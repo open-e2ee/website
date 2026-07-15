@@ -8,8 +8,11 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "check": "astro check",
+    "test": "node --test tests/*.test.mjs",
     "deploy": "npm run build && wrangler deploy",
-    "deploy:dry-run": "npm run build && wrangler deploy --dry-run"
+    "deploy:dry-run": "npm run build && wrangler deploy --dry-run",
+    "deploy:redirect": "npm test && wrangler deploy --config wrangler.redirect.jsonc",
+    "deploy:redirect:dry-run": "npm test && wrangler deploy --config wrangler.redirect.jsonc --dry-run"
   },
   "dependencies": {
     "@astrojs/mdx": "7.0.3",
