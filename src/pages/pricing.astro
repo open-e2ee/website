@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Pricing" description="Compare AGPL, Startup, Growth, and Enterprise commercial licensing for the Signal Protocol JavaScript SDK.">
+  <header class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Pricing</p>
+      <h1>Choose the rights your product needs.</h1>
+      <p class="lead">The complete SDK is available under AGPL. Proprietary products can purchase annual commercial production rights.</p>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="container">
+      <div class="pricing-grid">
+        <article class="price-card"><p class="tier-label">Community</p><h3>AGPL</h3><p class="price"><strong>Free</strong></p><p class="price-description">For projects that can comply with AGPLv3.</p><ul><li>Complete SDK</li><li>Browser, Node, and Expo</li><li>Self-operated infrastructure</li><li>Community support</li></ul><a class="button button-secondary" href="/licensing">Understand AGPL use</a></article>
+        <article class="price-card featured"><p class="tier-label">Startup</p><h3>One product</h3><p class="price"><strong>$5,000</strong><span>/ year</span></p><p class="price-description">Commercial production rights for one named product owned by one legal entity.</p><ul><li>Browser, iOS, Android, Expo, and Node</li><li>SDK updates during the term</li><li>Email support</li><li>Self-service purchase</li></ul><a class="button" href="https://console.signal-protocol.dev/licenses/new?plan=startup">Purchase Startup</a></article>
+        <article class="price-card"><p class="tier-label">Growth</p><h3>Integration support</h3><p class="price"><strong>$20,000</strong><span>/ year</span></p><p class="price-description">Commercial rights with prioritized updates and implementation support.</p><ul><li>One named product</li><li>Priority updates</li><li>Integration support</li><li>Additional products available</li></ul><a class="button button-secondary" href="mailto:licensing@signal-protocol.dev?subject=Growth%20commercial%20license">Schedule a meeting</a></article>
+        <article class="price-card"><p class="tier-label">Enterprise / OEM</p><h3>Portfolio rights</h3><p class="price"><strong>$50,000+</strong><span>/ year</span></p><p class="price-description">Negotiated product portfolio, redistribution, security, and support terms.</p><ul><li>Portfolio or OEM scope</li><li>Onboarding and SLA</li><li>Security review</li><li>Redistribution terms</li></ul><a class="button button-secondary" href="mailto:licensing@signal-protocol.dev?subject=Enterprise%20or%20OEM%20commercial%20license">Schedule a meeting</a></article>
+      </div>
+      <p class="pricing-note">Taxes may apply. The final signed agreement controls the license grant, covered product, support, renewal, and post-expiration rights. Growth and Enterprise purchases require a scope review before contracting.</p>
+    </div>
+  </section>
+
+  <section class="section section-subtle">
+    <div class="container split-grid">
+      <article class="split-card"><p class="eyebrow">Startup checkout</p><h2>Designed for self-service.</h2><p>Sign in, name the legal entity and covered product, accept the commercial terms, and complete annual checkout through Stripe.</p></article>
+      <article class="split-card"><p class="eyebrow">Growth and Enterprise</p><h2>Scope before purchase.</h2><p>Integration support, portfolio rights, redistribution, security review, and service levels require a short meeting and signed order form.</p></article>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Signal Protocol shield logo — dark mode</title>
+  <desc id="desc">A split-color shield containing aligned JetBrains Mono S and P letterforms.</desc>
+  <metadata>Mode: dark; small-size: false; intended background: #070B13; no gradients; no font dependency.</metadata>
+  <defs>
+    <clipPath id="shield-right-half">
+      <rect x="256" width="256" height="512"/>
+    </clipPath>
+  </defs>
+  <g>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="#FFFFFF"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="#EEF2F7" clip-path="url(#shield-right-half)"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="none" stroke="#D8E2F5" stroke-width="14" stroke-linejoin="round"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="none" stroke="#5C82D4" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M302-10Q225-10 167.5 17Q110 44 78.5 93.5Q47 143 47 210H193Q193 169 222.5 144.5Q252 120 302 120Q351 120 378.5 143.5Q406 167 406 206Q406 237 388 261.5Q370 286 335 294L246 315Q160 335 109.5 392.5Q59 450 59 530Q59 628 122.5 684Q186 740 296 740Q406 740 471 683.5Q536 627 536 531H390Q390 569 365 590.5Q340 612 296 612Q253 612 229 591Q205 570 205 535Q205 478 274 462L366 441Q452 422 502.5 358.5Q553 295 553 206Q553 141 522.5 92Q492 43 435.5 16.5Q379-10 302-10Z" fill="#142D52" transform="translate(131.375 339.333) scale(0.204809 -0.266667)"/>
+    <path d="M66 0V730H315Q392 730 449.5 701Q507 672 538.5 620Q570 568 570 498Q570 429 538 376.5Q506 324 449 295Q392 266 315 266H216V0ZM216 396H315Q363 396 391.5 425Q420 454 420 498Q420 542 391.5 571Q363 600 315 600H216Z" fill="#142D52" fill-rule="evenodd" transform="translate(254.261 342) scale(0.204809 -0.273973)"/>
+  </g>
+</svg>

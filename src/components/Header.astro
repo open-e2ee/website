@@ -1,0 +1,29 @@
+---
+import Logo from './Logo.astro';
+---
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand-link" href="/" aria-label="Signal Protocol home"><Logo /></a>
+    <nav class="desktop-nav" aria-label="Primary navigation">
+      <a href="/product">Product</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/blog">Blog</a>
+      <a href="https://docs.signal-protocol.dev">Docs</a>
+    </nav>
+    <div class="header-actions">
+      <a class="text-link desktop-only" href="https://console.signal-protocol.dev">Sign in</a>
+      <a class="button button-small" href="https://console.signal-protocol.dev/licenses/new?plan=startup">Get a license</a>
+      <details class="mobile-nav">
+        <summary aria-label="Open navigation">Menu</summary>
+        <nav aria-label="Mobile navigation">
+          <a href="/product">Product</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/blog">Blog</a>
+          <a href="https://docs.signal-protocol.dev">Docs</a>
+          <a href="https://console.signal-protocol.dev">Console</a>
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,56 @@
+---
+title: A JavaScript-first protocol implementation
+description: Why browser-native JavaScript, explicit runtime boundaries, and interoperability tests form a useful implementation profile.
+publishedAt: 2026-07-15
+author: Signal Protocol
+tags:
+  - Architecture
+  - JavaScript
+  - Interoperability
+---
+
+Cryptographic libraries inherit two kinds of constraints: the protocol they implement and the runtime in which that protocol must remain correct. In JavaScript, the second category deserves explicit treatment rather than being hidden behind an API that assumes every environment behaves like a native library.
+
+This project targets modern browsers, Node.js, and Expo. Those environments share a language, but they do not share identical storage, lifecycle, randomness, or secret-disposal behavior. A useful JavaScript profile therefore needs stable cryptographic contracts and deliberately different runtime adapters.
+
+## Interoperability is a direction and an oracle
+
+Exact compatibility with every deployed Signal implementation is not the only acceptable design outcome. It is, however, an unusually valuable correctness oracle.
+
+When a standardized primitive or encoding exists, matching independently generated vectors can expose errors that internal round-trip tests cannot. Where the JavaScript profile intentionally differs, the difference should be versioned, documented, and bound into the relevant transcript or trust object.
+
+That leads to a practical rule:
+
+> Prefer compatible, standardized behavior when it is sound and maintainable. Depart only for a concrete improvement in security, simplicity, portability, or material performance—and make the departure observable.
+
+## Composition is part of the security model
+
+The SDK does not need to own an application's infrastructure to define safe boundaries. Instead, it exposes contracts for local secret storage, public prekey publication, encrypted delivery, and opaque encrypted objects.
+
+```ts
+import { createSignalClient } from '@signal-protocol/sdk';
+
+const client = await createSignalClient({
+  identity: { userId },
+  adapters: { storage: platformStorage },
+});
+```
+
+Application code chooses the adapter. The protocol implementation validates the data crossing that boundary and commits state only after the operation has succeeded.
+
+This division also keeps the portable SDK useful before any hosted service exists. Teams can integrate locally, substitute infrastructure later, and test failure behavior at the adapter boundary.
+
+## JavaScript limitations should remain visible
+
+JavaScript cannot promise the same memory and timing properties as carefully controlled native code. Optimizing runtimes, garbage collection, and shared execution environments all matter.
+
+The responsible response is not to pretend those constraints disappear. It is to:
+
+- avoid secret-dependent branches where practical;
+- minimize secret lifetimes and copies;
+- overwrite mutable buffers on best effort paths;
+- validate hostile serialized state before mutation;
+- test bundled artifacts in every supported runtime;
+- retain a roadmap for qualified native or WebAssembly backends.
+
+That is the profile we are building: JavaScript-native, explicit about its limits, and continuously checked against independent implementations.

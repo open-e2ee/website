@@ -1,0 +1,34 @@
+---
+import Logo from './Logo.astro';
+const year = new Date().getUTCFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <a class="brand-link" href="/"><Logo /></a>
+      <p>A JavaScript-first, independently versioned Signal Protocol SDK.</p>
+    </div>
+    <div>
+      <strong>Product</strong>
+      <a href="/product">Overview</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/licensing">Licensing</a>
+    </div>
+    <div>
+      <strong>Developers</strong>
+      <a href="https://docs.signal-protocol.dev">Documentation</a>
+      <a href="https://docs.signal-protocol.dev/getting-started">Getting started</a>
+      <a href="/blog">Engineering journal</a>
+    </div>
+    <div>
+      <strong>Company</strong>
+      <a href="mailto:licensing@signal-protocol.dev">Contact</a>
+      <a href="https://console.signal-protocol.dev">Console</a>
+    </div>
+  </div>
+  <div class="container footer-legal">
+    <p>© {year} Signal Protocol contributors.</p>
+    <p>Independent project. Not affiliated with Signal Messenger LLC or the Signal Foundation.</p>
+  </div>
+</footer>

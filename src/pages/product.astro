@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProtocolFlow from '../components/ProtocolFlow.astro';
+---
+
+<BaseLayout title="Product" description="A portable TypeScript SDK for encrypted messaging across browser, Node.js, and Expo applications.">
+  <header class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Product</p>
+      <h1>A protocol SDK, not an infrastructure dependency.</h1>
+      <p class="lead">Own application identity, session state, local secrets, and infrastructure composition while using one coherent JavaScript API.</p>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="container">
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-number">Identity</span><h3>Composite identity</h3><p>A versioned X25519 and Ed25519 identity tuple becomes the trust object used by storage, transcripts, prekeys, rotation, and safety numbers.</p></article>
+        <article class="feature-card"><span class="feature-number">Messaging</span><h3>Session protocols</h3><p>Build one-to-one and group messaging with explicit session state, replay boundaries, skipped-key limits, and recovery behavior.</p></article>
+        <article class="feature-card"><span class="feature-number">Runtime</span><h3>JavaScript environments</h3><p>Target modern browsers, Node.js, and Expo through runtime-specific storage and platform adapters rather than separate protocol implementations.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-subtle">
+    <div class="container"><ProtocolFlow /></div>
+  </section>
+
+  <section class="section">
+    <div class="container split-grid">
+      <article class="split-card"><p class="eyebrow">Included</p><h2>Portable client behavior</h2><ul><li>Identity and prekey lifecycle</li><li>Session establishment and ratcheting</li><li>Multi-device and group state</li><li>Safety-number generation and comparison</li><li>Storage and delivery contracts</li></ul></article>
+      <article class="split-card"><p class="eyebrow">Not imposed</p><h2>Your infrastructure choices</h2><ul><li>No required hosted relay</li><li>No required database vendor</li><li>No access to customer plaintext</li><li>No SDK phone-home requirement</li><li>No hidden control-plane dependency</li></ul></article>
+    </div>
+  </section>
+
+  <section class="section section-subtle">
+    <div class="container">
+      <div class="cta-panel">
+        <div><p class="eyebrow">Developer workflow</p><h2>Start with a local adapter and a test conversation.</h2></div>
+        <a class="button" href="https://docs.signal-protocol.dev/getting-started">Follow the quickstart</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

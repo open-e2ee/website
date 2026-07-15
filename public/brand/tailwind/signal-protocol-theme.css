@@ -1,0 +1,131 @@
+/*
+ * Signal Protocol developer theme
+ * Tailwind CSS 4.3.2
+ *
+ * Import this file as the application stylesheet, or copy everything after the
+ * Tailwind import into an existing stylesheet that already imports Tailwind.
+ */
+
+@import "tailwindcss";
+
+/* Class-driven dark mode: add/remove .dark on the <html> element. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Stable brand primitives. These names are not mode-dependent. */
+@theme static {
+  --color-sp-white: #ffffff;
+  --color-sp-ink: #070b13;
+  --color-sp-slate-50: #f6f8fc;
+  --color-sp-slate-100: #eef2f7;
+  --color-sp-slate-200: #d8e2f5;
+  --color-sp-blue-400: #5c82d4;
+  --color-sp-blue-500: #4c78d0;
+  --color-sp-blue-700: #284d79;
+  --color-sp-blue-800: #19365f;
+  --color-sp-blue-900: #142d52;
+  --color-sp-blue-950: #0b1d36;
+
+  --font-brand-sans: Inter, ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  --font-brand-mono: "JetBrains Mono", "SFMono-Regular", Consolas,
+    "Liberation Mono", monospace;
+
+  --radius-brand-sm: 0.5rem;
+  --radius-brand-md: 0.75rem;
+  --radius-brand-lg: 1rem;
+
+  --shadow-brand-sm: 0 1px 2px rgb(7 11 19 / 0.08);
+  --shadow-brand-md: 0 8px 24px rgb(7 11 19 / 0.12);
+}
+
+/* Semantic tokens: components should consume these instead of raw hex values. */
+:root {
+  color-scheme: light;
+
+  --sp-canvas: #f6f8fc;
+  --sp-surface: #ffffff;
+  --sp-surface-subtle: #eef2f7;
+  --sp-surface-inverse: #142d52;
+  --sp-foreground: #10233f;
+  --sp-muted: #5d6f87;
+  --sp-border: #d8e2f5;
+  --sp-primary: #19365f;
+  --sp-primary-hover: #142d52;
+  --sp-primary-foreground: #ffffff;
+  --sp-accent: #466fc3;
+  --sp-focus: #5c82d4;
+  --sp-code: #0b1d36;
+  --sp-code-foreground: #eef2f7;
+  --sp-success: #176b4d;
+  --sp-warning: #8a5700;
+  --sp-danger: #b42336;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --sp-canvas: #070b13;
+  --sp-surface: #101827;
+  --sp-surface-subtle: #14233a;
+  --sp-surface-inverse: #ffffff;
+  --sp-foreground: #f7f9fc;
+  --sp-muted: #a8b5c8;
+  --sp-border: #263956;
+  --sp-primary: #ffffff;
+  --sp-primary-hover: #eef2f7;
+  --sp-primary-foreground: #142d52;
+  --sp-accent: #5c82d4;
+  --sp-focus: #8aa7e5;
+  --sp-code: #0b1322;
+  --sp-code-foreground: #eef2f7;
+  --sp-success: #5dd6a5;
+  --sp-warning: #f0c36a;
+  --sp-danger: #ff8495;
+}
+
+/*
+ * Mapping semantic CSS variables through @theme inline creates utilities like
+ * bg-canvas, text-foreground, border-border, and outline-focus.
+ */
+@theme inline {
+  --color-canvas: var(--sp-canvas);
+  --color-surface: var(--sp-surface);
+  --color-surface-subtle: var(--sp-surface-subtle);
+  --color-surface-inverse: var(--sp-surface-inverse);
+  --color-foreground: var(--sp-foreground);
+  --color-muted: var(--sp-muted);
+  --color-border: var(--sp-border);
+  --color-primary: var(--sp-primary);
+  --color-primary-hover: var(--sp-primary-hover);
+  --color-primary-foreground: var(--sp-primary-foreground);
+  --color-accent: var(--sp-accent);
+  --color-focus: var(--sp-focus);
+  --color-code: var(--sp-code);
+  --color-code-foreground: var(--sp-code-foreground);
+  --color-success: var(--sp-success);
+  --color-warning: var(--sp-warning);
+  --color-danger: var(--sp-danger);
+}
+
+@layer base {
+  html {
+    background: var(--sp-canvas);
+    color: var(--sp-foreground);
+    font-family: var(--font-brand-sans);
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-brand-mono);
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--sp-accent) 32%, transparent);
+  }
+}

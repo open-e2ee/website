@@ -1,0 +1,96 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProtocolFlow from '../components/ProtocolFlow.astro';
+
+const codeSample = `import { createSignalClient } from '@signal-protocol/sdk';
+import { indexedDbStore } from '@signal-protocol/sdk/local/store/web';
+
+const storage = await indexedDbStore();
+const client = await createSignalClient({
+  identity: { userId: 'alice' },
+  adapters: { storage },
+});
+
+await client.send('bob', 'hello');`;
+---
+
+<BaseLayout title="Signal Protocol" description="A JavaScript-first Signal Protocol SDK for browsers, Node.js, and Expo, available under AGPL or a commercial license.">
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">JavaScript-first encrypted messaging</p>
+          <h1>Private communication, composed your way.</h1>
+        </div>
+        <div class="hero-copy">
+          <p>A portable TypeScript SDK for encrypted messaging, devices, groups, attachments, and explicit storage and transport composition.</p>
+          <div class="button-row">
+            <a class="button" href="https://docs.signal-protocol.dev/getting-started">Read the docs</a>
+            <a class="button button-secondary" href="/pricing">Compare licenses</a>
+          </div>
+        </div>
+      </div>
+      <div class="hero-proof" aria-label="Supported environments and licensing">
+        <div><strong>Browser native</strong><span>Web Crypto and portable storage</span></div>
+        <div><strong>Node and Expo</strong><span>Runtime-specific adapters</span></div>
+        <div><strong>AGPL or commercial</strong><span>Choose the rights your product needs</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="product">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Protocol building blocks</p><h2>Cryptographic state belongs to your product.</h2></div>
+        <p>Compose a Signal-inspired protocol profile without outsourcing private keys, plaintext, or application ownership.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-number">01 / Identity</span><h3>Explicit trust</h3><p>Versioned composite identities, safety-number comparison, rotation controls, and fail-closed trust mutation.</p></article>
+        <article class="feature-card"><span class="feature-number">02 / Sessions</span><h3>Modern session state</h3><p>PQXDH, Double Ratchet, post-quantum ratcheting, multi-device session management, and bounded state recovery.</p></article>
+        <article class="feature-card"><span class="feature-number">03 / Composition</span><h3>Portable boundaries</h3><p>Choose local storage, delivery, and encrypted-object adapters for browser, server, and native JavaScript environments.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-subtle" id="architecture">
+    <div class="container"><ProtocolFlow /></div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="code-surface">
+        <pre><code>{codeSample}</code></pre>
+        <div class="code-explainer">
+          <p class="eyebrow">One explicit composition root</p>
+          <h3>Start locally. Add only the adapters you need.</h3>
+          <p>The SDK surface stays stable while applications select runtime storage, transport, and object persistence independently.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-subtle" id="pricing">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Licensing</p><h2>Open source or commercial production rights.</h2></div>
+        <p>Use the complete SDK under AGPL, or purchase commercial rights for a proprietary product.</p>
+      </div>
+      <div class="pricing-grid">
+        <article class="price-card"><p class="tier-label">Community</p><h3>AGPL</h3><p class="price"><strong>Free</strong></p><p class="price-description">For projects that can satisfy the AGPLv3 obligations.</p><ul><li>Complete SDK</li><li>Self-operated infrastructure</li><li>Community support</li></ul><a class="button button-secondary" href="/licensing">Review licensing</a></article>
+        <article class="price-card featured"><p class="tier-label">Startup</p><h3>One product</h3><p class="price"><strong>$5k</strong><span>/ year</span></p><p class="price-description">Commercial production rights for one named product and legal entity.</p><ul><li>Browser, Node, and Expo</li><li>SDK updates</li><li>Email support</li><li>Self-service checkout</li></ul><a class="button" href="https://console.signal-protocol.dev/licenses/new?plan=startup">Purchase Startup</a></article>
+        <article class="price-card"><p class="tier-label">Growth</p><h3>Integration support</h3><p class="price"><strong>$20k</strong><span>/ year</span></p><p class="price-description">Commercial rights with prioritized updates and implementation support.</p><ul><li>One named product</li><li>Priority updates</li><li>Integration support</li><li>Additional products available</li></ul><a class="button button-secondary" href="mailto:licensing@signal-protocol.dev?subject=Growth%20license">Schedule a meeting</a></article>
+        <article class="price-card"><p class="tier-label">Enterprise / OEM</p><h3>Portfolio rights</h3><p class="price"><strong>$50k+</strong><span>/ year</span></p><p class="price-description">Negotiated portfolio, redistribution, security, and support terms.</p><ul><li>Product or portfolio scope</li><li>Onboarding and SLA</li><li>Security review</li><li>Redistribution terms</li></ul><a class="button button-secondary" href="mailto:licensing@signal-protocol.dev?subject=Enterprise%20or%20OEM%20license">Schedule a meeting</a></article>
+      </div>
+      <p class="pricing-note">Prices shown are the proposed annual list prices for the named scope. The signed commercial agreement controls product scope, renewal, support, and usage rights.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="cta-panel">
+        <div><p class="eyebrow">Begin with the protocol</p><h2>Build the integration before choosing infrastructure.</h2></div>
+        <a class="button" href="https://docs.signal-protocol.dev/getting-started">Open developer docs</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

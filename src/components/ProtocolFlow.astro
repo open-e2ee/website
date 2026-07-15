@@ -1,0 +1,30 @@
+<figure class="protocol-flow" aria-labelledby="protocol-flow-title">
+  <figcaption>
+    <p class="eyebrow">Portable by construction</p>
+    <h2 id="protocol-flow-title">Private keys stay with your application.</h2>
+    <p>Your runtime owns identity and session state. Explicit adapters connect the encrypted output to infrastructure you choose.</p>
+  </figcaption>
+  <div class="flow-canvas">
+    <div class="flow-node flow-node-device">
+      <span class="flow-index">01</span>
+      <strong>Your application</strong>
+      <small>Browser · Node · Expo</small>
+      <span class="status-chip">private state</span>
+    </div>
+    <div class="flow-link" aria-hidden="true"><span></span></div>
+    <div class="flow-node flow-node-sdk">
+      <span class="flow-index">02</span>
+      <strong>Protocol SDK</strong>
+      <small>Keys · sessions · groups</small>
+      <span class="status-chip">ciphertext out</span>
+    </div>
+    <div class="flow-link" aria-hidden="true"><span></span></div>
+    <div class="flow-node flow-node-adapter">
+      <span class="flow-index">03</span>
+      <strong>Your adapters</strong>
+      <small>Storage · delivery · objects</small>
+      <span class="status-chip">explicit boundary</span>
+    </div>
+  </div>
+  <p class="flow-note"><span></span> The SDK defines the cryptographic and adapter contracts. It does not require a hosted Signal Protocol service.</p>
+</figure>
