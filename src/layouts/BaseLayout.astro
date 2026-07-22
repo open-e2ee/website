@@ -13,10 +13,10 @@ interface Props {
 const {
   title,
   description,
-  image = '/brand/signal-protocol-shield-mode-sheet.png',
+  image = '/brand/open-e2ee-shield-mode-sheet.png',
   canonical = Astro.url.pathname,
 } = Astro.props;
-const siteTitle = title === 'Signal Protocol' ? title : `${title} · Signal Protocol`;
+const siteTitle = title === 'OpenE2EE' ? title : `${title} · OpenE2EE`;
 const canonicalUrl = new URL(canonical, Astro.site);
 const imageUrl = new URL(image, Astro.site);
 ---
@@ -36,7 +36,7 @@ const imageUrl = new URL(image, Astro.site);
     <meta property="og:image" content={imageUrl} />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href={canonicalUrl} />
-    <link rel="icon" href="/brand/signal-protocol-shield-adaptive-small.svg" type="image/svg+xml" />
+    <link rel="icon" href="/brand/open-e2ee-shield-adaptive-small.svg" type="image/svg+xml" />
     <title>{siteTitle}</title>
   </head>
   <body>

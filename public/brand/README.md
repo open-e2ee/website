@@ -1,30 +1,29 @@
-# Signal Protocol developer shield
+# OpenE2EE developer shield
 
 This directory contains an original solid-color shield monogram for Signal
 Protocol, designed for developer documentation, SDKs, CLIs, and code-adjacent
 interfaces.
 
-The `S` and `P` use outlined JetBrains Mono ExtraBold glyphs on a shared
-monospaced grid. Their visible top and bottom edges are mathematically aligned.
-They are SVG paths rather than text, so the production logo has no runtime font
-dependency and renders consistently everywhere.
+The `O` and `E` use geometric paths on a shared grid. They are paths rather
+than text, so the production logo has no runtime font dependency and renders
+consistently everywhere.
 
 ## Files
 
 - `STYLE_GUIDE.md` — logo, color, typography, accessibility, and Tailwind CSS
   light/dark-mode guidance.
-- `tailwind/signal-protocol-theme.css` — copy-ready Tailwind CSS 4.3.2 theme
+- `tailwind/open-e2ee-theme.css` — copy-ready Tailwind CSS 4.3.2 theme
   with primitive and semantic brand tokens.
-- `signal-protocol-shield-adaptive.svg` — automatically selects light or dark
+- `open-e2ee-shield-adaptive.svg` — automatically selects light or dark
   colors with `prefers-color-scheme`.
-- `signal-protocol-shield-adaptive-small.svg` — simplified adaptive mark for
+- `open-e2ee-shield-adaptive-small.svg` — simplified adaptive mark for
   favicon and compact UI use.
-- `svg/signal-protocol-shield-light.svg` — explicit light-mode SVG.
-- `svg/signal-protocol-shield-dark.svg` — explicit dark-mode SVG.
+- `svg/open-e2ee-shield-light.svg` — explicit light-mode SVG.
+- `svg/open-e2ee-shield-dark.svg` — explicit dark-mode SVG.
 - `svg/*-small.svg` — explicit variants without the secondary accent stroke,
   optimized for 16–64 px use.
 - `png/{32,64,128,512,1024}/` — transparent PNG exports.
-- `signal-protocol-shield-mode-sheet.svg` and `.png` — presentation sheet.
+- `open-e2ee-shield-mode-sheet.svg` and `.png` — presentation sheet.
 
 The individual logo files have transparent backgrounds. Intended backgrounds:
 

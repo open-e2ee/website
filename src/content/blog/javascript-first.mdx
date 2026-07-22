@@ -2,7 +2,7 @@
 title: A JavaScript-first protocol implementation
 description: Why browser-native JavaScript, explicit runtime boundaries, and interoperability tests form a useful implementation profile.
 publishedAt: 2026-07-15
-author: Signal Protocol
+author: OpenE2EE
 tags:
   - Architecture
   - JavaScript
@@ -28,9 +28,9 @@ That leads to a practical rule:
 The SDK does not need to own an application's infrastructure to define safe boundaries. Instead, it exposes contracts for local secret storage, public prekey publication, encrypted delivery, and opaque encrypted objects.
 
 ```ts
-import { createSignalClient } from '@signal-protocol/sdk';
+import { createOpenE2EEClient } from '@open-e2ee/sdk';
 
-const client = await createSignalClient({
+const client = await createOpenE2EEClient({
   identity: { userId },
   adapters: { storage: platformStorage },
 });

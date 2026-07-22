@@ -9,7 +9,7 @@ const blog = defineCollection({
     description: z.string(),
     publishedAt: z.coerce.date(),
     updatedAt: z.coerce.date().optional(),
-    author: z.string().default('Signal Protocol'),
+    author: z.string().default('OpenE2EE'),
     draft: z.boolean().default(false),
     tags: z.array(z.string()).default([]),
   }),

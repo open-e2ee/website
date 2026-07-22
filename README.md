@@ -1,14 +1,20 @@
-# signal-protocol.dev
+# OpenE2EE website
 
 Public marketing site and engineering journal for the independent Signal
 Protocol JavaScript SDK.
 
 ## Applications
 
-- `signal-protocol.dev` — this static Astro site and blog.
-- `docs.signal-protocol.dev` — public Fumadocs routes deployed from the private
-  `signal-protocol/console` repository.
-- `console.signal-protocol.dev` — authenticated licensing and billing console.
+- `open-e2ee.dev` — the canonical static Astro site and blog.
+- `docs.open-e2ee.dev` — public Fumadocs routes deployed from the private
+  `open-e2ee/console` repository.
+- `console.open-e2ee.dev` — authenticated licensing and billing console.
+
+`www.open-e2ee.dev`, `signal-protocol.dev`, `signalprotocol.dev`,
+`open-e2ee.com`, and `opene2ee.dev` (including their `www` forms) are legacy
+or defensive aliases that permanently redirect to `https://open-e2ee.dev`.
+`docs.signal-protocol.dev` and `console.signal-protocol.dev` redirect to the
+matching `docs.open-e2ee.dev` and `console.open-e2ee.dev` hosts.
 
 Hosted relay, object-storage, and control-plane products are deliberately out
 of scope for this repository and the current launch.

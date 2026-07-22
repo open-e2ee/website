@@ -4,7 +4,7 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
-  site: 'https://signal-protocol.dev',
+  site: 'https://open-e2ee.dev',
   output: 'static',
   integrations: [mdx(), react(), sitemap()],
   markdown: {

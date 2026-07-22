@@ -31,14 +31,10 @@ const modes = {
 const shieldPath =
   'M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z';
 
-// JetBrains Mono ExtraBold glyph outlines. Both letters occupy the same
-// 600-unit advance grid. Their transforms normalize the visible bounds to the
-// exact same top and bottom while preserving the monospaced horizontal grid.
-// They are paths, not text, so the mark has no runtime font dependency.
-const sGlyphPath =
-  'M302-10Q225-10 167.5 17Q110 44 78.5 93.5Q47 143 47 210H193Q193 169 222.5 144.5Q252 120 302 120Q351 120 378.5 143.5Q406 167 406 206Q406 237 388 261.5Q370 286 335 294L246 315Q160 335 109.5 392.5Q59 450 59 530Q59 628 122.5 684Q186 740 296 740Q406 740 471 683.5Q536 627 536 531H390Q390 569 365 590.5Q340 612 296 612Q253 612 229 591Q205 570 205 535Q205 478 274 462L366 441Q452 422 502.5 358.5Q553 295 553 206Q553 141 522.5 92Q492 43 435.5 16.5Q379-10 302-10Z';
-const pGlyphPath =
-  'M66 0V730H315Q392 730 449.5 701Q507 672 538.5 620Q570 568 570 498Q570 429 538 376.5Q506 324 449 295Q392 266 315 266H216V0ZM216 396H315Q363 396 391.5 425Q420 454 420 498Q420 542 391.5 571Q363 600 315 600H216Z';
+// Geometric O and E letterforms for OpenE2EE. They are paths, not text, so
+// the mark has no runtime font dependency.
+const oGlyphPath = 'M148 174H244V338H148ZM174 199V313H218V199Z';
+const eGlyphPath = 'M270 174H370V199H298V240H360V265H298V313H370V338H270Z';
 
 function logoMarkup(colors, { small = false, idSuffix = '' } = {}) {
   const rightHalfId = `shield-right-half${idSuffix}`;
@@ -53,16 +49,16 @@ function logoMarkup(colors, { small = false, idSuffix = '' } = {}) {
     <path d="${shieldPath}" fill="${colors.shieldRight}" clip-path="url(#${rightHalfId})"/>
     <path d="${shieldPath}" fill="none" stroke="${small ? colors.accent : colors.outline}" stroke-width="${small ? 10 : 14}" stroke-linejoin="round"/>
     ${small ? '' : `<path d="${shieldPath}" fill="none" stroke="${colors.accent}" stroke-width="4" stroke-linejoin="round"/>`}
-    <path d="${sGlyphPath}" fill="${colors.ink}" transform="translate(131.375 339.333) scale(0.204809 -0.266667)"/>
-    <path d="${pGlyphPath}" fill="${colors.ink}" fill-rule="evenodd" transform="translate(254.261 342) scale(0.204809 -0.273973)"/>
+    <path d="${oGlyphPath}" fill="${colors.ink}" fill-rule="evenodd"/>
+    <path d="${eGlyphPath}" fill="${colors.ink}"/>
   </g>`;
 }
 
 function standaloneSvg(mode, colors, { small = false } = {}) {
   const sizeLabel = small ? 'small-size ' : '';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Signal Protocol ${sizeLabel}shield logo — ${mode} mode</title>
-  <desc id="desc">A split-color shield containing aligned JetBrains Mono S and P letterforms.</desc>
+  <title id="title">OpenE2EE ${sizeLabel}shield logo — ${mode} mode</title>
+  <desc id="desc">A split-color shield containing aligned O and E letterforms.</desc>
   <metadata>Mode: ${mode}; small-size: ${small}; intended background: ${colors.background}; no gradients; no font dependency.</metadata>${logoMarkup(colors, { small })}
 </svg>
 `;
@@ -72,8 +68,8 @@ function adaptiveSvg({ small = false } = {}) {
   const light = modes.light;
   const dark = modes.dark;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Adaptive Signal Protocol ${small ? 'small-size ' : ''}shield logo</title>
-  <desc id="desc">A split-color shield containing aligned JetBrains Mono S and P letterforms. Colors adapt to light or dark mode.</desc>
+  <title id="title">Adaptive OpenE2EE ${small ? 'small-size ' : ''}shield logo</title>
+  <desc id="desc">A split-color shield containing aligned O and E letterforms. Colors adapt to light or dark mode.</desc>
   <style>
     :root { --shield-left: ${light.shieldLeft}; --shield-right: ${light.shieldRight}; --outline: ${light.outline}; --accent: ${light.accent}; --ink: ${light.ink}; }
     @media (prefers-color-scheme: dark) {
@@ -99,7 +95,7 @@ function modeSheetSvg() {
   });
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title desc">
-  <title id="title">Signal Protocol developer shield logo</title>
+  <title id="title">OpenE2EE developer shield logo</title>
   <desc id="desc">Solid-color light and dark mode variants.</desc>
   <rect width="${width}" height="${height}" fill="#111418"/>${cards.join('')}
 </svg>
@@ -110,7 +106,7 @@ mkdirSync(join(root, 'svg'), { recursive: true });
 mkdirSync(join(root, 'png'), { recursive: true });
 
 for (const [mode, colors] of Object.entries(modes)) {
-  const basename = `signal-protocol-shield-${mode}`;
+  const basename = `open-e2ee-shield-${mode}`;
   const svgPath = join(root, 'svg', `${basename}.svg`);
   writeFileSync(svgPath, standaloneSvg(mode, colors));
   const smallSvgPath = join(root, 'svg', `${basename}-small.svg`);
@@ -132,14 +128,14 @@ for (const [mode, colors] of Object.entries(modes)) {
 
 }
 
-writeFileSync(join(root, 'signal-protocol-shield-adaptive.svg'), adaptiveSvg());
-writeFileSync(join(root, 'signal-protocol-shield-adaptive-small.svg'), adaptiveSvg({ small: true }));
-writeFileSync(join(root, 'signal-protocol-shield-mode-sheet.svg'), modeSheetSvg());
+writeFileSync(join(root, 'open-e2ee-shield-adaptive.svg'), adaptiveSvg());
+writeFileSync(join(root, 'open-e2ee-shield-adaptive-small.svg'), adaptiveSvg({ small: true }));
+writeFileSync(join(root, 'open-e2ee-shield-mode-sheet.svg'), modeSheetSvg());
 execFileSync('rsvg-convert', [
   '--width',
   '1440',
   '--output',
-  join(root, 'signal-protocol-shield-mode-sheet.png'),
-  join(root, 'signal-protocol-shield-mode-sheet.svg'),
+  join(root, 'open-e2ee-shield-mode-sheet.png'),
+  join(root, 'open-e2ee-shield-mode-sheet.svg'),
 ]);
 console.log('Generated 6 SVG logo files, a mode sheet, and 10 PNG exports.');

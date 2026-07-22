@@ -1,15 +1,11 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "signal-protocol-website",
+  "name": "open-e2ee-website",
   "compatibility_date": "2026-07-15",
   "workers_dev": false,
   "routes": [
     {
-      "pattern": "signal-protocol.dev",
-      "custom_domain": true
-    },
-    {
-      "pattern": "www.signal-protocol.dev",
+      "pattern": "open-e2ee.dev",
       "custom_domain": true
     }
   ],

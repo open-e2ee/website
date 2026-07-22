@@ -1,5 +1,5 @@
 {
-  "name": "@signal-protocol/website",
+  "name": "@open-e2ee/website",
   "version": "0.1.0",
   "private": true,
   "type": "module",

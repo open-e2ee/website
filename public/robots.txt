@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://signal-protocol.dev/sitemap-index.xml
+Sitemap: https://open-e2ee.dev/sitemap-index.xml

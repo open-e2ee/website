@@ -1,6 +1,6 @@
-# Signal Protocol developer brand style guide
+# OpenE2EE developer brand style guide
 
-This guide defines how to use the Signal Protocol shield and its supporting UI
+This guide defines how to use the OpenE2EE shield and its supporting UI
 tokens in developer documentation, SDK sites, dashboards, CLIs, package pages,
 and code-adjacent interfaces.
 
@@ -31,12 +31,12 @@ class-driven dark-mode variant:
 
 | Context | Asset |
 | --- | --- |
-| Light interface | `svg/signal-protocol-shield-light.svg` |
-| Dark interface | `svg/signal-protocol-shield-dark.svg` |
-| Web UI that follows the OS mode | `signal-protocol-shield-adaptive.svg` |
-| 16–64 px light UI | `svg/signal-protocol-shield-light-small.svg` |
-| 16–64 px dark UI | `svg/signal-protocol-shield-dark-small.svg` |
-| Compact adaptive UI | `signal-protocol-shield-adaptive-small.svg` |
+| Light interface | `svg/open-e2ee-shield-light.svg` |
+| Dark interface | `svg/open-e2ee-shield-dark.svg` |
+| Web UI that follows the OS mode | `open-e2ee-shield-adaptive.svg` |
+| 16–64 px light UI | `svg/open-e2ee-shield-light-small.svg` |
+| 16–64 px dark UI | `svg/open-e2ee-shield-dark-small.svg` |
+| Compact adaptive UI | `open-e2ee-shield-adaptive-small.svg` |
 
 Use explicit light and dark files for email, social images, documentation
 generators, and other renderers that may strip SVG media queries.
@@ -53,7 +53,7 @@ generators, and other renderers that may strip SVG media queries.
 
 - Reverse the approved facet direction: the lighter facet stays on the left.
 - Add gradients, shadows, glow, bevels, textures, or transparency to the mark.
-- Re-typeset, resize independently, or reposition the `S` and `P`.
+- Re-typeset, resize independently, or reposition the `O` and `E`.
 - Recolor only one glyph or use colors outside the approved palette.
 - Put the light-mode mark on a dark surface or the dark-mode mark on a light
   surface.
@@ -65,7 +65,7 @@ generators, and other renderers that may strip SVG media queries.
 | Token | Hex | Use |
 | --- | --- | --- |
 | Navy 950 | `#0B1D36` | Light-mode outer outline |
-| Navy 900 | `#142D52` | Dark-mode `SP` lettering |
+| Navy 900 | `#142D52` | Dark-mode `OE` lettering |
 | Navy 800 | `#19365F` | Darker right facet |
 | Navy 700 | `#284D79` | Lighter left facet |
 | Blue 500 | `#4C78D0` | Light-mode accent edge |
@@ -76,7 +76,7 @@ generators, and other renderers that may strip SVG media queries.
 
 ### Semantic UI colors
 
-Use semantic utilities from `signal-protocol-theme.css` so components switch
+Use semantic utilities from `open-e2ee-theme.css` so components switch
 modes automatically.
 
 | Purpose | Tailwind utility examples |
@@ -91,7 +91,7 @@ modes automatically.
 | Code surface | `bg-code text-code-foreground` |
 | Status text | `text-success`, `text-warning`, `text-danger` |
 
-Avoid using primitive utilities such as `bg-sp-blue-800` for application
+Avoid using primitive utilities such as `bg-oe-blue-800` for application
 surfaces. Primitive tokens are for brand artwork and exceptional one-off needs;
 semantic tokens are the component API.
 
@@ -121,7 +121,7 @@ Do not use monospace for long prose; it reduces scanning speed.
 ## Tailwind CSS setup
 
 The ready-to-use theme is in
-[`tailwind/signal-protocol-theme.css`](./tailwind/signal-protocol-theme.css).
+[`tailwind/open-e2ee-theme.css`](./tailwind/open-e2ee-theme.css).
 
 ### Install Tailwind 4.3.2
 
@@ -140,13 +140,13 @@ application already has one.
 Either use the provided file as the app stylesheet:
 
 ```css
-@import "../path/to/brand/tailwind/signal-protocol-theme.css";
+@import "../path/to/brand/tailwind/open-e2ee-theme.css";
 ```
 
 Or copy everything after `@import "tailwindcss";` into an existing Tailwind v4
 stylesheet that already imports Tailwind.
 
-The theme exposes primitive utilities such as `bg-sp-blue-800`, semantic
+The theme exposes primitive utilities such as `bg-oe-blue-800`, semantic
 utilities such as `bg-canvas`, typography utilities such as
 `font-brand-mono`, and brand radius/shadow utilities such as
 `rounded-brand-md` and `shadow-brand-sm`.
@@ -167,7 +167,7 @@ variables. A card generally needs no `dark:` duplication:
 <article class="rounded-brand-lg border border-border bg-surface p-6 text-foreground">
   <h2 class="text-xl font-semibold tracking-tight">Session established</h2>
   <p class="mt-2 text-sm leading-6 text-muted">
-    The component follows the active Signal Protocol theme.
+    The component follows the active OpenE2EE theme.
   </p>
 </article>
 ```
@@ -178,13 +178,13 @@ changes. Logo switching is a valid example:
 ```html
 <img
   class="size-12 dark:hidden"
-  src="/brand/svg/signal-protocol-shield-light.svg"
-  alt="Signal Protocol"
+  src="/brand/svg/open-e2ee-shield-light.svg"
+  alt="OpenE2EE"
 />
 <img
   class="hidden size-12 dark:block"
-  src="/brand/svg/signal-protocol-shield-dark.svg"
-  alt="Signal Protocol"
+  src="/brand/svg/open-e2ee-shield-dark.svg"
+  alt="OpenE2EE"
 />
 ```
 
@@ -194,7 +194,7 @@ document `<head>` before loading styles:
 ```html
 <script>
   (() => {
-    const preference = localStorage.getItem("sp-theme") ?? "system";
+    const preference = localStorage.getItem("oe-theme") ?? "system";
     const systemDark = matchMedia("(prefers-color-scheme: dark)").matches;
     const isDark = preference === "dark" ||
       (preference === "system" && systemDark);
@@ -203,7 +203,7 @@ document `<head>` before loading styles:
 </script>
 ```
 
-Store `"light"`, `"dark"`, or `"system"` under `sp-theme`, then rerun the same
+Store `"light"`, `"dark"`, or `"system"` under `oe-theme`, then rerun the same
 logic when the user changes preference. Listen to `matchMedia` changes while
 the stored preference is `"system"`.
 
