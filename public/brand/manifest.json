@@ -1,0 +1,26 @@
+{
+  "package": "@open-e2ee/design",
+  "version": "0.1.0",
+  "sha256": "b8dff26cb861041f58181d37a88d8184284bce058870e1fffe9aaed5e2115c0d",
+  "files": [
+    "open-e2ee-shield-adaptive-small.svg",
+    "open-e2ee-shield-adaptive.svg",
+    "open-e2ee-shield-mode-sheet.png",
+    "open-e2ee-shield-mode-sheet.svg",
+    "png/1024/open-e2ee-shield-dark.png",
+    "png/1024/open-e2ee-shield-light.png",
+    "png/128/open-e2ee-shield-dark.png",
+    "png/128/open-e2ee-shield-light.png",
+    "png/32/open-e2ee-shield-dark.png",
+    "png/32/open-e2ee-shield-light.png",
+    "png/512/open-e2ee-shield-dark.png",
+    "png/512/open-e2ee-shield-light.png",
+    "png/64/open-e2ee-shield-dark.png",
+    "png/64/open-e2ee-shield-light.png",
+    "social/open-e2ee-design-og.png",
+    "svg/open-e2ee-shield-dark-small.svg",
+    "svg/open-e2ee-shield-dark.svg",
+    "svg/open-e2ee-shield-light-small.svg",
+    "svg/open-e2ee-shield-light.svg"
+  ]
+}

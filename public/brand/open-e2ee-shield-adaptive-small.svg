@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Adaptive OpenE2EE small-size shield logo</title>
-  <desc id="desc">A split-color shield containing aligned O and E letterforms. Colors adapt to light or dark mode.</desc>
+  <title id="title">Adaptive OpenE2EE small-size shield</title>
+  <desc id="desc">A split-color shield containing geometric O and E letterforms. Colors adapt to the active color scheme.</desc>
   <style>
-    :root { --shield-left: #284D79; --shield-right: #19365F; --outline: #0B1D36; --accent: #4C78D0; --ink: #FFFFFF; }
+    :root { --shield-left: #284d79; --shield-right: #19365f; --outline: #0b1d36; --accent: #4c78d0; --ink: #ffffff; }
     @media (prefers-color-scheme: dark) {
-      :root { --shield-left: #FFFFFF; --shield-right: #EEF2F7; --outline: #D8E2F5; --accent: #5C82D4; --ink: #142D52; }
+      :root { --shield-left: #ffffff; --shield-right: #eef2f7; --outline: #d8e2f5; --accent: #5c82d4; --ink: #142d52; }
     }
   </style>
   

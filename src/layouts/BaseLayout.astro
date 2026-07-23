@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import '../styles/design-system.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
@@ -13,7 +14,7 @@ interface Props {
 const {
   title,
   description,
-  image = '/brand/open-e2ee-shield-mode-sheet.png',
+  image = '/brand/social/open-e2ee-design-og.png',
   canonical = Astro.url.pathname,
 } = Astro.props;
 const siteTitle = title === 'OpenE2EE' ? title : `${title} · OpenE2EE`;
@@ -26,6 +27,17 @@ const imageUrl = new URL(image, Astro.site);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
+    <script is:inline>
+      (() => {
+        try {
+          const preference = localStorage.getItem('oe-theme') ?? 'system';
+          const systemDark = matchMedia('(prefers-color-scheme: dark)').matches;
+          const dark = preference === 'dark' || (preference === 'system' && systemDark);
+          document.documentElement.classList.toggle('dark', dark);
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch {}
+      })();
+    </script>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f6f8fc" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#070b13" media="(prefers-color-scheme: dark)" />

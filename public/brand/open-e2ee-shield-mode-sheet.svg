@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1240" height="680" viewBox="0 0 1240 680" role="img" aria-labelledby="title desc">
-  <title id="title">OpenE2EE developer shield logo</title>
-  <desc id="desc">Solid-color light and dark mode variants.</desc>
+  <title id="title">OpenE2EE shield in light and dark modes</title>
+  <desc id="desc">Approved solid-color light and dark variants.</desc>
   <rect width="1240" height="680" fill="#111418"/>
   <g transform="translate(40 40)">
-    <rect width="560" height="600" rx="42" fill="#F6F8FC"/>
+    <rect width="560" height="600" rx="42" fill="#f6f8fc"/>
     <g transform="translate(82 42) scale(0.77)">
   <defs>
     <clipPath id="shield-right-half-light">
@@ -11,17 +11,17 @@
     </clipPath>
   </defs>
   <g>
-    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="#284D79"/>
-    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="#19365F" clip-path="url(#shield-right-half-light)"/>
-    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="none" stroke="#0B1D36" stroke-width="14" stroke-linejoin="round"/>
-    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="none" stroke="#4C78D0" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M148 174H244V338H148ZM174 199V313H218V199Z" fill="#FFFFFF" fill-rule="evenodd"/>
-    <path d="M270 174H370V199H298V240H360V265H298V313H370V338H270Z" fill="#FFFFFF"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="#284d79"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="#19365f" clip-path="url(#shield-right-half-light)"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="none" stroke="#0b1d36" stroke-width="14" stroke-linejoin="round"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="none" stroke="#4c78d0" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M148 174H244V338H148ZM174 199V313H218V199Z" fill="#ffffff" fill-rule="evenodd"/>
+    <path d="M270 174H370V199H298V240H360V265H298V313H370V338H270Z" fill="#ffffff"/>
   </g></g>
-    <text x="36" y="558" fill="#10233F" font-family="JetBrains Mono, IBM Plex Mono, SFMono-Regular, Consolas, monospace" font-size="22" font-weight="700" letter-spacing="1.5">LIGHT MODE</text>
+    <text x="36" y="558" fill="#10233f" font-family="JetBrains Mono, monospace" font-size="22" font-weight="700" letter-spacing="1.5">LIGHT MODE</text>
   </g>
   <g transform="translate(640 40)">
-    <rect width="560" height="600" rx="42" fill="#070B13"/>
+    <rect width="560" height="600" rx="42" fill="#070b13"/>
     <g transform="translate(82 42) scale(0.77)">
   <defs>
     <clipPath id="shield-right-half-dark">
@@ -29,13 +29,13 @@
     </clipPath>
   </defs>
   <g>
-    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="#FFFFFF"/>
-    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="#EEF2F7" clip-path="url(#shield-right-half-dark)"/>
-    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="none" stroke="#D8E2F5" stroke-width="14" stroke-linejoin="round"/>
-    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="none" stroke="#5C82D4" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M148 174H244V338H148ZM174 199V313H218V199Z" fill="#142D52" fill-rule="evenodd"/>
-    <path d="M270 174H370V199H298V240H360V265H298V313H370V338H270Z" fill="#142D52"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="#ffffff"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="#eef2f7" clip-path="url(#shield-right-half-dark)"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="none" stroke="#d8e2f5" stroke-width="14" stroke-linejoin="round"/>
+    <path d="M256 36C305 61 355 74 420 79V238C420 340 355 418 256 470C157 418 92 340 92 238V79C157 74 207 61 256 36Z" fill="none" stroke="#5c82d4" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M148 174H244V338H148ZM174 199V313H218V199Z" fill="#142d52" fill-rule="evenodd"/>
+    <path d="M270 174H370V199H298V240H360V265H298V313H370V338H270Z" fill="#142d52"/>
   </g></g>
-    <text x="36" y="558" fill="#F7F9FC" font-family="JetBrains Mono, IBM Plex Mono, SFMono-Regular, Consolas, monospace" font-size="22" font-weight="700" letter-spacing="1.5">DARK MODE</text>
+    <text x="36" y="558" fill="#f7f9fc" font-family="JetBrains Mono, monospace" font-size="22" font-weight="700" letter-spacing="1.5">DARK MODE</text>
   </g>
 </svg>

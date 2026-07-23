@@ -1,0 +1,36 @@
+@import "@open-e2ee/design/fonts.css";
+@import "@open-e2ee/design/tokens.css";
+
+/*
+ * Compatibility aliases for the website's established component stylesheet.
+ * New components should consume the --oe-* semantic contract directly.
+ */
+:root {
+  --canvas: var(--oe-canvas);
+  --surface: var(--oe-surface);
+  --surface-subtle: var(--oe-surface-subtle);
+  --surface-inverse: var(--oe-surface-inverse);
+  --foreground: var(--oe-foreground);
+  --muted: var(--oe-muted);
+  --border: var(--oe-border);
+  --primary: var(--oe-primary);
+  --primary-hover: var(--oe-primary-hover);
+  --primary-foreground: var(--oe-primary-foreground);
+  --accent: var(--oe-accent);
+  --accent-soft: var(--oe-accent-soft);
+  --focus: var(--oe-focus);
+  --code: var(--oe-code);
+  --code-foreground: var(--oe-code-foreground);
+  --success: var(--oe-success);
+  --warning: var(--oe-warning);
+  --danger: var(--oe-danger);
+  --font-sans: var(--oe-font-sans);
+  --font-mono: var(--oe-font-mono);
+  --radius-sm: var(--oe-radius-sm);
+  --radius-md: var(--oe-radius-md);
+  --radius-lg: var(--oe-radius-lg);
+  --radius-xl: var(--oe-radius-xl);
+  --shadow-sm: var(--oe-shadow-sm);
+  --shadow-md: var(--oe-shadow-md);
+}
+
