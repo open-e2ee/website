@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">Adaptive OpenE2EE small-size mark</title>
-  <desc id="desc">Two open carrier brackets holding a solid square payload. Small-size optical variant, drawn without the shear. The fill follows the active color scheme.</desc>
+  <desc id="desc">Two open carrier brackets holding a solid square payload. Small-size optical variant, drawn with thicker stems for favicon scale. The fill follows the active color scheme.</desc>
   <style>
     :root { --oe-mark: #090806; }
     @media (prefers-color-scheme: dark) {

@@ -7,7 +7,7 @@
     <g transform="translate(120 40) scale(0.625)">
       <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#090806"/>
       <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#090806"/>
-      <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#090806"/>
+      <path d="M152 152 H360 V360 H152 Z" fill="#090806"/>
     </g>
     <g transform="translate(40 424)">
       <g transform="translate(48 48) scale(0.03125)">
@@ -25,13 +25,13 @@
       <g transform="translate(264 32) scale(0.0625)">
         <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#090806"/>
         <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#090806"/>
-        <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#090806"/>
+        <path d="M152 152 H360 V360 H152 Z" fill="#090806"/>
       </g>
       <text x="264" y="88" fill="#090806" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">32px full</text>
       <g transform="translate(372 0) scale(0.125)">
         <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#090806"/>
         <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#090806"/>
-        <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#090806"/>
+        <path d="M152 152 H360 V360 H152 Z" fill="#090806"/>
       </g>
       <text x="372" y="88" fill="#090806" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">64px full</text>
     </g>
@@ -42,7 +42,7 @@
     <g transform="translate(120 40) scale(0.625)">
       <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#f4f1eb"/>
       <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#f4f1eb"/>
-      <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#f4f1eb"/>
+      <path d="M152 152 H360 V360 H152 Z" fill="#f4f1eb"/>
     </g>
     <g transform="translate(40 424)">
       <g transform="translate(48 48) scale(0.03125)">
@@ -60,13 +60,13 @@
       <g transform="translate(264 32) scale(0.0625)">
         <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#f4f1eb"/>
         <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#f4f1eb"/>
-        <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#f4f1eb"/>
+        <path d="M152 152 H360 V360 H152 Z" fill="#f4f1eb"/>
       </g>
       <text x="264" y="88" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">32px full</text>
       <g transform="translate(372 0) scale(0.125)">
         <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#f4f1eb"/>
         <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#f4f1eb"/>
-        <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#f4f1eb"/>
+        <path d="M152 152 H360 V360 H152 Z" fill="#f4f1eb"/>
       </g>
       <text x="372" y="88" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">64px full</text>
     </g>

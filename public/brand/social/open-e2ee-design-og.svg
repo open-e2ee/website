@@ -20,12 +20,12 @@
   <g transform="translate(88 88) scale(0.1875)">
     <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#090806"/>
     <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#090806"/>
-    <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#090806"/>
+    <path d="M152 152 H360 V360 H152 Z" fill="#090806"/>
   </g>
   <text x="220" y="166" fill="#090806" font-family="'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="85">
     <tspan font-weight="500" letter-spacing="-0.85">Open</tspan><tspan font-weight="800" letter-spacing="-1.28">E2EE</tspan>
   </text>
   <rect x="88" y="240" width="616" height="1" fill="#ded9d3"/>
   <text x="88" y="300" fill="#615d57" font-family="'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="500">Brand identity, design tokens, and theming.</text>
-  <text x="88" y="556" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="19">@open-e2ee/design · 0.2.1</text>
+  <text x="88" y="556" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="19">@open-e2ee/design · 0.2.2</text>
 </svg>
