@@ -27,12 +27,12 @@ const current = (href: string) =>
     </nav>
     <div class="header-actions">
       <ThemeToggle />
-      <a class="text-link desktop-only" href="https://console.open-e2ee.dev">Console</a>
+      <a class="text-link desktop-only" href="https://console.open-e2ee.dev">Sign in</a>
       <details class="mobile-nav">
         <summary>Menu</summary>
         <nav aria-label="Site">
           {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
-          <a href="https://console.open-e2ee.dev">Console</a>
+          <a href="https://console.open-e2ee.dev">Sign in</a>
           <a href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message</a>
         </nav>
       </details>
