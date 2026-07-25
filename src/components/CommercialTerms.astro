@@ -1,0 +1,313 @@
+---
+/*
+ * One document, two routes: `/legal/terms` is what a new order accepts, and
+ * `/legal/terms/2026-07-23` is the immutable copy an existing order is bound to.
+ * They render from this component so the two can never drift while they are the
+ * same version; publishing a new version means a new dated page, not an edit.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import {
+  commercialTermsEffectiveDate,
+  commercialTermsPath,
+  commercialTermsVersion,
+} from '../lib/legal.mjs';
+
+interface Props {
+  canonical: string;
+  /** Set on the dated page, which is pinned rather than current. */
+  versioned?: boolean;
+}
+
+const { canonical, versioned = false } = Astro.props;
+---
+
+<BaseLayout
+  title={versioned ? `Terms ${commercialTermsVersion}` : 'Terms'}
+  description="Website terms and versioned Startup commercial license terms for OpenE2EE."
+  canonical={canonical}
+>
+  <article>
+    <header class="article-header">
+      <div class="container article-column">
+        <a class="back-link" href="/legal">Legal</a>
+        <h1>Terms of Service and Startup Commercial License Terms</h1>
+        <p class="lead">
+          These Terms govern the OpenE2EE website, documentation, console, and each self-service
+          Startup commercial license order.
+        </p>
+        <p class="article-meta">
+          <span>Effective {commercialTermsEffectiveDate}</span>
+          <span>Version {commercialTermsVersion}</span>
+        </p>
+        {versioned ? (
+          <p class="legal-pin">
+            This is the immutable copy of that version. It is the document an order recorded at
+            checkout is bound to, and it does not change. The terms offered to new orders are the{' '}
+            <a href="/legal/terms">current terms</a>.
+          </p>
+        ) : (
+          <p class="legal-pin">
+            Startup checkout records the version you accept. The immutable copy of this one is
+            published at <a href={commercialTermsPath}><code>{commercialTermsPath}</code></a>.
+          </p>
+        )}
+      </div>
+    </header>
+
+    <div class="container article-column">
+      <div class="prose">
+        <aside class="callout" aria-label="Agreement summary">
+          <p class="label">Startup order summary</p>
+          <p>
+            One named legal entity receives annual proprietary production rights for one named
+            product using <code>@open-e2ee/signal-protocol-sdk</code>. The current list price is
+            $5,000 per year plus applicable taxes. The subscription renews annually until canceled.
+          </p>
+        </aside>
+
+        <nav class="legal-toc" aria-label="Terms contents">
+          <p class="label">Contents</p>
+          <ol>
+            <li><a href="#agreement">Agreement and authority</a></li>
+            <li><a href="#website">Website and open-source materials</a></li>
+            <li><a href="#commercial-license">Startup commercial license</a></li>
+            <li><a href="#fees-renewal">Fees, renewal, and cancellation</a></li>
+            <li><a href="#ownership">Ownership and third-party materials</a></li>
+            <li><a href="#security">Customer responsibilities and security</a></li>
+            <li><a href="#warranties">Disclaimers and liability</a></li>
+            <li><a href="#termination">Term and termination</a></li>
+            <li><a href="#changes">Changes to these Terms</a></li>
+            <li><a href="#general">General terms</a></li>
+          </ol>
+        </nav>
+
+        <h2 id="agreement">1. Agreement and authority</h2>
+        <p>
+          These Terms are a binding agreement between Open E2EE LLC, a Minnesota limited liability
+          company (“OpenE2EE,” “we,” “us,” or “our”), and the person or legal entity using the
+          Services or identified as the licensee in a Startup checkout order (“Customer,” “you,” or
+          “your”). “Services” means the OpenE2EE websites, documentation, console, billing and
+          licensing services, and related communications.
+        </p>
+        <p>
+          By using the Services, checking the terms box in Stripe Checkout, or purchasing a Startup
+          commercial license, you accept these Terms. If you accept on behalf of an organization,
+          you represent that you have authority to bind it. You must be at least 18 years old and
+          legally capable of entering into this agreement.
+        </p>
+        <p>
+          A Startup order includes the licensee name, covered product, licensed component, price,
+          billing interval, and the terms URL and version recorded at checkout. Those order details
+          and these versioned Terms form the commercial license agreement. A mutually signed order
+          form controls over conflicting language in these Terms.
+        </p>
+
+        <h2 id="website">2. Website and open-source materials</h2>
+        <p>
+          You may use the public website and documentation for lawful evaluation, development, and
+          business purposes. You may not interfere with the Services, attempt unauthorized access,
+          bypass security controls, misuse another person’s account, or use the Services to violate
+          law or another person’s rights.
+        </p>
+        <p>
+          Source code and other materials identified as open source are governed by the license
+          included with those materials. For the OpenE2EE Signal Protocol SDK, that is currently the GNU
+          Affero General Public License, version 3 or later (AGPL-3.0-or-later). These Terms do not
+          reduce rights granted by an applicable open-source license. Website descriptions and the{' '}
+          <a href="/licensing">licensing overview</a> are summaries; the applicable open-source
+          license, these versioned Terms, or a signed order form controls.
+        </p>
+
+        <h2 id="commercial-license">3. Startup commercial license</h2>
+        <h3>3.1 License grant</h3>
+        <p>
+          Subject to payment and continued compliance with this agreement, OpenE2EE grants the
+          licensee a limited, non-exclusive, non-transferable (except under Section 10),
+          non-sublicensable license during the paid subscription term to install, reproduce, use,
+          and modify the licensed component, and to distribute it only as incorporated into the
+          covered product, without applying the AGPL to the covered product solely because of that
+          incorporation.
+        </p>
+        <p>
+          The grant applies only to <code>@open-e2ee/signal-protocol-sdk</code>, only for the single
+          legal entity and single covered product recorded at checkout, and only to rights OpenE2EE
+          owns or is authorized to license. Affiliates, additional products, portfolio use, OEM use,
+          standalone redistribution, and offering the licensed component itself as a hosted
+          development service for third parties require a separate written agreement.
+        </p>
+
+        <h3>3.2 Restrictions</h3>
+        <p>You may not, outside the covered product:</p>
+        <ul>
+          <li>
+            sell, sublicense, publish, or distribute the licensed component as a standalone SDK,
+            library, or service;
+          </li>
+          <li>make the licensed component available for third parties to build their own products;</li>
+          <li>remove or obscure copyright, attribution, trademark, or third-party license notices;</li>
+          <li>use OpenE2EE names or marks to imply endorsement or affiliation; or</li>
+          <li>
+            use the licensed component in violation of applicable export, sanctions, privacy, or
+            other law.
+          </li>
+        </ul>
+
+        <h3>3.3 Updates and support</h3>
+        <p>
+          During an active term, the license includes generally available updates to the licensed
+          component and reasonable email support through{' '}
+          <a href="mailto:support@open-e2ee.dev">support@open-e2ee.dev</a>. It does not include
+          implementation services, guaranteed response times, security reviews, custom development,
+          or a service level agreement unless stated in a signed order form.
+        </p>
+
+        <h2 id="fees-renewal">4. Fees, renewal, and cancellation</h2>
+        <p>
+          Startup is billed in advance at $5,000 per year plus applicable taxes. Payments are
+          processed by Stripe. Except where required by law or expressly stated in a signed writing,
+          fees are non-refundable.
+        </p>
+        <p>
+          <strong>Your Startup subscription automatically renews for successive one-year terms until
+          canceled.</strong> You may cancel through the Stripe-hosted billing portal before the
+          renewal date. Cancellation takes effect at the end of the then-current paid term; it does
+          not retroactively refund that term. We may change a renewal price by giving at least 30
+          days’ notice before the affected renewal. If you do not agree, cancel before renewal.
+        </p>
+        <p>
+          You authorize OpenE2EE and Stripe to charge the payment method on file for each renewal
+          and applicable taxes. You are responsible for accurate billing, licensee, tax, and
+          covered-product information and for keeping payment details current.
+        </p>
+
+        <h2 id="ownership">5. Ownership and third-party materials</h2>
+        <p>
+          OpenE2EE and its licensors retain all right, title, and interest in the licensed
+          component, Services, documentation, and related intellectual property. Customer retains
+          its rights in the covered product and in Customer modifications, subject to OpenE2EE’s
+          underlying rights in the licensed component. No rights are granted by implication.
+        </p>
+        <p>
+          The licensed component may contain third-party open-source code. Third-party notices and
+          licenses continue to govern those portions, and this commercial license does not replace
+          or restrict those third-party terms.
+        </p>
+        <p>
+          If you voluntarily provide feedback, you grant OpenE2EE a perpetual, worldwide,
+          royalty-free right to use it without identifying you or disclosing your confidential
+          information.
+        </p>
+
+        <h2 id="security">6. Customer responsibilities and security</h2>
+        <p>
+          Cryptographic software is one part of a secure system. Customer is responsible for its
+          architecture, implementation, key management, identity and trust model, storage,
+          transport, access controls, testing, regulatory compliance, disclosures to end users,
+          incident response, and independent security review.
+        </p>
+        <p>
+          You must protect console credentials and promptly notify{' '}
+          <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a> of suspected
+          unauthorized access or a vulnerability. You may conduct good-faith security research
+          consistent with our published security guidance, but may not access other customers’ data
+          or disrupt the Services.
+        </p>
+
+        <h2 id="warranties">7. Disclaimers and liability</h2>
+        <h3>7.1 Disclaimer</h3>
+        <p class="legal-notice">
+          TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE SERVICES AND LICENSED COMPONENT ARE PROVIDED
+          “AS IS” AND “AS AVAILABLE.” OPENE2EE DISCLAIMS ALL EXPRESS, IMPLIED, AND STATUTORY
+          WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE,
+          NON-INFRINGEMENT, AND ANY WARRANTY THAT THE SOFTWARE IS ERROR-FREE, SECURE, OR SUITABLE
+          FOR A PARTICULAR THREAT MODEL.
+        </p>
+
+        <h3>7.2 Limitation of liability</h3>
+        <p class="legal-notice">
+          TO THE MAXIMUM EXTENT PERMITTED BY LAW, NEITHER PARTY WILL BE LIABLE FOR INDIRECT,
+          INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES, OR FOR LOST PROFITS,
+          REVENUE, DATA, GOODWILL, OR BUSINESS INTERRUPTION, ARISING FROM THIS AGREEMENT EVEN IF
+          ADVISED OF THE POSSIBILITY.
+        </p>
+        <p class="legal-notice">
+          EACH PARTY’S TOTAL AGGREGATE LIABILITY ARISING FROM THIS AGREEMENT WILL NOT EXCEED THE
+          FEES PAID OR PAYABLE UNDER THE APPLICABLE STARTUP ORDER DURING THE 12 MONTHS BEFORE THE
+          EVENT GIVING RISE TO LIABILITY. THESE LIMITS DO NOT APPLY TO CUSTOMER’S PAYMENT
+          OBLIGATIONS, A PARTY’S FRAUD OR WILLFUL MISCONDUCT, OR LIABILITY THAT CANNOT LAWFULLY BE
+          LIMITED.
+        </p>
+
+        <h3>7.3 Customer indemnity</h3>
+        <p>
+          Customer will defend and indemnify OpenE2EE and its personnel from third-party claims,
+          damages, and reasonable costs arising from the covered product, Customer’s data or
+          instructions, or Customer’s violation of law or Section 3.2, except to the extent caused
+          by OpenE2EE’s breach of this agreement.
+        </p>
+
+        <h2 id="termination">8. Term and termination</h2>
+        <p>
+          These Terms apply while you use the Services. A Startup commercial license begins when
+          checkout is completed and continues for the paid subscription term. Either party may
+          terminate for a material breach that remains uncured 30 days after written notice.
+          OpenE2EE may suspend or terminate sooner for nonpayment, unlawful use, sanctions risk, or
+          a material security threat.
+        </p>
+        <p>
+          When the commercial license expires or terminates, Customer must stop new use,
+          development, and distribution of the licensed component under the commercial grant. End
+          users who lawfully received a covered-product version during the paid term may continue
+          using that version, but Customer may not ship new versions containing the licensed
+          component unless it renews, obtains another commercial license, or complies with the
+          applicable open-source license. Accrued payment obligations and Sections 5, 7, 8, 9, and
+          10 survive.
+        </p>
+
+        <h2 id="changes">9. Changes to these Terms</h2>
+        <p>
+          We may update these Terms by publishing a new version with a new effective date. A new
+          version applies to new orders after its effective date. An existing Startup license,
+          including an automatic renewal, remains governed by the version recorded at checkout
+          unless Customer expressly accepts a later version or a change is required by law. A
+          renewal price change made under Section 4 does not by itself replace the recorded terms
+          version.
+        </p>
+        <p>
+          We will provide reasonable advance notice of material changes that affect an upcoming
+          renewal. Continued use after the effective date governs website use, but a material change
+          to an existing commercial grant requires the acceptance described above.
+        </p>
+
+        <h2 id="general">10. General terms</h2>
+        <p>
+          Customer may not assign this agreement without OpenE2EE’s prior written consent, except
+          with substantially all assets of the covered product in a merger or sale where the
+          assignee agrees in writing to these Terms and is not a competitor of OpenE2EE. OpenE2EE
+          may assign this agreement in connection with a reorganization, merger, sale of the
+          business, or transfer of the licensed component.
+        </p>
+        <p>
+          Neither party is liable for delay caused by events beyond reasonable control. The parties
+          are independent contractors. If a provision is unenforceable, it will be limited to the
+          minimum extent necessary and the remainder stays effective. A waiver must be in writing.
+          Headings are for convenience only.
+        </p>
+        <p>
+          Minnesota law governs, without regard to conflict-of-law rules. The state and federal
+          courts located in Hennepin County, Minnesota have exclusive jurisdiction, and each party
+          consents to that venue. Before filing a claim, the parties will attempt in good faith for
+          30 days to resolve it through written notice.
+        </p>
+        <p>
+          These Terms, the recorded Startup order details, and any signed order form are the entire
+          agreement about the Startup commercial license and supersede prior discussions about that
+          subject. Notices to OpenE2EE must be sent to{' '}
+          <a href="mailto:licensing@open-e2ee.dev">licensing@open-e2ee.dev</a>. We may send
+          operational or legal notices to the email associated with your console or Stripe customer
+          account.
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

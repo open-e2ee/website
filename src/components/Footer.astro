@@ -42,7 +42,7 @@ const groups = [
         <p class="footer-tagline">Opaque to the relay. Open to inspection.</p>
         <p>
           Open-source, protocol-level end-to-end encryption SDKs for TypeScript developers. AGPL-3.0
-          for open source; commercial licences for proprietary products.
+          for open source; commercial licenses for proprietary products.
         </p>
       </div>
       {groups.map((group) => (
@@ -55,7 +55,12 @@ const groups = [
       ))}
     </div>
     <div class="footer-legal">
-      <p>© {year} OpenE2EE contributors.</p>
+      <nav aria-label="Legal">
+        <a href="/legal">Legal</a>
+        <a href="/legal/privacy">Privacy</a>
+        <a href="/legal/terms">Terms</a>
+      </nav>
+      <p>© {year} Open E2EE LLC and OpenE2EE contributors.</p>
       <p>
         An independent implementation of the published Signal Protocol specifications. Not
         affiliated with, endorsed by, or wire-compatible with Signal Messenger LLC or the Signal
