@@ -9,13 +9,14 @@ before lifting anything into public copy.
 ## The thesis this roadmap encodes
 
 Claim the position **via the unanswered questions, not via protocol explainers.**
-The world does not need another "what is the Double Ratchet" post — Signal's own
-spec, Wong's *Real-World Cryptography* §10.4, and a hundred blog posts already
-cover it. What does not exist anywhere is the layer above: **application
-architecture for shipping E2EE in a TypeScript, React Native, or web product.**
+The world does not need another "what is the Double Ratchet" post — the Signal
+Protocol specifications, Wong's *Real-World Cryptography* §10.4, and a hundred
+blog posts already cover it. What does not exist anywhere is the layer above:
+**application architecture for shipping E2EE in a TypeScript, React Native, or
+web product.**
 
-The gap is structural rather than temporary. Signal owns the protocol and
-disclaims the app layer; Matrix owns a working implementation and scopes its
+The gap is structural rather than temporary. Signal Messenger owns the protocol
+and disclaims the app layer; Matrix owns a working implementation and scopes its
 docs to Matrix clients; academia owns the theory and stops at the RFC. Nobody's
 KPI covers application architecture, which is why the gap has persisted five
 years.
@@ -119,7 +120,7 @@ be the argument that sends people to it.
 ### R11 — Every E2EE tutorial on the internet, reviewed
 
 - **Target query:** "e2ee tutorial", "how to build end to end encryption" (intercepts the *bad* results)
-- **Evidence of demand:** every top-ranking tutorial was fetched and read for the dossier, and every one is either vendor lock-in to a dying SDK, static-key ECDH mislabelled as Signal-grade, not actually E2EE, or conceptually correct with no code. Named specifics: a still-ranking dev.to post using **raw unauthenticated Diffie-Hellman**; another shipping a shared AES key in `NEXT_PUBLIC_KEY`; a tutorial **updated January 2026** calling the archived-since-2021 library "the official JavaScript implementation."
+- **Evidence of demand:** every top-ranking tutorial was fetched and read for the dossier, and every one is either vendor lock-in to a dying SDK, static-key ECDH mislabelled as Signal Protocol-grade, not actually E2EE, or conceptually correct with no code. Named specifics: a still-ranking dev.to post using **raw unauthenticated Diffie-Hellman**; another shipping a shared AES key in `NEXT_PUBLIC_KEY`; a tutorial **updated January 2026** calling the archived-since-2021 library "the official JavaScript implementation."
 - **Why it works:** establishes authority by demonstrating judgment rather than asserting expertise. Pair with an **`awesome-e2ee`** repo, since awesome-cryptography (7,040 stars, active) has **no section for E2EE, secure messaging, Signal Protocol, or MLS** and the one existing `awesome-end-to-end-encryption` repo has 0 stars and died in March 2023.
 - **Care required:** this piece names other people's work as dangerous. Critique the code, never the author; link the exact line; offer the correction. Legal read before publishing.
 

@@ -134,8 +134,9 @@ this later.
 
 **You are right about the libraries.** The official JavaScript implementation was
 archived in August 2021. Its replacement is a Node native addon with no browser
-build, and Signal's own README says use outside Signal is unsupported. That is
-not you failing to find the right package; that is the state of the ecosystem.
+build, and Signal Messenger's own README says "Use outside of Signal is
+unsupported." That is not you failing to find the right package; that is the
+state of the ecosystem.
 
 **On the "just use RSA / asymmetric encryption" answers** — those give you
 confidentiality against a passive observer and nothing else. What they do not
@@ -163,12 +164,13 @@ in your own docs so a security reviewer does not have to catch you.
 
 **Practically,** your options today are: a maintained TypeScript implementation
 of the Signal Protocol (ours is one, `ts-mls` is another if you prefer MLS to
-Signal and can live with it stating it has not had a formal security audit), or
-adopting Matrix wholesale via `matrix-js-sdk` if you are willing to take on the
-whole ecosystem rather than just a crypto library. What I would avoid is the
-middle path the top tutorials recommend, which is hand-assembling libsodium or
-tweetnacl primitives into a protocol — that is exactly the "roll your own" the
-other commenters are warning you about, just with well-audited building blocks.
+the Signal Protocol and can live with it stating it has not had a formal
+security audit), or adopting Matrix wholesale via `matrix-js-sdk` if you are
+willing to take on the whole ecosystem rather than just a crypto library. What I
+would avoid is the middle path the top tutorials recommend, which is
+hand-assembling libsodium or tweetnacl primitives into a protocol — that is
+exactly the "roll your own" the other commenters are warning you about, just
+with well-audited building blocks.
 
 Happy to answer specifics if you have a threat model in mind. What are you
 protecting against, and from whom? The answer changes a lot depending on whether
@@ -200,8 +202,8 @@ To your specific questions:
 — they are easy to call — but because the design space between them is where the
 attacks live. If you find yourself choosing an AEAD and a KDF for a messaging
 app, you have already committed to designing a protocol, whether or not you meant
-to. Use X3DH/PQXDH + Double Ratchet (Signal) or RFC 9420 (MLS) depending on
-whether your product is more pairwise or more group-shaped.
+to. Use X3DH/PQXDH + Double Ratchet (Signal Protocol) or RFC 9420 (MLS)
+depending on whether your product is more pairwise or more group-shaped.
 
 **Is production E2EE realistic without a cryptographer on the team?** Yes, with a
 caveat that is not the one people expect. Using a protocol library correctly is
@@ -219,14 +221,14 @@ an encrypted local database (SQLCipher) for everything else, with the keychain
 secret unlocking the database. In both cases the design goal is that the server
 never has a code path that could receive a private key.
 
-**A reference implementation.** This is the honest gap in your question. Signal's
-specs are authoritative but pedagogically hostile — X3DH is still Revision 1 from
-2016, Sesame (multi-device, the thing you will need) is Revision 2 from April
-2017, and neither has a walkthrough. Matrix has a working implementation scoped
-to Matrix. The books do not cover it: *Real-World Cryptography* has one section
-on Signal, *Serious Cryptography* 2e has no secure-messaging chapter at all. So
-there isn't a good canonical reference, which is uncomfortable but better to know
-going in.
+**A reference implementation.** This is the honest gap in your question. The
+Signal Protocol specifications are authoritative but pedagogically hostile —
+X3DH is still Revision 1 from 2016, Sesame (multi-device, the thing you will
+need) is Revision 2 from April 2017, and neither has a walkthrough. Matrix has a
+working implementation scoped to Matrix. The books do not cover it:
+*Real-World Cryptography* has one section on the Signal Protocol, *Serious
+Cryptography* 2e has no secure-messaging chapter at all. So there isn't a good
+canonical reference, which is uncomfortable but better to know going in.
 
 **One thing I would add to your list:** decide your recovery policy before you
 write any code, and write down what it gives up. "User loses device, history is

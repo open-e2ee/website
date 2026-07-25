@@ -239,11 +239,12 @@ const outOfScope = [
           <dd>
             An independent implementation of the published Signal Protocol specifications. Not
             affiliated with or endorsed by Signal Messenger LLC or the Signal Foundation. The
-            cryptographic core is Signal's — same key agreement, same ratchet, in many places
-            byte-identical — but the encoding is deliberately our own. Messages, identities, and
-            sessions do not cross between the two, and safety numbers shown here will never match
-            the ones a Signal client displays. Every deliberate difference, and what it costs, is
-            documented in <a href={`${DOCS}/docs/DEVIATIONS.md`}>DEVIATIONS</a>.
+            cryptographic core follows the Signal Protocol specification — same key agreement, same
+            ratchet, in many places byte-identical — but the encoding is deliberately our own.
+            Messages, identities, and sessions do not cross between the two, and safety numbers
+            shown here will never match the ones a Signal Messenger client displays. Every
+            deliberate difference, and what it costs, is documented in{' '}
+            <a href={`${DOCS}/docs/DEVIATIONS.md`}>DEVIATIONS</a>.
           </dd>
         </div>
       </dl>
