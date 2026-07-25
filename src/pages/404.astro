@@ -3,15 +3,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Page not found" description="The requested OpenE2EE page could not be found.">
-  <section class="page-hero">
-    <div class="container">
-      <p class="eyebrow">404</p>
-      <h1>This route has no session.</h1>
-      <p class="lead">The page may have moved, or the address may be incomplete.</p>
-      <div class="button-row" style="margin-top: 2rem">
-        <a class="button" href="/">Return home</a>
-        <a class="button button-secondary" href="https://docs.open-e2ee.dev">Search the docs</a>
-      </div>
+  <header class="page-hero">
+    <div class="container measure">
+      <p class="label">404</p>
+      <h1>Nothing here to open.</h1>
+      <p class="lead">
+        The page may have moved, or the address may be incomplete. These are the ones worth having.
+      </p>
+      <p class="text-links">
+        <a href="/">Home</a>
+        <a href="/product">Signal Protocol SDK</a>
+        <a href="/learn">How E2EE changes your architecture</a>
+        <a href="/security">Security model</a>
+        <a href="https://docs.open-e2ee.dev">Documentation</a>
+      </p>
     </div>
-  </section>
+  </header>
 </BaseLayout>

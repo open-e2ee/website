@@ -1,0 +1,75 @@
+{
+  "sdkVersion": "0.1.0-alpha.1",
+  "packageName": "@open-e2ee/signal-protocol-sdk",
+  "capturedAt": "2026-07-25T01:41:55.399Z",
+  "plaintext": "Ship it Thursday. The staging key rotates at 09:00 UTC.",
+  "quickstartCode": "import { createSignalProtocolClient } from \"@open-e2ee/signal-protocol-sdk\";\nimport { mockStore } from \"@open-e2ee/signal-protocol-sdk/local/store/mock\";\nimport { mockRelay } from \"@open-e2ee/signal-protocol-sdk/remote/relay/mock\";\n\nconst relay = mockRelay();\nawait relay.registerDevice(\"alice\", { encryptedDeviceName: new ArrayBuffer(0) });\nawait relay.registerDevice(\"bob\", { encryptedDeviceName: new ArrayBuffer(0) });\n\nconst alice = await createSignalProtocolClient({\n  identity: { userId: \"alice\" },\n  adapters: { storage: mockStore(), relay },\n});\nconst bob = await createSignalProtocolClient({\n  identity: { userId: \"bob\" },\n  adapters: { storage: mockStore(), relay },\n});\n\nawait alice.syncToServer();\nawait bob.syncToServer();\n\nawait alice.send(\"bob\", \"Ship it Thursday. The staging key rotates at 09:00 UTC.\");\n\n// This is all the relay ever holds:\nconst [envelope] = relay.getPendingMessages(\"bob\", 1);\n\nbob.registerHook(\"onMessageDecrypted\", async (message) => {\n  console.log(message.content); // plaintext, only on Bob's device\n});\nbob.startRelaySubscription();",
+  "relayRecord": {
+    "targetUserId": "bob",
+    "targetDeviceId": 1,
+    "senderUserId": "alice",
+    "senderDeviceId": 1,
+    "ciphertext": "UkFnQUVpRUZHU0poZ2Ezc3VTeHI1U2lWcHRNV3RxWGpPS3VXTE10SlNzREVacGtkWlNzYVF3RUJ1ZXEvSzU0UGVIUmZWUTdob2FpRlVmSEJPL21oS0lIT1VPWGdOQ1RENlF3Q25FKzVKVlR1WVg1RU5MUEhHcXpOQ212aC85dy9nQ3hyRUpIYnNLMVdzRElpb2dKRUNpRUZHU0poZ2Ezc3VTeHI1U2lWcHRNV3RxWGpPS3VXTE10SlNzREVacGtkWlNzUUFCZ0FJckFCQTgvYTZyV1BmOVBkb1B3aUF2L1hUb2VIczcxNEdKQ0lIY3l3ODhMcGpwc0J6Rm0xZllBU3ljMUx3Z1VxblZGQkN0UnpqRlY1VWRNNk1hUVBUOWZ1NzgyTzM5azdTNzU3L0NGSTJtNnRPR0ZoSnR6ZlRacTQ4d292NzB1WkhsdWdPcnF0eVNaZUltM1Q5RjYzUHJBSVRQbDg1WndyalhtUG8zS2RNOUIwbEx5L3dZM0xFMkRTajNZRW5vek92MEFYNDhjS3RlZXBxQmhhZUZGYTZwS3hZUFhNd1lIaHZmOFJhRUovNDZ6NjVDOHFKUUVCQUFFQXFPdFQySzlIblplWmJvSWw0SEcrTFdaaFpVS2JLYTNYdDVQT09ZMjlNMnN5RXdFRllXeHBZMlVBQUFBQkEySnZZZ0FBQUFHZ0JnR2JjYnRVQmRzUG55ajZPakRsNmhXZ0JnQ3FCcUVNQ21QQ0d0K2VIZzU2Tk1ZclA2eC9KakE0UVY5TDZ2Q25qcXlUcDBvb3dpQUFtMG81enFlT0N0K2o0WFExdkY0VkZ6Rk1QUlFML3ltQlVBTkE4NU5CSWJ5WU5Za0FyVWF1YVdJTmFZVURvQlNZU0YyWDluRUxpRTIza2diaXNzeWVvQ0lCb0dCR0dNVTh2aUNNMSt0SXhqNEwyamhnYXVFaDlUR20vQXgwb0NWK0VJSm01SXpONkJjSzRibUErZkdzUEtCc05CWllGbzZDYVVXNWF2VTVscWg4dHB1Z3pZYkZVbWNhaDVVL0VMNmZBcnlDRStTRElNbmtxZEtTMmJFRGZQTUJvU1NiOS82L2Rxdmc5Wmd0bjMxM28vaU1pNUhhN0Y2THpFSWgxUUZRSGxEQXhiV3VlMGtlTDk2SFJST0ZGTVBQNjdaMTMrR2luQUZyb0NrUTVsaU5GTWNia1c0V2hmYkJHZTU0SWlIdXdqcWF2aXhxVUJyeW5lOVZ3L21BWmd0SU9SN0poRFpZVnYxSXN2L2JHbzloTTZaUVZJeUhsUzZETDZjaSsrbk1CbzVLN1AwdzVNcGZEZjlMZ0VGSzVBZkszOS9WY0RRZ2k1NlRGSGdDc21VdnlWcmhSZkMrZzNhRWFZMlpnWnBZSmFRajdHTjNoV0xCeTN4cjBtRnZaOWRydzZvWklsNjIxRS9OZ0dkdFdCSzdXVWRBdmF1ZmRKRFk0WU1XeVNWNmUrNDQ5aHdGS3FxdDZ2Q3B1T0NGelNuQVY5YWF4dGFYcHNEdzJObkNET2gyckZtQ28wSFhBa0xzL2FxQUE0bHRZWDRzMXhJdkJqRjRWdG1xdDI5YU96SklscE9JVWxrUUcrWHlsbDd3UnBaaGZJZXV3ZVYyNWJLdDRTRlRkVjRFRG93TUU5Y2Y1ck11aHE0RFFFRlpvZUdCcXd6QlVVcU9ZMjB4ZFpjYU5uaHMvRVE3Y3B0bHJrdk91SXZKbUdSWVdCSSs4bzdySThkSjhpUUFDdGh1RVVrTzJ4NGtaZGgzYVJ0c2swWTRSL3ByMmNLaytjdlczbDBOa1p6VUVVY2MrNlJ1dW8rdno2SnBrb0hLWm95SVo0Q2IycmtmN0MwbTlWRDdmVVZ3YXJQMy9vNnBvQ2g5WnN5a2lrcHQwMllHM0UyOUcvRk9LRGdIcHF0cU9MR0dLVHJJOVZKS1ltYzVoL3ZBaGZHQ056ekR0S2YrQWJiT3lmazU4MXFQOHViVm9zTXRvanJVSkF3ckRsaFZJNGQ1SndldGhIZmVuZTdGTHpXRWVHN1pPblN3Z0N4a1RkRnhoRWRlMktJWEdVWTh5RFVETWorNGo2WkUzSFFFdDhkTEZITmpZOCt0dnI0UTZDSUVmUXZmUHRESmJxZjdqaHpraERTSzhoaUhPTXhBODlMeU4wcVNSUW1kYmYzNThlT0Zrbk5jb1R4V01qci85MVhtQ003U1hEU0pjNS95a3UraitqTmdzS2p3dFR3UDI5VzU0Ky81Y05qeEp5VFVHcVlBL0MwVStOY3liL3ZDdU4zYkdKcWZXWXNhSU1zZzhUa0VSZlBKcnBNN2dhWUFCTW5BdnhwMjF3TWppbHN3ZHd0RTl5Nnphb3RvdnFCU29QY09FMDcrYW1PK3NpcURFMmpXcUwwejFIcGxlVFlNSFl0Ukpnb2Yxc3JvUC9ab1lqeWVvNEFHMmhtakxKODU4YlU4OFducjE0ckhHMmtqSmJQanpxQ0t1ZHhzUFRnV0Vhb21oTHhBUzBCSStvOUd5dFFhdlFDVXc4SWtNcUVhK2UxZ1cySDE3cTgveTBMWERKcmZXZ3ZITmV1ajNNZTV0aENhWHp4RVJFdFhDQ0F6TUVFdmpIRVV2eDhKaGN4TVFyZW1PcGpZeU4vdTJndDVzWFdjUWZ0WllXVHJtOVI1ZExBT3lJRzVvMEc2bklBLzBjSzA1ZjFvL0x3Wm5CNmMyTGhrclZjNFA0aDUxb292cGhURXdTY2Vxd0M3OWNKbDUzUVdFTEJHWmxjd0dxMG54dWFSQjhvQnZkTUR1VjJRUEtyTXVWN01LWVpHV0UvSmQ0MWFyMGswVkpPeitXQmNXTWFVdVpQazlncDNJS1NTSTBYNTAxUVlvQ3VBZ1poSWhOTm5oOEdVQm0zMWh1ZVhCZkF6UmJNZTUwbjlrS294Y3BOdjdKTVMxN0t2NnJkYnE5aXpnQXkvYWorOE9WSjQxa2VaN1hOUmtDK2RORnV5TGxtZjlXMk5iYWc3SzFkVHBoamRHWksrUXZweFNMc1RTdVVLTFluemU3SzI4Z1VtaXlROHB5c0dHOGdMa2FoM1FoNFJra0k1elJxYXRqZWJzTGh0YlJWZ2NRUW8zWWpRUDNIcEMwU1JGdlFNRnN5VzZRR0VRVk9UajFmMU9HRFgrVHEwTW1kbkxLcEZreVVQbEd0V2szMGVtcE9IeVpabmxDU0NiYXZRMzkxaUZWUWNHVjl0OGhiVk1GL1VZWitTZElYVjNnS2hJMnpMT1Z1a2ZFbkxIK3lNK2lMRjRXNFBsdS9wdVFjNUdnUnNyb2V3TWNwRVd6R2daNWpDOVJ4dHZXK09KK2NsZ0pEWHp0azVWRlphQ2VRVnlwZTRobnJPZ3Myc3RqN3RqS1h0MjBlQWhCK0dNWkNSR0g3VzNNKzdWOEU4cS9TZVhkOUEydHRhRDlOcGdSM0JTUlg3WGZXYXBoMXpIQm5PTSt0cjFwUnA3cXY4US9pdG1Mb01UODJkVm05VWFpU3UvMWpZWEtzM3NBWUI=",
+    "messageType": "prekey_bundle",
+    "timestamp": 1784943715359,
+    "recipientRegistrationId": 13951,
+    "id": "msg-1",
+    "serverTimestamp": 1784943715367
+  },
+  "ciphertext": "UkFnQUVpRUZHU0poZ2Ezc3VTeHI1U2lWcHRNV3RxWGpPS3VXTE10SlNzREVacGtkWlNzYVF3RUJ1ZXEvSzU0UGVIUmZWUTdob2FpRlVmSEJPL21oS0lIT1VPWGdOQ1RENlF3Q25FKzVKVlR1WVg1RU5MUEhHcXpOQ212aC85dy9nQ3hyRUpIYnNLMVdzRElpb2dKRUNpRUZHU0poZ2Ezc3VTeHI1U2lWcHRNV3RxWGpPS3VXTE10SlNzREVacGtkWlNzUUFCZ0FJckFCQTgvYTZyV1BmOVBkb1B3aUF2L1hUb2VIczcxNEdKQ0lIY3l3ODhMcGpwc0J6Rm0xZllBU3ljMUx3Z1VxblZGQkN0UnpqRlY1VWRNNk1hUVBUOWZ1NzgyTzM5azdTNzU3L0NGSTJtNnRPR0ZoSnR6ZlRacTQ4d292NzB1WkhsdWdPcnF0eVNaZUltM1Q5RjYzUHJBSVRQbDg1WndyalhtUG8zS2RNOUIwbEx5L3dZM0xFMkRTajNZRW5vek92MEFYNDhjS3RlZXBxQmhhZUZGYTZwS3hZUFhNd1lIaHZmOFJhRUovNDZ6NjVDOHFKUUVCQUFFQXFPdFQySzlIblplWmJvSWw0SEcrTFdaaFpVS2JLYTNYdDVQT09ZMjlNMnN5RXdFRllXeHBZMlVBQUFBQkEySnZZZ0FBQUFHZ0JnR2JjYnRVQmRzUG55ajZPakRsNmhXZ0JnQ3FCcUVNQ21QQ0d0K2VIZzU2Tk1ZclA2eC9KakE0UVY5TDZ2Q25qcXlUcDBvb3dpQUFtMG81enFlT0N0K2o0WFExdkY0VkZ6Rk1QUlFML3ltQlVBTkE4NU5CSWJ5WU5Za0FyVWF1YVdJTmFZVURvQlNZU0YyWDluRUxpRTIza2diaXNzeWVvQ0lCb0dCR0dNVTh2aUNNMSt0SXhqNEwyamhnYXVFaDlUR20vQXgwb0NWK0VJSm01SXpONkJjSzRibUErZkdzUEtCc05CWllGbzZDYVVXNWF2VTVscWg4dHB1Z3pZYkZVbWNhaDVVL0VMNmZBcnlDRStTRElNbmtxZEtTMmJFRGZQTUJvU1NiOS82L2Rxdmc5Wmd0bjMxM28vaU1pNUhhN0Y2THpFSWgxUUZRSGxEQXhiV3VlMGtlTDk2SFJST0ZGTVBQNjdaMTMrR2luQUZyb0NrUTVsaU5GTWNia1c0V2hmYkJHZTU0SWlIdXdqcWF2aXhxVUJyeW5lOVZ3L21BWmd0SU9SN0poRFpZVnYxSXN2L2JHbzloTTZaUVZJeUhsUzZETDZjaSsrbk1CbzVLN1AwdzVNcGZEZjlMZ0VGSzVBZkszOS9WY0RRZ2k1NlRGSGdDc21VdnlWcmhSZkMrZzNhRWFZMlpnWnBZSmFRajdHTjNoV0xCeTN4cjBtRnZaOWRydzZvWklsNjIxRS9OZ0dkdFdCSzdXVWRBdmF1ZmRKRFk0WU1XeVNWNmUrNDQ5aHdGS3FxdDZ2Q3B1T0NGelNuQVY5YWF4dGFYcHNEdzJObkNET2gyckZtQ28wSFhBa0xzL2FxQUE0bHRZWDRzMXhJdkJqRjRWdG1xdDI5YU96SklscE9JVWxrUUcrWHlsbDd3UnBaaGZJZXV3ZVYyNWJLdDRTRlRkVjRFRG93TUU5Y2Y1ck11aHE0RFFFRlpvZUdCcXd6QlVVcU9ZMjB4ZFpjYU5uaHMvRVE3Y3B0bHJrdk91SXZKbUdSWVdCSSs4bzdySThkSjhpUUFDdGh1RVVrTzJ4NGtaZGgzYVJ0c2swWTRSL3ByMmNLaytjdlczbDBOa1p6VUVVY2MrNlJ1dW8rdno2SnBrb0hLWm95SVo0Q2IycmtmN0MwbTlWRDdmVVZ3YXJQMy9vNnBvQ2g5WnN5a2lrcHQwMllHM0UyOUcvRk9LRGdIcHF0cU9MR0dLVHJJOVZKS1ltYzVoL3ZBaGZHQ056ekR0S2YrQWJiT3lmazU4MXFQOHViVm9zTXRvanJVSkF3ckRsaFZJNGQ1SndldGhIZmVuZTdGTHpXRWVHN1pPblN3Z0N4a1RkRnhoRWRlMktJWEdVWTh5RFVETWorNGo2WkUzSFFFdDhkTEZITmpZOCt0dnI0UTZDSUVmUXZmUHRESmJxZjdqaHpraERTSzhoaUhPTXhBODlMeU4wcVNSUW1kYmYzNThlT0Zrbk5jb1R4V01qci85MVhtQ003U1hEU0pjNS95a3UraitqTmdzS2p3dFR3UDI5VzU0Ky81Y05qeEp5VFVHcVlBL0MwVStOY3liL3ZDdU4zYkdKcWZXWXNhSU1zZzhUa0VSZlBKcnBNN2dhWUFCTW5BdnhwMjF3TWppbHN3ZHd0RTl5Nnphb3RvdnFCU29QY09FMDcrYW1PK3NpcURFMmpXcUwwejFIcGxlVFlNSFl0Ukpnb2Yxc3JvUC9ab1lqeWVvNEFHMmhtakxKODU4YlU4OFducjE0ckhHMmtqSmJQanpxQ0t1ZHhzUFRnV0Vhb21oTHhBUzBCSStvOUd5dFFhdlFDVXc4SWtNcUVhK2UxZ1cySDE3cTgveTBMWERKcmZXZ3ZITmV1ajNNZTV0aENhWHp4RVJFdFhDQ0F6TUVFdmpIRVV2eDhKaGN4TVFyZW1PcGpZeU4vdTJndDVzWFdjUWZ0WllXVHJtOVI1ZExBT3lJRzVvMEc2bklBLzBjSzA1ZjFvL0x3Wm5CNmMyTGhrclZjNFA0aDUxb292cGhURXdTY2Vxd0M3OWNKbDUzUVdFTEJHWmxjd0dxMG54dWFSQjhvQnZkTUR1VjJRUEtyTXVWN01LWVpHV0UvSmQ0MWFyMGswVkpPeitXQmNXTWFVdVpQazlncDNJS1NTSTBYNTAxUVlvQ3VBZ1poSWhOTm5oOEdVQm0zMWh1ZVhCZkF6UmJNZTUwbjlrS294Y3BOdjdKTVMxN0t2NnJkYnE5aXpnQXkvYWorOE9WSjQxa2VaN1hOUmtDK2RORnV5TGxtZjlXMk5iYWc3SzFkVHBoamRHWksrUXZweFNMc1RTdVVLTFluemU3SzI4Z1VtaXlROHB5c0dHOGdMa2FoM1FoNFJra0k1elJxYXRqZWJzTGh0YlJWZ2NRUW8zWWpRUDNIcEMwU1JGdlFNRnN5VzZRR0VRVk9UajFmMU9HRFgrVHEwTW1kbkxLcEZreVVQbEd0V2szMGVtcE9IeVpabmxDU0NiYXZRMzkxaUZWUWNHVjl0OGhiVk1GL1VZWitTZElYVjNnS2hJMnpMT1Z1a2ZFbkxIK3lNK2lMRjRXNFBsdS9wdVFjNUdnUnNyb2V3TWNwRVd6R2daNWpDOVJ4dHZXK09KK2NsZ0pEWHp0azVWRlphQ2VRVnlwZTRobnJPZ3Myc3RqN3RqS1h0MjBlQWhCK0dNWkNSR0g3VzNNKzdWOEU4cS9TZVhkOUEydHRhRDlOcGdSM0JTUlg3WGZXYXBoMXpIQm5PTSt0cjFwUnA3cXY4US9pdG1Mb01UODJkVm05VWFpU3UvMWpZWEtzM3NBWUI=",
+  "ciphertextStringLength": 3532,
+  "ciphertextBytes": 2648,
+  "protocolMessageBytes": 1986,
+  "metadataFields": [
+    {
+      "field": "targetUserId",
+      "value": "bob",
+      "note": "Recipient account the relay must route to. Protocol/relay-level: any real relay needs this to deliver."
+    },
+    {
+      "field": "targetDeviceId",
+      "value": "1",
+      "note": "Which of the recipient's registered devices this copy is for. Each device gets its own separately encrypted envelope."
+    },
+    {
+      "field": "senderUserId",
+      "value": "alice",
+      "note": "Sender account, visible on the identified-delivery path. Sealed sender replaces this with an empty string and messageType unidentified_sender."
+    },
+    {
+      "field": "senderDeviceId",
+      "value": "1",
+      "note": "Sender device. Also blanked (0) under sealed sender."
+    },
+    {
+      "field": "messageType",
+      "value": "prekey_bundle",
+      "note": "Outer envelope type only. prekey_bundle means this is the session-establishing X3DH/PQXDH message; later messages in the session carry ciphertext."
+    },
+    {
+      "field": "timestamp",
+      "value": "1784943715359",
+      "note": "Client timestamp set by the sender before encryption, used for retry matching and receipt correlation. Protocol-level."
+    },
+    {
+      "field": "serverTimestamp",
+      "value": "1784943715367",
+      "note": "Assigned by the relay on accept. Real relays assign this too."
+    },
+    {
+      "field": "id",
+      "value": "msg-1",
+      "note": "Relay-assigned envelope id. The msg-N form is specific to the in-memory mock relay counter; a production relay assigns its own id format."
+    },
+    {
+      "field": "recipientRegistrationId",
+      "value": "13951",
+      "note": "Recipient device registration id, sent so the relay/recipient can detect a device reinstall. Present only on prekey_bundle envelopes. Protocol-level."
+    },
+    {
+      "field": "ciphertext",
+      "value": "UkFnQUVpRUZHU0poZ2Ezc3VTeHI1U2lW...",
+      "note": "The only payload field. Opaque to the relay: 3532 base64 characters, no plaintext, no message length in cleartext beyond the ciphertext size itself."
+    }
+  ]
+}
