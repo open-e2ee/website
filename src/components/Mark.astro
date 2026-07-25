@@ -1,0 +1,30 @@
+---
+import { geometry, pathsForVariant, variantForSize } from '../lib/brand';
+
+interface Props {
+  /** Rendered size in CSS pixels. Selects the silhouette. */
+  size?: number;
+  /** Decorative marks inside a lockup are labelled by the wordmark beside them. */
+  decorative?: boolean;
+  class?: string;
+}
+
+const { size = 32, decorative = true, class: className } = Astro.props;
+const variant = variantForSize(size);
+const paths = pathsForVariant(variant);
+const titleId = `oe-mark-${crypto.randomUUID().slice(0, 8)}`;
+---
+
+<svg
+  class:list={['oe-mark', className]}
+  viewBox={geometry.viewBox}
+  width={size}
+  height={size}
+  fill="currentColor"
+  role={decorative ? 'presentation' : 'img'}
+  aria-hidden={decorative ? 'true' : undefined}
+  aria-labelledby={decorative ? undefined : titleId}
+>
+  {!decorative && <title id={titleId}>OpenE2EE</title>}
+  {paths.map((d) => <path d={d} />)}
+</svg>

@@ -1,27 +1,39 @@
 ---
-import Logo from './Logo.astro';
+import Lockup from './Lockup.astro';
+import ThemeToggle from './ThemeToggle.astro';
+
+const path = Astro.url.pathname;
+
+/* Nav follows the funnel: evaluate, learn, build, verify, buy, read, inspect. */
+const links = [
+  { href: '/product', label: 'Product' },
+  { href: '/learn', label: 'Learn' },
+  { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
+  { href: '/security', label: 'Security' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/blog', label: 'Blog' },
+  { href: 'https://github.com/open-e2ee/signal-protocol-js', label: 'GitHub' },
+];
+
+const current = (href: string) =>
+  href.startsWith('/') && (path === href || path.startsWith(`${href}/`)) ? 'page' : undefined;
 ---
 
 <header class="site-header">
   <div class="container header-inner">
-    <a class="brand-link" href="/" aria-label="OpenE2EE home"><Logo /></a>
-    <nav class="desktop-nav" aria-label="Primary navigation">
-      <a href="/product">Product</a>
-      <a href="/pricing">Pricing</a>
-      <a href="/blog">Blog</a>
-      <a href="https://docs.open-e2ee.dev">Docs</a>
+    <a class="brand-link" href="/" aria-label="OpenE2EE home"><Lockup /></a>
+    <nav class="site-nav" aria-label="Primary">
+      {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
     </nav>
     <div class="header-actions">
-      <a class="text-link desktop-only" href="https://console.open-e2ee.dev">Sign in</a>
-      <a class="button button-small" href="https://console.open-e2ee.dev/licenses/new?plan=startup">Get a license</a>
+      <ThemeToggle />
+      <a class="text-link desktop-only" href="https://console.open-e2ee.dev">Console</a>
       <details class="mobile-nav">
-        <summary aria-label="Open navigation">Menu</summary>
-        <nav aria-label="Mobile navigation">
-          <a href="/product">Product</a>
-          <a href="/pricing">Pricing</a>
-          <a href="/blog">Blog</a>
-          <a href="https://docs.open-e2ee.dev">Docs</a>
+        <summary>Menu</summary>
+        <nav aria-label="Site">
+          {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
           <a href="https://console.open-e2ee.dev">Console</a>
+          <a href="https://docs.open-e2ee.dev/getting-started">Build your first encrypted message</a>
         </nav>
       </details>
     </div>

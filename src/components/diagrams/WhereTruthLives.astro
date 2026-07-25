@@ -1,0 +1,72 @@
+---
+/*
+ * The same store, before and after. Outlined containers are still your
+ * infrastructure; what changes is whether their contents are readable. The
+ * metadata ticks stay drawn on the sealed side, because they are still there.
+ */
+
+const readableBars = [
+  { y: 70, width: 190 },
+  { y: 96, width: 210 },
+  { y: 122, width: 150 },
+];
+
+const SHEAR = 8;
+const slabs = [452, 524, 596];
+---
+
+<svg viewBox="0 0 720 230" role="img" aria-labelledby="truth-title truth-desc">
+  <title id="truth-title">The same database table, before and after end-to-end encryption</title>
+  <desc id="truth-desc">
+    On the left, an outlined store containing three readable rows. On the right, the same outlined
+    store containing three solid sealed slabs, with metadata ticks still drawn above them.
+  </desc>
+
+  <g>
+    <rect
+      x={30}
+      y={40}
+      width={240}
+      height={130}
+      fill="none"
+      stroke="var(--oe-diagram-plaintext-stroke)"
+      stroke-width={4}
+    />
+    {readableBars.map((bar) => (
+      <rect
+        x={52}
+        y={bar.y}
+        width={bar.width}
+        height={9}
+        fill="var(--oe-diagram-plaintext-stroke)"
+        opacity={0.28}
+      />
+    ))}
+    <text x={30} y={200} class="diagram-label">your database today · readable</text>
+  </g>
+
+  <g>
+    <rect
+      x={430}
+      y={40}
+      width={240}
+      height={130}
+      fill="none"
+      stroke="var(--oe-diagram-plaintext-stroke)"
+      stroke-width={4}
+    />
+    <text x={430} y={30} class="diagram-tick-label">metadata still visible</text>
+    {slabs.map((x) => (
+      <g>
+        {Array.from({ length: 4 }, (_, index) => (
+          <rect x={x + 8 + index * 12} y={54} width={2} height={8} fill="var(--oe-diagram-boundary)" />
+        ))}
+        <path
+          d={`M${x + SHEAR} 72 L${x + 56 + SHEAR} 72 L${x + 56} 152 L${x} 152 Z`}
+          fill="var(--oe-diagram-ciphertext-fill)"
+        />
+      </g>
+    ))}
+    <text x={430} y={200} class="diagram-label">your database encrypted · sealed</text>
+  </g>
+</svg>
