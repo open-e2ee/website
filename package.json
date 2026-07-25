@@ -6,7 +6,8 @@
   "scripts": {
     "predev": "npm run brand:sync",
     "dev": "astro dev",
-    "build": "npm run brand:check && astro check && astro build",
+    "build": "npm run brand:check && astro check && astro build && npm run audit",
+    "audit": "node scripts/audit-build.mjs dist",
     "preview": "astro preview",
     "check": "npm run brand:check && astro check",
     "test": "node --test tests/*.test.mjs",
@@ -21,7 +22,7 @@
     "@astrojs/mdx": "7.0.3",
     "@astrojs/react": "6.0.1",
     "@astrojs/sitemap": "3.7.3",
-    "@open-e2ee/design": "https://github.com/open-e2ee/design/archive/refs/tags/v0.1.0.tar.gz",
+    "@open-e2ee/design": "https://github.com/open-e2ee/design/archive/refs/tags/v0.2.0.tar.gz",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "astro": "7.1.3",

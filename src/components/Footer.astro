@@ -1,34 +1,66 @@
 ---
-import Logo from './Logo.astro';
+import Lockup from './Lockup.astro';
+
 const year = new Date().getUTCFullYear();
+
+const groups = [
+  {
+    heading: 'Product',
+    links: [
+      { href: '/product', label: 'Signal Protocol SDK' },
+      { href: '/security', label: 'Security model' },
+      { href: '/pricing', label: 'Pricing' },
+      { href: '/licensing', label: 'Licensing' },
+    ],
+  },
+  {
+    heading: 'Build',
+    links: [
+      { href: 'https://docs.open-e2ee.dev/getting-started', label: 'Ten-minute quickstart' },
+      { href: 'https://docs.open-e2ee.dev', label: 'Documentation' },
+      { href: 'https://github.com/open-e2ee/signal-protocol-js', label: 'SDK on GitHub' },
+      { href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/SECURITY.md', label: 'Threat model' },
+    ],
+  },
+  {
+    heading: 'Learn',
+    links: [
+      { href: '/learn', label: 'How E2EE changes your architecture' },
+      { href: '/blog', label: 'Blog' },
+      { href: 'https://console.open-e2ee.dev', label: 'Console' },
+      { href: 'mailto:licensing@open-e2ee.dev', label: 'Contact' },
+    ],
+  },
+];
 ---
 
 <footer class="site-footer">
-  <div class="container footer-grid">
-    <div class="footer-brand">
-      <a class="brand-link" href="/"><Logo /></a>
-      <p>A JavaScript-first, independently versioned OpenE2EE SDK.</p>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="brand-link" href="/"><Lockup /></a>
+        <p class="footer-tagline">Opaque to the relay. Open to inspection.</p>
+        <p>
+          Open-source, protocol-level end-to-end encryption SDKs for TypeScript developers. AGPL-3.0
+          for open source; commercial licences for proprietary products.
+        </p>
+      </div>
+      {groups.map((group) => (
+        <div>
+          <h2>{group.heading}</h2>
+          <nav aria-label={group.heading}>
+            {group.links.map((link) => <a href={link.href}>{link.label}</a>)}
+          </nav>
+        </div>
+      ))}
     </div>
-    <div>
-      <strong>Product</strong>
-      <a href="/product">Overview</a>
-      <a href="/pricing">Pricing</a>
-      <a href="/licensing">Licensing</a>
+    <div class="footer-legal">
+      <p>© {year} OpenE2EE contributors.</p>
+      <p>
+        An independent implementation of the published Signal Protocol specifications. Not
+        affiliated with, endorsed by, or wire-compatible with Signal Messenger LLC or the Signal
+        Foundation.
+      </p>
     </div>
-    <div>
-      <strong>Developers</strong>
-      <a href="https://docs.open-e2ee.dev">Documentation</a>
-      <a href="https://docs.open-e2ee.dev/getting-started">Getting started</a>
-      <a href="/blog">Engineering journal</a>
-    </div>
-    <div>
-      <strong>Company</strong>
-      <a href="mailto:licensing@open-e2ee.dev">Contact</a>
-      <a href="https://console.open-e2ee.dev">Console</a>
-    </div>
-  </div>
-  <div class="container footer-legal">
-    <p>© {year} OpenE2EE contributors.</p>
-    <p>Independent project. Not affiliated with Signal Messenger LLC or the Signal Foundation.</p>
   </div>
 </footer>

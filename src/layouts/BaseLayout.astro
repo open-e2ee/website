@@ -1,6 +1,5 @@
 ---
 import '../styles/global.css';
-import '../styles/design-system.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
@@ -39,8 +38,8 @@ const imageUrl = new URL(image, Astro.site);
       })();
     </script>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f6f8fc" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#070b13" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#faf7f3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#090806" media="(prefers-color-scheme: dark)" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={siteTitle} />
     <meta property="og:description" content={description} />
@@ -48,7 +47,8 @@ const imageUrl = new URL(image, Astro.site);
     <meta property="og:image" content={imageUrl} />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href={canonicalUrl} />
-    <link rel="icon" href="/brand/open-e2ee-shield-adaptive-small.svg" type="image/svg+xml" />
+    <link rel="icon" href="/brand/open-e2ee-favicon.svg" type="image/svg+xml" />
+    <link rel="alternate icon" href="/brand/png/32/open-e2ee-mark-light.png" sizes="32x32" />
     <title>{siteTitle}</title>
   </head>
   <body>
