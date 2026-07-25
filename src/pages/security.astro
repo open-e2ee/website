@@ -1,0 +1,271 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SignatureDiagram from '../components/SignatureDiagram.astro';
+
+const DOCS = 'https://github.com/open-e2ee/signal-protocol-js/blob/main';
+
+/*
+ * Every row here is checked against docs/SECURITY.md, ARCHITECTURE.md, and the
+ * Envelope type in remote/relay/types.ts. If the SDK changes what it puts on
+ * the wire, this table is wrong and must be corrected — it is the page the
+ * whole brand is staked on.
+ */
+const envelopeFields = [
+  { field: 'targetUserId', identified: 'visible', sealed: 'visible', note: 'Who the message is for' },
+  { field: 'targetDeviceId', identified: 'visible', sealed: 'visible', note: 'Which of their devices' },
+  { field: 'senderUserId', identified: 'visible', sealed: 'omitted', note: 'Who sent it' },
+  { field: 'senderDeviceId', identified: 'visible', sealed: 'omitted', note: 'Which device sent it' },
+  { field: 'messageType', identified: 'visible', sealed: 'visible', note: 'Handshake or steady-state' },
+  { field: 'timestamp', identified: 'visible', sealed: 'visible', note: 'When it was sent' },
+  { field: 'groupId', identified: 'visible', sealed: 'visible', note: 'Present on group messages' },
+  { field: 'clientMessageId', identified: 'visible', sealed: 'visible', note: 'Retry idempotency key' },
+  { field: 'ciphertext', identified: 'opaque', sealed: 'opaque', note: 'Bytes the relay cannot read' },
+];
+
+const notHidden = [
+  {
+    title: 'Who is receiving',
+    body: 'The recipient user and device are in the clear on every envelope, sealed or not. Sealed sender hides the sender, not the conversation.',
+  },
+  {
+    title: 'When, and roughly how much',
+    body: 'Timestamps are plaintext. Message bodies are padded into 160-byte buckets, which coarsens length but does not conceal it, and attachments travel through a separate object store.',
+  },
+  {
+    title: 'Group context',
+    body: 'The group ID travels in the clear. Multi-recipient sealed sends hand the relay the recipient list so it can fan the message out.',
+  },
+  {
+    title: 'Network-level metadata',
+    body: 'Addresses, connection timing, and traffic patterns are properties of your transport and deployment. This SDK makes no claim about them, and implements no decoy traffic or timing jitter.',
+  },
+  {
+    title: 'Sealed sender is best effort',
+    body: 'If the recipient profile key or identity key is unavailable, the client falls back to identified delivery rather than failing the send. Design for the fallback, not the happy path.',
+  },
+];
+
+const inScope = [
+  'Passive network observation',
+  'Active tampering, replay, reordering, duplication, and truncation',
+  'Malicious or stale relay responses within the adapter contract',
+  'Identity component substitution after trust is pinned',
+  'Malformed prekeys, KEM material, protocol messages, and restored state',
+  'Loss and out-of-order delivery within configured protocol bounds',
+  'Later compromise followed by an uncompromised ratchet recovery step',
+];
+
+const outOfScope = [
+  'Compromised endpoints, JavaScript engines, dependencies, or build pipeline',
+  'Hostile same-process code and high-assurance local timing attackers',
+  'Guaranteed secret erasure from managed memory',
+  'Hardware, physical, speculative-execution, and microarchitectural attacks',
+  'Traffic-analysis resistance beyond the padding behaviour explicitly implemented',
+  'Signal Messenger interoperability outside the alignments stated in the security model',
+  'Authenticity on unverified first contact without a safety-number check',
+];
+---
+
+<BaseLayout
+  title="Security model"
+  description="What the relay can and cannot see, what sealed sender does not hide, the threat model boundary, and the current audit status of the OpenE2EE Signal Protocol SDK."
+>
+  <header class="page-hero">
+    <div class="container measure">
+      <p class="label">Security model</p>
+      <h1>What your relay can see, written down.</h1>
+      <p class="lead">
+        The relay never needs message plaintext or device private keys. It does need routing
+        metadata, and pretending otherwise would make everything else on this site worth less.
+      </p>
+      <p class="maturity">0.1.0-alpha.1 — public APIs and persisted formats may change before 1.0.</p>
+    </div>
+  </header>
+
+  <section class="band">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>Where the boundary sits</h2>
+        <p class="measure">
+          Plaintext and long-term private keys exist only inside a device. Everything the relay
+          holds is sealed, and everything sealed still carries an address.
+        </p>
+      </div>
+      <div class="diagram">
+        <SignatureDiagram />
+      </div>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>The delivery envelope, field by field</h2>
+        <p class="measure">
+          This is the shape a relay adapter receives. Sealed sender omits two fields; it does not
+          empty the envelope.
+        </p>
+      </div>
+      <div class="table-scroll">
+        <table class="data">
+          <thead>
+            <tr>
+              <th scope="col">Field</th>
+              <th scope="col">Identified delivery</th>
+              <th scope="col">Sealed sender</th>
+              <th scope="col">What it is</th>
+            </tr>
+          </thead>
+          <tbody>
+            {envelopeFields.map((row) => (
+              <tr>
+                <th scope="row"><code>{row.field}</code></th>
+                <td>{row.identified}</td>
+                <td>{row.sealed}</td>
+                <td>{row.note}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="muted measure">
+        Some fields appear only in context: <code>recipientRegistrationId</code> accompanies the
+        initial handshake envelope, and <code>contentHint</code>, <code>ephemeral</code>, and{' '}
+        <code>urgent</code> are optional delivery hints. Your relay also assigns its own message id
+        and server timestamp.
+      </p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>What sealed sender does not hide</h2>
+        <p class="measure">
+          Sealed sender removes the sender identity from the envelope. Five things it leaves in
+          place, because a security page that only lists wins is marketing.
+        </p>
+      </div>
+      <ul class="rows">
+        {notHidden.map((item) => (
+          <li>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>Threat model boundary</h2>
+        <p class="measure">
+          Taken from the security model in the repository. An attacker in full control of your relay
+          can serve stale or hostile responses and observe every routing field above. It cannot read
+          message plaintext or long-term private keys.
+        </p>
+      </div>
+      <div class="two-col">
+        <div>
+          <h3>In scope</h3>
+          <ul class="list">{inScope.map((item) => <li>{item}</li>)}</ul>
+        </div>
+        <div>
+          <h3>Out of scope, or only partly mitigated</h3>
+          <ul class="list">{outOfScope.map((item) => <li>{item}</li>)}</ul>
+        </div>
+      </div>
+      <div class="callout measure">
+        <p>
+          First contact is trust-on-first-use, not authenticated identity. A relay that is hostile
+          from the very first message can substitute an identity before any trust is pinned; a
+          safety-number comparison is what closes that gap. After trust is pinned, substituting
+          either half of the identity tuple fails closed until a rotation is explicitly accepted.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>Limits we publish rather than bury</h2>
+      </div>
+      <dl class="definition-rows">
+        <div>
+          <dt>Not yet audited</dt>
+          <dd>
+            No third-party security audit has been performed. An independent review is planned. The
+            codebase is structured for review — narrow state transitions, injectable adapters, small
+            protocol seams — but structure is not certification.
+          </dd>
+        </div>
+        <div>
+          <dt>JavaScript is not a constant-time environment</dt>
+          <dd>
+            Browser, Node, and React Native engines provide no machine-level constant-time
+            guarantee. The implementation uses best-effort patterns on selected paths; it does not
+            claim timing equivalence against a co-resident adversary.
+          </dd>
+        </div>
+        <div>
+          <dt>Memory cannot be reliably wiped</dt>
+          <dd>
+            Typed-array overwrites shorten the life of some buffers. Strings, engine temporaries,
+            registers, and garbage-collected pages remain outside the SDK&rsquo;s control.
+          </dd>
+        </div>
+        <div>
+          <dt>Post-quantum means confidentiality, not signatures</dt>
+          <dd>
+            Post-quantum key agreement is the default and fails closed, using ML-KEM-1024 for PQXDH
+            and an ML-KEM Braid ratchet. Identity signatures remain classical Ed25519 and X25519.
+            The protection is against harvest-now-decrypt-later, not against a quantum adversary
+            forging identities.
+          </dd>
+        </div>
+        <div>
+          <dt>There is no key escrow, so device loss is real</dt>
+          <dd>
+            Nothing recoverable is held on a server. Transferring state to new hardware requires the
+            old device to still be available; a lost device means re-registering, and contacts see a
+            safety-number change. Decide your recovery story before launch, not after.
+          </dd>
+        </div>
+        <div>
+          <dt>Not Signal Messenger</dt>
+          <dd>
+            An independent implementation of the published Signal Protocol specifications. Not
+            affiliated with or endorsed by Signal Messenger LLC or the Signal Foundation, and not
+            wire-compatible with it.
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>Read the primary sources</h2>
+        <p class="measure">
+          This page is a summary. These are the documents it summarises, and they win any
+          disagreement.
+        </p>
+      </div>
+      <ul class="rows rows-single">
+        <li><a href={`${DOCS}/docs/SECURITY.md`}>Security model and threat model</a></li>
+        <li><a href={`${DOCS}/docs/PROTOCOL_POLICY.md`}>Protocol policy and post-quantum modes</a></li>
+        <li><a href={`${DOCS}/ARCHITECTURE.md`}>Architecture</a></li>
+        <li><a href={`${DOCS}/docs/E2EE.md`}>How the encryption works</a></li>
+        <li><a href={`${DOCS}/SECURITY.md`}>Reporting a vulnerability</a></li>
+      </ul>
+      <p class="text-links">
+        <a href="/learn">Learn how E2EE changes your app</a>
+        <a href="https://docs.open-e2ee.dev/getting-started">Build your first encrypted message</a>
+      </p>
+    </div>
+  </section>
+</BaseLayout>

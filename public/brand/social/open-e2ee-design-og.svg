@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">OpenE2EE Design</title>
+  <desc id="desc">The OpenE2EE mark and wordmark beside a manifest plate: an outlined carrier holding three opaque parcels, each marked with brass metadata ticks.</desc>
+  <rect width="1280" height="640" fill="#faf7f3"/>
+  <g>
+    <path d="M800 104 H888 V128 H824 V512 H888 V536 H800 Z" fill="#090806"/>
+    <path d="M1400 104 H1312 V128 H1376 V512 H1312 V536 H1400 Z" fill="#090806"/>
+    <path d="M704 424 L780 424 L768 556 L692 556 Z" fill="#34312d"/>
+    <rect x="708" y="410" width="2" height="10" fill="#a5700d"/><rect x="724" y="410" width="2" height="10" fill="#a5700d"/><rect x="740" y="410" width="2" height="10" fill="#a5700d"/><rect x="756" y="410" width="2" height="10" fill="#a5700d"/>
+    <path d="M880 168 L1200 168 L1200 232 L880 232 Z" fill="#34312d"/>
+    <rect x="884" y="154" width="2" height="10" fill="#a5700d"/><rect x="900" y="154" width="2" height="10" fill="#a5700d"/><rect x="916" y="154" width="2" height="10" fill="#a5700d"/><rect x="932" y="154" width="2" height="10" fill="#a5700d"/><rect x="948" y="154" width="2" height="10" fill="#a5700d"/><rect x="964" y="154" width="2" height="10" fill="#a5700d"/><rect x="980" y="154" width="2" height="10" fill="#a5700d"/>
+    <text x="880" y="258" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">svg/ · 6 files</text>
+    <path d="M880 272 L1280 272 L1280 360 L880 360 Z" fill="#34312d"/>
+    <rect x="884" y="258" width="2" height="10" fill="#a5700d"/><rect x="900" y="258" width="2" height="10" fill="#a5700d"/><rect x="916" y="258" width="2" height="10" fill="#a5700d"/><rect x="932" y="258" width="2" height="10" fill="#a5700d"/><rect x="948" y="258" width="2" height="10" fill="#a5700d"/><rect x="964" y="258" width="2" height="10" fill="#a5700d"/><rect x="980" y="258" width="2" height="10" fill="#a5700d"/><rect x="996" y="258" width="2" height="10" fill="#a5700d"/><rect x="1012" y="258" width="2" height="10" fill="#a5700d"/>
+    <text x="880" y="386" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">png/ · 18 files</text>
+    <path d="M880 400 L1140 400 L1140 456 L880 456 Z" fill="#34312d"/>
+    <rect x="884" y="386" width="2" height="10" fill="#a5700d"/><rect x="900" y="386" width="2" height="10" fill="#a5700d"/><rect x="916" y="386" width="2" height="10" fill="#a5700d"/><rect x="932" y="386" width="2" height="10" fill="#a5700d"/><rect x="948" y="386" width="2" height="10" fill="#a5700d"/><rect x="964" y="386" width="2" height="10" fill="#a5700d"/>
+    <text x="880" y="482" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">css/ · tokens · tailwind · fonts</text>
+  </g>
+  <g transform="translate(88 88) scale(0.1875)">
+    <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#090806"/>
+    <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#090806"/>
+    <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#090806"/>
+  </g>
+  <text x="220" y="166" fill="#090806" font-family="'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="85">
+    <tspan font-weight="500" letter-spacing="-0.85">Open</tspan><tspan font-weight="800" letter-spacing="-1.28">E2EE</tspan>
+  </text>
+  <rect x="88" y="240" width="616" height="1" fill="#ded9d3"/>
+  <text x="88" y="300" fill="#615d57" font-family="'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="500">Brand identity, design tokens, and theming.</text>
+  <text x="88" y="556" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="19">@open-e2ee/design · 0.2.1</text>
+</svg>

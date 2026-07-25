@@ -1,0 +1,24 @@
+---
+import Mark from './Mark.astro';
+
+interface Props {
+  /**
+   * The product line turns the horizontal lockup into the product lockup.
+   * Product names are typography beside the organization identity; they never
+   * get a mark of their own.
+   */
+  product?: string;
+  size?: number;
+  class?: string;
+}
+
+const { product, size = 30, class: className } = Astro.props;
+---
+
+<span class:list={['lockup', { 'lockup-product': product }, className]}>
+  <span style="display: inline-flex; align-items: center; gap: 0.375em;">
+    <Mark size={size} />
+    <span class="oe-wordmark"><span>Open</span><span>E2EE</span></span>
+  </span>
+  {product && <span class="product-line">{product}</span>}
+</span>

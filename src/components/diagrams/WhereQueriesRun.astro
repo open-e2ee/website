@@ -1,0 +1,92 @@
+---
+/*
+ * The search index moves across the boundary. Routing fields stay queryable on
+ * the server side because they are drawn outside the seal; content queries only
+ * work inside a device outline.
+ */
+
+const bars = [
+  { y: 118, width: 150 },
+  { y: 140, width: 170 },
+  { y: 162, width: 120 },
+];
+
+const SHEAR = 8;
+---
+
+<svg viewBox="0 0 720 290" role="img" aria-labelledby="queries-title queries-desc">
+  <title id="queries-title">Which queries run on the server and which run on the device</title>
+  <desc id="queries-desc">
+    On the left, an outlined store of sealed slabs with metadata ticks: recipient and time can still
+    be queried there. A dotted rule marks where the message is opened. On the right, an outlined
+    device with readable content, where content search happens.
+  </desc>
+
+  <g>
+    <rect
+      x={20}
+      y={96}
+      width={220}
+      height={133}
+      fill="none"
+      stroke="var(--oe-diagram-plaintext-stroke)"
+      stroke-width={4}
+    />
+    <text x={20} y={82} class="diagram-tick-label">by recipient, device, group, time</text>
+    {[42, 114, 186].map((x) => (
+      <g>
+        {Array.from({ length: 3 }, (_, index) => (
+          <rect x={x + 6 + index * 12} y={106} width={2} height={8} fill="var(--oe-diagram-boundary)" />
+        ))}
+        <path
+          d={`M${x + SHEAR} 122 L${x + 44 + SHEAR} 122 L${x + 44} 205 L${x} 205 Z`}
+          fill="var(--oe-diagram-ciphertext-fill)"
+        />
+      </g>
+    ))}
+    <text x={20} y={262} class="diagram-label">relay · routing fields only</text>
+  </g>
+
+  <g>
+    <text x={360} y={64} text-anchor="middle" class="diagram-boundary-label">open</text>
+    <line
+      x1={360}
+      y1={76}
+      x2={360}
+      y2={248}
+      stroke="var(--oe-diagram-boundary)"
+      stroke-width={2}
+      stroke-dasharray="2 6"
+    />
+  </g>
+
+  <g fill="var(--oe-diagram-carrier-stroke)">
+    <rect x={264} y={161} width={60} height={2} />
+    <path d="M324 155 L334 162 L324 169 Z" />
+  </g>
+
+  <g>
+    <rect
+      x={480}
+      y={96}
+      width={220}
+      height={133}
+      fill="none"
+      stroke="var(--oe-diagram-plaintext-stroke)"
+      stroke-width={4}
+    />
+    <text x={480} y={82} class="diagram-tick-label">by anything in the message</text>
+    {bars.map((bar) => (
+      <rect
+        x={500}
+        y={bar.y}
+        width={bar.width}
+        height={9}
+        fill="var(--oe-diagram-plaintext-stroke)"
+        opacity={0.28}
+      />
+    ))}
+    <path d="M500 190 H532 L540 198 V214 H500 Z" fill="var(--oe-diagram-plaintext-stroke)" />
+    <text x={480} y={262} class="diagram-label">device · your search index</text>
+  </g>
+</svg>

@@ -1,0 +1,33 @@
+---
+/*
+ * Light, dark, and system, persisted under `oe-theme` per the design system's
+ * theme contract. The resolver in BaseLayout runs before first paint, so this
+ * control only has to cycle the stored preference.
+ */
+---
+
+<button class="theme-toggle" type="button" data-theme-toggle aria-live="polite">
+  <span data-theme-label>system</span>
+</button>
+
+<script>
+  import { getStoredTheme, setTheme, watchSystemTheme } from '@open-e2ee/design/theme';
+
+  const order = ['system', 'light', 'dark'] as const;
+  const button = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  const label = document.querySelector<HTMLElement>('[data-theme-label]');
+
+  function render(preference: string) {
+    if (label) label.textContent = preference;
+    button?.setAttribute('aria-label', `Colour theme: ${preference}. Activate to change.`);
+  }
+
+  render(getStoredTheme());
+  watchSystemTheme();
+
+  button?.addEventListener('click', () => {
+    const next = order[(order.indexOf(getStoredTheme() as never) + 1) % order.length];
+    setTheme(next);
+    render(next);
+  });
+</script>

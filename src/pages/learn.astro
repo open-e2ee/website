@@ -1,0 +1,213 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import WhereTruthLives from '../components/diagrams/WhereTruthLives.astro';
+import NoWayBack from '../components/diagrams/NoWayBack.astro';
+import WhereQueriesRun from '../components/diagrams/WhereQueriesRun.astro';
+
+const failureModes = [
+  {
+    title: 'Session corruption',
+    body: 'Two devices can end up with ratchet state that no longer agrees. Messages stop decrypting and no amount of retrying fixes it. You need a path that resets the session and tells the user something honest.',
+  },
+  {
+    title: 'Identity changes',
+    body: 'A reinstall, a new device, or a restored backup all present as an identity-key change. Legitimate and hostile look identical to your code; only a safety-number comparison distinguishes them.',
+  },
+  {
+    title: 'Out-of-order and missing messages',
+    body: 'The ratchet tolerates gaps within bounds. Past those bounds it stops, deliberately. Design your UI for a message that will never arrive rather than assuming eventual delivery.',
+  },
+  {
+    title: 'Nothing to fall back on',
+    body: 'There is no support tool that reads a user out of trouble. Whatever recovery you offer has to be built before launch, because after launch there is nothing to build it from.',
+  },
+];
+---
+
+<BaseLayout
+  title="How E2EE changes your architecture"
+  description="The seven assumptions end-to-end encryption breaks — server authority, queryable rows, password reset, online-by-default — and what replaces each of them."
+>
+  <header class="page-hero">
+    <div class="container measure">
+      <p class="label">Learn</p>
+      <h1>How E2EE changes your architecture</h1>
+      <p class="lead">
+        Adding end-to-end encryption is not a library swap. It invalidates a handful of assumptions
+        that most application architectures are built on. Knowing which ones, before you start, is
+        the difference between a two-week integration and a rewrite.
+      </p>
+    </div>
+  </header>
+
+  <section class="band">
+    <div class="container measure prose">
+      <h2>1. The server stops being the source of truth</h2>
+      <p>
+        In a conventional application the server holds the authoritative copy of everything and
+        devices are caches. Under end-to-end encryption that inverts: the device holds the
+        authoritative plaintext and cryptographic state, and the server holds sealed envelopes it
+        cannot interpret.
+      </p>
+      <p>
+        This is the shift everything else follows from. Any feature that quietly assumed the backend
+        could look at content — search, moderation, previews, analytics, migrations, admin tooling —
+        has to be redesigned or moved onto the device.
+      </p>
+    </div>
+    <div class="container">
+      <figure class="diagram">
+        <WhereTruthLives />
+        <figcaption>
+          The container is still yours. What changes is whether you can read what is inside it.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container measure prose">
+      <h2>2. Rows you could query become envelopes you can only route</h2>
+      <p>
+        You keep the fields the relay needs to deliver a message: who it is for, which device, when,
+        which group. You lose everything inside. A <code>WHERE body LIKE</code> query has no
+        equivalent on the server, and it never will.
+      </p>
+      <p>
+        Full-text search becomes a device-local index. Unread counts and previews are computed after
+        decryption. Server-side reporting works on metadata and volumes, not content. Budget for
+        this explicitly — it is usually the largest single piece of work in an E2EE migration.
+      </p>
+    </div>
+    <div class="container">
+      <figure class="diagram">
+        <WhereQueriesRun />
+        <figcaption>
+          Routing fields stay queryable. Content queries move to the other side of the boundary.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container measure prose">
+      <h2>3. Accounts become device identities</h2>
+      <p>
+        An account with a password is an assertion your server makes about a person. A cryptographic
+        identity is a key pair a device holds. The two are not interchangeable: your existing login
+        still authenticates the user to your backend, but it says nothing about which keys should be
+        trusted.
+      </p>
+      <p>
+        Every device is a separate identity that has to be provisioned, listed, and revocable. A
+        user with a phone, a laptop, and a tablet is three participants in every conversation, and
+        every message you send has to be encrypted for each of them.
+      </p>
+      <p>
+        First contact is trust on first use. Until two users compare a safety number, you have
+        confidentiality against a passive observer but not proof of who is on the other end.
+      </p>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container measure prose">
+      <h2>4. Password reset has no equivalent</h2>
+      <p>
+        &ldquo;Forgot password&rdquo; works because your server can re-establish access to data it
+        can already read. When the server cannot read the data, there is nothing to re-establish
+        access to. Losing the key means losing the content, and that is a property of the system
+        working correctly rather than a bug.
+      </p>
+      <p>
+        So you have to choose your recovery posture deliberately, and every option is a trade:
+        device-to-device transfer while both devices still exist; a user-held recovery phrase they
+        will lose; or an encrypted backup, which reintroduces a key that has to live somewhere. Pick
+        one and be honest with users about what it costs.
+      </p>
+    </div>
+    <div class="container">
+      <figure class="diagram">
+        <NoWayBack />
+        <figcaption>
+          There is no arrow from the relay to the new device, because there is nothing there to send.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container measure prose">
+      <h2>5. The device has to work offline</h2>
+      <p>
+        Cryptographic state lives locally and evolves with every message. That state is not a cache
+        you can drop and refetch — losing it loses conversations. Local persistence stops being an
+        optimisation and becomes correctness-critical, which means storage encryption, migration
+        strategy, and corruption handling are now your problem.
+      </p>
+      <p>
+        Local-first is not an aesthetic preference here. It is the shape the protocol imposes.
+      </p>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container measure prose">
+      <h2>6. Trust moves from your promises to verifiable properties</h2>
+      <p>
+        A privacy policy is a statement of intent. It survives exactly as long as the company, its
+        ownership, its jurisdiction, and its subpoena posture stay the same. A protocol property
+        does not depend on any of that: if the relay never holds plaintext or private keys, an
+        attacker who takes the relay gets ciphertext, and so does a court order.
+      </p>
+      <p>
+        The corollary is that you now have to publish enough for that claim to be checkable. Which
+        is why <a href="/security">the metadata your relay still sees</a> is written down on this
+        site in full rather than summarised as &ldquo;we protect your privacy&rdquo;.
+      </p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container">
+      <div class="band-head measure">
+        <h2>7. You inherit four new failure modes</h2>
+        <p>
+          These do not exist in a server-authoritative system. They will appear in your support
+          queue in the first month, so build for them in the first week.
+        </p>
+      </div>
+      <ul class="rows">
+        {failureModes.map((item) => (
+          <li>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container measure stack">
+      <h2>The fastest way to understand this is to run it</h2>
+      <p class="lead">
+        Two clients, a development relay, and a real encrypted round trip on your own machine. It
+        takes about ten minutes and needs no account and no server.
+      </p>
+      <div class="actions">
+        <a class="cta-primary" href="https://docs.open-e2ee.dev/getting-started">
+          <span class="button">Build your first encrypted message</span>
+          <span class="cta-sublabel">two clients · no account · no server</span>
+        </a>
+        <a class="button button-secondary" href="/security">Read the security model</a>
+      </div>
+      <p class="text-links">
+        <a href="https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/E2EE.md">
+          How the encryption works
+        </a>
+        <a href="/blog">Longer writing</a>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
