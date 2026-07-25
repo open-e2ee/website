@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="680" viewBox="0 0 1240 680" role="img" aria-labelledby="title desc">
+  <title id="title">The OpenE2EE mark in light and dark modes</title>
+  <desc id="desc">The full mark above the size rule: the optical variant from 16 to 31 px, the full mark from 32 px.</desc>
+  <rect width="1240" height="680" fill="#f4f1eb"/>
+  <g transform="translate(40 40)">
+    <rect width="560" height="600" fill="#faf7f3"/>
+    <g transform="translate(120 40) scale(0.625)">
+      <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#090806"/>
+      <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#090806"/>
+      <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#090806"/>
+    </g>
+    <g transform="translate(40 424)">
+      <g transform="translate(48 48) scale(0.03125)">
+        <path d="M56 56 H200 V112 H112 V400 H200 V456 H56 Z" fill="#090806"/>
+        <path d="M456 56 H312 V112 H400 V400 H312 V456 H456 Z" fill="#090806"/>
+        <path d="M152 152 H360 V360 H152 Z" fill="#090806"/>
+      </g>
+      <text x="48" y="88" fill="#090806" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">16px optical</text>
+      <g transform="translate(156 40) scale(0.046875)">
+        <path d="M56 56 H200 V112 H112 V400 H200 V456 H56 Z" fill="#090806"/>
+        <path d="M456 56 H312 V112 H400 V400 H312 V456 H456 Z" fill="#090806"/>
+        <path d="M152 152 H360 V360 H152 Z" fill="#090806"/>
+      </g>
+      <text x="156" y="88" fill="#090806" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">24px optical</text>
+      <g transform="translate(264 32) scale(0.0625)">
+        <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#090806"/>
+        <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#090806"/>
+        <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#090806"/>
+      </g>
+      <text x="264" y="88" fill="#090806" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">32px full</text>
+      <g transform="translate(372 0) scale(0.125)">
+        <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#090806"/>
+        <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#090806"/>
+        <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#090806"/>
+      </g>
+      <text x="372" y="88" fill="#090806" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">64px full</text>
+    </g>
+    <text x="40" y="558" fill="#090806" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="20" font-weight="600" letter-spacing="1.4">LIGHT MODE</text>
+  </g>
+  <g transform="translate(640 40)">
+    <rect width="560" height="600" fill="#090806"/>
+    <g transform="translate(120 40) scale(0.625)">
+      <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#f4f1eb"/>
+      <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#f4f1eb"/>
+      <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#f4f1eb"/>
+    </g>
+    <g transform="translate(40 424)">
+      <g transform="translate(48 48) scale(0.03125)">
+        <path d="M56 56 H200 V112 H112 V400 H200 V456 H56 Z" fill="#f4f1eb"/>
+        <path d="M456 56 H312 V112 H400 V400 H312 V456 H456 Z" fill="#f4f1eb"/>
+        <path d="M152 152 H360 V360 H152 Z" fill="#f4f1eb"/>
+      </g>
+      <text x="48" y="88" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">16px optical</text>
+      <g transform="translate(156 40) scale(0.046875)">
+        <path d="M56 56 H200 V112 H112 V400 H200 V456 H56 Z" fill="#f4f1eb"/>
+        <path d="M456 56 H312 V112 H400 V400 H312 V456 H456 Z" fill="#f4f1eb"/>
+        <path d="M152 152 H360 V360 H152 Z" fill="#f4f1eb"/>
+      </g>
+      <text x="156" y="88" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">24px optical</text>
+      <g transform="translate(264 32) scale(0.0625)">
+        <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#f4f1eb"/>
+        <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#f4f1eb"/>
+        <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#f4f1eb"/>
+      </g>
+      <text x="264" y="88" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">32px full</text>
+      <g transform="translate(372 0) scale(0.125)">
+        <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#f4f1eb"/>
+        <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#f4f1eb"/>
+        <path d="M196 152 L364 152 L316 360 L148 360 Z" fill="#f4f1eb"/>
+      </g>
+      <text x="372" y="88" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">64px full</text>
+    </g>
+    <text x="40" y="558" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="20" font-weight="600" letter-spacing="1.4">DARK MODE</text>
+  </g>
+</svg>
