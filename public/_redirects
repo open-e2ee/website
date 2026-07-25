@@ -1,0 +1,7 @@
+/terms /legal/terms/ 308
+/terms/ /legal/terms/ 308
+/terms/2026-07-23 /legal/terms/2026-07-23/ 308
+/terms/2026-07-23/ /legal/terms/2026-07-23/ 308
+/privacy /legal/privacy/ 308
+/privacy/ /legal/privacy/ 308
+/terms/* /legal/terms/:splat 308

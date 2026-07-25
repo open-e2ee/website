@@ -39,8 +39,14 @@ const BANNED = [
   /opaque[- ]carrier/i,
 ];
 
+/*
+ * What must carry the qualifier is a claim of security review, not the word.
+ * The privacy notice needs "auditors" among professional advisers and "audit"
+ * among record-retention purposes, and neither asserts anything about the SDK.
+ */
 const AUDIT_NEGATIONS = [/not yet audited/i, /no third-party security audit/i];
-const AUDIT_MENTION = /\baudit(ed|able)?\b/i;
+const AUDIT_MENTION =
+  /\baudit(ed|able)\b|\b(?:security|third[- ]party|independent|external|formal|code)[- ](?:review[- ])?audits?\b/i;
 
 async function htmlFiles(dir) {
   const found = [];

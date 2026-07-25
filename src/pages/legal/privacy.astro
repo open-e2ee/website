@@ -1,0 +1,252 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
+---
+
+<BaseLayout
+  title="Privacy"
+  description="How OpenE2EE collects, uses, shares, and protects personal information."
+  canonical="/legal/privacy"
+>
+  <article>
+    <header class="article-header">
+      <div class="container article-column">
+        <a class="back-link" href="/legal">Legal</a>
+        <h1>Privacy Notice</h1>
+        <p class="lead">
+          This notice explains how OpenE2EE handles personal information across the website,
+          documentation, console, licensing, billing, and communications.
+        </p>
+        <p class="article-meta">
+          <span>Effective {privacyEffectiveDate}</span>
+          <span>Version {privacyVersion}</span>
+        </p>
+      </div>
+    </header>
+
+    <div class="container article-column">
+      <div class="prose">
+        <aside class="callout" aria-label="Encryption boundary">
+          <p class="label">Encryption boundary</p>
+          <p>
+            The OpenE2EE SDK is designed to run in your environment. OpenE2EE does not receive your
+            application’s plaintext messages, private cryptographic keys, or protocol state through
+            the SDK by default.
+          </p>
+        </aside>
+
+        <nav class="legal-toc" aria-label="Privacy contents">
+          <p class="label">Contents</p>
+          <ol>
+            <li><a href="#scope">Scope and controller</a></li>
+            <li><a href="#collect">Information we collect</a></li>
+            <li><a href="#use">How and why we use it</a></li>
+            <li><a href="#share">How we disclose it</a></li>
+            <li><a href="#cookies">Cookies and analytics</a></li>
+            <li><a href="#retention">Retention and security</a></li>
+            <li><a href="#rights">Your privacy rights</a></li>
+            <li><a href="#international">International transfers</a></li>
+            <li><a href="#changes">Changes and contact</a></li>
+          </ol>
+        </nav>
+
+        <h2 id="scope">1. Scope and controller</h2>
+        <p>
+          Open E2EE LLC (“OpenE2EE,” “we,” “us,” or “our”) is responsible for personal information
+          covered by this notice. It applies to <code>open-e2ee.dev</code>, the OpenE2EE
+          documentation and console, commercial licensing and billing, support and sales
+          communications, and related security operations.
+        </p>
+        <p>
+          This notice does not govern information processed solely inside software that you operate.
+          When a customer uses the SDK in its own product, that customer determines its own data
+          practices and is responsible for its notices.
+        </p>
+
+        <h2 id="collect">2. Information we collect</h2>
+        <h3>Information you or your organization provides</h3>
+        <ul>
+          <li>
+            contact information, such as name, business email, organization, and communication
+            content;
+          </li>
+          <li>
+            commercial-license information, including licensee, covered product, plan, and support
+            requests;
+          </li>
+          <li>billing information, such as billing address and tax identifier; and</li>
+          <li>security reports, feedback, and other information you choose to send.</li>
+        </ul>
+
+        <h3>Information from connected services</h3>
+        <ul>
+          <li>
+            <strong>GitHub:</strong> when you sign in, GitHub provides an account identifier and
+            available profile information such as username, display name, email, and avatar.
+          </li>
+          <li>
+            <strong>Stripe:</strong> Stripe provides customer, subscription, invoice,
+            payment-status, billing, and tax information needed to complete and administer a
+            license. OpenE2EE does not intentionally receive or store complete payment-card numbers.
+          </li>
+          <li>
+            <strong>Your organization:</strong> an authorized purchaser or administrator may provide
+            information about license users, billing contacts, or the covered product.
+          </li>
+        </ul>
+
+        <h3>Technical information</h3>
+        <p>
+          Our hosting and security providers may process IP address, request time, URL, referring
+          page, browser and device information, authentication and session events, error
+          information, and security signals. The console uses signed, secure cookies needed for
+          authentication, request integrity, and account access.
+        </p>
+
+        <h2 id="use">3. How and why we use information</h2>
+        <p>We use personal information to:</p>
+        <ul>
+          <li>authenticate users and operate the website, documentation, console, and billing portal;</li>
+          <li>create, fulfill, document, renew, support, and enforce commercial licenses;</li>
+          <li>process payments, invoices, taxes, cancellations, and accounting records;</li>
+          <li>answer support, sales, licensing, privacy, and security communications;</li>
+          <li>protect the Services, investigate abuse, debug failures, and prevent fraud;</li>
+          <li>improve documentation, reliability, and product experience; and</li>
+          <li>comply with law and establish, exercise, or defend legal claims.</li>
+        </ul>
+        <p>
+          Where the law requires a legal basis, we rely on performance of a contract, steps requested
+          before entering a contract, compliance with legal obligations, our legitimate interests in
+          operating and securing the Services, and consent where required. You may withdraw consent
+          for future processing when consent is the basis.
+        </p>
+
+        <h2 id="share">4. How we disclose information</h2>
+        <p>We disclose information only as reasonably necessary to:</p>
+        <ul>
+          <li>
+            <strong>Service providers:</strong> Cloudflare for the public site, DNS, TLS, and
+            security; Vercel for the console and documentation; GitHub for authentication; Stripe
+            for payments, subscriptions, tax information, and the billing portal; and Google
+            Workspace for business email.
+          </li>
+          <li>
+            <strong>Professional advisers:</strong> accountants, lawyers, insurers, auditors, and
+            security specialists subject to appropriate duties.
+          </li>
+          <li>
+            <strong>Legal and safety recipients:</strong> authorities or other parties when
+            reasonably necessary to comply with law, protect rights and safety, investigate fraud or
+            abuse, or respond to lawful process.
+          </li>
+          <li>
+            <strong>Business transactions:</strong> a buyer, successor, or adviser in a financing,
+            reorganization, acquisition, or sale, subject to appropriate confidentiality and
+            continued protection.
+          </li>
+        </ul>
+        <p>
+          We do not sell personal information. We do not share personal information for
+          cross-context behavioral advertising or use it for targeted advertising, and we have not
+          done so during the preceding 12 months. We do not use personal information for automated
+          decisions that produce legal or similarly significant effects.
+        </p>
+
+        <h2 id="cookies">5. Cookies and analytics</h2>
+        <p>
+          The public marketing site does not currently use advertising cookies or cross-site
+          behavioral analytics. The console uses essential authentication, security, and session
+          cookies. Cloudflare, Vercel, GitHub, and Stripe may use their own necessary security or
+          service cookies when you interact with their infrastructure or hosted pages.
+        </p>
+        <p>
+          Because we do not sell or share information for targeted advertising, there is no
+          advertising opt-out needed for the current Services. We will honor legally required
+          browser signals if our practices change in a way that makes them applicable.
+        </p>
+
+        <h2 id="retention">6. Retention and security</h2>
+        <p>
+          We retain personal information only as long as reasonably necessary for the purposes
+          above. Retention depends on the record:
+        </p>
+        <ul>
+          <li>
+            console authentication data is primarily maintained in signed session cookies and
+            connected-provider records;
+          </li>
+          <li>
+            license, subscription, invoice, and transaction records may be kept for the relationship
+            and up to seven years afterward for accounting, tax, audit, and dispute purposes;
+          </li>
+          <li>
+            support, sales, and security communications are kept as needed to resolve the matter and
+            maintain appropriate records; and
+          </li>
+          <li>
+            request and security logs are generally kept for shorter periods determined by
+            operational and provider settings, unless needed to investigate an incident.
+          </li>
+        </ul>
+        <p>
+          We use administrative, technical, and organizational safeguards appropriate to the nature
+          of the information, including encrypted transport, restricted credentials, least-privilege
+          service keys, secure session cookies, and access controls. No system is perfectly secure,
+          and we cannot guarantee absolute security.
+        </p>
+
+        <h2 id="rights">7. Your privacy rights</h2>
+        <p>
+          Depending on where you live, you may have rights to request access, correction, deletion,
+          portability, or a copy of personal information; to object to or restrict certain
+          processing; to withdraw consent; and to appeal a decision. You may also have the right not
+          to receive discriminatory treatment for exercising a privacy right.
+        </p>
+        <p>
+          California residents may request the categories and specific pieces of personal
+          information collected, the sources, purposes, and disclosure categories; request
+          correction or deletion subject to exceptions; and receive equal service when exercising
+          these rights. OpenE2EE does not sell or share personal information as those terms are
+          defined by California law.
+        </p>
+        <p>
+          Submit a request to{' '}
+          <a href="mailto:support@open-e2ee.dev?subject=Privacy%20request">support@open-e2ee.dev</a>.
+          Describe the request and the account or email involved. We may need to verify your
+          identity and authority before acting. An authorized agent may submit a request where
+          applicable. You may appeal a denial by replying with “Privacy appeal” in the subject. You
+          may also complain to your local data-protection authority.
+        </p>
+
+        <h3>Children</h3>
+        <p>
+          The Services are intended for developers and businesses and are not directed to children
+          under 13. We do not knowingly collect personal information from children under 13. Contact
+          us if you believe a child provided it.
+        </p>
+
+        <h2 id="international">8. International transfers</h2>
+        <p>
+          OpenE2EE is based in the United States, and service providers may process information in
+          the United States and other countries. Those countries may have different data-protection
+          laws. Where required, we rely on recognized transfer mechanisms and contractual safeguards
+          made available through our providers.
+        </p>
+
+        <h2 id="changes">9. Changes and contact</h2>
+        <p>
+          We may update this notice as our practices or legal obligations change. We will publish a
+          new effective date and provide additional notice when a change is material. We will not
+          apply a materially more permissive use or disclosure practice retroactively to previously
+          collected information without appropriate notice and consent where required.
+        </p>
+        <p>
+          For privacy questions or requests, email{' '}
+          <a href="mailto:support@open-e2ee.dev">support@open-e2ee.dev</a>. For suspected
+          vulnerabilities or security incidents, email{' '}
+          <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>.
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

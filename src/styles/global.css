@@ -528,6 +528,23 @@ a:hover {
   color: var(--oe-subtle);
 }
 
+/* The legal bar is where a reader goes looking for these three, so they sit
+   beside the copyright rather than inside the link columns above. */
+.footer-legal nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--oe-space-4);
+}
+
+.footer-legal a {
+  color: var(--oe-subtle);
+  text-decoration: none;
+}
+
+.footer-legal a:hover {
+  color: var(--oe-foreground);
+}
+
 @media (max-width: 62rem) {
   .footer-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1212,6 +1229,60 @@ table.data td {
 
 .callout p {
   color: var(--oe-muted);
+}
+
+/* --------------------------------------------------------------- legal --- */
+
+/*
+ * Legal documents read in the editorial column, like a post: the obligations
+ * are prose and belong in the serif. What surrounds them is not prose — a
+ * contents list, a version pin, a conspicuous notice — so that scaffolding
+ * stays in the operating faces and at operating size.
+ */
+.legal-pin {
+  margin-top: var(--oe-space-4);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--oe-muted);
+}
+
+/* The header is sticky, so a contents link would otherwise park its section
+   heading underneath it. */
+:target {
+  scroll-margin-top: calc(4rem + var(--oe-space-6));
+}
+
+.legal-toc {
+  border-block: 1px solid var(--oe-border);
+  padding-block: var(--oe-space-4);
+}
+
+.legal-toc > .label {
+  margin-bottom: var(--oe-space-3);
+}
+
+.legal-toc ol {
+  margin: 0;
+  font-family: var(--oe-font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--oe-muted);
+}
+
+/*
+ * Disclaimers and liability limits are capitalised because that is what makes
+ * them conspicuous at law. Capitals at prose size in the serif are a wall; the
+ * sans, a step smaller, stays conspicuous and stays readable.
+ */
+.legal-notice {
+  font-family: var(--oe-font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* Version stamp closing a legal index row. */
+.row-meta {
+  margin-top: var(--oe-space-3);
 }
 
 .page-hero {

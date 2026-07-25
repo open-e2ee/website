@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  commercialTermsEffectiveDate,
+  commercialTermsPath,
+  commercialTermsVersion,
+  privacyEffectiveDate,
+  privacyVersion,
+} from '../../lib/legal.mjs';
+---
+
+<BaseLayout
+  title="Legal"
+  description="OpenE2EE legal policies, commercial license terms, privacy information, and contact channels."
+  canonical="/legal"
+>
+  <header class="page-hero">
+    <div class="container measure">
+      <p class="label">Legal</p>
+      <h1>Policies and agreements.</h1>
+      <p class="lead">
+        Two documents govern using OpenE2EE: the terms you accept, and what we do with the
+        information you hand us. Both are versioned and dated, and the version a Startup order
+        accepted stays published at its own permanent URL.
+      </p>
+    </div>
+  </header>
+
+  <section class="band">
+    <div class="container">
+      <ul class="rows">
+        <li>
+          <p class="label">Agreement</p>
+          <h3><a href="/legal/terms">Terms of Service</a></h3>
+          <p>
+            Website terms, and the Startup commercial license agreement accepted at self-service
+            checkout. Growth and Enterprise orders close on a signed order form instead.
+          </p>
+          <p class="label row-meta">
+            Effective {commercialTermsEffectiveDate} · {commercialTermsVersion}
+          </p>
+        </li>
+        <li>
+          <p class="label">Data practices</p>
+          <h3><a href="/legal/privacy">Privacy Notice</a></h3>
+          <p>
+            What we collect, why, which providers process it, how long it is kept, and how to make a
+            request. The SDK runs in your environment; this covers the parts that do not.
+          </p>
+          <p class="label row-meta">Effective {privacyEffectiveDate} · {privacyVersion}</p>
+        </li>
+        <li>
+          <p class="label">Version history</p>
+          <h3><a href={commercialTermsPath}>Pinned terms {commercialTermsVersion}</a></h3>
+          <p>
+            The immutable copy of the terms recorded at checkout. Existing orders stay bound to the
+            version they accepted, so each published version keeps its own address.
+          </p>
+        </li>
+        <li>
+          <p class="label">Contact</p>
+          <h3>Security and legal questions</h3>
+          <p>
+            Report a vulnerability to{' '}
+            <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>. Send licensing and
+            contract questions to{' '}
+            <a href="mailto:licensing@open-e2ee.dev">licensing@open-e2ee.dev</a>.
+          </p>
+        </li>
+      </ul>
+      <p class="text-links">
+        <a href="/licensing">Compare licensing paths</a>
+        <a href="/pricing">See pricing</a>
+        <a href="/security">Read the security model</a>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
