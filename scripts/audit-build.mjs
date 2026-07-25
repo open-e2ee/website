@@ -40,6 +40,37 @@ const BANNED = [
 ];
 
 /*
+ * Naming rules, mirrored from PUBLIC_TERMINOLOGY_PATTERNS in the SDK's
+ * scripts/public-release-policy.mjs. The SDK enforces these on export, so its
+ * own prose cannot ship a violation — but this site restates the same claims
+ * about the same entities with no equivalent gate, which is how "the Signal
+ * Foundation" reached production in the global footer and stayed there.
+ *
+ * Only the prose-relevant subset is mirrored; the SDK's identifier patterns
+ * cover symbol names that cannot appear here. Keep the two lists in step.
+ *
+ * These match on rendered text with whitespace collapsed, so a phrase that
+ * wraps across source lines is caught — the footer instance wrapped between
+ * "Signal" and "Foundation" and survived a line-oriented search because of it.
+ */
+const TERMINOLOGY = [
+  /* Signal Technology Foundation is the entity's name. The sentences these
+   * appear in exist to be precise about who this project is not affiliated
+   * with, so getting the name wrong defeats the disclaimer. */
+  /\bSignal Foundation\b/i,
+  /* Compatibility shorthand retired in 0.1.0-alpha.5: it implies an
+   * endorsement or an interop guarantee that does not exist. */
+  /\bSignal-(?:inspired|style|styled|aligned|grade|compatible)\b/i,
+  /* libsignal is the reference implementation; it is not "Signal's", and
+   * public prose names it "the reference implementation". */
+  /\bSignal(?:'|’)s reference implementation\b/i,
+  /* Asserts an independence process that was never carried out. */
+  /\bclean[- ]room\b/i,
+  /* Renamed before launch; a docs link to it would 404 on npm. */
+  /@open-e2ee\/sdk(?:\b|\/)/,
+];
+
+/*
  * What must carry the qualifier is a claim of security review, not the word.
  * The privacy notice needs "auditors" among professional advisers and "audit"
  * among record-retention purposes, and neither asserts anything about the SDK.
@@ -90,6 +121,11 @@ for (const file of files) {
     if (hit) problems.push(`${rel}: banned claim ${pattern} — "${hit[0]}"`);
   }
 
+  for (const pattern of TERMINOLOGY) {
+    const hit = text.match(pattern);
+    if (hit) problems.push(`${rel}: naming violation ${pattern} — "${hit[0]}"`);
+  }
+
   if (AUDIT_MENTION.test(text) && !AUDIT_NEGATIONS.some((n) => n.test(text))) {
     problems.push(`${rel}: mentions an audit without the "not yet audited" qualifier`);
   }
@@ -122,4 +158,4 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
-console.log(`Build audit passed: ${files.length} pages, no banned claims, all internal links resolve, no CSP-blocked inline scripts.`);
+console.log(`Build audit passed: ${files.length} pages, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts.`);
