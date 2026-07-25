@@ -2,7 +2,7 @@
  * Version identity for the published legal documents.
  *
  * The Startup checkout records a terms URL and version alongside the order, and
- * Section 9 of the terms binds an existing licence to the version recorded at
+ * Section 9 of the terms binds an existing license to the version recorded at
  * checkout. That promise only holds if the recorded URL is immutable, so the
  * dated path below is published as its own page and never edited in place: a
  * new version gets a new date, a new path, and a new constant here.
