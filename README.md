@@ -48,4 +48,4 @@ Production deployment requires an authenticated Wrangler session or a scoped
 ## Project identity
 
 This is an independent project. It is not affiliated with Signal Messenger LLC
-or the Signal Foundation and does not use their logos.
+or Signal Technology Foundation and does not use their logos.
