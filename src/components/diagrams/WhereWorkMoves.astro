@@ -1,0 +1,173 @@
+---
+/*
+ * The architecture shift as a relocation, not a deletion. The same three work
+ * blocks appear in both rows; only the outline they sit inside changes.
+ *
+ * The top row has no trust boundary at all, and that absence is the diagram:
+ * plaintext reaches the server because nothing stops it. The bottom row gains a
+ * seal, the device grows to hold the work, and the middle collapses to the
+ * carrier form — brackets around slabs it routes without reading.
+ */
+
+const WORK = [
+  { label: 'search' },
+  { label: 'notifications' },
+  { label: 'moderation' },
+];
+
+const CHIP = { width: 116, height: 56, gap: 20 };
+const barWidths = [92, 104, 68];
+
+const SERVER = { x: 270, y: 62, width: 420, height: 140 };
+const DEVICE_AFTER = { x: 20, y: 278, width: 420, height: 140 };
+
+const BOUNDARY_X = 486;
+const BRACKET_LEFT = 588;
+const BRACKET_RIGHT = 812;
+
+function chipX(originX: number, index: number) {
+  return originX + 28 + index * (CHIP.width + CHIP.gap);
+}
+---
+
+<svg viewBox="0 0 860 480" role="img" aria-labelledby="workmoves-title workmoves-desc">
+  <title id="workmoves-title">
+    Where search, notifications and moderation run before and after end-to-end encryption
+  </title>
+  <desc id="workmoves-desc">
+    In the top row, a small outlined device sends readable content straight into a large outlined
+    server, with no boundary between them; three outlined work blocks labelled search,
+    notifications and moderation sit inside the server. In the bottom row the same three work
+    blocks sit inside a device that has grown to hold them, a dotted boundary marked seal stands
+    between the device and the middle, and the middle is now a pair of brackets holding two solid
+    slabs with metadata ticks: a relay that routes envelopes rather than a server that reads rows.
+  </desc>
+
+  <text x={20} y={38} class="diagram-label">Server-authoritative</text>
+
+  <rect
+    x={20}
+    y={78}
+    width={130}
+    height={108}
+    fill="none"
+    stroke="var(--oe-diagram-plaintext-stroke)"
+    stroke-width={4}
+  />
+  {barWidths.map((width, index) => (
+    <rect
+      x={38}
+      y={98 + index * 20}
+      width={width}
+      height={8}
+      fill="var(--oe-diagram-plaintext-stroke)"
+      opacity={0.28}
+    />
+  ))}
+  <text x={20} y={228} class="diagram-label">device · a cache</text>
+
+  <g fill="var(--oe-diagram-carrier-stroke)">
+    <rect x={170} y={131} width={70} height={2} />
+    <path d="M240 125 L250 132 L240 139 Z" />
+  </g>
+  <text x={170} y={116} class="diagram-tick-label">plaintext</text>
+
+  <rect
+    x={SERVER.x}
+    y={SERVER.y}
+    width={SERVER.width}
+    height={SERVER.height}
+    fill="none"
+    stroke="var(--oe-diagram-plaintext-stroke)"
+    stroke-width={4}
+  />
+  {WORK.map((work, index) => (
+    <g>
+      <rect
+        x={chipX(SERVER.x, index)}
+        y={SERVER.y + 30}
+        width={CHIP.width}
+        height={CHIP.height}
+        fill="none"
+        stroke="var(--oe-diagram-plaintext-stroke)"
+        stroke-width={3}
+      />
+      <text
+        x={chipX(SERVER.x, index) + CHIP.width / 2}
+        y={SERVER.y + 64}
+        text-anchor="middle"
+        class="diagram-tick-label"
+      >
+        {work.label}
+      </text>
+    </g>
+  ))}
+  <text x={SERVER.x} y={228} class="diagram-label">your server · reads rows, does the work</text>
+
+  <text x={20} y={258} class="diagram-label">Device-authoritative</text>
+
+  <rect
+    x={DEVICE_AFTER.x}
+    y={DEVICE_AFTER.y}
+    width={DEVICE_AFTER.width}
+    height={DEVICE_AFTER.height}
+    fill="none"
+    stroke="var(--oe-diagram-plaintext-stroke)"
+    stroke-width={4}
+  />
+  {WORK.map((work, index) => (
+    <g>
+      <rect
+        x={chipX(DEVICE_AFTER.x, index)}
+        y={DEVICE_AFTER.y + 30}
+        width={CHIP.width}
+        height={CHIP.height}
+        fill="none"
+        stroke="var(--oe-diagram-plaintext-stroke)"
+        stroke-width={3}
+      />
+      <text
+        x={chipX(DEVICE_AFTER.x, index) + CHIP.width / 2}
+        y={DEVICE_AFTER.y + 64}
+        text-anchor="middle"
+        class="diagram-tick-label"
+      >
+        {work.label}
+      </text>
+    </g>
+  ))}
+  <text x={DEVICE_AFTER.x} y={444} class="diagram-label">
+    device · source of truth, does the work
+  </text>
+
+  <text x={BOUNDARY_X} y={262} text-anchor="middle" class="diagram-boundary-label">seal</text>
+  <line
+    x1={BOUNDARY_X}
+    y1={274}
+    x2={BOUNDARY_X}
+    y2={430}
+    stroke="var(--oe-diagram-boundary)"
+    stroke-width={2}
+    stroke-dasharray="2 6"
+  />
+
+  <g fill="var(--oe-diagram-carrier-stroke)">
+    <rect x={506} y={347} width={48} height={2} />
+    <path d="M554 341 L564 348 L554 355 Z" />
+  </g>
+
+  <g stroke="var(--oe-diagram-carrier-stroke)" stroke-width={4} fill="none">
+    <path d={`M${BRACKET_LEFT + 26} 296 H${BRACKET_LEFT} V400 H${BRACKET_LEFT + 26}`} />
+    <path d={`M${BRACKET_RIGHT - 26} 296 H${BRACKET_RIGHT} V400 H${BRACKET_RIGHT - 26}`} />
+  </g>
+  {[BRACKET_LEFT + 58, BRACKET_LEFT + 128].map((x) => (
+    <g>
+      {Array.from({ length: 4 }, (_, index) => (
+        <rect x={x + 4 + index * 11} y={308} width={2} height={9} fill="var(--oe-diagram-boundary)" />
+      ))}
+      <rect x={x} y={324} width={52} height={62} fill="var(--oe-diagram-ciphertext-fill)" />
+    </g>
+  ))}
+  <text x={BRACKET_LEFT + 58} y={296} class="diagram-tick-label">metadata</text>
+  <text x={BRACKET_LEFT} y={444} class="diagram-label">relay · routes envelopes</text>
+</svg>

@@ -1,0 +1,135 @@
+---
+title: TLS is not end-to-end encryption
+description: TLS protects the wire. Your server still reads every message it carries. What changes when the relay holds ciphertext instead — including what you no longer have to disclose.
+publishedAt: 2026-07-25
+author: OpenE2EE
+tags:
+  - Architecture
+  - TLS
+  - Breach notification
+---
+
+import WhoHoldsPlaintext from '../../components/diagrams/WhoHoldsPlaintext.astro';
+import CarrierPanel from '../../components/CarrierPanel.astro';
+
+**Who this is for:** a JavaScript or TypeScript developer who already ships HTTPS everywhere, has a database full of plaintext, and has just been asked by a customer, a security questionnaire, or a lawyer whether the product is "end-to-end encrypted." The honest answer is almost certainly no, and the interesting part is what that costs you.
+
+Every deployment checklist has a line for TLS, and everybody ticks it. Certificates renew automatically, HSTS is on, the padlock shows. It is genuinely good engineering, and it is the reason a coffee-shop network cannot read your users' messages.
+
+It also has nothing to say about the largest reader of your users' data, which is you.
+
+## What TLS actually promises
+
+TLS secures a connection between two endpoints. The critical word is *connection*. A TLS session runs from the client to whatever terminates it — usually a load balancer or CDN edge, sometimes your application process — and at that point the ciphertext is decrypted, because the terminating endpoint has the key. That is not a flaw. It is the entire purpose: the server needs to read the request to serve it.
+
+So a message travelling from one user to another under TLS alone is encrypted, decrypted, and re-encrypted at least once in the middle. Between those two events it exists as plaintext: in memory, in the request log if you are not careful, in the row you write to Postgres, in the search index, in the analytics pipeline, in the nightly backup, and in the crash dump.
+
+"Encryption at rest" does not change this either. Disk-level or column-level encryption protects against someone walking out with the drive. Your application holds the decryption key and uses it on every read, so anything that can query the database can read the contents — including a leaked credential, a subpoena, a misconfigured internal tool, or an engineer who is having a bad month.
+
+<figure class="diagram">
+  <WhoHoldsPlaintext />
+  <figcaption>
+    Same devices, same envelopes in transit, same position in the middle. Under TLS the message is
+    sealed, opened at the server, and re-sealed on the way out — four boundaries, and a middle that
+    holds readable content. Under end-to-end encryption there are two boundaries, both at a device.
+  </figcaption>
+</figure>
+
+End-to-end encryption moves the boundary. The message is encrypted on the sending device with keys the sending device generated, and it is decrypted on the receiving device with keys that never left it. Everything between the two is transport. The server's job changes from *understanding* the message to *carrying* it.
+
+That is a smaller change to your code than it sounds like, and a much larger change to your architecture than it sounds like. This article is about the first part. [How E2EE changes your application architecture](/blog/e2ee-changes-your-application-architecture/) is about the second.
+
+## What it looks like in code
+
+Here is a complete round trip using the OpenE2EE Signal Protocol SDK, with the in-memory mock relay standing in for your backend so it runs with no server at all:
+
+```ts
+import { createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
+import { mockStore } from '@open-e2ee/signal-protocol-sdk/local/store/mock';
+import { mockRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/mock';
+
+const relay = mockRelay();
+await relay.registerDevice('alice', { encryptedDeviceName: new ArrayBuffer(0) });
+await relay.registerDevice('bob', { encryptedDeviceName: new ArrayBuffer(0) });
+
+const alice = await createSignalProtocolClient({
+  identity: { userId: 'alice' },
+  adapters: { storage: mockStore(), relay },
+});
+const bob = await createSignalProtocolClient({
+  identity: { userId: 'bob' },
+  adapters: { storage: mockStore(), relay },
+});
+
+await alice.syncToServer();
+await bob.syncToServer();
+
+bob.registerHook('onMessageDecrypted', (message) => {
+  console.log(message.content); // plaintext, only on Bob's device
+});
+bob.startRelaySubscription();
+
+await alice.send('bob', 'Ship it Thursday. The staging key rotates at 09:00 UTC.');
+```
+
+Two things in that snippet carry the whole idea. `adapters.storage` is required, and it owns the local encryption state for exactly one user on one device — the identity keys, the prekeys, the session records, the ratchet state. `adapters.relay` is optional, and in a real app it is your backend. The asymmetry is deliberate: the SDK cannot work without a local store, and it can work without a server.
+
+The install command today is the GitHub tag, because npm publication is pending:
+
+```bash
+npm install github:open-e2ee/signal-protocol-js
+```
+
+The package is `@open-e2ee/signal-protocol-sdk` at `0.1.0-alpha.1` — public APIs and persisted formats may change before 1.0.
+
+## What your database actually holds
+
+This is the part worth being concrete about, because "the server can't read it" is a claim, and claims should come with evidence. Below is the record the relay held after running exactly the code above. Nothing here is illustrative: it is the envelope as captured, with the plaintext shown beside it for comparison.
+
+<CarrierPanel />
+
+Look at what survived. The relay has a recipient, a device, a sender, a message type, two timestamps, a registration id, and 3,532 base64 characters that mean nothing to it. Those routing fields are not an oversight — a relay that does not know who to deliver to cannot deliver. The `prekey_bundle` type tells you this was the session-establishing message; subsequent messages in the session carry a plain `ciphertext` type.
+
+The honest framing is the one we use everywhere: **the relay never needs message plaintext or device private keys.** It is not blind. It sees the outside of the envelope, and the outside of an envelope is real information. Who talks to whom, how often, at what hours, and at what size is a rich signal, and any product claiming otherwise is overselling. The SDK ships a `sealed-sender` module that blanks the sender fields on the identified-delivery path, and it is worth using — but published research on Signal's own implementation found that "the promise of sealed sender does not compose over a conversation of messages" ([NDSS 2021](https://www.ndss-symposium.org/ndss-paper/improving-signals-sealed-sender/)). Treat it as a meaningful reduction in linkability, not as anonymity. We document the limits in [metadata and limits](https://docs.open-e2ee.dev/learn/limits-and-metadata).
+
+## The part your CFO will care about
+
+There is a persistent myth in this space that E2EE is a compliance requirement. It is not. HIPAA, SOC 2, GDPR, DORA, NIS2, and FERPA require encryption in transit and at rest, and TLS plus disk encryption satisfies them. Anyone selling you E2EE as a mandate will be caught by the buyer's compliance team, and deservedly.
+
+The real financial argument is different and much sturdier: **breach-notification law keys on whether the acquired data was readable.**
+
+- California's breach statute, [Cal. Civ. Code §1798.82](https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.82), triggers notification on acquisition of *unencrypted* personal information — or encrypted information acquired together with the key that would render it readable.
+- The [FTC Safeguards Rule](https://www.ftc.gov/business-guidance/resources/ftc-safeguards-rule-what-your-business-needs-know) defines a reportable event as unauthorized acquisition of *unencrypted* customer information.
+- GDPR Article 34(3)(a) relieves you of the obligation to notify affected individuals where the data was rendered unintelligible to anyone not authorised to access it.
+
+Notice the shape all three share. They ask whether the attacker got something readable. Server-side encryption gives an awkward answer, because your server holds the key by construction, and an attacker who reached your database usually reached the thing that decrypts it. End-to-end encryption gives a clean one, because the key was never on the machine that was breached — it was on a phone in someone's pocket.
+
+The sentence to put in front of a budget holder: **what your server never had, you never have to disclose.**
+
+Two caveats, stated plainly because this is the kind of claim that gets a company in trouble when it is stated loosely. First, this is not legal advice, the statutes have definitions and exceptions that matter, and the analysis depends on your jurisdiction, your data, and the specific facts of an incident — take it to counsel. Second, it protects the *contents*, not the fact of the relationship: an attacker who takes your relay database still learns who your users are and who they talk to, and that may itself be notifiable. Encryption narrows the disclosure; it does not always eliminate it.
+
+For scale on why anyone cares: IBM's 2025 *Cost of a Data Breach* report put the US average at $10.22M and healthcare at $7.42M, the highest sector for the fifteenth consecutive year. The argument is not that E2EE makes breaches impossible. It is that it changes what a breach yields.
+
+## What this does not buy you
+
+Being precise about the limits is the point of writing this down at all.
+
+**Endpoints are still endpoints.** If a device is compromised, the attacker is inside the boundary and reads plaintext, because that is where plaintext lives. E2EE is a statement about the middle, not about the ends.
+
+**The browser has a code-delivery problem.** In a web app, the server you are defending against also ships the JavaScript that does the encrypting. Subresource integrity and reproducible builds help; nobody should pretend the problem is closed. Our [browser quickstart](https://docs.open-e2ee.dev/start/browser) says so on the page rather than in a footnote.
+
+**Trust on first contact is still trust on first contact.** The first time two users exchange keys, neither has verified the other; the SDK pins the composite identity tuple per user and fails closed if it later changes, but pinning an unverified key means detecting a *change*, not proving who was there originally. That is why safety numbers exist, and why the [threat model](https://docs.open-e2ee.dev/learn/threat-model) is worth twenty minutes.
+
+**Recovery becomes a product decision.** Once the server cannot read the data, it cannot restore it either. "The user lost their phone" stops being a support ticket and becomes an architecture question you should answer before launch, not after. We cover the tradeoffs in [recovery, backup, and migration](https://docs.open-e2ee.dev/build/recovery-backup-migration).
+
+**Metadata remains.** Said once more, because it is the most common overclaim in the category.
+
+## Where to go from here
+
+TLS answers "can someone on the network read this." End-to-end encryption answers "can the operator read this." They are different questions, both are worth answering, and only one of them is on your deployment checklist today.
+
+The fastest way to understand the difference is to run the code above and look at the row your relay stores. It takes about ten minutes, needs no account, and requires no server.
+
+**[Build your first encrypted message →](https://docs.open-e2ee.dev/start/quickstart)**
+
+Further reading: [E2EE vs TLS](https://docs.open-e2ee.dev/learn/e2ee-vs-tls) walks the boundary in more detail; [the threat model](https://docs.open-e2ee.dev/learn/threat-model) states what the SDK guarantees and what stays your responsibility; [the production checklist](https://docs.open-e2ee.dev/operate/production-checklist) is what to work through before you ship.

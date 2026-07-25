@@ -1,0 +1,160 @@
+---
+/*
+ * Two rows, identical infrastructure, one difference: what the middle box is.
+ *
+ * The top row is TLS. It has four trust boundaries because TLS terminates at
+ * the server, so the message is opened there and re-sealed on the way out —
+ * and the middle is therefore drawn as an open outlined form with readable
+ * content bars. The bottom row is end-to-end encryption: two boundaries, and
+ * the middle is the carrier form, brackets holding an opaque slab.
+ *
+ * The devices, envelopes and boundary positions are pinned to the same x
+ * coordinates in both rows so the only thing the eye can compare is the middle.
+ */
+
+const DEVICE_WIDTH = 150;
+const DEVICE_HEIGHT = 100;
+const DEVICE_LEFT_X = 20;
+const DEVICE_RIGHT_X = 680;
+
+const ENVELOPE_ONE_X = 222;
+const ENVELOPE_TWO_X = 534;
+const ENVELOPE_WIDTH = 56;
+const SHEAR = 8;
+
+const MIDDLE_X = 330;
+const MIDDLE_WIDTH = 170;
+
+/* Row origins: the y of each row's device top edge. */
+const rows = [
+  { top: 72, boundaries: [200, 310, 520, 640] },
+  { top: 272, boundaries: [200, 640] },
+];
+
+const barWidths = [104, 118, 78];
+---
+
+<svg viewBox="0 0 860 452" role="img" aria-labelledby="plaintext-title plaintext-desc">
+  <title id="plaintext-title">
+    Who holds readable plaintext under TLS, and who holds it under end-to-end encryption
+  </title>
+  <desc id="plaintext-desc">
+    Two rows with the same devices, the same sealed envelopes in transit and the same middle
+    position. In the top row, labelled TLS only, four dotted boundaries mark the message being
+    sealed, opened at the server, re-sealed and opened again; the server is drawn as an open
+    outlined box holding readable content, because it does. In the bottom row, labelled end-to-end
+    encrypted, there are only two boundaries — one at each device — and the middle is a pair of
+    brackets holding a solid slab, carrying an envelope it has no way to open.
+  </desc>
+
+  {rows.map((row) => (
+    <g>
+      {[DEVICE_LEFT_X, DEVICE_RIGHT_X].map((x) => (
+        <g>
+          <rect
+            x={x}
+            y={row.top}
+            width={DEVICE_WIDTH}
+            height={DEVICE_HEIGHT}
+            fill="none"
+            stroke="var(--oe-diagram-plaintext-stroke)"
+            stroke-width={4}
+          />
+          {barWidths.map((width, index) => (
+            <rect
+              x={x + 18}
+              y={row.top + 18 + index * 18}
+              width={width}
+              height={8}
+              fill="var(--oe-diagram-plaintext-stroke)"
+              opacity={0.28}
+            />
+          ))}
+          <path
+            d={`M${x + 18} ${row.top + 74} H${x + 44} L${x + 52} ${row.top + 82} V${row.top + 88} H${x + 18} Z`}
+            fill="var(--oe-diagram-plaintext-stroke)"
+          />
+        </g>
+      ))}
+
+      {row.boundaries.map((x) => (
+        <line
+          x1={x}
+          y1={row.top - 18}
+          x2={x}
+          y2={row.top + DEVICE_HEIGHT + 24}
+          stroke="var(--oe-diagram-boundary)"
+          stroke-width={2}
+          stroke-dasharray="2 6"
+        />
+      ))}
+
+      {[ENVELOPE_ONE_X, ENVELOPE_TWO_X].map((x) => (
+        <path
+          d={`M${x + SHEAR} ${row.top + 8} L${x + ENVELOPE_WIDTH + SHEAR} ${row.top + 8} L${x + ENVELOPE_WIDTH} ${row.top + 92} L${x} ${row.top + 92} Z`}
+          fill="var(--oe-diagram-ciphertext-fill)"
+        />
+      ))}
+    </g>
+  ))}
+
+  <text x={DEVICE_LEFT_X} y={40} class="diagram-label">TLS only</text>
+  <text x={200} y={58} text-anchor="middle" class="diagram-boundary-label">seal</text>
+  <text x={310} y={58} text-anchor="middle" class="diagram-boundary-label">open</text>
+  <text x={520} y={58} text-anchor="middle" class="diagram-boundary-label">seal</text>
+  <text x={640} y={58} text-anchor="middle" class="diagram-boundary-label">open</text>
+
+  <rect
+    x={MIDDLE_X}
+    y={72}
+    width={MIDDLE_WIDTH}
+    height={DEVICE_HEIGHT}
+    fill="none"
+    stroke="var(--oe-diagram-plaintext-stroke)"
+    stroke-width={4}
+  />
+  {barWidths.map((width, index) => (
+    <rect
+      x={MIDDLE_X + 20}
+      y={90 + index * 18}
+      width={width + 12}
+      height={8}
+      fill="var(--oe-diagram-plaintext-stroke)"
+      opacity={0.28}
+    />
+  ))}
+
+  <text x={DEVICE_LEFT_X} y={200} class="diagram-label">device</text>
+  <text x={MIDDLE_X} y={200} class="diagram-label">your server · reads every message</text>
+  <text x={DEVICE_RIGHT_X} y={200} class="diagram-label">device</text>
+
+  <text x={DEVICE_LEFT_X} y={240} class="diagram-label">End-to-end encrypted</text>
+  <text x={200} y={258} text-anchor="middle" class="diagram-boundary-label">seal</text>
+  <text x={640} y={258} text-anchor="middle" class="diagram-boundary-label">open</text>
+
+  <g stroke="var(--oe-diagram-carrier-stroke)" stroke-width={4} fill="none">
+    <path d={`M${MIDDLE_X + 28} 272 H${MIDDLE_X} V372 H${MIDDLE_X + 28}`} />
+    <path d={`M${MIDDLE_X + MIDDLE_WIDTH - 28} 272 H${MIDDLE_X + MIDDLE_WIDTH} V372 H${MIDDLE_X + MIDDLE_WIDTH - 28}`} />
+  </g>
+  {Array.from({ length: 5 }, (_, index) => (
+    <rect
+      x={MIDDLE_X + 50 + index * 14}
+      y={282}
+      width={2}
+      height={10}
+      fill="var(--oe-diagram-boundary)"
+    />
+  ))}
+  <rect
+    x={MIDDLE_X + 46}
+    y={300}
+    width={MIDDLE_WIDTH - 92}
+    height={58}
+    fill="var(--oe-diagram-ciphertext-fill)"
+  />
+
+  <text x={DEVICE_LEFT_X} y={400} class="diagram-label">device</text>
+  <text x={MIDDLE_X} y={400} class="diagram-label">your relay · carries, cannot read</text>
+  <text x={DEVICE_RIGHT_X} y={400} class="diagram-label">device</text>
+  <text x={MIDDLE_X} y={424} class="diagram-tick-label">metadata still visible</text>
+</svg>

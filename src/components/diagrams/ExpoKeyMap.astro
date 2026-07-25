@@ -1,0 +1,135 @@
+---
+/*
+ * Where every key in an Expo app actually sits. The private key is a solid
+ * notched slab and it is drawn inside the device outline, because that is the
+ * only place it exists. The prekey bundle is the same notch drawn as an open
+ * outline, on the far side of the seal: it travels, and it is meant to be
+ * readable. The shape rhyme is the argument.
+ *
+ * Both local containers are flush with the device's bottom edge — a store that
+ * floats free of its device is a different claim than the one being made here.
+ */
+
+const DEVICE = { x: 20, y: 60, width: 400, height: 210 };
+const VAULT = { x: 46, y: 150, width: 152, height: DEVICE.y + DEVICE.height - 150 };
+const STORE = { x: 232, y: 116, width: 162, height: DEVICE.y + DEVICE.height - 116 };
+
+const BOUNDARY_X = 476;
+const BRACKET_LEFT = 574;
+const BRACKET_RIGHT = 812;
+
+/* Ratchet state: even intervals, each slab a little more opaque than the last. */
+const ratchet = [0.4, 0.58, 0.76, 1];
+---
+
+<svg viewBox="0 0 900 336" role="img" aria-labelledby="expokeys-title expokeys-desc">
+  <title id="expokeys-title">Where each key lives in an Expo app, and what crosses the seal</title>
+  <desc id="expokeys-desc">
+    An outlined device containing two containers flush with its lower edge. On the left, a vault
+    holding one solid notched slab: the device private keys. On the right, a local store divided by
+    a rule, holding a run of four upright slabs of increasing opacity: session and ratchet state. A
+    dotted boundary marked seal separates the device from a pair of brackets on the right. Inside
+    the brackets sit one outlined notched slab — the public prekey bundle, which travels and is
+    readable — and two solid slabs with metadata ticks above them, the sealed envelopes.
+  </desc>
+
+  <rect
+    x={DEVICE.x}
+    y={DEVICE.y}
+    width={DEVICE.width}
+    height={DEVICE.height}
+    fill="none"
+    stroke="var(--oe-diagram-plaintext-stroke)"
+    stroke-width={4}
+  />
+  <text x={DEVICE.x} y={44} class="diagram-tick-label">your device</text>
+
+  <rect
+    x={VAULT.x}
+    y={VAULT.y}
+    width={VAULT.width}
+    height={VAULT.height}
+    fill="none"
+    stroke="var(--oe-diagram-plaintext-stroke)"
+    stroke-width={3}
+  />
+  <text x={VAULT.x} y={VAULT.y - 12} class="diagram-tick-label">expo-secure-store · vault</text>
+  <path
+    d={`M${VAULT.x + 26} ${VAULT.y + 32} H${VAULT.x + 84} L${VAULT.x + 102} ${VAULT.y + 50} V${VAULT.y + 88} H${VAULT.x + 26} Z`}
+    fill="var(--oe-diagram-plaintext-stroke)"
+  />
+
+  <rect
+    x={STORE.x}
+    y={STORE.y}
+    width={STORE.width}
+    height={STORE.height}
+    fill="none"
+    stroke="var(--oe-diagram-plaintext-stroke)"
+    stroke-width={4}
+  />
+  <line
+    x1={STORE.x}
+    y1={STORE.y + 50}
+    x2={STORE.x + STORE.width}
+    y2={STORE.y + 50}
+    stroke="var(--oe-diagram-plaintext-stroke)"
+    stroke-width={4}
+  />
+  <text x={STORE.x} y={STORE.y - 12} class="diagram-tick-label">expo-sqlite · local store</text>
+  {ratchet.map((opacity, index) => (
+    <rect
+      x={STORE.x + 20 + index * 34}
+      y={STORE.y + 76}
+      width={22}
+      height={62}
+      fill="var(--oe-diagram-ciphertext-fill)"
+      opacity={opacity}
+    />
+  ))}
+
+  <text x={DEVICE.x} y={300} class="diagram-label">
+    private keys, sessions, ratchet state · never leave
+  </text>
+
+  <text x={BOUNDARY_X} y={44} text-anchor="middle" class="diagram-boundary-label">seal</text>
+  <line
+    x1={BOUNDARY_X}
+    y1={56}
+    x2={BOUNDARY_X}
+    y2={286}
+    stroke="var(--oe-diagram-boundary)"
+    stroke-width={2}
+    stroke-dasharray="2 6"
+  />
+
+  <g fill="var(--oe-diagram-carrier-stroke)">
+    <rect x={496} y={164} width={48} height={2} />
+    <path d="M544 158 L554 165 L544 172 Z" />
+  </g>
+
+  <g stroke="var(--oe-diagram-carrier-stroke)" stroke-width={4} fill="none">
+    <path d={`M${BRACKET_LEFT + 26} 100 H${BRACKET_LEFT} V246 H${BRACKET_LEFT + 26}`} />
+    <path d={`M${BRACKET_RIGHT - 26} 100 H${BRACKET_RIGHT} V246 H${BRACKET_RIGHT - 26}`} />
+  </g>
+
+  <path
+    d={`M${BRACKET_LEFT + 36} 128 H${BRACKET_LEFT + 94} L${BRACKET_LEFT + 112} 146 V184 H${BRACKET_LEFT + 36} Z`}
+    fill="none"
+    stroke="var(--oe-diagram-plaintext-stroke)"
+    stroke-width={3}
+  />
+  <text x={BRACKET_LEFT + 36} y={214} class="diagram-tick-label">prekey bundle</text>
+
+  {[BRACKET_RIGHT - 96, BRACKET_RIGHT - 50].map((x) => (
+    <g>
+      {Array.from({ length: 3 }, (_, index) => (
+        <rect x={x + 4 + index * 10} y={112} width={2} height={9} fill="var(--oe-diagram-boundary)" />
+      ))}
+      <rect x={x} y={128} width={34} height={100} fill="var(--oe-diagram-ciphertext-fill)" />
+    </g>
+  ))}
+  <text x={BRACKET_RIGHT - 96} y={100} class="diagram-tick-label">metadata</text>
+
+  <text x={BRACKET_LEFT} y={300} class="diagram-label">relay · public keys, sealed envelopes</text>
+</svg>
