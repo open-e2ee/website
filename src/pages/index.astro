@@ -2,11 +2,11 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProtocolFlow from '../components/ProtocolFlow.astro';
 
-const codeSample = `import { createOpenE2EEClient } from '@open-e2ee/sdk';
-import { indexedDbStore } from '@open-e2ee/sdk/local/store/web';
+const codeSample = `import { createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
+import { indexedDbStore } from '@open-e2ee/signal-protocol-sdk/local/store/web';
 
 const storage = await indexedDbStore();
-const client = await createOpenE2EEClient({
+const client = await createSignalProtocolClient({
   identity: { userId: 'alice' },
   adapters: { storage },
 });
@@ -77,7 +77,7 @@ await client.send('bob', 'hello');`;
       </div>
       <div class="pricing-grid">
         <article class="price-card"><p class="tier-label">Community</p><h3>AGPL</h3><p class="price"><strong>Free</strong></p><p class="price-description">For projects that can satisfy the AGPLv3 obligations.</p><ul><li>Complete SDK</li><li>Self-operated infrastructure</li><li>Community support</li></ul><a class="button button-secondary" href="/licensing">Review licensing</a></article>
-        <article class="price-card featured"><p class="tier-label">Startup</p><h3>Startup commercial license</h3><p class="price"><strong>$5k</strong><span>/ year</span></p><p class="price-description">Commercial production rights for one named product and legal entity.</p><ul><li>Licensed component: @open-e2ee/sdk</li><li>Browser, Node, and Expo</li><li>SDK updates</li><li>Self-service checkout</li></ul><a class="button" href="https://console.open-e2ee.dev/licenses/new?plan=startup">Purchase Startup</a></article>
+        <article class="price-card featured"><p class="tier-label">Startup</p><h3>Startup commercial license</h3><p class="price"><strong>$5k</strong><span>/ year</span></p><p class="price-description">Commercial production rights for one named product and legal entity.</p><ul><li>Licensed component: @open-e2ee/signal-protocol-sdk</li><li>Browser, Node, and Expo</li><li>SDK updates</li><li>Self-service checkout</li></ul><a class="button" href="https://console.open-e2ee.dev/licenses/new?plan=startup">Purchase Startup</a></article>
         <article class="price-card"><p class="tier-label">Growth</p><h3>Growth commercial license</h3><p class="price"><strong>$20k</strong><span>/ year</span></p><p class="price-description">Configurable product scope, implementation support, and services.</p><ul><li>Contract-defined component scope</li><li>Configurable product count</li><li>Integration support</li><li>Quote and signed order form</li></ul><a class="button button-secondary" href="https://console.open-e2ee.dev/contact?plan=growth">Schedule a meeting</a></article>
         <article class="price-card"><p class="tier-label">Enterprise / OEM</p><h3>Enterprise / OEM commercial license</h3><p class="price"><strong>$50k+</strong><span>/ year</span></p><p class="price-description">Negotiated portfolio, redistribution, security, and support terms.</p><ul><li>Contract-defined component scope</li><li>Portfolio or OEM rights</li><li>Security review and SLA</li><li>MSA or signed order form</li></ul><a class="button button-secondary" href="https://console.open-e2ee.dev/contact?plan=enterprise">Schedule a meeting</a></article>
       </div>
