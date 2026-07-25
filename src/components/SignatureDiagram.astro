@@ -1,0 +1,143 @@
+---
+import { geometry } from '../lib/brand';
+
+/*
+ * The signature diagram, ported from the design system's reference drawing so
+ * both surfaces render the same figure. Outlined forms are readable, filled
+ * forms are not, sheared forms are moving, and the trust boundary is a dotted
+ * gutter rather than a fence. The relay is the org mark itself, read from the
+ * published geometry, so the diagram cannot drift away from the logo.
+ *
+ * DESIGN.md allows at most one signature device per viewport: this diagram and
+ * the carrier panel must not share a screen.
+ */
+
+const RELAY_SIZE = 140;
+const RELAY_X = 478;
+const RELAY_Y = 92;
+
+const deviceBars = [
+  { y: 118, width: 150 },
+  { y: 140, width: 170 },
+  { y: 162, width: 120 },
+];
+
+const devices = [
+  { x: 10, label: 'Device A · readable' },
+  { x: 888, label: 'Device B · readable' },
+];
+
+const envelopes = [
+  { x: 320, ticks: 'metadata visible' },
+  { x: 688, ticks: undefined },
+];
+
+const boundaries = [
+  { x: 258, label: 'seal' },
+  { x: 826, label: 'open' },
+];
+
+const ENVELOPE_SHEAR = 14;
+---
+
+<svg
+  class="signature-diagram"
+  viewBox="0 0 1104 280"
+  role="img"
+  aria-labelledby="signature-diagram-title signature-diagram-desc"
+>
+  <title id="signature-diagram-title">
+    One message travelling from one device to another through a relay
+  </title>
+  <desc id="signature-diagram-desc">
+    Two outlined devices with readable contents and a private key inside each. Between them, sealed
+    envelopes drawn as solid slabs leaning in the direction of travel, carrying metadata ticks on
+    their outside edge, and the OpenE2EE mark standing in for the relay. Dotted brass rules mark
+    where the message is sealed and where it is opened.
+  </desc>
+
+  {devices.map((device) => (
+    <g>
+      <rect
+        x={device.x}
+        y={96}
+        width={200}
+        height={133}
+        fill="none"
+        stroke="var(--oe-diagram-plaintext-stroke)"
+        stroke-width={4}
+      />
+      {deviceBars.map((bar) => (
+        <rect
+          x={device.x + 20}
+          y={bar.y}
+          width={bar.width}
+          height={9}
+          fill="var(--oe-diagram-plaintext-stroke)"
+          opacity={0.28}
+        />
+      ))}
+      <path
+        d={`M${device.x + 20} 190 H${device.x + 52} L${device.x + 60} 198 V214 H${device.x + 20} Z`}
+        fill="var(--oe-diagram-plaintext-stroke)"
+      />
+      <text x={device.x} y={262} class="diagram-label">{device.label}</text>
+    </g>
+  ))}
+
+  {boundaries.map((boundary) => (
+    <g>
+      <text x={boundary.x} y={64} text-anchor="middle" class="diagram-boundary-label">
+        {boundary.label}
+      </text>
+      <line
+        x1={boundary.x}
+        y1={76}
+        x2={boundary.x}
+        y2={248}
+        stroke="var(--oe-diagram-boundary)"
+        stroke-width={2}
+        stroke-dasharray="2 6"
+      />
+    </g>
+  ))}
+
+  {envelopes.map((envelope) => (
+    <g>
+      {Array.from({ length: 5 }, (_, index) => (
+        <rect
+          x={envelope.x + 16 + index * 14}
+          y={98}
+          width={2}
+          height={10}
+          fill="var(--oe-diagram-boundary)"
+        />
+      ))}
+      {envelope.ticks && (
+        <text x={envelope.x + 14} y={88} class="diagram-tick-label">{envelope.ticks}</text>
+      )}
+      <path
+        d={`M${envelope.x + ENVELOPE_SHEAR} 112 L${envelope.x + 80 + ENVELOPE_SHEAR} 112 L${envelope.x + 80} 212 L${envelope.x} 212 Z`}
+        fill="var(--oe-diagram-ciphertext-fill)"
+      />
+      <text x={envelope.x} y={262} class="diagram-label">sealed</text>
+    </g>
+  ))}
+
+  {[432, 632].map((x) => (
+    <g fill="var(--oe-diagram-carrier-stroke)">
+      <rect x={x} y={161} width={30} height={2} />
+      <path d={`M${x + 30} 155 L${x + 40} 162 L${x + 30} 169 Z`} />
+    </g>
+  ))}
+
+  <g
+    transform={`translate(${RELAY_X} ${RELAY_Y}) scale(${RELAY_SIZE / 512})`}
+    fill="var(--oe-diagram-carrier-stroke)"
+  >
+    <path d={geometry.full.carrierLeftPath} />
+    <path d={geometry.full.carrierRightPath} />
+    <path d={geometry.full.payloadPath} />
+  </g>
+  <text x={RELAY_X} y={262} class="diagram-label">relay · cannot read</text>
+</svg>

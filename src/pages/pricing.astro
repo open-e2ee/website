@@ -1,32 +1,175 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+const tiers = [
+  {
+    name: 'AGPL-3.0',
+    price: 'Free',
+    period: null,
+    body: 'The complete SDK, for products that can meet the AGPL obligations. No feature is held back and nothing is time-limited.',
+    detail:
+      'You run your own infrastructure, you keep your own keys, and your source obligations are the licence text rather than anything we decide later.',
+    cta: { href: '/licensing', label: 'Understand AGPL use', secondary: true },
+  },
+  {
+    name: 'Startup',
+    price: '$5,000',
+    period: 'per year',
+    body: 'Commercial production rights for one named product owned by one legal entity, purchasable without talking to anyone.',
+    detail:
+      'Licensed component: @open-e2ee/signal-protocol-sdk. Includes SDK updates during the term. Self-service annual checkout.',
+    cta: {
+      href: 'https://console.open-e2ee.dev/licenses/new?plan=startup',
+      label: 'License for closed source',
+      secondary: false,
+    },
+  },
+  {
+    name: 'Growth',
+    price: '$20,000',
+    period: 'per year',
+    body: 'Commercial rights with a configurable product scope, plus implementation support while you integrate.',
+    detail:
+      'Contract-defined component scope, configurable product count, integration support. Quote and signed order form.',
+    cta: {
+      href: 'https://console.open-e2ee.dev/contact?plan=growth',
+      label: 'Schedule a meeting',
+      secondary: true,
+    },
+  },
+  {
+    name: 'Enterprise / OEM',
+    price: '$50,000+',
+    period: 'per year',
+    body: 'Negotiated portfolio or redistribution rights, security review, and service levels.',
+    detail:
+      'Contract-defined component scope, portfolio or OEM rights, security review and SLA. MSA or signed order form.',
+    cta: {
+      href: 'https://console.open-e2ee.dev/contact?plan=enterprise',
+      label: 'Plan a security review',
+      secondary: true,
+    },
+  },
+];
 ---
 
-<BaseLayout title="Pricing" description="Compare AGPL, Startup, Growth, and Enterprise commercial licensing for the OpenE2EE JavaScript SDK.">
+<BaseLayout
+  title="Pricing"
+  description="The complete SDK is free under AGPL-3.0. Commercial production rights for proprietary products start at $5,000 per year."
+>
   <header class="page-hero">
-    <div class="container">
-      <p class="eyebrow">Pricing</p>
-      <h1>Choose the rights your product needs.</h1>
-      <p class="lead">The complete SDK is available under AGPL. Proprietary products can purchase annual commercial production rights.</p>
+    <div class="container measure">
+      <p class="label">Pricing</p>
+      <h1>Free under AGPL. Priced when you need it closed.</h1>
+      <p class="lead">
+        There is no trial, no feature gate, and no usage metering. The complete SDK is available
+        under AGPL-3.0 today. You buy a commercial licence only when your product cannot meet the
+        AGPL obligations.
+      </p>
+      <div class="actions">
+        <a class="cta-primary" href="https://docs.open-e2ee.dev/getting-started">
+          <span class="button">Build your first encrypted message</span>
+          <span class="cta-sublabel">two clients · no account · no server</span>
+        </a>
+        <a class="button button-secondary" href="/licensing">Understand AGPL use</a>
+      </div>
     </div>
   </header>
 
-  <section class="section">
+  <section class="band">
     <div class="container">
-      <div class="pricing-grid">
-        <article class="price-card"><p class="tier-label">Community</p><h3>AGPL</h3><p class="price"><strong>Free</strong></p><p class="price-description">For projects that can comply with AGPLv3.</p><ul><li>Complete SDK</li><li>Browser, Node, and Expo</li><li>Self-operated infrastructure</li><li>Community support</li></ul><a class="button button-secondary" href="/licensing">Understand AGPL use</a></article>
-        <article class="price-card featured"><p class="tier-label">Startup</p><h3>Startup commercial license</h3><p class="price"><strong>$5,000</strong><span>/ year</span></p><p class="price-description">Commercial production rights for one named product owned by one legal entity.</p><ul><li>Licensed component: @open-e2ee/signal-protocol-sdk</li><li>Browser, Node, and Expo</li><li>SDK updates during the term</li><li>Self-service purchase</li></ul><a class="button" href="https://console.open-e2ee.dev/licenses/new?plan=startup">Purchase Startup</a></article>
-        <article class="price-card"><p class="tier-label">Growth</p><h3>Growth commercial license</h3><p class="price"><strong>$20,000</strong><span>/ year</span></p><p class="price-description">Commercial rights with configurable product scope, implementation support, and services.</p><ul><li>Contract-defined component scope</li><li>Configurable product count</li><li>Integration support</li><li>Quote and signed order form</li></ul><a class="button button-secondary" href="https://console.open-e2ee.dev/contact?plan=growth">Schedule a meeting</a></article>
-        <article class="price-card"><p class="tier-label">Enterprise / OEM</p><h3>Enterprise / OEM commercial license</h3><p class="price"><strong>$50,000+</strong><span>/ year</span></p><p class="price-description">Negotiated product portfolio, redistribution, security, and support terms.</p><ul><li>Contract-defined component scope</li><li>Portfolio or OEM rights</li><li>Security review and SLA</li><li>MSA or signed order form</li></ul><a class="button button-secondary" href="https://console.open-e2ee.dev/contact?plan=enterprise">Schedule a meeting</a></article>
-      </div>
-      <p class="pricing-note">Taxes may apply. The current Startup profile licenses the OpenE2EE JavaScript SDK (<code>@open-e2ee/signal-protocol-sdk</code>); any broader component scope must be explicit in the signed agreement. The final agreement controls the grant, covered products, support, renewal, and post-expiration rights.</p>
+      <ul class="tiers">
+        {tiers.map((tier) => (
+          <li class="tier">
+            <div class="tier-name">
+              <h2>{tier.name}</h2>
+              <p class="tier-price">
+                {tier.price}
+                {tier.period && <span>{tier.period}</span>}
+              </p>
+            </div>
+            <div class="tier-body">
+              <p>{tier.body}</p>
+              <p class="muted">{tier.detail}</p>
+              <p class="text-links">
+                <a href={tier.cta.href}>{tier.cta.label}</a>
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p class="muted measure">
+        Taxes may apply. Prices are the annual list prices for the scope named above. The signed
+        commercial agreement — not this page — controls the grant, covered products, support,
+        renewal, and post-expiration rights.
+      </p>
     </div>
   </section>
 
-  <section class="section section-subtle">
-    <div class="container split-grid">
-      <article class="split-card"><p class="eyebrow">Startup checkout</p><h2>Designed for self-service.</h2><p>Sign in, name the legal entity and covered product, accept the commercial terms, and complete annual checkout through Stripe.</p></article>
-      <article class="split-card"><p class="eyebrow">Growth and Enterprise</p><h2>Scope before purchase.</h2><p>Integration support, portfolio rights, redistribution, security review, and service levels require a short meeting and signed order form.</p></article>
+  <section class="band band-surface">
+    <div class="container measure prose">
+      <h2>What a breach looks like afterwards</h2>
+      <p>
+        The usual reason teams reach for protocol-level encryption is not a regulation. Almost no
+        regulation requires end-to-end encryption; HIPAA, SOC 2, GDPR, and the rest are satisfied by
+        transport security and encryption at rest. Anyone telling you otherwise is selling
+        something.
+      </p>
+      <p>
+        The real argument is what happens on the day your server is breached. If an attacker reaches
+        your database and the message bodies there are ciphertext you cannot decrypt either, the
+        conversation that follows is a different conversation. Several breach-notification regimes
+        treat encrypted data differently from readable data — California&rsquo;s notification statute
+        and Article 34(3)(a) of the GDPR both turn on whether the exposed data was rendered
+        unintelligible.
+      </p>
+      <p>
+        We are not your lawyers and this is not legal advice; whether any specific regime applies to
+        you depends on your data, your jurisdiction, and your facts. But the engineering position is
+        straightforward and worth stating plainly: you cannot disclose what you were never able to
+        read.
+      </p>
+      <p class="honesty">
+        This does not extend to metadata. Your relay still holds who talked to whom and when, and
+        that is disclosable. <a href="/security">The full list is here.</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container">
+      <div class="band-head">
+        <h2>How buying works</h2>
+      </div>
+      <dl class="definition-rows">
+        <div>
+          <dt>Startup</dt>
+          <dd>
+            Sign in, name the legal entity and the covered product, accept the commercial terms, and
+            complete annual checkout. No call required.
+          </dd>
+        </div>
+        <div>
+          <dt>Growth and Enterprise</dt>
+          <dd>
+            Portfolio rights, redistribution, integration support, security review, and service
+            levels need scoping first. A short meeting, then a signed order form.
+          </dd>
+        </div>
+        <div>
+          <dt>Evaluating</dt>
+          <dd>
+            Build the integration under AGPL first. Nothing about the code changes when you buy a
+            licence — only the rights do.
+          </dd>
+        </div>
+      </dl>
+      <p class="text-links">
+        <a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">
+          Ask a licensing question
+        </a>
+        <a href="/security">Read the security model</a>
+      </p>
     </div>
   </section>
 </BaseLayout>

@@ -1,0 +1,65 @@
+---
+import capture from '../data/carrier-capture.json';
+
+/*
+ * The proof moment. Both panes come from `src/data/carrier-capture.json`,
+ * which was recorded by running the SDK's documented mock-relay quickstart and
+ * reading the envelope the relay actually held. Nothing in this component is
+ * drawn, mocked up, or hand-typed: if the recorded ciphertext were replaced by
+ * something plausible-looking, the page would be making exactly the claim the
+ * brand exists to avoid.
+ */
+
+interface Props {
+  /** Base64 characters of ciphertext to show before truncating. */
+  excerpt?: number;
+}
+
+const { excerpt = 420 } = Astro.props;
+
+const record = capture.relayRecord;
+const shown = capture.ciphertext.slice(0, excerpt);
+
+/*
+ * Only fields the relay genuinely holds, in the order it holds them. The
+ * relay-assigned id is deliberately omitted: `msg-1` is the mock relay's
+ * in-memory counter, not a format any production relay would use.
+ */
+const visible = [
+  { field: 'targetUserId', value: record.targetUserId },
+  { field: 'targetDeviceId', value: String(record.targetDeviceId) },
+  { field: 'senderUserId', value: record.senderUserId },
+  { field: 'messageType', value: record.messageType },
+  { field: 'timestamp', value: String(record.timestamp) },
+  { field: 'recipientRegistrationId', value: String(record.recipientRegistrationId) },
+];
+---
+
+<figure class="carrier-panel">
+  <div class="carrier-pane">
+    <span class="label">device — bob</span>
+    <p class="carrier-message">{capture.plaintext}</p>
+  </div>
+
+  <div class="carrier-pane carrier-pane-relay">
+    <span class="label">relay — the row in your database</span>
+    <p class="carrier-cipher">{shown}<span aria-hidden="true">…</span></p>
+    <p class="carrier-cipher-note">
+      ciphertext — {capture.ciphertextStringLength.toLocaleString('en-US')} base64 characters,
+      {capture.ciphertextBytes.toLocaleString('en-US')} bytes stored, excerpt shown
+    </p>
+    <dl class="carrier-meta">
+      {visible.map((entry) => (
+        <>
+          <dt>{entry.field}</dt>
+          <dd>{entry.value}</dd>
+        </>
+      ))}
+    </dl>
+  </div>
+
+  <figcaption class="carrier-caption">
+    <span>recorded from a real round trip</span>
+    <span>{capture.packageName}@{capture.sdkVersion}</span>
+  </figcaption>
+</figure>

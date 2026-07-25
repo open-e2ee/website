@@ -5,27 +5,50 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf(),
 );
-const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
 ---
 
-<BaseLayout title="Engineering journal" description="Technical writing about JavaScript cryptography, protocol implementation, interoperability, and developer experience.">
+<BaseLayout
+  title="Engineering journal"
+  description="Writing about JavaScript cryptography, protocol implementation, interoperability, and building encrypted applications."
+>
   <header class="page-hero">
-    <div class="container">
-      <p class="eyebrow">Engineering journal</p>
+    <div class="container measure">
+      <p class="label">Engineering journal</p>
       <h1>Protocol decisions, made inspectable.</h1>
-      <p class="lead">Notes on JavaScript cryptography, implementation profiles, interoperability, testing, and the developer experience around encrypted applications.</p>
+      <p class="lead">
+        Notes on JavaScript cryptography, implementation profiles, interoperability, testing, and
+        what it actually takes to build an encrypted application.
+      </p>
     </div>
   </header>
 
-  <section class="section">
-    <div class="container blog-grid">
-      {posts.map((post) => (
-        <a class="post-card" href={`/blog/${post.id}/`}>
-          <time datetime={post.data.publishedAt.toISOString()}>{dateFormatter.format(post.data.publishedAt)}</time>
-          <h2>{post.data.title}</h2>
-          <p>{post.data.description}</p>
-        </a>
-      ))}
+  <section class="band">
+    <div class="container">
+      {posts.length === 0 ? (
+        <p class="muted measure">
+          Nothing published yet. The <a href="/learn">architecture guide</a> is the best place to
+          start in the meantime.
+        </p>
+      ) : (
+        <ul class="post-list">
+          {posts.map((post) => (
+            <li>
+              <a class="post-link" href={`/blog/${post.id}/`}>
+                <time datetime={post.data.publishedAt.toISOString()}>
+                  {dateFormatter.format(post.data.publishedAt)}
+                </time>
+                <h2>{post.data.title}</h2>
+                <p>{post.data.description}</p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   </section>
 </BaseLayout>

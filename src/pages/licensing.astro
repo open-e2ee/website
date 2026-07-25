@@ -2,42 +2,67 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<BaseLayout title="Licensing" description="Understand the open-source and commercial licensing paths for the OpenE2EE JavaScript SDK.">
+<BaseLayout
+  title="Licensing"
+  description="The OpenE2EE Signal Protocol SDK is available under AGPL-3.0, or under a commercial licence for proprietary products."
+>
   <header class="page-hero">
-    <div class="container">
-      <p class="eyebrow">Licensing</p>
-      <h1>One SDK. Two paths to production.</h1>
-      <p class="lead">Use the SDK under its open-source license, or obtain commercial rights for a product that cannot meet those obligations.</p>
+    <div class="container measure">
+      <p class="label">Licensing</p>
+      <h1>One SDK. Two ways to ship it.</h1>
+      <p class="lead">
+        The same code either way. What differs is the obligations you take on — and this page is a
+        summary of them, not the licence itself.
+      </p>
     </div>
   </header>
 
-  <section class="section">
-    <div class="container split-grid">
-      <article class="split-card">
-        <p class="eyebrow">Open source</p>
-        <h2>AGPLv3</h2>
-        <p>Suitable when your distribution and network use can comply with the AGPL requirements. The repository license text—not this overview—controls.</p>
-        <ul><li>Complete SDK source</li><li>No license fee</li><li>AGPL compliance required</li><li>No proprietary production grant</li></ul>
-      </article>
-      <article class="split-card">
-        <p class="eyebrow">Commercial</p>
-        <h2>Named product rights</h2>
-        <p>Suitable for proprietary applications that need a separately negotiated production grant without applying the AGPL to the covered product.</p>
-        <ul><li>Named legal entity and covered products</li><li>Explicit licensed-component scope</li><li>Startup self-service option</li><li>Growth and Enterprise / OEM order forms</li></ul>
-      </article>
+  <section class="band">
+    <div class="container">
+      <dl class="definition-rows">
+        <div>
+          <dt>AGPL-3.0</dt>
+          <dd>
+            The complete SDK, at no cost, for products whose distribution and network use can meet
+            the AGPL obligations. Those obligations are real: the AGPL reaches applications offered
+            over a network, not only distributed binaries. Read the licence text in the repository
+            before you rely on this path — it controls, not this description.
+          </dd>
+        </div>
+        <div>
+          <dt>Commercial licence</dt>
+          <dd>
+            A separately negotiated production grant for proprietary products, so the AGPL does not
+            apply to the covered product. Scoped to a named legal entity, named covered products,
+            and an explicit licensed-component list.
+          </dd>
+        </div>
+      </dl>
     </div>
   </section>
 
-  <section class="section section-subtle">
-    <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">Important boundary</p><h2>The agreement is the license.</h2></div>
-        <p>Website descriptions summarize the intended commercial model. They do not replace the executed commercial agreement or provide legal advice.</p>
-      </div>
-      <div class="button-row">
-        <a class="button" href="https://console.open-e2ee.dev/licenses/new?plan=startup">Purchase Startup</a>
-        <a class="button button-secondary" href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">Ask a licensing question</a>
-      </div>
+  <section class="band band-surface">
+    <div class="container measure prose">
+      <h2>The agreement is the licence</h2>
+      <p>
+        Everything on this website describes the intended commercial model in plain language. It
+        does not replace the executed agreement, and it is not legal advice. Where the two differ,
+        the signed agreement controls the grant, the covered products, the support commitments,
+        renewal, and what happens after expiration.
+      </p>
+      <p>
+        If you are unsure which path applies to your product, ask before you build. It is a shorter
+        conversation than the one after launch.
+      </p>
+      <p class="text-links">
+        <a href="/pricing">See pricing</a>
+        <a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">
+          Ask a licensing question
+        </a>
+        <a href="https://github.com/open-e2ee/signal-protocol-js/blob/main/LICENSE">
+          Read the licence text
+        </a>
+      </p>
     </div>
   </section>
 </BaseLayout>

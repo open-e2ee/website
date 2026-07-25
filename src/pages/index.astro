@@ -1,96 +1,198 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import ProtocolFlow from '../components/ProtocolFlow.astro';
+import CarrierPanel from '../components/CarrierPanel.astro';
+import SignatureDiagram from '../components/SignatureDiagram.astro';
 
-const codeSample = `import { createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
-import { indexedDbStore } from '@open-e2ee/signal-protocol-sdk/local/store/web';
+const differentiators = [
+  {
+    title: 'Pure TypeScript, everywhere your app runs',
+    body: 'Expo, React Native, browsers, and Node from one package. No native modules, no prebuild step, no ejecting.',
+  },
+  {
+    title: 'Post-quantum from the first handshake',
+    body: 'PQXDH with ML-KEM establishes the session; the Double Ratchet carries it forward. Not a future roadmap item.',
+  },
+  {
+    title: 'Your backend stays yours',
+    body: 'Storage, relay, and encrypted-object adapters are composed by your application. We do not host anything, and nothing phones home.',
+  },
+  {
+    title: 'The hard parts are included',
+    body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files — the work teams usually discover three months in.',
+  },
+  {
+    title: 'Every claim is inspectable',
+    body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay still sees are all published.',
+  },
+  {
+    title: 'AGPL, or a commercial licence',
+    body: 'The complete SDK is free under AGPL-3.0. Proprietary products buy annual production rights at a published price.',
+  },
+];
 
-const storage = await indexedDbStore();
-const client = await createSignalProtocolClient({
-  identity: { userId: 'alice' },
-  adapters: { storage },
-});
-
-await client.send('bob', 'hello');`;
+const trustLinks = [
+  { href: '/security', label: 'What the relay can and cannot see' },
+  {
+    href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/SECURITY.md',
+    label: 'The security model and threat model',
+  },
+  {
+    href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/ARCHITECTURE.md',
+    label: 'Architecture and protocol profile',
+  },
+  {
+    href: 'https://github.com/open-e2ee/signal-protocol-js',
+    label: 'View the SDK on GitHub',
+  },
+];
 ---
 
-<BaseLayout title="OpenE2EE" description="A JavaScript-first OpenE2EE SDK for browsers, Node.js, and Expo, available under AGPL or a commercial license.">
+<BaseLayout
+  title="OpenE2EE"
+  description="Open-source, protocol-level end-to-end encryption for TypeScript. Your relay carries sealed envelopes it cannot read — in Expo, React Native, browsers, and Node."
+>
   <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <h1>Your relay carries it.<br />Your relay can&rsquo;t read it.</h1>
+        <p class="lead">
+          Pure TypeScript. Expo, React Native, browsers, and Node. Post-quantum PQXDH and the Double
+          Ratchet, multi-device, groups, sealed sender, encrypted attachments. No native modules. No
+          prebuild step.
+        </p>
+        <p class="honesty">
+          It still sees metadata. We document exactly what, and what sealed sender does and
+          doesn&rsquo;t hide.
+        </p>
+        <p class="maturity">0.1.0-alpha.1 — public APIs and persisted formats may change before 1.0.</p>
+        <div class="actions">
+          <a class="cta-primary" href="https://docs.open-e2ee.dev/getting-started">
+            <span class="button">Build your first encrypted message</span>
+            <span class="cta-sublabel">two clients · no account · no server</span>
+          </a>
+          <a class="button button-secondary" href="#what-the-relay-stores">See what the relay stores</a>
+        </div>
+        <p class="text-links">
+          <a href="https://github.com/open-e2ee/signal-protocol-js">View the SDK on GitHub</a>
+          <a href="/security">Read the security model</a>
+        </p>
+      </div>
+
+      <div id="what-the-relay-stores">
+        <CarrierPanel />
+      </div>
+    </div>
+  </section>
+
+  <section class="band band-surface">
     <div class="container">
-      <div class="hero-grid">
+      <div class="band-head">
+        <h2>What you get, and what it costs you to find out</h2>
+        <p class="measure">
+          Six things that decide whether protocol-level encryption is workable for your product.
+        </p>
+      </div>
+      <ul class="rows">
+        {differentiators.map((item) => (
+          <li>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>One message, end to end</h2>
+        <p class="measure">
+          Plaintext and private keys exist only inside a device outline. Everything between them is
+          sealed — and carries metadata your relay can still see.
+        </p>
+      </div>
+      <div class="diagram">
+        <SignatureDiagram />
+      </div>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container">
+      <div class="band-head">
+        <h2>Why this exists at all</h2>
+        <p class="measure">
+          If something else fit, you should use it. Here is the honest state of the alternatives;
+          the full matrix, with links to every project, is in the SDK README.
+        </p>
+      </div>
+      <dl class="definition-rows">
         <div>
-          <p class="eyebrow">JavaScript-first encrypted messaging</p>
-          <h1>Private communication, composed your way.</h1>
+          <dt>The official implementation</dt>
+          <dd>
+            <code>@signalapp/libsignal-client</code> is actively maintained and post-quantum, and it
+            ships prebuilt native binaries for Windows, macOS, and Linux. It does not run in Expo,
+            React Native, or a browser.
+          </dd>
         </div>
-        <div class="hero-copy">
-          <p>A portable TypeScript SDK for encrypted messaging, devices, groups, attachments, and explicit storage and transport composition.</p>
-          <div class="button-row">
-            <a class="button" href="https://docs.open-e2ee.dev/getting-started">Read the docs</a>
-            <a class="button button-secondary" href="/pricing">Compare licenses</a>
-          </div>
+        <div>
+          <dt>The older JavaScript ports</dt>
+          <dd>
+            <code>libsignal-protocol-javascript</code> was archived in 2021.
+            <code>@privacyresearch/libsignal-protocol-typescript</code> last shipped in 2023. Neither
+            is post-quantum, and neither documents a React Native path.
+          </dd>
         </div>
-      </div>
-      <div class="hero-proof" aria-label="Supported environments and licensing">
-        <div><strong>Browser native</strong><span>Web Crypto and portable storage</span></div>
-        <div><strong>Node and Expo</strong><span>Runtime-specific adapters</span></div>
-        <div><strong>AGPL or commercial</strong><span>Choose the rights your product needs</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="product">
-    <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">Protocol building blocks</p><h2>Cryptographic state belongs to your product.</h2></div>
-        <p>Compose a Signal-inspired protocol profile without outsourcing private keys, plaintext, or application ownership.</p>
-      </div>
-      <div class="feature-grid">
-        <article class="feature-card"><span class="feature-number">01 / Identity</span><h3>Explicit trust</h3><p>Versioned composite identities, safety-number comparison, rotation controls, and fail-closed trust mutation.</p></article>
-        <article class="feature-card"><span class="feature-number">02 / Sessions</span><h3>Modern session state</h3><p>PQXDH, Double Ratchet, post-quantum ratcheting, multi-device session management, and bounded state recovery.</p></article>
-        <article class="feature-card"><span class="feature-number">03 / Composition</span><h3>Portable boundaries</h3><p>Choose local storage, delivery, and encrypted-object adapters for browser, server, and native JavaScript environments.</p></article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section section-subtle" id="architecture">
-    <div class="container"><ProtocolFlow /></div>
-  </section>
-
-  <section class="section">
-    <div class="container">
-      <div class="code-surface">
-        <pre><code>{codeSample}</code></pre>
-        <div class="code-explainer">
-          <p class="eyebrow">One explicit composition root</p>
-          <h3>Start locally. Add only the adapters you need.</h3>
-          <p>The SDK surface stays stable while applications select runtime storage, transport, and object persistence independently.</p>
+        <div>
+          <dt>A different protocol</dt>
+          <dd>
+            <code>ts-mls</code> is well maintained and runs everywhere, but it implements MLS, not
+            the Signal Protocol. That is a real choice — a different one.
+          </dd>
         </div>
-      </div>
+        <div>
+          <dt>This SDK</dt>
+          <dd>
+            An independent TypeScript implementation of the published Signal Protocol
+            specifications, running in the JavaScript runtimes your product already targets, with
+            storage and transport left to you and a commercial licence available.
+          </dd>
+        </div>
+      </dl>
+      <p class="text-links">
+        <a href="https://github.com/open-e2ee/signal-protocol-js#how-it-compares">
+          See the full comparison table
+        </a>
+        <a href="/product">See the SDK surface</a>
+      </p>
     </div>
   </section>
 
-  <section class="section section-subtle" id="pricing">
-    <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">Licensing</p><h2>Open source or commercial production rights.</h2></div>
-        <p>Use the complete SDK under AGPL, or purchase commercial rights for a proprietary product.</p>
-      </div>
-      <div class="pricing-grid">
-        <article class="price-card"><p class="tier-label">Community</p><h3>AGPL</h3><p class="price"><strong>Free</strong></p><p class="price-description">For projects that can satisfy the AGPLv3 obligations.</p><ul><li>Complete SDK</li><li>Self-operated infrastructure</li><li>Community support</li></ul><a class="button button-secondary" href="/licensing">Review licensing</a></article>
-        <article class="price-card featured"><p class="tier-label">Startup</p><h3>Startup commercial license</h3><p class="price"><strong>$5k</strong><span>/ year</span></p><p class="price-description">Commercial production rights for one named product and legal entity.</p><ul><li>Licensed component: @open-e2ee/signal-protocol-sdk</li><li>Browser, Node, and Expo</li><li>SDK updates</li><li>Self-service checkout</li></ul><a class="button" href="https://console.open-e2ee.dev/licenses/new?plan=startup">Purchase Startup</a></article>
-        <article class="price-card"><p class="tier-label">Growth</p><h3>Growth commercial license</h3><p class="price"><strong>$20k</strong><span>/ year</span></p><p class="price-description">Configurable product scope, implementation support, and services.</p><ul><li>Contract-defined component scope</li><li>Configurable product count</li><li>Integration support</li><li>Quote and signed order form</li></ul><a class="button button-secondary" href="https://console.open-e2ee.dev/contact?plan=growth">Schedule a meeting</a></article>
-        <article class="price-card"><p class="tier-label">Enterprise / OEM</p><h3>Enterprise / OEM commercial license</h3><p class="price"><strong>$50k+</strong><span>/ year</span></p><p class="price-description">Negotiated portfolio, redistribution, security, and support terms.</p><ul><li>Contract-defined component scope</li><li>Portfolio or OEM rights</li><li>Security review and SLA</li><li>MSA or signed order form</li></ul><a class="button button-secondary" href="https://console.open-e2ee.dev/contact?plan=enterprise">Schedule a meeting</a></article>
-      </div>
-      <p class="pricing-note">Prices shown are the proposed annual list prices for the named scope. The signed commercial agreement controls product scope, renewal, support, and usage rights.</p>
+  <section class="band">
+    <div class="container measure">
+      <figure class="quote">
+        <blockquote>Use outside of Signal is unsupported.</blockquote>
+        <figcaption>libsignal, the official implementation</figcaption>
+      </figure>
+      <p class="lead">So we built the one that is supported.</p>
     </div>
   </section>
 
-  <section class="section">
+  <section class="band band-surface">
     <div class="container">
-      <div class="cta-panel">
-        <div><p class="eyebrow">Begin with the protocol</p><h2>Build the integration before choosing infrastructure.</h2></div>
-        <a class="button" href="https://docs.open-e2ee.dev/getting-started">Open developer docs</a>
+      <div class="band-head">
+        <h2>Check the work</h2>
+        <p class="measure">
+          Not yet audited; an independent review is planned. Until then, every claim on this page
+          has something you can read behind it.
+        </p>
       </div>
+      <ul class="rows rows-single">
+        {trustLinks.map((link) => (
+          <li><a href={link.href}>{link.label}</a></li>
+        ))}
+      </ul>
     </div>
   </section>
 </BaseLayout>

@@ -1,44 +1,216 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import ProtocolFlow from '../components/ProtocolFlow.astro';
+import SignatureDiagram from '../components/SignatureDiagram.astro';
+import capture from '../data/carrier-capture.json';
+
+/*
+ * Every subpath and symbol on this page is copied from the SDK's own public
+ * surface. A marketing page that invents an import is a support ticket.
+ */
+const capabilities = [
+  {
+    title: 'Identity and trust',
+    body: 'One versioned X25519 and Ed25519 composite tuple is the trust object. Safety numbers, rotation, and fail-closed trust mutation once an identity is pinned.',
+    subpaths: ['./keys', './safety', './profile', './username'],
+  },
+  {
+    title: 'Sessions and messaging',
+    body: 'PQXDH establishment and the Double Ratchet, with post-quantum ratcheting, replay boundaries, skipped-key limits, and bounded state recovery.',
+    subpaths: ['.', './client', './client/compose', './client/headless'],
+  },
+  {
+    title: 'Devices and groups',
+    body: 'Multi-device fan-out, provisioning and transfer flows, group state, and sealed sender.',
+    subpaths: ['./device', './device/provisioning', './groups', './sealed-sender'],
+  },
+  {
+    title: 'Attachments and files',
+    body: 'Encrypted attachments and files with digest verification, retry decisions, and pointer metadata handled by the SDK.',
+    subpaths: ['./media', './files'],
+  },
+  {
+    title: 'Application integration',
+    body: 'Lifecycle hooks, blocking, server clock skew handling, and typed errors your application can act on.',
+    subpaths: ['./hooks', './blocking', './server-clock', './types'],
+  },
+  {
+    title: 'Anonymous group credentials',
+    body: 'ZK credential primitives, for products whose group membership should not be legible to the server.',
+    subpaths: ['./zk/groups', './zk/credentials'],
+  },
+];
+
+const adapters = [
+  {
+    role: 'Local store',
+    body: 'Where protocol state lives on the device.',
+    options: [
+      './local/store/expo',
+      './local/store/web',
+      './local/store/node',
+      './local/store/react-native',
+      './local/store/mock',
+    ],
+  },
+  {
+    role: 'Secret vault',
+    body: 'Where bootstrap secrets live, backed by a platform keystore.',
+    options: ['./local/vault', './local/vault/expo-secure-store'],
+  },
+  {
+    role: 'Relay',
+    body: 'How sealed envelopes reach the other device. Your backend, your contract.',
+    options: ['./remote/relay/convex', './remote/relay/mock', './remote/relay/types'],
+  },
+  {
+    role: 'Object store',
+    body: 'Where encrypted attachment bytes go.',
+    options: ['./remote/object-store/convex-r2', './remote/object-store/s3'],
+  },
+];
 ---
 
-<BaseLayout title="Product" description="A portable TypeScript SDK for encrypted messaging across browser, Node.js, and Expo applications.">
+<BaseLayout
+  title="Signal Protocol SDK"
+  description="Pure TypeScript Signal Protocol for Expo, React Native, browsers, and Node. Post-quantum PQXDH and the Double Ratchet, multi-device, groups, sealed sender, encrypted attachments."
+>
   <header class="page-hero">
-    <div class="container">
-      <p class="eyebrow">Product</p>
-      <h1>A protocol SDK, not an infrastructure dependency.</h1>
-      <p class="lead">Own application identity, session state, local secrets, and infrastructure composition while using one coherent JavaScript API.</p>
+    <div class="container measure">
+      <p class="label">Signal Protocol SDK</p>
+      <h1>The Signal Protocol, where your app actually runs.</h1>
+      <p class="lead">
+        Pure TypeScript. Expo, React Native, browsers, and Node. Post-quantum PQXDH and the Double
+        Ratchet, multi-device, groups, sealed sender, encrypted attachments. No native modules. No
+        prebuild step.
+      </p>
+      <p class="honesty">
+        It still sees metadata. We document exactly what, and what sealed sender does and
+        doesn&rsquo;t hide.
+      </p>
+      <p class="maturity">0.1.0-alpha.1 — public APIs and persisted formats may change before 1.0.</p>
+      <div class="actions">
+        <a class="cta-primary" href="https://docs.open-e2ee.dev/getting-started">
+          <span class="button">Build your first encrypted message</span>
+          <span class="cta-sublabel">two clients · no account · no server</span>
+        </a>
+        <a class="button button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
+          View the SDK on GitHub
+        </a>
+      </div>
     </div>
   </header>
 
-  <section class="section">
-    <div class="container">
-      <div class="feature-grid">
-        <article class="feature-card"><span class="feature-number">Identity</span><h3>Composite identity</h3><p>A versioned X25519 and Ed25519 identity tuple becomes the trust object used by storage, transcripts, prekeys, rotation, and safety numbers.</p></article>
-        <article class="feature-card"><span class="feature-number">Messaging</span><h3>Session protocols</h3><p>Build one-to-one and group messaging with explicit session state, replay boundaries, skipped-key limits, and recovery behavior.</p></article>
-        <article class="feature-card"><span class="feature-number">Runtime</span><h3>JavaScript environments</h3><p>Target modern browsers, Node.js, and Expo through runtime-specific storage and platform adapters rather than separate protocol implementations.</p></article>
+  <section class="band">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>Two clients, one relay, no account</h2>
+        <p class="measure">
+          The quickstart runs entirely on your machine against the development adapters. This is the
+          whole program.
+        </p>
       </div>
+      <div class="code-block">
+        <p class="code-filename">quickstart.ts</p>
+        <pre><code>{capture.quickstartCode}</code></pre>
+      </div>
+      <p class="muted measure">
+        <code>mockStore()</code> and <code>mockRelay()</code> are development adapters: in-memory, no
+        auth, no durability. Swap them for a real store and relay when the shape of your integration
+        is settled — the client code above does not change.
+      </p>
     </div>
   </section>
 
-  <section class="section section-subtle">
-    <div class="container"><ProtocolFlow /></div>
-  </section>
-
-  <section class="section">
-    <div class="container split-grid">
-      <article class="split-card"><p class="eyebrow">Included</p><h2>Portable client behavior</h2><ul><li>Identity and prekey lifecycle</li><li>Session establishment and ratcheting</li><li>Multi-device and group state</li><li>Safety-number generation and comparison</li><li>Storage and delivery contracts</li></ul></article>
-      <article class="split-card"><p class="eyebrow">Not imposed</p><h2>Your infrastructure choices</h2><ul><li>No required hosted relay</li><li>No required database vendor</li><li>No access to customer plaintext</li><li>No SDK phone-home requirement</li><li>No hidden control-plane dependency</li></ul></article>
+  <section class="band band-surface">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>What the package covers</h2>
+        <p class="measure">
+          One coherent API surface, imported by subpath so your bundle only carries what you use.
+        </p>
+      </div>
+      <ul class="rows">
+        {capabilities.map((item) => (
+          <li>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+            <p class="subpath-list">
+              {item.subpaths.map((path) => <code>{path}</code>)}
+            </p>
+          </li>
+        ))}
+      </ul>
     </div>
   </section>
 
-  <section class="section section-subtle">
-    <div class="container">
-      <div class="cta-panel">
-        <div><p class="eyebrow">Developer workflow</p><h2>Start with a local adapter and a test conversation.</h2></div>
-        <a class="button" href="https://docs.open-e2ee.dev/getting-started">Follow the quickstart</a>
+  <section class="band">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>Composition, not configuration</h2>
+        <p class="measure">
+          Four boundaries are yours. You pass adapters into <code>createSignalProtocolClient</code>;
+          the protocol logic above them never changes, and no credentials ever reach us.
+        </p>
       </div>
+      <dl class="definition-rows">
+        {adapters.map((adapter) => (
+          <div>
+            <dt>{adapter.role}</dt>
+            <dd>
+              {adapter.body}
+              <span class="subpath-list">
+                {adapter.options.map((path) => <code>{path}</code>)}
+              </span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p class="muted measure">
+        Browser and bare React Native stores are experimental; the Expo and Node stores are the
+        well-trodden paths. You can also implement <code>ISignalLocalStore</code> or{' '}
+        <code>ISignalRelayServer</code> yourself — they are documented interfaces, not internals.
+      </p>
+      <p class="text-links">
+        <a href="https://github.com/open-e2ee/signal-protocol-js/blob/main/ADAPTERS.md">
+          Adapter reference
+        </a>
+        <a href="https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/CLIENT_COMPOSITION.md">
+          Client composition guide
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>Where your data actually sits</h2>
+        <p class="measure">
+          Plaintext and private keys never leave a device outline. Your relay carries sealed
+          envelopes, and those envelopes still have addresses on them.
+        </p>
+      </div>
+      <div class="diagram">
+        <SignatureDiagram />
+      </div>
+      <p class="text-links">
+        <a href="/security">See exactly what the relay stores</a>
+        <a href="/learn">Learn how E2EE changes your app</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container measure stack">
+      <h2>Licensing</h2>
+      <p>
+        The complete SDK is available under AGPL-3.0. Proprietary products purchase annual
+        commercial production rights at a published price, starting at $5,000 per year.
+      </p>
+      <p class="text-links">
+        <a href="/pricing">License for closed source</a>
+        <a href="/licensing">Understand AGPL use</a>
+      </p>
     </div>
   </section>
 </BaseLayout>
