@@ -18,7 +18,14 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 });
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout
+  title={title}
+  description={description}
+  ogType="article"
+  publishedTime={publishedAt}
+  modifiedTime={updatedAt}
+  author={author}
+>
   <article>
     <header class="article-header">
       <div class="container article-column">
