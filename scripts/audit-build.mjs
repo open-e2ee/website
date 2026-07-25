@@ -33,6 +33,10 @@ const BANNED = [
   /\bnsa\b/i,
   /uncrackable/i,
   /absolutely secure/i,
+  /* Opaque Systems holds live OPAQUE marks in classes 9 and 42 covering
+   * privacy software, so this pairing must not be presented as the name of
+   * anything. The tagline's descriptive use of "opaque" alone is unaffected. */
+  /opaque[- ]carrier/i,
 ];
 
 const AUDIT_NEGATIONS = [/not yet audited/i, /no third-party security audit/i];
