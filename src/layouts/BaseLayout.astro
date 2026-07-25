@@ -35,17 +35,7 @@ const imageUrl = new URL(image, Astro.site);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <script is:inline>
-      (() => {
-        try {
-          const preference = localStorage.getItem('oe-theme') ?? 'system';
-          const systemDark = matchMedia('(prefers-color-scheme: dark)').matches;
-          const dark = preference === 'dark' || (preference === 'system' && systemDark);
-          document.documentElement.classList.toggle('dark', dark);
-          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-        } catch {}
-      })();
-    </script>
+    <script src="/theme-init.js" is:inline></script>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#faf7f3" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#090806" media="(prefers-color-scheme: dark)" />
