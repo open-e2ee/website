@@ -1,6 +1,6 @@
 {
   "package": "@open-e2ee/design",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "mark": "carrier",
   "variants": {
     "rule": "Use the optical variant from 16 to 31 px and the full mark from 32 px. Do not reproduce the mark below 16 px.",
@@ -18,7 +18,7 @@
       "1024": "full"
     }
   },
-  "sha256": "ce3c749d1e5e9ca20eadb96c5d94bda19e777aa33735e02d400b5e65fb3843e0",
+  "sha256": "eaf05050246e6331cf43d0493c6b0d16ab34dd6a801d3a7a4e14025a597d715e",
   "files": [
     "open-e2ee-favicon.svg",
     "open-e2ee-mark-adaptive-small.svg",
