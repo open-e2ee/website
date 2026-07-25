@@ -74,10 +74,10 @@ await alice.send('bob', 'Ship it Thursday. The staging key rotates at 09:00 UTC.
 
 Two things in that snippet carry the whole idea. `adapters.storage` is required, and it owns the local encryption state for exactly one user on one device — the identity keys, the prekeys, the session records, the ratchet state. `adapters.relay` is optional, and in a real app it is your backend. The asymmetry is deliberate: the SDK cannot work without a local store, and it can work without a server.
 
-The install command today is the GitHub tag, because npm publication is pending:
+Install it from npm:
 
 ```bash
-npm install github:open-e2ee/signal-protocol-js
+npm install @open-e2ee/signal-protocol-sdk
 ```
 
 The package is `@open-e2ee/signal-protocol-sdk` at `0.1.0-alpha.1` — public APIs and persisted formats may change before 1.0.
