@@ -103,10 +103,23 @@ for (const file of files) {
   }
 }
 
+// The CSP is script-src 'self' with no 'unsafe-inline': an inline script in
+// built HTML is silently dead in production. The theme resolver broke exactly
+// this way once; never again.
+for (const file of files) {
+  const html = await readFile(file, 'utf8');
+  const rel = relative(DIST, file);
+  for (const match of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+    if (match[1].trim().length > 0 && !match[0].includes('application/ld+json')) {
+      problems.push(`${rel}: inline script would be blocked by CSP script-src 'self'`);
+    }
+  }
+}
+
 if (problems.length > 0) {
   console.error(`Build audit failed (${problems.length}):`);
   for (const problem of problems) console.error(`  ${problem}`);
   process.exit(1);
 }
 
-console.log(`Build audit passed: ${files.length} pages, no banned claims, all internal links resolve.`);
+console.log(`Build audit passed: ${files.length} pages, no banned claims, all internal links resolve, no CSP-blocked inline scripts.`);
