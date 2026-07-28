@@ -55,9 +55,9 @@ npx expo install expo-sqlite expo-secure-store expo-crypto
 The Expo store needs to be told how to reach your database. You own the connection; the SDK owns the schema:
 
 ```ts
-import { configureSignalExpoDbBindings } from '@open-e2ee/signal-protocol-sdk/local/store/expo/db';
+import { configureSignalProtocolExpoDbBindings } from '@open-e2ee/signal-protocol-sdk/local/store/expo/db';
 
-configureSignalExpoDbBindings({
+configureSignalProtocolExpoDbBindings({
   getDrizzle: async () => drizzleDatabase,
   getRawDatabase: () => rawDatabase,
 });
@@ -104,7 +104,7 @@ This is the question the [`r/reactnative` thread](https://www.reddit.com/r/react
 
 Concretely, three places:
 
-**Expo SecureStore holds one small secret: the database key.** The SDK's vault wrapper is a class you construct directly, `new ExpoSecureStoreSignalSecretVault()` from `@open-e2ee/signal-protocol-sdk/local/vault/expo-secure-store`, with a three-method interface — `getSecret`, `setSecret`, `deleteSecret`. It takes no options because the keychain accessibility class is fixed rather than configurable: `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`. That constant is doing real work. `THIS_DEVICE_ONLY` keeps the secret out of iCloud Keychain backups, so it cannot be restored onto a different device; `AFTER_FIRST_UNLOCK` means background message processing still works when the phone is locked but not freshly rebooted.
+**Expo SecureStore holds one small secret: the database key.** The SDK's vault wrapper is a class you construct directly, `new ExpoSecureStoreSignalProtocolSecretVault()` from `@open-e2ee/signal-protocol-sdk/local/vault/expo-secure-store`, with a three-method interface — `getSecret`, `setSecret`, `deleteSecret`. It takes no options because the keychain accessibility class is fixed rather than configurable: `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`. That constant is doing real work. `THIS_DEVICE_ONLY` keeps the secret out of iCloud Keychain backups, so it cannot be restored onto a different device; `AFTER_FIRST_UNLOCK` means background message processing still works when the phone is locked but not freshly rebooted.
 
 **The SQLCipher-encrypted SQLite database holds everything else**: identity keys, contact trust records, EC and Kyber prekeys, session records, sender keys, message records, group state. It is encrypted at rest with the key from SecureStore, so the database file alone is not enough.
 
@@ -128,8 +128,11 @@ const signal = await createSignalProtocolClient({
   },
 });
 
-const status = await signal.checkPreKeyStatus(); // { remaining, needsReplenishment }
+const status = await signal.checkPreKeyStatus();
+// { oneTimePreKeysRemaining: number, needsReplenishment: boolean }
 ```
+
+One wrinkle worth knowing before you branch on that count: the check is throttled, and a throttled call returns `oneTimePreKeysRemaining: -1` with `needsReplenishment: false` rather than blocking or re-counting. Treat a negative count as "no reading this time," not as zero.
 
 `preKeyLowThreshold` defaults to 50 — half a batch. The other lifetime defaults are worth knowing because they are the ones you will tune: `keyRefreshIntervalMs` is 2 days, `maxPreKeyAgeMs` is 14 days, and `preKeyCheckThrottleMs` is 12 hours, so a foregrounded app checks at most twice a day rather than on every message. The 14-day maximum age against a 2-day refresh interval leaves a twelve-day recovery window for a device that has been offline.
 
