@@ -30,6 +30,17 @@ const differentiators = [
   },
 ];
 
+/*
+ * The runtime question is the first one a visitor has, and until now the
+ * answer was a sentence in the lead rather than a link. One quickstart per
+ * runtime, so "does it run where I run" is a click instead of a search.
+ */
+const runtimes = [
+  { href: 'https://docs.open-e2ee.dev/start/expo', label: 'Expo' },
+  { href: 'https://docs.open-e2ee.dev/start/browser', label: 'Browser' },
+  { href: 'https://docs.open-e2ee.dev/start/node', label: 'Node' },
+];
+
 const trustLinks = [
   { href: '/security', label: 'What the relay can and cannot see' },
   {
@@ -68,13 +79,18 @@ const trustLinks = [
         <div class="actions">
           <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
             <span class="button">Build your first encrypted message</span>
-            <span class="cta-sublabel">two clients · no account · no server</span>
+            <span class="cta-sublabel">ten minutes · two clients · no account</span>
           </a>
           <a class="button button-secondary" href="#what-the-relay-stores">See what the relay stores</a>
         </div>
+        <p class="platform-links">
+          <span>Start where you are:</span>
+          {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
+        </p>
         <p class="text-links">
           <a href="https://github.com/open-e2ee/signal-protocol-js">View the SDK on GitHub</a>
           <a href="/security">Read the security model</a>
+          <a href="/evaluate">Security review pack</a>
         </p>
       </div>
 
