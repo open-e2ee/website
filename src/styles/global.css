@@ -509,6 +509,18 @@ a:hover {
   font-weight: 500;
 }
 
+/* Sits directly under the tagline it qualifies, close enough to be read with
+ * it and quiet enough not to compete with it. Scoped under .footer-brand so it
+ * outranks the `.footer-brand p` colour and spacing it would otherwise take. */
+.footer-brand .footer-provisional {
+  margin-top: var(--oe-space-2);
+  color: var(--oe-subtle);
+  font-family: var(--oe-metadata-font-family);
+  font-weight: var(--oe-metadata-weight);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+}
+
 .footer-grid h2 {
   font-size: 0.75rem;
   font-family: var(--oe-metadata-font-family);
