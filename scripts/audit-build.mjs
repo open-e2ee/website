@@ -32,7 +32,6 @@ const BANNED = [
   /hipaa[- ]compliant/i,
   /soc ?2[- ]compliant/i,
   /gdpr[- ]compliant/i,
-  /\bfips\b/i,
   /production[- ]ready/i,
   /\bnsa\b/i,
   /uncrackable/i,
@@ -83,6 +82,25 @@ const AUDIT_NEGATIONS = [/not yet audited/i, /no third-party security audit/i];
 const AUDIT_MENTION =
   /\baudit(ed|able)\b|\b(?:security|third[- ]party|independent|external|formal|code)[- ](?:review[- ])?audits?\b/i;
 
+/*
+ * FIPS, on the same principle as "audited": what must be qualified is the
+ * claim, not the letters.
+ *
+ * This began as a flat ban on the word, which was the safe rule while nothing
+ * on the site had cause to say it. Two things now do. `FIPS 203` is simply the
+ * name of the NIST publication that standardises ML-KEM, and it appears in the
+ * pinned-specification table. And a security reviewer's own checklist asks the
+ * validation question directly — the verbal identity requires the honest
+ * answer, which cannot be given by a page forbidden to say the word.
+ *
+ * So: the publication numbers are free, and any other mention must sit on a
+ * page that also states the SDK is not validated. A compliance claim still
+ * fails, which is the thing the ban was protecting.
+ */
+const FIPS_PUBLICATION = /\bFIPS\s*20[345]\b/gi;
+const FIPS_MENTION = /\bFIPS\b/i;
+const FIPS_NEGATION = /\bnot\s+FIPS[\s-]?140[\s-]?[23]?[\s-]?(?:validated|certified)/i;
+
 async function htmlFiles(dir) {
   const found = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -132,6 +150,10 @@ for (const file of files) {
 
   if (AUDIT_MENTION.test(text) && !AUDIT_NEGATIONS.some((n) => n.test(text))) {
     problems.push(`${rel}: mentions an audit without the "not yet audited" qualifier`);
+  }
+
+  if (FIPS_MENTION.test(text.replace(FIPS_PUBLICATION, ' ')) && !FIPS_NEGATION.test(text)) {
+    problems.push(`${rel}: mentions FIPS without stating that the SDK is not FIPS 140-validated`);
   }
 
   for (const [, href] of html.matchAll(/href="([^"]+)"/g)) {
