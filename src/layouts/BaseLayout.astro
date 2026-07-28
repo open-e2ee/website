@@ -58,6 +58,12 @@ const imageUrl = new URL(image, Astro.site);
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
     <link rel="canonical" href={canonicalUrl} />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="OpenE2EE — Engineering journal"
+      href="/rss.xml"
+    />
     <link rel="icon" href="/brand/open-e2ee-favicon.svg" type="image/svg+xml" />
     <link rel="alternate icon" href="/brand/png/32/open-e2ee-mark-light.png" sizes="32x32" />
     <title>{siteTitle}</title>
