@@ -230,10 +230,13 @@ const comparison = [
         ))}
       </dl>
       <p class="muted measure">
-        Browser and bare React Native stores are experimental; the Expo and Node stores are the
-        well-trodden paths. You can also implement <code>ISignalProtocolLocalStore</code> or{' '}
-        <code>ISignalProtocolRelayServer</code> yourself — they are documented interfaces, not
-        internals.
+        Browser and bare React Native stores are experimental. The Expo store is the complete one —
+        it implements <code>ISignalProtocolLocalStore</code> in full. The Node store covers identity
+        keys, contact trust records, prekeys and sessions, which is what a single-device client, a
+        CLI, or a relay-side process needs; it does not yet cover sender keys, message records, or
+        multi-device state, so groups and multi-device need the Expo store today. You can also
+        implement <code>ISignalProtocolLocalStore</code> or <code>ISignalProtocolRelayServer</code>
+        yourself — they are documented interfaces, not internals.
       </p>
       <div class="callout measure">
         <p>

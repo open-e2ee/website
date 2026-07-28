@@ -126,6 +126,20 @@ test('offers the journal by feed as well as by page', async () => {
   assert.match(feed, /!data\.draft/);
 });
 
+test('does not let the Node store inherit the Expo store’s coverage', async () => {
+  const product = await flat('../src/pages/product.astro');
+
+  /* The SDK does multi-device and groups, and the site says so. It does them
+   * through the Expo store: NodeSignalProtocolStore carries no sender keys,
+   * message records, or device state, and does not declare `implements
+   * ISignalProtocolLocalStore`. Listing the two stores as equals let a reader
+   * combine two true sentences into a false one, which is the failure mode
+   * this page is most exposed to. */
+  assert.match(product, /does not yet cover sender keys, message records, or multi-device state/);
+  assert.match(product, /groups and multi-device need the Expo store today/);
+  assert.doesNotMatch(product, /the Expo and Node stores are the\s*well-trodden paths/);
+});
+
 test('gives every article its own share card, falling back to the site card', async () => {
   const [config, layout] = await Promise.all([
     flat('../src/content.config.ts'),
