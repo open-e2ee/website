@@ -100,7 +100,9 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           Our hosting and security providers may process IP address, request time, URL, referring
           page, browser and device information, authentication and session events, error
           information, and security signals. The console uses signed, secure cookies needed for
-          authentication, request integrity, and account access.
+          authentication, request integrity, and account access. The marketing site additionally
+          records a small set of anonymous events with no identifier attached, described in full in
+          <a href="#cookies">Cookies and analytics</a>.
         </p>
 
         <h2 id="use">3. How and why we use information</h2>
@@ -154,10 +156,34 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
 
         <h2 id="cookies">5. Cookies and analytics</h2>
         <p>
-          The public marketing site does not currently use advertising cookies or cross-site
-          behavioral analytics. The console uses essential authentication, security, and session
-          cookies. Cloudflare, Vercel, GitHub, and Stripe may use their own necessary security or
-          service cookies when you interact with their infrastructure or hosted pages.
+          The public marketing site sets no cookies, stores nothing in your browser, and uses no
+          advertising or cross-site behavioral analytics. It does measure which parts of the site
+          people use, and this section describes that measurement exactly, because a privacy notice
+          that describes it vaguely is not worth reading.
+        </p>
+        <p>
+          The site sends a short message to our own servers when one of nine things happens: you
+          open the quickstart, choose a runtime, copy the install command, follow the closing link
+          of an article or the architecture guide, open one of our GitHub repositories, view the
+          security model page, view the pricing page, open the console, or begin an enterprise
+          enquiry. Each message contains the name of the event, the path of the page it happened on,
+          and — for a runtime choice — which of the three runtimes it was. That is the whole
+          message.
+        </p>
+        <p>
+          It contains no identifier of any kind. We set no cookie, read no cookie, and write nothing
+          to local storage; we do not fingerprint your browser or device; we assign you no visitor
+          or session identifier; and your IP address is not recorded alongside these events. Because
+          there is nothing that distinguishes one visitor from another, these events cannot be
+          linked to you, to each other, or into a journey through the site, either by us or by
+          anyone who obtained the data. What they show is how many people took each step, and
+          nothing else. The measurement is handled by our own code on our own infrastructure, and no
+          third-party analytics service receives it.
+        </p>
+        <p>
+          The console uses essential authentication, security, and session cookies. Cloudflare,
+          Vercel, GitHub, and Stripe may use their own necessary security or service cookies when
+          you interact with their infrastructure or hosted pages.
         </p>
         <p>
           Because we do not sell or share information for targeted advertising, there is no
@@ -239,6 +265,12 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           new effective date and provide additional notice when a change is material. We will not
           apply a materially more permissive use or disclosure practice retroactively to previously
           collected information without appropriate notice and consent where required.
+        </p>
+        <p>
+          <strong>Version {privacyVersion}:</strong> the marketing site began recording the
+          anonymous usage events described in <a href="#cookies">Cookies and analytics</a>. No
+          cookie, storage, identifier, or IP-address record was introduced with them, and nothing
+          collected under an earlier version of this notice is affected.
         </p>
         <p>
           For privacy questions or requests, email{' '}

@@ -15,7 +15,7 @@ test('pins the first Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-07-23');
   assert.equal(commercialTermsPath, '/legal/terms/2026-07-23');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-07-23');
-  assert.equal(privacyVersion, '2026-07-23');
+  assert.equal(privacyVersion, '2026-07-28');
 });
 
 test('publishes a legal index and canonical current, versioned, and privacy routes', async () => {
