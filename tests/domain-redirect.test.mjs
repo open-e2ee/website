@@ -18,8 +18,18 @@ const aliases = [
   "www.opene2ee.dev",
 ];
 
+/*
+ * The configs are .jsonc and do carry comments, so they cannot go straight to
+ * JSON.parse. Strings are matched first in the alternation below, which is what
+ * keeps a "//" inside a value from being read as the start of a comment.
+ */
 function wranglerConfig(name) {
-  return JSON.parse(readFileSync(new URL(`../${name}`, import.meta.url), "utf8"));
+  const source = readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
+  const withoutComments = source.replace(
+    /("(?:\\.|[^"\\])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,
+    (match, string) => string ?? "",
+  );
+  return JSON.parse(withoutComments);
 }
 
 test("keeps canonical and redirect Worker host assignments disjoint", () => {

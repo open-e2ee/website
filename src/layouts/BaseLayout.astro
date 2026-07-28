@@ -70,6 +70,9 @@ const imageUrl = new URL(image, Astro.site);
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
+    {/* Deferred and external: nothing here should compete with the page, and
+        the CSP is script-src 'self' with no 'unsafe-inline'. */}
+    <script src="/measure.js" defer></script>
     <Header />
     <main id="main-content">
       <slot />
