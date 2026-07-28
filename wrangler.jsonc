@@ -9,10 +9,24 @@
       "custom_domain": true
     }
   ],
+  // The site is static; the Worker exists only to accept the measurement
+  // beacon. Every other request is passed to the asset server untouched.
+  "main": "./src/workers/site.ts",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+    "binding": "ASSETS",
+    "run_worker_first": ["/e"]
   },
+  // Writes are dropped silently until this dataset exists, so the site keeps
+  // working if the binding is missing. Analytics Engine has to be enabled on
+  // the account before the first deploy that carries this.
+  "analytics_engine_datasets": [
+    {
+      "binding": "MEASUREMENTS",
+      "dataset": "open_e2ee_website"
+    }
+  ],
   "observability": {
     "enabled": true
   }

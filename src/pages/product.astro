@@ -68,6 +68,70 @@ const adapters = [
     options: ['./remote/object-store/convex-r2', './remote/object-store/s3'],
   },
 ];
+
+/*
+ * Mirrored from the "How it compares" table in the SDK README, which is the
+ * maintained source and wins any disagreement. Every dated claim there was
+ * measured from the GitHub and npm registry APIs on 2026-07-24; repeating the
+ * measurement date rather than writing "currently" is what keeps this table
+ * honest as it ages. Each alternative is a real project doing a real job.
+ */
+const COMPARED_ON = '2026-07-24';
+
+const rivals = [
+  { name: '@open-e2ee/signal-protocol-sdk', ours: true },
+  { name: '@signalapp/libsignal-client', href: 'https://github.com/signalapp/libsignal' },
+  {
+    name: 'libsignal-protocol-javascript',
+    href: 'https://github.com/signalapp/libsignal-protocol-javascript',
+  },
+  {
+    name: '@privacyresearch/libsignal-protocol-typescript',
+    href: 'https://github.com/privacyresearchgroup/libsignal-protocol-typescript',
+  },
+  { name: 'ts-mls', href: 'https://github.com/LukaJCB/ts-mls' },
+];
+
+const comparison = [
+  {
+    axis: 'Expo / React Native',
+    cells: [
+      'Yes',
+      'No — Node native addon, prebuilt for Windows, macOS, and Linux only',
+      'No',
+      'No documented React Native path',
+      'Yes',
+    ],
+  },
+  {
+    axis: 'Maintained',
+    cells: [
+      'Yes — 0.1.0-alpha, active',
+      'Yes — very active',
+      'No — archived, last push 2021-08-04',
+      'No — last npm publish 2023-05-06, last repo push 2023-07-18',
+      'Yes — very active',
+    ],
+  },
+  {
+    axis: 'Post-quantum',
+    cells: [
+      'Yes — PQXDH with ML-KEM, default, fails closed',
+      'Yes',
+      'No',
+      'No',
+      'Yes',
+    ],
+  },
+  {
+    axis: 'TypeScript-native',
+    cells: ['Yes', 'No — Rust core with TypeScript bindings', 'No — JavaScript', 'Yes', 'Yes'],
+  },
+  {
+    axis: 'Commercial license offered',
+    cells: ['Yes', 'No — AGPL-3.0 only', 'No — GPL-3.0', 'No — GPL-3.0', 'Not needed — MIT'],
+  },
+];
 ---
 
 <BaseLayout
@@ -91,7 +155,7 @@ const adapters = [
       <div class="actions">
         <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
           <span class="button">Build your first encrypted message</span>
-          <span class="cta-sublabel">two clients · no account · no server</span>
+          <span class="cta-sublabel">ten minutes · two clients · no account</span>
         </a>
         <a class="button button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
           View the SDK on GitHub
@@ -166,10 +230,23 @@ const adapters = [
         ))}
       </dl>
       <p class="muted measure">
-        Browser and bare React Native stores are experimental; the Expo and Node stores are the
-        well-trodden paths. You can also implement <code>ISignalLocalStore</code> or{' '}
-        <code>ISignalRelayServer</code> yourself — they are documented interfaces, not internals.
+        Browser and bare React Native stores are experimental. The Expo store is the complete one —
+        it implements <code>ISignalProtocolLocalStore</code> in full. The Node store covers identity
+        keys, contact trust records, prekeys and sessions, which is what a single-device client, a
+        CLI, or a relay-side process needs; it does not yet cover sender keys, message records, or
+        multi-device state, so groups and multi-device need the Expo store today. You can also
+        implement <code>ISignalProtocolLocalStore</code> or <code>ISignalProtocolRelayServer</code>
+        yourself — they are documented interfaces, not internals.
       </p>
+      <div class="callout measure">
+        <p>
+          One caveat worth knowing before you plan a sprint: the encrypted local store uses{' '}
+          <code>expo-sqlite</code> with SQLCipher, and SQLCipher requires a development build — it
+          is not available in Expo Go. There is no native module of ours to link and{' '}
+          <code>npx expo prebuild</code> is not involved, but you do need a dev build rather than
+          the Expo Go sandbox.
+        </p>
+      </div>
       <p class="text-links">
         <a href="https://github.com/open-e2ee/signal-protocol-js/blob/main/ADAPTERS.md">
           Adapter reference
@@ -201,6 +278,54 @@ const adapters = [
   </section>
 
   <section class="band">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>How it compares</h2>
+        <p class="measure">
+          If something else fits your product, use it. These are the five axes this SDK was built
+          to change — not a quality ranking, and not an argument that the alternatives are bad at
+          what they do. Measured from the GitHub and npm registry APIs on {COMPARED_ON}.
+        </p>
+      </div>
+      <div class="table-scroll">
+        <table class="data">
+          <thead>
+            <tr>
+              <th scope="col">&nbsp;</th>
+              {rivals.map((rival) => (
+                <th scope="col">
+                  {rival.ours ? <code>{rival.name}</code> : <a href={rival.href}><code>{rival.name}</code></a>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {comparison.map((row) => (
+              <tr>
+                <th scope="row">{row.axis}</th>
+                {row.cells.map((cell) => <td>{cell}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="muted measure">
+        Two things the columns cannot say on their own. <code>ts-mls</code> implements MLS (RFC
+        9420), a different protocol with different properties — if MLS suits your product it is a
+        good library, and its MIT licence already permits proprietary use, so the last row is not a
+        cost it imposes. <code>@signalapp/libsignal-client</code> is the implementation Signal
+        Messenger itself uses, and its README states that use outside Signal Messenger is
+        unsupported.
+      </p>
+      <p class="text-links">
+        <a href="https://github.com/open-e2ee/signal-protocol-js#how-it-compares">
+          The maintained version of this table, with every measurement
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <section class="band band-surface">
     <div class="container measure stack">
       <h2>Licensing</h2>
       <p>

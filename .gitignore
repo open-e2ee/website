@@ -24,3 +24,11 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# Local checkouts of sibling repositories, dropped in here to read the SDK
+# surface against. They are separate git repositories with their own history —
+# ignored so they never enter this one, and excluded in tsconfig.json so
+# `astro check` does not try to type-check them.
+/signal-protocol-js*/
+/design*/
+/console*/

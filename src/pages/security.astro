@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SignatureDiagram from '../components/SignatureDiagram.astro';
+import { checks, dependencies, docs, reporting, specifications } from '../lib/assurance.mjs';
 
 const DOCS = 'https://github.com/open-e2ee/signal-protocol-js/blob/main';
 
@@ -191,6 +192,95 @@ const outOfScope = [
   <section class="band">
     <div class="container stack">
       <div class="band-head">
+        <h2>What there is to check</h2>
+        <p class="measure">
+          Everything above is a claim. These are the figures behind it, each with the date it was
+          measured, because an undated number stops being evidence the moment it ages.
+        </p>
+      </div>
+      <dl class="figure-rows">
+        <div>
+          <dt>{checks.assertions}</dt>
+          <dd>
+            assertions across {checks.modules} modules, {checks.failed} failing and {checks.skipped}{' '}
+            skipped, on {checks.measuredOn}. The checks live in the private engineering repository
+            this one is exported from; an export is only cut from a revision where they pass.
+          </dd>
+        </div>
+        <div>
+          <dt>{dependencies.direct}</dt>
+          <dd>
+            direct production dependencies, resolving to {dependencies.resolved} packages in total.
+            The published repository runs a build, a typecheck, and a production-tree advisory audit
+            on every change.
+          </dd>
+        </div>
+        <div>
+          <dt>{specifications.length}</dt>
+          <dd>
+            published specifications the implementation profile is pinned to, by revision, in the
+            table below.
+          </dd>
+        </div>
+        <div>
+          <dt>{reporting.acknowledgment}</dt>
+          <dd>
+            to acknowledge a vulnerability report sent to{' '}
+            <a href={`mailto:${reporting.address}`}>{reporting.address}</a>, and{' '}
+            {reporting.assessment} to an initial assessment.
+          </dd>
+        </div>
+      </dl>
+      <p class="muted measure">
+        What those checks are, in the terms used elsewhere on this site: cryptographic known-answer
+        checks for ML-KEM, hashing, AEAD, and signature primitives against published vector data;
+        conformance scenarios for session, group, and sealed-sender invariants, checked against
+        known-answer material and against behaviour documented in the published specifications;
+        property-based checks over protocol and encoding invariants; multi-device, group lifecycle,
+        provisioning, and relay-delivery integration flows; every storage, relay, and object-store
+        adapter; and the quickstart printed in the README, executed as written on every change.
+      </p>
+      <p class="text-links">
+        <a href={docs.assurance}>Assurance — what runs, what is not published, and why</a>
+        <a href="/evaluate">The full security review pack</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>Specifications, pinned by revision</h2>
+        <p class="measure">
+          The implementation follows its own versioned profile, based on these published
+          specifications at these revisions. Mirrored from the SDK README, which is the maintained
+          source.
+        </p>
+      </div>
+      <div class="table-scroll">
+        <table class="data">
+          <thead>
+            <tr>
+              <th scope="col">Specification</th>
+              <th scope="col">Revision</th>
+            </tr>
+          </thead>
+          <tbody>
+            {specifications.map((spec) => (
+              <tr>
+                <th scope="row"><a href={spec.href}>{spec.name}</a></th>
+                <td>{spec.revision}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container stack">
+      <div class="band-head">
         <h2>Limits we publish rather than bury</h2>
       </div>
       <dl class="definition-rows">
@@ -200,6 +290,16 @@ const outOfScope = [
             No third-party security audit has been performed. An independent review is planned. The
             codebase is structured for review — narrow state transitions, injectable adapters, small
             protocol seams — but structure is not certification.
+          </dd>
+        </div>
+        <div>
+          <dt>Not a validated cryptographic module</dt>
+          <dd>
+            Pure-JavaScript cryptography is not FIPS 140-validated, and no part of this SDK is
+            offered as a validated module. The ML-KEM implementation follows FIPS 203, but
+            following a standard and being validated against it are different things, and only the
+            second satisfies a programme that requires validation. If yours does, this is the wrong
+            choice, and it is better to know now.
           </dd>
         </div>
         <div>

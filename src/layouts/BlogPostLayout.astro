@@ -8,9 +8,10 @@ interface Props {
   updatedAt?: Date;
   author: string;
   tags: string[];
+  image?: string;
 }
 
-const { title, description, publishedAt, updatedAt, author, tags } = Astro.props;
+const { title, description, publishedAt, updatedAt, author, tags, image } = Astro.props;
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   day: 'numeric',
@@ -21,6 +22,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 <BaseLayout
   title={title}
   description={description}
+  image={image}
   ogType="article"
   publishedTime={publishedAt}
   modifiedTime={updatedAt}

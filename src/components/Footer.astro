@@ -9,6 +9,7 @@ const groups = [
     links: [
       { href: '/product', label: 'Signal Protocol SDK' },
       { href: '/security', label: 'Security model' },
+      { href: '/evaluate', label: 'Security review pack' },
       { href: '/pricing', label: 'Pricing' },
       { href: '/licensing', label: 'Licensing' },
     ],
@@ -40,6 +41,13 @@ const groups = [
       <div class="footer-brand">
         <a class="brand-link" href="/"><Lockup /></a>
         <p class="footer-tagline">Opaque to the relay. Open to inspection.</p>
+        {/*
+          The design contract requires any surface using the taglines to say
+          they are proposed, because founder sign-off has not landed. Stated
+          once, quietly, next to the line it qualifies — a claim about our own
+          brand that we would not let a vendor make unqualified.
+        */}
+        <p class="footer-provisional">Brand language is provisional — taglines are proposed, pending sign-off.</p>
         <p>
           Open-source, protocol-level end-to-end encryption SDKs for TypeScript developers. AGPL-3.0
           for open source; commercial licenses for proprietary products.
