@@ -38,7 +38,7 @@
     <text x="40" y="558" fill="#090806" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="20" font-weight="600" letter-spacing="1.4">LIGHT MODE</text>
   </g>
   <g transform="translate(640 40)">
-    <rect width="560" height="600" fill="#090806"/>
+    <rect width="560" height="600" fill="#0f0e0b"/>
     <g transform="translate(120 40) scale(0.625)">
       <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#f4f1eb"/>
       <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#f4f1eb"/>

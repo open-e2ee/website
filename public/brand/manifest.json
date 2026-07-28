@@ -1,6 +1,6 @@
 {
   "package": "@open-e2ee/design",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "mark": "carrier",
   "variants": {
     "rule": "Use the optical variant from 16 to 31 px and the full mark from 32 px. Do not reproduce the mark below 16 px.",
@@ -18,8 +18,154 @@
       "1024": "full"
     }
   },
-  "sha256": "eaf05050246e6331cf43d0493c6b0d16ab34dd6a801d3a7a4e14025a597d715e",
+  "lockups": {
+    "rule": "Lockup proportions are derived from the symbol height S and the Public Sans cap height; see DESIGN.md.",
+    "symbolSize": 128,
+    "wordmarkCapHeight": 79.36,
+    "wordmarkFontSize": 109.76,
+    "symbolGap": 48,
+    "stackedGap": 39.68,
+    "productFontSize": 68.05,
+    "productBaselineDrop": 123.01,
+    "note": "SVG only, and the wordmark is live text: a lockup needs Public Sans available to render as drawn.",
+    "assets": [
+      {
+        "lockup": "symbol",
+        "mode": "light",
+        "svg": "lockup/open-e2ee-lockup-symbol-light.svg",
+        "width": 160,
+        "height": 160
+      },
+      {
+        "lockup": "symbol",
+        "mode": "dark",
+        "svg": "lockup/open-e2ee-lockup-symbol-dark.svg",
+        "width": 160,
+        "height": 160
+      },
+      {
+        "lockup": "symbol",
+        "mode": "mono",
+        "svg": "lockup/open-e2ee-lockup-symbol-mono.svg",
+        "width": 160,
+        "height": 160
+      },
+      {
+        "lockup": "horizontal",
+        "mode": "light",
+        "svg": "lockup/open-e2ee-lockup-horizontal-light.svg",
+        "width": 753.09,
+        "height": 160
+      },
+      {
+        "lockup": "horizontal",
+        "mode": "dark",
+        "svg": "lockup/open-e2ee-lockup-horizontal-dark.svg",
+        "width": 753.09,
+        "height": 160
+      },
+      {
+        "lockup": "horizontal",
+        "mode": "mono",
+        "svg": "lockup/open-e2ee-lockup-horizontal-mono.svg",
+        "width": 753.09,
+        "height": 160
+      },
+      {
+        "lockup": "stacked",
+        "mode": "light",
+        "svg": "lockup/open-e2ee-lockup-stacked-light.svg",
+        "width": 577.09,
+        "height": 303.74
+      },
+      {
+        "lockup": "stacked",
+        "mode": "dark",
+        "svg": "lockup/open-e2ee-lockup-stacked-dark.svg",
+        "width": 577.09,
+        "height": 303.74
+      },
+      {
+        "lockup": "stacked",
+        "mode": "mono",
+        "svg": "lockup/open-e2ee-lockup-stacked-mono.svg",
+        "width": 577.09,
+        "height": 303.74
+      },
+      {
+        "lockup": "product",
+        "mode": "light",
+        "svg": "lockup/open-e2ee-lockup-product-light.svg",
+        "width": 753.09,
+        "height": 274
+      },
+      {
+        "lockup": "product",
+        "mode": "dark",
+        "svg": "lockup/open-e2ee-lockup-product-dark.svg",
+        "width": 753.09,
+        "height": 274
+      },
+      {
+        "lockup": "product",
+        "mode": "mono",
+        "svg": "lockup/open-e2ee-lockup-product-mono.svg",
+        "width": 753.09,
+        "height": 274
+      }
+    ]
+  },
+  "social": {
+    "rule": "One card per repository, generated from brand/source/social-cards.json. Plate rows are copy about the repository named in `subject`.",
+    "size": {
+      "width": 1280,
+      "height": 640
+    },
+    "assets": [
+      {
+        "slug": "open-e2ee-design-og",
+        "subject": "@open-e2ee/design",
+        "title": "OpenE2EE Design",
+        "svg": "social/open-e2ee-design-og.svg",
+        "png": "social/open-e2ee-design-og.png"
+      },
+      {
+        "slug": "open-e2ee-signal-protocol-sdk-og",
+        "subject": "open-e2ee/signal-protocol-js",
+        "title": "OpenE2EE Signal Protocol SDK",
+        "svg": "social/open-e2ee-signal-protocol-sdk-og.svg",
+        "png": "social/open-e2ee-signal-protocol-sdk-og.png"
+      },
+      {
+        "slug": "open-e2ee-website-og",
+        "subject": "open-e2ee/website",
+        "title": "OpenE2EE",
+        "svg": "social/open-e2ee-website-og.svg",
+        "png": "social/open-e2ee-website-og.png"
+      },
+      {
+        "slug": "open-e2ee-org-og",
+        "subject": "github.com/open-e2ee",
+        "title": "OpenE2EE",
+        "svg": "social/open-e2ee-org-og.svg",
+        "png": "social/open-e2ee-org-og.png"
+      }
+    ]
+  },
+  "sha256": "be6288c322764836b3048aeb670829dc8ab7dad083f5b3fd2f6de11514c6fcba",
   "files": [
+    "lockup/open-e2ee-lockup-horizontal-dark.svg",
+    "lockup/open-e2ee-lockup-horizontal-light.svg",
+    "lockup/open-e2ee-lockup-horizontal-mono.svg",
+    "lockup/open-e2ee-lockup-product-dark.svg",
+    "lockup/open-e2ee-lockup-product-light.svg",
+    "lockup/open-e2ee-lockup-product-mono.svg",
+    "lockup/open-e2ee-lockup-stacked-dark.svg",
+    "lockup/open-e2ee-lockup-stacked-light.svg",
+    "lockup/open-e2ee-lockup-stacked-mono.svg",
+    "lockup/open-e2ee-lockup-symbol-dark.svg",
+    "lockup/open-e2ee-lockup-symbol-light.svg",
+    "lockup/open-e2ee-lockup-symbol-mono.svg",
     "open-e2ee-favicon.svg",
     "open-e2ee-mark-adaptive-small.svg",
     "open-e2ee-mark-adaptive.svg",
@@ -45,6 +191,12 @@
     "png/64/open-e2ee-mark-light.png",
     "social/open-e2ee-design-og.png",
     "social/open-e2ee-design-og.svg",
+    "social/open-e2ee-org-og.png",
+    "social/open-e2ee-org-og.svg",
+    "social/open-e2ee-signal-protocol-sdk-og.png",
+    "social/open-e2ee-signal-protocol-sdk-og.svg",
+    "social/open-e2ee-website-og.png",
+    "social/open-e2ee-website-og.svg",
     "svg/open-e2ee-mark-dark-small.svg",
     "svg/open-e2ee-mark-dark.svg",
     "svg/open-e2ee-mark-light-small.svg",

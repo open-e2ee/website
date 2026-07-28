@@ -348,16 +348,18 @@ a:hover {
 .lockup {
   display: inline-flex;
   align-items: center;
-  gap: 0.375em;
+  /* symbolGap / wordmarkFontSize from the design manifest: 48 / 109.76 */
+  gap: 0.437em;
   font-size: 1.25rem;
   line-height: 1;
   color: var(--oe-foreground);
 }
 
 .lockup .oe-mark {
-  /* Symbol-to-wordmark proportion from the design contract: cap height 0.62 S. */
-  width: 1.55em;
-  height: 1.55em;
+  /* Contract ratios are of the symbol height S, not the font size:
+     S / wordmarkFontSize = 128 / 109.76 per brand/generated/manifest.json. */
+  width: 1.166em;
+  height: 1.166em;
   flex: none;
 }
 
