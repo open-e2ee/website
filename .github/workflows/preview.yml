@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   deployments: write
+  pull-requests: write
 
 concurrency:
   group: preview-${{ github.event.pull_request.number }}
@@ -17,7 +18,9 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment: preview
+    environment:
+      name: preview
+      url: ${{ steps.preview.outputs.deployment-url }}
     steps:
       - uses: actions/checkout@v7
 
@@ -50,3 +53,92 @@ jobs:
             echo
             echo "[$PREVIEW_URL]($PREVIEW_URL)"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update the pull request comment
+        if: always()
+        uses: actions/github-script@v9
+        env:
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.event.pull_request.head.sha }}
+          JOB_STATUS: ${{ job.status }}
+          PREVIEW_OUTCOME: ${{ steps.preview.outcome }}
+          PREVIEW_URL: ${{ steps.preview.outputs.deployment-url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const marker = '<!-- cloudflare-preview -->';
+            const { owner, repo } = context.repo;
+            const pullNumber = context.issue.number;
+            const sourceSha = process.env.SOURCE_SHA;
+            const shortSha = sourceSha.slice(0, 7);
+
+            const { data: pull } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+
+            if (pull.head.sha !== sourceSha) {
+              core.notice(`Skipped the preview comment for stale commit ${sourceSha}.`);
+              return;
+            }
+
+            const previewReady =
+              process.env.PREVIEW_OUTCOME === 'success' &&
+              Boolean(process.env.PREVIEW_URL);
+            const commitLink = `[\`${shortSha}\`](${process.env.COMMIT_URL})`;
+            const logLink = `[View workflow logs](${process.env.RUN_URL})`;
+            let body;
+
+            if (previewReady) {
+              body = `${marker}
+            ### Cloudflare preview
+
+            ✅ The preview URL now serves commit ${commitLink}.
+
+            [View preview](${process.env.PREVIEW_URL}) | ${logLink}
+
+            The stable URL updates after each successful deployment.`;
+            } else {
+              const status = process.env.JOB_STATUS === 'cancelled'
+                ? 'GitHub Actions cancelled'
+                : 'The preview workflow failed for';
+              const result = process.env.JOB_STATUS === 'cancelled'
+                ? `${status} the preview workflow for commit ${commitLink}.`
+                : `${status} commit ${commitLink}.`;
+
+              body = `${marker}
+            ### Cloudflare preview
+
+            ❌ ${result}
+
+            ${logLink}
+
+            This workflow did not update the stable preview URL.`;
+            }
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: pullNumber, per_page: 100 },
+            );
+            const existing = comments.find(
+              (comment) =>
+                comment.user?.login === 'github-actions[bot]' &&
+                comment.body?.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                body,
+              });
+            }
