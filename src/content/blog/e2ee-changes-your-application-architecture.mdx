@@ -1,6 +1,6 @@
 ---
 title: E2EE changes your application architecture
-description: The crypto is the small part. Search, notifications, moderation, and recovery all move to the device. Learn what teams reported and which patterns replace server-side work.
+description: The crypto is the small part. Search, notifications, moderation and recovery all move to the device — here is what the teams who shipped it actually reported, and the patterns that replace what you lose.
 image: /social/blog/e2ee-changes-your-application-architecture.png
 publishedAt: 2026-07-25
 author: OpenE2EE
@@ -12,11 +12,11 @@ tags:
 
 import WhereWorkMoves from '../../components/diagrams/WhereWorkMoves.astro';
 
-**Who this is for:** an engineer or technical founder who might add end-to-end encryption to an existing product. You need to know the cost before you commit. This article is not a protocol explainer. The protocol has good documentation.
+**Who this is for:** an engineer or technical founder deciding whether to add end-to-end encryption to a product that already exists, who needs to know what it costs before committing. Not a protocol explainer. The protocol is the part with good documentation.
 
 Teams budget for the cryptography. Then they discover the cryptography was the small part.
 
-Timothy Buck described this cost after working on end-to-end encryption for Meta's Messenger:
+The clearest statement of this comes from Timothy Buck, who worked on end-to-end encryption for Meta's Messenger:
 
 > People have come to expect a large number of features in Messenger, across messaging and calling, well over 100. And each of those had to be redesigned and rebuilt. Obviously, originally they were very server-centric. **A lot of the logic was on the server and that doesn't work anymore.**
 >
@@ -28,14 +28,15 @@ That is the whole article in one quote. What follows is the inventory: what stop
 
 The organising idea comes from Ink & Switch's local-first essay: "The key difference between traditional systems and local-first systems is not an absence of servers, but a change in their responsibilities." ([Ink & Switch](https://www.inkandswitch.com/essay/local-first/))
 
-In a conventional application, the server holds the authoritative copy and the client holds a cache. End-to-end encryption inverts this relationship. The device holds the authoritative, readable copy. The relay holds an encrypted replica that it cannot interpret and routes envelopes between devices. Your infrastructure remains. The *work* moves across the boundary.
+In a normal application the server holds the authoritative copy and the client holds a cache. Under end-to-end encryption that inverts. The device holds the authoritative, readable copy; the server holds an encrypted replica it cannot interpret and routes envelopes between devices. Nothing about your infrastructure disappears. What changes is which side of the boundary the *work* happens on.
 
 <figure class="diagram">
   <WhereWorkMoves />
   <figcaption>
-    The same three pieces of work appear in both rows. The server-authoritative row has no trust
-    boundary, so plaintext reaches the server. In the device-authoritative row, the work sits inside
-    the device outline. The middle is a relay that routes envelopes.
+    The same three pieces of work in both rows. In the server-authoritative row there is no trust
+    boundary at all, which is why plaintext reaches the server. In the device-authoritative row the
+    work has moved inside the device outline and the middle has become a relay that routes
+    envelopes.
   </figcaption>
 </figure>
 
@@ -43,49 +44,41 @@ In a conventional application, the server holds the authoritative copy and the c
 
 **Week one: `WHERE content LIKE '%...%'` stops existing.** Search is the first casualty and the one users notice fastest. So do link previews, thumbnail generation, profanity filters, auto-tagging, and anything else that reads the body of a record. They have no input any more.
 
-**Week two: push notifications go quiet.** Your push provider cannot render "Sarah: are we still on for 3pm?" because it cannot read the message. Instead, send a contentless push that wakes the app. The app decrypts the message locally and rewrites the notification. On iOS, the app does this work inside a `UNNotificationServiceExtension`.
+**Week two: push notifications go quiet.** Your push provider cannot render "Sarah: are we still on for 3pm?" because it cannot read the message. What you send instead is a contentless push that wakes the app, and the app decrypts locally and rewrites the notification — on iOS inside a `UNNotificationServiceExtension`, which is a separate process with its own keychain access, seconds of execution budget, and no access to your JavaScript runtime. Apple and Google document the pieces; almost nobody documents assembling them for a React Native app.
 
-This extension is a separate process with its own keychain access. It has seconds of execution budget and cannot access your JavaScript runtime. Apple and Google document the parts. Few sources explain how to assemble them for a React Native app.
+**Month one: the admin dashboard becomes a row count.** Support cannot "log in as user" any more — not as a policy choice, but by construction. Every internal tool that read customer content needs a different design, usually one where the user exports or shares their own data.
 
-**Month one: the admin dashboard becomes a row count.** Support cannot "log in as user" because the architecture prevents it. Every internal tool that read customer content needs a different design. Usually, the user must export or share their own data.
+**Month three: moderation.** This is the single most common objection from enterprise buyers, and the answer is that moderation must be *redesigned*, not abandoned. The techniques that survive an encrypted channel are user reporting with cryptographic message franking — a construction that lets a reporting user prove to you that a specific message really was sent by a specific sender, so reports cannot be forged — plus metadata-based abuse signals like rate and fan-out. [Academic work on the problem](https://arxiv.org/abs/2202.04617) converges on the same two. You lose proactive content scanning; you keep reactive enforcement with better evidence than a screenshot.
 
-**Month three: moderation.** Enterprise buyers most often object to moderation. An encrypted channel requires a new moderation design. One approach combines user reporting with cryptographic message franking. Message franking lets a reporting user prove that a specific sender sent a specific message. This proof prevents forged reports.
-
-Another approach uses metadata-based abuse signals such as rate and fan-out. [Academic work on the problem](https://arxiv.org/abs/2202.04617) supports both approaches. You lose proactive content scanning. You keep reactive enforcement with better evidence than a screenshot.
-
-**Month six: a keypair is not a user.** Your `users` table becomes a directory of public keys. A person is a changing set of devices, not one account row. Every protocol decision must name the applicable device.
+**Month six: a keypair is not a user.** Your `users` table degrades into a directory of public keys, and you discover that a human being is a changing set of devices rather than an account row. Every protocol decision then has to name which device it means.
 
 ## Somebody else already published the bill
 
-Two companies documented enough of the cost to support planning.
+Two companies have documented the cost honestly enough to plan against.
 
-**Zoom publishes its feature-loss list.** Zoom's [meeting documentation](https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0065408) lists unavailable features when a host enables E2EE: "Zoom AI features, Cloud recording, Meeting chat before and after the meeting, Live streaming, Live transcription, Polling and Surveys, Zoom Apps, Zoom Notes, Zoom Whiteboard." This list covers much of Zoom's product differentiation. Each feature needs a server that can see the meeting.
+**Zoom publishes its feature-loss list.** Zoom's support documentation for [end-to-end encryption in meetings](https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0065408) names what stops working when a host enables E2EE: "Zoom AI features, Cloud recording, Meeting chat before and after the meeting, Live streaming, Live transcription, Polling and Surveys, Zoom Apps, Zoom Notes, Zoom Whiteboard." Read that list again as what it is — most of Zoom's product-differentiation surface. Every one of those features needs a server that can see the meeting.
 
-**Discord published the lab-versus-field gap.** Discord described its DAVE rollout for voice and video: "The initial proof-of-concept worked well and DAVE's encryption functioned as expected in controlled tests. However, when we tried using DAVE in real Discord calls, it stopped working." ([Discord](https://discord.com/blog/bringing-dave-to-all-discord-platforms)) A working prototype does not show that production is close.
+**Discord published the lab-versus-field gap.** On rolling out DAVE, their end-to-end encryption for voice and video: "The initial proof-of-concept worked well and DAVE's encryption functioned as expected in controlled tests. However, when we tried using DAVE in real Discord calls, it stopped working." ([Discord](https://discord.com/blog/bringing-dave-to-all-discord-platforms)) A working prototype is not evidence that you are close.
 
-Meta announced plans for default end-to-end encryption in Messenger in 2019. It made E2EE the default [about four and a half years later](https://engineering.fb.com/2023/12/06/security/building-end-to-end-security-for-messenger/).
-
-Meta was still revising the backup protocol in [May 2026](https://engineering.fb.com/2026/05/11/security/labyrinth-1-1-end-to-end-encrypted-e2ee-backups-more-reliable/). Labyrinth 1.1 lets messages reach encrypted backup as users send them. Previously, backup waited for a device to return online. Meta continued to improve lost-phone reliability two and a half years after launch.
+And on timelines: Meta announced the intent to make Messenger end-to-end encrypted in 2019, shipped it as the default in December 2023 — [about four and a half years](https://engineering.fb.com/2023/12/06/security/building-end-to-end-security-for-messenger/) — and was still revising the backup protocol in [May 2026](https://engineering.fb.com/2026/05/11/security/labyrinth-1-1-end-to-end-encrypted-e2ee-backups-more-reliable/), shipping Labyrinth 1.1 so messages could reach encrypted backup as they are sent rather than waiting for a device to come back online. That is a company with essentially unlimited cryptography talent, still iterating on "do messages reliably survive a lost phone" two and a half years after launch.
 
 Your product is smaller than Messenger. The point is not the absolute duration. It is that the long pole is the application layer, not the protocol.
 
 ## The patterns that replace what you lose
 
-Teams use established patterns for these problems.
+The good news is that these are known problems with known shapes.
 
-**Search moves to the device and needs a local store.** Only the device can read messages, so it needs an index. The OpenE2EE Signal Protocol SDK makes `storage` required and `relay` optional. The local encrypted store contains application state. Proton downloads and decrypts the mailbox, then indexes it locally. Proton says this "may take a few minutes and can be quite resource-intensive" ([Proton](https://proton.me/support/search-message-content)). Include that experience in the product plan.
+**Search moves to the device, which means you need a real local store.** Once messages are only readable on the device, the device needs an index. This is why the SDK makes `storage` a required adapter and `relay` an optional one: a local encrypted store is not an optimisation, it is where the application lives. Proton, which has invested the most in encrypted search, downloads and decrypts the mailbox and indexes it locally, and is candid that this "may take a few minutes and can be quite resource-intensive" ([Proton](https://proton.me/support/search-message-content)). Budget for that experience rather than discovering it.
 
 **Notification content moves to the extension.** Send a wake-up, decrypt locally, rewrite the notification body. Design a sensible fallback for the case where decryption fails or the budget expires, because it will.
 
-**Analytics moves to counts and shapes.** Envelope volume, delivery latency, error rates, and session establishment failures remain visible and useful. Content-derived metrics are gone.
+**Analytics moves to counts and shapes.** Envelope volume, delivery latency, error rates, session establishment failures — all still visible, all still useful. Content-derived metrics are gone.
 
-**Sync becomes convergence rather than commitment.** Devices go offline, and messages arrive out of order. The relay cannot compact unreadable records, so the operation log grows. One developer summarized work on an encrypted local-first app: "Synchronization has been my nightmare for the past couple of months. I have rewritten it a couple of times and still not fully satisfied." ([Roman Zaynetdinov](https://www.zaynetro.com/post/how-to-build-e2ee-local-first-app))
+**Sync becomes convergence rather than commitment.** Devices go offline, messages arrive out of order, and the server cannot compact what it cannot read, so the op log grows. One developer's summary after building an encrypted local-first app: "Synchronization has been my nightmare for the past couple of months. I have rewritten it a couple of times and still not fully satisfied." ([Roman Zaynetdinov](https://www.zaynetro.com/post/how-to-build-e2ee-local-first-app))
 
-**Encrypted state creates distinct failure modes.** Each decrypt advances the ratchet, so the app must persist session state atomically. A partial write can corrupt that state beyond recovery. A common production symptom is a "Bad MAC" error.
+**New failure modes become first-class.** Session state must persist atomically, because a decrypt mutates the ratchet and a partial write corrupts it irrecoverably. The signature production failure is a "Bad MAC" error, and it fails *silently*: one gateway logged [a burst of 479 such exceptions](https://github.com/openclaw/openclaw/issues/14146) while believing it was connected and listening. Matrix's meta-issue for undecryptable messages [catalogues over 70 distinct causes](https://github.com/element-hq/element-meta/issues/245), and notes that debugging one generally requires logs from both the sender and the receiver. Testing encrypted failure paths is not optional polish.
 
-One gateway logged [a burst of 479 such exceptions](https://github.com/openclaw/openclaw/issues/14146) while its status still showed connected and listening. Matrix's meta-issue [catalogues over 70 causes](https://github.com/element-hq/element-meta/issues/245) of undecryptable messages. It says diagnosis generally requires logs from both the sender and receiver. Test encrypted failure paths before release.
-
-**Observability must stay outside the plaintext.** Element shipped a bug that wrote "the private part of the backup key pair" to application debug logs. The issue affected 156 users' key material ([Element](https://element.io/blog/security-release-element-x-android-0-4-12-and-ios-1-6-7/)). Log envelope ids, session states, and error codes. Never log key material. Add a test that rejects it.
+**Observability has to stay outside the plaintext — and the obvious shortcut is a vulnerability.** Element shipped a bug where "the private part of the backup key pair" was written to application debug logs, affecting 156 users' key material before it was caught ([Element](https://element.io/blog/security-release-element-x-android-0-4-12-and-ios-1-6-7/)). Log envelope ids, session states, and error codes. Never log key material, and write a test that asserts you do not.
 
 ## Recovery is a day-one decision you will discover in month twelve
 
@@ -95,13 +88,11 @@ There is no universally correct answer, and you should be suspicious of any libr
 
 The useful move is to pick a named profile deliberately rather than to drift into one:
 
-- **A server-confidential business archive** prioritises continuity. History survives device loss, and multiple devices see everything. The recovery path is a target for coercion or account compromise. This profile can fit a team collaboration product.
-- **A higher-risk messaging profile** limits recoverable data. Lose the device and lose the history. A new device starts empty. This profile can fit a threat model that includes device seizure.
+- **A server-confidential business archive** prioritises continuity. History survives device loss, multiple devices see everything, and the recovery path is a real target for coercion or account compromise. Defensible for a team collaboration product.
+- **A higher-risk messaging profile** limits what is recoverable. Lose the device and lose the history; a new device starts empty. Defensible when the threat model includes device seizure.
 - **A collaboration profile** sits between them, balancing offline work, membership changes, and recovery, and usually accepts more complexity than either.
 
-The SDK provides device-to-device transfer, encrypted backup primitives, and QR-based provisioning for linked devices. Device transfer clones the identity private key and live ratchet state. If both devices remain active, a peer message that one device decrypts desynchronizes the other. Cloned state also weakens the forward-secrecy bound because one endpoint compromise exposes state that the other device shares. The [deviations document](https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/DEVIATIONS.md#54-extensions-provisioning-transfer-device-names) records both limits.
-
-The SDK does not choose the recovery policy. That product policy determines what users lose. [Recovery, backup, and migration](https://docs.open-e2ee.dev/build/recovery-backup-migration) compares the profiles.
+The SDK gives you device-to-device transfer and encrypted backup primitives, and QR-based provisioning for linked devices. It does not silently choose the policy, because the policy is a product decision about what your users should lose, and a library that made it for you would be making it wrong for someone. [Recovery, backup, and migration](https://docs.open-e2ee.dev/build/recovery-backup-migration) compares the profiles.
 
 ## Metadata: state it, do not bury it
 
@@ -109,7 +100,7 @@ The most common overclaim in this category is that end-to-end encryption makes a
 
 Your relay still knows who sent to whom, when, how often, from which device, and roughly how large. That is a rich behavioural signal, and it is why we never claim a relay is blind. The formulation we hold ourselves to is narrower and true: **the relay never needs message plaintext or device private keys.**
 
-Sealed sender reduces this metadata. It does not eliminate it. Research on Signal Messenger found that "the promise of sealed sender does not compose over a conversation of messages." With delivery receipts enabled by default, "Signal could link sealed sender users in as few as 5 messages" ([NDSS 2021](https://www.ndss-symposium.org/ndss-paper/improving-signals-sealed-sender/)). [Follow-up work](https://arxiv.org/abs/2305.09799) extended the technique to entire group conversations. The SDK exports a `sealed-sender` module, and we recommend its use. [Limits and metadata](https://docs.open-e2ee.dev/learn/limits-and-metadata) states these limits beside the feature.
+Sealed sender reduces this. It does not eliminate it. Research on Signal Messenger's implementation found that "the promise of sealed sender does not compose over a conversation of messages" — with delivery receipts on by default, "Signal could link sealed sender users in as few as 5 messages" ([NDSS 2021](https://www.ndss-symposium.org/ndss-paper/improving-signals-sealed-sender/)), and [follow-up work](https://arxiv.org/abs/2305.09799) extended the technique to deanonymising entire group conversations. The SDK exports a `sealed-sender` module and we think you should use it; we also think its documentation should say this on the same page, which is what [limits and metadata](https://docs.open-e2ee.dev/learn/limits-and-metadata) is for.
 
 Two more limits worth stating in the same breath. Endpoint compromise defeats all of this, because plaintext lives on the endpoint by design. And trust on first contact is trust: identity pinning detects a later key change, it does not prove who was on the other end originally.
 
@@ -117,16 +108,10 @@ Two more limits worth stating in the same breath. Endpoint compromise defeats al
 
 Sometimes not, and that is a real answer. Slack has explicitly declined end-to-end encryption, citing the cost to search, apps, and bots. Meta shut down Instagram DM encryption in May 2026, saying very few people opted in. Regulated finance, where SEC Rule 17a-4 requires retained communications, is structurally hostile without an archival story.
 
-When E2EE is worth the cost, one of three reasons usually drives the decision:
-
-- A customer segment requires it before buying.
-- A sovereignty requirement favors client-side encryption.
-- Reduced server-side breach exposure supports the product's risk model.
-
-An attacker who reaches the relay database gets ciphertext instead of message content. Applicable law and incident facts determine notification and disclosure duties. [TLS is not end-to-end encryption](/blog/tls-is-not-end-to-end-encryption/) examines that architecture.
+When it is worth it, the reason is usually one of three: a customer segment you cannot sell to otherwise, a sovereignty requirement that client-side encryption satisfies most cleanly, or the liability shift — an attacker who reaches your database gets ciphertext, and you cannot be compelled to produce what you never held. That last one is the subject of [TLS is not end-to-end encryption](/blog/tls-is-not-end-to-end-encryption/).
 
 What should not decide it is a belief that the hard part is the cryptography. The hard part is the hundred features that assumed a server could read the data.
 
 **[Plan your app's E2EE architecture →](https://docs.open-e2ee.dev/learn/e2ee-architecture)**
 
-Start with [local-first and offline state](https://docs.open-e2ee.dev/learn/local-first) to understand where data lives. [Limits and metadata](https://docs.open-e2ee.dev/learn/limits-and-metadata) explains what remains visible. [The threat model](https://docs.open-e2ee.dev/learn/threat-model) separates SDK guarantees from application responsibilities.
+Start with [local-first and offline state](https://docs.open-e2ee.dev/learn/local-first) for where the data lives, [limits and metadata](https://docs.open-e2ee.dev/learn/limits-and-metadata) for what remains visible, and [the threat model](https://docs.open-e2ee.dev/learn/threat-model) for the line between what the SDK guarantees and what stays yours.
