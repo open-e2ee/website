@@ -37,33 +37,53 @@ jobs:
 
       - name: Upload preview
         id: preview
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           command: versions upload --env preview --preview-alias pr-${{ github.event.pull_request.number }}
 
-      - name: Add preview link to the job summary
+      - name: Resolve the stable preview URL
+        id: preview_url
         env:
-          PREVIEW_URL: ${{ steps.preview.outputs.deployment-url }}
+          WRANGLER_OUTPUT: ${{ steps.preview.outputs.command-output }}
+        run: |
+          preview_url="$(
+            printf '%s\n' "$WRANGLER_OUTPUT" |
+              sed -n 's/^Version Preview Alias URL: \(https:\/\/[^[:space:]]*\)$/\1/p' |
+              tail -n 1
+          )"
+          if [[ -z "$preview_url" ]]; then
+            echo "::error::Wrangler did not return a preview alias URL."
+            exit 1
+          fi
+          echo "url=$preview_url" >> "$GITHUB_OUTPUT"
+
+      - name: Add preview links to the job summary
+        env:
+          PREVIEW_URL: ${{ steps.preview_url.outputs.url }}
+          VERSION_URL: ${{ steps.preview.outputs.deployment-url }}
         run: |
           {
             echo "### Cloudflare preview"
             echo
-            echo "[$PREVIEW_URL]($PREVIEW_URL)"
+            echo "[View stable preview]($PREVIEW_URL)"
+            echo
+            echo "[View this version]($VERSION_URL)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Update the pull request comment
         if: always()
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.event.pull_request.head.sha }}
           JOB_STATUS: ${{ job.status }}
-          PREVIEW_OUTCOME: ${{ steps.preview.outcome }}
-          PREVIEW_URL: ${{ steps.preview.outputs.deployment-url }}
+          PREVIEW_OUTCOME: ${{ steps.preview_url.outcome }}
+          PREVIEW_URL: ${{ steps.preview_url.outputs.url }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          VERSION_URL: ${{ steps.preview.outputs.deployment-url }}
         with:
           script: |
             const marker = '<!-- cloudflare-preview -->';
@@ -96,7 +116,7 @@ jobs:
 
             ✅ The preview URL now serves commit ${commitLink}.
 
-            [View preview](${process.env.PREVIEW_URL}) | ${logLink}
+            [View preview](${process.env.PREVIEW_URL}) | [View this version](${process.env.VERSION_URL}) | ${logLink}
 
             The stable URL updates after each successful deployment.`;
             } else {
@@ -114,7 +134,7 @@ jobs:
 
             ${logLink}
 
-            This workflow did not update the stable preview URL.`;
+            GitHub did not receive a current stable preview URL from this workflow.`;
             }
 
             const comments = await github.paginate(
