@@ -2,22 +2,25 @@ name: Preview
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, closed]
 
 permissions:
   contents: read
   deployments: write
+  pull-requests: write
 
 concurrency:
   group: preview-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event.action != 'closed' }}
 
 jobs:
   preview:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment: preview
+    environment:
+      name: preview
+      url: ${{ steps.preview.outputs.deployment-url }}
     steps:
       - uses: actions/checkout@v7
 
@@ -32,21 +35,205 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Upload preview
+      - name: Deploy preview
         id: preview
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          command: versions upload --env preview --preview-alias pr-${{ github.event.pull_request.number }}
+          command: deploy --env preview --name open-e2ee-website-pr-${{ github.event.pull_request.number }}
 
-      - name: Add preview link to the job summary
+      - name: Add preview links to the job summary
         env:
           PREVIEW_URL: ${{ steps.preview.outputs.deployment-url }}
         run: |
           {
             echo "### Cloudflare preview"
             echo
-            echo "[$PREVIEW_URL]($PREVIEW_URL)"
+            echo "[View preview]($PREVIEW_URL)"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update the pull request comment
+        if: always()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.event.pull_request.head.sha }}
+          JOB_STATUS: ${{ job.status }}
+          PREVIEW_OUTCOME: ${{ steps.preview.outcome }}
+          PREVIEW_URL: ${{ steps.preview.outputs.deployment-url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const marker = '<!-- cloudflare-preview -->';
+            const { owner, repo } = context.repo;
+            const pullNumber = context.issue.number;
+            const sourceSha = process.env.SOURCE_SHA;
+            const shortSha = sourceSha.slice(0, 7);
+
+            const { data: pull } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+
+            if (pull.head.sha !== sourceSha) {
+              core.notice(`Skipped the preview comment for stale commit ${sourceSha}.`);
+              return;
+            }
+
+            const previewReady =
+              process.env.PREVIEW_OUTCOME === 'success' &&
+              Boolean(process.env.PREVIEW_URL);
+            const commitLink = `[\`${shortSha}\`](${process.env.COMMIT_URL})`;
+            const logLink = `[View workflow logs](${process.env.RUN_URL})`;
+            let body;
+
+            if (previewReady) {
+              body = `${marker}
+            ### Cloudflare preview
+
+            ✅ The preview URL now serves commit ${commitLink}.
+
+            [View preview](${process.env.PREVIEW_URL}) | ${logLink}
+
+            The URL updates after each successful deployment to this pull request.`;
+            } else {
+              const status = process.env.JOB_STATUS === 'cancelled'
+                ? 'GitHub Actions cancelled'
+                : 'The preview workflow failed for';
+              const result = process.env.JOB_STATUS === 'cancelled'
+                ? `${status} the preview workflow for commit ${commitLink}.`
+                : `${status} commit ${commitLink}.`;
+
+              body = `${marker}
+            ### Cloudflare preview
+
+            ❌ ${result}
+
+            ${logLink}
+
+            GitHub did not receive a current stable preview URL from this workflow.`;
+            }
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: pullNumber, per_page: 100 },
+            );
+            const existing = comments.find(
+              (comment) =>
+                comment.user?.login === 'github-actions[bot]' &&
+                comment.body?.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                body,
+              });
+            }
+
+  cleanup:
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: preview
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Delete preview
+        id: cleanup
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          PREVIEW_PULL_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/cleanup-cloudflare-preview.mjs
+
+      - name: Add the cleanup result to the job summary
+        if: always()
+        env:
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+          PREVIEW_PULL_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "### Cloudflare preview cleanup"
+            echo
+            if [[ "$CLEANUP_OUTCOME" == "success" ]]; then
+              echo "Removed the preview for pull request $PREVIEW_PULL_NUMBER."
+            else
+              echo "Failed to remove the preview for pull request $PREVIEW_PULL_NUMBER."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update the pull request comment
+        if: always()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+          MERGED: ${{ github.event.pull_request.merged }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const marker = '<!-- cloudflare-preview -->';
+            const { owner, repo } = context.repo;
+            const pullNumber = context.issue.number;
+            const logLink = `[View workflow logs](${process.env.RUN_URL})`;
+            const merged = process.env.MERGED === 'true';
+            let body;
+
+            if (process.env.CLEANUP_OUTCOME === 'success') {
+              const reason = merged ? 'merged' : 'closed';
+              body = `${marker}
+            ### Cloudflare preview
+
+            ✅ The workflow removed the preview after this pull request ${reason}.
+
+            ${logLink}`;
+            } else {
+              body = `${marker}
+            ### Cloudflare preview
+
+            ❌ The workflow could not remove this closed pull request preview.
+
+            ${logLink}`;
+            }
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: pullNumber, per_page: 100 },
+            );
+            const existing = comments.find(
+              (comment) =>
+                comment.user?.login === 'github-actions[bot]' &&
+                comment.body?.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                body,
+              });
+            }
