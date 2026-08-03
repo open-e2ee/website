@@ -945,6 +945,17 @@ a:hover {
   color: var(--oe-muted);
 }
 
+/*
+ * The comparison's per-project rows end on the sentence a reader decides on,
+ * and two of the five send them to somebody else's project. The paragraph
+ * above it is evidence and stays muted; the conclusion takes the foreground
+ * colour and a line of space so it is not read as more evidence.
+ */
+.definition-rows dd .verdict {
+  margin-block-start: var(--oe-space-3);
+  color: var(--oe-foreground);
+}
+
 @media (max-width: 44rem) {
   .definition-rows {
     grid-template-columns: minmax(0, 1fr);
