@@ -13,6 +13,17 @@
  * outlined and readable; opaque forms are filled and show nothing. Nothing
  * here is half-transparent, frosted, or gradient-filled, and panels occlude
  * rather than blend.
+ *
+ * Text is --oe-foreground or --oe-muted. Never --oe-subtle: it is the same
+ * value as --oe-border-control, and the design system's own contrast test
+ * holds it to 3:1 — the threshold for a line, not for a word. Measured
+ * against the six surfaces it reaches 3.41–4.60, so it fails 4.5:1 on six of
+ * the eight surface-and-mode pairs; --oe-muted clears every one by 5.31 or
+ * better. Third-tier text is made with size, weight, and letterspacing, which
+ * is how .maturity and .cta-sublabel recede without going pale. Those two are
+ * why this matters more than it looks: the alpha caveat and the terms under
+ * the primary button are the page admitting its limits, and they were the
+ * hardest lines on it to read.
  */
 
 *,
@@ -122,7 +133,7 @@ code {
   font-weight: var(--oe-metadata-weight);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
 }
 
 .lead {
@@ -347,7 +358,7 @@ a:hover {
   font-weight: var(--oe-metadata-weight);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
 }
 
 .text-links {
@@ -371,7 +382,7 @@ a:hover {
 }
 
 .platform-links > span {
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
 }
 
 /* -------------------------------------------------------------- chrome --- */
@@ -606,7 +617,7 @@ a:hover {
  * outranks the `.footer-brand p` colour and spacing it would otherwise take. */
 .footer-brand .footer-provisional {
   margin-top: var(--oe-space-2);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
   font-family: var(--oe-metadata-font-family);
   font-weight: var(--oe-metadata-weight);
   font-size: var(--oe-metadata-size);
@@ -618,7 +629,7 @@ a:hover {
   font-family: var(--oe-metadata-font-family);
   font-weight: var(--oe-metadata-weight);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
   margin-bottom: var(--oe-space-4);
 }
 
@@ -646,7 +657,7 @@ a:hover {
   flex-wrap: wrap;
   gap: var(--oe-space-3) var(--oe-space-8);
   font-size: 0.875rem;
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
 }
 
 /* The legal bar is where a reader goes looking for these three, so they sit
@@ -658,7 +669,7 @@ a:hover {
 }
 
 .footer-legal a {
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
   text-decoration: none;
 }
 
@@ -760,7 +771,7 @@ a:hover {
   font-weight: var(--oe-metadata-weight);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
   border-top: 1px solid var(--oe-border);
   padding-top: var(--oe-space-3);
   width: 100%;
@@ -822,7 +833,7 @@ a:hover {
   font-family: var(--oe-metadata-font-family);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
 }
 
 .carrier-meta {
@@ -854,7 +865,7 @@ a:hover {
   font-family: var(--oe-metadata-font-family);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
   display: flex;
   flex-wrap: wrap;
   gap: var(--oe-space-2) var(--oe-space-4);
@@ -970,7 +981,7 @@ a:hover {
 .subpath-list code {
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
 }
 
 /* Plain enumerations: scope lists, capability lists. Marker is a hairline. */
@@ -1119,7 +1130,7 @@ table.data thead th {
   font-weight: var(--oe-metadata-weight);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
   border-bottom-color: var(--oe-border-control);
 }
 
@@ -1207,7 +1218,7 @@ table.data td {
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--oe-control-radius);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
   cursor: pointer;
 }
 
@@ -1274,7 +1285,7 @@ table.data td {
 }
 
 .tier-price span {
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
   font-weight: 400;
 }
 
@@ -1412,7 +1423,7 @@ table.data td {
   font-weight: var(--oe-metadata-weight);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
   padding-top: 0.4rem;
 }
 
@@ -1472,7 +1483,7 @@ table.data td {
   font-weight: var(--oe-metadata-weight);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
 }
 
 .back-link {
