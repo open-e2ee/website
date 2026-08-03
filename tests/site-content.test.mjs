@@ -50,6 +50,19 @@ test('answers the runtime question from the hero', async () => {
   }
 });
 
+test('answers “what does the relay see” in the fixed wording', async () => {
+  const index = await flat('../src/pages/index.astro');
+
+  /* messaging.md §3 fixes one sentence for this question and forbids
+   * paraphrasing it into something stronger. The hero used to answer with
+   * "your relay can't read it", which is the paraphrase the rule names, and
+   * the page carried no instance of the formula itself. The formula and the
+   * metadata caveat travel together, or the claim is only half stated. */
+  assert.match(index, /The relay never needs message plaintext or device private keys\./);
+  assert.match(index, /It still sees metadata/);
+  assert.doesNotMatch(index, /relay can(?:’|')t read/i);
+});
+
 test('reaches the security review pack from the homepage and the footer', async () => {
   const [index, footer] = await Promise.all([
     flat('../src/pages/index.astro'),
