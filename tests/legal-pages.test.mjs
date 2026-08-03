@@ -42,7 +42,7 @@ test('makes privacy and terms available from the site footer', async () => {
   assert.match(footer, /href="\/legal"/);
   assert.match(footer, /href="\/legal\/privacy"/);
   assert.match(footer, /href="\/legal\/terms"/);
-  assert.match(footer, /Open E2EE LLC and OpenE2EE contributors/);
+  assert.match(footer, /OpenE2EE LLC and OpenE2EE contributors/);
 });
 
 test('discloses annual renewal and protects accepted versions from retroactive replacement', async () => {
