@@ -618,6 +618,12 @@ a:hover {
   font-size: clamp(2.125rem, 1.15rem + 3.1vw, 3.125rem);
 }
 
+/* `.hero-copy` is a flex column with `align-items: flex-start`, which sizes
+   the block to its longest line. The snippet is a panel and takes the column. */
+.hero-snippet {
+  width: 100%;
+}
+
 .maturity {
   font-family: var(--oe-metadata-font-family);
   font-weight: var(--oe-metadata-weight);
@@ -1023,7 +1029,10 @@ table.data td {
   max-width: 100%;
 }
 
-.code-filename {
+/* The ruled header of a code block names its source: a filename on a page
+   showing a file, the install command on the hero block showing an excerpt. */
+.code-filename,
+.code-command {
   font-family: var(--oe-metadata-font-family);
   font-weight: var(--oe-metadata-weight);
   font-size: var(--oe-metadata-size);
