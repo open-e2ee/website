@@ -608,15 +608,11 @@ a:hover {
   align-items: flex-start;
 }
 
-.hero-copy h1 {
-  text-wrap: pretty;
-}
-
 /*
- * The hero headline is two sentences with an explicit break between them, and
- * the second is the longer one. Capped below the global h1 maximum so that
- * second sentence holds a single line inside the 7/12 column instead of
- * orphaning its last word.
+ * The hero headline is one sentence that names the category, so it wraps on
+ * its own rather than at an authored break. `balance` from the global heading
+ * rule is what that wants. Capped below the global h1 maximum so a sentence
+ * this long stays at two or three lines inside the 7/12 column.
  */
 .hero h1 {
   font-size: clamp(2.125rem, 1.15rem + 3.1vw, 3.125rem);
