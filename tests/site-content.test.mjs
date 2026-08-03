@@ -314,6 +314,18 @@ test('keeps a narrowed container on the same left edge as everything else', asyn
   assert.doesNotMatch(css, /\.container\.measure > \*/);
 });
 
+test('never sets text in the border colour', async () => {
+  const css = await read('../src/styles/global.css');
+
+  /* `--oe-subtle` is `--oe-border-control` under another name, and the design
+   * system holds it to 3:1 — a line's threshold, not a word's. It reaches
+   * 3.41–4.60 across the six surfaces, so it fails 4.5:1 on six of the eight
+   * surface-and-mode pairs. Sixteen rules had it as `color`, among them the
+   * alpha caveat and the terms under the primary button: the two places the
+   * page states its own limits were the two hardest on it to read. */
+  assert.doesNotMatch(css, /color: var\(--oe-subtle\)/);
+});
+
 test('shows the receive side in the hero, not only the send', () => {
   /* `onMessageDecrypted` is the half a reader cannot infer from `send` — a
    * hook rather than a return value, because the message arrives when the
