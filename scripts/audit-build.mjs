@@ -101,12 +101,12 @@ const FIPS_PUBLICATION = /\bFIPS\s*20[345]\b/gi;
 const FIPS_MENTION = /\bFIPS\b/i;
 const FIPS_NEGATION = /\bnot\s+FIPS[\s-]?140[\s-]?[23]?[\s-]?(?:validated|certified)/i;
 
-async function htmlFiles(dir) {
+async function filesWith(dir, extension) {
   const found = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
-    if (entry.isDirectory()) found.push(...(await htmlFiles(full)));
-    else if (entry.name.endsWith('.html')) found.push(full);
+    if (entry.isDirectory()) found.push(...(await filesWith(full, extension)));
+    else if (entry.name.endsWith(extension)) found.push(full);
   }
   return found;
 }
@@ -123,7 +123,7 @@ function textOf(html) {
     .replace(/\s+/g, ' ');
 }
 
-const files = await htmlFiles(DIST);
+const files = await filesWith(DIST, '.html');
 const problems = [];
 
 /* Every href a page can reach, so a typo in a nav link fails the build. */
@@ -174,6 +174,35 @@ for (const file of files) {
   for (const match of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
     if (match[1].trim().length > 0 && !match[0].includes('application/ld+json')) {
       problems.push(`${rel}: inline script would be blocked by CSP script-src 'self'`);
+    }
+  }
+}
+
+/*
+ * A preloaded font the stylesheet does not load is worse than no preload: it
+ * fetches a second copy of the face on the critical path, which is the exact
+ * opposite of what the hint is for.
+ *
+ * The layout imports the file from the website's own copy of
+ * `@fontsource-variable/public-sans`; the @font-face rule comes from
+ * `@open-e2ee/design`, which has its own copy. Both resolve to the same hashed
+ * asset while the two versions agree. Bumping one and not the other would make
+ * them silently disagree, and nothing else in the build would notice.
+ */
+const stylesheets = await filesWith(DIST, '.css');
+const css = (await Promise.all(stylesheets.map((file) => readFile(file, 'utf8')))).join('\n');
+for (const file of files) {
+  const html = await readFile(file, 'utf8');
+  const rel = relative(DIST, file);
+  const preloads = [...html.matchAll(/<link\b[^>]*>/g)]
+    .filter((tag) => /\bas="font"/.test(tag[0]))
+    .map((tag) => tag[0].match(/\bhref="([^"]+)"/)?.[1])
+    .filter(Boolean);
+  for (const href of preloads) {
+    if (!existsSync(join(DIST, href))) {
+      problems.push(`${rel}: preloads a font that was not published — ${href}`);
+    } else if (!css.includes(href)) {
+      problems.push(`${rel}: preloads a font no stylesheet loads — ${href}`);
     }
   }
 }
@@ -339,6 +368,6 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `Build audit passed: ${files.length} pages, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts, ` +
+  `Build audit passed: ${files.length} pages, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts, every preloaded font loaded by a stylesheet, ` +
     `every code identifier found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
 );
