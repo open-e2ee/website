@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
+import externalLinks from './scripts/external-links.mjs';
 
 export default defineConfig({
   site: 'https://open-e2ee.dev',
@@ -13,7 +14,9 @@ export default defineConfig({
       assetsInlineLimit: 0,
     },
   },
-  integrations: [mdx(), react(), sitemap()],
+  /* externalLinks runs last: it rewrites emitted HTML, so it has to see the
+     output every other integration has finished producing. */
+  integrations: [mdx(), react(), sitemap(), externalLinks()],
   markdown: {
     shikiConfig: {
       themes: {
