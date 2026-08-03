@@ -234,12 +234,44 @@ a:hover {
   margin-bottom: var(--oe-space-8);
 }
 
+/* --------------------------------------------------------------- icons --- */
+
+/*
+ * Icons are drawn in `currentColor` and sized in `em`, so one sits inside a
+ * button, a link, or a line of metadata and inherits the colour and scale of
+ * whatever it is labelling. Every one is `aria-hidden`: an icon here is
+ * always beside a name, never instead of one.
+ */
+.icon {
+  width: 1em;
+  height: 1em;
+  flex: none;
+}
+
+/*
+ * Off-screen but still in the accessibility tree, for the names of controls
+ * whose visible label is an icon. `clip-path` rather than `display: none`,
+ * which would take the text out of the tree along with the pixels.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ------------------------------------------------------------ controls --- */
 
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--oe-space-2);
   min-height: var(--oe-control-height-md);
   padding-inline: var(--oe-button-padding-inline-md);
   border: 1px solid transparent;
@@ -409,22 +441,60 @@ a:hover {
   font-size: 0.9375rem;
 }
 
+/* An icon on its own is a control, not text, so it answers to the 3:1 line in
+   the accessibility baseline rather than the 4.5:1 one. `--oe-muted` clears
+   both; the hover state is the same promotion the nav links make. */
+.icon-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--oe-muted);
+}
+
+.icon-link:hover {
+  color: var(--oe-foreground);
+}
+
+/* Square, because the label inside is now an icon rather than a word of
+   varying length, and a control that changed width as you cycled it made the
+   whole header shift. */
 .theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: var(--oe-control-height-sm);
-  padding-inline: var(--oe-space-3);
+  min-width: var(--oe-control-height-sm);
+  padding: 0;
   background: transparent;
   border: 1px solid var(--oe-border);
   border-radius: var(--oe-control-radius);
   color: var(--oe-muted);
-  font-family: var(--oe-metadata-font-family);
-  font-size: var(--oe-metadata-size);
-  letter-spacing: var(--oe-metadata-tracking);
   cursor: pointer;
 }
 
 .theme-toggle:hover {
   color: var(--oe-foreground);
   border-color: var(--oe-border-control);
+}
+
+/*
+ * One of three icons, chosen by the preference `theme-init.js` publishes on
+ * <html> before first paint. System is the default in the markup so that the
+ * control still says something with JavaScript unavailable, which is also the
+ * case where the preference can only be system.
+ */
+.theme-icon {
+  display: none;
+}
+
+.theme-icon-system,
+:root[data-theme-preference="light"] .theme-icon-light,
+:root[data-theme-preference="dark"] .theme-icon-dark {
+  display: block;
+}
+
+:root[data-theme-preference="light"] .theme-icon-system,
+:root[data-theme-preference="dark"] .theme-icon-system {
+  display: none;
 }
 
 .mobile-nav {
@@ -594,11 +664,28 @@ a:hover {
   padding-block: clamp(2.5rem, 1.5rem + 5vw, 5rem) clamp(3rem, 2rem + 4vw, 5rem);
 }
 
+/*
+ * One column until the second one can hold a code sample, then 5/7 with the
+ * demo on the wider side.
+ *
+ * The width is not a taste call. The longest line of the recorded excerpt —
+ * `await alice.send("bob", "Ship it Thursday. …")` — is 83 characters, and
+ * the excerpt is sliced from a capture, so it cannot be shortened to suit a
+ * column. At 74rem the container has already reached its 1180px maximum, so
+ * above that breakpoint the hero has exactly one geometry to satisfy rather
+ * than a range: 1132px of content, 64px of gap, a 623px demo column. Below
+ * it, stacking gives the code the full measure instead of a scrollbar.
+ */
 .hero-grid {
   display: grid;
-  grid-template-columns: 7fr 5fr;
   gap: clamp(2rem, 1rem + 4vw, 4rem);
   align-items: start;
+}
+
+@media (min-width: 74rem) {
+  .hero-grid {
+    grid-template-columns: 5fr 7fr;
+  }
 }
 
 .hero-copy {
@@ -612,16 +699,40 @@ a:hover {
  * The hero headline is one sentence that names the category, so it wraps on
  * its own rather than at an authored break. `balance` from the global heading
  * rule is what that wants. Capped below the global h1 maximum so a sentence
- * this long stays at two or three lines inside the 7/12 column.
+ * this long stays at two or three lines — now inside the 5/12 column, which
+ * is why the ceiling came down with the column: at the old 50px it set four
+ * lines and 224px of headline before the reader reached the first claim.
  */
 .hero h1 {
-  font-size: clamp(2.125rem, 1.15rem + 3.1vw, 3.125rem);
+  font-size: clamp(2.125rem, 1.15rem + 3.1vw, 2.625rem);
+}
+
+.hero-demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-3);
+  /* A grid item defaults to `min-width: auto`, which would let 83 characters
+     of unwrappable code widen the column and squeeze the copy beside it. */
+  min-width: 0;
 }
 
 /* `.hero-copy` is a flex column with `align-items: flex-start`, which sizes
    the block to its longest line. The snippet is a panel and takes the column. */
 .hero-snippet {
   width: 100%;
+}
+
+/* Set against the 623px column above: 83 characters at 12.5px measure 573px,
+   leaving room for the 32px of padding and a little for a fallback face with
+   a wider advance. Stacked, the block has the full measure and keeps the
+   site-wide size. `overflow-x` on `.code-block pre` remains the backstop. */
+@media (min-width: 74rem) {
+  /* `.code-block pre` sets the site-wide size and is declared later in this
+     file, so a single-class selector here would lose the tie on source order
+     rather than on intent. */
+  .hero-snippet.code-block pre {
+    font-size: 0.78125rem;
+  }
 }
 
 .maturity {
@@ -636,13 +747,15 @@ a:hover {
   max-width: 58ch;
 }
 
-@media (max-width: 58rem) {
-  .hero-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 /* ------------------------------------------------------- carrier panel --- */
+
+/* The recording sits under the diagram it proves, so it gets the separation
+   of a new thought without the weight of a new band. */
+.carrier-proof {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-3);
+}
 
 /*
  * Two panes, one hairline between them: the same message on the device and in
@@ -1040,6 +1153,57 @@ table.data td {
   color: var(--oe-subtle);
   padding: var(--oe-space-3) var(--oe-space-4);
   border-bottom: 1px solid var(--oe-border);
+}
+
+/* The command is the line a reader is meant to leave with, so the row holds a
+   button as well as the text. */
+.code-command {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oe-space-3);
+  min-width: 0;
+}
+
+.code-command > span {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--oe-control-radius);
+  color: var(--oe-subtle);
+  cursor: pointer;
+}
+
+.copy-button:hover {
+  color: var(--oe-foreground);
+  border-color: var(--oe-border-control);
+}
+
+/*
+ * The tick replaces the clipboard only once the write resolves, so the state
+ * shown is one the browser confirmed rather than one the click assumed. It is
+ * a change of shape, not of colour, and the button's name changes with it —
+ * the confirmation survives both a monochrome display and a screen reader.
+ */
+.copy-icon-done,
+.copy-button[data-copied] .copy-icon-idle {
+  display: none;
+}
+
+.copy-button[data-copied] .copy-icon-done {
+  display: block;
+  color: var(--oe-foreground);
 }
 
 .code-block pre {

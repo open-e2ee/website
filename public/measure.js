@@ -21,7 +21,9 @@
   addEventListener(
     'click',
     function (event) {
-      var link = event.target.closest && event.target.closest('a[href]');
+      if (!event.target.closest) return;
+      if (event.target.closest('[data-install-copy]')) return send('install_copy');
+      var link = event.target.closest('a[href]');
       if (!link) return;
       var href = link.href;
       var runtime = /\/start\/(expo|browser|node)\b/.exec(href);
@@ -37,7 +39,9 @@
     true,
   );
 
-  // No copy button exists, so copying is a selection. Never read beyond this.
+  // Pages without the copy button still let a reader select the command by
+  // hand. `navigator.clipboard.writeText` raises no `copy` event, so the two
+  // paths cannot both fire for one action. Never read beyond this.
   addEventListener('copy', function () {
     if (String(getSelection()).includes('@open-e2ee/signal-protocol-sdk')) send('install_copy');
   });
