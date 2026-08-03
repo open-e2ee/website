@@ -44,7 +44,7 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
   assert.match(footer, /Ten-minute quickstart/);
 });
 
-test('answers the runtime question from the hero', async () => {
+test('answers the runtime question on the homepage', async () => {
   const index = await flat('../src/pages/index.astro');
 
   for (const runtime of ['expo', 'browser', 'node']) {
@@ -91,9 +91,11 @@ test('reaches the security review pack from the homepage and the footer', async 
     flat('../src/components/Footer.astro'),
   ]);
 
-  /* The homepage links it inline; the footer builds its columns from a data
-   * array, so the path is quoted rather than written as an attribute. */
-  assert.match(index, /href="\/evaluate"/);
+  /* Both build their links from a data array now, so the path is quoted
+   * rather than written as an attribute. On the homepage it belongs in the
+   * "Check the work" band with the rest of the evidence, not in a third row
+   * of hero links competing with the one action the hero is for. */
+  assert.match(index, /href: '\/evaluate'/);
   assert.match(footer, /href: '\/evaluate'/);
   assert.match(footer, /Security review pack/);
 });

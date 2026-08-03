@@ -32,9 +32,10 @@ const differentiators = [
 ];
 
 /*
- * The runtime question is the first one a visitor has, and until now the
- * answer was a sentence in the lead rather than a link. One quickstart per
- * runtime, so "does it run where I run" is a click instead of a search.
+ * The runtime question is the first one a visitor has, and one quickstart per
+ * runtime makes "does it run where I run" a click instead of a search. It sits
+ * under the differentiator that raises it rather than in the hero, where three
+ * more links were competing with the one action the hero is for.
  */
 const runtimes = [
   { href: 'https://docs.open-e2ee.dev/start/expo', label: 'Expo' },
@@ -42,8 +43,15 @@ const runtimes = [
   { href: 'https://docs.open-e2ee.dev/start/node', label: 'Node' },
 ];
 
+/*
+ * Everything a reader can check, in the band that exists to be checked. The
+ * security model and the review pack used to sit in a third row of links in
+ * the hero, where they read as afterthoughts to the CTA rather than as the
+ * page's answer to "prove it".
+ */
 const trustLinks = [
   { href: '/security', label: 'What the relay can and cannot see' },
+  { href: '/evaluate', label: 'The security review pack' },
   {
     href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/SECURITY.md',
     label: 'The security model and threat model',
@@ -82,22 +90,14 @@ const trustLinks = [
             <span class="button">Build your first encrypted message</span>
             <span class="cta-sublabel">ten minutes · two clients · no account</span>
           </a>
-          <a class="button button-secondary" href="#what-the-relay-stores">See what the relay stores</a>
+          <a class="button button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
+            View the SDK on GitHub
+          </a>
         </div>
         <HeroSnippet />
         <p class="muted">
           Six lines from the quickstart, as recorded. <a href="/product">See the whole file</a> —
           the second client and the mock relay setup are real work this excerpt drops.
-        </p>
-
-        <p class="platform-links">
-          <span>Start where you are:</span>
-          {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
-        </p>
-        <p class="text-links">
-          <a href="https://github.com/open-e2ee/signal-protocol-js">View the SDK on GitHub</a>
-          <a href="/security">Read the security model</a>
-          <a href="/evaluate">Security review pack</a>
         </p>
       </div>
 
@@ -123,6 +123,10 @@ const trustLinks = [
           </li>
         ))}
       </ul>
+      <p class="platform-links">
+        <span>Start where you are:</span>
+        {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
+      </p>
     </div>
   </section>
 
