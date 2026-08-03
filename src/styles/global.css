@@ -1143,14 +1143,20 @@ table.data td {
 }
 
 /* The ruled header of a code block names its source: a filename on a page
-   showing a file, the install command on the hero block showing an excerpt. */
+   showing a file, the install command on the hero block showing an excerpt.
+
+   `muted` rather than `subtle`: the design system asserts `subtle` against the
+   canvas at a floor of 3, which is the non-text-contrast threshold, and on the
+   code surface the pair measures 3.72 in light and 4.42 in dark. That is fine
+   for a border and short of AA for a line of text — and this line is the one
+   the reader is meant to take away. `muted` on code is 5.80 and 6.80. */
 .code-filename,
 .code-command {
   font-family: var(--oe-metadata-font-family);
   font-weight: var(--oe-metadata-weight);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-subtle);
+  color: var(--oe-muted);
   padding: var(--oe-space-3) var(--oe-space-4);
   border-bottom: 1px solid var(--oe-border);
 }
