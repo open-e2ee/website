@@ -4,6 +4,7 @@ import CarrierPanel from '../components/CarrierPanel.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import Icon from '../components/Icon.astro';
 import SignatureDiagram from '../components/SignatureDiagram.astro';
+import { MEASURED_ON, libsignalReadme } from '../lib/comparison.mjs';
 
 const differentiators = [
   {
@@ -210,9 +211,7 @@ const trustLinks = [
         </div>
       </dl>
       <p class="text-links">
-        <a href="https://github.com/open-e2ee/signal-protocol-js#how-it-compares">
-          See the full comparison table
-        </a>
+        <a href="/compare">The full comparison, measured on {MEASURED_ON}</a>
         <a href="/product">See the SDK surface</a>
       </p>
     </div>
@@ -222,9 +221,14 @@ const trustLinks = [
     <div class="container measure">
       <figure class="quote">
         <blockquote>Use outside of Signal is unsupported.</blockquote>
-        <figcaption>libsignal, the official implementation</figcaption>
+        <figcaption>
+          <a href={libsignalReadme.href}>{libsignalReadme.attribution}</a>
+        </figcaption>
       </figure>
       <p class="lead">So we built the one that is supported.</p>
+      <p class="text-links">
+        <a href="/compare">Every alternative, measured and dated</a>
+      </p>
     </div>
   </section>
 

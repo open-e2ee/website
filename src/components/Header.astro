@@ -5,9 +5,17 @@ import ThemeToggle from './ThemeToggle.astro';
 
 const path = Astro.url.pathname;
 
-/* Nav follows the funnel: evaluate, learn, build, verify, buy, read. */
+/*
+ * Nav follows the funnel: evaluate, choose, learn, build, verify, buy, read.
+ *
+ * Compare sits directly after Product because "why not libsignal" is the first
+ * question anyone asks and the answer is a quote from libsignal's own README.
+ * It was a pull-quote two thirds down the homepage, where the reader who most
+ * needed it had already left.
+ */
 const links = [
   { href: '/product', label: 'Product' },
+  { href: '/compare', label: 'Compare' },
   { href: '/learn', label: 'Learn' },
   { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
   { href: '/security', label: 'Security' },
