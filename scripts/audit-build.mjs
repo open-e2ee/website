@@ -165,6 +165,36 @@ for (const file of files) {
   }
 }
 
+/*
+ * Off-site links open in a new tab. `scripts/external-links.mjs` does the
+ * rewriting during the build; this checks it happened, because an integration
+ * that stops running is invisible — the pages still build, still deploy, and
+ * still look right.
+ *
+ * `mailto:` and `tel:` are excluded there and here: they hand off to another
+ * application, and the tab left behind would be empty.
+ */
+for (const file of files) {
+  const html = await readFile(file, 'utf8');
+  const rel = relative(DIST, file);
+  for (const [, tag, href] of html.matchAll(/<a\b([^>]*\bhref="(https?:\/\/[^"]*)"[^>]*)>/g)) {
+    let host;
+    try {
+      host = new URL(href).host;
+    } catch {
+      problems.push(`${rel}: link has an href that is not a URL — ${href}`);
+      continue;
+    }
+    if (host === 'open-e2ee.dev') continue;
+    if (!/\btarget="_blank"/.test(tag)) {
+      problems.push(`${rel}: off-site link does not open in a new tab — ${href}`);
+    }
+    if (!/\brel="[^"]*\bnoopener\b/.test(tag)) {
+      problems.push(`${rel}: off-site link opens a new tab without rel=noopener — ${href}`);
+    }
+  }
+}
+
 // The CSP is script-src 'self' with no 'unsafe-inline': an inline script in
 // built HTML is silently dead in production. The theme resolver broke exactly
 // this way once; never again.
