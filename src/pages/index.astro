@@ -84,7 +84,6 @@ const trustLinks = [
           The relay never needs message plaintext or device private keys. It still sees metadata —
           we document exactly what, and what sealed sender does and doesn&rsquo;t hide.
         </p>
-        <p class="maturity">0.1.x alpha — public APIs and persisted formats may change before 1.0.</p>
         <div class="actions">
           <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
             <span class="button">Build your first encrypted message</span>
@@ -99,6 +98,10 @@ const trustLinks = [
           Six lines from the quickstart, as recorded. <a href="/product">See the whole file</a> —
           the second client and the mock relay setup are real work this excerpt drops.
         </p>
+        {/* Closes the column rather than interrupting it. The rule above this
+            line is what makes it read as the terms of the offer above, and a
+            reader who has got this far has already seen the offer. */}
+        <p class="maturity">0.1.x alpha — public APIs and persisted formats may change before 1.0.</p>
       </div>
 
       <div id="what-the-relay-stores">

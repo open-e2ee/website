@@ -44,6 +44,18 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
   assert.match(footer, /Ten-minute quickstart/);
 });
 
+test('says the release is alpha on the page that sells it', async () => {
+  const index = await flat('../src/pages/index.astro');
+
+  /* messaging.md §4 fixes "alpha" as the word — not beta, not early access,
+   * not preview — and §1.2 puts the limit in the same breath as the claim.
+   * This sentence moved once for placement, which is exactly the edit that
+   * loses a line like it. It may move again; it may not leave. */
+  assert.match(index, /0\.1\.x alpha/);
+  assert.match(index, /public APIs and persisted formats may change before 1\.0/);
+  assert.doesNotMatch(index, /\b(?:beta|early access|preview)\b/i);
+});
+
 test('answers the runtime question on the homepage', async () => {
   const index = await flat('../src/pages/index.astro');
 
