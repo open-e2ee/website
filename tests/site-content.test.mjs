@@ -313,3 +313,13 @@ test('keeps a narrowed container on the same left edge as everything else', asyn
    * Moving it to the children stops it capping a 60px heading at all. */
   assert.doesNotMatch(css, /\.container\.measure > \*/);
 });
+
+test('shows the receive side in the hero, not only the send', () => {
+  /* `onMessageDecrypted` is the half a reader cannot infer from `send` — a
+   * hook rather than a return value, because the message arrives when the
+   * relay delivers it — and the recorded comment beside it is the page's
+   * central claim in code that ran rather than in a sentence about code.
+   * Trimming the snippet back to the send call gives both of those up. */
+  assert.match(heroCode, /bob\.registerHook\("onMessageDecrypted"/);
+  assert.match(heroCode, /plaintext, only on Bob's device/);
+});
