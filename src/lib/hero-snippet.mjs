@@ -33,15 +33,24 @@ const segment = (anchor, count = 1) => {
 };
 
 /*
- * Import, construct, send. The setup the excerpt drops — the second client and
- * the mock relay's device registration — is real work a reader still has to
- * do, which is why the block links to the whole file rather than pretending
- * these are the only lines there are.
+ * Import, construct, send, receive.
+ *
+ * The receive side earns its lines twice over. It is the half a reader cannot
+ * infer from the send call — a hook rather than a return value, because the
+ * message arrives whenever the relay delivers it — and its recorded comment,
+ * `plaintext, only on Bob's device`, is the page's central claim written in
+ * code that ran rather than in a sentence about code.
+ *
+ * The setup the excerpt still drops — the mock relay's device registration and
+ * Bob's own client, which is Alice's four lines with one name changed — is real
+ * work a reader has to do, which is why the block links to the whole file
+ * rather than pretending these are the only lines there are.
  */
 export const heroSegments = [
   segment('import { createSignalProtocolClient }'),
   segment('const alice = await createSignalProtocolClient({', 4),
   segment('await alice.send('),
+  segment('bob.registerHook("onMessageDecrypted"', 4),
 ];
 
 export const heroCode = heroSegments.map((segment) => segment.join('\n')).join(`\n\n${ELISION}\n\n`);
