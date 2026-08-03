@@ -1,6 +1,7 @@
 @import "@open-e2ee/design/fonts.css";
 @import "@open-e2ee/design/tokens.css";
 @import "@open-e2ee/design/wordmark.css";
+@import "@open-e2ee/design/components.css";
 
 /*
  * OpenE2EE website.
@@ -166,12 +167,6 @@ a:hover {
   color: var(--oe-link-hover);
 }
 
-:where(a, button, summary, input, [tabindex]):focus-visible {
-  outline: var(--oe-control-focus-width) solid var(--oe-focus);
-  outline-offset: var(--oe-control-focus-offset);
-  border-radius: var(--oe-radius-sm);
-}
-
 .skip-link {
   position: absolute;
   left: -9999px;
@@ -265,78 +260,14 @@ a:hover {
   margin-bottom: var(--oe-space-8);
 }
 
-/* --------------------------------------------------------------- icons --- */
-
-/*
- * Icons are drawn in `currentColor` and sized in `em`, so one sits inside a
- * button, a link, or a line of metadata and inherits the colour and scale of
- * whatever it is labelling. Every one is `aria-hidden`: an icon here is
- * always beside a name, never instead of one.
- */
-.icon {
-  width: 1em;
-  height: 1em;
-  flex: none;
-}
-
-/*
- * Off-screen but still in the accessibility tree, for the names of controls
- * whose visible label is an icon. `clip-path` rather than `display: none`,
- * which would take the text out of the tree along with the pixels.
- */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-
 /* ------------------------------------------------------------ controls --- */
 
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--oe-space-2);
-  min-height: var(--oe-control-height-md);
-  padding-inline: var(--oe-button-padding-inline-md);
-  border: 1px solid transparent;
-  border-radius: var(--oe-control-radius);
-  background: var(--oe-accent);
-  color: var(--oe-accent-foreground);
-  font-family: var(--oe-button-font-family);
-  font-weight: var(--oe-button-font-weight);
-  font-size: 0.9375rem;
-  text-decoration: none;
-  transition: background var(--oe-duration-fast) ease-out;
-}
-
-.button:hover {
-  background: var(--oe-accent-hover);
-  color: var(--oe-accent-foreground);
-}
-
-.button-secondary {
-  background: transparent;
-  color: var(--oe-foreground);
-  border-color: var(--oe-border-control);
-}
-
-.button-secondary:hover {
-  background: var(--oe-surface);
-  color: var(--oe-foreground);
-}
-
-.button-small {
-  min-height: var(--oe-control-height-sm);
-  padding-inline: var(--oe-button-padding-inline-sm);
-  font-size: 0.875rem;
-}
+/*
+ * The controls themselves — buttons, the theme toggle, icons, the visually
+ * hidden label, and the focus ring — come from components.css, imported at the
+ * top of this file. What stays here is how this site arranges them: an actions
+ * row, and a CTA that carries its terms underneath it.
+ */
 
 .actions {
   display: flex;
@@ -472,42 +403,11 @@ a:hover {
   font-size: 0.9375rem;
 }
 
-/* An icon on its own is a control, not text, so it answers to the 3:1 line in
-   the accessibility baseline rather than the 4.5:1 one. `--oe-muted` clears
-   both; the hover state is the same promotion the nav links make. */
-.icon-link {
-  display: inline-flex;
-  align-items: center;
-  color: var(--oe-muted);
-}
-
-.icon-link:hover {
-  color: var(--oe-foreground);
-}
-
-/* Square, because the label inside is now an icon rather than a word of
-   varying length, and a control that changed width as you cycled it made the
-   whole header shift. */
-.theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--oe-control-height-sm);
-  min-width: var(--oe-control-height-sm);
-  padding: 0;
-  background: transparent;
-  border: 1px solid var(--oe-border);
-  border-radius: var(--oe-control-radius);
-  color: var(--oe-muted);
-  cursor: pointer;
-}
-
-.theme-toggle:hover {
-  color: var(--oe-foreground);
-  border-color: var(--oe-border-control);
-}
-
 /*
+ * Which of the toggle's three icons is showing. The control itself is
+ * `oe-theme-toggle` in components.css; this is the part only a page with a
+ * pre-paint theme script can do.
+ *
  * One of three icons, chosen by the preference `theme-init.js` publishes on
  * <html> before first paint. System is the default in the markup so that the
  * control still says something with JavaScript unavailable, which is also the
@@ -1577,7 +1477,7 @@ table.data td {
 }
 
 @media (forced-colors: active) {
-  .button,
+  .oe-button,
   .carrier-panel,
   .callout,
   .code-block {

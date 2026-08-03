@@ -47,7 +47,28 @@ test('says that the link opens a new tab, in whichever way the link is named', (
   assert.doesNotMatch(labelled, /visually-hidden/);
 
   const worded = anchor('<a href="https://github.com/x">Read the source</a>');
-  assert.match(worded, /Read the source<span class="visually-hidden"> \(opens in a new tab\)<\/span>/);
+  assert.match(worded, /Read the source<span class="oe-visually-hidden"> \(opens in a new tab\)<\/span>/);
+});
+
+test('hides the hint with a class something actually defines', async () => {
+  /* The hint is the one piece of markup this site emits after the stylesheet
+   * has been written, so a rename in CSS cannot fail its build — it just puts
+   * "(opens in a new tab)" on the page in full size next to twenty links.
+   * That is exactly what happened when the controls moved to the design
+   * package and `.visually-hidden` became `.oe-visually-hidden`. */
+  const emitted = anchor('<a href="https://github.com/x">Read the source</a>')
+    .match(/<span class="([^"]+)"/)?.[1];
+  assert.ok(emitted, 'the hint should be wrapped in a span with a class');
+
+  const { readFile } = await import('node:fs/promises');
+  const components = await readFile(
+    new URL(
+      '../node_modules/@open-e2ee/design/packages/design/dist/css/components.css',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  assert.match(components, new RegExp(`\\.${emitted}\\s*\\{`));
 });
 
 test('does not overrule a target the source set deliberately', () => {

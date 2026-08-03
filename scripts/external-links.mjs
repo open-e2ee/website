@@ -60,7 +60,7 @@ export function rewrite(html) {
       return `<a${next} target="_blank">${body}</a>`;
     }
 
-    return `<a${next} target="_blank">${body}<span class="visually-hidden"> (${HINT})</span></a>`;
+    return `<a${next} target="_blank">${body}<span class="oe-visually-hidden"> (${HINT})</span></a>`;
   });
 }
 
