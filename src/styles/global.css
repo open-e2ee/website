@@ -209,6 +209,26 @@ a:hover {
   max-width: var(--oe-content-measure);
 }
 
+/*
+ * `.measure` caps a line of text. `.container` centres a box. Composed on one
+ * element they cap the container's own box and then centre that — so a page
+ * hero started a quarter of the way across the page while the wordmark above it
+ * and every band below it started at the gutter. Five pages read as if the top
+ * of them belonged to a different site.
+ *
+ * The width stays exactly as `.measure` sets it; only the left edge moves, to
+ * the one the container would have had. The value is the container's own auto
+ * margin written out: nothing either side of 73.75rem, and the gutter below it.
+ *
+ * The cap has to stay on the container rather than move to its children. It is
+ * in `ch`, and `ch` is resolved against the font of the element carrying it —
+ * on a 60px heading, 68ch is wider than any screen, so a per-child cap silently
+ * stops capping the one line that most needs it.
+ */
+.container.measure {
+  margin-inline: max(0px, (100% - var(--oe-content-wide)) / 2) auto;
+}
+
 .stack {
   display: flex;
   flex-direction: column;

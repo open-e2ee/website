@@ -367,9 +367,34 @@ const outOfScope = [
         <li><a href={`${DOCS}/docs/E2EE.md`}>How the encryption works</a></li>
         <li><a href={`${DOCS}/SECURITY.md`}>Reporting a vulnerability</a></li>
       </ul>
-      <p class="text-links">
-        <a href="/learn">Learn how E2EE changes your app</a>
-        <a href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message</a>
+    </div>
+  </section>
+
+  {/*
+    The page ended on two links of the same weight as the sentences around them,
+    which left the reader who had just finished the threat model with nothing to
+    do. The review pack leads because the person who reads this page to the end
+    is usually reading it on someone else's behalf.
+  */}
+  <section class="band">
+    <div class="container measure stack">
+      <h2>Take this to whoever signs it off</h2>
+      <p>
+        This page is the summary; the documents above are the evidence. The review pack collects
+        them with the pinned specification revisions, dependency and test figures, and current
+        audit status in one place.
+      </p>
+      <div class="actions">
+        <a class="button" href="/evaluate">Get the security review pack</a>
+        <a class="button button-secondary" href="https://docs.open-e2ee.dev/start/quickstart">
+          Build your first encrypted message
+        </a>
+      </div>
+      <p class="muted">
+        A question about the threat model, or an answer you need for a questionnaire — email{' '}
+        <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>. No licence, meeting, or
+        account first. If you are earlier than that,{' '}
+        <a href="/learn">read how E2EE changes your app</a>.
       </p>
     </div>
   </section>
