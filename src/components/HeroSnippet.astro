@@ -1,0 +1,15 @@
+---
+import { heroCode, installCommand } from '../lib/hero-snippet.mjs';
+
+/*
+ * The demo, for a package. A developer decides whether an SDK is worth ten
+ * minutes by looking at the shape of its API, and until now the homepage
+ * asked them to take that on trust and click through. Both strings come from
+ * `src/lib/hero-snippet.mjs`, which slices the recorded quickstart capture.
+ */
+---
+
+<div class="code-block hero-snippet">
+  <p class="code-command">{installCommand}</p>
+  <pre><code>{heroCode}</code></pre>
+</div>

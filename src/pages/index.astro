@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import CarrierPanel from '../components/CarrierPanel.astro';
+import HeroSnippet from '../components/HeroSnippet.astro';
 import SignatureDiagram from '../components/SignatureDiagram.astro';
 
 const differentiators = [
@@ -83,6 +84,12 @@ const trustLinks = [
           </a>
           <a class="button button-secondary" href="#what-the-relay-stores">See what the relay stores</a>
         </div>
+        <HeroSnippet />
+        <p class="muted">
+          Six lines from the quickstart, as recorded. <a href="/product">See the whole file</a> —
+          the second client and the mock relay setup are real work this excerpt drops.
+        </p>
+
         <p class="platform-links">
           <span>Start where you are:</span>
           {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}

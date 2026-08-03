@@ -10,7 +10,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import capture from '../src/data/carrier-capture.json' with { type: 'json' };
 import { checks, dependencies, reporting, specifications } from '../src/lib/assurance.mjs';
+import { ELISION, heroCode, installCommand } from '../src/lib/hero-snippet.mjs';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
@@ -48,6 +50,26 @@ test('answers the runtime question from the hero', async () => {
   for (const runtime of ['expo', 'browser', 'node']) {
     assert.match(index, new RegExp(`docs\\.open-e2ee\\.dev/start/${runtime}`));
   }
+});
+
+test('shows only recorded code in the hero snippet', () => {
+  /* The carrier panel's rule applies to the snippet beside it: nothing on
+   * this page is drawn, mocked up, or hand-typed. A hero example written to
+   * read well is a claim about the API surface, and it is the one claim this
+   * brand cannot afford to get wrong. Anchors already throw at build time if
+   * a re-recorded capture moves them; this catches an editor who pastes a
+   * "small fix" into the rendered string instead. */
+  const rendered = heroCode.split('\n').filter((line) => line && line !== ELISION);
+
+  assert.ok(rendered.length > 0);
+  for (const line of rendered) {
+    assert.ok(
+      capture.quickstartCode.includes(line),
+      `hero line is not in the recorded capture: ${line}`,
+    );
+  }
+
+  assert.equal(installCommand, `npm install ${capture.packageName}`);
 });
 
 test('answers “what does the relay see” in the fixed wording', async () => {
