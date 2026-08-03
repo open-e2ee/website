@@ -84,6 +84,78 @@ test('shows only recorded code in the hero snippet', () => {
   assert.equal(installCommand, `npm install ${capture.packageName}`);
 });
 
+test('keeps the recorded carrier row on the page, wherever it sits', async () => {
+  const index = await flat('../src/pages/index.astro');
+
+  /* The panel left the hero for the band whose copy raises the question it
+   * answers. Moving it is a layout decision; dropping it is not, because it
+   * is the only thing on the site that shows rather than states what the
+   * relay holds. A homepage that only asserts it has given up the argument. */
+  assert.match(index, /<CarrierPanel \/>/);
+  assert.match(index, /Not a mock-up/);
+  assert.match(index, /captured by running the documented quickstart/);
+});
+
+test('gives the install command a control, and measures the one it declared', async () => {
+  const [snippet, script] = await Promise.all([
+    flat('../src/components/HeroSnippet.astro'),
+    read('../public/measure.js'),
+  ]);
+
+  /* `install_copy` was in the declared nine before anything could send it
+   * deliberately — the copy listener could only infer it from a selection.
+   * The button is the deliberate path, and the hook the collector watches for
+   * is the attribute, so renaming it silently stops the event. */
+  assert.match(snippet, /data-install-copy/);
+  assert.match(snippet, /navigator\.clipboard\.writeText/);
+  assert.match(script, /\[data-install-copy\]'\)\) return send\('install_copy'\)/);
+});
+
+test('names every icon-only control it puts in the header', async () => {
+  const [header, toggle, icon] = await Promise.all([
+    flat('../src/components/Header.astro'),
+    flat('../src/components/ThemeToggle.astro'),
+    flat('../src/components/Icon.astro'),
+  ]);
+
+  /* DESIGN.md's accessibility baseline: a non-text control still needs a
+   * name. Three of these became icons in one change, and an icon with no
+   * name is a button that only sighted mouse users can identify. */
+  assert.match(header, /aria-label="The SDK on GitHub"/);
+  assert.match(toggle, /Colour theme: <span data-theme-label>/);
+  /* Decorative inside a named control: the name must not be read twice. */
+  assert.match(icon, /aria-hidden="true"/);
+  assert.match(icon, /focusable="false"/);
+});
+
+test('sends the reader to the console rather than to a doorway', async () => {
+  const header = await flat('../src/components/Header.astro');
+
+  /* "Sign in" named the step, not the destination, and it was the only nav
+   * item that described work rather than a place. */
+  assert.match(header, />Console</);
+  /* Link text only — the comment above the constant has to be free to say
+   * what the label used to be and why it stopped being that. */
+  assert.doesNotMatch(header, />\s*Sign in\s*</i);
+});
+
+test('ships the license for the icon set it copied', async () => {
+  const [notices, license, icon] = await Promise.all([
+    read('../THIRD_PARTY_NOTICES.md'),
+    read('../third-party/Octicons-MIT.txt'),
+    read('../src/components/Icon.astro'),
+  ]);
+
+  /* The MIT license asks for the notice to travel with the copy, and the
+   * design system's own rule is that naming a license without shipping it
+   * does not satisfy it. The paths are vendored, so this repository owes the
+   * text — not a link to it. */
+  assert.match(license, /Copyright \(c\) \d{4} GitHub Inc\./);
+  assert.match(license, /THE SOFTWARE IS PROVIDED "AS IS"/);
+  assert.match(notices, /third-party\/Octicons-MIT\.txt/);
+  assert.match(icon, /THIRD_PARTY_NOTICES\.md/);
+});
+
 test('answers “what does the relay see” in the fixed wording', async () => {
   const index = await flat('../src/pages/index.astro');
 

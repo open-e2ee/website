@@ -1,13 +1,31 @@
 ---
+import Icon from './Icon.astro';
+
 /*
  * Light, dark, and system, persisted under `oe-theme` per the design system's
  * theme contract. The resolver in BaseLayout runs before first paint, so this
  * control only has to cycle the stored preference.
+ *
+ * Sun, moon, and monitor, because that is the control every developer has
+ * already learned somewhere else. The word it used to print was unambiguous
+ * but it read as a status field rather than a switch, and it was the only
+ * lowercase mono string in a header of sentence-case links.
+ *
+ * All three icons are rendered and CSS shows one. Which one is decided by
+ * `data-theme-preference` on <html>, which `theme-init.js` sets before first
+ * paint — a stored preference of dark therefore paints the moon rather than
+ * painting the monitor and correcting itself once this script runs.
+ *
+ * The accessible name is real text rather than an `aria-label` so that the
+ * `aria-live` region has something to announce when the preference changes.
  */
 ---
 
 <button class="theme-toggle" type="button" data-theme-toggle aria-live="polite">
-  <span data-theme-label>system</span>
+  <Icon name="desktop" class="theme-icon theme-icon-system" />
+  <Icon name="sun" class="theme-icon theme-icon-light" />
+  <Icon name="moon" class="theme-icon theme-icon-dark" />
+  <span class="visually-hidden">Colour theme: <span data-theme-label>system</span></span>
 </button>
 
 <script>
@@ -19,7 +37,7 @@
 
   function render(preference: string) {
     if (label) label.textContent = preference;
-    button?.setAttribute('aria-label', `Colour theme: ${preference}. Activate to change.`);
+    document.documentElement.dataset.themePreference = preference;
   }
 
   render(getStoredTheme());

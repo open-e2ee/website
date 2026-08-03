@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import CarrierPanel from '../components/CarrierPanel.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
+import Icon from '../components/Icon.astro';
 import SignatureDiagram from '../components/SignatureDiagram.astro';
 
 const differentiators = [
@@ -90,22 +91,27 @@ const trustLinks = [
             <span class="cta-sublabel">ten minutes · two clients · no account</span>
           </a>
           <a class="button button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
+            <Icon name="github" />
             View the SDK on GitHub
           </a>
         </div>
-        <HeroSnippet />
-        <p class="muted">
-          Six lines from the quickstart, as recorded. <a href="/product">See the whole file</a> —
-          the second client and the mock relay setup are real work this excerpt drops.
-        </p>
         {/* Closes the column rather than interrupting it. The rule above this
             line is what makes it read as the terms of the offer above, and a
             reader who has got this far has already seen the offer. */}
         <p class="maturity">0.1.x alpha — public APIs and persisted formats may change before 1.0.</p>
       </div>
 
-      <div id="what-the-relay-stores">
-        <CarrierPanel />
+      {/* The demo takes the side the proof panel used to hold. A reader
+          deciding whether to spend ten minutes is asking what the API looks
+          like, and this answers it without a click; the panel that answers
+          "what does the relay actually hold" now sits with the diagram that
+          raises the question. */}
+      <div class="hero-demo">
+        <HeroSnippet />
+        <p class="muted">
+          Six lines from the quickstart, as recorded. <a href="/product">See the whole file</a> —
+          the second client and the mock relay setup are real work this excerpt drops.
+        </p>
       </div>
     </div>
   </section>
@@ -144,6 +150,18 @@ const trustLinks = [
       </div>
       <div class="diagram">
         <SignatureDiagram />
+      </div>
+
+      {/* The diagram states it; this shows it. Keeping the two together means
+          the claim and the recording are read in one pass, which is the whole
+          argument of the band. */}
+      <div id="what-the-relay-stores" class="carrier-proof">
+        <h3>The same message, recorded</h3>
+        <p class="measure">
+          Not a mock-up: the plaintext as Bob&rsquo;s device decrypted it, and the row the relay
+          held, captured by running the documented quickstart against the mock relay.
+        </p>
+        <CarrierPanel />
       </div>
     </div>
   </section>

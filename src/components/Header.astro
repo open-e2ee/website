@@ -1,10 +1,11 @@
 ---
+import Icon from './Icon.astro';
 import Lockup from './Lockup.astro';
 import ThemeToggle from './ThemeToggle.astro';
 
 const path = Astro.url.pathname;
 
-/* Nav follows the funnel: evaluate, learn, build, verify, buy, read, inspect. */
+/* Nav follows the funnel: evaluate, learn, build, verify, buy, read. */
 const links = [
   { href: '/product', label: 'Product' },
   { href: '/learn', label: 'Learn' },
@@ -12,8 +13,20 @@ const links = [
   { href: '/security', label: 'Security' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/blog', label: 'Blog' },
-  { href: 'https://github.com/open-e2ee/signal-protocol-js', label: 'GitHub' },
 ];
+
+/*
+ * The repository is the seventh nav item everywhere else on the internet and
+ * the mark is how it is recognised, so it leaves the word list and joins the
+ * actions as an icon. In the menu, where there is room for words and no room
+ * for a row of icons, it stays a link that says GitHub.
+ */
+const repository = 'https://github.com/open-e2ee/signal-protocol-js';
+
+/* The destination is the console. Calling the link "Sign in" described the
+ * doorway rather than the room, and named the one step a reader has to take
+ * before they get anything. */
+const consoleUrl = 'https://console.open-e2ee.dev';
 
 const current = (href: string) =>
   href.startsWith('/') && (path === href || path.startsWith(`${href}/`)) ? 'page' : undefined;
@@ -26,13 +39,17 @@ const current = (href: string) =>
       {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
     </nav>
     <div class="header-actions">
+      <a class="icon-link desktop-only" href={repository} aria-label="The SDK on GitHub">
+        <Icon name="github" />
+      </a>
       <ThemeToggle />
-      <a class="text-link desktop-only" href="https://console.open-e2ee.dev">Sign in</a>
+      <a class="text-link desktop-only" href={consoleUrl}>Console</a>
       <details class="mobile-nav">
         <summary>Menu</summary>
         <nav aria-label="Site">
           {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
-          <a href="https://console.open-e2ee.dev">Sign in</a>
+          <a href={repository}>GitHub</a>
+          <a href={consoleUrl}>Console</a>
           <a href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message</a>
         </nav>
       </details>

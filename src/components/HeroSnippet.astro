@@ -1,4 +1,5 @@
 ---
+import Icon from './Icon.astro';
 import { heroCode, installCommand } from '../lib/hero-snippet.mjs';
 
 /*
@@ -6,10 +7,49 @@ import { heroCode, installCommand } from '../lib/hero-snippet.mjs';
  * minutes by looking at the shape of its API, and until now the homepage
  * asked them to take that on trust and click through. Both strings come from
  * `src/lib/hero-snippet.mjs`, which slices the recorded quickstart capture.
+ *
+ * The install command is the one line on the page a reader is meant to take
+ * away with them, so it has a button rather than an invitation to select it
+ * by hand. `measure.js` already declared `install_copy` and could only infer
+ * it from a selection; the button is what it was waiting for.
  */
 ---
 
 <div class="code-block hero-snippet">
-  <p class="code-command">{installCommand}</p>
+  <p class="code-command">
+    <span>{installCommand}</span>
+    <button type="button" class="copy-button" data-install-copy data-copy={installCommand}>
+      <Icon name="copy" class="copy-icon copy-icon-idle" />
+      <Icon name="check" class="copy-icon copy-icon-done" />
+      <span class="visually-hidden" data-copy-label>Copy the install command</span>
+    </button>
+  </p>
   <pre><code>{heroCode}</code></pre>
 </div>
+
+<script>
+  /* Bundled rather than inline: the CSP is script-src 'self'. */
+  const button = document.querySelector<HTMLButtonElement>('[data-install-copy]');
+  const label = button?.querySelector<HTMLElement>('[data-copy-label]');
+  const idle = 'Copy the install command';
+  let restore: ReturnType<typeof setTimeout> | undefined;
+
+  button?.addEventListener('click', async () => {
+    const command = button.dataset.copy;
+    if (!command) return;
+    try {
+      await navigator.clipboard.writeText(command);
+    } catch {
+      /* Clipboard access can be refused, and a button that lies about having
+         copied is worse than one that quietly does nothing. */
+      return;
+    }
+    button.dataset.copied = 'true';
+    if (label) label.textContent = 'Install command copied';
+    clearTimeout(restore);
+    restore = setTimeout(() => {
+      delete button.dataset.copied;
+      if (label) label.textContent = idle;
+    }, 2000);
+  });
+</script>
