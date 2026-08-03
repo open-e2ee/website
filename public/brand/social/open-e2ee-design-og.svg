@@ -28,5 +28,5 @@
   <text x="88" y="261.26" fill="#615d57" font-family="'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="52.7" font-weight="500">Design System</text>
   <rect x="88" y="301.26" width="692" height="1" fill="#ded9d3"/>
   <text x="88" y="361.25525" fill="#615d57" font-family="'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="500">Brand identity, design tokens, and theming.</text>
-  <text x="88" y="556" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="19">@open-e2ee/design · 0.3.0</text>
+  <text x="88" y="556" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="19">@open-e2ee/design · 0.4.0</text>
 </svg>

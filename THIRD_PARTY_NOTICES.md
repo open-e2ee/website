@@ -2,11 +2,13 @@
 
 ## Octicons
 
-`src/components/Icon.astro` inlines six path definitions copied unmodified from
+`src/components/Icon.astro` renders six path definitions copied unmodified from
 Octicons 19.32.0 (`primer/octicons`), published by GitHub Inc. under the MIT
-license: `github`, `sun`, `moon`, `desktop`, `copy`, and `check`. License text:
-`third-party/Octicons-MIT.txt`. Naming a license without shipping it does not
-satisfy it.
+license: `github`, `sun`, `moon`, `desktop`, `copy`, and `check`. The paths come
+from `@open-e2ee/design/icons`, which carries the same notice; this site inlines
+them into its own pages, so it redistributes them too and states it here rather
+than pointing at a dependency. License text: `third-party/Octicons-MIT.txt`.
+Naming a license without shipping it does not satisfy it.
 
 The GitHub mark is copied rather than redrawn on purpose. It is a trademark,
 and an approximation of someone else's trademark is worse than no mark at all.

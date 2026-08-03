@@ -294,8 +294,8 @@ test('gives the security page something to do at the end of it', async () => {
    * and used to arrive at two links weighted the same as the sentences above
    * them. The close has to carry an action of button weight. */
   const close = security.slice(security.lastIndexOf('Read the primary sources'));
-  assert.match(close, /<a class="button" href="\/evaluate">/);
-  assert.match(close, /class="button button-secondary"/);
+  assert.match(close, /<a class="oe-button" href="\/evaluate">/);
+  assert.match(close, /class="oe-button oe-button-secondary"/);
 });
 
 test('keeps a narrowed container on the same left edge as everything else', async () => {
