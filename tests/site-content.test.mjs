@@ -270,3 +270,46 @@ test('gives every article its own share card, falling back to the site card', as
   assert.match(config, /image: z\.string\(\)\.optional\(\)/);
   assert.match(layout, /image=\{image\}/);
 });
+
+test('names what the relay cannot read, in the drawings as well as the prose', async () => {
+  const [signature, plaintext] = await Promise.all([
+    flat('../src/components/SignatureDiagram.astro'),
+    flat('../src/components/diagrams/WhoHoldsPlaintext.astro'),
+  ]);
+
+  /* A diagram is the part of a page that gets screenshotted and quoted with
+   * none of the sentences around it. `cannot read` on its own reads as the
+   * relay being blind, which is the wording messaging.md names as wrong; the
+   * relay sees every routing field. The object is what makes it true. */
+  for (const diagram of [signature, plaintext]) {
+    assert.match(diagram, /cannot read plaintext<\/text>/);
+    assert.doesNotMatch(diagram, /cannot read<\/text>/);
+  }
+});
+
+test('gives the security page something to do at the end of it', async () => {
+  const security = await flat('../src/pages/security.astro');
+
+  /* The reader who finishes this page is usually reading it for someone else,
+   * and used to arrive at two links weighted the same as the sentences above
+   * them. The close has to carry an action of button weight. */
+  const close = security.slice(security.lastIndexOf('Read the primary sources'));
+  assert.match(close, /<a class="button" href="\/evaluate">/);
+  assert.match(close, /class="button button-secondary"/);
+});
+
+test('keeps a narrowed container on the same left edge as everything else', async () => {
+  const css = await read('../src/styles/global.css');
+
+  /* `.container` centres its box and `.measure` narrows it, so composing them
+   * centred a narrow box: five page heroes started a quarter of the way across
+   * the page while the wordmark above and the bands below started at the
+   * gutter. The container has to keep the left edge it would have had. */
+  assert.match(
+    css,
+    /\.container\.measure \{\s*margin-inline: max\(0px, \(100% - var\(--oe-content-wide\)\) \/ 2\) auto;\s*\}/,
+  );
+  /* The cap is in `ch`, which resolves against the font of whatever carries it.
+   * Moving it to the children stops it capping a 60px heading at all. */
+  assert.doesNotMatch(css, /\.container\.measure > \*/);
+});

@@ -25,6 +25,12 @@ const SHEAR = 8;
 const MIDDLE_X = 330;
 const MIDDLE_WIDTH = 170;
 
+/* The device labels start at their box's left edge, but the middle label is
+   the long one in both rows — naming what the middle holds runs it into the
+   right-hand device's label. Centred under the box it names instead, in both
+   rows, so the two rows stay the same drawing apart from the middle. */
+const MIDDLE_LABEL_X = MIDDLE_X + MIDDLE_WIDTH / 2;
+
 /* Row origins: the y of each row's device top edge. */
 const rows = [
   { top: 72, boundaries: [200, 310, 520, 640] },
@@ -125,7 +131,7 @@ const barWidths = [104, 118, 78];
   ))}
 
   <text x={DEVICE_LEFT_X} y={200} class="diagram-label">device</text>
-  <text x={MIDDLE_X} y={200} class="diagram-label">your server · reads every message</text>
+  <text x={MIDDLE_LABEL_X} y={200} text-anchor="middle" class="diagram-label">your server · reads every message</text>
   <text x={DEVICE_RIGHT_X} y={200} class="diagram-label">device</text>
 
   <text x={DEVICE_LEFT_X} y={240} class="diagram-label">End-to-end encrypted</text>
@@ -154,7 +160,7 @@ const barWidths = [104, 118, 78];
   />
 
   <text x={DEVICE_LEFT_X} y={400} class="diagram-label">device</text>
-  <text x={MIDDLE_X} y={400} class="diagram-label">your relay · carries, cannot read</text>
+  <text x={MIDDLE_LABEL_X} y={400} text-anchor="middle" class="diagram-label">your relay · carries, cannot read plaintext</text>
   <text x={DEVICE_RIGHT_X} y={400} class="diagram-label">device</text>
   <text x={MIDDLE_X} y={424} class="diagram-tick-label">metadata still visible</text>
 </svg>

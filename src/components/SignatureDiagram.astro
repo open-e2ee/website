@@ -139,5 +139,11 @@ const ENVELOPE_SHEAR = 14;
     <path d={geometry.full.carrierRightPath} />
     <path d={geometry.full.payloadPath} />
   </g>
-  <text x={RELAY_X} y={262} class="diagram-label">relay · cannot read</text>
+  {/*
+    Centred under the mark rather than started at its left edge, which is where
+    the device and envelope labels start: naming the object runs this label past
+    the second envelope's own label, and the mark is a symbol with a centre
+    rather than a box with a left edge.
+  */}
+  <text x={RELAY_X + RELAY_SIZE / 2} y={262} text-anchor="middle" class="diagram-label">relay · cannot read plaintext</text>
 </svg>
