@@ -3,13 +3,26 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import CarrierPanel from '../components/CarrierPanel.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import Icon from '../components/Icon.astro';
-import SignatureDiagram from '../components/SignatureDiagram.astro';
 import { MEASURED_ON, libsignalReadme } from '../lib/comparison.mjs';
+import { startupTier } from '../data/pricing.mjs';
 
 const differentiators = [
   {
     title: 'Pure TypeScript, everywhere your app runs',
-    body: 'Expo, React Native, browsers, and Node from one package. No native modules, no prebuild step, no ejecting.',
+    /* "No native modules, no prebuild step, no ejecting" was true of the crypto
+     * and false of the storage this site's own /product page documents: the
+     * encrypted Expo store is expo-sqlite with SQLCipher, which Expo Go does
+     * not carry. The limit belongs in the same breath as the capability.
+     *
+     * Appending the limit was not enough: "no prebuild step" and "needs a
+     * development build" stayed in one sentence, and two readers called it a
+     * contradiction, because a development build is native project generation
+     * however it is spelled. The claim is now scoped the way the approved
+     * proof point in docs/messaging.md §5 scopes it — to the *protocol code*,
+     * which really is pure TypeScript — rather than to the package as a whole.
+     * /product keeps the full reconciliation, where there is room to explain
+     * that `npx expo prebuild` is not a command the reader types. */
+    body: 'Expo, React Native, browsers, and Node from one package. The protocol code is pure TypeScript with no native crypto module to link — the encrypted Expo store uses SQLCipher, which needs a development build rather than Expo Go.',
   },
   {
     title: 'Post-quantum from the first handshake',
@@ -20,16 +33,81 @@ const differentiators = [
     body: 'Storage, relay, and encrypted-object adapters are composed by your application. We do not host anything, and nothing phones home.',
   },
   {
+    /* The clause here used to be "the work teams usually discover three
+       months in". Two fresh readers flagged it independently and both were
+       right: "three months" is a statistic, nobody measured it, and there are
+       no teams to have measured it on. One wrote "unsourced vendor line —
+       which teams? I discount it entirely", the other "a made-up number in a
+       page that is otherwise scrupulous about sourcing". That is the exact
+       trade the rest of the page refuses — borrowing the authority of a
+       measurement without doing one — and it was buying a rhetorical beat.
+       The replacement says the same thing as a fact about scope, which any
+       reader can check against their own prototype. */
     title: 'The hard parts are included',
-    body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files — the work teams usually discover three months in.',
+    body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files — the parts a working one-to-one prototype still leaves to build.',
   },
   {
     title: 'Every claim is inspectable',
     body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay still sees are all published.',
   },
   {
+    /* This cell said "at a published price" and showed no price, for the whole
+     * loop. A fresh reader took the word "published" literally and was right
+     * to: "it promises a number that is not on the page and not linked", and
+     * they listed it as one of two go/no-go inputs they could not get. The
+     * number existed the entire time — /pricing has carried $5,000 since
+     * before this loop started, and the header links to it. The page was
+     * being coy about the one fact a solo developer decides on.
+     *
+     * The price is read from the same module /pricing renders, so the two
+     * surfaces cannot disagree. Naming the entry tier only, because "starts
+     * at" is the honest shape of a three-tier table and the link carries the
+     * rest. */
+    id: 'agpl-or-commercial',
     title: 'AGPL, or a commercial license',
-    body: 'The complete SDK is free under AGPL-3.0. Proprietary products buy annual production rights at a published price.',
+    body: `The complete SDK is free under AGPL-3.0 — every feature, nothing time-limited. Closed-source products buy annual production rights, from ${startupTier.price} ${startupTier.period} for one product.`,
+    link: { href: '/pricing', label: 'See the tiers' },
+  },
+  /*
+   * The band is titled "What you get, and what it costs you to find out" and
+   * for eight rounds it listed only the first half. Three fresh readers in two
+   * consecutive waves arrived at the missing half unaided and made it their
+   * largest gap: one asked what happens to dispute resolution, fraud review
+   * and trust-and-safety; one wrote that support messages under E2EE cannot be
+   * produced under subpoena, cannot be supervised, and cannot have DLP run
+   * over them, and that "the page never names the tradeoff — not to solve it,
+   * not even to acknowledge it exists." Their shared conclusion was not that
+   * the product is wrong. It is that a page which omits the one cost every
+   * evaluator finds in the first meeting has not met an evaluator yet, and
+   * that reading is more expensive than the cost itself.
+   *
+   * It is stated as a consequence of what the relay holds, because that is the
+   * part this page can prove: the recorded row two bands down is ciphertext,
+   * and everything in this cell follows from that and nothing else. No
+   * regulation is named — docs/messaging.md bans "required for HIPAA / GDPR /
+   * SOC 2" outright, and the honest form of this cost is the capability a team
+   * loses, not a rule someone must obey.
+   *
+   * The last sentence sends the wrong reader away on purpose. The brief
+   * optimises for qualified starts of a ten-minute quickstart, and a team that
+   * needs server-side moderation will discover this either way — the only
+   * variable is whether they discover it here or after the ten minutes, and
+   * only one of those two outcomes is repairable.
+   *
+   * It said "if your product needs any of that" for one round, and that was
+   * too wide. A fresh reader building a marketplace pointed out that
+   * client-side reporting — the user's own device attaches the plaintext to a
+   * report — is a solved pattern, so the page was disqualifying products it
+   * actually fits, in the last sentence they would read before closing the
+   * tab. The condition is server-side capability, not the capability itself,
+   * and the sentence now says so. It stops there deliberately: the SDK ships
+   * no reporting API, and describing the client-side pattern as though it
+   * were one would trade an over-disqualification for an invented feature.
+   */
+  {
+    id: 'what-you-give-up',
+    title: 'What you give up',
+    body: 'Your relay holds ciphertext, so nothing on your backend can search message contents, moderate them, or produce them for a legal request. The SDK ships encrypted device-to-device transfer, but restoring history to a user who has lost every device is a backup you design. If any of that has to happen on your server, encrypt in transit and at rest instead — this is the wrong tool, and it is cheaper to know now.',
   },
 ];
 
@@ -71,20 +149,159 @@ const trustLinks = [
 
 <BaseLayout
   title="OpenE2EE"
-  description="Open-source, protocol-level end-to-end encryption for TypeScript. Your relay carries sealed envelopes it cannot read — in Expo, React Native, browsers, and Node."
+  description="Add end-to-end encrypted messaging to a TypeScript app. The Signal Protocol in one npm package for Expo, React Native, browsers, and Node — your relay never needs message plaintext or device private keys."
 >
   <section class="hero">
     <div class="container hero-grid">
       <div class="hero-copy">
-        <h1>End-to-end encryption for TypeScript, on the Signal Protocol.</h1>
+        <h1>
+          <span class="keep-together">End-to-end</span> encrypted messaging for your TypeScript app.
+        </h1>
+        {/* "It is not a hosted chat service" is four words of comparison in
+            the one block that was already above the fold everywhere.
+
+            A mobile critic measured the first paint and found the ratio: every
+            pixel of disclosed risk was above the 664 line and none of the
+            disclosed differentiation was — the libsignal argument begins 19 px
+            under it. Their summary was that the page is honest in the wrong
+            order, because the reasoning a phone shows is "this is exactly my
+            stack, my users' stored data may break, click here", with no
+            evidence and no comparison in between. Six critics have now listed
+            what they would otherwise reach for and every list is topped by the
+            same category, a hosted chat service. Against that one the page
+            already had its answer — the ownership clause and "nothing phones
+            home" are that answer — but stated as a privacy fact, so no reader
+            heard it as a comparison. It is the same sentence with the other
+            side of it named.
+
+            No vendor is named and none is characterised: the claim is about
+            this product, and /pricing states the same thing in its own words
+            ("You run your own infrastructure"). A comparison the page can only
+            make by describing someone else's product is one it should not make
+            here.
+
+            It was budgeted as costing a line at 390 — the fold holds four
+            answers and there are five, so every addition was expected to come
+            out of the secondary button. Measured, it costs nothing there. The
+            lead's sixth line held one word, `home.`, and 33 characters
+            redistributed into the slack above it: the CTA, its terms and the
+            GitHub button are on the same pixels as before, 541, 593 and 628.
+            The 31 px it does cost lands at 1280 and 1440, where the fold is
+            250 px further down and nothing reaches it.
+
+            Which is worth recording as the reason, not as luck. Ragged-right
+            body copy carries a line of slack most of the time, and the fold
+            arithmetic from round 4 counts blocks rather than characters, so it
+            prices a clause and a paragraph the same. It is right about
+            paragraphs and wrong about clauses.
+
+            "and more than TLS" is the second comparison, and it is here
+            because the first one was aimed at the wrong opponent. Nine fresh
+            readers have now written out the shortlist they hold before the
+            page speaks, and a hosted chat service tops it — but it is never
+            the whole list, and it is never the option they would actually
+            take. Three of the last four named the same real default in the
+            same words: ship it on TLS and encryption at rest, revisit E2EE
+            later. One called it "my actual default", another "the real
+            default and the hardest to displace". The page argued against
+            hosted chat and against libsignal, which are the two alternatives
+            it finds most flattering to argue against, and said nothing at all
+            to the reader who is not going to encrypt anything.
+
+            Naming TLS is not a comparison with a vendor, and it does not
+            characterise anyone's product. TLS and at-rest encryption are the
+            reader's own status quo, and the honest distinction between them
+            and this is where the protection stops — which is a fact about
+            where ciphertext sits, and the recorded relay row further down is
+            the evidence for it.
+
+            "carries them as ciphertext" and not "cannot read them": §3 of
+            docs/messaging.md bans that paraphrase by name, and the paired
+            honesty line under the button still says the relay sees metadata.
+            The claim is about the envelope, which is the thing the page can
+            show, and does.
+
+            It read "carries them sealed" for one round, and all three fresh
+            readers of that round stopped on the word. "sealed" is a term of
+            art here — the feature band lists "sealed sender" two screens
+            down, and the recorded relay row prints `senderUserId alice` in
+            the clear. So the hero appeared to promise a specific feature that
+            the page's own evidence then showed switched off. One reader
+            called it "the one place I felt handled", which is the most
+            expensive sentence a reader can write about this page.
+            "ciphertext" is the word the recorded panel, the cost cell, and
+            this line can all use to mean the same thing.
+
+            Paid for by "nothing phones home", which is not lost — it is the
+            second sentence of the "Your backend stays yours" cell, verbatim.
+            A payload that appears twice on one page can be spent once. */}
         <p class="lead">
-          Pure TypeScript, from one package: Expo, React Native, browsers, and Node. Post-quantum
-          PQXDH and the Double Ratchet, multi-device, groups, sealed sender, encrypted attachments.
-          No native modules. No prebuild step.
+          The Signal Protocol as one npm package, for Expo, React Native, browsers, and Node. Not a
+          hosted chat service, and more than TLS: no third party holds your users&rsquo; messages,
+          and your own relay carries them as ciphertext. You own the device store and the relay; the
+          SDK ships adapters for both.
         </p>
-        <p class="honesty">
-          The relay never needs message plaintext or device private keys. It still sees metadata —
-          we document exactly what, and what sealed sender does and doesn&rsquo;t hide.
+        {/* This line gates the offer, so it sits directly above the button
+            rather than closing the column. A reader who reaches the button has
+            not necessarily read down to a footnote, and the click happens
+            here. It gates runtime scope as well as maturity: the lead sells
+            four runtimes as peers, and the admission that two of their stores
+            are experimental otherwise sits four folds below the button, so a
+            browser or bare React Native developer could spend the whole ten
+            minutes before meeting it. Its rule is the join between the
+            argument and the offer, not a section break under both. */}
+        {/* The licence sentence links because three fresh readers were told
+            three times that they owe money and never once what it costs. One
+            made it their largest gap on the whole page: the AGPL card says
+            proprietary products buy production rights "at a published price",
+            which asserts the price is public in the act of not showing it —
+            the one claim on a page built around inspectable claims that they
+            could not inspect. Pricing was a bare nav word thirteen screens
+            below the sentence that created the debt. /pricing carries the
+            numbers, so this is a missing link and not a missing decision. */}
+        {/* The licence sentence is here because of a contradiction four fresh
+            readers hit and none could resolve: the nav offers Pricing and
+            Console while the lead says "nothing phones home" and the button
+            says "no account". Every one of them read Pricing as a hosted
+            service and concluded the page was hiding one. It sells a
+            commercial licence — "Free under AGPL. Priced when you need it
+            closed", and "You run your own infrastructure, you keep your own
+            keys", both on /pricing — so the two statements were never in
+            tension; the landing page simply never said which kind of thing
+            Pricing was. One reader called it the only place where reading
+            longer reduced their confidence.
+
+            It belongs in this strip rather than the lead because this strip is
+            the disqualifying-facts gate in front of the button, and a licence
+            disqualifies more readers than an alpha version number does. */}
+        {/* "; Expo and Node are not" is four words closing an inference five
+            separate readers have now had to make for themselves.
+
+            The sentence marks two of the four runtimes the lead sells as
+            peers, and readers split two ways on it. One kind read "Browser and
+            bare React Native stores are experimental" as *browsers are
+            experimental*, so the page was harsher on itself than the facts
+            are. The other kind reasoned correctly by elimination — Expo is the
+            one runtime named in the lead and absent from the warning — and
+            then said, in three separate reports, that they had constructed
+            that answer rather than read it. An Expo founder put it plainly:
+            the fold names Expo first, invites the question "can I actually use
+            this", contains every word needed to answer it, and leaves the
+            answer to the reader. They also could not tell whether "bare React
+            Native" included them, having run `expo prebuild`.
+
+            Naming the other side is the whole fix, and it is what the source
+            says: `ADAPTERS.md` marks the web and react-native stores
+            `(experimental)` and puts no marker on the Expo or Node ones. "Are
+            not" rather than "are complete" or "are production-ready", because
+            an absent marker is evidence for the absence of the marker and not
+            for a capability grade — and the alpha clause in front of it
+            already governs all four. */}
+        <p class="maturity">
+          0.1.x alpha — public APIs and persisted formats may change before 1.0. Browser and bare
+          React Native stores are experimental; Expo and Node are not. Free under AGPL-3.0; <a
+            href="/pricing">commercial licence for closed source</a
+          >.
         </p>
         <div class="actions">
           <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
@@ -96,10 +313,75 @@ const trustLinks = [
             View the SDK on GitHub
           </a>
         </div>
-        {/* Closes the column rather than interrupting it. The rule above this
-            line is what makes it read as the terms of the offer above, and a
-            reader who has got this far has already seen the offer. */}
-        <p class="maturity">0.1.x alpha — public APIs and persisted formats may change before 1.0.</p>
+        {/*
+          These two paragraphs answer objections, and they now follow the offer
+          instead of standing between the reader and it.
+
+          A phone is why. 390×844 is the device height, not the viewport: an
+          iPhone serves about 664 CSS px on first paint, and the button used to
+          begin 91 px below that with the maturity rule landing on 661 — the
+          last row of pixels a reader saw was a full-width line that means "this
+          section has ended". Measured, the four blocks a first paint has room
+          for are the headline, the lead, the alpha gate and the button; there
+          is no ordering of six that fits five answers into 664 px, so the
+          question was which answer arrives after a scroll rather than whether
+          one does. It is now "why not the alternatives", which begins 13 px
+          below the fold, instead of "what do I do next", which began 91 px
+          below it.
+
+          Nothing is lost at 390×844 either, where both still render.
+
+          The libsignal sentence: three fresh readers answered every question
+          the first viewport is for except this one, each giving the same
+          reason — the page named no alternative, so "no native modules" was a
+          contrast with nothing on the other side of it. Its own README is the
+          strongest evidence available and it is one line long. The runtime
+          clause repeats verbatim in the comparison band below, which is why
+          the hero can afford to carry it and the fold can afford to lose it.
+        */}
+        {/* Twelve fresh readers have now written out the shortlist they hold
+            before the page speaks, and every one of them tops it with the same
+            option: ship it on TLS and encryption at rest, revisit E2EE later.
+            The lead names that option — "and more than TLS" — and three
+            readers in one wave independently returned the same verdict on it:
+            "four words, no threat named", "an assertion, not an argument",
+            "the entire argument against my number-one option". Naming an
+            alternative is not arguing against it.
+
+            The argument is in docs/positioning.md §5, where readable-data
+            exposure is ranked the strongest adoption trigger of the eight, and
+            its wording is deliberate: "end-to-end encryption can limit the
+            readable content that an attacker gets from a breached relay." It
+            says *can limit*, not prevents, and it is about a breached relay
+            rather than about compliance — the same section opens by stating
+            that almost no regulation requires E2EE at all. Reproduced close to
+            verbatim here for that reason, hedge included.
+
+            It sits above the libsignal sentence because the shortlists are
+            ordered and libsignal is never first. It cannot go in the lead: at
+            390 the real fold is 664 px and holds five blocks with no slack,
+            and the only block that could yield is the alpha and licence
+            disclosure, which the honesty contract requires and a test pins. */}
+        <p class="stance">
+          Why not just TLS? TLS protects a message on the wire and at-rest encryption protects the
+          disk &mdash; in between, your server holds it readable. End-to-end encryption can limit
+          the readable content a breached relay gives up.
+        </p>
+        <p class="stance">
+          Why not libsignal? The reference implementation&rsquo;s own README says{' '}
+          <a href={libsignalReadme.href}>&ldquo;use outside of Signal is unsupported&rdquo;</a>, and
+          it does not run in Expo, React Native, or a browser.
+        </p>
+        {/* "we document exactly what" promised a document and pointed at
+            nothing, in the one paragraph where a sceptical reader most wants
+            to click through — a claim that cannot be checked at the moment it
+            is being weighed. `/security` is where pricing, learn and product
+            already send a reader for this same fact. */}
+        <p class="honesty">
+          The relay never needs message plaintext or device private keys. It still sees metadata —{' '}
+          <a href="/security">we document exactly what</a>, and what sealed sender does and
+          doesn&rsquo;t hide.
+        </p>
       </div>
 
       {/* The demo takes the side the proof panel used to hold. A reader
@@ -111,9 +393,79 @@ const trustLinks = [
         <HeroSnippet />
         <p class="muted">
           Send and receive, lifted from the quickstart as recorded.{' '}
-          <a href="/product">See the whole file</a> — registering the devices with the relay, and
-          Bob&rsquo;s own client, are real work this excerpt drops.
+          <a href="/product">See the whole file.</a>
         </p>
+        {/*
+          The disclosure was one clause at the end of the caption above, and it
+          named Bob's client and the device registration. Four fresh readers
+          sized up the excerpt; every one of them found something it did not
+          name. `mockStore()` is a mock in the reader's own estimate — a real
+          store, per device, per platform, and the thing whose "persisted
+          formats may change before 1.0". `relay` is a server somebody has to
+          run. Those are the two line items that decide whether this is a
+          two-week or a two-month job, and they were the two the disclosure
+          left out, which is worse than disclosing nothing: a reader who finds
+          the omission themselves stops believing the parts you did admit.
+
+          It is a list because a list can be checked against the code beside
+          it, and a trailing clause cannot. It sits here because this is where
+          the measured space was — two readers independently put a rectangle
+          around the same emptiness under the caption, one calling it 630×137
+          CSS px at 1280 and the other 569×238 at 1440, and both said the
+          question the excerpt raises is asked exactly where nothing answers
+          it. Every item is already on the page: two are in the code, one is in
+          the lead, one was already in the caption.
+        */}
+        <div class="excerpt-drops">
+          <p class="excerpt-drops-title">Not in this excerpt, and yours to supply</p>
+          {/* The bullets name the shipped adapter as well as the obligation,
+              because naming only the obligation created a contradiction.
+
+              "The SDK ships adapters for both" is in the lead, 450 px to the
+              left of "yours to supply", and a fresh reader put the two side by
+              side and could not tell which was true: do I install an adapter
+              and configure it, or do I stand up a network service before one
+              real message moves? Their words — the difference between an
+              afternoon and a sprint, and the only question that decides
+              whether I try this today.
+
+              Both sentences were true and the pair was not. The store and the
+              relay are yours to supply; the code for them ships. `ADAPTERS.md`
+              lists `expoStore`, `nodeStore`, `indexedDbStore` and
+              `reactNativeStore`, and `convexRelay` alongside `mockRelay` — all
+              exports of the installed package the build audit checks names
+              against. So the answer is deploy, not write, and it took naming
+              them to say so.
+
+              The relay gets a definition because three fresh readers in one
+              wave made the same complaint independently: it is the
+              load-bearing noun of the whole pitch, it appears five times in
+              the first viewport, and the page never says what it is. Each
+              inferred "a server" and then could not size it. The description
+              is the SDK's own — public keys, device lists, encrypted envelope
+              delivery.
+
+              What it deliberately does not say is what the relay can see. One
+              reader proposed "it never sees message content or your keys",
+              which is the absolute `design/DESIGN.md:403` forbids. The
+              `.honesty` paragraph already carries the fixed formula and the
+              metadata admission, one column away. A second, looser statement
+              of the same boundary is how the loose one ends up quoted. */}
+          <ul>
+            <li>
+              a real store in place of <code>mockStore()</code>, on each device — <code
+                >expoStore()</code
+              >, <code>nodeStore()</code> and <code>indexedDbStore()</code> ship
+            </li>
+            <li>
+              the relay <code>mockRelay()</code> stands in for: the server that holds public keys
+              and device lists and delivers the encrypted envelopes. <code>convexRelay()</code> ships
+              one; you host it.
+            </li>
+            <li>registering both devices with it</li>
+            <li>Bob&rsquo;s own client, which is Alice&rsquo;s four lines renamed</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
@@ -123,20 +475,52 @@ const trustLinks = [
       <div class="band-head">
         <h2>What you get, and what it costs you to find out</h2>
         <p class="measure">
-          Six things that decide whether protocol-level encryption is workable for your product.
+          {/* The deck used to end "including the one that decides it against",
+              which names a disqualifier and then withholds it. A reader whose
+              product cannot live without server-side moderation had to read
+              all seven cards to find the one that tells them to leave, and the
+              whole point of putting it on the page is that they leave early
+              and cheaply. A tease is the wrong shape for a warning. */}
+          Seven things that decide whether protocol-level encryption is workable for your product.
+          Read <a href="#what-you-give-up">What you give up</a> first &mdash; it rules this out for
+          products with retention, moderation, or account-recovery duties, and it is cheaper to know
+          now.
         </p>
       </div>
       <ul class="rows">
         {differentiators.map((item) => (
-          <li>
+          <li id={item.id}>
             <h3>{item.title}</h3>
             <p>{item.body}</p>
+            {/* Only the licence cell carries one. A row of links here would
+                flatten the band into a nav list; one link, on the one cell
+                whose answer lives on another page, reads as a continuation. */}
+            {item.link && (
+              <p class="row-link">
+                <a href={item.link.href}>{item.link.label}</a>
+              </p>
+            )}
           </li>
         ))}
       </ul>
       <p class="platform-links">
         <span>Start where you are:</span>
         {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
+      </p>
+      {/* The three quickstarts used to sit here as equal peers, which is not
+          what the shipped package says: ADAPTERS.md marks the browser and bare
+          React Native stores experimental. A reader who learns that after
+          following the link learns it too late.
+
+          The Node clause tracks the shipped release, not the pinned one:
+          alpha.9 completed `NodeSignalProtocolStore` — sender keys, device
+          records and message records — so the sentence that named it short of
+          groups and multi-device was true of the alpha.7 in node_modules and
+          false of the alpha.9 the install command above resolves to. */}
+      <p class="muted measure">
+        The Expo and Node stores implement the storage interface in full. The browser and bare
+        React Native stores are experimental.{' '}
+        <a href="/product">What each store holds</a>.
       </p>
     </div>
   </section>
@@ -145,18 +529,55 @@ const trustLinks = [
     <div class="container stack">
       <div class="band-head">
         <h2>One message, end to end</h2>
+        {/* "ciphertext" and not "sealed", for the same reason the lead gives
+            at length: "sealed sender" is a real feature of this SDK, and the
+            recorded row four lines below this sentence prints `senderUserId`
+            in the clear because the quickstart does not switch it on. This is
+            the worse of the two places to be loose about the word — it is the
+            caption standing directly over the evidence that would contradict
+            it. The second clause was always honest; now the first one uses a
+            word the panel underneath can be checked against. */}
         <p class="measure">
-          Plaintext and private keys exist only inside a device outline. Everything between them is
-          sealed — and carries metadata your relay can still see.
+          Plaintext and private keys exist only on the devices at each end. Everything in between is
+          ciphertext — and carries metadata your relay can still see.
         </p>
       </div>
-      <div class="diagram">
-        <SignatureDiagram />
-      </div>
 
-      {/* The diagram states it; this shows it. Keeping the two together means
-          the claim and the recording are read in one pass, which is the whole
-          argument of the band. */}
+      {/* The signature diagram stood here for seven rounds and has been moved
+          off this page. It is still the best drawing on the site and it still
+          runs on /security and /product, where it is the only signature device
+          on the screen — which is the design contract's rule and part of why
+          it had to leave this one.
+
+          The deciding test the brief sets is whether a fresh reader reaches
+          the central boundary *faster* with the figure. An integration critic
+          measured the opposite. The figure's whole vocabulary — readable
+          device, seal, sealed envelope with metadata riding outside, relay,
+          open, readable device — is the paragraph above it, drawn; its one
+          genuine addition is that the boundary is crossed twice. The plate
+          100 px below names the eight fields the relay actually held, with
+          real values and a real byte count. Same boundary, with proof instead
+          of assertion. A reader did not arrive sooner for the figure; they
+          arrived sooner by scrolling past it, and on a phone that meant
+          scrolling past ~770 px — more than one entire 664 px viewport of
+          abstraction standing between them and the evidence.
+
+          Three other things followed it out. Its content bars are the only
+          thing distinguishing a readable device from an empty box, and they
+          measure 1.93:1 light and 2.26:1 dark against the 3:1 that WCAG 1.4.11
+          asks of a meaning-bearing graphic — in dark the two devices read as
+          empty rectangles, which inverts the figure's own claim. The token is
+          owned by @open-e2ee/design, so this page could not fix it, only stop
+          depending on it. The contract's enforceable list also caps a screen
+          at one signature device, naming "the mark, a manifest plate, and the
+          signature diagram in one screen" as the failure; at a 937 px viewport
+          all three were on screen together. And the relay is drawn as the
+          OpenE2EE mark, so the one node the page insists you host looked like
+          the vendor's logo, 60 px under the same logo in the header.
+
+          Keeping it was the round-4 decision and it was provisional then — the
+          note said to revisit if no critic reported the boundary landing
+          faster with it. None ever did. */}
       <div id="what-the-relay-stores" class="carrier-proof">
         <h3>The same message, recorded</h3>
         <p class="measure">
@@ -164,6 +585,16 @@ const trustLinks = [
           held, captured by running the documented quickstart against the mock relay.
         </p>
         <CarrierPanel />
+      </div>
+
+      {/* A reader who has just read the row the relay held is at the moment of
+          highest intent on the page, and used to find the next button four
+          folds away in the footer. */}
+      <div class="actions">
+        <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
+          <span class="oe-button">Record this yourself</span>
+          <span class="cta-sublabel">ten minutes · two clients · no account</span>
+        </a>
       </div>
     </div>
   </section>
@@ -189,7 +620,12 @@ const trustLinks = [
         <div>
           <dt>The older JavaScript ports</dt>
           <dd>
-            <code>libsignal-protocol-javascript</code> was archived in 2021.
+            {/* The explicit space is load-bearing: Astro collapses the newline
+                between a text node and a following inline element, so this
+                rendered as "archived in 2021.@privacyresearch/…" for the whole
+                loop. A fresh critic found it in the one band whose job is
+                being scrupulous about other people's projects. */}
+            <code>libsignal-protocol-javascript</code> was archived in 2021.{' '}
             <code>@privacyresearch/libsignal-protocol-typescript</code> last shipped in 2023. Neither
             is post-quantum, and neither documents a React Native path.
           </dd>
@@ -197,8 +633,14 @@ const trustLinks = [
         <div>
           <dt>A different protocol</dt>
           <dd>
-            <code>ts-mls</code> is well maintained and runs everywhere, but it implements MLS, not
-            the Signal Protocol. That is a real choice — a different one.
+            {/* "runs everywhere" was this page's own summary of a row that
+                does not say it: `comparison.mjs` records browsers, Node, and
+                serverless runtimes, and no React Native or Expo path. The
+                looser word overstated a competitor and understated the one
+                axis this SDK is built on. */}
+            <code>ts-mls</code> is well maintained and runs in browsers, Node, and serverless
+            runtimes, but it implements MLS, not the Signal Protocol. That is a real choice — a
+            different one.
           </dd>
         </div>
         <div>
@@ -217,28 +659,23 @@ const trustLinks = [
     </div>
   </section>
 
-  <section class="band">
-    <div class="container measure">
-      <figure class="quote">
-        <blockquote>Use outside of Signal is unsupported.</blockquote>
-        <figcaption>
-          <a href={libsignalReadme.href}>{libsignalReadme.attribution}</a>
-        </figcaption>
-      </figure>
-      <p class="lead">So we built the one that is supported.</p>
-      <p class="text-links">
-        <a href="/compare">Every alternative, measured and dated</a>
-      </p>
-    </div>
-  </section>
+  {/* The libsignal sentence used to have a band of its own here, four folds
+      below the question it answers, and as a standalone h2-weight blockquote it
+      read as a disclosure about this SDK rather than a quotation about another
+      one. It now opens the hero, where the reader is actually asking. */}
 
-  <section class="band band-surface">
+  <section class="band">
     <div class="container">
       <div class="band-head">
         <h2>Check the work</h2>
+        {/* "an independent review is planned" was the whole of it, and
+            "planned" carries a commitment /evaluate does not make: that page
+            says no firm is engaged and no date is set. The band whose subject
+            is what a reader can check should not be the one place the site
+            rounds up. */}
         <p class="measure">
-          Not yet audited; an independent review is planned. Until then, every claim on this page
-          has something you can read behind it.
+          Not yet audited. An independent review is planned, but no firm is engaged and no date is
+          set — so until then, every claim on this page has something you can read behind it.
         </p>
       </div>
       <ul class="rows rows-single">
@@ -246,6 +683,19 @@ const trustLinks = [
           <li><a href={link.href}>{link.label}</a></li>
         ))}
       </ul>
+
+      {/* The page used to end on a text link to GitHub. Every reader who did
+          not act on the fold arrived here persuaded and found nothing to press,
+          and the last interactive element routed to a supporting action. */}
+      <div class="closing">
+        <p class="lead">The fastest way to check any of it is to run it.</p>
+        <div class="actions">
+          <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
+            <span class="oe-button">Build your first encrypted message</span>
+            <span class="cta-sublabel">ten minutes · two clients · no account</span>
+          </a>
+        </div>
+      </div>
     </div>
   </section>
 </BaseLayout>

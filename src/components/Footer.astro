@@ -40,14 +40,30 @@ const groups = [
     <div class="footer-grid">
       <div class="footer-brand">
         <a class="brand-link" href="/"><Lockup /></a>
-        <p class="footer-tagline">Opaque to the relay. Open to inspection.</p>
         {/*
-          The design contract requires any surface using the taglines to say
-          they are proposed, because founder sign-off has not landed. Stated
-          once, quietly, next to the line it qualifies — a claim about our own
-          brand that we would not let a vendor make unqualified.
+          The footer carried "Opaque to the relay. Open to inspection." and,
+          under it, "Brand language is provisional — taglines are proposed,
+          pending sign-off." Both are gone, by founder decision on 2026-08-04,
+          and the tagline itself is still undecided: `docs/decisions.md` §1
+          stays open. Dropping the line is not approving or rejecting it.
+
+          Two reasons, and the second is the one that matters. The note was
+          internal process copy — our own review state, shipped to every
+          visitor on all seventeen pages, answering a question no customer
+          asked. And "Opaque" is an absolute the rest of this site spends its
+          effort not making: the carrier panel on the landing page prints
+          `senderUserId alice` in the clear, and the fixed relay formula is
+          deliberately narrower — the relay never needs message plaintext or
+          device private keys. A brand line that overstates against our own
+          published evidence is the one kind of copy this project cannot
+          afford, whoever signs it off.
+
+          The design contract requires an annotation only from a surface that
+          *uses* a tagline, so a footer without one owes nothing. `/product`
+          still does — its h1 is the proposed Product hero string — and that
+          page now carries the annotation itself, scoped to the one page that
+          needs it. See `src/pages/product.astro`.
         */}
-        <p class="footer-provisional">Brand language is provisional — taglines are proposed, pending sign-off.</p>
         <p>
           Open-source, protocol-level end-to-end encryption SDKs for TypeScript developers. AGPL-3.0
           for open source; commercial licenses for proprietary products.

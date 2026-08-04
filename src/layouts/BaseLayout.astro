@@ -51,7 +51,17 @@ const imageUrl = new URL(image, Astro.site);
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    {/* `initial-scale=1` is not decoration. Without it a phone is free to
+        shrink the whole page to fit its widest element, so an overflow defect
+        renders as a silently zoomed-out page instead of a sideways scroll.
+        This site had one: while the diagram briefly painted its 512 px wide
+        composition on a phone, Chrome reported a 528 px viewport at a 390 px
+        device and `scrollWidth > innerWidth` stayed false — the overflow check
+        passed on a page rendering at about three quarters size. Pinning the
+        initial scale makes overflow visible to the reader and measurable here.
+        Nothing caps `maximum-scale` or sets `user-scalable=no`; pinch zoom is
+        untouched. */}
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="/theme-init.js" is:inline></script>
     <link rel="preload" href={publicSansLatin} as="font" type="font/woff2" crossorigin />
     <meta name="description" content={description} />
@@ -92,7 +102,10 @@ const imageUrl = new URL(image, Astro.site);
         the CSP is script-src 'self' with no 'unsafe-inline'. */}
     <script src="/measure.js" defer></script>
     <Header />
-    <main id="main-content">
+    {/* `tabindex="-1"` is what makes the skip link land. Without it the URL
+        fragment moves the scroll position but not the focus ring, so the next
+        Tab resumes in the header the link was pressed to escape. */}
+    <main id="main-content" tabindex="-1">
       <slot />
     </main>
     <Footer />

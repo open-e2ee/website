@@ -16,17 +16,32 @@ import Icon from './Icon.astro';
  * paint — a stored preference of dark therefore paints the moon rather than
  * painting the monitor and correcting itself once this script runs.
  *
- * The accessible name is real text rather than an `aria-label` so that the
- * `aria-live` region has something to announce when the preference changes.
+ * The accessible name is real text rather than an `aria-label` so that it can
+ * carry the current preference: a control may name its own state, and for a
+ * three-way cycle the state is the only thing that tells a reader what the
+ * next press will do.
+ *
+ * The announcement is a sibling region rather than `aria-live` on the button,
+ * which is what this used to be. A live region wrapped around the control that
+ * owns it makes the button its own announcer, and that fails in the case it
+ * exists for: NVDA and JAWS do not reliably re-announce a focused control whose
+ * name mutates under them, so the press that changes the theme is the press
+ * least likely to be heard. `HeroSnippet.astro` states the same rule for the
+ * copy button; two controls in the same header should not disagree about it.
+ *
+ * The region is in the DOM at load and empty, and `render` does not write to
+ * it — only the click handler does. Otherwise restoring a stored preference
+ * would announce a change nobody made, on every page load.
  */
 ---
 
-<button class="oe-theme-toggle" type="button" data-theme-toggle aria-live="polite">
+<button class="oe-theme-toggle" type="button" data-theme-toggle>
   <Icon name="desktop" class="theme-icon theme-icon-system" />
   <Icon name="sun" class="theme-icon theme-icon-light" />
   <Icon name="moon" class="theme-icon theme-icon-dark" />
   <span class="oe-visually-hidden">Colour theme: <span data-theme-label>system</span></span>
 </button>
+<span class="oe-visually-hidden" role="status" data-theme-status></span>
 
 <script>
   import { getStoredTheme, setTheme, watchSystemTheme } from '@open-e2ee/design/theme';
@@ -34,6 +49,7 @@ import Icon from './Icon.astro';
   const order = ['system', 'light', 'dark'] as const;
   const button = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
   const label = document.querySelector<HTMLElement>('[data-theme-label]');
+  const status = document.querySelector<HTMLElement>('[data-theme-status]');
 
   function render(preference: string) {
     if (label) label.textContent = preference;
@@ -47,5 +63,8 @@ import Icon from './Icon.astro';
     const next = order[(order.indexOf(getStoredTheme() as never) + 1) % order.length];
     setTheme(next);
     render(next);
+    /* Deliberately not the button's own name repeated back: this is the result
+       of a press, and it should sound like one. */
+    if (status) status.textContent = `Colour theme set to ${next}.`;
   });
 </script>

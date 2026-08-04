@@ -18,8 +18,11 @@ import { checks, dependencies, docs, reporting, specifications } from '../lib/as
 const answers = [
   {
     question: 'What is the threat model?',
+    /* This answer stands alone — no adjacent paragraph qualifies it — so the
+     * first-contact limit is in the out-of-scope list here, where the security
+     * model itself puts it, rather than paraphrased away by an absolute. */
     answer:
-      'Stated in full, with what is in scope and what is explicitly not. An attacker in control of your relay can serve stale or hostile responses and observe every routing field; it cannot read message plaintext or long-term private keys. Compromised endpoints, hostile same-process code, guaranteed memory erasure, and traffic-analysis resistance beyond the implemented padding are out of scope.',
+      'Stated in full, with what is in scope and what is explicitly not. An attacker in control of your relay can serve stale or hostile responses and observe every routing field; the relay never needs message plaintext or device private keys, and once trust is pinned, an identity substitution that would reach them fails closed. Authenticity on unverified first contact without a safety-number check, compromised endpoints, hostile same-process code, guaranteed memory erasure, and traffic-analysis resistance beyond the implemented padding are out of scope.',
     links: [
       { href: '/security', label: 'Summary, with the envelope field by field' },
       { href: docs.securityModel, label: 'Security model and threat model' },

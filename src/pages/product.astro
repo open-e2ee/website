@@ -1,7 +1,9 @@
 ---
+import { Code } from 'astro:components';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SignatureDiagram from '../components/SignatureDiagram.astro';
 import capture from '../data/carrier-capture.json';
+import { codeThemes } from '../lib/code-theme.mjs';
 import { MEASURED_ON } from '../lib/comparison.mjs';
 
 /*
@@ -113,7 +115,17 @@ const adapters = [
       </div>
       <div class="code-block">
         <p class="code-filename">quickstart.ts</p>
-        <pre><code>{capture.quickstartCode}</code></pre>
+        {/* The same theme and the same reasons as the hero excerpt this page
+            is the destination for — a reader who follows "See the whole file"
+            should land on the same program, not a monochrome copy of it. */}
+        <Code
+          code={capture.quickstartCode}
+          lang="ts"
+          themes={codeThemes}
+          defaultColor={false}
+          role="group"
+          aria-label="The quickstart program"
+        />
       </div>
       <p class="muted measure">
         <code>mockStore()</code> and <code>mockRelay()</code> are development adapters: in-memory, no
@@ -168,13 +180,13 @@ const adapters = [
         ))}
       </dl>
       <p class="muted measure">
-        Browser and bare React Native stores are experimental. The Expo store is the complete one —
-        it implements <code>ISignalProtocolLocalStore</code> in full. The Node store covers identity
-        keys, contact trust records, prekeys and sessions, which is what a single-device client, a
-        CLI, or a relay-side process needs; it does not yet cover sender keys, message records, or
-        multi-device state, so groups and multi-device need the Expo store today. You can also
-        implement <code>ISignalProtocolLocalStore</code> or <code>ISignalProtocolRelayServer</code>
-        yourself — they are documented interfaces, not internals.
+        Browser and bare React Native stores are experimental. The Expo and Node stores are the
+        complete ones — both implement <code>ISignalProtocolLocalStore</code> in full, so groups and
+        multi-device work on either. They differ in where the bytes land: the Expo store is
+        <code>expo-sqlite</code> with SQLCipher, the Node store is an encrypted filesystem under
+        <code>node:crypto</code> with 0600 permissions. You can also implement{' '}
+        <code>ISignalProtocolLocalStore</code> or <code>ISignalProtocolRelayServer</code> yourself —
+        they are documented interfaces, not internals.
       </p>
       <div class="callout measure">
         <p>
@@ -244,4 +256,19 @@ const adapters = [
       </p>
     </div>
   </section>
+
+  {/*
+    The h1 of this page is one of the three strings the design contract lists
+    as proposed rather than approved, and the contract asks any surface that
+    uses one to say so. That annotation used to live in the global footer,
+    where it qualified a tagline on all seventeen pages and told every visitor
+    about our internal review state. The footer tagline is gone; this page
+    still uses one, so the annotation lives here and nowhere else.
+
+    Placed at the end rather than under the headline on purpose. It has to be
+    on the page, and it does not have to be the second thing a reader meets.
+  */}
+  <div class="container">
+    <p class="tagline-note">Headline wording on this page is proposed, not final.</p>
+  </div>
 </BaseLayout>

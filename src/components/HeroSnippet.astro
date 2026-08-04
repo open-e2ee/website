@@ -1,5 +1,7 @@
 ---
+import { Code } from 'astro:components';
 import Icon from './Icon.astro';
+import { codeThemes } from '../lib/code-theme.mjs';
 import { heroCode, installCommand } from '../lib/hero-snippet.mjs';
 
 /*
@@ -21,17 +23,59 @@ import { heroCode, installCommand } from '../lib/hero-snippet.mjs';
     <button type="button" class="copy-button" data-install-copy data-copy={installCommand}>
       <Icon name="copy" class="copy-icon copy-icon-idle" />
       <Icon name="check" class="copy-icon copy-icon-done" />
-      <span class="oe-visually-hidden" data-copy-label>Copy the install command</span>
+      <span class="oe-visually-hidden">Copy the install command</span>
     </button>
+    {/* The result goes in its own live region, not into the button's name.
+        Two reasons. A control's accessible name should say what it does, and
+        this one used to change to "Install command copied" — a past-tense
+        report standing where the affordance belongs, so a reader arriving
+        afterwards is told what already happened rather than what the button
+        is for. And NVDA and JAWS do not reliably re-announce a focused
+        control whose name mutates in place, which is the whole population
+        this feedback exists for: the visual swap to a check icon is the
+        sighted path, and before this element there was no other. The region
+        is in the DOM at load and empty, because a live region inserted at the
+        same moment as its text is not reliably announced either. Clearing it
+        is silent, and the failure branch below stays silent by writing
+        nothing — a refused clipboard should not claim success. */}
+    <span class="oe-visually-hidden" role="status" data-copy-status></span>
   </p>
-  <pre><code>{heroCode}</code></pre>
+  {/* Shiki runs at build time and ships no script, which the CSP requires:
+      `script-src 'self'` has no room for a highlighter, and `style-src` allows
+      the inline color it writes on each span. `defaultColor={false}` emits
+      both palettes as `--shiki-light` / `--shiki-dark` custom properties and
+      leaves the choice to `:root.dark`, so the panel follows the theme toggle
+      without a second copy of the markup. */}
+  {/* The name identifies the region; it does not describe scrolling. It used
+      to end in "scrollable", on the stated reasoning that "the block scrolls
+      sideways on a narrow screen" — which is backwards. Measured at 1440, 390
+      and 320: a narrow screen is where it cannot scroll, because the rule
+      below switches it to `pre-wrap` and wrapped text has nothing to scroll
+      to; the wide screen keeps `white-space: pre` and is the only place a long
+      line could overflow, and today none does (scrollWidth == clientWidth,
+      621 == 621). So the name promised an affordance that is absent at every
+      width the page is built for.
+
+      Shiki's `tabindex` stays. It is there because a highlighter cannot know
+      whether a given snippet will overflow, and at desktop this one is one
+      recorded line away from doing so — a scroll container reachable only by
+      mouse fails 2.1.1. A stop that announces what the panel is costs a
+      keyboard user one Tab; a name that describes behaviour the element does
+      not have costs a screen-reader user a wrong model of the page. */}
+  <Code
+    code={heroCode}
+    lang="ts"
+    themes={codeThemes}
+    defaultColor={false}
+    role="group"
+    aria-label="Quickstart excerpt"
+  />
 </div>
 
 <script>
   /* Bundled rather than inline: the CSP is script-src 'self'. */
   const button = document.querySelector<HTMLButtonElement>('[data-install-copy]');
-  const label = button?.querySelector<HTMLElement>('[data-copy-label]');
-  const idle = 'Copy the install command';
+  const status = document.querySelector<HTMLElement>('[data-copy-status]');
   let restore: ReturnType<typeof setTimeout> | undefined;
 
   button?.addEventListener('click', async () => {
@@ -45,11 +89,11 @@ import { heroCode, installCommand } from '../lib/hero-snippet.mjs';
       return;
     }
     button.dataset.copied = 'true';
-    if (label) label.textContent = 'Install command copied';
+    if (status) status.textContent = 'Install command copied';
     clearTimeout(restore);
     restore = setTimeout(() => {
       delete button.dataset.copied;
-      if (label) label.textContent = idle;
+      if (status) status.textContent = '';
     }, 2000);
   });
 </script>

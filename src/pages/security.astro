@@ -20,7 +20,12 @@ const envelopeFields = [
   { field: 'timestamp', identified: 'visible', sealed: 'visible', note: 'When it was sent' },
   { field: 'groupId', identified: 'visible', sealed: 'visible', note: 'Present on group messages' },
   { field: 'clientMessageId', identified: 'visible', sealed: 'visible', note: 'Retry idempotency key' },
-  { field: 'ciphertext', identified: 'opaque', sealed: 'opaque', note: 'Bytes the relay cannot read' },
+  {
+    field: 'ciphertext',
+    identified: 'opaque',
+    sealed: 'opaque',
+    note: 'Bytes the relay never needs to read',
+  },
 ];
 
 const notHidden = [
@@ -162,10 +167,19 @@ const outOfScope = [
     <div class="container stack">
       <div class="band-head">
         <h2>Threat model boundary</h2>
+        {/* The relay formula is fixed and this sentence used to paraphrase it
+            into an absolute — "it cannot read message plaintext or long-term
+            private keys" — which the callout at the foot of this same section
+            refutes sixteen lines later: a relay hostile from the very first
+            message can substitute an identity before any trust is pinned, and
+            then it reads exactly what the absolute promised it could not. The
+            scope clause is what makes the claim true, so it is in the sentence
+            rather than left to the reader to carry down the page. */}
         <p class="measure">
           Taken from the security model in the repository. An attacker in full control of your relay
-          can serve stale or hostile responses and observe every routing field above. It cannot read
-          message plaintext or long-term private keys.
+          can serve stale or hostile responses and observe every routing field above. The relay never
+          needs message plaintext or device private keys, and once trust is pinned, an identity
+          substitution that would reach them fails closed.
         </p>
       </div>
       <div class="two-col">
