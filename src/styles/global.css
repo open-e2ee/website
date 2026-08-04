@@ -155,6 +155,22 @@ code {
   max-width: 58ch;
 }
 
+/*
+ * The one paragraph on the page that quotes somebody else. A rule on the
+ * inline start marks it as citation rather than as our own claim, which is
+ * also what stops libsignal's sentence being read as a disclosure about this
+ * SDK — the failure the standalone blockquote band had when it carried the
+ * same words at h2 weight with no question in front of them.
+ */
+.stance {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--oe-muted);
+  max-width: 56ch;
+  border-inline-start: 2px solid var(--oe-border);
+  padding-inline-start: var(--oe-space-4);
+}
+
 /* ------------------------------------------------------------- linkage --- */
 
 a {
@@ -282,6 +298,11 @@ a:hover {
   flex-direction: column;
   gap: var(--oe-space-2);
   align-items: flex-start;
+  /* The anchor wraps both the filled button and the sublabel, so the global
+     link underline painted twice: once through the button label and once as a
+     stray rule under "ten minutes · two clients · no account" out on the
+     canvas. It was the loudest unfinished-looking detail on the page. */
+  text-decoration: none;
 }
 
 .cta-sublabel {
@@ -290,6 +311,21 @@ a:hover {
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
   color: var(--oe-muted);
+}
+
+/*
+ * The last thing on the page is the first action again. A rule closes the
+ * evidence list above it without opening another band, which the page does not
+ * need — this is the same offer, not a new argument.
+ */
+.closing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-4);
+  align-items: flex-start;
+  margin-top: var(--oe-space-8);
+  padding-top: var(--oe-space-6);
+  border-top: 1px solid var(--oe-border);
 }
 
 .text-links {
@@ -507,16 +543,15 @@ a:hover {
   max-width: 36ch;
 }
 
-.footer-tagline {
-  color: var(--oe-foreground);
-  font-weight: 500;
-}
-
-/* Sits directly under the tagline it qualifies, close enough to be read with
- * it and quiet enough not to compete with it. Scoped under .footer-brand so it
- * outranks the `.footer-brand p` colour and spacing it would otherwise take. */
-.footer-brand .footer-provisional {
-  margin-top: var(--oe-space-2);
+/* `.footer-tagline` and `.footer-brand .footer-provisional` stood here. Both
+ * are unused now that the footer carries no tagline, so both are deleted
+ * rather than left behind as dead rules that describe a component the site no
+ * longer has. What replaces them qualifies the one remaining surface that
+ * uses a proposed tagline — the /product h1 — and is deliberately the quietest
+ * thing on that page: end of the document, metadata type, muted. */
+.tagline-note {
+  margin-top: var(--oe-space-6);
+  margin-bottom: var(--oe-space-6);
   color: var(--oe-muted);
   font-family: var(--oe-metadata-font-family);
   font-weight: var(--oe-metadata-weight);
@@ -591,8 +626,24 @@ a:hover {
 
 /* ---------------------------------------------------------------- hero --- */
 
+/*
+ * The top padding is flat, and the bottom one still grows.
+ *
+ * It used to grow too, reaching 5rem from about 1120px up. That is 80px of
+ * nothing between a 64px sticky header and the headline, and it is the only
+ * space above the fold that carries no content — every other block in this
+ * column is a sentence a reader needs. It cost the offer: at 1280×800 the
+ * primary action ran 756–828 against an 800 fold, so the button was sliced
+ * through its own label and the terms under it — ten minutes, two clients, no
+ * account — never rendered. The reassurance that earns the click was the part
+ * the fold took.
+ *
+ * 2.5rem is not a new value; it is the floor this clamp already used, so
+ * nothing below about 1120px moves by more than four pixels and the phone is
+ * unaffected. Only the widths that had spare padding give it back.
+ */
 .hero {
-  padding-block: clamp(2.5rem, 1.5rem + 5vw, 5rem) clamp(3rem, 2rem + 4vw, 5rem);
+  padding-block: 2.5rem clamp(3rem, 2rem + 4vw, 5rem);
 }
 
 /*
@@ -638,6 +689,55 @@ a:hover {
   font-size: clamp(2.125rem, 1.15rem + 3.1vw, 2.625rem);
 }
 
+/*
+ * From 74rem up the headline shares its row with the demo, so its measure
+ * stops growing with the viewport and holds at the 5/12 column — 470px — while
+ * the clamp is already pinned to its 42px maximum. That set the headline in
+ * four lines with `encrypted` alone on the second, and the column below it has
+ * no fold left to give.
+ */
+@media (min-width: 74rem) {
+  .hero h1 {
+    font-size: 2.375rem;
+  }
+
+  /*
+   * And the ramp under it, because the rule above breaks one.
+   *
+   * The global h2 clamp keeps climbing to 2.25rem while this page's headline is
+   * held at 2.375rem, so from 74rem up the display headline and the section
+   * headings arrive 38px against 36px — a ratio of 1.06, measured off the
+   * rendered cap heights. The page reads as a flat stack of equally loud
+   * voices, and the same two headings are 1.30 apart at 390px, so the defect
+   * belongs to width alone.
+   *
+   * Scoped rather than global. Measured at 1440px, every other page runs 60
+   * against 36 — a ratio of 1.67, which is correct — because none of them pulls
+   * its h1 down. Re-capping the global h2 would fix this page by flattening six
+   * healthy ones, so the correction lives with its cause: the same breakpoint
+   * and the same media query that lowered the headline. h1 and h2 now step down
+   * together at 74rem, leaving no width where one has moved and the other has
+   * not.
+   *
+   * The sibling combinator is the scope. `.hero` appears on this page only, and
+   * its following bands are exactly the sections whose headings answer to that
+   * headline — no new class, and nothing reaches the footer's own h2.
+   */
+  .hero ~ .band h2 {
+    font-size: 1.75rem;
+  }
+}
+
+/*
+ * `end-to-end` is one term, and `text-wrap: balance` will still break a line
+ * after a hyphen inside it. In the hero's 5/12 column that set "Add end-to-"
+ * on a line of its own and cost the headline a fourth line — 50px the first
+ * viewport does not have to spare, and a term read in two halves.
+ */
+.keep-together {
+  white-space: nowrap;
+}
+
 .hero-demo {
   display: flex;
   flex-direction: column;
@@ -664,6 +764,44 @@ a:hover {
   .hero-snippet.code-block pre {
     font-size: 0.78125rem;
   }
+}
+
+/*
+ * The excerpt's own disclosure, in the space the excerpt's question creates.
+ *
+ * It borrows the metadata typeface from `.maturity` rather than the body face
+ * on purpose: this is not part of the argument, it is the bill of materials
+ * for the code above it, and it should read as annotation attached to the
+ * panel rather than as another paragraph competing with the offer. The rule on
+ * top ties it to the panel the way `.maturity`'s rule ties that line to the
+ * button.
+ */
+.excerpt-drops {
+  border-top: 1px solid var(--oe-border);
+  padding-top: var(--oe-space-3);
+  color: var(--oe-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.excerpt-drops-title {
+  font-family: var(--oe-metadata-font-family);
+  font-weight: var(--oe-metadata-weight);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  margin-bottom: var(--oe-space-2);
+}
+
+.excerpt-drops ul {
+  margin: 0;
+  padding-inline-start: var(--oe-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-1);
+}
+
+.excerpt-drops code {
+  font-size: 0.9em;
 }
 
 .maturity {
@@ -789,8 +927,40 @@ a:hover {
 .diagram svg {
   display: block;
   width: 100%;
-  min-width: 32rem;
   height: auto;
+}
+
+/* The wide composition stops being readable before it stops fitting, so it
+   holds a floor and scrolls under it. The stacked one is drawn for the narrow
+   column and never needs the scroll — see `SignatureDiagram.astro`.
+
+   Both selectors carry `.diagram` because `.diagram svg` above already sets
+   `display: block` at (0,1,1). A media query adds no specificity, so a bare
+   `.signature-diagram { display: none }` at (0,1,0) lost the cascade and the
+   page drew both compositions at every width. */
+.diagram .signature-diagram {
+  min-width: 32rem;
+}
+
+.diagram .signature-diagram-stacked {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  .diagram .signature-diagram {
+    display: none;
+  }
+
+  .diagram .signature-diagram-stacked {
+    display: block;
+    min-width: 0;
+  }
+
+  /* No scroll left to offer, and a scroll container that cannot scroll is
+     still a tab stop. */
+  .diagram {
+    overflow-x: visible;
+  }
 }
 
 .diagram figcaption {
@@ -859,6 +1029,17 @@ a:hover {
 .rows > li > p {
   color: var(--oe-muted);
   max-width: 54ch;
+}
+
+/*
+ * One cell in the band answers on another page, and its link needs to read as
+ * a continuation of the sentence above rather than as a sibling of the body
+ * text. Margin only — colour, underline and focus ring all come from the
+ * global link rules, because a link that styles itself is a link that will
+ * eventually disagree with the rest of the page about what a link looks like.
+ */
+.rows > li > .row-link {
+  margin-top: var(--oe-space-2);
 }
 
 @media (max-width: 48rem) {
@@ -1161,6 +1342,63 @@ table.data td {
   line-height: var(--oe-code-line-height);
   color: var(--oe-code-foreground);
   overflow-x: auto;
+}
+
+/* Shiki writes both palettes onto every span as custom properties and picks
+   neither, so the theme class chooses here rather than the build choosing for
+   it. One rule per mode, and an unhighlighted block still inherits the
+   foreground above, so a page that shows code without a language is unchanged.
+
+   The colors and the reasoning behind the two roles are in
+   `src/lib/code-theme.mjs`; this is only the switch. */
+.code-block .astro-code,
+.code-block .astro-code span {
+  color: var(--shiki-light);
+}
+
+:root.dark .code-block .astro-code,
+:root.dark .code-block .astro-code span {
+  color: var(--shiki-dark);
+}
+
+/* The panel already draws the surface and the rule around it. Shiki's own
+   background would put a second, slightly different one inside it. */
+.code-block .astro-code {
+  background: transparent;
+}
+
+/*
+ * On a phone the block was 651px wide inside a 356px column: 45% of the
+ * program off-screen behind a sideways scroll, including the comment that
+ * carries the page's central claim. Wrapping shows all of it.
+ *
+ * The hanging indent is what makes that safe. A wrapped line that starts at
+ * the left margin reads as the next statement; started two characters in, it
+ * reads as the same one continuing, which is the only thing the scroll was
+ * buying. `.line` is Shiki's own element and has to become a block for the
+ * indent to apply per line rather than once for the program.
+ *
+ * The command wraps rather than scrolls for the same reason, and gains from
+ * it: a scroll container needs to be reachable from a keyboard, and the one
+ * that is not there needs nothing.
+ */
+@media (max-width: 48rem) {
+  .code-block pre {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+
+  .code-block .astro-code .line {
+    display: block;
+    padding-left: 2ch;
+    text-indent: -2ch;
+  }
+
+  .code-command > span {
+    overflow-x: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
 
 /* --------------------------------------------------------------- price --- */

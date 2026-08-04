@@ -10,6 +10,18 @@ import { geometry } from '../lib/brand';
  *
  * DESIGN.md allows at most one signature device per viewport: this diagram and
  * the carrier panel must not share a screen.
+ *
+ * Two compositions of one figure. The wide one reads left to right. Below 48rem
+ * it was 512px of drawing inside a 356px column — a sideways scroll, with 13px
+ * labels landing at about four CSS pixels, which is the size at which a diagram
+ * stops being a diagram. The stacked one reads top to bottom, sets every label
+ * at full size, and fits a phone viewport whole.
+ *
+ * Every shape is declared once in `<defs>` and placed by `<use>`, so the two
+ * compositions cannot end up showing different pictures — the stacked one is
+ * the same device, the same envelope and the same mark, turned a quarter turn
+ * and set at four fifths. Only the text is laid out twice, because text does
+ * not turn with the drawing.
  */
 
 const RELAY_SIZE = 140;
@@ -17,34 +29,61 @@ const RELAY_X = 478;
 const RELAY_Y = 92;
 
 const deviceBars = [
-  { y: 118, width: 150 },
-  { y: 140, width: 170 },
-  { y: 162, width: 120 },
+  { y: 22, width: 150 },
+  { y: 44, width: 170 },
+  { y: 66, width: 120 },
 ];
 
-const devices = [
-  { x: 10, label: 'Device A · readable' },
-  { x: 888, label: 'Device B · readable' },
-];
+/* One copy of every string the drawing says out loud, so a change to the
+ * wide composition's wording reaches the stacked one. */
+const LABELS = {
+  devices: ['Device A · readable', 'Device B · readable'],
+  boundaries: ['seal', 'open'],
+  sealed: 'sealed',
+  metadata: 'metadata visible',
+  relay: 'relay · never needs plaintext',
+};
 
+const devices = [10, 888].map((x, index) => ({ x, label: LABELS.devices[index] }));
+const boundaries = [258, 826].map((x, index) => ({ x, label: LABELS.boundaries[index] }));
 const envelopes = [
-  { x: 320, ticks: 'metadata visible' },
+  { x: 320, ticks: LABELS.metadata },
   { x: 688, ticks: undefined },
 ];
 
-const boundaries = [
-  { x: 258, label: 'seal' },
-  { x: 826, label: 'open' },
-];
-
 const ENVELOPE_SHEAR = 14;
+
+/* The stacked composition. `SCALE` is the quarter-turn's reduction; the rest
+ * are the y positions of a single column, in the order a message travels. */
+const SCALE = 0.8;
+const STACK = {
+  deviceX: 100,
+  deviceA: 8,
+  deviceB: 664,
+  sealRule: 176,
+  openRule: 648,
+  envelopeA: 192,
+  envelopeB: 536,
+  envelopeRight: 220,
+  arrowA: 284,
+  arrowB: 488,
+  relayX: 125,
+  relayY: 330,
+  relaySize: 110,
+  labelX: 238,
+  centre: 180,
+};
 ---
 
+{/* aria-labelledby names the title only. `<desc>` already maps to the
+    accessible description, so naming it here too made a screen reader
+    announce the same 330 characters twice — once as the name, once as the
+    description. */}
 <svg
   class="signature-diagram"
   viewBox="0 0 1104 280"
   role="img"
-  aria-labelledby="signature-diagram-title signature-diagram-desc"
+  aria-labelledby="signature-diagram-title"
 >
   <title id="signature-diagram-title">
     One message travelling from one device to another through a relay
@@ -56,31 +95,52 @@ const ENVELOPE_SHEAR = 14;
     where the message is sealed and where it is opened.
   </desc>
 
-  {devices.map((device) => (
-    <g>
+  <defs>
+    <g id="sd-device">
       <rect
-        x={device.x}
-        y={96}
         width={200}
         height={133}
         fill="none"
         stroke="var(--oe-diagram-plaintext-stroke)"
         stroke-width={4}
       />
+      {/* Solid, not the plaintext stroke at 0.28. design/DESIGN.md rule 2:
+          "Alpha is not a lighter colour, it is a claim that something is
+          partly readable" — and these bars stand for content that is wholly
+          readable. docs/diagram-grammar.md names this exact swap, and the
+          token ships in the pinned package. The composite also measured
+          1.93:1 light and 2.31:1 dark against a 3:1 bar. */}
       {deviceBars.map((bar) => (
-        <rect
-          x={device.x + 20}
-          y={bar.y}
-          width={bar.width}
-          height={9}
-          fill="var(--oe-diagram-plaintext-stroke)"
-          opacity={0.28}
-        />
+        <rect x={20} y={bar.y} width={bar.width} height={9} fill="var(--oe-diagram-content-bar)" />
+      ))}
+      <path d="M20 94 H52 L60 102 V118 H20 Z" fill="var(--oe-diagram-plaintext-stroke)" />
+    </g>
+
+    <g id="sd-envelope">
+      {Array.from({ length: 5 }, (_, index) => (
+        <rect x={16 + index * 14} y={-14} width={2} height={10} fill="var(--oe-diagram-boundary)" />
       ))}
       <path
-        d={`M${device.x + 20} 190 H${device.x + 52} L${device.x + 60} 198 V214 H${device.x + 20} Z`}
-        fill="var(--oe-diagram-plaintext-stroke)"
+        d={`M${ENVELOPE_SHEAR} 0 L${80 + ENVELOPE_SHEAR} 0 L80 100 L0 100 Z`}
+        fill="var(--oe-diagram-ciphertext-fill)"
       />
+    </g>
+
+    <g id="sd-arrow" fill="var(--oe-diagram-carrier-stroke)">
+      <rect y={-1} width={30} height={2} />
+      <path d="M30 -7 L40 0 L30 7 Z" />
+    </g>
+
+    <g id="sd-mark" fill="var(--oe-diagram-carrier-stroke)">
+      <path d={geometry.full.carrierLeftPath} />
+      <path d={geometry.full.carrierRightPath} />
+      <path d={geometry.full.payloadPath} />
+    </g>
+  </defs>
+
+  {devices.map((device) => (
+    <g>
+      <use href="#sd-device" x={device.x} y={96} />
       <text x={device.x} y={262} class="diagram-label">{device.label}</text>
     </g>
   ))}
@@ -104,46 +164,142 @@ const ENVELOPE_SHEAR = 14;
 
   {envelopes.map((envelope) => (
     <g>
-      {Array.from({ length: 5 }, (_, index) => (
-        <rect
-          x={envelope.x + 16 + index * 14}
-          y={98}
-          width={2}
-          height={10}
-          fill="var(--oe-diagram-boundary)"
-        />
-      ))}
+      <use href="#sd-envelope" x={envelope.x} y={112} />
       {envelope.ticks && (
         <text x={envelope.x + 14} y={88} class="diagram-tick-label">{envelope.ticks}</text>
       )}
-      <path
-        d={`M${envelope.x + ENVELOPE_SHEAR} 112 L${envelope.x + 80 + ENVELOPE_SHEAR} 112 L${envelope.x + 80} 212 L${envelope.x} 212 Z`}
-        fill="var(--oe-diagram-ciphertext-fill)"
-      />
-      <text x={envelope.x} y={262} class="diagram-label">sealed</text>
+      <text x={envelope.x} y={262} class="diagram-label">{LABELS.sealed}</text>
     </g>
   ))}
 
-  {[432, 632].map((x) => (
-    <g fill="var(--oe-diagram-carrier-stroke)">
-      <rect x={x} y={161} width={30} height={2} />
-      <path d={`M${x + 30} 155 L${x + 40} 162 L${x + 30} 169 Z`} />
-    </g>
-  ))}
+  {[432, 632].map((x) => <use href="#sd-arrow" x={x} y={162} />)}
 
-  <g
+  <use
+    href="#sd-mark"
     transform={`translate(${RELAY_X} ${RELAY_Y}) scale(${RELAY_SIZE / 512})`}
-    fill="var(--oe-diagram-carrier-stroke)"
-  >
-    <path d={geometry.full.carrierLeftPath} />
-    <path d={geometry.full.carrierRightPath} />
-    <path d={geometry.full.payloadPath} />
-  </g>
+  />
   {/*
     Centred under the mark rather than started at its left edge, which is where
     the device and envelope labels start: naming the object runs this label past
     the second envelope's own label, and the mark is a symbol with a centre
     rather than a box with a left edge.
   */}
-  <text x={RELAY_X + RELAY_SIZE / 2} y={262} text-anchor="middle" class="diagram-label">relay · cannot read plaintext</text>
+  <text x={RELAY_X + RELAY_SIZE / 2} y={262} text-anchor="middle" class="diagram-label">
+    {LABELS.relay}
+  </text>
+</svg>
+
+{/* The same figure for a phone. Ids are distinct because both compositions are
+    in the document at once — CSS chooses between them, so the one that is not
+    shown is `display: none` and out of the accessibility tree, but two elements
+    still may not share an id. */}
+<svg
+  class="signature-diagram-stacked"
+  viewBox="0 0 360 810"
+  role="img"
+  aria-labelledby="signature-diagram-stacked-title"
+>
+  <title id="signature-diagram-stacked-title">
+    One message travelling from one device to another through a relay
+  </title>
+  <desc id="signature-diagram-stacked-desc">
+    Two outlined devices with readable contents and a private key inside each, one above the other.
+    Between them, sealed envelopes drawn as solid slabs leaning in the direction of travel, carrying
+    metadata ticks on their outside edge, and the OpenE2EE mark standing in for the relay. Dotted
+    brass rules mark where the message is sealed and where it is opened.
+  </desc>
+
+  <defs>
+    <g id="sd-device-stacked">
+      <rect
+        width={200}
+        height={133}
+        fill="none"
+        stroke="var(--oe-diagram-plaintext-stroke)"
+        stroke-width={4}
+      />
+      {deviceBars.map((bar) => (
+        <rect x={20} y={bar.y} width={bar.width} height={9} fill="var(--oe-diagram-content-bar)" />
+      ))}
+      <path d="M20 94 H52 L60 102 V118 H20 Z" fill="var(--oe-diagram-plaintext-stroke)" />
+    </g>
+
+    <g id="sd-envelope-stacked">
+      {Array.from({ length: 5 }, (_, index) => (
+        <rect x={16 + index * 14} y={-14} width={2} height={10} fill="var(--oe-diagram-boundary)" />
+      ))}
+      <path
+        d={`M${ENVELOPE_SHEAR} 0 L${80 + ENVELOPE_SHEAR} 0 L80 100 L0 100 Z`}
+        fill="var(--oe-diagram-ciphertext-fill)"
+      />
+    </g>
+
+    <g id="sd-arrow-stacked" fill="var(--oe-diagram-carrier-stroke)">
+      <rect y={-1} width={30} height={2} />
+      <path d="M30 -7 L40 0 L30 7 Z" />
+    </g>
+
+    <g id="sd-mark-stacked" fill="var(--oe-diagram-carrier-stroke)">
+      <path d={geometry.full.carrierLeftPath} />
+      <path d={geometry.full.carrierRightPath} />
+      <path d={geometry.full.payloadPath} />
+    </g>
+  </defs>
+
+  <use href="#sd-device-stacked" transform={`translate(${STACK.deviceX} ${STACK.deviceA}) scale(${SCALE})`} />
+  <text x={STACK.deviceX} y={STACK.deviceA + 132} class="diagram-label">{LABELS.devices[0]}</text>
+
+  {/* Horizontal where the wide composition rules vertically: the boundary is
+      still the gutter the message crosses, and it still crosses it once. */}
+  <text x={20} y={STACK.sealRule - 12} class="diagram-boundary-label">{LABELS.boundaries[0]}</text>
+  <line
+    x1={20}
+    y1={STACK.sealRule}
+    x2={340}
+    y2={STACK.sealRule}
+    stroke="var(--oe-diagram-boundary)"
+    stroke-width={2}
+    stroke-dasharray="2 6"
+  />
+
+  {/* A quarter turn puts the shear along the way down and carries the metadata
+      ticks around to the outside edge with it. */}
+  <use
+    href="#sd-envelope-stacked"
+    transform={`translate(${STACK.envelopeRight} ${STACK.envelopeA}) rotate(90) scale(${SCALE})`}
+  />
+  <text x={STACK.labelX} y={STACK.envelopeA + 30} class="diagram-label">{LABELS.sealed}</text>
+  <text x={STACK.labelX} y={STACK.envelopeA + 50} class="diagram-tick-label">{LABELS.metadata}</text>
+
+  <use href="#sd-arrow-stacked" transform={`translate(${STACK.centre} ${STACK.arrowA}) rotate(90) scale(${SCALE})`} />
+
+  <use
+    href="#sd-mark-stacked"
+    transform={`translate(${STACK.relayX} ${STACK.relayY}) scale(${STACK.relaySize / 512})`}
+  />
+  <text x={STACK.centre} y={STACK.relayY + 136} text-anchor="middle" class="diagram-label">
+    {LABELS.relay}
+  </text>
+
+  <use href="#sd-arrow-stacked" transform={`translate(${STACK.centre} ${STACK.arrowB}) rotate(90) scale(${SCALE})`} />
+
+  <use
+    href="#sd-envelope-stacked"
+    transform={`translate(${STACK.envelopeRight} ${STACK.envelopeB}) rotate(90) scale(${SCALE})`}
+  />
+  <text x={STACK.labelX} y={STACK.envelopeB + 30} class="diagram-label">{LABELS.sealed}</text>
+
+  <text x={20} y={STACK.openRule - 12} class="diagram-boundary-label">{LABELS.boundaries[1]}</text>
+  <line
+    x1={20}
+    y1={STACK.openRule}
+    x2={340}
+    y2={STACK.openRule}
+    stroke="var(--oe-diagram-boundary)"
+    stroke-width={2}
+    stroke-dasharray="2 6"
+  />
+
+  <use href="#sd-device-stacked" transform={`translate(${STACK.deviceX} ${STACK.deviceB}) scale(${SCALE})`} />
+  <text x={STACK.deviceX} y={STACK.deviceB + 132} class="diagram-label">{LABELS.devices[1]}</text>
 </svg>

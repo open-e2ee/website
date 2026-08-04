@@ -41,13 +41,31 @@ const segment = (anchor, count = 1) => {
  * `plaintext, only on Bob's device`, is the page's central claim written in
  * code that ran rather than in a sentence about code.
  *
- * The setup the excerpt still drops — the mock relay's device registration and
- * Bob's own client, which is Alice's four lines with one name changed — is real
- * work a reader has to do, which is why the block links to the whole file
- * rather than pretending these are the only lines there are.
+ * The opening segment is five lines rather than one because of what four fresh
+ * readers did with the shorter version. It imported a single name, and then the
+ * constructor used three that had never been declared: `mockStore()`, a bare
+ * `relay`, and `bob`. The caption disclosed the third and neither of the first
+ * two — and every one of those readers worked out on their own that a bare
+ * `relay` in `adapters` meant a server they had to write and operate. One put
+ * it as partial candour reading worse than none, because they found the
+ * omission themselves. That is the correct reaction, and the cheapest possible
+ * answer was already in the recording: lines 1-5 of the capture declare
+ * `relay`, import `mockStore`, and carry their own disclosure in the specifier
+ * — `/local/store/mock` and `/remote/relay/mock` say `mock` twice, in the
+ * reader's own language, without the page asserting anything.
+ *
+ * They are taken as one contiguous run, blank line included, so no elision
+ * mark stands between them. An `…` claims code was removed; between line 3 and
+ * line 5 the only thing removed would be an empty line, and a truthful snippet
+ * does not get to imply otherwise. The `…` that follows is honest — device
+ * registration really is elided there.
+ *
+ * `bob` stays undeclared, because his client is Alice's four lines with one
+ * name changed and the panel should not spend four lines on a rename. The
+ * caption names him, and now names the store and the relay as well.
  */
 export const heroSegments = [
-  segment('import { createSignalProtocolClient }'),
+  segment('import { createSignalProtocolClient }', 5),
   segment('const alice = await createSignalProtocolClient({', 4),
   segment('await alice.send('),
   segment('bob.registerHook("onMessageDecrypted"', 4),

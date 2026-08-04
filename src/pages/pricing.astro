@@ -1,56 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const tiers = [
-  {
-    name: 'AGPL-3.0',
-    price: 'Free',
-    period: null,
-    body: 'The complete SDK, for products that can meet the AGPL obligations. No feature is held back and nothing is time-limited.',
-    detail:
-      'You run your own infrastructure, you keep your own keys, and your source obligations are the license text rather than anything we decide later.',
-    cta: { href: '/licensing', label: 'Understand AGPL use', secondary: true },
-  },
-  {
-    name: 'Startup',
-    price: '$5,000',
-    period: 'per year',
-    body: 'Commercial production rights for one named product owned by one legal entity, purchasable without talking to anyone.',
-    detail:
-      'Licensed component: @open-e2ee/signal-protocol-sdk. Includes SDK updates during the term. Self-service annual checkout.',
-    cta: {
-      href: 'https://console.open-e2ee.dev/licenses/new?plan=startup',
-      label: 'License for closed source',
-      secondary: false,
-    },
-  },
-  {
-    name: 'Growth',
-    price: '$20,000',
-    period: 'per year',
-    body: 'Commercial rights with a configurable product scope, plus implementation support while you integrate.',
-    detail:
-      'Contract-defined component scope, configurable product count, integration support. Quote and signed order form.',
-    cta: {
-      href: 'https://console.open-e2ee.dev/contact?plan=growth',
-      label: 'Schedule a meeting',
-      secondary: true,
-    },
-  },
-  {
-    name: 'Enterprise / OEM',
-    price: '$50,000+',
-    period: 'per year',
-    body: 'Negotiated portfolio or redistribution rights, security review, and service levels.',
-    detail:
-      'Contract-defined component scope, portfolio or OEM rights, security review and SLA. MSA or signed order form.',
-    cta: {
-      href: 'https://console.open-e2ee.dev/contact?plan=enterprise',
-      label: 'Plan a security review',
-      secondary: true,
-    },
-  },
-];
+/* Single-sourced so the landing page can quote the entry price without
+ * risking drift. See src/data/pricing.mjs. */
+import { tiers } from '../data/pricing.mjs';
 ---
 
 <BaseLayout

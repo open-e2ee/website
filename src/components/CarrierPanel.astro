@@ -1,5 +1,6 @@
 ---
 import capture from '../data/carrier-capture.json';
+import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 
 /*
  * The proof moment. Both panes come from `src/data/carrier-capture.json`,
@@ -17,22 +18,49 @@ interface Props {
 
 const { excerpt = 420 } = Astro.props;
 
-const record = capture.relayRecord;
 const shown = capture.ciphertext.slice(0, excerpt);
 
 /*
- * Only fields the relay genuinely holds, in the order it holds them. The
- * relay-assigned id is deliberately omitted: `msg-1` is the mock relay's
- * in-memory counter, not a format any production relay would use.
+ * Every metadata field the recording holds, in the order it recorded them,
+ * read from `capture.metadataFields` rather than retyped. It used to be a
+ * hand-written array of six, and the recording holds ten — `senderDeviceId`
+ * and `serverTimestamp` had gone missing from a panel captioned "the row",
+ * silently, in the direction that flatters us. The capture's own note on the
+ * second one reads "Real relays assign this too."
+ *
+ * A hand-kept copy of recorded data will drift, and on this panel drift is
+ * indistinguishable from curation. Deriving it means the only way to change
+ * what the relay appears to hold is to change what the relay actually held.
+ *
+ * Exactly two fields are held back, and the reader is told about both:
+ *   ciphertext — rendered above as the bytes themselves, not as a table row.
+ *   id — `msg-1` is the mock relay's in-memory counter. A production relay
+ *        assigns its own format, so printing this one would teach a reader
+ *        something false about their own database. The field is named in the
+ *        note under the list rather than dropped in silence.
  */
-const visible = [
-  { field: 'targetUserId', value: record.targetUserId },
-  { field: 'targetDeviceId', value: String(record.targetDeviceId) },
-  { field: 'senderUserId', value: record.senderUserId },
-  { field: 'messageType', value: record.messageType },
-  { field: 'timestamp', value: String(record.timestamp) },
-  { field: 'recipientRegistrationId', value: String(record.recipientRegistrationId) },
-];
+const HELD_BACK = new Set(['ciphertext', 'id']);
+const visible = capture.metadataFields.filter((entry) => !HELD_BACK.has(entry.field));
+
+/*
+ * The recording is stamped alpha.1 and the install command on this same page
+ * fetches something much later, and a reader who notices reasonably asks
+ * whether the row still looks like this. Two fresh critics did notice, and one
+ * called it the one exhibit on a page about inspectable claims that a reader
+ * cannot reproduce.
+ *
+ * The answer is that the envelope did not move: every field this panel shows
+ * is still on the `Envelope` interface of the installed package, and the
+ * caption now says so with the installed version named. That is a stronger
+ * statement than a fresh recording would make — a re-record proves the shape
+ * on one day, and this says the shape held across the releases in between.
+ *
+ * It is not a promise: `tests/site-content.test.mjs` reads the recorded field
+ * names out of the capture and checks each one against the installed type
+ * declarations, so the day a release drops a field this page stops building
+ * the claim instead of printing it.
+ */
+const installedVersion = sdkManifest.version;
 ---
 
 <figure class="carrier-panel">
@@ -43,10 +71,20 @@ const visible = [
 
   <div class="carrier-pane carrier-pane-relay">
     <span class="label">relay — the row in your database</span>
-    <p class="carrier-cipher">{shown}<span aria-hidden="true">…</span></p>
+    {/*
+      The blob is hidden from assistive technology and the note below is not.
+      A screen reader was announcing ~420 base64 characters one at a time,
+      with no heading or landmark to escape to, immediately before the line
+      that already carries the entire meaning — the count, the decoded size,
+      and the fact that it is an excerpt. The bytes are evidence for a reader
+      who can scan them at a glance and confirm they are not words; read
+      aloud they are only a wall. Nothing is withheld: the note states what
+      the blob is and how much of it there is, which is strictly more than a
+      listener could have recovered from hearing it.
+    */}
+    <p class="carrier-cipher" aria-hidden="true">{shown}<span>…</span></p>
     <p class="carrier-cipher-note">
-      ciphertext — {capture.ciphertextStringLength.toLocaleString('en-US')} base64 characters,
-      {capture.ciphertextBytes.toLocaleString('en-US')} bytes stored, excerpt shown
+      {`ciphertext — ${capture.ciphertextStringLength.toLocaleString('en-US')} base64 characters, ${capture.ciphertextBytes.toLocaleString('en-US')} bytes decoded, excerpt shown`}
     </p>
     <dl class="carrier-meta">
       {visible.map((entry) => (
@@ -56,10 +94,21 @@ const visible = [
         </>
       ))}
     </dl>
+    <p class="carrier-cipher-note">
+      and a relay-assigned envelope id, in whatever format your relay assigns
+    </p>
   </div>
 
   <figcaption class="carrier-caption">
-    <span>recorded from a real round trip</span>
+    {/* It used to read "recorded from a real round trip". A fresh reader put
+        that against the disclosure five lines below it — "captured by running
+        the documented quickstart against the mock relay" — and was right: the
+        cryptography in this capture is real, the transport is not, and "a real
+        round trip" claims the second. On the one panel whose entire job is
+        that the page will not overstate its evidence, that is the most
+        expensive place on the site to overstate by one adjective. */}
+    <span>recorded by running the quickstart</span>
     <span>{capture.packageName}@{capture.sdkVersion}</span>
+    <span>every field shown is still in the envelope at {installedVersion}</span>
   </figcaption>
 </figure>

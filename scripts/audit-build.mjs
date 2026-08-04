@@ -40,6 +40,30 @@ const BANNED = [
    * privacy software, so this pairing must not be presented as the name of
    * anything. The tagline's descriptive use of "opaque" alone is unaffected. */
   /opaque[- ]carrier/i,
+  /*
+   * The relay formula paraphrased into an absolute. design/DESIGN.md fixes the
+   * wording — "the relay never needs message plaintext or device private keys"
+   * — and says not to paraphrase it, because the absolute is false: a relay
+   * hostile from the very first message can substitute an identity before any
+   * trust is pinned. The site tests enforced this on the two diagrams only, so
+   * three instances of it shipped in page prose while this audit printed "no
+   * banned claims" over them.
+   *
+   * Two shapes, because the paraphrase has two. First, the verb reaching the
+   * object the formula names: "cannot read message plaintext", "can never
+   * access the private keys". `never needs` is the sanctioned form and is not
+   * matched, because `needs` is a claim about what the design requires rather
+   * than about what an attacker can do.
+   */
+  /\b(?:cannot|can't|can not|never)\s+(?:read|see|access|obtain|decrypt|recover)\b[^.]{0,40}\b(?:plaintext|private keys)\b/i,
+  /*
+   * Second, the relay as bare subject: "the relay cannot read". No gap is
+   * allowed between the noun and the verb, which is what separates an
+   * assertion about this relay from a restrictive clause defining a class —
+   * "a relay that cannot read the data cannot restore it" is correct English
+   * about a property, and the recovery section of the TLS post needs it.
+   */
+  /\brelay\s+(?:cannot|can't|can not)\s+(?:read|see|access|decrypt)\b/i,
 ];
 
 /*
@@ -298,6 +322,11 @@ const splitCode = (html) => {
  * So a colon only counts when one token follows it, the way a property does.
  */
 function bareIdentifier(span) {
+  /* `node:crypto` is the reserved builtin-module namespace — as plainly
+   * someone else's as `a.b`, and the reason the rule above exempts a
+   * namespace. Without this the colon rule reads it as a property access on
+   * a symbol named `node` and asks the SDK to export one. */
+  if (/^node:[a-z][a-z/]*$/.test(span)) return null;
   const [head, ...tail] = span.split(/[:=(]/);
   const rest = tail.join(':').trim();
   if (rest.includes(' ')) return null;
