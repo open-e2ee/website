@@ -144,6 +144,143 @@ code {
   max-width: 56ch;
 }
 
+/*
+ * The three marks in the lead, one per clause. Each component carries why it is
+ * drawn the way it is — `OsiMark.astro` the trademark conditions and the
+ * palette, `BatteryMark.astro` the geometry — and what is settled here is how
+ * big the three are and where they sit on the line, because those are the two
+ * questions that can only be answered by looking at all of them at once.
+ *
+ * WHERE THEY SIT was guessed at and is now measured. `text-bottom` sat every
+ * box on the descender line, which hung the marks low: it aligns the bottom of
+ * the box with the bottom of the font's descent, so a glyph with no descender
+ * floats down into the space one would have used. What "aligned with the text"
+ * actually looked like was the 🔋 these marks replaced. At the lead's 19.43px
+ * that emoji spanned 20px above the baseline and 5px below, putting its centre
+ * 7.5px up — a third of a pixel off the middle of the cap band, which reaches
+ * 14.04px. So the target is 7.5/19.43 = 0.386em above the baseline, and a box
+ * of height S has its bottom edge 0.386em - S/2 from it. The calc() is what
+ * keeps that true when one mark is resized; three hand-set offsets would not
+ * survive the next change to the sizes below. All three paths are centred in
+ * their own viewBox, so centring the box centres the ink.
+ *
+ * HOW MUCH AIR each one carries had to be settled before any of the sizes below
+ * meant anything, and it was measured rather than assumed. The keyhole and the
+ * TypeScript tile both paint to all four edges of their own boxes — the
+ * keyhole's viewBox looks like it has 7.68 units of slack on every side, and
+ * that slack is exactly the half-stroke, so the painted mark fills it. The
+ * battery was drawn on a 24-unit square and is 12 units wide, so half its box
+ * was empty: 6.3px of built-in padding on each side, on top of the word space,
+ * against 0 for the other two. That is the whole of why it looked pushed away
+ * from the word after it. `BatteryMark.astro` now crops its viewBox to the ink,
+ * which is what lets one `margin-inline` below apply to all three and mean the
+ * same thing on each.
+ *
+ * So `--oe-mark-size` is the painted height of the mark, not the height of a box
+ * with unknown slack in it. That is the only reading under which the three
+ * numbers can be compared at all.
+ *
+ * WHERE THEY SIT was guessed at and is now measured. `text-bottom` sat every
+ * box on the descender line, which hung the marks low: it aligns the bottom of
+ * the box with the bottom of the font's descent, so a glyph with no descender
+ * floats down into the space one would have used. What "aligned with the text"
+ * actually looked like was the 🔋 these marks replaced. At the lead's 19.43px
+ * that emoji spanned 20px above the baseline and 5px below, putting its centre
+ * 7.5px up — a third of a pixel off the middle of the cap band, which reaches
+ * 14.04px. So the target is 7.5/19.43 = 0.386em above the baseline, and a box
+ * of height S has its bottom edge 0.386em - S/2 from it. The calc() is what
+ * keeps that true when one mark is resized; three hand-set offsets would not
+ * survive the next change to the sizes below. All three marks are centred in
+ * their own viewBox, so centring the box centres the ink.
+ *
+ * HOW BIG started as a rule and is now a rule with a correction on it. Equal
+ * boxes do not read as equal marks: to a first approximation what the eye
+ * matches is how much ink each one puts on the line. The keyhole is round and
+ * inks 66.8% of its box, so at 1.15em it lays down 1.15² x 0.668 = 0.883em², and
+ * that is the target the square gets measured against.
+ *
+ * The rule put the TypeScript tile at 0.941em — it inks 99.8%, everything but
+ * its four rounded corners — and it was set at 0.95 and looked visibly the small
+ * one. The correction is the interesting part, because it generalises: the
+ * primary logo is a *figure on a field*, white letters printed on a blue tile,
+ * and the reader sizes the figure. The letterform is half the tile's height, so
+ * at 0.95em its caps came out at 0.48em against the lead's own 0.72em cap band.
+ * Ink area treats the tile and the letters as the same substance and they are
+ * not. 1.05em is where the mark stops reading as the small one, chosen off a
+ * five-step ladder rendered at the lead's real size. The rule holds for a mark
+ * that is all figure, like the keyhole; a mark with a field around its figure
+ * needs a box above what the rule says.
+ *
+ * The battery is on neither. It is a tall narrow glyph, so equal ink area would
+ * demand a mark half again as tall as the cap band. Height is its constraint:
+ * 1.08em, which lands between the keyhole's painted 1.107em and the tile's 1.05.
+ *
+ * THE MARGIN is one number for all three and it exists so that the gap around a
+ * mark does not depend on which mark it is. 0.15em, chosen off a ladder of five
+ * on the rendered page: at 0 the marks weld to the words, and by 0.25em each one
+ * has drifted away from the clause it belongs to. It is `margin-inline` rather
+ * than a trailing space so it applies to both edges of all three at once —
+ * before the fix the gaps ran 4.9px, 4.9px and 11.2px for the same markup.
+ *
+ * GREEN, and only this one. The two marks beside it are locked to brand colour
+ * by a licence or by nominative use; this one is ours, so it can carry meaning,
+ * and it takes the green this site uses where something is settled rather than
+ * promised — which is the claim "batteries included" makes.
+ *
+ * Both canvases now name a ramp step directly, and neither uses the semantic
+ * token. That is a deliberate exception on both sides rather than a shortcut.
+ * `--oe-verified` is tuned for a run of small text; a whole glyph filled with it
+ * is a different object, too pale on dark at `verify-300` (10.98:1, reads as
+ * mint) and heavier than it needs to be on light at `verify-700` (5.67:1). So:
+ * `verify-500` at 6.6:1 on dark, `verify-600` at 3.85:1 on light.
+ *
+ * `verify-600` is the whole of the headroom the light canvas has, and the number
+ * is why the ramp stops there rather than anywhere prettier. WCAG 1.4.11 asks
+ * 3:1 of a meaningful graphic, and against `#faf7f3` the next step up the ramp
+ * is `verify-500` at 2.74 — under the floor. One step of lightening was
+ * available and it was taken. A second is not available at all, and if a lighter
+ * green is ever wanted here the thing that has to move first is the claim that
+ * this glyph carries meaning, not the ratio.
+ *
+ * The cap in `tests/site-content.test.mjs` is the other half of the keyhole's
+ * size. A mark at badge scale reads as certification, and OSI certifies
+ * licences rather than products — the "no implied endorsement" condition,
+ * expressed as a number.
+ */
+.osi-mark,
+.ts-mark,
+.battery-mark {
+  display: inline-block;
+  line-height: 0;
+  margin-inline: 0.15em;
+}
+
+.osi-mark {
+  --oe-mark-size: 1.15em;
+}
+
+.ts-mark {
+  --oe-mark-size: 1.05em;
+}
+
+.battery-mark {
+  --oe-mark-size: 1.08em;
+  --oe-mark-aspect: 0.6;
+  color: var(--oe-color-verify-600);
+}
+
+:root.dark .battery-mark {
+  color: var(--oe-color-verify-500);
+}
+
+.osi-mark svg,
+.ts-mark svg,
+.battery-mark svg {
+  height: var(--oe-mark-size);
+  width: calc(var(--oe-mark-size) * var(--oe-mark-aspect, 1));
+  vertical-align: calc(0.386em - var(--oe-mark-size) / 2);
+}
+
 .muted {
   color: var(--oe-muted);
 }
@@ -440,6 +577,37 @@ a:hover {
 }
 
 /*
+ * The GitHub mark, larger than the token's default. `.oe-icon` is 1em so that an
+ * icon takes the size of the text beside it, which is right where an icon sits
+ * in a sentence and wrong here: this one has no text beside it, and at the
+ * header's 15px it was the smallest thing in a row it is one of two actions in.
+ * A ladder of five was rendered against the nav labels and the theme toggle's
+ * 40px button: 1.25em still read as the small thing next to that button, the
+ * founder took the top rung at 1.75em, and then went one past the ladder
+ * entirely. 2em is 30px, which is 75% of the 40px button and the tallest thing
+ * in the row.
+ *
+ * My own pick off that ladder was 1.5em, on the grounds that 1.75 made the mark
+ * heavier than the "Console" link beside it. That is recorded here as a
+ * judgement that was overruled rather than deleted, because it was a judgement
+ * about balance and the founder's is about emphasis: this is the one control in
+ * the header that leads to the source, the page's whole argument is that the
+ * source is the product, and a mark that outweighs its neighbour is the point
+ * rather than the cost. Weight was never the constraint — no measurement said
+ * 1.75 was wrong, and none says 2 is; the header row is 64px and the row's own
+ * height never moved as the mark climbed, so the ceiling here is taste, and the
+ * taste that owns it is not mine.
+ *
+ * The override is on the link and not on `.oe-icon`, so it is this instance that
+ * changes and not every icon on the site — the token is the design system's
+ * lever for exactly this, and reaching past it to the icon's own width would
+ * take the other five with it.
+ */
+.site-header .oe-icon-link {
+  --oe-icon-size: 2em;
+}
+
+/*
  * Which of the toggle's three icons is showing. The control itself is
  * `oe-theme-toggle` in components.css; this is the part only a page with a
  * pre-paint theme script can do.
@@ -539,7 +707,7 @@ a:hover {
 .footer-brand p {
   margin-top: var(--oe-space-4);
   color: var(--oe-muted);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   max-width: 36ch;
 }
 
@@ -647,82 +815,374 @@ a:hover {
 }
 
 /*
- * One column until the second one can hold a code sample, then 5/7 with the
- * demo on the wider side.
+ * One column, down the middle, at every width.
  *
- * The width is not a taste call. The longest line of the recorded excerpt —
- * `await alice.send("bob", "Ship it Thursday. …")` — is 83 characters, and
- * the excerpt is sliced from a capture, so it cannot be shortened to suit a
- * column. At 74rem the container has already reached its 1180px maximum, so
- * above that breakpoint the hero has exactly one geometry to satisfy rather
- * than a range: 1132px of content, 64px of gap, a 623px demo column. Below
- * it, stacking gives the code the full measure instead of a scrollbar.
+ * This was two columns above 74rem — copy on the left, demo on the right — and
+ * the split is what set the code's size. The longest line of the program the
+ * selector builds is 84 characters and comes verbatim from the capture, so it
+ * cannot be shortened to suit a column; the demo column was 645px at the last
+ * ratio the headline could afford, and 84 characters only fit 645px at 13px.
+ * The site sets code at 13.5px everywhere else, so the panel carried a
+ * desktop-only exception for the difference — and the two React Native
+ * variants, whose import line is 91 characters, still scrolled 46px inside it.
+ *
+ * Nothing in a two-column hero can fix that, because the copy and the code
+ * were bidding for the same 1132px. Centred, they are not: the copy is capped
+ * at its own measure and the panel takes the container's full width, the same
+ * 1132px the carrier recording under it takes. The React Native variants
+ * stopped scrolling — the first width on this page that has ever held all ten
+ * — and the size exception the split forced is gone.
+ *
+ * There is an exception here again, and it is worth being clear that it is not
+ * the same one coming back. That one shrank the code to 13px to fit a column
+ * the layout had already decided on, and the reader lost the program to make
+ * room for a ratio. This one runs the other way: the panel is given the widest
+ * box the page has, and the code is solved for what that leaves — 18px at the
+ * top, down to 13px on the narrowest viewport that still shows it. The old
+ * exception was a size the layout imposed on the program. This one is a size
+ * the program takes from the layout, and it is a clamp rather than a number
+ * because a fixed size against a variable panel is what produced the two wrap
+ * queries that are now gone.
+ *
+ * `justify-items: center` rather than a max-width on the grid, because the
+ * children want different widths: the copy wants a reading measure, the panel
+ * wants the program, the objections want two columns of prose, and the platform
+ * strip wants the container. The three that cap themselves do it below.
  */
 .hero-grid {
+  /* Named so the strip below can subtract it. A second copy of this clamp is a
+     second thing to keep in step, and the two are only correct together. */
+  --hero-grid-gap: clamp(2rem, 1rem + 4vw, 4rem);
+
   display: grid;
-  gap: clamp(2rem, 1rem + 4vw, 4rem);
-  align-items: start;
+  gap: var(--hero-grid-gap);
+  justify-items: center;
 }
 
-@media (min-width: 74rem) {
-  .hero-grid {
-    grid-template-columns: 5fr 7fr;
-  }
+/*
+ * The strip belongs to the panel under it, and the grid could not say so.
+ *
+ * One `gap` puts the same distance at every boundary, so the four children were
+ * a list of four unrelated blocks: measured, 61.9px above the strip and 61.9px
+ * below it, exactly. A row that sits equidistant between the buttons and the
+ * demo belongs to neither, and the reading it invites is "here is another
+ * section" rather than "here is what that panel runs on".
+ *
+ * It is the panel's caption. The strip and the demo are already the same
+ * 1100px box — the copy above is a 768px reading measure and the objections
+ * below are 896px — so the grouping is a fact about the layout that the spacing
+ * was contradicting.
+ *
+ * 16px flat rather than a fraction of the gap. A fraction holds one ratio at
+ * every width, which is the tempting version and the wrong one here: at 390 the
+ * grid gap is 32, so a third of it is 10.7px against the strip's own 8px
+ * internals, and the strip stops being a unit before it starts being a caption.
+ * Flat 16 is twice its internals at the narrow end and a quarter of the grid's
+ * rhythm at the wide end, and it never has to be re-picked.
+ *
+ * What makes that safe is that the terminal is a bounded panel: its border and
+ * fill do the separating, so this gap is only keeping the marks off the edge
+ * rather than establishing a boundary. That is why it can be this tight — the
+ * ladder was rendered at 48, 40, 32, 24, 20, 16 and 14, and 14 was the first
+ * where the S3 basket read as resting on the panel instead of above it.
+ *
+ * Subtracted from the gap rather than replacing it, because `row-gap` is not
+ * per-child. The negative resolves to -45.9px at this viewport and -16px at
+ * 390, and it cannot drift from the gap it cancels: both sides are the same
+ * variable.
+ */
+.hero-grid > .platform-strip {
+  margin-bottom: calc(var(--oe-space-4) - var(--hero-grid-gap));
 }
 
+/*
+ * Centred text, at every width.
+ *
+ * This was `@media (min-width: 44rem)` until this round, and the paragraph that
+ * put it there argued that centring is a width dividend a phone cannot pay: the
+ * copy already has the whole column, so centring below 44rem only costs the
+ * reader the left edge their eye returns to on every line. It set the
+ * breakpoint from line counts — "the headline runs three lines and the lead
+ * five to seven from 640px down, and at 704px they settle at two and four".
+ *
+ * Both halves of that stopped being true, and in different ways.
+ *
+ * The measurement is stale. The lead is a three-item badge row now — "Fully
+ * Open Source. Pure TypeScript. Batteries included." — and measures one or two
+ * lines at every width from 320 to 900. It is never five, and never seven, so
+ * "seven is a paragraph that has lost its anchor" described nothing on this
+ * page by the time it was being cited.
+ *
+ * The principle was over-applied. Not centring *running text* is real
+ * typographic guidance, and it is about the return sweep: a centred paragraph
+ * starts every line at a different x. Nothing left in this column is running
+ * text. The h1 is a large display heading at three or four lines on a phone,
+ * the lead is a badge row, `.actions` is two buttons, and the strip is seven
+ * logos. Centring short display type is ordinary rather than a violation, and
+ * the rule was being applied to four elements it never covered.
+ *
+ * Checked against the three sites the brief names as the craft bar, by reading
+ * the responsive alignment off each hero: Resend is `text-center md:text-left`
+ * — centred on a phone, left from 768 up, the exact inverse of what stood here.
+ * Liveblocks is `items-center text-center` with no breakpoint prefix, centred
+ * everywhere. Supabase declares no alignment at all and is left everywhere. Two
+ * of the three centre on a phone, and none of the three switches left-to-centre
+ * as the viewport grows. Resend's switch has a structural reason this hero does
+ * not have: its hero becomes a two-column flex row at `md`, so its copy turns
+ * into a left-hand column. This hero is one column at every width.
+ *
+ * What is given up is the left rhythm with the two panels below, which stay
+ * full-bleed to the gutter while the copy centres. That is a real cost and it
+ * is a layout preference rather than a readability one — Liveblocks has the
+ * same arrangement and centres anyway. The founder's call is that it is worth
+ * it. Do not restore the query on the strength of the first paragraph above;
+ * its line counts do not describe this lead.
+ *
+ * 48rem is the cap. It was the panel's width exactly, back when the
+ * code was 13.5px and the two shared an edge. The panel is the container's full
+ * width now, so at 1280 and up it overhangs this column by 182px on each side —
+ * the copy is a reading measure and the panel is a screenshot, and they stopped
+ * being the same size two rounds ago. Symmetric overhang on a centred hero
+ * reads as one column with a wider panel in it rather than as two misaligned
+ * blocks, and the alternative is to cap the evidence at the width of a
+ * paragraph. The cap stays at 48rem because it is a reading measure: 70rem of
+ * centred lead is not a paragraph anybody finishes.
+ *
+ * `.lead` gives its own cap up to it, and the reason is line count rather than
+ * width: its 56ch sets 685px, and the difference between that and the full 768
+ * is a line of centred body copy the reader does not have to walk back to the
+ * left edge for.
+ *
+ * There were two capped children here. The other was `.maturity`, which has
+ * moved to the foot of the hero — it is not part of the offer, and it was
+ * costing this column three lines of centred mono directly above the button.
+ */
 .hero-copy {
   display: flex;
   flex-direction: column;
   gap: var(--oe-space-6);
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 48rem;
 }
+
+.hero-copy .lead {
+  max-width: none;
+}
+
+/* `.actions` and `.cta-primary` are the shared pair, used again at the foot of
+   this page and on two other pages, and they stay left-aligned there. Only the
+   hero copy is centred, so only the hero copy re-aligns them. */
+.hero-copy .actions {
+  justify-content: center;
+}
+
+.hero-copy .cta-primary {
+  align-items: center;
+}
+
+/* The strip is a sibling of `.hero-copy` rather than a child, so it is reached
+   through the grid. Qualified rather than bare because the base rules for these
+   are declared *after* these lines — at equal specificity the later
+   `align-items: flex-start` would win and the centring would silently do
+   nothing.
+
+   Three axes, and they are different things. The first centres the heading over
+   the marks it heads: without it the heading stays flush-left above a row far
+   wider than itself, which on a centred page reads as a stray indent. The
+   second centres the clusters against each other once the row wraps. The third
+   is only visible on a phone — each cluster wraps internally there, and without
+   it the leftover name starts a flush-left second line under a centred first
+   one. At 390 that name is "Node.js", alone under Expo/React/Browser. */
+.hero-grid > .platform-strip {
+  align-items: center;
+}
+
+.hero-grid .platform-marks,
+.hero-grid .platform-cluster > ul {
+  justify-content: center;
+}
+
+/*
+ * The platform strip under the hero's actions.
+ *
+ * Sized and coloured to sit below the offer rather than beside it. The marks
+ * are 34px, the names 16px, the heading 13px. The legibility floor is 18 —
+ * below it the Convex arcs close up into a disc — so the size is set by weight
+ * rather than legibility, and the ceiling is the row above: the marks are the
+ * second-loudest thing above the fold and the primary button has to stay the
+ * first.
+ *
+ * They were 40 and 18, which put the marks within 4px of the 44px button and
+ * left colour as the only thing separating them — one muted hue at 7.08 against
+ * a filled accent, and nothing else. 34 and 16 restore size as a second
+ * separator: 10px of difference rather than 4, a row 817px wide instead of 912,
+ * and a strip 6px shorter. That the button stays the loudest element above the
+ * fold is an acceptance gate rather than a preference, so a change in this
+ * direction is always the safe one; the floor is what limits it, and 34 is
+ * still most of the way above the floor.
+ *
+ * Ladder rendered at 40/18, 36/17, 34/16, 32/16 and 28/15, all of them one row
+ * at desktop. The pair moves together because a name that does not shrink with
+ * its mark stops reading as a label on it.
+ *
+ * `currentColor` on the paths and `--oe-muted` on the item is what keeps this
+ * a compatibility list. Brand colour is the visual grammar of a partner wall,
+ * and it would also put seven unrelated hues under a headline whose whole job
+ * is to be the loudest thing above the fold. One colour, the page's own.
+ *
+ * The heading sits above the marks rather than inline before them. Inline it
+ * was the first thing in the row and read as part of the list — one more item
+ * at the same baseline, before a reader had worked out that the row was a list
+ * at all. Above it, it is a heading over a set, which is what it is.
+ *
+ * The strip is a grid child rather than part of `.hero-copy`, so it takes the
+ * container's width — 1132px, the same box as the install command and the code
+ * panel — instead of the copy column's 48rem reading measure. That is what puts
+ * the seven entries on one row: they measure 683px with their gaps, which does
+ * not fit the copy column and fits here with 449px to spare.
+ *
+ * Measured at these names and sizes: one row at 760 and up, two from 500 to
+ * 700, three at 420 and below — it no longer reaches four at any width the page
+ * is read at. Those numbers move whenever a mark size or a name does, and both
+ * moved at once here: 1000 / 660 / 500 / 358 at 40px marks with "React Native"
+ * and "Cloudflare R2", then 900 / 500 / 390 / 358 at 34px with the same names,
+ * now 760 / 500 / 420 with the short ones. That is why they are a record of the
+ * current state rather than a contract —
+ * `flex-wrap` is what actually holds it, because the wrap points are set by the
+ * content and hand-picked queries would need re-picking the next time an
+ * adapter ships.
+ */
+.platform-strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-2);
+  align-items: flex-start;
+  width: 100%;
+}
+
+.platform-label {
+  margin: 0;
+  color: var(--oe-muted);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  /* Ranked below the names by size, case, and letterspacing rather than by
+     colour, per the header of this file. `--oe-subtle` is the tempting token
+     and it is forbidden for text: it is `--oe-border-control`'s value, held to
+     3:1, and it measures 3.93 on the light canvas. `muted` is 6.12 light and
+     7.08 dark. */
+}
+
+/*
+ * Two levels of the same wrapping row, and the gaps match on purpose: one line
+ * of seven reads as one row because the space between "Node" and "Convex" is
+ * the space between "Expo" and "React Native". The nesting only becomes visible
+ * when the row runs out of width, and then it decides *where* — the three
+ * backends leave together instead of the break landing on whichever name
+ * happens to be seventh.
+ *
+ * The clusters wrap internally as well, so the narrowest phone gets four short
+ * rows rather than two long ones scrolling off the edge.
+ */
+.platform-marks,
+.platform-cluster > ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--oe-space-2) var(--oe-space-4);
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A flex item that is itself a flex container. `display: contents` would be
+   fewer boxes and it is the wrong tool: it takes list semantics off the element
+   in more than one shipping engine, and here it would also dissolve the very
+   box that makes the cluster a wrap unit. */
+.platform-cluster {
+  display: flex;
+}
+
+.platform-cluster > ul > li {
+  display: inline-flex;
+  gap: var(--oe-space-2);
+  align-items: center;
+  color: var(--oe-muted);
+  font-size: 1rem;
+  /* The name never wraps away from its own mark. Every entry is one word now —
+     "React Native" and "Cloudflare R2" were the two that were not — so this
+     guards the remaining break the text could take on its own, which is
+     "Node.js" at the dot. The list wraps between entries instead, which is the
+     only place a break means anything. */
+  white-space: nowrap;
+}
+
+.platform-marks svg {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  fill: currentColor;
+}
+
+
 
 /*
  * The hero headline is one sentence that names the category, so it wraps on
  * its own rather than at an authored break. `balance` from the global heading
  * rule is what that wants. Capped below the global h1 maximum so a sentence
- * this long stays at two or three lines — now inside the 5/12 column, which
- * is why the ceiling came down with the column: at the old 50px it set four
- * lines and 224px of headline before the reader reached the first claim.
+ * this long stays at two or three lines: at the global 60px it sets three
+ * lines and 216px of headline inside the centred measure before the reader
+ * reaches the first claim, and it set four in the column this used to share
+ * with the demo.
+ *
+ * The floor is 33px rather than a round 34 because the headline grew by one
+ * word. "Add end-to-end encrypted messaging to your TypeScript app." is three
+ * characters longer than the noun phrase it replaced, and at 390px — the width
+ * the fold measurement belongs to — that was the difference between three
+ * lines and four: the primary button fell to 696px against a real-device fold
+ * of 664. Swept 34/33/32/31/30 at that width; 33 is the largest that returns
+ * the headline to three lines, and it lands the button at 654, four pixels
+ * higher than the old headline managed at 34. Below 390 both strings wrap
+ * identically and neither clears the fold, so nothing there regressed — but
+ * the smaller floor still buys 320px a line back (five to four) and 360px
+ * four pixels. The floor governs up to 470px, where the preferred term takes
+ * over.
  */
 .hero h1 {
-  font-size: clamp(2.125rem, 1.15rem + 3.1vw, 2.625rem);
+  font-size: clamp(2.0625rem, 1.15rem + 3.1vw, 2.625rem);
 }
 
 /*
- * From 74rem up the headline shares its row with the demo, so its measure
- * stops growing with the viewport and holds at the 5/12 column — 470px — while
- * the clamp is already pinned to its 42px maximum. That set the headline in
- * four lines with `encrypted` alone on the second, and the column below it has
- * no fold left to give.
+ * The ramp under the headline, which this page breaks and no other page does.
+ *
+ * `.hero h1` above stops climbing at 42px — it has to, or a 57-character
+ * sentence sets three lines — while the global h2 clamp keeps going to 36px.
+ * From 74rem up, where both are pinned to their maxima, the display headline
+ * and every section heading under it arrive 42px against 36px: a ratio of
+ * 1.17, measured off the rendered cap heights, and the page reads as a flat
+ * stack of equally loud voices. The same two headings are 1.30 apart at 390px,
+ * so the defect belongs to width alone and the correction belongs to a
+ * breakpoint.
+ *
+ * This used to be justified by an extra cap that pulled the headline to
+ * 2.375rem at the same breakpoint, because in the old two-column hero the
+ * headline's measure stopped at the 470px left column and 42px set four lines
+ * there. Centred, the headline has 704px and sets two, so the cap is gone —
+ * but its partner is not, because 42 against 36 was never the healthy ratio.
+ * It was only the smaller half of the problem.
+ *
+ * Scoped rather than global. Measured at 1440px, every other page runs 60
+ * against 36 — a ratio of 1.67, which is correct — because none of them holds
+ * its h1 down. Re-capping the global h2 would fix this page by flattening six
+ * healthy ones.
+ *
+ * The sibling combinator is the scope. `.hero` appears on this page only, and
+ * its following bands are exactly the sections whose headings answer to that
+ * headline — no new class, and nothing reaches the footer's own h2.
  */
 @media (min-width: 74rem) {
-  .hero h1 {
-    font-size: 2.375rem;
-  }
-
-  /*
-   * And the ramp under it, because the rule above breaks one.
-   *
-   * The global h2 clamp keeps climbing to 2.25rem while this page's headline is
-   * held at 2.375rem, so from 74rem up the display headline and the section
-   * headings arrive 38px against 36px — a ratio of 1.06, measured off the
-   * rendered cap heights. The page reads as a flat stack of equally loud
-   * voices, and the same two headings are 1.30 apart at 390px, so the defect
-   * belongs to width alone.
-   *
-   * Scoped rather than global. Measured at 1440px, every other page runs 60
-   * against 36 — a ratio of 1.67, which is correct — because none of them pulls
-   * its h1 down. Re-capping the global h2 would fix this page by flattening six
-   * healthy ones, so the correction lives with its cause: the same breakpoint
-   * and the same media query that lowered the headline. h1 and h2 now step down
-   * together at 74rem, leaving no width where one has moved and the other has
-   * not.
-   *
-   * The sibling combinator is the scope. `.hero` appears on this page only, and
-   * its following bands are exactly the sections whose headings answer to that
-   * headline — no new class, and nothing reaches the footer's own h2.
-   */
   .hero ~ .band h2 {
     font-size: 1.75rem;
   }
@@ -730,39 +1190,159 @@ a:hover {
 
 /*
  * `end-to-end` is one term, and `text-wrap: balance` will still break a line
- * after a hyphen inside it. In the hero's 5/12 column that set "Add end-to-"
+ * after a hyphen inside it. In the hero's old 5/12 column that set "Add end-to-"
  * on a line of its own and cost the headline a fourth line — 50px the first
- * viewport does not have to spare, and a term read in two halves.
+ * viewport does not have to spare, and a term read in two halves. The column is
+ * gone and the phone, where the measure is narrowest, is not.
  */
 .keep-together {
   white-space: nowrap;
 }
 
+/*
+ * The panel, at the width the page already uses for recorded evidence.
+ *
+ * It was capped at 52rem, which was the width the program measured at the size
+ * it was set in — the box sized to the code. That relationship is now the other
+ * way round and it is the better one: the panel takes the full container, the
+ * same 1132px the carrier recording takes further down the page, and the code
+ * is sized to whatever that leaves. The two panels are the page's two pieces of
+ * recorded evidence and they had no reason to be different widths; measured,
+ * `.carrier-panel` and `.hero-demo` now report the same box at every width from
+ * 1440 down to 390.
+ *
+ * `container-type: inline-size` is here to make the panel's own width a unit
+ * the size below can be written in. `cqi` rather than `vw` is not a
+ * preference: the code has to fit the panel, and the panel is the container's
+ * content box, which is the viewport less padding that changes at breakpoints.
+ * A `vw` formula would be right at one width and drifting at the others, and
+ * would silently go wrong the day the container's padding moves. Verified in
+ * the browser rather than assumed — a probe measuring `100cqi` inside this
+ * element reports its own width at every viewport, which is worth checking
+ * because a container unit that resolved to zero would collapse the code to
+ * the clamp floor and still look like a working clamp.
+ *
+ * There is no circularity in doing that: the width comes from the grid track
+ * above, never from the content, so the inline size is settled before the font
+ * that depends on it is resolved.
+ */
 .hero-demo {
   display: flex;
   flex-direction: column;
   gap: var(--oe-space-3);
-  /* A grid item defaults to `min-width: auto`, which would let 83 characters
-     of unwrappable code widen the column and squeeze the copy beside it. */
+  width: 100%;
+  container-type: inline-size;
+  /* A grid item defaults to `min-width: auto`, which would let 91 characters
+     of unwrappable code widen the hero past the viewport rather than scroll
+     inside the panel. */
   min-width: 0;
 }
 
-/* `.hero-copy` is a flex column with `align-items: flex-start`, which sizes
-   the block to its longest line. The snippet is a panel and takes the column. */
 .hero-snippet {
   width: 100%;
 }
 
-/* Set against the 623px column above: 83 characters at 12.5px measure 573px,
-   leaving room for the 32px of padding and a little for a fallback face with
-   a wider advance. Stacked, the block has the full measure and keeps the
-   site-wide size. `overflow-x` on `.code-block pre` remains the backstop. */
-@media (min-width: 74rem) {
-  /* `.code-block pre` sets the site-wide size and is declared later in this
-     file, so a single-class selector here would lose the tie on source order
-     rather than on intent. */
-  .hero-snippet.code-block pre {
-    font-size: 0.78125rem;
+/*
+ * The one code panel on the site that sets its own size, and the only type on
+ * the site that is solved for rather than chosen.
+ *
+ * `--oe-code-size` is 13.5px and stays 13.5px everywhere else: it is the size
+ * for a snippet quoted inside prose, and /product's recorded file is already at
+ * the ceiling its own column allows — measured, 13.50px exactly, so a site-wide
+ * step would push that panel into a scrollbar.
+ *
+ * Here the size is whatever makes the longest program exactly fit the panel.
+ * The constraint, all four terms measured in the browser rather than derived
+ * from the `ch` unit, which resolves against a different font than the one the
+ * glyphs paint in — 8.10 against 7.45 at 13.5px, checked:
+ *
+ *   91 characters      the React Native import, the longest line in the ten
+ *                      variants; the other eight are 84
+ *   0.552 px/px        painted advance per pixel of font size, constant across
+ *                      the range: 8.28 at 15, 8.83 at 16, 9.94 at 18
+ *   4.75ch gutter      at 0.5576 px/px, so it grows with the code
+ *   30px               the panel's 28px of padding and its 2px border
+ *
+ * which solves to 1.89cqi − 0.57px. The 1.8 below is that with about five per
+ * cent held back, because the fit is exact and a font that rounded the wrong
+ * way would put a scrollbar under the page's primary evidence.
+ *
+ * The gutter term moved from 3.25ch to 4.75ch and the ceiling only fell from
+ * 1.92 to 1.89, which is worth stating because it looks wrong: the gutter is
+ * about a twentieth of the line and the code is the rest, so widening it by
+ * 1.5ch moves the ceiling by around one and a half per cent. The size below did
+ * not have to change, and the margin was measured rather than trusted — 59px
+ * of slack on the longest line at the narrowest width that does not wrap.
+ *
+ * The ceiling is a judgement and the floor is not. 18px keeps genuine slack —
+ * the full 1132px panel would carry 21.1px — and sits under the lead's 20px,
+ * so the evidence does not outweigh the sentence that frames it. The floor is
+ * arithmetic: at 48rem the panel is 720px and the largest size that still fits
+ * is 13.26px, so 13px is the last honest step, and 48rem is exactly where the
+ * block below stops solving for fit and picks 15px instead. Above that line the
+ * code is always whole; below it nothing fits at any size a person reads, so it
+ * scrolls.
+ *
+ * This is why the two wrap media queries that used to sit beside the gutter
+ * rules are gone for this panel. They existed because a fixed size met a
+ * variable width and lost through a band of viewports. A size that solves for
+ * the width does not have a band.
+ */
+.hero-snippet.code-block pre {
+  font-size: clamp(0.8125rem, 1.8cqi, 1.125rem);
+}
+
+/*
+ * The objections, which are the one part of the hero that is not centred.
+ *
+ * They are paragraphs of argument rather than short blocks of offer, and
+ * centred argument is where a ragged left edge starts costing real reading. So
+ * the group is centred and its text is not.
+ *
+ * Two columns from 60rem, because the two `.stance` paragraphs are a matched
+ * pair — same question form, same citation rule down the inline start — and
+ * stacking them under an 832px panel sets two short lines against a wide empty
+ * right half. `.honesty` is not one of the pair: it answers no "why not", it
+ * states the security boundary, so it takes its own row underneath, and
+ * `.maturity` takes the row under that.
+ *
+ * Those rows are indented by exactly the rule and the padding a `.stance` puts
+ * in front of its own text, so all four paragraphs share one left edge. Centring
+ * it instead was tried and looked like a mistake: a paragraph with no rule
+ * beginning 230px into an otherwise flush-left block reads as something that
+ * failed to line up rather than as something placed.
+ */
+.hero-objections {
+  display: grid;
+  /* The scale is 1, 2, 3, 4, 6, 8, 12, 16, 24 — there is no 5, and asking for
+     one is silent: `gap: var(--oe-space-5)` is an invalid value, so the grid
+     falls back to `normal`, which is zero. That shipped for one build and put
+     the two citation rules end to end on a phone, reading as one paragraph
+     with one rule. `tests/site-content.test.mjs` now checks every spacing
+     token this file names against the package that defines them. */
+  gap: var(--oe-space-6);
+  width: 100%;
+  max-width: 56rem;
+  text-align: start;
+}
+
+@media (min-width: 60rem) {
+  .hero-objections {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hero-objections .honesty {
+    grid-column: 1 / -1;
+    padding-inline-start: calc(var(--oe-space-4) + 2px);
+  }
+
+  /* The maturity line takes a full row for the same reason and shares the
+     same left edge, but with a margin rather than padding: it is the one
+     paragraph here that carries a rule over it, and padding would start that
+     rule 18px to the left of the text it belongs to. */
+  .hero-objections .maturity {
+    grid-column: 1 / -1;
+    margin-inline-start: calc(var(--oe-space-4) + 2px);
   }
 }
 
@@ -1258,9 +1838,162 @@ table.data td {
 
 /* ---------------------------------------------------------------- code --- */
 
+/*
+ * The only literal hex values in this file, and the header above says there
+ * are none — so here is the exception and its reason.
+ *
+ * That rule exists because a mode-specific value copied out of the palette
+ * goes stale the moment @open-e2ee/design moves. These eight are not copies
+ * of our palette. They are two other applications' surfaces: VS Code's editor
+ * and Ghostty's window. Neither belongs to the theme contract, neither has an
+ * --oe-* token to inherit from, and the whole point of showing them is that
+ * they are recognisably not ours. Restating them as tokens here is what lets
+ * the rest of the section keep reading in semantic names.
+ *
+ * They are also not trusted. `src/lib/code-theme.mjs` carries the same eight
+ * values with their provenance, and `tests/site-content.test.mjs` re-derives
+ * the editor pair from `@shikijs/themes` and asserts all of it matches what
+ * is written below. A drifted hex fails the suite rather than the page.
+ */
+:root {
+  --oe-editor: #ffffff;
+  --oe-editor-foreground: #000000;
+
+  /* Dark+'s paper, named on its own because two different rules now want it:
+     `:root.dark` just below, where a snippet inside an article follows the
+     page the way the rest of the article does, and `.code-block`, where the
+     quoted panel keeps one appearance in both modes. Declared once so the two
+     consumers cannot drift apart, and so the hex appears here rather than
+     twice. */
+  --oe-editor-dark: #1e1e1e;
+  --oe-editor-dark-foreground: #d4d4d4;
+
+  /* No `:root.dark` counterpart, and that is the fact rather than an
+     oversight: Ghostty has one appearance. See `.terminal` below. */
+  --oe-shell: #282c34;
+  --oe-shell-foreground: #ffffff;
+  --oe-shell-prompt: #9da5b4;
+
+  /* Named for its one consumer rather than for the titlebar it used to draw.
+     It outlines the copy control at rest, which is the only piece of interface
+     the shell contains. */
+  --oe-shell-control: #6e7681;
+}
+
+:root.dark {
+  --oe-editor: var(--oe-editor-dark);
+  --oe-editor-foreground: var(--oe-editor-dark-foreground);
+}
+
+/*
+ * The panel quotes one editor, in both modes.
+ *
+ * It used to follow the page: Light+ on a light page, Dark+ on a dark one. The
+ * argument for that was recognition — a snippet is a sample of the reader's own
+ * editor — and it is a good argument that this panel is the wrong place for.
+ * The install command sits directly above this block, in Ghostty's fill, and
+ * Ghostty ships no light theme, so on a light page the stack was a dark
+ * terminal above a white editor: two panels of identical width and identical
+ * left edge, reading as two unrelated widgets rather than as two halves of one
+ * instruction. Pinning the editor is what makes them one object.
+ *
+ * The honest version of the reason, because the tempting one is wrong. The
+ * terminal is dark in both modes because Ghostty *has* no light appearance —
+ * that is a fact about the application being quoted, and it does not transfer.
+ * VS Code has a light theme and plenty of developers use it. So this is not the
+ * same argument one step further; it is a composition decision about two panels
+ * that share an edge, and it costs the light-mode reader the version of the
+ * editor they may actually run. What it buys is that the hero reads as one
+ * stack, and that the code keeps one appearance in the screenshot a reader
+ * takes away.
+ *
+ * Scoped to `.code-block`, which is the hero panel and /product's recorded
+ * file. A snippet inside a blog post is not a quoted editor window — it is
+ * evidence inside body text, read at the page's own brightness — so `.prose
+ * pre` keeps following the theme. That is a real split and the comment there
+ * says so.
+ */
 .code-block {
+  --oe-editor: var(--oe-editor-dark);
+  --oe-editor-foreground: var(--oe-editor-dark-foreground);
+
+  /* The syntax colours are pinned too, but they cannot be pinned from here:
+     shiki writes its palette onto the spans, so a property declared on this
+     element has nothing to read. That pin is a selector, further down, next to
+     the two rules it has to outweigh. */
+
+  /*
+   * The dark palette's own four values, restated.
+   *
+   * This is the copy of our palette that the block above this section says it
+   * does not make, and the exception needs stating rather than hiding. The
+   * panel now has one appearance while the page has two, so every site-owned
+   * colour printed on it — the filename, the adapter labels, the select, the
+   * copy glyph, the note under the program — has to stop tracking the page or
+   * go unreadable: light `--oe-muted` is #615d57, which measures 1.6 on this
+   * surface. The design package exposes no mode-independent alias to point at,
+   * so the values are written here and `tests/site-content.test.mjs` re-derives
+   * every one from `tokens.semantic.dark`. A palette move upstream fails the
+   * suite rather than dimming a control on the page.
+   *
+   * `--oe-focus` is in the list for the same reason and it is the one that
+   * would have been missed: the ring is drawn with an offset, so it lands on
+   * the panel, and light `--oe-focus` is #4454cc at 2.69 here. The two selects
+   * and the copy button are the only operable things in the panel.
+   */
+  --oe-muted: #a19c95;
+  --oe-foreground: #f4f1eb;
+  --oe-border: #34312d;
+  --oe-focus: #95acff;
+
+  /*
+   * The line numbers, which are `--oe-muted` stepped back toward the surface
+   * under them.
+   *
+   * Plain `--oe-muted` is 6.12 on this paper, and at that strength a column of
+   * numerals competes with the syntax colours beside it — the gutter reads as
+   * part of the program rather than as the ruler down its side. The palette has
+   * no gentler step to reach for: the next one down is paper-500, which is
+   * `--oe-subtle` and `--oe-border-control` at 3.97, under AA and already
+   * forbidden for text by a test in this repository. So the value is mixed
+   * rather than picked.
+   *
+   * 78% is 4.25, which is under AA, and that is a decision rather than a drift.
+   *
+   * The ladder, measured at 1% resolution by painting each candidate and
+   * sampling the pixel: 85% is 4.79, 82% is 4.55, 81% is 4.48, 78% is 4.25,
+   * 74% is 3.97. So 82% was the last step that held 4.5, and this is one stop
+   * past it. The owner was shown that ladder with the AA line marked on it and
+   * chose 78% — the numbers still read as too present at the floor, and the
+   * gutter is meant to be a ruler rather than a column of the program.
+   *
+   * The grounds are WCAG 1.4.3's incidental exemption: text that is pure
+   * decoration carries no contrast requirement. A line number here is not
+   * referenced by anything — checked, no copy on the site points at one, and
+   * the only mention is "the ten-line example", which is a count. It is not the
+   * case that a reader tells a colleague which line broke, which is what an
+   * earlier version of this comment argued and what held the value at 4.5; that
+   * argument is about an editor a reader is working in, not about a
+   * seventeen-line quotation on a landing page they cannot edit.
+   *
+   * It is a real exemption and not a free one, so the floor moved rather than
+   * being removed: the test now holds this to the 3:1 non-text minimum, which
+   * 74% would still clear and 70% at 3.7 would too. The next step down is a
+   * decision as well, not a slope.
+   *
+   * Worth recording because it is the reference point for how far this has
+   * gone: VS Code's own dark line numbers are #858585, which measures 4.52 on
+   * this exact background — read out of `editorColorRegistry.ts`, where the
+   * default is registered as `{ dark: '#858585', light: '#237893' }`. Neither
+   * Light+ nor Dark+ bundles `editorLineNumber.foreground`, checked, so the
+   * theme cannot supply it and this stays derived from our own palette. At 82%
+   * the derived value sat within three hundredths of the editor's. At 78% it is
+   * deliberately softer than the thing being quoted.
+   */
+  --oe-code-gutter: color-mix(in srgb, var(--oe-muted) 78%, var(--oe-editor));
+
   border: 1px solid var(--oe-border);
-  background: var(--oe-code);
+  background: var(--oe-editor);
   min-width: 0;
   max-width: 100%;
 }
@@ -1270,11 +2003,12 @@ table.data td {
 
    `muted` rather than `subtle`: the design system asserts `subtle` against the
    canvas at a floor of 3, which is the non-text-contrast threshold, and on the
-   code surface the pair measures 3.72 in light and 4.42 in dark. That is fine
-   for a border and short of AA for a line of text — and this line is the one
-   the reader is meant to take away. `muted` on code is 5.80 and 6.80. */
-.code-filename,
-.code-command {
+   editor surface the pair measures 4.20 in light and 3.97 in dark. That is
+   fine for a border and short of AA for a line of text — and this line is the
+   one the reader is meant to take away. `muted` on the editor is 6.54 and
+   6.12, so moving the panel onto VS Code's paper left this argument standing
+   with better numbers than it had on ours. */
+.code-filename {
   font-family: var(--oe-metadata-font-family);
   font-weight: var(--oe-metadata-weight);
   font-size: var(--oe-metadata-size);
@@ -1284,22 +2018,267 @@ table.data td {
   border-bottom: 1px solid var(--oe-border);
 }
 
-/* The command is the line a reader is meant to leave with, so the row holds a
-   button as well as the text. */
-.code-command {
+/*
+ * The same ruled header, when it carries controls as well as a name.
+ *
+ * /product still uses `.code-filename` on its own, so the padding and the rule
+ * stay on that element and the toolbar takes them over only where it wraps it.
+ * Two rules for one edge is a smell; one rule that two elements can own is the
+ * alternative and it would have meant changing a page this round is not about.
+ */
+.code-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: var(--oe-space-3);
+  padding: var(--oe-space-3) var(--oe-space-4);
+  border-bottom: 1px solid var(--oe-border);
+}
+
+.code-toolbar .code-filename {
+  padding: 0;
+  border-bottom: 0;
+}
+
+/* Pushes the copy control to the far edge and lets the selects sit together. */
+.code-adapters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--oe-space-3);
+  margin-inline-start: auto;
+}
+
+.code-select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oe-space-2);
+}
+
+.code-select-label {
+  font-family: var(--oe-metadata-font-family);
+  font-weight: var(--oe-metadata-weight);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+}
+
+/*
+ * Left as a native select on purpose. A custom listbox would need a script to
+ * be operable at all, and this control's whole job is to be the one thing on
+ * the page a reader can operate — so it should not be the one thing that
+ * breaks when a script fails. The native element brings keyboard support,
+ * touch pickers, and the platform's own focus ring for free, and the only
+ * thing given up is control of the popup's colours, which no reader is here
+ * for. `font: inherit` is what stops Safari and Firefox shrinking it.
+ */
+/*
+ * The design package's focus ring enumerates `a, button, summary, input,
+ * [tabindex]` and does not include `select`, so this control fell back to
+ * Chrome's own ring — measured `auto 1px rgb(153, 200, 255)`, which is a
+ * different colour, a different width and a different offset from every other
+ * focusable thing on the page. The site's own ring is restated here in the
+ * same shape as `components.css` writes it, rather than the package being
+ * edited: it is a pinned tarball, and this repository does not own it. Worth
+ * raising upstream — `select` is the only native control the list misses.
+ */
+.code-select select:focus-visible {
+  outline: var(--oe-control-focus-width) solid var(--oe-focus);
+  outline-offset: var(--oe-control-focus-offset);
+  border-radius: var(--oe-radius-sm);
+}
+
+.code-select select {
+  font: inherit;
+  font-size: var(--oe-metadata-size);
+  font-family: var(--oe-metadata-font-family);
+  color: var(--oe-foreground);
+  background: var(--oe-editor);
+  border: 1px solid var(--oe-border-control);
+  padding: 2px var(--oe-space-2);
+  max-width: 14ch;
+}
+
+/* Nine of the ten are `hidden`. The attribute is the mechanism — it takes the
+   variant out of the accessibility tree as well as off the page — and this is
+   the guard against a later `display` rule quietly overriding it. */
+.code-variant[hidden] {
+  display: none;
+}
+
+/* `.code-note` stood here — muted 13px prose under the program, saying whose
+   object `convex`, `api` and `storage` were. Its own comment argued that a note
+   about a snippet placed outside the snippet is a note about the page, and that
+   is right as far as it goes: inside the panel beats below it. A comment on the
+   line above beats both, because it is the only one of the three that survives
+   the copy button. The rule is gone rather than left unused; the disclosure is
+   in `snippetComments`. */
+
+/* --------------------------------------------------------- terminal --- */
+
+/*
+ * The install command, as a shell rather than as a caption.
+ *
+ * It used to share the code surface with the snippet below it, on the
+ * reasoning that they are two halves of one instruction and a second
+ * background would read as two unrelated widgets. They are two halves of one
+ * instruction, and they are also two different programs: you type the first
+ * into a terminal and read the second in an editor. Giving them one surface
+ * asked the reader to tell those apart from a `$` alone. Giving them the two
+ * surfaces they actually have says it before the line is read.
+ *
+ * The values are Ghostty's own defaults, from `src/config/Config.zig`:
+ * `background = #282C34`, `foreground = #FFFFFF`, and `window-padding-x/y =
+ * 2`. Both colours apply in both modes, because Ghostty ships no light theme
+ * — a shell that turned white with the page would be a shell nobody runs.
+ * White on the fill measures 14.00. The padding is the one default not
+ * copied: 2pt is right for a window you resize and wrong for a panel on a
+ * page, where the surrounding rhythm is the site's spacing scale.
+ *
+ * The typeface needed no decision. `--oe-font-mono` is JetBrains Mono, which
+ * is the face Ghostty embeds and falls back to.
+ */
+.terminal {
+  width: 100%;
+  border: 1px solid var(--oe-border);
+  background: var(--oe-shell);
+  color: var(--oe-shell-foreground);
+  min-width: 0;
+  max-width: 100%;
+}
+
+/*
+ * The panel carried a titlebar strip with three outlined rings for one round.
+ * It was removed on the founder's call, and the reasoning is worth keeping
+ * because it is the same reasoning that governs the fill: Ghostty draws no
+ * window furniture at all — it is a native window and inherits whatever the
+ * desktop puts on it. The strip was therefore a convention rather than a
+ * quotation, and a page that quotes a terminal exactly is more honest than one
+ * that draws a titlebar no Ghostty user has. The `$`, the fill and the mono
+ * face carry the signal without it.
+ */
+.terminal-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--oe-space-3);
+  padding: var(--oe-space-4);
+  /*
+   * The same inset as the code panel's gutter side, and for the same reason
+   * doubled: these two panels share a left edge and a width at every width the
+   * page has — measured, 1440 down to 390 — so they are read as one stack, and
+   * the `$` and the line numbers are the same thing in it, a fixed marker in
+   * front of the content. Moving the numbers 4px toward the edge without
+   * moving the prompt put two stacked panels of identical width out of
+   * register, which is more visible than either inset is on its own.
+   */
+  padding-inline-start: var(--oe-space-3);
+  margin: 0;
+  font-family: var(--oe-font-mono);
+  /*
+   * Solved against the panel below it rather than set, for the same reason that
+   * panel is solved rather than set — and the two have to be solved in the same
+   * unit or the relationship between them only holds at one width.
+   *
+   * This was `--oe-code-size`, a flat 13.5px, while the code panel runs
+   * `1.8cqi` between 13 and 18. Measured at a 1006px viewport: code 17.24px,
+   * command 13.5px. The one line on the page a reader is meant to leave with
+   * was a third smaller than the evidence under it, which inverts the hierarchy
+   * the two panels are stacked in — the code is what proves the claim, the
+   * command is what acts on it.
+   *
+   * `2cqi` is the code's own expression at 1.111x, so the step rides the same
+   * width the code does rather than being a gap that opens and closes. Fixing
+   * 19px instead would have been right at this viewport and wrong at the others
+   * — the code falls to about 13px at the 48rem breakpoint, where a fixed 19px
+   * command would stand half again as tall as the program.
+   *
+   * The step is not one constant, and the first draft of this note claimed it
+   * was. The two clamps have different corners: the command reaches its 19px
+   * ceiling at a 950px container and the code reaches its 18px at 1000px, so
+   * between those the command is already capped while the code is still
+   * growing. Swept every container width from 320 to 1600, the ratio runs
+   * 1.111x through the middle of the range and settles to 19/18, or 1.056x,
+   * once both are capped — minimum 1.056, maximum 1.111, and the command is
+   * larger at every single width. That last part is the property worth having,
+   * and it is the one the test asserts. The constant was a sentence, not a
+   * measurement.
+   *
+   * The ceiling is 19px against the code's 18px and the lead's 20px, which is
+   * the order those three should be in. Closing the ratio gap by lifting the
+   * ceiling to 20px was the alternative and it is the wrong trade: it buys an
+   * invariant nobody looks at by putting the command level with the sentence
+   * that explains what it installs. The floor is 14px, one step over the code's
+   * 13px, and it only ever applies under 48rem — where the command wraps rather
+   * than fits, so no arithmetic depends on it.
+   *
+   * Width is not a constraint here and it is worth writing down why, because it
+   * is the constraint on the panel below. Measured: the command advances 25.2px
+   * per px of font size (42 characters of a 0.6em monospace), and the row also
+   * carries the `$`, two 12px gaps, 28px of padding and a 24px button. That
+   * solves to a fit ceiling of about 39px at this width and about 25px at
+   * 48rem, both far above the 19px cap. The code panel is the one fighting for
+   * its width; this row has room it is not using.
+   */
+  font-size: clamp(0.875rem, 2cqi, 1.1875rem);
+  line-height: var(--oe-code-line-height);
   min-width: 0;
 }
 
-.code-command > span {
-  overflow-x: auto;
-  white-space: nowrap;
+/*
+ * Never selectable and never announced. A prompt that lands in the clipboard
+ * turns a working command into `$ npm install …`, and a screen reader that
+ * announces "dollar" is reading punctuation as content. The button copies the
+ * command string from `data-copy` and never touches this element's text.
+ */
+.terminal-prompt {
+  flex: none;
+  color: var(--oe-shell-prompt);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
+/*
+ * `min-width: 0` because a flex item defaults to `min-width: auto` and will
+ * not shrink below its content: without it the 42-character command widens
+ * the panel past the hero column instead of scrolling inside it.
+ *
+ * 500 is the second half of drawing attention to this line, and it is the half
+ * that costs nothing. The command is already `#ffffff` on Ghostty's `#282c34`,
+ * which is the most contrast there is — colour had no room left to move in, so
+ * emphasis had to come from size and weight. Measured on a canvas at 18px, the
+ * 500 axis lays down 14.4% more ink than 400, which is visible; 600 lays down
+ * 20.9% and reads as a heading rather than as something typed.
+ *
+ * It is free of layout because the face is monospace: the same string measures
+ * 453.59px at 500 against 453.61px at 400, so no width, wrap point or fit
+ * calculation on this row changes. A proportional face would have moved all
+ * three and the weight would have had to be re-argued against the fit.
+ */
+.terminal-command {
+  color: var(--oe-shell-foreground);
+  font-weight: 500;
+  overflow-x: auto;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/*
+ * The one control on the page that lives inside the shell, so it is dressed
+ * out of the shell's palette rather than the site's. There is no second
+ * `.copy-button` anywhere in `src/`; giving it mode-aware --oe-muted and
+ * --oe-border-control would be describing a generic control that does not
+ * exist, and both of those values are picked to sit on our surfaces, not on
+ * Ghostty's #282c34. The prompt step measures 5.65 on the fill and the chrome
+ * step 3.05 — AA for the glyph, the non-text floor for its border.
+ *
+ * A resting border, where this used to be `transparent` until hover. The
+ * control that carries the page's one takeaway was invisible as a control
+ * until a pointer found it — which is no affordance at all on a touch screen,
+ * where nothing hovers.
+ */
 .copy-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1308,15 +2287,43 @@ table.data td {
   height: 1.5rem;
   padding: 0;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--oe-shell-control);
   border-radius: var(--oe-control-radius);
-  color: var(--oe-muted);
+  color: var(--oe-shell-prompt);
   cursor: pointer;
 }
 
+/*
+ * DESIGN.md: "Default controls are at least 44 px tall." This one is drawn at
+ * 24, and the gap is closed here rather than by growing the box.
+ *
+ * The rule protects a finger, and a 44px hit area is what a finger needs. A
+ * 44px *drawn* box is a different thing: it would stand two lines tall beside
+ * a single line of 13px monospace, and the panel it sits in exists to look
+ * like a terminal, where nothing is 44px. So the target is 44 and the ring is
+ * 24. `inset` is negative by half the difference in each direction, and the
+ * overlay is the button's own pseudo-element, so it moves with the control
+ * and cannot be separated from it.
+ *
+ * The row is 20px of text plus 32px of padding, which is taller than 44, so
+ * the expanded target stays inside the shell and overlaps nothing. There is
+ * no other control on this row for it to steal a tap from.
+ */
+.copy-button::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+
 .copy-button:hover {
-  color: var(--oe-foreground);
-  border-color: var(--oe-border-control);
+  color: var(--oe-shell-foreground);
+  border-color: var(--oe-shell-foreground);
+}
+
+/* Baseline alignment is for the text on this row; a 24px square box aligned to
+   a baseline sits low. `center` puts it on the line's optical middle. */
+.terminal-copy {
+  align-self: center;
 }
 
 /*
@@ -1332,73 +2339,457 @@ table.data td {
 
 .copy-button[data-copied] .copy-icon-done {
   display: block;
+  color: var(--oe-shell-foreground);
+}
+
+/*
+ * The example's copy control, which is not the install command's.
+ *
+ * It sits on the editor surface rather than inside the shell, so it cannot
+ * wear the shell's steps: `--oe-shell-prompt` is #9da5b4, which measures 2.48
+ * on white — the least readable thing in the panel, and its only control. It
+ * takes the site's own colours instead, both of which the contrast test holds
+ * against this surface.
+ *
+ * It has to sit *after* `.copy-button`, and this is not a stylistic
+ * preference. `.code-copy` and `.copy-button` are both (0,1,0), so the
+ * cascade falls through to source order — and while this block was written
+ * above `.copy-button`, every declaration in it lost silently. The page
+ * shipped a 2.48 glyph through a passing contrast suite, because the test
+ * checked that the token pair clears AA and not that the stylesheet applies
+ * it. A browser probe is what caught it, and a test below now pins the order.
+ */
+.code-copy {
+  border-color: var(--oe-border-control);
+  color: var(--oe-muted);
+}
+
+.code-copy:hover {
+  color: var(--oe-foreground);
+  border-color: var(--oe-foreground);
+}
+
+.code-copy[data-copied] .copy-icon-done {
   color: var(--oe-foreground);
 }
 
 .code-block pre {
   margin: 0;
   padding: var(--oe-space-4);
+  /*
+   * The gutter side is inset one step less than the other three.
+   *
+   * The numbers hang off this padding — the numeral box is absolute at the
+   * line's own left edge, and the line starts where the pre's content box
+   * starts — so this declaration, not anything in the line rule, is what sets
+   * how far the column sits from the panel border. At an even 1rem the ruler
+   * floated in the middle of a margin instead of running down the edge, which
+   * is not where a reader who has used an editor expects to find it.
+   *
+   * Logical rather than `padding-left`, to match the block above it: the page
+   * is left-to-right today, and a code panel that flipped would want the
+   * ruler on the other side with it.
+   *
+   * 0.75rem rather than something narrower because the numerals still need to
+   * clear the panel's 1px border and its rounding without looking pinned to
+   * it. The code moves the same 4px with them, which the wrap band gets for
+   * free: the content box is 4px wider than it was, so the arithmetic below
+   * gains a little margin rather than losing it.
+   */
+  padding-inline-start: var(--oe-space-3);
   font-size: var(--oe-code-size);
   line-height: var(--oe-code-line-height);
-  color: var(--oe-code-foreground);
+  color: var(--oe-editor-foreground);
   overflow-x: auto;
 }
 
-/* Shiki writes both palettes onto every span as custom properties and picks
-   neither, so the theme class chooses here rather than the build choosing for
-   it. One rule per mode, and an unhighlighted block still inherits the
-   foreground above, so a page that shows code without a language is unchanged.
-
-   The colors and the reasoning behind the two roles are in
-   `src/lib/code-theme.mjs`; this is only the switch. */
-.code-block .astro-code,
-.code-block .astro-code span {
+/*
+ * Shiki writes both palettes onto every span as custom properties and picks
+ * neither, so the theme class chooses here rather than the build choosing for
+ * it. One rule per mode, and an unhighlighted block still inherits the
+ * foreground above, so a page that shows code without a language is unchanged.
+ *
+ * Not scoped to `.code-block`, which is the bug this fixes. Blog posts get
+ * their `<pre>` from markdown, so it is emitted straight into `.prose` with
+ * no wrapper — and the wrapper was what these selectors required. Every code
+ * block on every article has therefore been rendering `--shiki-light` in dark
+ * mode since the day the blog shipped: dark text on white, inside a page that
+ * is otherwise near-black. `.astro-code` is Shiki's own class and is on the
+ * `<pre>` in both places, which makes it the honest hook. The panel styling
+ * stays scoped; only the colour choice is site-wide.
+ *
+ * `.code-block pre` above is (0,1,1) and beats a bare `.astro-code`, so the
+ * `<pre>` element itself keeps `--oe-editor-foreground`. That is the same
+ * value Shiki would have written, and it is what an unhighlighted block wants
+ * anyway; the spans below carry the real work.
+ *
+ * The choice is written into `color` on the elements shiki wrote the palette
+ * onto, and the indirection this replaces is worth recording, because it read
+ * as the more careful design and painted nothing at all. That version routed
+ * both modes through one property — `:root { --oe-shiki: var(--shiki-light) }`,
+ * overridden on `:root.dark` and on `.code-block` — with `color:
+ * var(--oe-shiki)` on the span, to buy the pin without a specificity fight.
+ * The comment here claimed custom properties substitute at the point of use.
+ * They do not: a `var()` inside a custom property is substituted at
+ * computed-value time on the element that *declares* it. `--oe-shiki` therefore
+ * resolved against `:root`, where no `--shiki-light` exists, and computed to
+ * the guaranteed-invalid value — which inherits, takes `color` with it, and
+ * left every span falling back to the inherited foreground. All 93 spans in the
+ * hero panel painted one flat `#d4d4d4`. Shiki's properties live on the spans,
+ * so only a declaration on a span can read them, and no amount of indirection
+ * above one can.
+ *
+ * Which puts the specificity back in the open, handled by three rules that
+ * strictly increase instead of tying: (0,1,1) site-wide, (0,3,1) for a dark
+ * page, (0,3,2) for the pinned panel. A tie decided by source order is the
+ * failure this file has already shipped twice — the hero wrap rule that painted
+ * nothing and the copy control that lost every declaration — so the last rule
+ * carries a `:root` that selects nothing new and exists only to outweigh the
+ * rule above it. Without it the pin ties in dark mode and survives on the two
+ * rules happening to name the same value, which is a fact about today's
+ * palette rather than a property of the cascade.
+ *
+ * The theme and the reasons for it are in `src/lib/code-theme.mjs`; this is
+ * only the switch.
+ */
+.astro-code,
+.astro-code span {
   color: var(--shiki-light);
 }
 
-:root.dark .code-block .astro-code,
-:root.dark .code-block .astro-code span {
+:root.dark .astro-code,
+:root.dark .astro-code span {
+  color: var(--shiki-dark);
+}
+
+:root .code-block pre.astro-code,
+:root .code-block pre.astro-code span {
   color: var(--shiki-dark);
 }
 
 /* The panel already draws the surface and the rule around it. Shiki's own
-   background would put a second, slightly different one inside it. */
-.code-block .astro-code {
+   background would put a second one inside it — and with `defaultColor:
+   false` it writes that background to `--shiki-light-bg` rather than to
+   `background-color`, so this is belt and braces against a config change
+   rather than a live override. */
+.astro-code {
   background: transparent;
 }
 
 /*
- * On a phone the block was 651px wide inside a 356px column: 45% of the
- * program off-screen behind a sideways scroll, including the comment that
- * carries the page's central claim. Wrapping shows all of it.
+ * Line numbers, and the layout change that had to come with them.
  *
- * The hanging indent is what makes that safe. A wrapped line that starts at
- * the left margin reads as the next statement; started two characters in, it
- * reads as the same one continuing, which is the only thing the scroll was
- * buying. `.line` is Shiki's own element and has to become a block for the
- * indent to apply per line rather than once for the program.
+ * Shiki emits one `<span class="line">` per line with a literal newline
+ * between them, and leaves the spans inline so those newlines do the breaking.
+ * A gutter needs each line to be a block instead — and turning them into
+ * blocks while the newlines are still in a `pre` context is what the previous
+ * round did on mobile only, with two measured consequences. Every newline
+ * became its own anonymous block, so the program rendered double-spaced; and
+ * every authored blank line, being an empty block, collapsed to zero height,
+ * so the paragraph structure that survived was the wrong one. Measured at 390:
+ * 23 lines occupying 47 rows, with the four blank lines invisible.
  *
- * The command wraps rather than scrolls for the same reason, and gains from
- * it: a scroll container needs to be reachable from a keyboard, and the one
- * that is not there needs nothing.
+ * `white-space: normal` on the `<code>` is the fix. The newlines between the
+ * spans are then ordinary collapsible whitespace next to block boxes and
+ * generate nothing; each line re-declares `pre` for its own content, so the
+ * program's internal spacing is untouched. The blank lines come back because
+ * the gutter gives every line a `::before` — a line with a number in it is
+ * never empty.
+ */
+.code-block .astro-code code {
+  display: block;
+  white-space: normal;
+  counter-reset: line;
+}
+
+.code-block .astro-code .line {
+  display: block;
+  white-space: pre;
+  counter-increment: line;
+  position: relative;
+  /*
+   * 4.75ch: two digits, and two and three quarters between them and the code.
+   *
+   * It was 3.5ch, sized for a gutter that could hold three digits, then 2.75ch
+   * when that third digit turned out to be reserved against a case this site
+   * does not have — the longest of the ten programs is 23 lines and the 29-line
+   * recording on /product is the ceiling for the whole page. 2.75ch put the
+   * numbers 0.75ch from their code, which is where the complaint came from:
+   * moving the column toward the panel edge shortened the wrong gap, since the
+   * distance that stops a ruler competing with the program is the one between
+   * the ruler and the program. 3.25ch was a step along that line and stopped
+   * short.
+   *
+   * The step to 4.75ch is against a measured reference rather than against
+   * taste. VS Code reserves `lineDecorationsWidth: 10` between the numbers and
+   * the text and, with `folding: true` by default, a folding column of about
+   * 16px on top of it — so a default editor puts roughly 26px there, and it
+   * also reserves `lineNumbersMinChars: 5` digits of column for a file with two
+   * digits of lines. Zed reserves four ems by the same logic. 4.75ch measures
+   * 27.3px at the panel's 18px and 20.5px at 13.5px, which is that reference
+   * held across the fluid range.
+   *
+   * The part of VS Code's gutter this does *not* copy is the reserved width to
+   * the left of the numerals. That space exists to keep the column from
+   * reflowing as a file passes 100 and 1000 lines, which is a fact about an
+   * editor open on a changing buffer, not about a fixed seventeen-line
+   * quotation — the same reason the terminal above this panel draws no
+   * stoplights and no cursor.
+   *
+   * It is measured in `ch` so that it tracks the fluid size above rather than
+   * pinching at 18px and yawning at 13px, and it is part of the constraint that
+   * size is solved against — the gutter is the second term in the arithmetic
+   * up there, not a fixed inset the code is fitted around. Widening it spends
+   * headroom the fit had: measured at the narrowest width that does not wrap,
+   * the longest line keeps 59px of slack at 4.75ch against 70px at 3.25ch, so
+   * the clamp is unchanged and nothing scrolls.
+   */
+  padding-left: 4.75ch;
+  /*
+   * The blank lines, which are the program's paragraph breaks.
+   *
+   * Shiki emits an empty `<span class="line">` for each one, and an empty
+   * block box is zero tall — so as blocks they vanish and the program reads as
+   * one wall. The gutter does not rescue them either: the number is absolutely
+   * positioned, which is what makes wrapped rows hang correctly, and an
+   * out-of-flow box contributes no height to its line. Measured both ways
+   * before this line existed: four blank lines, four zero heights.
+   *
+   * `calc()` rather than `1lh` only because the two tokens are already here
+   * and this then holds under a token change without depending on a unit
+   * whose support is younger than the browsers in the support matrix.
+   */
+  min-height: calc(var(--oe-code-size) * var(--oe-code-line-height));
+}
+
+/*
+ * Absolute rather than an inline-block prefix, which is the usual recipe. Two
+ * reasons, both about the wrap below: taken out of flow the number cannot be
+ * pushed around by a long line, and the line's own `padding-left` becomes a
+ * hanging indent that continuation rows inherit for free — so wrapped text
+ * lands under the code rather than under the gutter, with no `text-indent`
+ * arithmetic to keep in step.
+ *
+ * `::before` content is not in `textContent`, which is what the copy button
+ * reads, so the numbers cannot reach the clipboard. `user-select: none` covers
+ * the other path — a reader dragging across the panel by hand.
+ *
+ * The colour is the site's own, not the editor's, because Light+ and Dark+ do
+ * not carry one: both leave `editorLineNumber.foreground` to VS Code's base
+ * theme, which shiki does not bundle, so there is no value here to quote.
+ * Restating VS Code's default from memory would be a claim this repository
+ * cannot check. `--oe-code-gutter` is derived from `--oe-muted`, which is what
+ * this site uses everywhere else for text that is present but not the point;
+ * the step back from it, and the floor it stops at, are set out where the
+ * token is declared.
+ *
+ * `2ch` is the width the numbers actually need. Two digits carry this page's
+ * longest program with eleven lines to spare, and `text-align: right` keeps
+ * the ones column under the tens whether the number is one digit or two.
+ */
+.code-block .astro-code .line::before {
+  content: counter(line);
+  position: absolute;
+  left: 0;
+  width: 2ch;
+  text-align: right;
+  color: var(--oe-code-gutter);
+  user-select: none;
+}
+
+/*
+ * On a phone a code panel is wider than the column, and there are two ways to
+ * pay for that. The blocks quoted inside prose wrap; the hero panel scrolls.
+ *
+ * They differ because the reader's relationship to them differs. /product's
+ * block is the whole recorded file and the reason the page exists — a reader
+ * gets there to read it, so wrapping puts all of it on screen with no
+ * interaction. The hero panel is evidence a reader opens for a few seconds to
+ * see the shape of the thing, and a wrapped 17-line program becomes 30 ragged
+ * lines whose indentation no longer means anything. Shape is exactly what it
+ * is there to show.
+ *
+ * `:not(.hero-snippet)` rather than a hero rule after this one: the two would
+ * be (0,3,0) against (0,3,0) and decided on source order, which is the tie the
+ * note at the foot of this section records losing once already.
+ *
+ * The size the hero panel scrolls at is set further down, in the block where
+ * this breakpoint is negated exactly rather than approximated.
+ *
+ * The wrap sits on `.line`, which is where the `pre` now lives. The hanging
+ * indent it used to need is already there as the gutter's padding.
+ *
+ * The command wraps rather than scrolls, and gains from it: a scroll container
+ * needs to be reachable from a keyboard, and the one that is not there needs
+ * nothing. It is one line of 42 characters, so wrapping costs it a second row
+ * and no meaning.
  */
 @media (max-width: 48rem) {
-  .code-block pre {
+  .code-block:not(.hero-snippet) .astro-code .line {
     white-space: pre-wrap;
     overflow-wrap: break-word;
   }
 
-  .code-block .astro-code .line {
-    display: block;
-    padding-left: 2ch;
-    text-indent: -2ch;
-  }
-
-  .code-command > span {
+  .terminal-command {
     overflow-x: visible;
     white-space: normal;
     overflow-wrap: anywhere;
   }
+}
+
+/*
+ * There was a second wrap query here, at 56rem, and its absence is the point.
+ *
+ * The hero panel used to be a fixed 52rem of code inside a box that reached
+ * 52rem only once the viewport cleared the container's padding, so through a
+ * band from 48rem to about 856px the program was wider than the panel holding
+ * it — measured with the rule off, the React Native import overran by 38px at
+ * 800 and 6px at 832. The query wrapped the band. It also spent two rounds
+ * painting nothing, because `.hero-snippet .astro-code .line` is (0,3,0),
+ * exactly the weight of the two rules above it, and lost the tie on source
+ * order while reading as though it were handling the overflow.
+ *
+ * A size solved against the panel's own width has no band. The clamp on
+ * `.hero-snippet.code-block pre` is the fix for the same defect one level up,
+ * and it removes the specificity trap with it. Below 48rem the clamp is
+ * overridden outright rather than wrapped around: 91 characters do not fit a
+ * phone at any readable size, so that panel scrolls.
+ */
+
+/* -------------------------------------------- the example on a phone --- */
+
+/*
+ * The example is shown on a phone, at a size chosen rather than solved.
+ *
+ * It was behind a `<details>` here until this round, and the paragraph that put
+ * it there measured the panel at 1,180px tall at 390 — 23 wrapped lines of a
+ * program that needs a keyboard to be of any use, with the objections, the
+ * boundary and the second call to action all below it.
+ *
+ * That number is history rather than the cost of this decision, and the
+ * difference matters enough to write down. The wrap is gone from this panel:
+ * `.code-block:not(.hero-snippet)` excludes it, so 91 characters scroll
+ * sideways instead of folding into 35 rows. Measured at 390 with the panel
+ * always open, the panel is 467px and the objections begin at 1,526 — one fold
+ * of code, not three. Most of what the disclosure was built to save had already
+ * been paid back by the scroll, and what was left of it was an affordance
+ * between a reader and the page's primary evidence.
+ *
+ * The founder's call is that the code is the evidence and a reader who has to
+ * ask for it does not see it. Do not re-add a disclosure on the strength of the
+ * first paragraph above; its number no longer describes this panel.
+ *
+ * What remains below is what was in the same breakpoint for its own reasons:
+ * the panel's size and the command's size. The adapter selects were hidden here
+ * too and are not any more — the note where that rule stood says why.
+ */
+
+/* `not all and (min-width: 48rem)` rather than `max-width: 47.99rem`, and not
+   `max-width: 48rem` either. The clamp this block overrides has its floor
+   derived at exactly 48rem — 720px of panel, 13.26px of largest-fitting code,
+   so 13px — which only means anything if 48rem itself is a width where the
+   clamp is what runs. `max-width: 48rem` fires at 768 and takes that width off
+   the derivation; `max-width: 47.99rem` leaves 0.16px between the two, which is
+   unreachable at integer widths and perfectly reachable under browser zoom,
+   where viewport widths are fractional. Negating `min-width` is the only one of
+   the three that is exact at both ends. */
+@media not all and (min-width: 48rem) {
+  /*
+   * Below the breakpoint the size stops being solved and starts being chosen.
+   *
+   * Above it the size is whatever makes the longest line exactly fit the panel,
+   * and the 13px floor on that clamp is the arithmetic answer to "the smallest
+   * panel that still fits the program". Down here nothing fits it — 91
+   * characters do not go into 356px at any size a person reads — so a size
+   * derived from fit is deriving from a constraint that stopped holding. The
+   * panel scrolls either way, and the only question left is how small the type
+   * is while it does.
+   *
+   * 15px, which is a legibility floor rather than a fit one. It is above the
+   * 13.5px this site sets for code quoted inside prose, so the panel that is
+   * the page's primary evidence is not also the smallest code on the site, and
+   * it stays well under the lead. Measured at 390: the longest line is 747px
+   * against a 356px column, so about 2.1 screens of scroll, where 13px would
+   * have been about 1.8 — the scroll is barely cheaper small and the reading is
+   * markedly worse.
+   *
+   * `overflow-x: auto` is already on `.code-block pre` and nothing overrides it
+   * here, so the scroll is inherited rather than restated, and Shiki's
+   * `tabindex` on that same element is what keeps it reachable without a mouse.
+   * What did have to go is the wrap: `.code-block .astro-code .line` now
+   * excludes this panel, because wrapped code cannot be scrolled to.
+   */
+  .hero-snippet.code-block pre {
+    font-size: 0.9375rem;
+  }
+
+  /*
+   * And the command follows it up, because down here the code stops solving and
+   * starts climbing.
+   *
+   * This is a defect that shipped for one build and was found by measuring the
+   * page rather than by reading the stylesheet or by any test. Above the
+   * breakpoint the command's `2cqi` is comfortably over the code's `1.8cqi`.
+   * Below it the code jumps to a chosen 15px while the command falls to its
+   * 14px clamp floor — so at 390 the command was 14px under 15px code, and the
+   * one line a reader is meant to take away was the smaller of the two on
+   * exactly the devices where it matters most.
+   *
+   * The lesson is about the shape of the bug rather than the number: a
+   * relationship expressed as two independent clamps holds only where both
+   * clamps are what is running. A media query that overrides one side is not
+   * visible to the arithmetic on the other, and the test that swept those
+   * clamps passed while the page was wrong, because it was modelling the
+   * declarations instead of the cascade. The test now checks this pairing
+   * directly.
+   *
+   * 16px against the code's 15px, keeping the same order and roughly the same
+   * step as above the breakpoint. It costs nothing, which is the reason this
+   * number and not a smaller one: the row already wraps down here — the
+   * `max-width: 48rem` block above turns `white-space` back to `normal` so the
+   * command breaks instead of scrolling — and 42 characters of a 0.6em face is
+   * 403px at 16px against 240px of room at 360 and 270px at 390. Two lines
+   * either way, at 14px or at 16px, measured at both widths. The larger type is
+   * free.
+   */
+  .terminal-line {
+    font-size: 1rem;
+  }
+
+  /*
+   * The adapter selects used to be `display: none` here, and are not any more.
+   *
+   * The argument for hiding them was toolbar chrome, and the measurement was
+   * right: two comboboxes and their labels against the filename and the copy
+   * button do not fit one row on a phone. Measured again this round, with the
+   * selects shown — 49px becomes 80px at 390, 412 and 430, 116px at 358 and
+   * 375, and 152px at 320, where the toolbar is four stacked rows.
+   *
+   * The founder's call is that the controls are the argument. Changing the
+   * dropdown and watching one import line change with it is the only place on
+   * the page where "your backend stays yours" stops being a sentence, and a
+   * phone was the one device that got the sentence without the demonstration.
+   * Chrome is what that costs.
+   *
+   * Three tighter layouts were measured before settling for the natural wrap,
+   * and none of them beat it: giving the select group its own full-width row
+   * (`flex-basis: 100%`) turns 390 from two rows into three, adding
+   * `space-between` to that row does the same, and dropping the group's auto
+   * margin so everything flows in order is identical to doing nothing. The
+   * binding constraint is arithmetic rather than layout — at 320 the toolbar
+   * has 254px of usable width and the four items need more than that in any
+   * arrangement — so the flex wrap is already the best answer available
+   * without shortening the labels, and the labels are what say which of the
+   * two keys of `adapters: { storage, relay }` each control edits.
+   *
+   * The rule is gone rather than neutralised, and the copy button's
+   * `margin-inline-start: auto` went with it: that margin only existed because
+   * the auto margin pushing the button to the far edge lives on the select
+   * group, which was not here to carry it. With the group back, the button
+   * takes its place from the group again and a second auto margin would fight
+   * it. This comment is what is left, so the next reader who measures 152px of
+   * toolbar at 320 finds the decision instead of re-making it.
+   */
 }
 
 /* --------------------------------------------------------------- price --- */
@@ -1514,10 +2905,35 @@ table.data td {
   padding: 0.1em 0.3em;
 }
 
+/*
+ * The same editor, following the page.
+ *
+ * This used to say the site had one idea of what code looks like rather than
+ * three, and that is no longer true: `.code-block` pins Dark+ in both modes, so
+ * a light article now prints Light+ above a landing page that prints Dark+. The
+ * split is deliberate and the line is between a quoted editor window and
+ * evidence inside body text. A hero panel is an object a reader looks at, next
+ * to a terminal, and it keeps one appearance. A snippet inside an article is
+ * part of the article and is read at the brightness the reader chose for it —
+ * a black block four paragraphs into a white page is a hole in the column.
+ *
+ * What the old comment was really defending survives intact: one theme pair and
+ * one surface token across the site, rather than the `github-light`/`github-dark`
+ * on `--oe-code` the blog used to run, which was a second palette on a third
+ * surface for the same TypeScript.
+ *
+ * `color` is set here and it matters. `.prose pre` never declared one, which
+ * was survivable while `shikiConfig` had no `defaultColor` and Shiki baked a
+ * literal colour onto every span. Turning `defaultColor: false` on stops it
+ * doing that, so a `<pre>` with no colour of its own would render every
+ * unhighlighted block in the body foreground on the editor's paper — black on
+ * black in dark mode. This is the fallback the custom properties fall back to.
+ */
 .prose pre {
   font-size: var(--oe-code-size);
   line-height: var(--oe-code-line-height);
-  background: var(--oe-code);
+  background: var(--oe-editor);
+  color: var(--oe-editor-foreground);
   border: 1px solid var(--oe-border);
   padding: var(--oe-space-4);
   overflow-x: auto;

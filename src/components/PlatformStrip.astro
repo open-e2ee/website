@@ -1,0 +1,76 @@
+---
+/*
+ * What the SDK is compatible with, under the hero's actions.
+ *
+ * Every entry is checked against the installed package rather than against the
+ * roadmap. The four runtimes each have a local store under ./local/store, and
+ * the three backends each have a shipped adapter: ./remote/relay/convex,
+ * ./remote/object-store/convex-r2, ./remote/object-store/s3. `mock` is not
+ * here — it is a development adapter, not a platform.
+ *
+ * The names are visible rather than tooltip-only, and that is the difference
+ * between a compatibility list and a partner wall. It also carries the
+ * precision the marks cannot: a bucket glyph on its own means nothing, and the
+ * Cloudflare mark on its own would claim the platform when what is supported is
+ * one object store — so that entry is the mark plus "R2", which reads as
+ * "Cloudflare R2" while spending one word. `src/lib/platform-marks.mjs` holds
+ * the provenance and the trademark position for each mark, and the two labels
+ * that are the founder's word rather than the SDK's.
+ */
+import { platformMarks } from '../lib/platform-marks.mjs';
+
+/* Marks are referenced rather than looked up by a string id, so a typo is a
+   build error instead of an empty <path> nobody notices.
+
+   Runtimes first, then backends. The row is not to be sorted alphabetically or
+   by mark width.
+
+   The two clusters are the wrap unit. On one line they read as a single row —
+   the gap between them is the gap inside them — and when the row runs out of
+   width the backends drop together instead of the break landing wherever the
+   seventh name happens to fall. A row that breaks after "Convex" says the three
+   backends are unrelated, which is the one thing the strip is asserting they
+   are not.
+
+   Maturity is not shown here. The maturity line below the strip carries it, and
+   `tests/site-content.test.mjs` holds that line to the `(experimental)` markers
+   in the installed ADAPTERS.md, so a store the SDK newly marks or clears fails
+   the build instead of drifting. */
+const clusters = [
+  [platformMarks.expo, platformMarks['react-native'], platformMarks.browser, platformMarks.node],
+  [platformMarks.convex, platformMarks['cloudflare-r2'], platformMarks.s3],
+];
+---
+
+<div class="platform-strip">
+  <p class="platform-label">Works with</p>
+  <ul class="platform-marks">
+    {
+      clusters.map((cluster) => (
+        <li class="platform-cluster">
+          <ul>
+            {cluster.map((mark) => (
+              <li>
+                {/* aria-hidden because the visible name beside it is already the
+                    accessible name; announcing both would read every entry
+                    twice. */}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  {/* Narrowed here rather than typed in the data module: the
+                      marks are plain JS, so `fillRule` widens to `string` and
+                      SVGAttributes will not take it. The comparison is also the
+                      only thing standing between a mistyped rule and a mark that
+                      silently fills its own counters. */}
+                  <path
+                    fill-rule={mark.fillRule === 'evenodd' ? 'evenodd' : 'nonzero'}
+                    d={mark.path}
+                  />
+                </svg>
+                <span>{mark.label}</span>
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))
+    }
+  </ul>
+</div>

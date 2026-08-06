@@ -1,0 +1,75 @@
+---
+/*
+ * The battery in the landing page's lead, drawn here.
+ *
+ * It replaced 🔋 for the reason the TypeScript mark replaced ⚡: a line that
+ * mixes real marks with emoji standing in for marks reads as an accident. The
+ * other two are trademarks, copied rather than redrawn, because an
+ * approximation of someone else's mark is worse than no mark at all. This one
+ * belongs to nobody — "batteries included" is a figure of speech about
+ * defaults, not a product — so it is drawn to this page rather than taken from
+ * an icon set.
+ *
+ * The bolt is the whole point of the drawing. The first version was a plain
+ * rounded rectangle with a nub: unmistakably a battery and completely inert,
+ * which is a lot of ink to spend on saying "battery" beside a sentence that
+ * already says it. Knocking a charge bolt out of the body is what makes the
+ * mark say the thing the clause means — the defaults are in it and it is ready
+ * to go — rather than illustrating the noun.
+ *
+ * Six alternatives were drawn and rendered beside the incumbent at the lead's
+ * real 19.4px before this one was picked, which is the only way to choose
+ * between them — none of the differences survive being described. A segmented
+ * gauge read as a stack of dashes, an outlined shell with three inner bars read
+ * as a document, and a plain rim-and-fill read as a battery and nothing more.
+ * The bolt was legible in every one of them.
+ *
+ * The geometry that makes it survive. Body 12 units wide on a 24 grid, nub 4.5
+ * — an earlier draft at 11 and 5 read as a pill with a bump, because at this
+ * size a nub under 3px does not register and a rounded rectangle nobody
+ * recognises is a smudge with good proportions. The bolt is inset about 2.9
+ * units from each side of the body, and its arms are 2.1 units across, which is
+ * 2.2px on the page. Nothing here is thinner than that on purpose: a 1.2-unit
+ * gauge slot came out at 1.3px in an earlier draft and was a grey blur rather
+ * than a detail.
+ *
+ * `evenodd` is what makes the bolt a hole rather than a second filled shape, so
+ * the rule is written out rather than left to the default. The nub is a
+ * separate element for the opposite reason — it has to *union* with the body,
+ * and it deliberately overlaps it by a unit, because two shapes meeting exactly
+ * on an edge show an antialiasing seam. Under one `evenodd` path that overlap
+ * would punch a hole in the top of the battery.
+ *
+ * The viewBox is cropped to the ink — `6 2 12 20` and not `0 0 24 24`. On the
+ * square grid this is drawn on, the battery is a tall narrow glyph with half
+ * the box width empty, and that empty half was rendering as 6.3px of dead space
+ * between the mark and the word after it, on top of the word space. The other
+ * two marks paint to all four edges of their own boxes, so the battery was the
+ * only one of the three carrying built-in padding. Cropping is what lets one
+ * margin in `global.css` apply to all three and mean the same thing.
+ *
+ * `currentColor`, unlike the two marks beside it. Those are locked to brand
+ * colour by a trademark licence or by what nominative use allows. This one is
+ * ours and is free to mean something, so `global.css` points it at the green
+ * this site uses where something is settled rather than promised, which is the
+ * claim "batteries included" makes. Drawing in `currentColor` rather than in
+ * the hex is what lets one drawing take a light and a dark value with nothing
+ * theme-aware in this file.
+ *
+ * aria-hidden, and not a link. "Batteries" is the noun the sentence beside it
+ * already uses, so announcing the glyph would only repeat the line.
+ *
+ * Size and alignment live in `global.css` with the other two, because the three
+ * are set against each other rather than one at a time.
+ */
+---
+
+<span class="battery-mark">
+  <svg viewBox="6 2 12 20" aria-hidden="true" focusable="false" fill="currentColor">
+    <path
+      fill-rule="evenodd"
+      d="M8 5h8a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z M13.6 7.4 8.9 14.1h2.6L10.4 19.6l4.7-6.9h-2.6z"
+    ></path>
+    <rect x="9.75" y="2" width="4.5" height="4" rx="1.25"></rect>
+  </svg>
+</span>
