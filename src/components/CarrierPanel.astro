@@ -4,11 +4,15 @@ import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 
 /*
  * The proof moment. Both panes come from `src/data/carrier-capture.json`,
- * which was recorded by running the SDK's documented mock-relay quickstart and
- * reading the envelope the relay actually held. Nothing in this component is
- * drawn, mocked up, or hand-typed: if the recorded ciphertext were replaced by
- * something plausible-looking, the page would be making exactly the claim the
- * brand exists to avoid.
+ * which `scripts/record-carrier-capture.mjs` writes by running the documented
+ * quickstart against the in-memory relay and reading the envelope the relay
+ * actually held. Nothing in this component is drawn, mocked up, or hand-typed:
+ * if the recorded ciphertext were replaced by something plausible-looking, the
+ * page would be making exactly the claim the brand exists to avoid.
+ *
+ * The recording path is a committed script rather than a story about how the
+ * file once came to exist, which is what lets a reader run it — `npm run
+ * capture:record` — and get a row of their own.
  */
 
 interface Props {
@@ -34,7 +38,7 @@ const shown = capture.ciphertext.slice(0, excerpt);
  *
  * Exactly two fields are held back, and the reader is told about both:
  *   ciphertext — rendered above as the bytes themselves, not as a table row.
- *   id — `msg-1` is the mock relay's in-memory counter. A production relay
+ *   id — `msg-1` is the in-memory relay counting sends. A production relay
  *        assigns its own format, so printing this one would teach a reader
  *        something false about their own database. The field is named in the
  *        note under the list rather than dropped in silence.
@@ -43,24 +47,30 @@ const HELD_BACK = new Set(['ciphertext', 'id']);
 const visible = capture.metadataFields.filter((entry) => !HELD_BACK.has(entry.field));
 
 /*
- * The recording is stamped alpha.1 and the install command on this same page
- * fetches something much later, and a reader who notices reasonably asks
- * whether the row still looks like this. Two fresh critics did notice, and one
- * called it the one exhibit on a page about inspectable claims that a reader
- * cannot reproduce.
+ * The recording is not refreshed on every release, and the caption has to stay
+ * honest in between.
  *
- * The answer is that the envelope did not move: every field this panel shows
- * is still on the `Envelope` interface of the installed package, and the
- * caption now says so with the installed version named. That is a stronger
- * statement than a fresh recording would make — a re-record proves the shape
- * on one day, and this says the shape held across the releases in between.
+ * It is re-recorded when the program in it stops being true of the package —
+ * alpha.10 renamed both adapters, so the recorded file named two subpaths that
+ * no longer existed and it had to be run again. A version bump on its own does
+ * not earn one: a re-record proves the envelope's shape on one day, and the
+ * check below proves the shape held across every release since the recording,
+ * which is the stronger of the two claims and the one a sceptical reader is
+ * actually asking about.
  *
- * It is not a promise: `tests/site-content.test.mjs` reads the recorded field
- * names out of the capture and checks each one against the installed type
- * declarations, so the day a release drops a field this page stops building
- * the claim instead of printing it.
+ * That check is what the third caption line rests on:
+ * `tests/site-content.test.mjs` reads the recorded field names out of the
+ * capture and asserts each one against the `Envelope` interface in the
+ * installed type declarations. A release that drops a field fails the build
+ * rather than shipping a caption that has quietly become false.
+ *
+ * The line is printed only when the two versions differ, which today they do
+ * not. Naming the same version twice in one caption answers a question no
+ * reader has yet — the gap is what raises it, and until there is a gap the
+ * stamp above already says everything the line would.
  */
 const installedVersion = sdkManifest.version;
+const recordedAtInstalled = capture.sdkVersion === installedVersion;
 ---
 
 <figure class="carrier-panel">
@@ -101,14 +111,16 @@ const installedVersion = sdkManifest.version;
 
   <figcaption class="carrier-caption">
     {/* It used to read "recorded from a real round trip". A fresh reader put
-        that against the disclosure five lines below it — "captured by running
-        the documented quickstart against the mock relay" — and was right: the
-        cryptography in this capture is real, the transport is not, and "a real
-        round trip" claims the second. On the one panel whose entire job is
-        that the page will not overstate its evidence, that is the most
-        expensive place on the site to overstate by one adjective. */}
+        that against the disclosure five lines below it — the quickstart, run
+        against the relay that keeps its queue in this process — and was right:
+        the cryptography in this capture is real, the transport is simulated,
+        and "a real round trip" claims the second. On the one panel whose
+        entire job is that the page will not overstate its evidence, that is
+        the most expensive place on the site to overstate by one adjective. */}
     <span>recorded by running the quickstart</span>
     <span>{capture.packageName}@{capture.sdkVersion}</span>
-    <span>every field shown is still in the envelope at {installedVersion}</span>
+    {!recordedAtInstalled && (
+      <span>every field shown is still in the envelope at {installedVersion}</span>
+    )}
   </figcaption>
 </figure>

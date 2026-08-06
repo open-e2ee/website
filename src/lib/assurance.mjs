@@ -41,19 +41,22 @@ export const checks = {
 
 /** Direct production dependencies, from the README. */
 export const dependencies = {
-  direct: 7,
-  resolved: 8,
+  direct: 6,
+  resolved: 6,
   names: [
     '@noble/ciphers',
     '@noble/curves',
     '@noble/hashes',
     '@noble/post-quantum',
     'async-lock',
-    'protobufjs',
     'unique-names-generator',
   ],
-  /* The eighth is `long`, pulled in by protobufjs. */
-  transitive: 'long',
+  /* There is no transitive entry to name. `protobufjs` left the production
+     tree in alpha.10 — it is a development dependency now, where the wire
+     tests use it as an independent oracle — and `long` left with it. The only
+     edges left inside the tree are the `@noble` packages depending on one
+     another, so the resolved count equals the direct one and every package an
+     install pulls in is already named above. */
 };
 
 /** Response commitment, which must match SECURITY.md exactly. */

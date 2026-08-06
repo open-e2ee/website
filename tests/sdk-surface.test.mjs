@@ -16,7 +16,12 @@ import { readSdkSurface, suggest } from '../scripts/sdk-surface.mjs';
 const PRE_RENAME = [
   'ISignalRelayServer',
   'ISignalLocalStore',
-  'MockSignalRelayServer',
+  /* Was `MockSignalRelayServer` until alpha.10 renamed the adapter itself. The
+   * entry has to track the real export or it stops standing for anything: the
+   * class it was the "minus Protocol" form of no longer exists under any
+   * spelling, so the list would have been asserting against a name with no
+   * export behind it rather than against the rename this gate is for. */
+  'InMemorySignalRelayServer',
   'ConvexSignalRelayServer',
   'SignalRemoteObjectStore',
   'ExpoSignalStore',

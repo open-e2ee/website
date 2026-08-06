@@ -13,6 +13,7 @@
     "test": "node --test tests/*.test.mjs",
     "brand:sync": "oe-design export public/brand",
     "brand:check": "oe-design check public/brand",
+    "capture:record": "node scripts/record-carrier-capture.mjs",
     "blog:cards": "node scripts/generate-blog-cards.mjs",
     "blog:cards:check": "node scripts/generate-blog-cards.mjs --check",
     "deploy": "npm run build && wrangler deploy",
@@ -35,7 +36,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
-    "@open-e2ee/signal-protocol-sdk": "^0.1.0-alpha.7",
+    "@open-e2ee/signal-protocol-sdk": "^0.1.0-alpha.10",
     "typescript": "^6.0.3",
     "wrangler": "4.111.0"
   },

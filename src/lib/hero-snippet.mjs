@@ -52,8 +52,8 @@ const PACKAGE = capture.packageName;
  *
  * The recorded quickstart drives both sides of a conversation inside one
  * process: it calls `relay.registerDevice()` twice and reads the queue back
- * with `relay.getPendingMessages()`. Both are mock-relay methods, and they
- * exist so that a quickstart can show a round trip with no server running.
+ * with `relay.getPendingMessages()`. Both belong to the in-memory relay, and
+ * they exist so that a quickstart can show a round trip with no server running.
  * `convexRelay` returns a different class and does not have them.
  *
  * So a snippet built by swapping the relay line of the recording would compile
@@ -98,11 +98,11 @@ const PACKAGE = capture.packageName;
  */
 export const storageOptions = [
   {
-    id: 'mock',
+    id: 'memory',
     label: 'In-memory',
-    subpath: 'local/store/mock',
-    symbol: 'mockStore',
-    expr: 'mockStore()',
+    subpath: 'local/store/memory',
+    symbol: 'inMemoryStore',
+    expr: 'inMemoryStore()',
     experimental: false,
   },
   {
@@ -152,9 +152,9 @@ export const storageOptions = [
  * The relay, which is the backend question.
  *
  * `setup` is the whole construction, not just a factory name, because the two
- * options differ in more than one: the mock takes nothing, and the Convex one
- * takes a client the reader builds and an API their own `convex/` directory
- * generates. The `convexRelay({ convex, api: api.signal })` arrangement is
+ * options differ in more than one: the in-memory one takes nothing, and the
+ * Convex one takes a client the reader builds and an API their own `convex/`
+ * directory generates. The `convexRelay({ convex, api: api.signal })` shape is
  * copied from the SDK's docstring, `api.signal` included.
  *
  * Those two names used to be explained instead of shown — "convex is your
@@ -183,11 +183,11 @@ export const storageOptions = [
  */
 export const relayOptions = [
   {
-    id: 'mock',
-    label: 'Mock',
-    subpath: 'remote/relay/mock',
-    symbol: 'mockRelay',
-    setup: 'const relay = mockRelay();',
+    id: 'memory',
+    label: 'In-memory',
+    subpath: 'remote/relay/memory',
+    symbol: 'inMemoryRelay',
+    setup: 'const relay = inMemoryRelay();',
     experimental: false,
   },
   {
@@ -265,7 +265,8 @@ export const relayOptions = [
    for the same thing, three paragraphs below this panel.
 
    True of both options, which is the standing constraint on a fixed comment:
-   `mockRelay` is an in-memory mailbox and `convexRelay` is a hosted one. */
+   `inMemoryRelay` is a mailbox in this process and `convexRelay` is a hosted
+   one. */
 const RELAY_COMMENT =
   '// The relay is the mailbox: devices post encrypted envelopes and collect their own.';
 const ADAPTERS_COMMENT = '// Adapters are values you pass. Your keys stay in your store.';
@@ -284,7 +285,7 @@ export const snippetComments = [
 ];
 
 /** The combination the capture was recorded with, and the one shown first. */
-export const defaultVariant = { storage: 'mock', relay: 'mock' };
+export const defaultVariant = { storage: 'memory', relay: 'memory' };
 
 const specifier = (subpath) => `"${PACKAGE}/${subpath}"`;
 

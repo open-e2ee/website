@@ -52,7 +52,7 @@ const adapters = [
       './local/store/web',
       './local/store/node',
       './local/store/react-native',
-      './local/store/mock',
+      './local/store/memory',
     ],
   },
   {
@@ -63,7 +63,7 @@ const adapters = [
   {
     role: 'Relay',
     body: 'How sealed envelopes reach the other device. Your backend, your contract.',
-    options: ['./remote/relay/convex', './remote/relay/mock', './remote/relay/types'],
+    options: ['./remote/relay/convex', './remote/relay/memory', './remote/relay/types'],
   },
   {
     role: 'Object store',
@@ -128,9 +128,10 @@ const adapters = [
         />
       </div>
       <p class="muted measure">
-        <code>mockStore()</code> and <code>mockRelay()</code> are development adapters: in-memory, no
-        auth, no durability. Swap them for a real store and relay when the shape of your integration
-        is settled — the client code above does not change.
+        <code>inMemoryStore()</code> and <code>inMemoryRelay()</code> run the real protocol and the
+        real cryptography against simulated infrastructure: no auth, no durability, nothing that
+        outlives the process. Swap them for a real store and relay when the shape of your
+        integration is settled — the client code above does not change.
       </p>
     </div>
   </section>
