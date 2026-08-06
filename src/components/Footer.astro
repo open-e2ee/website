@@ -90,6 +90,22 @@ const groups = [
         affiliated with, endorsed by, or wire-compatible with Signal Messenger LLC or Signal
         Technology Foundation.
       </p>
+      {/*
+        Required, and quoted rather than paraphrased. OSI's guidelines give the
+        sentence verbatim — "include the statement 'The OSI logo trademark is
+        the trademark of Open Source Initiative.'" — and a trademark notice is
+        the one kind of copy on this site with a correct wording that is not
+        ours to improve. It also carries the ® acknowledgement for a mark shown
+        without the logotype the ® is attached to.
+
+        It sits in the footer on all seventeen pages while the mark itself is on
+        one, which is the same shape as the Signal note above it and the reason
+        that note is above it: a reader looking for who owns what finds both in
+        the same place. `tests/site-content.test.mjs` ties the two together from
+        the other end — the landing page may not carry the keyhole without this
+        line and the AGPL-3.0 statement being on the site.
+      */}
+      <p>The OSI logo trademark is the trademark of Open Source Initiative.</p>
     </div>
   </div>
 </footer>

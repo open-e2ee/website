@@ -2,25 +2,70 @@
 import { Code } from 'astro:components';
 import Icon from './Icon.astro';
 import { codeThemes } from '../lib/code-theme.mjs';
-import { heroCode, installCommand } from '../lib/hero-snippet.mjs';
+import {
+  defaultVariant,
+  installCommand,
+  relayOptions,
+  snippetVariants,
+  storageOptions,
+} from '../lib/hero-snippet.mjs';
 
 /*
  * The demo, for a package. A developer decides whether an SDK is worth ten
  * minutes by looking at the shape of its API, and until now the homepage
- * asked them to take that on trust and click through. Both strings come from
- * `src/lib/hero-snippet.mjs`, which slices the recorded quickstart capture.
+ * asked them to take that on trust and click through.
  *
- * The install command is the one line on the page a reader is meant to take
- * away with them, so it has a button rather than an invitation to select it
- * by hand. `measure.js` already declared `install_copy` and could only infer
- * it from a selection; the button is what it was waiting for.
+ * The snippet is no longer one fixed excerpt. `src/lib/hero-snippet.mjs`
+ * builds ten of them — five device stores by two relays — and all ten are
+ * rendered here at build time. That is the only way this can work under the
+ * CSP: `script-src 'self'` has no room for a highlighter, so a variant that
+ * did not exist before the page loaded could never be coloured. Ten complete
+ * programs is a few kilobytes of HTML and no runtime cost at all.
  */
 ---
 
-<div class="code-block hero-snippet">
-  <p class="code-command">
-    <span>{installCommand}</span>
-    <button type="button" class="copy-button" data-install-copy data-copy={installCommand}>
+{/*
+  The install line reads as a terminal now, and it is its own panel rather than
+  the code block's header row.
+
+  It was set in the metadata style — 12px, muted, on the ruled top edge of the
+  snippet — which is the treatment this site gives captions and bills of
+  materials. So the one line a reader is meant to take away with them was the
+  quietest thing in the panel, and it looked like a label for the code rather
+  than a command to run. It moved onto Ghostty's own surface with a prompt in
+  front of it, and it is now set a step above the code rather than under it.
+
+  That step was a correction to this note as much as to the page. It read "the
+  same size as code" for several rounds and the two were never the same size:
+  the command was a flat 13.5px while the panel below it solves for its own
+  width and renders at 17.2px. The claim was true of the intent and false of the
+  render, which is the kind of comment that stops anyone from re-checking the
+  thing it describes. The sizes are now related by a written ratio in
+  `global.css` instead of by an assertion here, and a test holds it.
+
+  Nothing is drawn around it. A titlebar strip and a block cursor were both
+  tried and both removed: Ghostty draws neither — it is a native window with
+  the desktop's own furniture, and its cursor belongs to the shell session, not
+  to a command sitting on a page. The fill, the `$` and the mono face are the
+  quotation, and they are the whole of it.
+
+  The `$` is decoration in the strict sense: it carries no information a reader
+  needs and it must never end up in what they paste. It is `aria-hidden`, it is
+  `user-select: none` so a drag-select skips it, and the button copies
+  `data-copy` — the command string itself — rather than the element's text.
+  Three independent paths to the same guarantee, because a prompt glyph in a
+  pasted command is the classic way a copy affordance wastes someone's minute.
+*/}
+<div class="terminal">
+  <p class="terminal-line">
+    <span class="terminal-prompt" aria-hidden="true">$</span>
+    <span class="terminal-command">{installCommand}</span>
+    <button
+      type="button"
+      class="copy-button terminal-copy"
+      data-install-copy
+      data-copy={installCommand}
+    >
       <Icon name="copy" class="copy-icon copy-icon-idle" />
       <Icon name="check" class="copy-icon copy-icon-done" />
       <span class="oe-visually-hidden">Copy the install command</span>
@@ -40,6 +85,89 @@ import { heroCode, installCommand } from '../lib/hero-snippet.mjs';
         nothing — a refused clipboard should not claim success. */}
     <span class="oe-visually-hidden" role="status" data-copy-status></span>
   </p>
+</div>
+
+<div class="code-block hero-snippet">
+  {/*
+    The editor's tab strip, which is where the page's central claim stops being
+    a sentence and becomes something a reader can operate. "Your backend stays
+    yours" and "Expo, React Native, browsers, and Node from one package" are
+    both assertions until you change the dropdown and watch the program change
+    with it. What moves is the adapter's own lines — the import it needs and
+    the expression that builds it. What holds still is everything under
+    `createSignalProtocolClient`: the client, the hook, the send. That is the
+    argument, and the second half is the half worth being exact about.
+
+    This said "one line of the program changes with it — and nothing else" for
+    several rounds, and that was never true: swapping an adapter has always
+    moved an import as well as a construction. The Convex relay now brings its
+    own client and generated API in with it, so the false version of the claim
+    would be visibly false on the second dropdown a reader touches.
+
+    Two selects rather than one, because there are genuinely two choices and
+    they compose: `adapters: { storage, relay }` has two keys, and the controls
+    are shaped like the object they edit.
+
+    `(experimental)` is in the option text rather than beside the control,
+    because the label is where the choice is made and a caveat placed anywhere
+    else is a caveat a reader can select past. The page's sentence — "Browser
+    and bare React Native stores are experimental; Expo and Node are not" —
+    stays exactly where it was; this is the same fact at the point of use.
+  */}
+  {/* The filename carried an `aria-describedby` from both selects, on the
+      reasoning that a control should say which file it edits. Checked against
+      the accessibility tree it came out as "Store, combobox, quickstart.ts",
+      which is not that sentence — a description slot filled with a bare
+      filename is noise in the one place a screen reader user cannot skim past.
+      The selects are inside the panel and labelled "Store" and "Relay"; the
+      example itself is a labelled group. The relationship was already there. */}
+  <div class="code-toolbar">
+    <span class="code-filename">quickstart.ts</span>
+    <span class="code-adapters">
+      <label class="code-select">
+        <span class="code-select-label">Store</span>
+        <select data-adapter="storage">
+          {
+            storageOptions.map((option) => (
+              <option value={option.id} selected={option.id === defaultVariant.storage}>
+                {option.label}
+                {option.experimental ? ' (experimental)' : ''}
+              </option>
+            ))
+          }
+        </select>
+      </label>
+      <label class="code-select">
+        <span class="code-select-label">Relay</span>
+        <select data-adapter="relay">
+          {
+            relayOptions.map((option) => (
+              <option value={option.id} selected={option.id === defaultVariant.relay}>
+                {option.label}
+              </option>
+            ))
+          }
+        </select>
+      </label>
+    </span>
+    <button type="button" class="copy-button code-copy" data-code-copy>
+      <Icon name="copy" class="copy-icon copy-icon-idle" />
+      <Icon name="check" class="copy-icon copy-icon-done" />
+      <span class="oe-visually-hidden">Copy the example</span>
+    </button>
+    {/* Its own region, for the same reason the install button has one. This
+        button's name must keep saying what it does. */}
+    <span class="oe-visually-hidden" role="status" data-code-copy-status></span>
+    {/* Changing a select swaps which of ten blocks is visible, which is a
+        loud change on screen and a silent one otherwise: focus stays on the
+        combobox, so the only thing announced is the option name — "Expo" —
+        and nothing says the program changed with it. This region says what is
+        now showing. Empty at load and in the DOM from the start, because a
+        live region inserted alongside its first text is not reliably
+        announced. */}
+    <span class="oe-visually-hidden" role="status" data-variant-status></span>
+  </div>
+
   {/* Shiki runs at build time and ships no script, which the CSP requires:
       `script-src 'self'` has no room for a highlighter, and `style-src` allows
       the inline color it writes on each span. `defaultColor={false}` emits
@@ -52,28 +180,52 @@ import { heroCode, installCommand } from '../lib/hero-snippet.mjs';
       and 320: a narrow screen is where it cannot scroll, because the rule
       below switches it to `pre-wrap` and wrapped text has nothing to scroll
       to; the wide screen keeps `white-space: pre` and is the only place a long
-      line could overflow, and today none does (scrollWidth == clientWidth,
-      621 == 621). So the name promised an affordance that is absent at every
-      width the page is built for.
+      line could overflow.
 
       Shiki's `tabindex` stays. It is there because a highlighter cannot know
-      whether a given snippet will overflow, and at desktop this one is one
-      recorded line away from doing so — a scroll container reachable only by
-      mouse fails 2.1.1. A stop that announces what the panel is costs a
-      keyboard user one Tab; a name that describes behaviour the element does
-      not have costs a screen-reader user a wrong model of the page. */}
-  <Code
-    code={heroCode}
-    lang="ts"
-    themes={codeThemes}
-    defaultColor={false}
-    role="group"
-    aria-label="Quickstart excerpt"
-  />
+      whether a given snippet will overflow, and a scroll container reachable
+      only by mouse fails 2.1.1. A stop that announces what the panel is costs
+      a keyboard user one Tab.
+
+      The label names the adapters rather than saying "excerpt", which is what
+      it said while this was one. Nine of the ten are `hidden`, so only the
+      selected one is in the accessibility tree and only its label is read. */}
+  {
+    snippetVariants.map((variant) => (
+      <div
+        class="code-variant"
+        data-storage={variant.storage}
+        data-relay={variant.relay}
+        hidden={!variant.isDefault}
+      >
+        <Code
+          code={variant.code}
+          lang="ts"
+          themes={codeThemes}
+          defaultColor={false}
+          role="group"
+          aria-label={`Quickstart example, ${variant.storageLabel} store, ${variant.relayLabel} relay`}
+        />
+        {/* The disclosure that used to sit here as a `<p class="code-note">` is
+            in the program now. It named three objects the reader brings, and
+            they did not turn out to be the same kind of thing. `convex` and
+            `api` are importable — a Convex client and a generated API module —
+            so the Convex variant imports them, and a name a program binds needs
+            no caption. `storage` is not: the store wants an implementation of
+            `ReactNativeKeyValueStorage`, which is the reader's to write, so it
+            keeps a comment on the line above. Either way the disclosure is now
+            inside what the copy button copies, which prose under the panel
+            never was. `snippetComments` in src/lib/hero-snippet.mjs holds the
+            comments; the imports are on the option itself. */}
+      </div>
+    ))
+  }
 </div>
 
 <script>
   /* Bundled rather than inline: the CSP is script-src 'self'. */
+
+  /* ---- the install command ---- */
   const button = document.querySelector<HTMLButtonElement>('[data-install-copy]');
   const status = document.querySelector<HTMLElement>('[data-copy-status]');
   let restore: ReturnType<typeof setTimeout> | undefined;
@@ -94,6 +246,63 @@ import { heroCode, installCommand } from '../lib/hero-snippet.mjs';
     restore = setTimeout(() => {
       delete button.dataset.copied;
       if (status) status.textContent = '';
+    }, 2000);
+  });
+
+  /* ---- the adapter selector ---- */
+  const panel = document.querySelector<HTMLElement>('.hero-snippet');
+  const selects = panel?.querySelectorAll<HTMLSelectElement>('select[data-adapter]');
+  const variants = panel?.querySelectorAll<HTMLElement>('.code-variant');
+
+  /* Every combination is already in the document, so switching is showing one
+     and hiding the rest. No fetch, no highlighter, and nothing to fail: with
+     scripting off the default variant is the one the server rendered and it is
+     still complete, correct and copyable. */
+  const variantStatus = panel?.querySelector<HTMLElement>('[data-variant-status]');
+
+  const show = () => {
+    if (!panel || !selects || !variants) return;
+    const wanted: Record<string, string> = {};
+    for (const select of selects) wanted[select.dataset.adapter ?? ''] = select.value;
+    for (const variant of variants) {
+      const match =
+        variant.dataset.storage === wanted.storage && variant.dataset.relay === wanted.relay;
+      variant.hidden = !match;
+    }
+    /* The shown block's own accessible name is already the sentence this
+       wants — "Quickstart example, Expo store, Convex relay" — so it is read
+       from there rather than rebuilt, and the two cannot drift apart. */
+    const shown = panel.querySelector('.code-variant:not([hidden]) .astro-code');
+    const label = shown?.getAttribute('aria-label');
+    if (variantStatus && label) variantStatus.textContent = label;
+  };
+
+  selects?.forEach((select) => select.addEventListener('change', show));
+
+  /* ---- the example ---- */
+  const codeButton = panel?.querySelector<HTMLButtonElement>('[data-code-copy]');
+  const codeStatus = panel?.querySelector<HTMLElement>('[data-code-copy-status]');
+  let codeRestore: ReturnType<typeof setTimeout> | undefined;
+
+  codeButton?.addEventListener('click', async () => {
+    /* Read from the visible variant rather than from an attribute: ten copies
+       of the program in `data-copy` would double the panel's weight to say
+       what the panel already says. The line numbers are `::before` content, so
+       they are not in `textContent` and cannot reach the clipboard. */
+    const visible = panel?.querySelector<HTMLElement>('.code-variant:not([hidden]) pre');
+    const code = visible?.textContent;
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      return;
+    }
+    codeButton.dataset.copied = 'true';
+    if (codeStatus) codeStatus.textContent = 'Example copied';
+    clearTimeout(codeRestore);
+    codeRestore = setTimeout(() => {
+      delete codeButton.dataset.copied;
+      if (codeStatus) codeStatus.textContent = '';
     }, 2000);
   });
 </script>
