@@ -42,7 +42,7 @@ const answers = [
   },
   {
     question: 'What is the dependency footprint?',
-    answer: `${dependencies.direct} direct production dependencies — ${dependencies.names.join(', ')} — resolving to ${dependencies.resolved} packages in total, the eighth being ${dependencies.transitive} by way of protobufjs. Everything else in the tree is a development or optional peer dependency. Continuous integration runs a production-tree advisory audit at moderate severity on every change.`,
+    answer: `${dependencies.direct} direct production dependencies — ${dependencies.names.join(', ')} — resolving to ${dependencies.resolved} packages in total: the only transitive edges are the @noble packages depending on one another, so the resolved tree adds nothing the list above does not already name. Everything else in the tree is a development or optional peer dependency. Continuous integration runs a production-tree advisory audit at moderate severity on every change.`,
     links: [{ href: docs.thirdParty, label: 'Third-party notices' }],
   },
   {

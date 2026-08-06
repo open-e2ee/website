@@ -304,13 +304,14 @@ const trustLinks = [
           The disclosure was one clause at the end of the caption above, and it
           named Bob's client and the device registration. Four fresh readers
           sized up the excerpt; every one of them found something it did not
-          name. `mockStore()` is a mock in the reader's own estimate — a real
-          store, per device, per platform, and the thing whose "persisted
-          formats may change before 1.0". `relay` is a server somebody has to
-          run. Those are the two line items that decide whether this is a
-          two-week or a two-month job, and they were the two the disclosure
-          left out, which is worse than disclosing nothing: a reader who finds
-          the omission themselves stops believing the parts you did admit.
+          name. `inMemoryStore()` stands where a line item goes in the reader's
+          own estimate — a real store, per device, per platform, and the thing
+          whose "persisted formats may change before 1.0". `relay` is a server
+          somebody has to run. Those are the two line items that decide whether
+          this is a two-week or a two-month job, and they were the two the
+          disclosure left out, which is worse than disclosing nothing: a reader
+          who finds the omission themselves stops believing the parts you did
+          admit.
 
           It is a list because a list can be checked against the code beside
           it, and a trailing clause cannot. It sits here because this is where
@@ -343,7 +344,7 @@ const trustLinks = [
               Both sentences were true and the pair was not. The store and the
               relay are yours to supply; the code for them ships. `ADAPTERS.md`
               lists `expoStore`, `nodeStore`, `indexedDbStore` and
-              `reactNativeStore`, and `convexRelay` alongside `mockRelay` — all
+              `reactNativeStore`, and `convexRelay` alongside `inMemoryRelay` — all
               exports of the installed package the build audit checks names
               against. So the answer is deploy, not write, and it took naming
               them to say so.
@@ -364,12 +365,12 @@ const trustLinks = [
               of the same boundary is how the loose one ends up quoted. */}
           <ul>
             <li>
-              a real store in place of <code>mockStore()</code>, on each device — <code
+              a real store in place of <code>inMemoryStore()</code>, on each device — <code
                 >expoStore()</code
               >, <code>nodeStore()</code> and <code>indexedDbStore()</code> ship
             </li>
             <li>
-              the relay <code>mockRelay()</code> stands in for: the server that holds public keys
+              the relay <code>inMemoryRelay()</code> stands in for: the server that holds public keys
               and device lists and delivers the encrypted envelopes. <code>convexRelay()</code> ships
               one; you host it.
             </li>
@@ -377,7 +378,7 @@ const trustLinks = [
                 "Bob's own client, which is Alice's four lines renamed". Both
                 were artefacts of quoting a recording that drives both sides of
                 a conversation inside one process: the registration calls are
-                `mockRelay`'s own API, and the second client existed so the
+                `inMemoryRelay`'s own API, and the second client existed so the
                 recording could show a round trip without a network. Neither is
                 work the reader does, so listing them as work they owe was
                 inflating the estimate the list exists to make honest. What is
@@ -649,7 +650,7 @@ const trustLinks = [
         <h3>The same message, recorded</h3>
         <p class="measure">
           Not a mock-up: the plaintext as Bob&rsquo;s device decrypted it, and the row the relay
-          held, captured by running the documented quickstart against the mock relay.
+          held, captured by running the documented quickstart against the in-memory relay.
         </p>
         <CarrierPanel />
       </div>

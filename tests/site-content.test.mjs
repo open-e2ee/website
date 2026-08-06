@@ -252,11 +252,11 @@ test('offers every adapter as a real, complete, copyable program', () => {
   /* The default is the combination the capture was recorded with, so the
    * provenance test above is testing the snippet a reader sees first. */
   assert.equal(heroCode, buildSnippet(defaultVariant.storage, defaultVariant.relay));
-  assert.equal(defaultVariant.storage, 'mock');
-  assert.equal(defaultVariant.relay, 'mock');
+  assert.equal(defaultVariant.storage, 'memory');
+  assert.equal(defaultVariant.relay, 'memory');
 
-  assert.throws(() => buildSnippet('nope', 'mock'), /Unknown storage adapter/);
-  assert.throws(() => buildSnippet('mock', 'nope'), /Unknown relay adapter/);
+  assert.throws(() => buildSnippet('nope', 'memory'), /Unknown storage adapter/);
+  assert.throws(() => buildSnippet('memory', 'nope'), /Unknown relay adapter/);
 });
 
 test('keeps the nine unselected variants out of the page and out of the tab order', async () => {
@@ -867,11 +867,56 @@ test('dates every assurance figure it publishes', () => {
   assert.match(checks.measuredOn, /^\d{4}-\d{2}-\d{2}$/);
   assert.equal(checks.failed, 0);
   assert.equal(dependencies.direct, dependencies.names.length);
-  assert.ok(dependencies.resolved > dependencies.direct);
+  assert.ok(dependencies.resolved >= dependencies.direct);
   assert.ok(specifications.length > 0);
   for (const spec of specifications) {
     assert.ok(spec.name && spec.revision, `${spec.name} needs a pinned revision`);
   }
+});
+
+test('counts the dependency footprint from the installed tree, not from memory', async () => {
+  /* Two pages publish this as a proof point, and it is the one assurance
+   * figure a reader can check in a second — `npm install` and look. So it is
+   * derived here rather than trusted: `names` must be exactly the SDK's
+   * declared production dependencies, and `resolved` must be the size of the
+   * closure over them.
+   *
+   * The count moved in alpha.10, when `protobufjs` left the production tree
+   * and took `long` with it. Before that the resolved figure was one larger
+   * than the direct one, and the assertion guarding it said only "resolved is
+   * larger" — which was true of the arithmetic and proved nothing about the
+   * package. A figure this cheap to check should not be maintained by hand. */
+  const manifestOf = async (name) =>
+    JSON.parse(
+      await readFile(new URL(`../node_modules/${name}/package.json`, import.meta.url), 'utf8'),
+    );
+
+  const sdk = await manifestOf('@open-e2ee/signal-protocol-sdk');
+  const declared = Object.keys(sdk.dependencies ?? {}).sort();
+  assert.deepEqual(
+    declared,
+    [...dependencies.names].sort(),
+    'the SDK production dependencies are not the ones the site lists',
+  );
+
+  /* Optional and peer dependencies are deliberately out of the closure: an
+   * adapter's runtime requirement is installed by the reader who picks that
+   * adapter, and counting them would inflate a number whose whole claim is
+   * what a bare install pulls in. */
+  const closure = new Set();
+  const walk = async (name) => {
+    if (closure.has(name)) return;
+    closure.add(name);
+    const manifest = await manifestOf(name);
+    for (const child of Object.keys(manifest.dependencies ?? {})) await walk(child);
+  };
+  for (const name of declared) await walk(name);
+
+  assert.equal(
+    closure.size,
+    dependencies.resolved,
+    `a bare install resolves to ${closure.size} packages, and the site says ${dependencies.resolved}`,
+  );
 });
 
 test('states the validation and audit position rather than omitting it', async () => {
@@ -1807,10 +1852,16 @@ test('declares what the example uses, and discloses what it still leaves out', a
    * decoded as a server they would have to run — the largest line item in the
    * estimate, left to inference. The capture already contained the answer, so
    * the snippet now carries lines 1-5 verbatim and the specifiers disclose
-   * themselves: `/local/store/mock` and `/remote/relay/mock`. */
-  assert.match(heroCode, /import \{ mockStore \} from "@open-e2ee\/signal-protocol-sdk\/local\/store\/mock";/);
-  assert.match(heroCode, /import \{ mockRelay \} from "@open-e2ee\/signal-protocol-sdk\/remote\/relay\/mock";/);
-  assert.match(heroCode, /const relay = mockRelay\(\);/);
+   * themselves: `/local/store/memory` and `/remote/relay/memory`. */
+  assert.match(
+    heroCode,
+    /import \{ inMemoryStore \} from "@open-e2ee\/signal-protocol-sdk\/local\/store\/memory";/,
+  );
+  assert.match(
+    heroCode,
+    /import \{ inMemoryRelay \} from "@open-e2ee\/signal-protocol-sdk\/remote\/relay\/memory";/,
+  );
+  assert.match(heroCode, /const relay = inMemoryRelay\(\);/);
 
   /* No elision mark anywhere. This used to guard only the opening, because
    * the snippet was an excerpt and `…` was legitimate further down. Now the
@@ -1825,8 +1876,8 @@ test('declares what the example uses, and discloses what it still leaves out', a
    * none, because the reader who finds the omission stops trusting the
    * admission. */
   assert.match(index, /Not in this example, and yours to supply/);
-  assert.match(index, /a real store in place of <code>mockStore\(\)<\/code>/);
-  assert.match(index, /the relay <code>mockRelay\(\)<\/code> stands in for/);
+  assert.match(index, /a real store in place of <code>inMemoryStore\(\)<\/code>/);
+  assert.match(index, /the relay <code>inMemoryRelay\(\)<\/code> stands in for/);
 });
 
 test('backs the durability claim it prints under the recorded row', async () => {
@@ -1979,13 +2030,19 @@ test('does not overstate the one artefact that exists to not be overstated', asy
 
   /* The caption read "recorded from a real round trip" while the disclosure
    * five lines under it read "captured by running the documented quickstart
-   * against the mock relay". A fresh reader put the two together and was
-   * right: the cryptography is real, the transport is a mock, and only the
-   * first of those is what "a real round trip" claims. The panel's whole
+   * against the in-memory relay". A fresh reader put the two together and was
+   * right: the cryptography is real, the infrastructure is simulated, and only
+   * the first of those is what "a real round trip" claims. The panel's whole
    * function is that this page does not inflate its evidence, so an inflated
-   * adjective costs more here than anywhere else on the site. */
+   * adjective costs more here than anywhere else on the site.
+   *
+   * The disclosure names the adapter rather than calling it a mock, which is
+   * the alpha.10 vocabulary and is also the more precise of the two: nothing
+   * in that relay is a test double, and a reader who discounts the exhibit as
+   * mocked has discounted real ciphertext. What it simulates is the
+   * infrastructure, and that is the part the sentence has to keep admitting. */
   assert.match(panel, /recorded by running the quickstart/);
-  assert.match(index, /against the mock relay/);
+  assert.match(index, /against the in-memory relay/);
   /* Absence is asserted against the rendered page, not the source: the comment
    * recording *why* the adjective went has to be free to quote it. */
   if (dist) {

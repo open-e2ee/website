@@ -3,6 +3,7 @@ title: TLS is not end-to-end encryption
 description: TLS protects the wire, but your server still reads every message it carries. Learn what changes when the relay holds ciphertext, including the limits on breach exposure.
 image: /social/blog/tls-is-not-end-to-end-encryption.png
 publishedAt: 2026-07-25
+updatedAt: 2026-08-06
 author: OpenE2EE
 tags:
   - Architecture
@@ -42,24 +43,24 @@ The next section shows the code change. [How E2EE changes your application archi
 
 ## What it looks like in code
 
-This complete round trip uses the OpenE2EE Signal Protocol SDK and its in-memory mock relay:
+This complete round trip uses the OpenE2EE Signal Protocol SDK and its in-memory relay. The protocol and the cryptography are real; only the infrastructure is simulated:
 
 ```ts
 import { createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
-import { mockStore } from '@open-e2ee/signal-protocol-sdk/local/store/mock';
-import { mockRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/mock';
+import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
+import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 
-const relay = mockRelay();
+const relay = inMemoryRelay();
 await relay.registerDevice('alice', { encryptedDeviceName: new ArrayBuffer(0) });
 await relay.registerDevice('bob', { encryptedDeviceName: new ArrayBuffer(0) });
 
 const alice = await createSignalProtocolClient({
   identity: { userId: 'alice' },
-  adapters: { storage: mockStore(), relay },
+  adapters: { storage: inMemoryStore(), relay },
 });
 const bob = await createSignalProtocolClient({
   identity: { userId: 'bob' },
-  adapters: { storage: mockStore(), relay },
+  adapters: { storage: inMemoryStore(), relay },
 });
 
 await alice.syncToServer();
