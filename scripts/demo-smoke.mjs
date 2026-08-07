@@ -435,6 +435,10 @@ async function run(headers, held) {
    * the last request. Without it, a slow decrypt would leave the connection
    * already quiet for longer than the window and this would return at once —
    * skipping exactly the interval the check exists to watch.
+   *
+   * Returns whether the quiet window was actually observed. A page that keeps
+   * talking until the cap expires never gives us one, and the pass message has
+   * to say so rather than claim a window it did not get.
    */
   async function settleEgress() {
     const start = Date.now();
@@ -442,7 +446,8 @@ async function run(headers, held) {
     for (;;) {
       const now = Date.now();
       const quiet = Math.min(now - lastRequestAt, now - start);
-      if (quiet >= EGRESS_QUIET_MS || now >= deadline) return;
+      if (quiet >= EGRESS_QUIET_MS) return true;
+      if (now >= deadline) return false;
       await new Promise((r) => setTimeout(r, Math.min(200, EGRESS_QUIET_MS - quiet)));
     }
   }
@@ -541,7 +546,7 @@ async function run(headers, held) {
       },
     );
 
-    await settleEgress();
+    const wentQuiet = await settleEgress();
 
     /* Pull bodies the browser did not hand over inline. */
     for (const requestId of postDataNeeded) {
@@ -575,10 +580,18 @@ async function run(headers, held) {
       );
     }
 
+    /* Say which of the two things happened. Claiming a quiet window we never
+       got would overstate the egress evidence on exactly the chatty pages
+       where it is weakest. */
+    const watched = wentQuiet
+      ? `including a ${EGRESS_QUIET_MS} ms quiet window after it decrypted`
+      : `the page was still making requests when the ` +
+        `${EGRESS_SETTLE_MAX_MS / 1000} s settle cap expired`;
+
     console.log(
       `demo smoke: PASS — round-tripped a typed sentence in the browser, ` +
-        `${requests.length} request(s) observed (including a ${EGRESS_QUIET_MS} ms quiet window ` +
-        `after it decrypted), none carrying it, no CSP violation.`,
+        `${requests.length} request(s) observed (${watched}), none carrying it, ` +
+        `no CSP violation.`,
     );
   }
 }
