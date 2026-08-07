@@ -9,19 +9,30 @@
  * what a server would hold, and that the sentence is not on it.
  *
  * A claim like that is only worth as much as the surface it is made about.
- * `ISignalProtocolRelayServer` declares **41** methods, counting the two
- * interfaces it extends — `IProvisioningService` and `IKeyRotationService`,
- * which is where the two prekey-metadata calls live. A session reaches the 15
- * in `CARRIED_CALLS` and `CARRIED_STREAMS` below and nothing else, measured
- * rather than guessed. Those are the only things this relay carries, and it is
- * those two lists that the honesty test asserts against.
+ * `ISignalProtocolRelayServer` has 42 members — 41 methods and one property —
+ * counting the two interfaces it extends, `IProvisioningService` and
+ * `IKeyRotationService`, which is where the two prekey-metadata calls live.
  *
- * Every one of the other 26 throws its own name rather than returning a
- * plausible answer, and `UncoveredRelayMethod` below is what makes that
- * sentence true rather than aspirational: it fails the build naming any method
- * that is neither carried nor refused. A demo relay that quietly handed back
- * `null` for a method the SDK had started calling would keep working and stop
- * being true, which is the failure this page exists in order not to commit.
+ * This relay provides 15 of them, the ones in `CARRIED_CALLS` and
+ * `CARRIED_STREAMS` below, and those two lists are what the honesty test
+ * asserts the channel against. 12 is the number a two-tab session was measured
+ * to actually reach; the other three are provided because they are reached on
+ * a path a clean run does not take — two prekey rotations and a retry request
+ * after a failed decrypt.
+ *
+ * Read that as a claim about the two-tab send path and nothing wider. The
+ * scenarios on the rest of /demo drive a relay directly rather than through
+ * this one, and between them they reach provisioning, rotation and injected
+ * failures — members this relay refuses. Running a scenario through here would
+ * report that at the call, by name, which is the point.
+ *
+ * Every one of the other 26 methods throws its own name rather than returning
+ * a plausible answer, and `CoveredRelayMember` below is what makes that
+ * sentence true rather than aspirational: it fails the build naming any member
+ * that is neither carried, refused, nor deliberately omitted. A relay that
+ * quietly handed back `null` for a method the SDK had started calling would
+ * keep working and stop being true, which is the failure this page exists in
+ * order not to commit.
  * That is not hypothetical: the measured list was one short —
  * `subscribeRetryRequests` is called by every client at boot — and the refusal
  * is what said so, at the call, instead of the demo half-working.
@@ -88,6 +99,17 @@ export type CarriedCall = (typeof CARRIED_CALLS)[number];
  * Both hand back an unsubscribe function rather than a promise of one, so
  * neither can be a request/response over the channel. They are registrations,
  * and what comes back on them arrives as pushes.
+ *
+ * Both, and it is worth naming them separately, because they fail identically
+ * and the first failure hides the second. `subscribe()`'s return is stored as
+ * `this.relayUnsubscribe` and `subscribeRetryRequests()`'s as
+ * `this.retryUnsubscribe`; making either one `async` returns a promise, which
+ * survives every send and every delivery and then throws
+ * `this.relayUnsubscribe is not a function` in `stop()`, a long way from the
+ * line that caused it. A client calls both at boot and `stop()` reaches
+ * `relayUnsubscribe` first, so a wrong `subscribeRetryRequests` reports the
+ * other name's error and looks like the other defect. Teardown in the tests is
+ * the only thing that runs this path at all.
  */
 export const CARRIED_STREAMS = ['envelopes', 'retries'] as const;
 
@@ -101,7 +123,7 @@ export type RelayMessage =
   | { kind: 'call'; callId: string; method: CarriedCall; args: unknown[] }
   /** The host's answer. `value` is whatever that method returns. */
   | { kind: 'return'; callId: string; ok: true; value: unknown }
-  | { kind: 'return'; callId: string; ok: false; error: string }
+  | { kind: 'return'; callId: string; ok: false; error: RelayError }
   /** A guest asking to be subscribed to one device's row, on one stream. */
   | { kind: 'watch'; watchId: string; stream: CarriedStream; userId: string; deviceId: number }
   | { kind: 'unwatch'; watchId: string }
@@ -109,6 +131,46 @@ export type RelayMessage =
   | { kind: 'envelope'; watchId: string; envelope: Envelope }
   /** A receiving device asking a sender to try again. Carries no message. */
   | { kind: 'retry'; watchId: string; request: unknown };
+
+/**
+ * What survives of a thrown error when it crosses the channel.
+ *
+ * `postMessage` structured-clones, and structured clone drops the prototype.
+ * An `EncryptionError` thrown in the host tab arrives in the guest as a plain
+ * object: no class, no `instanceof`, and — if only the message were carried —
+ * no `code` either. Code branching on `error.code` would then take one path in
+ * the tab holding the relay and another in the tab beside it, which is not one
+ * SDK behaving consistently, it is two.
+ *
+ * Class identity is not recoverable; the constructors are not on the wire. So
+ * the three fields the SDK's own handling reads are carried explicitly and the
+ * guest rebuilds an `Error` from them. `name` is what makes a `TypeError` from
+ * the relay still say `TypeError` in the tab that asked for it.
+ */
+export interface RelayError {
+  name: string;
+  message: string;
+  code?: string;
+}
+
+/** Flatten a thrown value into the three fields the channel carries. */
+function describeError(error: unknown): RelayError {
+  if (!(error instanceof Error)) return { name: 'Error', message: String(error) };
+  const { code } = error as Error & { code?: unknown };
+  return {
+    name: error.name,
+    message: error.message,
+    ...(typeof code === 'string' ? { code } : {}),
+  };
+}
+
+/** Rebuild the guest's side of a host failure, fields intact. */
+function reviveError(described: RelayError): Error {
+  const error = new Error(described.message);
+  error.name = described.name;
+  if (described.code !== undefined) (error as Error & { code?: string }).code = described.code;
+  return error;
+}
 
 /** The message kinds, for a test that wants to enumerate the wire. */
 export const MESSAGE_KINDS = [
@@ -178,18 +240,35 @@ export interface DemoRelay {
  *
  * The alternative — returning `null`, `[]` or `undefined` to satisfy the type
  * — is how a demo goes on working while it stops being true. If the SDK ever
- * reaches for a sixteenth method, this page has to be the thing that reports
- * it, because nothing else is watching.
+ * reaches past the 15 this relay provides, this page has to be the thing that
+ * reports it, because nothing else is watching.
  */
 function refuse(method: string): (...args: unknown[]) => never {
   return () => {
-    throw new Error(
-      `the two-tab demo relay does not carry ${method}(). It carries what a ` +
-        `session was measured to reach: ${CARRIED_CALLS.join(', ')}, and the ` +
-        `${CARRIED_STREAMS.join(' and ')} subscriptions. If the SDK now needs ` +
-        `${method}(), add it here and to the test that enumerates the channel.`,
-    );
+    throw refusal(method);
   };
+}
+
+/**
+ * The refusal itself, built rather than thrown.
+ *
+ * A guest refuses locally and the host refuses over the wire, and both have to
+ * be the same refusal. Built once here so the wire cannot develop a second,
+ * shorter sentence that says less — and given a name and a code, because those
+ * are what a caller can branch on after a structured clone has taken the class
+ * away. A refusal that arrives as a bare string is not the same answer the
+ * single-tab scenarios give.
+ */
+function refusal(method: string): Error {
+  const error = new Error(
+    `the two-tab demo relay does not carry ${method}(). It carries what a ` +
+      `session was measured to reach: ${CARRIED_CALLS.join(', ')}, and the ` +
+      `${CARRIED_STREAMS.join(' and ')} subscriptions. If the SDK now needs ` +
+      `${method}(), add it here and to the test that enumerates the channel.`,
+  ) as Error & { code: string };
+  error.name = 'DemoRelayMethodNotCarried';
+  error.code = 'DEMO_RELAY_METHOD_NOT_CARRIED';
+  return error;
 }
 
 /**
@@ -330,8 +409,15 @@ export async function broadcastRelay(options: BroadcastRelayOptions = {}): Promi
 
   if (role === 'host') {
     const local = inMemoryRelay() as unknown as Record<string, (...args: unknown[]) => unknown>;
-    /* One subscription per watching guest, so an `unwatch` — or a guest that
-       reloads — takes down that guest's and nobody else's. */
+    /* One subscription per watching guest, so an `unwatch` takes down that
+       guest's and nobody else's.
+
+       A guest that is closed or reloaded posts no `unwatch`, and its entry
+       stays here until this tab goes away — the host learns nothing about a
+       tab that stopped existing, since `BroadcastChannel` carries no such
+       event. What leaks is one closure per dead guest, delivering into a
+       channel nobody is listening on, which the demo's lifetime bounds. A real
+       relay would hold a connection whose loss it could see. */
     const watches = new Map<string, () => void>();
 
     channel.addEventListener('message', (event) => {
@@ -339,12 +425,14 @@ export async function broadcastRelay(options: BroadcastRelayOptions = {}): Promi
       if (!message || typeof message !== 'object') return;
 
       if (message.kind === 'call') {
+        /* The host checks the list itself rather than trusting that the guest
+           checked it. A guest is another tab, and this one is the relay. */
         if (!CARRIED.has(message.method)) {
           post({
             kind: 'return',
             callId: message.callId,
             ok: false,
-            error: `the two-tab demo relay does not carry ${String(message.method)}()`,
+            error: describeError(refusal(String(message.method))),
           });
           return;
         }
@@ -353,12 +441,7 @@ export async function broadcastRelay(options: BroadcastRelayOptions = {}): Promi
             const value = await local[message.method](...message.args);
             post({ kind: 'return', callId: message.callId, ok: true, value });
           } catch (error) {
-            post({
-              kind: 'return',
-              callId: message.callId,
-              ok: false,
-              error: error instanceof Error ? error.message : String(error),
-            });
+            post({ kind: 'return', callId: message.callId, ok: false, error: describeError(error) });
           }
         })();
         return;
@@ -420,7 +503,7 @@ export async function broadcastRelay(options: BroadcastRelayOptions = {}): Promi
         waiting.delete(message.callId);
         clearTimeout(pending.timer);
         if (message.ok) pending.resolve(message.value);
-        else pending.reject(new Error(message.error));
+        else pending.reject(reviveError(message.error));
         return;
       }
 
@@ -510,14 +593,15 @@ export async function broadcastRelay(options: BroadcastRelayOptions = {}): Promi
      * checks police the names, this cast forgives the shapes, and `OMITTED` is
      * where a shape decision gets written down.**
      *
-     * As for why the shapes are forgiven at all: the interface has 42 members
-     * and this relay provides the 15 a two-tab session needs. Writing the
-     * other 26 to satisfy the compiler would be 26 places for a wrong answer
-     * to hide, and the compiler cannot tell a correct implementation from a
-     * plausible one. So
-     * they are present and they throw their own names, which is the honest
-     * shape and the one that reports a change in the SDK instead of absorbing
-     * it. The type says what the SDK requires; `refuse()` says what this is.
+     * As for why the shapes are forgiven at all: the interface has 42 members,
+     * this relay provides the 15 a two-tab session needs, and 27 are left.
+     * Implementing them to satisfy the compiler would be 27 places for a wrong
+     * answer to hide, and the compiler cannot tell a correct implementation
+     * from a plausible one. So 26 are present and throw their own names, and
+     * `groupServer` is absent because the type says it may be. That is the
+     * honest shape, and the one that reports a change in the SDK instead of
+     * absorbing it: the type says what the SDK requires, `refuse()` says what
+     * this is.
      */
     relay: relay as unknown as ISignalProtocolRelayServer,
     close() {
