@@ -153,17 +153,26 @@ const VIEWPORT = { width: 1280, height: 800 };
 
 /*
  * Every script a page fetches before the reader asks for the SDK, which on
- * 2026-08-07 was 15.7 KB over six files on the homepage and 14.4 KB over five
+ * 2026-08-07 was 15.7 KB over six files on the homepage and 17.9 KB over five
  * on `/demo` — the theme and measurement scripts, each page's own script, and
  * a shared preload helper Vite splits out because two pages now import
- * dynamically. The interaction then pulls 1760.8 KB, so the tripwire sits two
- * orders of magnitude below any build that has the SDK on its initial path.
+ * dynamically. The interaction then pulls about 1770 KB, so the tripwire sits
+ * two orders of magnitude below any build that has the SDK on its initial path.
+ *
+ * `/demo` has 2.1 KB left, and it is the page under pressure: each scenario
+ * adds to the one script this page ships, so LD6 has less room here than the
+ * gzip ceiling suggests.
  *
  * These are wire bytes without compression: `chrome-harness.mjs` serves the
  * build as it is on disk, while Cloudflare compresses. So this is not
  * invariant 7's budget, which is 10 KB gzip and is a *delta* — it needs a build
  * without the demo to compare against, and is measured in the proof rather than
  * here. This is the tripwire for the SDK arriving uninvited.
+ *
+ * The proof's table reports `/demo` lower, at 14.5 KB, and the two numbers are
+ * both right: it walks the module graph on disk, while this counts what Chrome
+ * actually fetched, which includes responses the static walk does not model.
+ * The ceiling is set against the figure measured here.
  */
 const PRE_INTERACTION_CEILING = 20 * 1024;
 
@@ -1375,7 +1384,19 @@ const FLIP_DENIALS = [
   'cannot say that no garbage plaintext reached it',
 ];
 
+/*
+ * Each of these is a branch the page renders when it cannot make its argument.
+ * The page is right to print them; a run that reaches one is not a pass.
+ *
+ * `no scroll-back for the device it linked` is the state where the linked
+ * device produced no pane at all — which is not the same as a pane that simply
+ * lacks the pre-link message, and that difference is the whole point of the
+ * scenario. It shares its cause with `never joined the session`, so both
+ * render together, and the scan below reports the first match: the precise one
+ * has to come first, or the failure is reported as the vaguer of the two.
+ */
 const SECOND_DEVICE_DENIALS = [
+  'no scroll-back for the device it linked',
   'is on the new device',
   'never reached every device',
   'never joined the session',

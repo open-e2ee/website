@@ -399,22 +399,33 @@ const description =
     }
     output.append(el('h3', 'What happened'), happened);
 
-    /* The arithmetic, checked rather than asserted. */
+    /*
+     * The arithmetic, checked rather than asserted — and in three states, not
+     * two. "The device holds no scroll-back at all" and "the device holds a
+     * scroll-back without that message in it" are different runs, and only the
+     * second is evidence of anything. Folding the first into the second is how
+     * a page ends up printing a confident caption about a scroll-back it was
+     * never given, so the absent case says that it is absent.
+     */
     const newDevice = result.scrollback.find((device) => device.deviceId === result.linked.deviceId);
-    const carriedOver = newDevice?.messages.includes(result.before.text) ?? false;
+    const carriedOver = newDevice ? newDevice.messages.includes(result.before.text) : null;
 
     const notHappened = el('ul', undefined, 'scenario-nots');
     notHappened.dataset.scenarioNots = '';
     notHappened.append(
       el(
         'li',
-        carriedOver
-          ? 'The message sent before the link is on the new device. Nothing in the protocol can ' +
-              'produce that, so either this scenario or the SDK is wrong — and this run is not ' +
-              'evidence of either.'
-          : 'No history followed the device. The message sent before the link is not on it, ' +
-              'because this device’s keys did not exist when that message was encrypted and ' +
-              'there was nothing to encrypt it to. That is arithmetic, not a decision.',
+        carriedOver === null
+          ? 'This run produced no scroll-back for the device it linked, so it cannot say what ' +
+              'that device can read. Nothing below is evidence about the message sent before ' +
+              'the link.'
+          : carriedOver
+            ? 'The message sent before the link is on the new device. Nothing in the protocol ' +
+                'can produce that, so either this scenario or the SDK is wrong — and this run ' +
+                'is not evidence of either.'
+            : 'No history followed the device. The message sent before the link is not on it, ' +
+                'because this device’s keys did not exist when that message was encrypted and ' +
+                'there was nothing to encrypt it to. That is arithmetic, not a decision.',
       ),
       el(
         'li',
