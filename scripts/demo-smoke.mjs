@@ -4,14 +4,16 @@
  *
  *   npm run build && npm run demo:smoke
  *
- * Four claims, one run:
+ * Five claims, one run:
  *
  *   1. A reader's own sentence round-trips through the installed SDK in their
- *      tab, under the site's unchanged `script-src 'self'`.
+ *      tab, under the site's unchanged `script-src 'self'`, twice.
  *   2. The sentence never leaves the page.
- *   3. The metadata beside it is the live envelope's own fields, not a list
+ *   3. What does leave the page is one measurement beacon of a shape fixed in
+ *      advance, carrying nothing derived from the sentence.
+ *   4. The metadata beside it is the live envelope's own fields, not a list
  *      someone typed.
- *   4. Nothing SDK-shaped is fetched before the reader asks for it.
+ *   5. Nothing SDK-shaped is fetched before the reader asks for it.
  *
  * Then a second pass blocks every chunk the interaction pulled and checks the
  * page lands back on the recorded capture rather than on a hole.
@@ -24,6 +26,14 @@
  * form. The typed sentence carries a per-run nonce: the site ships a recorded
  * capture whose plaintext is a fixed string, and a fixed probe string would
  * either collide with it or quietly stop proving anything.
+ *
+ * Claim 3 is what claim 2 stopped being sufficient for the moment the demo
+ * gained an analytics event (LD3). Searching for the sentence proves the
+ * sentence did not go; it says nothing about a beacon carrying the sentence's
+ * *length*, the ciphertext's byte count, or how many milliseconds the encrypt
+ * took — each of which is a fact about what the reader typed, and none of which
+ * would ever match a probe search. So the beacon is checked positively: the
+ * whole body, against a string this file knows before the browser starts.
  *
  * It also fails on a CSP violation. The demo's whole premise is that it runs
  * under the site's unchanged `script-src 'self'` — and the failure mode is not
@@ -80,6 +90,12 @@ const FALLBACK = '[data-demo-fallback-note]';
 
 const NONCE = randomUUID().slice(0, 8);
 const PROBE = `Smoke probe ${NONCE}: the staging key rotates at 09:00 UTC.`;
+/* A second sentence through a session that is already warm. The repeat send is
+   a different path — the SDK chunk is there, the handshake is done, the ratchet
+   has moved on — and until LD3 nothing ever exercised it. It is also what makes
+   "one beacon per page, not per sentence" a measurement rather than an
+   assertion: a page asked once cannot tell the two apart. */
+const REPEAT_PROBE = `Second probe ${NONCE}: sent again, on a session already warm.`;
 
 const DECRYPT_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 30000;
@@ -126,6 +142,25 @@ const MIN_DERIVED_FIELDS = 10;
 const EGRESS_QUIET_MS = 2000;
 const EGRESS_SETTLE_MAX_MS = 10000;
 
+/*
+ * The one endpoint the page is allowed to talk to, and the exact thing it is
+ * allowed to say there. `/e` is the site's own cookieless collector
+ * (`public/measure.js` posts to it, `src/workers/site.ts` decides what is
+ * stored); the demo posts `demo_run` once a sentence has been through the SDK.
+ *
+ * `dist/` has no `/e` in it, so the harness's file server answers 404 and the
+ * beacon lands nowhere. That is the right split: what is under test here is
+ * what the page *sends*, which is the half a reader can see in their network
+ * tab. What the collector then keeps is `tests/measurement.test.mjs`, which
+ * drives the Worker directly.
+ */
+const BEACON_PATH = '/e';
+const DEMO_RUN_BODY = 'demo_run /';
+/* `<event> <path>[ <label>]`, the collector's wire format. The path shape is
+   the one `scrubPath` reduces to; anything outside it is a payload trying to
+   look like a route. */
+const BEACON_SHAPE = /^([a-z_]+) (\/[a-z0-9/_.-]*)(?: ([a-z0-9-]+))?$/;
+
 /* Astro fetches a page's module scripts after the load event, so "before the
    reader asked" means after the page has stopped asking for things of its own
    accord — not after the load event. */
@@ -145,12 +180,25 @@ function egressForms(text) {
 
 function findProbe(haystack) {
   if (!haystack) return null;
-  for (const [label, form] of egressForms(PROBE)) {
-    if (haystack.includes(form)) return label;
+  for (const text of [PROBE, REPEAT_PROBE]) {
+    for (const [label, form] of egressForms(text)) {
+      if (haystack.includes(form)) return label;
+    }
   }
   /* The nonce alone is enough: nothing else on the site contains it. */
   if (haystack.includes(NONCE)) return 'nonce fragment';
   return null;
+}
+
+/** Every request the page made to the measurement endpoint. */
+function beaconsIn(requests) {
+  return requests.filter((request) => {
+    try {
+      return new URL(request.url).pathname === BEACON_PATH;
+    } catch {
+      return false;
+    }
+  });
 }
 
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
@@ -265,7 +313,7 @@ async function teardown(held) {
  * `blocked` is the list of URLs Chrome refuses before the page loads, which is
  * how the second pass makes the demo's chunks never arrive.
  */
-async function visit(cdp, origin, held, { blocked = [] } = {}) {
+async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
   const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
   held.targets.push(targetId);
   const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
@@ -285,13 +333,17 @@ async function visit(cdp, origin, held, { blocked = [] } = {}) {
       const { request, requestId, type } = message.params;
       lastRequestAt = Date.now();
       requestedAt.set(requestId, { url: request.url, at: Date.now(), type });
-      requests.push({
+      const record = {
         url: request.url,
         method: request.method,
         postData: request.postData ?? null,
         headers: JSON.stringify(request.headers ?? {}),
-      });
-      if (request.hasPostData && !request.postData) postDataNeeded.push(requestId);
+      };
+      requests.push(record);
+      /* Keep the record, not the id. A body fetched later has to land back on
+         the request it belongs to — filed as a separate entry it would be a
+         body with no URL, which the beacon checks cannot read. */
+      if (request.hasPostData && !request.postData) postDataNeeded.push({ requestId, record });
     }
     if (message.method === 'Network.loadingFinished') {
       const request = requestedAt.get(message.params.requestId);
@@ -455,14 +507,49 @@ async function visit(cdp, origin, held, { blocked = [] } = {}) {
       },
     );
 
+    /* Read the panel before touching it again, so the assertions about the
+       first sentence are about the moment the first sentence landed. */
+    const afterFirst = await evaluate(cdp, sessionId, SNAPSHOT);
+
+    if (repeat) {
+      /* Clearing the field by hand rather than selecting and overtyping: the
+         panel reads `input.value` when send is pressed and nothing else, so
+         this is the same thing a reader does and two fewer CDP round trips. */
+      await evaluate(
+        cdp,
+        sessionId,
+        `(() => {
+           const input = document.querySelector(${JSON.stringify(INPUT)});
+           input.focus();
+           input.value = '';
+         })()`,
+        'demo',
+      );
+      await cdp.send('Input.insertText', { text: REPEAT_PROBE }, sessionId);
+      await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(SEND)}).click()`, 'demo');
+      await waitFor(
+        cdp,
+        sessionId,
+        `(() => {
+           const panel = document.querySelector(${JSON.stringify(PANEL)});
+           const decrypted = panel.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? '';
+           const note = panel.querySelector(${JSON.stringify(FALLBACK)})?.textContent ?? '';
+           return decrypted.includes(${JSON.stringify(REPEAT_PROBE)}) || note.length > 0;
+         })()`,
+        DECRYPT_TIMEOUT_MS,
+        `the demo returned the first sentence and then never returned the second within ` +
+          `${DECRYPT_TIMEOUT_MS} ms — the repeat send is a warm session, not a cold one`,
+      );
+    }
+
     const wentQuiet = await quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS);
     const dom = await evaluate(cdp, sessionId, SNAPSHOT);
 
     /* Pull bodies the browser did not hand over inline. */
-    for (const requestId of postDataNeeded) {
+    for (const { requestId, record } of postDataNeeded) {
       try {
         const { postData } = await cdp.send('Network.getRequestPostData', { requestId }, sessionId);
-        requests.push({ url: '(deferred body)', method: 'POST', postData, headers: '{}' });
+        record.postData = postData;
       } catch {}
     }
 
@@ -472,7 +559,9 @@ async function visit(cdp, origin, held, { blocked = [] } = {}) {
     const after = scripts.filter((script) => script.at >= interactedAt);
     return {
       beforeInteraction,
+      afterFirst,
       dom,
+      repeated: repeat,
       requests,
       cspViolations,
       pageErrors,
@@ -554,7 +643,79 @@ async function expectedFields(envelopeFields) {
   return expected;
 }
 
-function checkRoundTrip(pass, envelopeFields, expected) {
+/*
+ * The event names the collector accepts, read out of the Worker rather than
+ * retyped here. A beacon carrying a name that source does not know is dropped
+ * on arrival — the site would be measuring nothing and looking like it was, and
+ * a copy of the list in this file would go stale in exactly the way that hides
+ * it.
+ */
+async function collectorEvents() {
+  const source = await readFile(new URL('../src/workers/site.ts', import.meta.url), 'utf8');
+  const declared = source.match(/const EVENTS = new Set\(\[([^\]]*)\]\)/s)?.[1];
+  if (declared === undefined) {
+    throw new Infra(
+      'could not read EVENTS out of src/workers/site.ts, so this run cannot tell a beacon the ' +
+        'collector keeps from one it silently drops',
+    );
+  }
+  return new Set([...declared.matchAll(/'([^']+)'/g)].map((match) => match[1]));
+}
+
+/*
+ * What the page said to its own collector, checked as a whole string.
+ *
+ * Two sentences went through the demo in this pass, so a `demo_run` count is
+ * the difference between the privacy notice's "one is sent per page" and a
+ * panel that quietly measures each send.
+ */
+function checkBeacons(pass, events) {
+  const beacons = beaconsIn(pass.requests);
+
+  for (const beacon of beacons) {
+    const body = beacon.postData ?? '';
+    const shape = BEACON_SHAPE.exec(body);
+    if (!shape) {
+      throw new Red(
+        `a beacon body is not the collector's wire format: ${JSON.stringify(body)}\n` +
+          `  It has to be "<event> <path>" and at most a label, because those are the only ` +
+          `three things\n  src/workers/site.ts will store. Anything else is a field somebody added.`,
+      );
+    }
+    if (!events.has(shape[1])) {
+      throw new Red(
+        `the page sent "${shape[1]}", which src/workers/site.ts does not accept — the collector ` +
+          `drops it,\n  so the site is measuring nothing while looking like it is`,
+      );
+    }
+  }
+
+  const runs = beacons.filter((beacon) => (beacon.postData ?? '').startsWith('demo_run'));
+  if (runs.length === 0) {
+    throw new Red(
+      'two sentences round-tripped and nothing measured either of them: no demo_run beacon was ' +
+        'sent.\n  The panel calls window.oeMeasure, which public/measure.js publishes — check ' +
+        'that both are on the page.',
+    );
+  }
+  if (runs.length > 1) {
+    throw new Red(
+      `two sentences produced ${runs.length} demo_run beacons. The panel is measuring per send, ` +
+        `and /legal/privacy\n  says one is sent per page, not per sentence.`,
+    );
+  }
+  if (runs[0].postData !== DEMO_RUN_BODY) {
+    throw new Red(
+      `the demo's beacon reads ${JSON.stringify(runs[0].postData)}, not ` +
+        `${JSON.stringify(DEMO_RUN_BODY)}.\n  It has grown a dimension, and the only material on ` +
+        `that page to derive one from is what the reader typed —\n  its length, the ciphertext's ` +
+        `size, the milliseconds. None of those may leave the tab.`,
+    );
+  }
+  return beacons;
+}
+
+function checkRoundTrip(pass, origin, envelopeFields, expected, events) {
   if (pass.beforeInteraction.claimVisible) {
     throw new Red(
       'the page claimed "that ran in this tab" before anything had run in this tab',
@@ -564,9 +725,16 @@ function checkRoundTrip(pass, envelopeFields, expected) {
   if (pass.dom.fallbackNote) {
     throw new Red(`the demo fell back to the recording: ${pass.dom.fallbackNote}`);
   }
-  if (!pass.dom.decrypted.includes(PROBE)) {
+  if (!pass.afterFirst.decrypted.includes(PROBE)) {
     throw new Red(
       `the typed sentence did not come back:\n  sent:      ${PROBE}\n` +
+        `  decrypted: ${pass.afterFirst.decrypted || '(nothing)'}`,
+    );
+  }
+  if (pass.repeated && !pass.dom.decrypted.includes(REPEAT_PROBE)) {
+    throw new Red(
+      `the demo returned the first sentence and not the second. The session was already warm ` +
+        `and the ratchet had moved on:\n  sent:      ${REPEAT_PROBE}\n` +
         `  decrypted: ${pass.dom.decrypted || '(nothing)'}`,
     );
   }
@@ -593,6 +761,22 @@ function checkRoundTrip(pass, envelopeFields, expected) {
       `the typed sentence left the page in ${leaks.length} request(s):\n  ${leaks.join('\n  ')}`,
     );
   }
+
+  /* Nowhere else, either. The probe search proves the sentence did not go; this
+     proves nothing at all went off our own origin, which is the claim a reader
+     opening the network tab is actually reading. `data:` and `blob:` URLs never
+     reach a network, so a scheme test is the filter, not an allowlist. */
+  const offOrigin = pass.requests.filter(
+    (request) => /^https?:/i.test(request.url) && new URL(request.url).origin !== origin,
+  );
+  if (offOrigin.length) {
+    throw new Red(
+      `the demo page talked to ${offOrigin.length} host(s) that are not this site:\n  ` +
+        offOrigin.map((request) => `${request.method} ${request.url}`).join('\n  '),
+    );
+  }
+
+  checkBeacons(pass, events);
 
   if (pass.cspViolations.length) {
     throw new Red(
@@ -678,6 +862,16 @@ function checkFallback(pass) {
   if (pass.dom.claimVisible) {
     throw new Red('the demo never ran and the page still claims something ran in this tab');
   }
+  /* Nothing ran, so nothing may be reported as having run. A demo_run recorded
+     off a page that fell back to the recording would make the D5 measurement
+     count readers who saw no demo at all. */
+  const beacons = beaconsIn(pass.requests);
+  if (beacons.length) {
+    throw new Red(
+      `the chunk never arrived and the page measured ${beacons.length} event(s) anyway:\n  ` +
+        beacons.map((beacon) => JSON.stringify(beacon.postData)).join('\n  '),
+    );
+  }
   if (pass.pageErrors.length) {
     throw new Red(
       `a blocked chunk should be handled, not thrown:\n  ${pass.pageErrors.join('\n  ')}`,
@@ -705,6 +899,7 @@ async function main() {
   }
 
   const expected = await expectedFields(envelopeFields);
+  const events = await collectorEvents();
 
   const held = { server: null, chrome: null, cdp: null, targets: [] };
   try {
@@ -719,8 +914,8 @@ async function main() {
     const cdp = await Cdp.connect(webSocketDebuggerUrl);
     held.cdp = cdp;
 
-    const live = await visit(cdp, origin, held);
-    checkRoundTrip(live, envelopeFields, expected);
+    const live = await visit(cdp, origin, held, { repeat: true });
+    checkRoundTrip(live, origin, envelopeFields, expected, events);
 
     /* Block every chunk the interaction asked for, so the dynamic import cannot
        resolve however Vite chose to split it. Taking only the first request
@@ -738,10 +933,16 @@ async function main() {
       : `the page was still making requests when the ` +
         `${EGRESS_SETTLE_MAX_MS / 1000} s settle cap expired`;
 
+    const beacons = beaconsIn(live.requests);
+
     console.log(
-      `demo smoke: PASS — round-tripped a typed sentence on the homepage under the shipped CSP, ` +
-        `against ${surface.origin} @${surface.version}.\n` +
-        `  egress:         ${live.requests.length} request(s) observed (${watched}), none carrying it\n` +
+      `demo smoke: PASS — round-tripped two typed sentences on the homepage under the shipped ` +
+        `CSP, against ${surface.origin} @${surface.version}.\n` +
+        `  egress:         ${live.requests.length} request(s) observed (${watched}), all on this ` +
+        `origin, none carrying either sentence\n` +
+        `  measured:       ${beacons.length} beacon(s) to ${BEACON_PATH} — ` +
+        `${beacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ') || 'none'}, ` +
+        `one for two sentences\n` +
         `  metadata:       ${live.dom.fields.length} fields, exactly the set an envelope built ` +
         `in this process yields less the withheld ones (${live.dom.fields.join(', ')})\n` +
         `  before a touch: ${kb(live.bytesBefore)} of script over ${live.before.length} file(s), ` +

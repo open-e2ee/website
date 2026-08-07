@@ -1,7 +1,7 @@
 /*
- * Cookieless measurement: nine events, no identifiers, nothing stored on or
- * read from the device. Events come from each link's own href, so pages carry
- * no tracking attributes. Declared in /legal/privacy, enforced in
+ * Cookieless measurement: ten events, no identifiers, nothing stored on or
+ * read from the device. Most events come from each link's own href, so pages
+ * carry no tracking attributes. Declared in /legal/privacy, enforced in
  * src/workers/site.ts.
  */
 (() => {
@@ -14,6 +14,16 @@
       fetch('/e', { method: 'POST', body: body, keepalive: true });
     } catch (e) {}
   };
+
+  /*
+   * The one thing this file publishes, for an event no link can express: the
+   * homepage demo's run is a button inside that demo's own module, and giving
+   * the handler below its selectors would spread the demo across two files.
+   * A caller passes a name and at most a label, never a body — the path and
+   * the wire format stay here, and the collector drops a name or a label it
+   * does not already know.
+   */
+  window.oeMeasure = send;
 
   var view = { '/security': 'security_view', '/pricing': 'pricing_view' };
   if (view[path]) send(view[path]);

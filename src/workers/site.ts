@@ -12,8 +12,9 @@
  * attacker can shape, so nothing here is echoed back or stored unvalidated.
  */
 
-/** The nine events the site measures. Anything else is dropped. */
+/** The ten events the site measures. Anything else is dropped. */
 const EVENTS = new Set([
+  'demo_run',
   'quickstart_open',
   'runtime_select',
   'install_copy',

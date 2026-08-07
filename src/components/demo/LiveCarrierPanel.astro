@@ -319,6 +319,30 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
       claim.hidden = false;
     };
 
+    /*
+     * One event, the first time a sentence completes a round trip on this page,
+     * carrying nothing about it — not the sentence, not its length, not the
+     * byte counts or the milliseconds the panel just printed beside it. The
+     * beacon reads `demo_run /` and there is no third field for it to read.
+     *
+     * Once per page rather than once per send. The question this exists to
+     * answer (plan D5) is whether readers who ran the demo go on to enter and
+     * finish the quickstart, and its denominator is readers; counting sends
+     * would measure how much someone enjoyed pressing the button. Nothing here
+     * identifies a page view, so this is the closest a cookieless model gets to
+     * "a reader ran it", and it is deliberately the conservative direction.
+     *
+     * `public/measure.js` owns the beacon; this owns the moment. The site's
+     * delegated click handler reads links, and this is a button in a module it
+     * knows nothing about.
+     */
+    let reportedRun = false;
+    const reportRun = () => {
+      if (reportedRun) return;
+      reportedRun = true;
+      window.oeMeasure?.('demo_run');
+    };
+
     const submit = async () => {
       const text = input.value.trim();
       if (text.length === 0) {
@@ -335,6 +359,7 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
         const ready = await boot();
         const exchange = await ready.send(text);
         render(exchange);
+        reportRun();
         setStatus('Sent. Type another and press it again.');
       } catch {
         /* `fallBack` has already run for both failure shapes that reach here. */

@@ -1,7 +1,7 @@
 /*
  * The privacy notice makes specific promises about what the marketing site
- * measures. These tests hold the code to them: that the nine events the client
- * can send are the nine the server accepts and the nine the notice describes,
+ * measures. These tests hold the code to them: that the ten events the client
+ * can send are the ten the server accepts and the ten the notice describes,
  * and that nothing in the path identifies a visitor.
  *
  * The collector itself is exercised through its exported `collect`, with a
@@ -9,6 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
+import { gzipSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { collect } from '../src/workers/site.ts';
@@ -16,7 +17,17 @@ import { collect } from '../src/workers/site.ts';
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
 
+/*
+ * Every file on the site that names an event. `measure.js` covers everything a
+ * link or a copy can express; a page script with an event of its own calls the
+ * `oeMeasure` that file publishes, and the demo panel is the first to do it.
+ * A sender that is not on this list is invisible to the set check below, so a
+ * new one belongs here in the same commit that writes it.
+ */
+const SENDERS = ['../public/measure.js', '../src/components/demo/LiveCarrierPanel.astro'];
+
 const EVENTS = [
+  'demo_run',
   'quickstart_open',
   'runtime_select',
   'install_copy',
@@ -45,7 +56,7 @@ const beacon = (body) =>
     headers: { origin: 'https://open-e2ee.dev' },
   });
 
-test('records each of the nine events and nothing else', async () => {
+test('records each of the ten events and nothing else', async () => {
   for (const event of EVENTS) {
     const env = stubEnv();
     await collect(beacon(`${event} /pricing`), env);
@@ -150,24 +161,29 @@ test('sets nothing on the device and reads nothing from it', async () => {
   assert.doesNotMatch(script, /https?:\/\//);
 });
 
+/*
+ * Compressed, because that is what a reader downloads — Cloudflare serves this
+ * file gzipped and the budget is about their connection, not our disk. Counting
+ * raw bytes taxed the comments at the same rate as the code, in the one file
+ * whose comments are the documentation of a privacy claim; the budget is the
+ * same promise measured where it lands. For scale: 1,233 B compressed today,
+ * against a page that ships several hundred kilobytes of type.
+ */
 test('stays small enough to be beneath notice', async () => {
-  const script = await read('../public/measure.js');
-  assert.ok(
-    Buffer.byteLength(script) < 2048,
-    `measure.js is ${Buffer.byteLength(script)} bytes; marketing JS should stay negligible`,
-  );
+  const bytes = gzipSync(await read('../public/measure.js')).byteLength;
+  assert.ok(bytes < 1536, `measure.js is ${bytes} bytes gzipped; marketing JS should stay negligible`);
 });
 
 test('sends only the events the collector accepts', async () => {
-  const script = await read('../public/measure.js');
-  /* Event names reach `send` three ways — directly, through a ternary, and
-   * through the view lookup — so match on the shape of the name itself and
-   * check the set both ways round. */
-  const named = new Set(
-    [...script.matchAll(/'([a-z]+_[a-z]+)'/g)]
-      .map((match) => match[1])
-      .filter((name) => !name.startsWith('signal_')),
-  );
+  /* Event names reach a beacon several ways — directly, through a ternary,
+   * through the view lookup, and from a page script calling `oeMeasure` — so
+   * match on the shape of the name itself and check the set both ways round. */
+  const named = new Set();
+  for (const sender of SENDERS) {
+    for (const match of (await read(sender)).matchAll(/'([a-z]+_[a-z]+)'/g)) {
+      if (!match[1].startsWith('signal_')) named.add(match[1]);
+    }
+  }
 
   for (const event of named) {
     assert.ok(EVENTS.includes(event), `${event} is sent but the collector would drop it`);
@@ -175,6 +191,20 @@ test('sends only the events the collector accepts', async () => {
   for (const event of EVENTS) {
     assert.ok(named.has(event), `${event} is accepted but nothing on the site sends it`);
   }
+});
+
+/*
+ * The demo is the only measured thing on the site that has a reader's own words
+ * in front of it, so the shape of its call is worth pinning rather than trusting
+ * to review. One argument means one dimension — the event name — and no room
+ * for the sentence, its length, or any of the counts the panel prints beside it.
+ * `demo-smoke.mjs` proves the same thing from the other end, by reading the
+ * beacon off the wire in a browser.
+ */
+test('measures the demo without measuring what was typed into it', async () => {
+  const panel = await read('../src/components/demo/LiveCarrierPanel.astro');
+  assert.match(panel, /window\.oeMeasure\?\.\('demo_run'\)/);
+  assert.equal([...panel.matchAll(/oeMeasure/g)].length, 1, 'the panel measures at one place');
 });
 
 test('describes the measurement in the privacy notice it points at', async () => {
@@ -185,7 +215,11 @@ test('describes the measurement in the privacy notice it points at', async () =>
 
   assert.match(script, /\/legal\/privacy/);
   assert.match(privacy, /sets no cookie/i);
-  assert.match(privacy, /nine things/i);
+  assert.match(privacy, /ten things/i);
+  /* The demo's own paragraph, which is the only measurement claim on the site
+   * made in front of something a reader typed. */
+  assert.match(privacy, /neither the sentence nor anything derived from it/i);
+  assert.match(privacy, /one is sent per page, not per sentence/i);
   assert.match(privacy, /IP address is not recorded/i);
   assert.match(privacy, /no third-party analytics service receives it/i);
   /* The old text claimed the site measured nothing at all. */
