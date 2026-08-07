@@ -337,7 +337,18 @@ function bareIdentifier(span) {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : null;
 }
 
-/* A file under the public repository's `docs/`, and the heading it aims at. */
+/*
+ * A hand-written file directly under the public repository's `docs/`, and the
+ * heading it aims at.
+ *
+ * The name may not contain a slash, which is load-bearing rather than tidy:
+ * `docs/api/**` is generated reference that the export publishes to the public
+ * repository (`publicDocRoots`) and does **not** put in the npm package, so the
+ * package cannot answer whether one of those files exists and this must not
+ * guess. Excluding the slash is what keeps those links out of scope. Widen this
+ * and every `docs/api/` link on the site fails a check it should never have
+ * been given.
+ */
 const PUBLIC_DOC_LINK =
   /https:\/\/github\.com\/open-e2ee\/signal-protocol-js\/blob\/[^/"]+\/docs\/([A-Za-z0-9._-]+\.md)(?:#([A-Za-z0-9._-]+))?/g;
 
@@ -418,9 +429,15 @@ if (!surface) {
    * allowlist carries that file. `DEVICE_LIFECYCLE.md` is in the internal
    * repository and not on the allowlist, so `/demo`'s link to it was a 404 on
    * production from the day it shipped — reachable to whoever wrote it and to
-   * nobody else. The installed package ships exactly the exported docs, so
-   * this needs no network and cannot flake: a file that is not in there is a
-   * URL that 404s.
+   * nobody else.
+   *
+   * The installed package stands in for the public repository here, which
+   * needs no network and so cannot flake. What makes it a fair stand-in is
+   * that the export ships the same twelve top-level documents to both — one
+   * list in the release policy feeds the repository and the package. That is
+   * a property of the policy rather than a law: if the two ever diverge, this
+   * fails a link that does resolve, and the message names the file so the
+   * cause is visible from the failure alone.
    */
   const docsDir = join(surface.root, 'docs');
   const docs = existsSync(docsDir) ? new Set(await readdir(docsDir)) : null;
