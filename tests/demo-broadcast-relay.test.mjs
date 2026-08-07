@@ -50,6 +50,14 @@ import {
  * A port never hears its own post, matching `BroadcastChannel`. A fake that
  * echoed would let the host answer its own calls and never prove the guest's
  * side ran at all.
+ *
+ * **Do not `.unref()` this timer, or the poll in `waitForDelivery`.** These two
+ * are the only things keeping the loop alive between a post and its delivery.
+ * Unref'd, Node 22 drains the loop mid-test and the runner cancels all six —
+ * while reporting `fail 0`, so the suite looks green and the file has not run.
+ * That shipped on this branch for three heads: CI pins 22, this machine
+ * defaults to 26, and 26 happens to keep the loop alive long enough. Under 22
+ * the unref'd version is `pass 0, fail 0, cancelled 6`.
  */
 function channelHub() {
   const ports = new Set();
@@ -65,7 +73,7 @@ function channelHub() {
             if (other === port) continue;
             setTimeout(() => {
               for (const listener of other.listeners) listener({ data: message });
-            }, 0).unref?.();
+            }, 0);
           }
         },
         addEventListener(type, listener) {
@@ -151,7 +159,7 @@ async function twoTabs() {
 async function waitForDelivery(received, ms = 8000) {
   const deadline = Date.now() + ms;
   while (received.length === 0 && Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 20).unref?.());
+    await new Promise((resolve) => setTimeout(resolve, 20));
   }
   assert.ok(
     received.length > 0,
