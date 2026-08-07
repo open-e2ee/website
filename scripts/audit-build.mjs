@@ -1,8 +1,9 @@
 /*
  * Post-build audit. Things a marketing site can silently get wrong and neither
  * `astro check` nor the test suite would notice: shipping a claim the verbal
- * identity forbids, shipping an internal link that 404s, and printing an
- * import or a symbol name the SDK does not actually export.
+ * identity forbids, shipping an internal link that 404s, linking to a doc the
+ * public repository does not export, and printing an import or a symbol name
+ * the SDK does not actually export.
  *
  * Run against dist/ after `npm run build`.
  */
@@ -147,8 +148,62 @@ function textOf(html) {
     .replace(/\s+/g, ' ');
 }
 
+/*
+ * The text a built script can put on a page, near enough for these patterns.
+ *
+ * Escapes are decoded and whitespace collapsed for the same reason `textOf`
+ * collapses it: a sentence the bundler split across an escape or a newline is
+ * still one sentence by the time a reader has it.
+ */
+function scriptText(js) {
+  return js
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/\\[nrt]/g, ' ')
+    .replace(/\\(["'`\\])/g, '$1')
+    .replace(/\s+/g, ' ');
+}
+
 const files = await filesWith(DIST, '.html');
 const problems = [];
+
+/*
+ * Everything a reader can be shown, which is not the same as everything in the
+ * HTML.
+ *
+ * `/demo` writes its prose at runtime: every sentence `src/lib/demo/render.ts`
+ * produces ships as a string inside `dist/_astro/render.*.js` and reaches the
+ * page only once the scenario has run. So the scans below, run over `.html`
+ * alone, could not see the largest body of copy on the site — and `textOf`
+ * strips `<script>` before matching, so they could not see inline script text
+ * either. ld0-verify demonstrated the gap rather than argued it: two of this
+ * file's own TERMINOLOGY patterns, planted in the shipped quotation paragraph,
+ * built and passed this audit.
+ *
+ * So the prose scans take the built scripts too. Scanning them whole, rather
+ * than picking string literals out of them, is deliberate: a literal extractor
+ * that loses sync on minified output fails by going quiet, and a checker that
+ * goes quiet is the thing being fixed here. The cost is the reverse risk — a
+ * banned phrase could match a minified identifier and fail a build over text no
+ * reader sees. Measured rather than assumed: across all 54 built scripts,
+ * 2.05 MB including the whole SDK bundle and its crypto dependencies, these
+ * patterns match nothing today.
+ *
+ * Two limits worth knowing. A phrase the bundler split across a concatenation
+ * or a template hole (`"…the Signal " + name`) is invisible to any static scan
+ * of the output, here and in the HTML pass alike. And AUDIT/FIPS want their
+ * qualifier on the same *page*, which does not map onto a chunk: a scenario
+ * that ever needs to say "audited" has to carry "not yet audited" in the same
+ * chunk, which is where the sentence belongs anyway.
+ */
+const scripts = await filesWith(DIST, '.js');
+const prose = [
+  ...(await Promise.all(
+    files.map(async (file) => [relative(DIST, file), textOf(await readFile(file, 'utf8'))]),
+  )),
+  ...(await Promise.all(
+    scripts.map(async (file) => [relative(DIST, file), scriptText(await readFile(file, 'utf8'))]),
+  )),
+];
 
 /* Every href a page can reach, so a typo in a nav link fails the build. */
 const pages = new Set();
@@ -157,11 +212,7 @@ for (const file of files) {
   pages.add(rel.endsWith('/') && rel !== '/' ? rel.slice(0, -1) : rel);
 }
 
-for (const file of files) {
-  const rel = relative(DIST, file);
-  const html = await readFile(file, 'utf8');
-  const text = textOf(html);
-
+for (const [rel, text] of prose) {
   for (const pattern of BANNED) {
     const hit = text.match(pattern);
     if (hit) problems.push(`${rel}: banned claim ${pattern} — "${hit[0]}"`);
@@ -179,6 +230,12 @@ for (const file of files) {
   if (FIPS_MENTION.test(text.replace(FIPS_PUBLICATION, ' ')) && !FIPS_NEGATION.test(text)) {
     problems.push(`${rel}: mentions FIPS without stating that the SDK is not FIPS 140-validated`);
   }
+}
+
+/* Links are a property of the markup, so this pass stays on the pages. */
+for (const file of files) {
+  const rel = relative(DIST, file);
+  const html = await readFile(file, 'utf8');
 
   for (const [, href] of html.matchAll(/href="([^"]+)"/g)) {
     if (!href.startsWith('/') || href.startsWith('//')) continue;
@@ -336,6 +393,48 @@ function bareIdentifier(span) {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : null;
 }
 
+/*
+ * A hand-written document in the public repository, and the heading it aims at.
+ *
+ * Two shapes are in scope, because the site links both: a file one level under
+ * `docs/`, and a file at the repository root. The root-level set —
+ * `ARCHITECTURE.md`, `SECURITY.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`,
+ * `ADAPTERS.md` — was outside this pattern until now, so nine links on the site
+ * were exempt from the check written to catch exactly their failure mode. They
+ * all resolve today; nothing was broken, and nothing was watching either.
+ *
+ * Anything deeper than one segment stays out of scope, which is load-bearing
+ * rather than tidy. `docs/api/**` is generated reference that the export
+ * publishes to the public repository (`publicDocRoots`) and does **not** put in
+ * the npm package, so the package cannot answer whether one of those files
+ * exists and this must not guess. The site has no `docs/api/` link today; the
+ * exclusion is here so that the first one does not fail a check that was never
+ * able to judge it.
+ */
+const PUBLIC_DOC_LINK =
+  /https:\/\/github\.com\/open-e2ee\/signal-protocol-js\/blob\/[^/"]+\/([A-Za-z0-9._/-]+)(?:#([A-Za-z0-9._-]+))?/g;
+
+/*
+ * The interface whose members are the SDK's whole hook surface, and the name
+ * of the list `/demo` prints and calls exactly that surface.
+ *
+ * The page finds it by printing the list, so the check goes looking for the
+ * list rather than for a page: whichever page shows `WATCHED_HOOKS` is the one
+ * making the claim.
+ */
+const HOOKS_INTERFACE = 'SignalProtocolClientHooks';
+const WATCHED_HOOKS = 'WATCHED_HOOKS';
+
+/* GitHub's heading-to-fragment rule: case folded, punctuation dropped, spaces
+ * hyphenated. It also numbers repeated headings `-1`, `-2`; ours are unique,
+ * and a link to a repeated one fails here loudly rather than silently. */
+const slug = (heading) =>
+  heading
+    .toLowerCase()
+    .replace(/[^\w\- ]+/g, '')
+    .trim()
+    .replace(/ +/g, '-');
+
 const surface = await readSdkSurface();
 if (!surface) {
   problems.push(
@@ -397,6 +496,103 @@ if (!surface) {
       );
     }
   }
+
+  /*
+   * A link into the public repository's `docs/` resolves only if the export
+   * allowlist carries that file. `DEVICE_LIFECYCLE.md` is in the internal
+   * repository and not on the allowlist, so `/demo`'s link to it was a 404 on
+   * production from the day it shipped — reachable to whoever wrote it and to
+   * nobody else.
+   *
+   * The installed package stands in for the public repository here, which
+   * needs no network and so cannot flake. What makes it a fair stand-in is
+   * that the export ships the same twelve top-level documents to both — one
+   * list in the release policy feeds the repository and the package. That is
+   * a property of the policy rather than a law: if the two ever diverge, this
+   * fails a link that does resolve, and the message names the file so the
+   * cause is visible from the failure alone.
+   */
+  const docsDir = join(surface.root, 'docs');
+  const docs = existsSync(docsDir) ? new Set(await readdir(docsDir)) : null;
+  const anchors = new Map();
+  const rootFiles = new Set(
+    (await readdir(surface.root, { withFileTypes: true }))
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name),
+  );
+
+  for (const file of files) {
+    const rel = relative(DIST, file);
+    const html = await readFile(file, 'utf8');
+    for (const [, path, anchor] of html.matchAll(PUBLIC_DOC_LINK)) {
+      const segments = path.split('/');
+      const underDocs = segments.length === 2 && segments[0] === 'docs';
+      /* Out of scope rather than passing: see PUBLIC_DOC_LINK. */
+      if (segments.length > 1 && !underDocs) continue;
+      if (underDocs && !docs) {
+        problems.push(
+          `${rel}: cannot verify the link to ${path} — the ${surface.origin} copy of ${SDK_PACKAGE} ships no docs directory`,
+        );
+        continue;
+      }
+      const published = underDocs ? docs : rootFiles;
+      if (!published.has(segments.at(-1))) {
+        problems.push(
+          `${rel}: links to ${path} in the public repository, which does not export that file — the URL is a 404. ` +
+            `Exported ${underDocs ? 'under docs/' : 'at the root'}: ${[...published].sort().join(', ')}`,
+        );
+        continue;
+      }
+      if (!anchor) continue;
+      if (!anchors.has(path)) {
+        const markdown = await readFile(join(surface.root, path), 'utf8');
+        anchors.set(
+          path,
+          new Set([...markdown.matchAll(/^#{1,6} +(.+?)\s*$/gm)].map(([, head]) => slug(head))),
+        );
+      }
+      if (!anchors.get(path).has(anchor)) {
+        problems.push(`${rel}: ${path} has no heading that GitHub would number #${anchor}`);
+      }
+    }
+  }
+
+  /*
+   * `/demo` prints a hand-written list of hook names and says of it, in as many
+   * words, that it is every hook the SDK offers. It has to be hand-written —
+   * the page shows it as code a reader could have written themselves — so only
+   * a check like this holds it equal to the SDK's hook surface.
+   *
+   * The list carries a type-level exhaustiveness guard too, and that one is not
+   * enough on its own. It is checked against the SDK the site type-checks
+   * against; this is checked against the copy the site was built against, which
+   * is the copy the shipped sentence is a claim about. The annotation that used
+   * to stand where that guard is now caught nothing at all: `HookName[]` widens,
+   * so a list short of a hook type-checked happily.
+   *
+   * One direction only. A hook the SDK gained and the list has not is what this
+   * catches, and it is the direction staleness runs in. A hook the SDK *lost*
+   * can still be found elsewhere on a page this size, so it is left to the
+   * exhaustiveness guard, which sees the list itself rather than the page.
+   */
+  const hooks = surface.members.get(HOOKS_INTERFACE);
+  if (!hooks || hooks.size === 0) {
+    problems.push(
+      `cannot verify the hook list: the ${surface.origin} copy of ${SDK_PACKAGE} declares no ${HOOKS_INTERFACE} members`,
+    );
+  } else {
+    for (const file of files) {
+      const html = await readFile(file, 'utf8');
+      if (!html.includes(WATCHED_HOOKS)) continue;
+      const missing = [...hooks].filter((hook) => !html.includes(hook));
+      if (missing.length > 0) {
+        problems.push(
+          `${relative(DIST, file)}: prints ${WATCHED_HOOKS} as every hook the SDK offers, but names ` +
+            `${hooks.size - missing.length} of the ${hooks.size} in ${HOOKS_INTERFACE} — missing ${missing.join(', ')}`,
+        );
+      }
+    }
+  }
 }
 
 /* Social cards are produced in the design repo on their own schedule, so a
@@ -427,6 +623,6 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `Build audit passed: ${files.length} pages, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts, every preloaded font loaded by a stylesheet, ` +
-    `every code identifier found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
+  `Build audit passed: ${files.length} pages and ${scripts.length} scripts, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts, every preloaded font loaded by a stylesheet, ` +
+    `every code identifier, every linked public doc, and every ${HOOKS_INTERFACE} member found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
 );
