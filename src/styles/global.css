@@ -1559,6 +1559,16 @@ a:hover {
   display: none;
 }
 
+/* Sits above the recorded panel for a reader with scripts off, where the
+   fallback note cannot appear — nothing failed for them, so nothing writes it. */
+.live-carrier-noscript {
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+  margin-block-end: var(--oe-space-3);
+}
+
 /* ------------------------------------------------------------ diagrams --- */
 
 /*

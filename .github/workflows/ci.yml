@@ -21,6 +21,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+
+      # The node suite, as its own step. It already ran here before this line
+      # existed — `deploy:redirect:dry-run` starts with `npm test`, so every
+      # pull request was running all of it — but that made the site's whole
+      # test suite a side effect of a Wrangler dry run. Dropping the redirect
+      # check, or trimming that `&&`, would have taken the suite with it and
+      # left a green pipeline. It is the fastest check in the workflow, so
+      # running it first also fails the job before anything spends five minutes
+      # building.
+      - run: npm test
+
       - run: npm run build
 
       # The homepage demo, driven in a real browser against the build above.

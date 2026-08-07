@@ -49,6 +49,20 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
     what the smoke harness asserts is still on screen when it blocks the chunk.
   */}
   <div class="live-carrier-recorded" data-demo-recorded>
+    {/*
+      The page's lead offers the reader a sentence to type. With scripts off
+      there is no field to type it into, and the fallback note above stays
+      correctly empty, because from where that reader sits nothing failed —
+      so nothing else on the page would ever say why the offer cannot be
+      taken up. This is the one line that only they see, and it is the only
+      honest place to put it: a script cannot write it.
+    */}
+    <noscript>
+      <p class="carrier-cipher-note live-carrier-noscript">
+        The panel below is a recording. The live version needs JavaScript — it runs the SDK
+        in your browser, so with scripts off there is nothing to run it with.
+      </p>
+    </noscript>
     <CarrierPanel />
     {/*
       Empty, and server-rendered empty on purpose. It is filled only when the
@@ -230,7 +244,8 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
      * Scrolling the panel into view is deliberately not a signal. An
      * IntersectionObserver here would warm the session before the first
      * keystroke, which reads well until you notice it bills every reader who
-     * scrolls past for 110 KB gzip of SDK they never asked for — the exact
+     * scrolls past for the whole import — 30 chunks, 679 KB gzip measured off
+     * this build, ~713 KB on the wire — of SDK they never asked for, the exact
      * cost invariant 7 exists to keep off people who do not use the demo. A
      * reader who clicks send without focusing first is covered anyway:
      * `submit` awaits `boot()` rather than assuming a session exists.

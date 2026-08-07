@@ -46,8 +46,10 @@
  */
 
 import { existsSync, rmSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { startDemoSession } from '../src/lib/demo/driver.ts';
 import {
   Cdp,
   Infra,
@@ -102,12 +104,13 @@ const VIEWPORT = { width: 1280, height: 800 };
 const PRE_INTERACTION_CEILING = 20 * 1024;
 
 /*
- * The live envelope declares fourteen fields. The panel prints every one that
- * is set except the two it holds back, which on 2026-08-06 was ten: `urgent`
- * and `ephemeral` are optional and the in-memory relay leaves them unset. So
- * this floor is the count observed rather than the declared total, and it is
- * here to catch a pane that renders one row, or none, and still looks
- * populated.
+ * A floor on the expected set, not on what the page printed.
+ *
+ * The expectation itself is computed per run (see `expectedFields`), so this
+ * number is only here to catch the expectation collapsing: an `Envelope` that
+ * suddenly declares two fields would make an equality check trivially
+ * satisfiable, and a harness that passes because it expected nothing is worse
+ * than no harness. Ten is what the installed alpha.10 produces.
  */
 const MIN_DERIVED_FIELDS = 10;
 
@@ -487,7 +490,71 @@ async function visit(cdp, origin, held, { blocked = [] } = {}) {
 
 // ----------------------------------------------------------------- the verdict
 
-function checkRoundTrip(pass, envelopeFields) {
+/*
+ * What the metadata pane must print, computed rather than counted.
+ *
+ * A count is the wrong assertion, and this harness shipped with one. Ten rows
+ * of the right names pass `>= 10` whether the panel iterated the envelope or
+ * carried a list someone typed — which is the drift the recorded panel already
+ * suffered, and the thing invariant 4 exists to stop. Adversarial review proved
+ * the hole by hand-typing the current ten field names and watching the run stay
+ * green.
+ *
+ * So the expectation is derived the same way the panel's rows are supposed to
+ * be: run the real driver here in Node, against the same installed package the
+ * browser loads, and take the keys of the envelope it produces. Subtract the
+ * fields the panel declares it holds back, read out of the panel source rather
+ * than retyped here, and what remains is the exact set the pane must show —
+ * no more, no less.
+ *
+ * That equality does not make a hand-typed list fail *today*: a list that
+ * happens to be correct right now prints the correct names. What it does is
+ * turn the next `Envelope` change into a red run instead of a silent
+ * divergence, which is the failure this guard is for. The list has to be caught
+ * at the source, and `tests/demo-panel.test.mjs` is where that happens.
+ */
+async function expectedFields(envelopeFields) {
+  const panelSource = await readFile(
+    new URL('../src/components/demo/LiveCarrierPanel.astro', import.meta.url),
+    'utf8',
+  );
+  const declared = panelSource.match(/HELD_BACK = new Set\(\[([^\]]*)\]\)/s)?.[1];
+  if (declared === undefined) {
+    throw new Infra(
+      'could not read HELD_BACK out of LiveCarrierPanel.astro, so this run cannot tell a ' +
+        'deliberately withheld field from a missing one',
+    );
+  }
+  const heldBack = new Set([...declared.matchAll(/'([^']+)'/g)].map((match) => match[1]));
+
+  let envelope;
+  try {
+    const session = await startDemoSession();
+    ({ envelope } = await session.send('probe for the expected field set'));
+  } catch (cause) {
+    throw new Infra(`the driver could not produce an envelope to expect: ${cause}`);
+  }
+
+  const expected = new Set(Object.keys(envelope).filter((field) => !heldBack.has(field)));
+  for (const field of heldBack) {
+    if (!envelopeFields.has(field)) {
+      throw new Infra(
+        `the panel withholds "${field}", which the installed SDK does not declare on Envelope — ` +
+          `the exclusion is stale and this run would expect the wrong set`,
+      );
+    }
+  }
+  if (expected.size < MIN_DERIVED_FIELDS) {
+    throw new Infra(
+      `a live envelope yielded only ${expected.size} printable field(s) ` +
+        `(${[...expected].join(', ') || 'none'}), fewer than the ${MIN_DERIVED_FIELDS} this SDK ` +
+        `should produce — the expectation has collapsed, so checking against it proves nothing`,
+    );
+  }
+  return expected;
+}
+
+function checkRoundTrip(pass, envelopeFields, expected) {
   if (pass.beforeInteraction.claimVisible) {
     throw new Red(
       'the page claimed "that ran in this tab" before anything had run in this tab',
@@ -547,10 +614,29 @@ function checkRoundTrip(pass, envelopeFields) {
         `declare on Envelope — those rows cannot have come from the live object`,
     );
   }
-  if (pass.dom.fields.length < MIN_DERIVED_FIELDS) {
+
+  /* And it has to be *every* one of them. `expected` is the key set of an
+     envelope this process built from the same package, less what the panel says
+     it withholds, so a missing row is a field the pane stopped showing and an
+     extra row is one it shows without the envelope having it. Either is the
+     pane and the object disagreeing, which is the whole of invariant 4. */
+  const printed = new Set(pass.dom.fields);
+  const missing = [...expected].filter((field) => !printed.has(field));
+  const extra = [...printed].filter((field) => !expected.has(field));
+  if (missing.length || extra.length) {
     throw new Red(
-      `the metadata pane derived ${pass.dom.fields.length} fields from the live envelope, ` +
-        `fewer than the ${MIN_DERIVED_FIELDS} expected: ${pass.dom.fields.join(', ')}`,
+      `the metadata pane and the live envelope disagree about which fields exist:\n` +
+        (missing.length ? `  never printed: ${missing.join(', ')}\n` : '') +
+        (extra.length ? `  printed anyway: ${extra.join(', ')}\n` : '') +
+        `  expected exactly: ${[...expected].join(', ')}\n` +
+        `  the pane showed:  ${pass.dom.fields.join(', ') || '(nothing)'}\n` +
+        `A pane built by iterating the envelope cannot disagree with it. This one did, so it ` +
+        `is not being built that way.`,
+    );
+  }
+  if (pass.dom.fields.length !== printed.size) {
+    throw new Red(
+      `the metadata pane printed the same field twice: ${pass.dom.fields.join(', ')}`,
     );
   }
   const empty = pass.dom.fields.filter((_, index) => !pass.dom.values[index]?.trim());
@@ -618,6 +704,8 @@ async function main() {
     );
   }
 
+  const expected = await expectedFields(envelopeFields);
+
   const held = { server: null, chrome: null, cdp: null, targets: [] };
   try {
     const { server, origin } = await serve(DIST, productionHeaders());
@@ -632,7 +720,7 @@ async function main() {
     held.cdp = cdp;
 
     const live = await visit(cdp, origin, held);
-    checkRoundTrip(live, envelopeFields);
+    checkRoundTrip(live, envelopeFields, expected);
 
     /* Block every chunk the interaction asked for, so the dynamic import cannot
        resolve however Vite chose to split it. Taking only the first request
@@ -654,8 +742,8 @@ async function main() {
       `demo smoke: PASS — round-tripped a typed sentence on the homepage under the shipped CSP, ` +
         `against ${surface.origin} @${surface.version}.\n` +
         `  egress:         ${live.requests.length} request(s) observed (${watched}), none carrying it\n` +
-        `  metadata:       ${live.dom.fields.length} fields derived from the live envelope ` +
-        `(${live.dom.fields.join(', ')})\n` +
+        `  metadata:       ${live.dom.fields.length} fields, exactly the set an envelope built ` +
+        `in this process yields less the withheld ones (${live.dom.fields.join(', ')})\n` +
         `  before a touch: ${kb(live.bytesBefore)} of script over ${live.before.length} file(s), ` +
         `under the ${kb(PRE_INTERACTION_CEILING)} tripwire (uncompressed — this server does ` +
         `not gzip)\n` +
