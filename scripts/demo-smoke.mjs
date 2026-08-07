@@ -66,6 +66,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
+import { runFlipAByte } from '../src/lib/demo/scenarios/flip-a-byte.ts';
 import { EVENTS } from '../src/workers/site.ts';
 import {
   Cdp,
@@ -95,6 +96,31 @@ const META = '[data-demo-meta]';
 const CLAIM = '[data-demo-claim]';
 const FALLBACK = '[data-demo-fallback-note]';
 
+/*
+ * `/demo`'s contract, on the same terms. The scenario is addressed by its slug
+ * rather than by position: a second scenario landing on the page must not
+ * silently move what this drives.
+ */
+const SCENARIO_SLUG = 'flip-a-byte';
+const SCENARIO = `[data-scenario="${SCENARIO_SLUG}"]`;
+const SCENARIO_RUN = '[data-scenario-run]';
+const SCENARIO_STATUS = '[data-scenario-status]';
+const SCENARIO_OUTPUT = '[data-scenario-output]';
+const SCENARIO_STEPS = '[data-scenario-steps]';
+const SCENARIO_NOTS = '[data-scenario-nots]';
+const SCENARIO_LOG_LINE = '[data-scenario-log-line]';
+
+/* The beacon `/demo` is allowed to send, in full. Same reasoning as
+   `DEMO_RUN_BODY`: the body is fixed before the browser starts, so a dimension
+   derived from the run — a timing, a byte count, an error code — is a failure
+   rather than something to be searched for. */
+const SCENARIO_BEACON_BODY = `scenario_opened /demo ${SCENARIO_SLUG}`;
+
+/* Two boots of two devices, a MAC failure, a session archive and a resend, all
+   in one tab. It ran in ~80 ms where this was written; the bound is for a
+   machine under load, not for the protocol. */
+const SCENARIO_TIMEOUT_MS = 60000;
+
 const NONCE = randomUUID().slice(0, 8);
 const PROBE = `Smoke probe ${NONCE}: the staging key rotates at 09:00 UTC.`;
 /* A second sentence through a session that is already warm. The repeat send is
@@ -112,11 +138,12 @@ const LOAD_TIMEOUT_MS = 30000;
 const VIEWPORT = { width: 1280, height: 800 };
 
 /*
- * Every script the homepage fetches before the reader touches the demo, which
- * on 2026-08-06 was 14.5 KB over five files — the theme and measurement
- * scripts, two other page scripts, and the demo's own loader chunk. The
- * interaction then pulls 1760.8 KB, so the tripwire sits two orders of
- * magnitude below any build that has the SDK on its initial path.
+ * Every script a page fetches before the reader asks for the SDK, which on
+ * 2026-08-07 was 15.7 KB over six files on the homepage and 14.4 KB over five
+ * on `/demo` — the theme and measurement scripts, each page's own script, and
+ * a shared preload helper Vite splits out because two pages now import
+ * dynamically. The interaction then pulls 1760.8 KB, so the tripwire sits two
+ * orders of magnitude below any build that has the SDK on its initial path.
  *
  * These are wire bytes without compression: `chrome-harness.mjs` serves the
  * build as it is on disk, while Cloudflare compresses. So this is not
@@ -185,16 +212,44 @@ function egressForms(text) {
   ];
 }
 
-function findProbe(haystack) {
+/** Which spelling of any of `texts` this string carries, if it carries one. */
+function findAny(haystack, texts) {
   if (!haystack) return null;
-  for (const text of [PROBE, REPEAT_PROBE]) {
+  for (const text of texts) {
     for (const [label, form] of egressForms(text)) {
       if (haystack.includes(form)) return label;
     }
   }
-  /* The nonce alone is enough: nothing else on the site contains it. */
-  if (haystack.includes(NONCE)) return 'nonce fragment';
   return null;
+}
+
+function findProbe(haystack) {
+  const found = findAny(haystack, [PROBE, REPEAT_PROBE]);
+  if (found) return found;
+  /* The nonce alone is enough: nothing else on the site contains it. */
+  if (haystack?.includes(NONCE)) return 'nonce fragment';
+  return null;
+}
+
+/**
+ * Every request `find` recognises, named by where in it the text was and in
+ * what form. The URL, the body and the headers are all searched: a page that
+ * put the plaintext in a query string or a custom header has leaked it just as
+ * thoroughly as one that posted it.
+ */
+function leaks(requests, find) {
+  const found = [];
+  for (const request of requests) {
+    for (const [field, value] of [
+      ['url', request.url],
+      ['body', request.postData],
+      ['headers', request.headers],
+    ]) {
+      const how = find(value);
+      if (how) found.push(`${request.method} ${request.url} — ${how} in the ${field}`);
+    }
+  }
+  return found;
 }
 
 /** Every request the page made to the measurement endpoint. */
@@ -272,6 +327,33 @@ const SNAPSHOT = `(() => {
   };
 })()`;
 
+/*
+ * Everything `/demo` printed about the scenario it just ran.
+ *
+ * Read through the same data attributes the page renders, in one round trip.
+ * The rendered text is what a reader sees, so it is what the checks read: a
+ * harness that reached into a result object the page happened to expose would
+ * pass on a page that computed the right answer and printed something else.
+ */
+const SCENARIO_SNAPSHOT = `(() => {
+  const scenario = document.querySelector(${JSON.stringify(SCENARIO)});
+  const output = scenario?.querySelector(${JSON.stringify(SCENARIO_OUTPUT)});
+  const flat = (node) => (node?.textContent ?? '').replace(/\\s+/g, ' ').trim();
+  const list = (selector) =>
+    [...(output?.querySelectorAll(selector + ' li') ?? [])].map(flat);
+  return {
+    open: Boolean(scenario?.open),
+    status: flat(scenario?.querySelector(${JSON.stringify(SCENARIO_STATUS)})),
+    outputVisible: Boolean(output) && !output.hidden,
+    text: flat(output),
+    steps: list(${JSON.stringify(SCENARIO_STEPS)}),
+    nots: list(${JSON.stringify(SCENARIO_NOTS)}),
+    logLines: [...(output?.querySelectorAll(${JSON.stringify(SCENARIO_LOG_LINE)}) ?? [])].map(
+      (row) => ({ level: row.dataset.scenarioLogLine, text: flat(row) }),
+    ),
+  };
+})()`;
+
 // ---------------------------------------------------------------- the harness
 
 /*
@@ -314,13 +396,17 @@ async function teardown(held) {
 }
 
 /**
- * Load the homepage in a fresh tab, type the probe, press send, and report
- * everything the browser did.
+ * A fresh tab with every listener the checks read from already attached.
+ *
+ * Both pages need the same accounting — every request with its body, every
+ * script with its wire bytes and the moment it was asked for, CSP violations,
+ * uncaught errors — so that lives here. What a page is then driven to do with
+ * it is the caller's business, and the two callers do very different things.
  *
  * `blocked` is the list of URLs Chrome refuses before the page loads, which is
- * how the second pass makes the demo's chunks never arrive.
+ * how the homepage's second pass makes the demo's chunks never arrive.
  */
-async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
+async function openTab(cdp, held, { blocked = [] } = {}) {
   const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
   held.targets.push(targetId);
   const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
@@ -409,6 +495,36 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
     }
   }
 
+  /** Go to a URL and wait for its load event, or say which page never fired. */
+  async function navigate(url, what) {
+    const loaded = new Promise((resolve, reject) => {
+      const stop = cdp.on((m) => {
+        if (m.sessionId === sessionId && m.method === 'Page.loadEventFired') {
+          stop();
+          resolve();
+        }
+      });
+      setTimeout(() => {
+        stop();
+        reject(new Infra(`${what} did not fire load within ${LOAD_TIMEOUT_MS} ms`));
+      }, LOAD_TIMEOUT_MS);
+    });
+    await cdp.send('Page.navigate', { url }, sessionId);
+    await loaded;
+  }
+
+  /** Pull bodies the browser did not hand over inline, onto their own records. */
+  async function fillPostData() {
+    for (const { requestId, record } of postDataNeeded) {
+      try {
+        const { postData } = await cdp.send('Network.getRequestPostData', { requestId }, sessionId);
+        record.postData = postData;
+      } catch {}
+    }
+  }
+
+  /* A listener attached and then abandoned would go on filling arrays nobody
+     reads for the rest of the run, so setup failing has to detach it too. */
   try {
     for (const domain of ['Page', 'Runtime', 'Network', 'Log']) {
       await cdp.send(`${domain}.enable`, {}, sessionId);
@@ -421,21 +537,38 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
     if (blocked.length) {
       await cdp.send('Network.setBlockedURLs', { urls: blocked }, sessionId);
     }
+  } catch (error) {
+    off();
+    throw error;
+  }
 
-    const loaded = new Promise((resolve, reject) => {
-      const stop = cdp.on((m) => {
-        if (m.sessionId === sessionId && m.method === 'Page.loadEventFired') {
-          stop();
-          resolve();
-        }
-      });
-      setTimeout(() => {
-        stop();
-        reject(new Infra(`the homepage did not fire load within ${LOAD_TIMEOUT_MS} ms`));
-      }, LOAD_TIMEOUT_MS);
-    });
-    await cdp.send('Page.navigate', { url: `${origin}/` }, sessionId);
-    await loaded;
+  return {
+    sessionId,
+    requests,
+    scripts,
+    cspViolations,
+    pageErrors,
+    blockedRequests,
+    get lastRequestAt() {
+      return lastRequestAt;
+    },
+    quiet,
+    navigate,
+    fillPostData,
+    off,
+  };
+}
+
+/**
+ * Load the homepage in a fresh tab, type the probe, press send, and report
+ * everything the browser did.
+ */
+async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
+  const tab = await openTab(cdp, held, { blocked });
+  const { sessionId, requests, scripts, cspViolations, pageErrors, blockedRequests, quiet } = tab;
+
+  try {
+    await tab.navigate(`${origin}/`, 'the homepage');
 
     /* Serving the built site at all is the infrastructure check. If the
        homepage did not render, nothing below would mean anything. */
@@ -552,13 +685,7 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
     const wentQuiet = await quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS);
     const dom = await evaluate(cdp, sessionId, SNAPSHOT);
 
-    /* Pull bodies the browser did not hand over inline. */
-    for (const { requestId, record } of postDataNeeded) {
-      try {
-        const { postData } = await cdp.send('Network.getRequestPostData', { requestId }, sessionId);
-        record.postData = postData;
-      } catch {}
-    }
+    await tab.fillPostData();
 
     /* A script *requested* before the interaction was requested without one,
        whenever it happened to finish arriving. */
@@ -580,7 +707,126 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
       bytesAfter: after.reduce((sum, script) => sum + script.bytes, 0),
     };
   } finally {
-    off();
+    tab.off();
+  }
+}
+
+/**
+ * Open `/demo` at the scenario's own fragment, run it twice, and report both
+ * runs plus everything the browser did across them.
+ *
+ * Twice, because once cannot tell a live protocol failure from a page that
+ * prints one. Every fixed string in the output — the error code, the SDK's
+ * message, the two "did not happen" lines — is exactly what a hand-written page
+ * would print, and it would print it in 0 ms. What such a page cannot do is
+ * produce a different message id on the second press, because that id comes
+ * from a device pair booted for that run. So the checks require the fixed parts
+ * to match across both runs and the per-run parts to differ.
+ */
+async function visitScenario(cdp, origin, held) {
+  const tab = await openTab(cdp, held);
+  const { sessionId } = tab;
+
+  const read = () => evaluate(cdp, sessionId, SCENARIO_SNAPSHOT);
+
+  try {
+    /* The fragment, not the bare path: arriving at `/demo#flip-a-byte` is a
+       reader asking for this scenario by name, and opening it is what the page
+       promises to do about that. */
+    await tab.navigate(`${origin}/demo#${SCENARIO_SLUG}`, `/demo#${SCENARIO_SLUG}`);
+
+    const title = await evaluate(cdp, sessionId, 'document.title');
+    if (!title) throw new Infra('/demo rendered no title — the served build looks wrong');
+
+    if (!(await evaluate(cdp, sessionId, present(SCENARIO)))) {
+      throw new Red(
+        `no scenario on /demo: nothing matches ${SCENARIO}.\n` +
+          `  The page served and rendered (title: ${JSON.stringify(title)}), so the scenario is ` +
+          `absent rather than\n  unreachable.`,
+      );
+    }
+    for (const [selector, what] of [
+      [`${SCENARIO} ${SCENARIO_RUN}`, 'a control that runs it'],
+      [`${SCENARIO} ${SCENARIO_STATUS}`, 'a status line'],
+      [`${SCENARIO} ${SCENARIO_OUTPUT}`, 'a pane for what the SDK said'],
+    ]) {
+      if (!(await evaluate(cdp, sessionId, present(selector)))) {
+        throw new Red(`the scenario is on the page but exposes no ${what} (${selector})`);
+      }
+    }
+
+    const opened = await read();
+
+    await tab.quiet(IDLE_QUIET_MS, IDLE_MAX_MS);
+    const interactedAt = Date.now();
+
+    const runs = [];
+    for (const attempt of [1, 2]) {
+      const before = runs.at(-1)?.text ?? null;
+      await evaluate(
+        cdp,
+        sessionId,
+        `document.querySelector(${JSON.stringify(`${SCENARIO} ${SCENARIO_RUN}`)}).click()`,
+        'demo',
+      );
+      /* The second run has to be waited for by its *content*, not by the pane
+         becoming visible: the pane from the first run is already visible, so a
+         visibility wait would return immediately and read the previous run's
+         output as this one's. */
+      await waitFor(
+        cdp,
+        sessionId,
+        `(() => {
+           const output = document.querySelector(
+             ${JSON.stringify(`${SCENARIO} ${SCENARIO_OUTPUT}`)},
+           );
+           if (!output || output.hidden) return false;
+           const text = (output.textContent ?? '').replace(/\\s+/g, ' ').trim();
+           return text.length > 0 && text !== ${JSON.stringify(before ?? '')};
+         })()`,
+        SCENARIO_TIMEOUT_MS,
+        `run ${attempt} of the ${SCENARIO_SLUG} scenario printed nothing within ` +
+          `${SCENARIO_TIMEOUT_MS} ms`,
+        () => {
+          const lines = [];
+          if (tab.cspViolations.length) {
+            lines.push(
+              `  The page reported ${tab.cspViolations.length} CSP violation(s), which is the ` +
+                `likeliest cause:`,
+              ...tab.cspViolations.map((v) => `    ${v}`),
+            );
+          }
+          if (tab.pageErrors.length) {
+            lines.push(
+              `  The page threw ${tab.pageErrors.length} uncaught error(s):`,
+              ...tab.pageErrors.map((e) => `    ${e.split('\n')[0]}`),
+            );
+          }
+          return lines;
+        },
+      );
+      runs.push(await read());
+    }
+
+    const wentQuiet = await tab.quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS);
+    await tab.fillPostData();
+
+    const before = tab.scripts.filter((script) => script.at < interactedAt);
+    const after = tab.scripts.filter((script) => script.at >= interactedAt);
+    return {
+      opened,
+      runs,
+      requests: tab.requests,
+      cspViolations: tab.cspViolations,
+      pageErrors: tab.pageErrors,
+      wentQuiet,
+      before,
+      after,
+      bytesBefore: before.reduce((sum, script) => sum + script.bytes, 0),
+      bytesAfter: after.reduce((sum, script) => sum + script.bytes, 0),
+    };
+  } finally {
+    tab.off();
   }
 }
 
@@ -738,20 +984,10 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
     throw new Red('the demo round-tripped a sentence and never showed the claim about it');
   }
 
-  const leaks = [];
-  for (const request of pass.requests) {
-    for (const [field, value] of [
-      ['url', request.url],
-      ['body', request.postData],
-      ['headers', request.headers],
-    ]) {
-      const how = findProbe(value);
-      if (how) leaks.push(`${request.method} ${request.url} — ${how} in the ${field}`);
-    }
-  }
-  if (leaks.length) {
+  const carried = leaks(pass.requests, findProbe);
+  if (carried.length) {
     throw new Red(
-      `the typed sentence left the page in ${leaks.length} request(s):\n  ${leaks.join('\n  ')}`,
+      `the typed sentence left the page in ${carried.length} request(s):\n  ${carried.join('\n  ')}`,
     );
   }
 
@@ -894,6 +1130,278 @@ function checkFallback(pass) {
   }
 }
 
+/*
+ * What the receiving device actually calls this failure, computed rather than
+ * quoted.
+ *
+ * The same reasoning as `expectedFields`, applied to the claim `/demo` exists
+ * to make. A harness carrying the string "MAC mismatch" would go green against
+ * a page that had that string typed into it, which is precisely the page this
+ * one must never become — and it would go red the day the SDK reworded its
+ * errors, teaching whoever ran it to update the string rather than look. So the
+ * expectation is produced by running the scenario here in Node, against the
+ * same installed package the browser loads, and taking the SDK's own words out
+ * of the run.
+ *
+ * A Node run that does not refuse is not a demo failure. It means the shipped
+ * package accepted a ciphertext with a flipped byte, and there is no page left
+ * worth checking.
+ */
+async function expectedRefusal() {
+  const result = await runFlipAByte();
+  if (!result.refusal) {
+    throw new Red(
+      'the installed SDK was handed a ciphertext with one byte flipped and reported no error ' +
+        'at all.\n  This is not the page being wrong. Nothing on /demo is worth checking until ' +
+        'it is explained.',
+    );
+  }
+  if (result.delivered !== null && result.delivered !== result.sentence) {
+    throw new Red(
+      `the installed SDK delivered something other than the sent sentence after one byte was ` +
+        `flipped:\n  sent:      ${result.sentence}\n  delivered: ${result.delivered}`,
+    );
+  }
+  return { ...result.refusal, sentence: result.sentence };
+}
+
+/*
+ * Sentences `render()` prints when the run did *not* go the way the page
+ * claims it goes. Each is the else-branch of a check against an observed
+ * value, so any of them on screen means the page is being honest about a run
+ * that failed — which is still a red harness result, and a far more
+ * interesting one than a missing element.
+ */
+const SCENARIO_DENIALS = [
+  'reported no error at all',
+  'Something other than the sent message was delivered',
+  'Garbage plaintext reached the application',
+  'no recovery to show',
+  'cannot say the drop was not silent',
+];
+
+/*
+ * The one value in the output that a page cannot have been born knowing.
+ *
+ * It has to come from the log rather than from the summary, and it has to be
+ * key material rather than an identifier. The message id looked like the
+ * obvious choice and is useless: the in-memory relay numbers messages from one,
+ * so every run reports `msg-1`. The sending device's identity key fingerprint
+ * is generated when that device boots, and every press of the button boots a
+ * new pair — so it differs across runs of a live demo and cannot differ across
+ * runs of a recording.
+ */
+const FINGERPRINT = /"senderIdentityKeyFingerprint":"([^"]+)"/;
+
+function fingerprintIn(run) {
+  for (const row of run.logLines) {
+    const found = FINGERPRINT.exec(row.text);
+    if (found) return found[1];
+  }
+  return null;
+}
+
+function checkScenario(pass, origin, expected) {
+  if (!pass.opened.open) {
+    throw new Red(
+      `/demo#${SCENARIO_SLUG} did not open the scenario it names. The fragment is the whole ` +
+        `point of\n  addressing one: a reader who follows that link lands on a closed list.`,
+    );
+  }
+  if (pass.opened.outputVisible || pass.opened.text) {
+    throw new Red(
+      `the scenario showed output before anything had run: ${JSON.stringify(pass.opened.text)}`,
+    );
+  }
+
+  for (const [index, run] of pass.runs.entries()) {
+    const where = `run ${index + 1}`;
+
+    /* The SDK's error surface, which is the reason this page exists. Both the
+       code and the message, because the code alone is a constant a page could
+       hold and the message is what the SDK actually said. */
+    for (const [what, value] of [
+      ['error code', expected.errorCode],
+      ['error message', expected.errorMessage],
+    ]) {
+      if (!run.text.includes(value)) {
+        throw new Red(
+          `${where} never printed the SDK's ${what}. The same scenario run in this process ` +
+            `against\n  the installed package reported ${JSON.stringify(value)}, and the page ` +
+            `printed:\n  ${run.text.slice(0, 400) || '(nothing)'}`,
+        );
+      }
+    }
+
+    /* And in the log pane, not only in the summary. The summary is this page's
+       prose about the run; the log is the SDK's own records, and a page that
+       printed the right sentence over an empty log would be describing a
+       failure rather than showing one. */
+    const named = run.logLines.filter(
+      (row) => row.text.includes(expected.errorCode) && row.text.includes(expected.errorMessage),
+    );
+    if (named.length === 0) {
+      throw new Red(
+        `${where} printed the refusal in its summary and no log record carrying it. The pane is ` +
+          `headed\n  "What the SDK said", so it has to be what the SDK said: ` +
+          `${run.logLines.length} record(s) shown.`,
+      );
+    }
+
+    for (const denial of SCENARIO_DENIALS) {
+      if (run.text.includes(denial)) {
+        throw new Red(
+          `${where} reported that the protocol did not hold: the page printed "${denial}".\n` +
+            `  The page is telling the truth about a run that failed, which is the harness ` +
+            `working — but the\n  run failed.`,
+        );
+      }
+    }
+
+    /* Invariant: the scenario's two named non-events are on screen. They are
+       the half of the story a log does not tell, and the task they came from
+       names them. */
+    for (const promised of ['No garbage plaintext', 'No silent drop']) {
+      if (!run.nots.some((text) => text.startsWith(promised))) {
+        throw new Red(
+          `${where} did not say "${promised}". Naming what did not happen is the point of the ` +
+            `scenario;\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
+        );
+      }
+    }
+
+    if (!run.steps.some((text) => text.includes('One byte changed on the way into the relay'))) {
+      throw new Red(`${where} printed no step saying which byte was changed`);
+    }
+    if (!run.steps.some((text) => text.includes('the resend arrived intact'))) {
+      throw new Red(
+        `${where} never showed the recovery. Refusing is half the story; the sentence arriving ` +
+          `on the\n  resend is what makes it a protocol rather than a wall.`,
+      );
+    }
+  }
+
+  /*
+   * The two runs, against each other. This is what a page cannot fake: the
+   * fixed strings are identical because both runs asked the same SDK, and the
+   * identity key fingerprint differs because each run boots its own pair of
+   * devices. A page with the output typed into it gets the first right and the
+   * second wrong.
+   */
+  const ids = pass.runs.map(fingerprintIn);
+  if (ids.some((id) => id === null)) {
+    throw new Red(
+      `a run printed no sending identity key fingerprint (${ids.join(', ')}), so the two runs ` +
+        `cannot be told\n  apart and neither of them proves a device pair was ever booted`,
+    );
+  }
+  if (ids[0] === ids[1]) {
+    throw new Red(
+      `both runs reported identity key fingerprint ${ids[0]}. Every press boots a fresh pair of ` +
+        `devices with\n  fresh keys, so a repeated fingerprint means the page is printing a ` +
+        `recording rather than running the SDK.`,
+    );
+  }
+  if (pass.runs[0].text === pass.runs[1].text) {
+    throw new Red(
+      'both runs printed byte-for-byte the same output, which no two live runs of this scenario do',
+    );
+  }
+
+  /* The sentence the scenario sends is fixed and lives in the module, so it is
+     on the page as source before it is ever encrypted. What must not happen is
+     it leaving in a request. */
+  const carried = leaks(pass.requests, (value) => findAny(value, [expected.sentence]));
+  if (carried.length) {
+    throw new Red(
+      `the scenario's sentence left the page in ${carried.length} request(s):\n  ` +
+        carried.join('\n  '),
+    );
+  }
+
+  const offOrigin = pass.requests.filter(
+    (request) => /^https?:/i.test(request.url) && new URL(request.url).origin !== origin,
+  );
+  if (offOrigin.length) {
+    throw new Red(
+      `/demo talked to ${offOrigin.length} host(s) that are not this site:\n  ` +
+        offOrigin.map((request) => `${request.method} ${request.url}`).join('\n  '),
+    );
+  }
+
+  const beacons = beaconsIn(pass.requests);
+  const sent = pass.requests.filter((request) => {
+    if (request.method === 'GET') return false;
+    try {
+      return new URL(request.url).pathname !== BEACON_PATH;
+    } catch {
+      return true;
+    }
+  });
+  if (sent.length) {
+    throw new Red(
+      `/demo posted to ${sent.length} destination(s) other than ${BEACON_PATH}:\n  ` +
+        sent.map((request) => `${request.method} ${request.url}`).join('\n  '),
+    );
+  }
+
+  for (const beacon of beacons) {
+    const body = beacon.postData ?? '';
+    const shape = BEACON_SHAPE.exec(body);
+    if (!shape) {
+      throw new Red(`a beacon body is not the collector's wire format: ${JSON.stringify(body)}`);
+    }
+    if (!EVENTS.has(shape[1])) {
+      throw new Red(
+        `/demo sent "${shape[1]}", which src/workers/site.ts does not accept — the collector ` +
+          `drops it,\n  so the page is measuring nothing while looking like it is`,
+      );
+    }
+  }
+  if (beacons.length !== 1) {
+    throw new Red(
+      `/demo sent ${beacons.length} beacon(s) for one scenario opened once and run twice:\n  ` +
+        (beacons.map((beacon) => JSON.stringify(beacon.postData)).join('\n  ') || '(none)') +
+        `\n  It is one per scenario per page — not per run, and not per toggle.`,
+    );
+  }
+  if (beacons[0].postData !== SCENARIO_BEACON_BODY) {
+    throw new Red(
+      `the scenario's beacon reads ${JSON.stringify(beacons[0].postData)}, not ` +
+        `${JSON.stringify(SCENARIO_BEACON_BODY)}.\n  It has grown a dimension, and everything ` +
+        `this page has to derive one from is a fact about a protocol\n  failure the reader ran — ` +
+        `the error code, the byte position, the milliseconds. None of those may leave the tab.`,
+    );
+  }
+
+  /* Invariant 7 again, on the page that has the most to gain from breaking it:
+     the SDK is 713 KB and every scenario needs it. */
+  if (pass.bytesBefore > PRE_INTERACTION_CEILING) {
+    throw new Red(
+      `${kb(pass.bytesBefore)} of JavaScript arrived on /demo before the reader ran anything, ` +
+        `over the ${kb(PRE_INTERACTION_CEILING)} tripwire:\n  ` +
+        pass.before.map((s) => `${s.url} (${s.bytes} B)`).join('\n  '),
+    );
+  }
+  if (pass.after.length === 0) {
+    throw new Red(
+      'running the scenario fetched no chunk at all — the SDK was already on /demo before the ' +
+        'reader asked for it',
+    );
+  }
+  if (pass.pageErrors.length) {
+    throw new Red(`/demo threw while running the scenario:\n  ${pass.pageErrors.join('\n  ')}`);
+  }
+  if (pass.cspViolations.length) {
+    throw new Red(
+      `/demo violated the site's own CSP ${pass.cspViolations.length} time(s):\n  ` +
+        pass.cspViolations.join('\n  '),
+    );
+  }
+
+  return { beacons, ids };
+}
+
 // --------------------------------------------------------------------- the run
 
 async function main() {
@@ -914,6 +1422,7 @@ async function main() {
   }
 
   const expected = await expectedFields(envelopeFields);
+  const refusal = await expectedRefusal();
 
   const held = { server: null, chrome: null, cdp: null, targets: [] };
   try {
@@ -938,6 +1447,12 @@ async function main() {
       blocked: live.after.map((script) => script.url),
     });
     checkFallback(starved);
+
+    /* `/demo` in its own tab, so the homepage's accounting above is about the
+       homepage. The scenario is run twice in that tab, which is what the two
+       runs are compared against each other for. */
+    const scenario = await visitScenario(cdp, origin, held);
+    const { beacons: scenarioBeacons, ids } = checkScenario(scenario, origin, refusal);
 
     /* Say which of the two things happened. Claiming a quiet window we never
        got would overstate the egress evidence on exactly the chatty pages
@@ -964,7 +1479,18 @@ async function main() {
         `not gzip)\n` +
         `  the touch drew: ${kb(live.bytesAfter)} over ${live.after.length} chunk(s)\n` +
         `  those blocked:  the recorded capture stayed on screen ` +
-        `("${starved.dom.fallbackNote}")`,
+        `("${starved.dom.fallbackNote}")\n` +
+        `  /demo:          ${SCENARIO_SLUG} opened by fragment and run twice; both runs printed ` +
+        `${refusal.errorCode}\n` +
+        `                  ("${refusal.errorMessage}") in the SDK's own log, and the resend ` +
+        `arrived intact\n` +
+        `                  sending identity keys ${ids.join(' then ')} — a fresh device pair ` +
+        `per run\n` +
+        `                  measured ${scenarioBeacons.length} beacon(s): ` +
+        `${scenarioBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
+        `                  before a touch ${kb(scenario.bytesBefore)} over ` +
+        `${scenario.before.length} file(s); the run drew ${kb(scenario.bytesAfter)} over ` +
+        `${scenario.after.length} chunk(s)`,
     );
   } finally {
     await teardown(held);

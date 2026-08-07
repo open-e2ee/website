@@ -1315,7 +1315,7 @@ a:hover {
 .hero-objections {
   display: grid;
   /* The scale is 1, 2, 3, 4, 6, 8, 12, 16, 24 — there is no 5, and asking for
-     one is silent: `gap: var(--oe-space-5)` is an invalid value, so the grid
+     one is silent: `gap: var(--oe-space-4)` is an invalid value, so the grid
      falls back to `normal`, which is zero. That shipped for one build and put
      the two citation rules end to end on a phone, reading as one paragraph
      with one rule. `tests/site-content.test.mjs` now checks every spacing
@@ -3226,5 +3226,176 @@ table.data td {
   .callout,
   .code-block {
     border: 1px solid CanvasText;
+  }
+}
+
+/*
+ * `/demo` — a list of scenarios, each a closed disclosure.
+ *
+ * Closed is the functional state, not a space-saving one: opening a scenario is
+ * what the page measures, so a scenario that is open on arrival would report a
+ * page view under the name of a deliberate act. It also gives the page a shape
+ * that survives having ten scenarios in it, which a stack of expanded panels
+ * would not.
+ */
+.scenario-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-4);
+  margin-top: var(--oe-space-8);
+}
+
+.scenario {
+  border: 1px solid var(--oe-border);
+  border-radius: var(--oe-radius-lg);
+  background: var(--oe-surface);
+  padding: var(--oe-space-4) var(--oe-space-6);
+}
+
+/* The marker is removed and nothing replaces it, because the summary is a
+   two-line block and a triangle beside the first line of it reads as a bullet.
+   The whole row is the target either way. */
+.scenario-summary {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-2);
+  list-style: none;
+}
+
+.scenario-summary::-webkit-details-marker {
+  display: none;
+}
+
+.scenario-summary:focus-visible {
+  outline: 2px solid var(--oe-focus);
+  outline-offset: var(--oe-space-2);
+  border-radius: var(--oe-radius-sm);
+}
+
+.scenario-title {
+  font-family: var(--oe-font-sans);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.scenario-expectation {
+  color: var(--oe-muted);
+  max-width: var(--oe-content-measure);
+}
+
+.scenario-body {
+  margin-top: var(--oe-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-4);
+  /* A flex child defaults to `min-width: auto`, which lets the code block and
+     the log push the page sideways rather than scroll inside themselves. */
+  min-width: 0;
+}
+
+.scenario-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--oe-space-3) var(--oe-space-4);
+}
+
+.scenario-status {
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+}
+
+.scenario-output > h3 {
+  margin-top: var(--oe-space-6);
+}
+
+.scenario-output > h3:first-child {
+  margin-top: 0;
+}
+
+.scenario-steps,
+.scenario-nots {
+  margin-top: var(--oe-space-3);
+  padding-inline-start: var(--oe-space-4);
+  max-width: var(--oe-content-measure);
+}
+
+.scenario-steps > li + li,
+.scenario-nots > li + li {
+  margin-top: var(--oe-space-2);
+}
+
+/*
+ * The receiving device's own log, printed rather than summarised.
+ *
+ * It scrolls inside its own box in both directions. Vertically because a run
+ * produces about twenty records and the page below them is worth reaching;
+ * horizontally because the payloads are one long JSON line each, and wrapping
+ * a key–value blob turns a scannable column of messages into prose.
+ */
+.scenario-log {
+  margin-top: var(--oe-space-3);
+  border: 1px solid var(--oe-border);
+  border-radius: var(--oe-radius-sm);
+  background: var(--oe-surface-raised);
+  padding: var(--oe-space-3);
+  max-height: 28rem;
+  overflow: auto;
+  font-family: var(--oe-font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.scenario-log-line {
+  display: grid;
+  grid-template-columns: 5.5rem 3rem 1fr;
+  gap: var(--oe-space-2);
+  padding-block: var(--oe-space-1);
+  border-inline-start: 2px solid transparent;
+  padding-inline-start: var(--oe-space-2);
+}
+
+.scenario-log-line + .scenario-log-line {
+  border-top: 1px solid var(--oe-border);
+}
+
+/* Level is carried by weight and a rule, never by hue alone: the two records
+   that matter here are the two a reader has to be able to find. */
+.scenario-log-warn,
+.scenario-log-error {
+  border-inline-start-color: var(--oe-foreground);
+}
+
+.scenario-log-error .scenario-log-message {
+  font-weight: 600;
+}
+
+.scenario-log-role,
+.scenario-log-level {
+  color: var(--oe-muted);
+}
+
+.scenario-log-payload {
+  grid-column: 3;
+  color: var(--oe-muted);
+  white-space: pre;
+}
+
+.scenario-link {
+  margin-top: var(--oe-space-2);
+}
+
+@media (max-width: 40rem) {
+  /* The three-column log header stops being a grid before it starts eliding
+     the message, which is the column that carries the meaning. */
+  .scenario-log-line {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-log-payload {
+    grid-column: 1;
   }
 }

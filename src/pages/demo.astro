@@ -1,0 +1,323 @@
+---
+import { Code } from 'astro:components';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { codeThemes } from '../lib/code-theme.mjs';
+import { SCENARIOS } from '../lib/demo/scenarios/catalog.ts';
+import { scenarioCode } from '../lib/demo/scenarios/source.ts';
+import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
+
+/*
+ * The page where the SDK is asked to fail.
+ *
+ * The homepage panel shows the protocol working, which is the easy half: a
+ * reader who has already decided to trust it learns nothing from watching a
+ * sentence come back. What decides an adoption is the other half — what the
+ * thing does when something goes wrong — and every project on the internet
+ * answers that in prose. So this page answers it by running it, in the
+ * reader's tab, against the installed package, and printing the receiving
+ * device's own log rather than a description of what the log would say.
+ *
+ * Each scenario is a closed `<details>`, and that is what "opened" means in
+ * the one event this page measures. It is also the shape the page needs as
+ * more scenarios land: a list a reader can read the titles of, and open the
+ * one they came for. The `id` is on the `<details>`, so `/demo#flip-a-byte`
+ * both scrolls to the scenario and opens it.
+ *
+ * Nothing SDK-shaped is on this page's initial payload. The frontmatter's
+ * imports reach the scenario catalogue, which holds words and a filename;
+ * the module that boots two clients is fetched by a dynamic `import()` in the
+ * run handler, the same discipline as the homepage panel (invariant 7).
+ */
+
+const scenarios = SCENARIOS.map((scenario) => ({
+  ...scenario,
+  code: scenarioCode(scenario),
+  filename: scenario.source.replace(/^\.\//, ''),
+}));
+
+const title = 'Watch it fail closed';
+const description =
+  'Corrupt a message in transit and see what the Signal Protocol does about it, running in ' +
+  'your own browser against the installed SDK.';
+---
+
+<BaseLayout title={title} description={description}>
+  <section class="section">
+    <div class="container">
+      <div class="stack">
+        <h1>{title}</h1>
+        <p class="lede measure">
+          Every library says it detects tampering. This page does it to itself: the scenarios
+          below run the installed SDK in this tab, break something on purpose, and print what the
+          receiving device said about it — its own log, unedited.
+        </p>
+        {/*
+          Invariant 5, before the reader has run anything rather than after.
+          The cryptography is the shipped cryptography; the infrastructure
+          under it is not, and on a page whose whole subject is failure the
+          reader has to know which failures are real ones.
+        */}
+        <p class="muted measure">
+          Real protocol and real cryptography, simulated infrastructure — <code>inMemoryStore()</code
+          >{' '}and <code>inMemoryRelay()</code> run in this tab, so both devices and the relay are
+          the same browser. {sdkManifest.name}@{sdkManifest.version}.
+        </p>
+      </div>
+
+      <div class="scenario-list">
+        {
+          scenarios.map((scenario) => (
+            <details class="scenario" id={scenario.slug} data-scenario={scenario.slug}>
+              <summary class="scenario-summary">
+                <span class="scenario-title">{scenario.title}</span>
+                <span class="scenario-expectation">{scenario.expectation}</span>
+              </summary>
+
+              <div class="scenario-body">
+                {/*
+                  Sliced out of the module the button imports, at build time.
+                  This is not an excerpt written to look like the code — it is
+                  the code, and `scenarioCode` throws rather than print an
+                  empty block if the markers ever go missing.
+                */}
+                <div class="code-block">
+                  <p class="code-filename">{scenario.filename}</p>
+                  <Code
+                    code={scenario.code}
+                    lang="ts"
+                    themes={codeThemes}
+                    defaultColor={false}
+                    role="group"
+                    aria-label={`The program this scenario runs: ${scenario.title}`}
+                  />
+                </div>
+
+                <div class="scenario-controls">
+                  <button class="oe-button" type="button" data-scenario-run>
+                    {scenario.action}
+                  </button>
+                  <p class="scenario-status" data-scenario-status role="status">
+                    Nothing has run yet.
+                  </p>
+                </div>
+
+                <div class="scenario-output" data-scenario-output hidden />
+
+                <p class="scenario-link">
+                  <a href={scenario.link.href} target="_blank" rel="noopener">
+                    {scenario.link.label}
+                  </a>
+                </p>
+              </div>
+            </details>
+          ))
+        }
+      </div>
+
+      {/*
+        The same invitation the homepage makes, on the page where it is worth
+        more: this one runs a protocol failure and still has nothing to report
+        to anybody. What it does send is one beacon saying which scenario was
+        opened, which is why the sentence names it rather than claiming
+        silence.
+      */}
+      <p class="muted measure">
+        All of it runs here. The only thing this page sends is one beacon naming the scenario you
+        opened — no message content, no sizes, no timings. Check the network tab.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import type { FlipAByteResult, ScenarioLogRecord } from '../lib/demo/scenarios/flip-a-byte.ts';
+
+  /*
+   * One handler for every scenario on the page, wired from the `<details>`
+   * elements rather than from a list this file keeps. A scenario added to the
+   * catalogue is a scenario this runs, with no second place to edit.
+   */
+  for (const element of document.querySelectorAll<HTMLDetailsElement>('[data-scenario]')) {
+    wire(element);
+  }
+
+  function wire(scenario: HTMLDetailsElement) {
+    const slug = scenario.dataset.scenario ?? '';
+    const run = scenario.querySelector<HTMLButtonElement>('[data-scenario-run]');
+    const status = scenario.querySelector<HTMLElement>('[data-scenario-status]');
+    const output = scenario.querySelector<HTMLElement>('[data-scenario-output]');
+    if (!run || !status || !output) return;
+
+    /*
+     * One beacon the first time this scenario is opened, carrying the slug and
+     * nothing else. Once per scenario per page: a reader who closes a
+     * scenario and opens it again has not looked at a second scenario, and
+     * counting the toggle would measure fidgeting.
+     */
+    let measured = false;
+    scenario.addEventListener('toggle', () => {
+      if (!scenario.open || measured) return;
+      measured = true;
+      window.oeMeasure?.('scenario_opened', slug);
+    });
+
+    /* Arriving at `/demo#flip-a-byte` is asking for this scenario, so open it.
+       The `toggle` above then measures it, which is correct: the reader asked
+       for this one by name. */
+    if (location.hash === `#${slug}`) scenario.open = true;
+
+    let running = false;
+    run.addEventListener('click', async () => {
+      if (running) return;
+      running = true;
+      run.disabled = true;
+      output.hidden = true;
+      status.textContent = 'Loading the SDK…';
+
+      try {
+        /* The 713 KB the page has kept off its own payload, fetched now that
+           the reader has asked for it. */
+        const module = await import('../lib/demo/scenarios/flip-a-byte.ts');
+        status.textContent = 'Booting two devices, then corrupting a message…';
+        const result = await module.runFlipAByte();
+        render(output, result, module.describePayload);
+        output.hidden = false;
+        status.textContent = 'Done. Press it again for a fresh pair of devices.';
+      } catch (cause) {
+        /* A scenario that cannot run says so in its own status line. There is
+           no recorded fallback here as there is on the homepage: this page
+           promises a live failure, and a recording of one would be worth
+           nothing. */
+        status.textContent =
+          `This scenario could not run: ${cause instanceof Error ? cause.message : String(cause)}`;
+        output.hidden = true;
+      } finally {
+        running = false;
+        run.disabled = false;
+      }
+    });
+  }
+
+  const el = <K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    text?: string,
+    className?: string,
+  ): HTMLElementTagNameMap[K] => {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    if (className) node.className = className;
+    return node;
+  };
+
+  const hex = (byte: number) => `0x${byte.toString(16).padStart(2, '0')}`;
+  const count = (value: number) => value.toLocaleString('en-US');
+
+  /*
+   * Everything printed here is read off the result, and every claim is
+   * conditional on what the run actually produced. The two lines this page
+   * exists to be able to write — no garbage plaintext, no silent drop — are
+   * checks against the observed values, not sentences waiting to be shown. A
+   * run where the plaintext came back wrong has to print that instead.
+   */
+  function render(
+    output: HTMLElement,
+    result: FlipAByteResult,
+    describePayload: (value: unknown) => string,
+  ) {
+    output.replaceChildren();
+
+    /* The three rendered collections carry data attributes as well as classes.
+       `demo-smoke.mjs` reads them, and a harness that found them by class name
+       would break the next time this page is restyled — which is the one kind
+       of change that must never turn a scenario's evidence red. */
+    const happened = el('ol', undefined, 'scenario-steps');
+    happened.dataset.scenarioSteps = '';
+    const step = (text: string) => happened.append(el('li', text));
+
+    step(
+      `One byte changed on the way into the relay: byte ${count(result.flip.at)} of ` +
+        `${count(result.flip.of)}, ${hex(result.flip.before)} to ${hex(result.flip.after)}.`,
+    );
+    if (result.accepted) {
+      step(
+        `The sender was told it worked: message ${result.accepted.messageId}, accepted for ` +
+          `${result.accepted.recipientDeviceCount} device. Nothing on the sending side knows ` +
+          `anything is wrong.`,
+      );
+    }
+    if (result.refusal) {
+      step(
+        `The receiving device refused it — ${result.refusal.errorCode}: ` +
+          `${result.refusal.errorMessage}`,
+      );
+    } else {
+      step('The receiving device reported no error at all, which is not what should happen here.');
+    }
+    if (result.delivered === null) {
+      step('Nothing was ever delivered, so this run has no recovery to show.');
+    } else if (result.delivered === result.sentence) {
+      step(
+        `It asked the sender for the message again, and the resend arrived intact` +
+          (result.roundTripMs === null
+            ? '.'
+            : `, ${result.roundTripMs.toFixed(1)} ms after send.`),
+      );
+    } else {
+      step('Something other than the sent message was delivered. That is a defect, not a demo.');
+    }
+
+    output.append(el('h3', 'What happened'), happened);
+
+    /* The point of the scenario, and the half that a log alone does not make.
+       Both entries are assertions about this run's values. */
+    const notHappened = el('ul', undefined, 'scenario-nots');
+    notHappened.dataset.scenarioNots = '';
+    const intact = result.delivered === null || result.delivered === result.sentence;
+    notHappened.append(
+      el(
+        'li',
+        intact
+          ? 'No garbage plaintext. The corrupted copy produced no output at all — the only text ' +
+              'that reached the application is byte-for-byte the sentence that was sent.'
+          : 'Garbage plaintext reached the application. This is the failure this page exists to ' +
+              'show cannot happen, and on this run it did.',
+      ),
+      el(
+        'li',
+        result.refusal
+          ? 'No silent drop. The failure was named, the session was archived, and the sender was ' +
+              'asked to send it again — all of it in the log below.'
+          : 'No refusal was recorded, so this run cannot say the drop was not silent.',
+      ),
+    );
+    output.append(el('h3', 'What did not happen'), notHappened);
+
+    const log = el('div', undefined, 'scenario-log');
+    log.dataset.scenarioLog = '';
+    for (const record of result.records) log.append(line(record, describePayload));
+    output.append(
+      el('h3', 'What the SDK said'),
+      el(
+        'p',
+        `${count(result.records.length)} records at info and above, from both devices, in the ` +
+          `order they were logged. The SDK emitted ${count(result.debugRecords)} more at debug, ` +
+          `which are counted here and not printed.`,
+        'muted',
+      ),
+      log,
+    );
+  }
+
+  function line(record: ScenarioLogRecord, describePayload: (value: unknown) => string) {
+    const row = el('p', undefined, `scenario-log-line scenario-log-${record.level}`);
+    row.dataset.scenarioLogLine = record.level;
+    row.append(
+      el('span', record.role, 'scenario-log-role'),
+      el('span', record.level, 'scenario-log-level'),
+      el('span', record.message, 'scenario-log-message'),
+    );
+    const payload = record.payload.map(describePayload).join(' ');
+    if (payload) row.append(el('span', payload, 'scenario-log-payload'));
+    return row;
+  }
+</script>

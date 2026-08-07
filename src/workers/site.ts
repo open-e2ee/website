@@ -33,10 +33,18 @@ export const EVENTS = new Set([
   'pricing_view',
   'signup_start',
   'enterprise_contact',
+  'scenario_opened',
 ]);
 
-/** The only labels any event carries. Free text is never stored. */
-const LABELS = new Set(['expo', 'browser', 'node']);
+/*
+ * The only labels any event carries. Free text is never stored.
+ *
+ * The scenario slugs are here one at a time, as each scenario ships. A label
+ * accepted before the page that sends it exists would make an unopened
+ * scenario and an unbuilt one look the same in the dataset — which is the
+ * question `/demo` is measured to answer.
+ */
+export const LABELS = new Set(['expo', 'browser', 'node', 'flip-a-byte']);
 
 const COLLECT_PATH = '/e';
 const MAX_BODY_BYTES = 128;

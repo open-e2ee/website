@@ -15,7 +15,7 @@ test('pins the first Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-07-23');
   assert.equal(commercialTermsPath, '/legal/terms/2026-07-23');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-07-23');
-  assert.equal(privacyVersion, '2026-08-07');
+  assert.equal(privacyVersion, '2026-08-08');
 });
 
 test('publishes a legal index and canonical current, versioned, and privacy routes', async () => {
@@ -69,7 +69,17 @@ test('keeps the privacy version history truthful about when each event arrived',
   const privacy = await flat('../src/pages/legal/privacy.astro');
   assert.match(privacy, /<strong>Version 2026-07-28:<\/strong>/);
   assert.match(privacy, /nine of them at that date/i);
-  assert.match(privacy, /<strong>Version \{privacyVersion\}:<\/strong> a tenth event was added/);
+  /* Every version but the newest is written out, because interpolating the
+     constant into an older entry re-dates a change that already happened. */
+  assert.match(privacy, /<strong>Version 2026-08-07:<\/strong> a tenth event was added/);
+  assert.match(
+    privacy,
+    /<strong>Version \{privacyVersion\}:<\/strong> an eleventh event was added/,
+  );
+  assert.doesNotMatch(
+    privacy,
+    /<strong>Version \{privacyVersion\}:<\/strong> a tenth event was added/,
+  );
 });
 
 test('describes the implemented providers and the self-operated SDK boundary', async () => {

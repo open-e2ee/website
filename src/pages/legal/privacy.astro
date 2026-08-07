@@ -162,13 +162,14 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           that describes it vaguely is not worth reading.
         </p>
         <p>
-          The site sends a short message to our own servers when one of ten things happens: you run
-          the live demo on the home page, open the quickstart, choose a runtime, copy the install
-          command, follow the closing link of an article or the architecture guide, open one of our
-          GitHub repositories, view the security model page, view the pricing page, open the
-          console, or begin an enterprise enquiry. Each message contains the name of the event, the
-          path of the page it happened on, and — for a runtime choice — which of the three runtimes
-          it was. That is the whole message.
+          The site sends a short message to our own servers when one of eleven things happens: you
+          run the live demo on the home page, open one of the scenarios on the demo page, open the
+          quickstart, choose a runtime, copy the install command, follow the closing link of an
+          article or the architecture guide, open one of our GitHub repositories, view the security
+          model page, view the pricing page, open the console, or begin an enterprise enquiry. Each
+          message contains the name of the event, the path of the page it happened on, and one
+          further word on two of them: which of the three runtimes a runtime choice was, and which
+          scenario was opened. That is the whole message.
         </p>
         <p>
           The live demo is the one place on this site where you type something. What you type is
@@ -176,6 +177,14 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           that records the run carries neither the sentence nor anything derived from it — not its
           length, not the size of the ciphertext, not how long the encryption took. The message
           reads <code>demo_run /</code>, and one is sent per page, not per sentence.
+        </p>
+        <p>
+          The scenarios on the demo page run the same way, in your own browser, and the message
+          that records one reads <code>scenario_opened /demo</code> followed by the name of the
+          scenario — the same name that appears in the page address when you open it. It carries
+          nothing about what the scenario produced: no message content, no sizes, no timings. One
+          is sent the first time each scenario is opened, and opening the same one again sends
+          nothing further.
         </p>
         <p>
           It contains no identifier of any kind. We set no cookie, read no cookie, and write nothing
@@ -280,10 +289,18 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           and nothing collected under an earlier version of this notice is affected.
         </p>
         <p>
-          <strong>Version {privacyVersion}:</strong> a tenth event was added, recording that the
+          <strong>Version 2026-08-07:</strong> a tenth event was added, recording that the
           live demo on the home page was run. It carries nothing about what was typed into the
           demo, as described in <a href="#cookies">Cookies and analytics</a>. Nothing else about
           the measurement changed: still no cookie, no storage, no identifier, and no IP-address
+          record.
+        </p>
+        <p>
+          <strong>Version {privacyVersion}:</strong> an eleventh event was added, recording which
+          scenario on the demo page was opened. The name of the scenario is the second and last
+          word any event on this site carries, and it describes the page rather than the visitor,
+          as described in <a href="#cookies">Cookies and analytics</a>. Nothing else about the
+          measurement changed: still no cookie, no storage, no identifier, and no IP-address
           record.
         </p>
         <p>

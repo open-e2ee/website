@@ -1,5 +1,5 @@
 /*
- * Cookieless measurement: ten events, no identifiers, nothing stored on or
+ * Cookieless measurement: eleven events, no identifiers, nothing stored on or
  * read from the device. Most events come from each link's own href, so pages
  * carry no tracking attributes. Declared in /legal/privacy, enforced in
  * src/workers/site.ts.

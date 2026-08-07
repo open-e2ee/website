@@ -15,7 +15,8 @@ import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { EVENTS, collect } from '../src/workers/site.ts';
+import { EVENTS, LABELS, collect } from '../src/workers/site.ts';
+import { SCENARIOS } from '../src/lib/demo/scenarios/catalog.ts';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
@@ -27,7 +28,11 @@ const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
  * A sender that is not on this list is invisible to the set check below, so a
  * new one belongs here in the same commit that writes it.
  */
-const SENDERS = ['../public/measure.js', '../src/components/demo/LiveCarrierPanel.astro'];
+const SENDERS = [
+  '../public/measure.js',
+  '../src/components/demo/LiveCarrierPanel.astro',
+  '../src/pages/demo.astro',
+];
 
 /*
  * How the privacy notice counts the events, so the sentence a reader is asked
@@ -205,6 +210,38 @@ test('measures the demo without measuring what was typed into it', async () => {
   const panel = await read('../src/components/demo/LiveCarrierPanel.astro');
   assert.match(panel, /window\.oeMeasure\?\.\('demo_run'\)/);
   assert.equal([...panel.matchAll(/oeMeasure/g)].length, 1, 'the panel measures at one place');
+});
+
+/*
+ * The same pinning for `/demo`, whose label is the one dimension any event on
+ * this site carries beyond its own name. One argument past the event name, and
+ * that argument is the slug the page already puts in its fragment — never a
+ * count of records, a timing, or anything the scenario printed.
+ */
+test('measures which scenario was opened, and nothing about what it did', async () => {
+  const page = await read('../src/pages/demo.astro');
+  assert.match(page, /window\.oeMeasure\?\.\('scenario_opened', slug\)/);
+  assert.equal([...page.matchAll(/oeMeasure/g)].length, 1, 'the page measures at one place');
+});
+
+/*
+ * A label the collector accepts for a scenario nobody can open is worse than
+ * no label: an unopened scenario and an unbuilt one become the same row in the
+ * dataset, which is the exact question this event was added to answer. So the
+ * accepted set and the shipped set have to match in both directions, less the
+ * three runtime labels that belong to `runtime_select`.
+ */
+test('accepts a scenario label only for a scenario the site actually ships', () => {
+  const runtimes = new Set(['expo', 'browser', 'node']);
+  const slugs = new Set(SCENARIOS.map((scenario) => scenario.slug));
+
+  for (const slug of slugs) {
+    assert.ok(LABELS.has(slug), `/demo ships ${slug} but the collector would drop its label`);
+  }
+  for (const label of LABELS) {
+    if (runtimes.has(label)) continue;
+    assert.ok(slugs.has(label), `${label} is an accepted label but no scenario ships it`);
+  }
 });
 
 test('describes the measurement in the privacy notice it points at', async () => {

@@ -27,7 +27,12 @@
  */
 
 import { DEFAULT_DEVICE_ID, createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
-import type { DecryptedEnvelope, Envelope, SendResult } from '@open-e2ee/signal-protocol-sdk';
+import type {
+  DecryptedEnvelope,
+  Envelope,
+  ILogger,
+  SendResult,
+} from '@open-e2ee/signal-protocol-sdk';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 
@@ -36,6 +41,32 @@ export interface DemoSessionOptions {
   sender?: string;
   /** Account that receives and decrypts. */
   recipient?: string;
+  /**
+   * Where each device's own log goes.
+   *
+   * The SDK takes an `ILogger` per client and reports through it. That is the
+   * only surface on which a relay-path decryption failure is visible at all:
+   * `onDecryptionError` is documented as "called when decryption fails", but
+   * the relay subscription handles a failure through its own retry machinery
+   * and never invokes the hook — it is reached only from the manual
+   * `decryptMessage`/`decryptMessages` calls. A scenario that wants to show
+   * what the SDK said when it refused a message has to read it from here.
+   *
+   * Kept per role rather than as one logger for both, because a scenario that
+   * prints these has to be able to say which device spoke.
+   */
+  logger?: { sender?: ILogger; recipient?: ILogger };
+  /**
+   * A hostile network, in the one place a hostile network sits.
+   *
+   * Called with each envelope on its way into the relay, and its return value
+   * is what the relay stores. Deliberately synchronous: `inMemoryRelay()`
+   * hands the envelope to the subscriber inside `send()`, and `exchange()`
+   * below depends on that having happened by the time `send()` resolves. An
+   * `async` transform here would move delivery past that point and turn the
+   * envelope wait into a hang rather than an error.
+   */
+  tamper?: (envelope: Envelope) => Envelope;
 }
 
 /**
@@ -103,14 +134,27 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
   await relay.registerDevice(sender, { encryptedDeviceName: new ArrayBuffer(0) });
   await relay.registerDevice(recipient, { encryptedDeviceName: new ArrayBuffer(0) });
 
+  /* The transform goes on the relay rather than on the client, because that is
+   * where the corresponding real thing is: a relay that stores what it was
+   * handed, or a network between the two. Nothing about the sending client
+   * changes, which is the point of the scenarios that use it — the sender is
+   * behaving correctly and is still told the send succeeded. */
+  if (options.tamper) {
+    const store = relay.send.bind(relay);
+    const tamper = options.tamper;
+    relay.send = (envelope) => store(tamper(envelope));
+  }
+
   const [from, to] = await Promise.all([
     createSignalProtocolClient({
       identity: { userId: sender },
       adapters: { storage: inMemoryStore(), relay },
+      logger: options.logger?.sender,
     }),
     createSignalProtocolClient({
       identity: { userId: recipient },
       adapters: { storage: inMemoryStore(), relay },
+      logger: options.logger?.recipient,
     }),
   ]);
 
@@ -174,10 +218,23 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
     const n = ++exchanges;
     const mark = (stage: string) => `oe-demo:send:${n}:${stage}`;
 
+    /*
+     * Anything already queued belongs to a send that has finished, so this
+     * one must not be handed it.
+     *
+     * The queue used to be drained with a `shift()`, on the reading that an
+     * envelope could arrive before the wait was set up. It cannot: envelopes
+     * only appear in response to a send, and the wait is installed before the
+     * send starts. What does arrive outside a send is a *second* envelope for
+     * a send that already resolved — the receiving device asks the sender to
+     * try again when a message fails to decrypt, and the resend lands after
+     * `onEnvelope` has been cleared. `shift()` would then hand that stale
+     * envelope to the next send, which would report the previous sentence's
+     * ciphertext as this one's and never notice.
+     */
+    pending.length = 0;
     const envelopeArrived = new Promise<Envelope>((resolve) => {
-      const queued = pending.shift();
-      if (queued) resolve(queued);
-      else onEnvelope = resolve;
+      onEnvelope = resolve;
     });
     const decryptedArrived = new Promise<DecryptedEnvelope>((resolve) => {
       onDecrypted = resolve;
