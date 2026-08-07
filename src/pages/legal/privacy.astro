@@ -162,13 +162,20 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           that describes it vaguely is not worth reading.
         </p>
         <p>
-          The site sends a short message to our own servers when one of nine things happens: you
-          open the quickstart, choose a runtime, copy the install command, follow the closing link
-          of an article or the architecture guide, open one of our GitHub repositories, view the
-          security model page, view the pricing page, open the console, or begin an enterprise
-          enquiry. Each message contains the name of the event, the path of the page it happened on,
-          and — for a runtime choice — which of the three runtimes it was. That is the whole
-          message.
+          The site sends a short message to our own servers when one of ten things happens: you run
+          the live demo on the home page, open the quickstart, choose a runtime, copy the install
+          command, follow the closing link of an article or the architecture guide, open one of our
+          GitHub repositories, view the security model page, view the pricing page, open the
+          console, or begin an enterprise enquiry. Each message contains the name of the event, the
+          path of the page it happened on, and — for a runtime choice — which of the three runtimes
+          it was. That is the whole message.
+        </p>
+        <p>
+          The live demo is the one place on this site where you type something. What you type is
+          encrypted and decrypted inside your own browser tab and never leaves it, and the message
+          that records the run carries neither the sentence nor anything derived from it — not its
+          length, not the size of the ciphertext, not how long the encryption took. The message
+          reads <code>demo_run /</code>, and one is sent per page, not per sentence.
         </p>
         <p>
           It contains no identifier of any kind. We set no cookie, read no cookie, and write nothing
@@ -267,10 +274,17 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           collected information without appropriate notice and consent where required.
         </p>
         <p>
-          <strong>Version {privacyVersion}:</strong> the marketing site began recording the
-          anonymous usage events described in <a href="#cookies">Cookies and analytics</a>. No
-          cookie, storage, identifier, or IP-address record was introduced with them, and nothing
-          collected under an earlier version of this notice is affected.
+          <strong>Version 2026-07-28:</strong> the marketing site began recording the anonymous
+          usage events described in <a href="#cookies">Cookies and analytics</a>, nine of them at
+          that date. No cookie, storage, identifier, or IP-address record was introduced with them,
+          and nothing collected under an earlier version of this notice is affected.
+        </p>
+        <p>
+          <strong>Version {privacyVersion}:</strong> a tenth event was added, recording that the
+          live demo on the home page was run. It carries nothing about what was typed into the
+          demo, as described in <a href="#cookies">Cookies and analytics</a>. Nothing else about
+          the measurement changed: still no cookie, no storage, no identifier, and no IP-address
+          record.
         </p>
         <p>
           For privacy questions or requests, email{' '}

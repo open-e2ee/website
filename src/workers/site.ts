@@ -12,8 +12,18 @@
  * attacker can shape, so nothing here is echoed back or stored unvalidated.
  */
 
-/** The nine events the site measures. Anything else is dropped. */
-const EVENTS = new Set([
+/*
+ * The events the site measures. Anything else is dropped.
+ *
+ * Exported because this is the only copy that decides anything, and the tests
+ * and the smoke harness both need to ask what it holds. They used to keep
+ * their own lists, which agreed with this one right up until an event was
+ * added here and nowhere else — at which point the collector accepts a name
+ * no page sends, and a metric that reports nothing looks identical to one
+ * nobody triggered.
+ */
+export const EVENTS = new Set([
+  'demo_run',
   'quickstart_open',
   'runtime_select',
   'install_copy',

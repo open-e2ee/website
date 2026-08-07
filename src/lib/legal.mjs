@@ -13,5 +13,5 @@ export const commercialTermsEffectiveDate = 'July 23, 2026';
 export const commercialTermsPath = '/legal/terms/2026-07-23';
 export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
 
-export const privacyVersion = '2026-07-28';
-export const privacyEffectiveDate = 'July 28, 2026';
+export const privacyVersion = '2026-08-07';
+export const privacyEffectiveDate = 'August 7, 2026';

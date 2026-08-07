@@ -15,7 +15,7 @@ test('pins the first Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-07-23');
   assert.equal(commercialTermsPath, '/legal/terms/2026-07-23');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-07-23');
-  assert.equal(privacyVersion, '2026-07-28');
+  assert.equal(privacyVersion, '2026-08-07');
 });
 
 test('publishes a legal index and canonical current, versioned, and privacy routes', async () => {
@@ -56,6 +56,20 @@ test('grants the licence over the package that is actually published', async () 
   assert.match(terms, /@open-e2ee\/signal-protocol-sdk/);
   /* The pre-launch draft named a package that was never published. */
   assert.doesNotMatch(terms, /@open-e2ee\/sdk\b/);
+});
+
+/*
+ * Section 9 promises a new effective date whenever the notice changes, so the
+ * version constant moves with the text. The history then has to say which
+ * version each change arrived in — and the way that silently stops being true
+ * is interpolating the *current* version into a sentence about a past one,
+ * which is what the tenth event's arrival did to the nine before it.
+ */
+test('keeps the privacy version history truthful about when each event arrived', async () => {
+  const privacy = await flat('../src/pages/legal/privacy.astro');
+  assert.match(privacy, /<strong>Version 2026-07-28:<\/strong>/);
+  assert.match(privacy, /nine of them at that date/i);
+  assert.match(privacy, /<strong>Version \{privacyVersion\}:<\/strong> a tenth event was added/);
 });
 
 test('describes the implemented providers and the self-operated SDK boundary', async () => {
