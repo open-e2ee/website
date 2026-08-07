@@ -64,14 +64,43 @@ export interface DemoSessionOptions {
    * A hostile network, in the one place a hostile network sits.
    *
    * Called with each envelope on its way into the relay, and its return value
-   * is what the relay stores. Deliberately synchronous: `inMemoryRelay()`
-   * hands the envelope to the subscriber inside `send()`, and `exchange()`
-   * below depends on that having happened by the time `send()` resolves. An
-   * `async` transform here would move delivery past that point and turn the
-   * envelope wait into a hang rather than an error.
+   * is what the relay stores. Typed synchronous because every scenario that
+   * uses it corrupts bytes rather than delays them, and because the shape of
+   * the transform is the shape of the thing being demonstrated. Delivery
+   * arriving after `send()` resolves is no longer a hazard either way —
+   * `exchange()` bounds its waits — but a transform that returns a promise
+   * would hand the relay a promise where it expects an envelope.
    */
   tamper?: (envelope: Envelope) => Envelope;
+  /**
+   * The relay to run the session on, instead of a fresh `inMemoryRelay()`.
+   *
+   * This exists as a test boundary rather than as a configuration knob. The
+   * whole of `exchange()` below is a set of waits on things a relay delivers,
+   * and in-memory the relay delivers all of them inside `send()` — so a test
+   * that only ever sees `inMemoryRelay()` cannot reach the case where it does
+   * not, which is the case that matters and the case that shipped broken.
+   * Passing a wrapper that defers delivery is how that case gets tested.
+   */
+  relay?: InMemorySignalProtocolRelayServer;
+  /**
+   * How long a send waits for the relay before giving up, in milliseconds.
+   *
+   * Generous by default, because the failure it guards against is rare and a
+   * false one would abort a send that was merely slow. Lowered by tests that
+   * want the failure itself rather than the wait.
+   */
+  deadlineMs?: number;
 }
+
+/**
+ * How long `exchange()` waits for anything the relay has to hand back.
+ *
+ * Ten seconds is far longer than a local round trip — the whole boot,
+ * handshake included, is a fraction of it — and is chosen so that the deadline
+ * can only be reached by something actually being wrong.
+ */
+const DELIVERY_DEADLINE_MS = 10_000;
 
 /**
  * What one send produced, at each stage a reader can be shown.
@@ -176,13 +205,38 @@ function measure(name: string, from: string, to: string): number {
   return performance.measure(name, from, to).duration;
 }
 
+/**
+ * Wait for something the relay owes us, or fail saying what never came.
+ *
+ * `inMemoryRelay()` hands the envelope to its subscriber inside `send()`, so
+ * in this tab every one of these values has already arrived before it is
+ * awaited. No relay that crosses anything — a BroadcastChannel, a socket, a
+ * network — can promise that, and one that never delivers turns a bare
+ * `await` into the worst failure a demo has available: no error, no rejection,
+ * no console line, a spinner that runs until the reader closes the tab.
+ *
+ * So the wait is bounded, and reaching the bound is an ordinary rejection that
+ * the surface above renders as a failure like any other. Loud and wrong beats
+ * silent and stuck: a deadline that fires early costs a reader one confusing
+ * error message, and one that never fires costs them the page.
+ */
+function withDeadline<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expired = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`the relay never delivered ${what} (waited ${ms}ms)`)), ms);
+  });
+  return Promise.race([promise, expired]).finally(() => clearTimeout(timer));
+}
+
 export async function startDemoSession(options: DemoSessionOptions = {}): Promise<DemoSession> {
   const sender = options.sender ?? 'alice';
   const recipient = options.recipient ?? 'bob';
 
   performance.mark('oe-demo:boot:start');
 
-  const relay = inMemoryRelay();
+  const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
+
+  const relay = options.relay ?? inMemoryRelay();
   await relay.registerDevice(sender, { encryptedDeviceName: new ArrayBuffer(0) });
   await relay.registerDevice(recipient, { encryptedDeviceName: new ArrayBuffer(0) });
 
@@ -246,8 +300,8 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
   /* `DEFAULT_DEVICE_ID` comes from the package rather than being written as 1:
    * the client registers itself under the SDK's default, so a demo that pinned
    * its own copy would subscribe to the wrong device the day that default
-   * moved — and the symptom would be `envelope-stored` never firing and
-   * `await envelopeArrived` hanging, not an error.
+   * moved — and the symptom would be `envelope-stored` never firing, and the
+   * send failing on its deadline well away from the line that broke.
    *
    * This is the demo watching the server, and it watches the primary device's
    * row. A send to an account with a second device linked stores one envelope
@@ -320,10 +374,10 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
      * only appear in response to a send, and the wait is installed before the
      * send starts. What does arrive outside a send is a *second* envelope for
      * a send that already resolved — the receiving device asks the sender to
-     * try again when a message fails to decrypt, and the resend lands after
-     * `onEnvelope` has been cleared. `shift()` would then hand that stale
-     * envelope to the next send, which would report the previous sentence's
-     * ciphertext as this one's and never notice.
+     * try again when a message fails to decrypt, and the resend lands once
+     * `onEnvelope` has been cleared below. `shift()` would then hand that
+     * stale envelope to the next send, which would report the previous
+     * sentence's ciphertext as this one's and never notice.
      */
     pending.length = 0;
     const envelopeArrived = new Promise<Envelope>((resolve) => {
@@ -344,16 +398,41 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
     let result: SendResult;
     try {
       result = await from.send(recipient, text);
-    } finally {
+    } catch (error) {
       onEnvelope = null;
+      for (const device of waiting) device.onDecrypted = null;
+      throw error;
     }
     performance.mark(mark('accepted'));
     const encryptMs = measure(`oe-demo:encrypt:${n}`, mark('start'), mark('accepted'));
     emit({ type: 'message-sent', text, result, encryptMs });
 
-    const envelope = await envelopeArrived;
-    const deliveries = await Promise.all(deliveriesArrived);
-    for (const device of waiting) device.onDecrypted = null;
+    /*
+     * The slot stays open until the envelope is in hand, not until the send
+     * resolves.
+     *
+     * It used to be cleared the moment `from.send()` returned, which was safe
+     * for exactly one reason: `inMemoryRelay()` delivers to its subscriber
+     * inside `send()`, so the envelope had always landed before the slot
+     * closed. Against any relay that delivers later the envelope arrived to a
+     * closed slot, went into `pending`, and this line waited on a promise
+     * nothing could resolve. Holding the slot across the wait removes the
+     * race, and the deadline covers what is left — an envelope that is not
+     * merely late but never coming.
+     */
+    let envelope: Envelope;
+    let deliveries: { deviceId: number; message: DecryptedEnvelope }[];
+    try {
+      envelope = await withDeadline(envelopeArrived, deadlineMs, 'the envelope');
+      deliveries = await withDeadline(
+        Promise.all(deliveriesArrived),
+        deadlineMs,
+        'the decrypted message',
+      );
+    } finally {
+      onEnvelope = null;
+      for (const device of waiting) device.onDecrypted = null;
+    }
     const decrypted = deliveries[0].message;
 
     performance.mark(mark('decrypted'));
