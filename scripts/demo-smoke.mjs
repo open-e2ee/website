@@ -69,6 +69,7 @@ import { startDemoSession } from '../src/lib/demo/driver.ts';
 import { SCENARIOS } from '../src/lib/demo/scenarios/catalog.ts';
 import { runFlipAByte } from '../src/lib/demo/scenarios/flip-a-byte.ts';
 import { runAddASecondDevice } from '../src/lib/demo/scenarios/add-a-second-device.ts';
+import { runOutOfPreKeys } from '../src/lib/demo/scenarios/run-out-of-prekeys.ts';
 import { EVENTS } from '../src/workers/site.ts';
 import {
   Cdp,
@@ -113,6 +114,7 @@ const FALLBACK = '[data-demo-fallback-note]';
  */
 const FLIP_SLUG = 'flip-a-byte';
 const SECOND_DEVICE_SLUG = 'add-a-second-device';
+const PREKEY_SLUG = 'run-out-of-prekeys';
 
 const scenarioRoot = (slug) => `[data-scenario="${slug}"]`;
 const SCENARIO_RUN = '[data-scenario-run]';
@@ -153,15 +155,22 @@ const VIEWPORT = { width: 1280, height: 800 };
 
 /*
  * Every script a page fetches before the reader asks for the SDK, which on
- * 2026-08-07 was 15.7 KB over six files on the homepage and 17.9 KB over five
+ * 2026-08-07 was 15.7 KB over six files on the homepage and 13.1 KB over five
  * on `/demo` — the theme and measurement scripts, each page's own script, and
  * a shared preload helper Vite splits out because two pages now import
  * dynamically. The interaction then pulls about 1770 KB, so the tripwire sits
  * two orders of magnitude below any build that has the SDK on its initial path.
  *
- * `/demo` has 2.1 KB left, and it is the page under pressure: each scenario
- * adds to the one script this page ships, so LD6 has less room here than the
- * gzip ceiling suggests.
+ * `/demo` has 6.9 KB left, and it stopped being the page under pressure during
+ * LD6. It had 2.0 KB left with two scenarios, because every scenario's
+ * renderer — about four kilobytes of prose apiece — sat in the page's own
+ * `<script>` and therefore on its initial path. The third scenario went 2.1 KB
+ * over this tripwire and the prose was what tripped it. The renderers now live
+ * in `src/lib/demo/render.ts`, fetched by the same press that fetches the
+ * scenario, which is where code that cannot run until a reader presses the
+ * button belongs. Measured either side of that move, on the same machine:
+ * `/demo` was 18.0 KB over five files with two scenarios and is 13.1 KB over
+ * five with three. A fourth scenario adds nothing here.
  *
  * These are wire bytes without compression: `chrome-harness.mjs` serves the
  * build as it is on disk, while Cloudflare compresses. So this is not
@@ -169,10 +178,11 @@ const VIEWPORT = { width: 1280, height: 800 };
  * without the demo to compare against, and is measured in the proof rather than
  * here. This is the tripwire for the SDK arriving uninvited.
  *
- * The proof's table reports `/demo` lower, at 14.5 KB, and the two numbers are
- * both right: it walks the module graph on disk, while this counts what Chrome
- * actually fetched, which includes responses the static walk does not model.
- * The ceiling is set against the figure measured here.
+ * The proof's table reports `/demo` lower — 14.7 KB before LD6 and 9.7 KB
+ * after — and both are right beside the figures above: it walks the module
+ * graph on disk, while this counts what Chrome actually fetched, which includes
+ * responses the static walk does not model. The ceiling is set against the
+ * figure measured here.
  */
 const PRE_INTERACTION_CEILING = 20 * 1024;
 
@@ -1369,6 +1379,142 @@ async function expectedSecondDevice() {
 }
 
 /*
+ * What running the relay out of one-time prekeys does, according to the
+ * installed SDK.
+ *
+ * This scenario's claim is a negative — the SDK does not complain — and a
+ * negative is the easiest thing on this site to assert falsely, so the run is
+ * done here first and the page is held to it. The assertions below are about
+ * the SDK: they fail when the SDK's behaviour moves, including when it moves
+ * in the direction everyone would prefer.
+ */
+async function expectedPreKeys() {
+  let result;
+  try {
+    result = await runOutOfPreKeys();
+  } catch (cause) {
+    throw new Red(
+      `the prekey-exhaustion scenario could not complete a run in this process: ` +
+        `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
+        `would see in the scenario's status line, so /demo is broken rather than the harness.`,
+    );
+  }
+
+  if (!result.bundle) {
+    throw new Red(
+      'the relay published no prekey bundle at all, so the run never reached the state the ' +
+        'scenario is about.',
+    );
+  }
+  if (result.bundle.ecOneTimePreKey !== null || result.bundle.kemOneTimePreKey !== null) {
+    throw new Red(
+      `the relay was told to serve no one-time prekeys and served them anyway: EC ` +
+        `${result.bundle.ecOneTimePreKey}, KEM ${result.bundle.kemOneTimePreKey}.\n  The ` +
+        `scenario has nothing to show, and the page would be describing an exhaustion that ` +
+        `did not happen.`,
+    );
+  }
+  if (result.bundle.kemLastResortPreKey === null) {
+    throw new Red(
+      'the relay published no last-resort prekey either, so this run is about a bundle with no ' +
+        'usable KEM key\n  rather than about the fallback the scenario exists to show.',
+    );
+  }
+  if (result.healthy.usedKemPreKeyType !== 'one-time') {
+    throw new Red(
+      `the ordinary conversation did not use a one-time prekey — the SDK called it ` +
+        `${JSON.stringify(result.healthy.usedKemPreKeyType)}.\n  Without that, the run has no ` +
+        `healthy case to contrast the exhausted one against.`,
+    );
+  }
+  if (result.fallback.usedKemPreKeyType !== 'last-resort' || result.fallback.usedOneTimePreKey) {
+    throw new Red(
+      `the handshake against the empty bundle did not fall back the way the page says: ` +
+        `usedKemPreKeyType ${JSON.stringify(result.fallback.usedKemPreKeyType)}, ` +
+        `usedOneTimePreKey ${String(result.fallback.usedOneTimePreKey)}.`,
+    );
+  }
+  if (result.delivered !== result.sentence) {
+    throw new Red(
+      `the first message of the new conversation never arrived, so this run cannot show that ` +
+        `exhaustion is survivable.\n  sent: ${JSON.stringify(result.sentence)}, delivered: ` +
+        `${JSON.stringify(result.delivered)}`,
+    );
+  }
+  if (result.exhausted.ec !== 0 || result.exhausted.kem !== 0) {
+    throw new Red(
+      `the relay still held ${result.exhausted.ec} EC and ${result.exhausted.kem} KEM one-time ` +
+        `prekeys at the moment it published an empty bundle.\n  The counts the page prints ` +
+        `would contradict the bundle beside them.`,
+    );
+  }
+
+  /*
+   * The finding, asserted in the direction that makes it a finding. If a future
+   * SDK does warn, this goes red — deliberately. The page's central sentence
+   * would then be false, and a harness that stayed green while the page told a
+   * reader "the SDK says nothing" about an SDK that says something is worse
+   * than no harness. The message says which way to fix it.
+   */
+  if (result.warnings.length > 0) {
+    throw new Red(
+      `the SDK now reports prekey exhaustion: ` +
+        `${result.warnings.map((record) => `${record.level} ${record.message}`).join('; ')}.\n` +
+        `  That is an improvement, and it makes /demo wrong: the scenario is built around the ` +
+        `SDK saying nothing.\n  Update the page and this expectation together.`,
+    );
+  }
+
+  /*
+   * And the check that keeps the one above from being vacuous.
+   *
+   * An empty `warnings` array proves nothing by itself: an SDK that logged
+   * nothing at all would produce one, and so would a filter that had quietly
+   * stopped working. What makes the silence a finding is that the SDK is
+   * talking throughout — in breadcrumbs, several of them naming the fallback —
+   * and never at a level an application would see. A run where the breadcrumbs
+   * dried up is a run where "no warning" is no longer evidence of anything, and
+   * the page would be printing a finding it did not observe.
+   */
+  if (result.whileEmpty.namingFallback === 0) {
+    throw new Red(
+      `the SDK dropped ${result.whileEmpty.breadcrumbs} breadcrumb(s) during the exhausted ` +
+        `handshake and none of them\n  named the last-resort fallback. The page's "no warning" ` +
+        `line is read against what the SDK did say;\n  with nothing said, an empty warn/error ` +
+        `list stops being evidence that exhaustion goes unreported.`,
+    );
+  }
+
+  /*
+   * And the other half of the finding: the SDK's own prekey-health call cannot
+   * see the exhaustion, because it counts this device's stored prekeys rather
+   * than the server's. If it ever agrees with the server, the page's
+   * explanation of why it does not is wrong.
+   */
+  if (
+    result.health &&
+    result.health.oneTimePreKeysRemaining >= 0 &&
+    result.health.oneTimePreKeysRemaining === result.exhausted.ec
+  ) {
+    throw new Red(
+      `checkPreKeyStatus() now agrees with the relay (both ${result.exhausted.ec}), so it is no ` +
+        `longer counting only\n  local storage. The page tells a reader the opposite. Update ` +
+        `both.`,
+    );
+  }
+
+  return {
+    firstSentence: result.firstSentence,
+    sentence: result.sentence,
+    bundle: result.bundle,
+    exhausted: result.exhausted,
+    fallback: result.fallback,
+    health: result.health,
+    whileEmpty: result.whileEmpty,
+  };
+}
+
+/*
  * Sentences the page prints when the run did *not* go the way it claims runs
  * go. Each is the else-branch of a check against an observed value, so any of
  * them on screen means the page is being honest about a run that failed — which
@@ -1401,6 +1547,56 @@ const SECOND_DEVICE_DENIALS = [
   'never reached every device',
   'never joined the session',
 ];
+
+/*
+ * The branches the prekey scenario renders when it cannot make its argument.
+ *
+ * Ordered so the scan below reports the most precise one first, as the
+ * second-device list is. "went on serving them" is the state where the run
+ * never reached exhaustion at all, and everything printed after it is about a
+ * bundle that was never empty — so it has to be reported ahead of the vaguer
+ * downstream branches it causes.
+ *
+ * `The SDK did warn` is in here for a different reason than the rest. It is not
+ * a failed run: it is the page discovering that the SDK has grown the warning
+ * this scenario says it does not have. It belongs on this list because it means
+ * the page is stale, which is a stop, not a pass.
+ *
+ * What is deliberately *not* on this list is the health check declining to
+ * answer. `checkPreKeyStatus()` is throttled per account for twelve hours in a
+ * map that outlives the client, so the second press in a tab is always refused
+ * — it was on the run that put this note here. That is the SDK behaving as
+ * built rather than a run that failed, and it is the same finding as the
+ * counted branch: no signal reaches the application either way. It is held to
+ * instead by `checkRuns` below, which requires the counted branch from at least
+ * one of the two presses, so a pass still proves the finding on screen.
+ */
+const PREKEY_DENIALS = [
+  'went on serving them',
+  'The SDK reported no key agreement',
+  'The message never arrived',
+  'The SDK did warn',
+  'returned nothing on this run',
+];
+
+/*
+ * The prekey scenario's per-run value: the last-resort key the empty bundle
+ * handed over.
+ *
+ * It is the right one for this scenario twice over. It is key material rather
+ * than an identifier, so it is fresh on every press and cannot be fresh on a
+ * recording; and it is the exact key the scenario's argument is about — the one
+ * every sender arriving at an empty stash shares.
+ */
+const LAST_RESORT = /public key ([A-Za-z0-9+/]+)/;
+
+function lastResortIn(run) {
+  for (const step of run.steps) {
+    const found = LAST_RESORT.exec(step);
+    if (found) return found[1];
+  }
+  return null;
+}
 
 /*
  * The one value in the output that a page cannot have been born knowing.
@@ -1449,9 +1645,13 @@ function qrKeyIn(run) {
  * those are derived from a run of the scenario in this process, never typed
  * here — a harness holding the page to strings it was given by the same person
  * who wrote the page is checking that nobody made a typo.
+ *
+ * `checkRuns` is the optional half of `checkRun`: a claim that has to hold
+ * across the pass rather than on every press. Only a scenario whose output
+ * legitimately differs between presses needs one.
  */
 function checkScenario(pass, origin, expectation) {
-  const { slug, secrets, denials, divergence, checkRun } = expectation;
+  const { slug, secrets, denials, divergence, checkRun, checkRuns } = expectation;
 
   if (!pass.opened.open) {
     throw new Red(
@@ -1480,6 +1680,8 @@ function checkScenario(pass, origin, expectation) {
 
     checkRun(run, where);
   }
+
+  checkRuns?.(pass.runs);
 
   /*
    * The two runs, against each other. This is what a page cannot fake: the
@@ -1788,6 +1990,144 @@ function secondDeviceExpectation(expected) {
   };
 }
 
+/*
+ * The same for `run-out-of-prekeys`, whose subject is a silence.
+ *
+ * The page is held to the SDK's own words for the fallback, to the bundle the
+ * relay published, and to the two sentences it is only allowed to print when
+ * the run earned them. The citation is checked as well: it is the one claim in
+ * the output that this run did not produce, which is exactly why it must not be
+ * quietly droppable.
+ */
+function preKeysExpectation(expected) {
+  return {
+    slug: PREKEY_SLUG,
+    secrets: [expected.firstSentence, expected.sentence],
+    denials: PREKEY_DENIALS,
+    divergence: { what: 'last-resort prekey', of: lastResortIn },
+    checkRun(run, where) {
+      /* The SDK's own account of the handshake, in the page's steps. Both
+         fields, because "last-resort" alone is a string the page could hold
+         and `usedOneTimePreKey false` is the SDK conceding the other half. */
+      for (const value of [expected.fallback.usedKemPreKeyType, 'usedOneTimePreKey false']) {
+        if (!run.text.includes(value)) {
+          throw new Red(
+            `${where} never printed ${JSON.stringify(value)}. The same scenario run in this ` +
+              `process against\n  the installed package reported it, and the page printed:\n  ` +
+              `${run.text.slice(0, 400) || '(nothing)'}`,
+          );
+        }
+      }
+
+      /* The counts, which are the before and after the whole scenario turns
+         on. A page that printed the fallback without them would be asserting
+         the stash ran out rather than showing it — and the numbers themselves
+         are checked, not just their presence, because "99 and 99 left to give"
+         beside a bundle with nothing in it is the one arrangement of this
+         scenario's own figures that contradicts the rest of it. */
+      const left = `${expected.exhausted.ec} and ${expected.exhausted.kem} left to give`;
+      if (!run.steps.some((text) => text.includes(left))) {
+        throw new Red(
+          `${where} printed no step saying "${left}" — what the relay actually had when it ` +
+            `published\n  the empty bundle, as the same scenario reported it in this process.\n  ` +
+            `Steps printed:\n  ${run.steps.join('\n  ') || '(none)'}`,
+        );
+      }
+
+      /* The two named non-events. The first is the scenario's whole finding;
+         the second is the answer to the question a reader asks immediately
+         afterwards, and leaving it out would imply the SDK has a health call
+         that covers this. */
+      /* The page's silence line has to carry what the SDK did say, for the
+         reason the expectation above spells out: "no warning" beside a count
+         of breadcrumbs naming the fallback is a finding, and on its own it is
+         a sentence about an empty array. */
+      if (!run.nots.some((text) => /name the last-resort fallback outright/.test(text))) {
+        throw new Red(
+          `${where} said the SDK gave no warning without saying what it gave instead. The ` +
+            `breadcrumbs naming\n  the fallback are what make the silence evidence rather than ` +
+            `an absence of logging.\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
+        );
+      }
+
+      for (const promised of ['No warning', 'No signal from the health check']) {
+        if (!run.nots.some((text) => text.startsWith(promised))) {
+          throw new Red(
+            `${where} did not say "${promised}". Naming what did not happen is the point of the ` +
+              `scenario;\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
+          );
+        }
+      }
+
+      /* The measurement, with its source. This page may tell a reader that
+         exhaustion happens in production only while it also tells them who
+         measured it — an unsourced "13%" is the kind of claim this project has
+         a document forbidding. */
+      for (const required of ['13% of companion devices', 'arXiv:2511.20252']) {
+        if (!run.text.includes(required)) {
+          throw new Red(
+            `${where} printed the scenario without ${JSON.stringify(required)}. The measurement ` +
+              `and its source ship together\n  or neither ships.`,
+          );
+        }
+      }
+    },
+
+    /*
+     * The finding itself, which only one of the two presses can show.
+     *
+     * `checkPreKeyStatus()` answers at most once per account every twelve
+     * hours, in a map that outlives the client, so the second press in a tab
+     * is refused whatever it would have said. Both branches are honest and
+     * both are checked above as "No signal from the health check"; only the
+     * counted one carries the evidence — a healthy-looking number standing
+     * beside a relay holding nothing. Requiring it of every press would red on
+     * the throttle; requiring it of neither would let the page stop making its
+     * argument and still pass.
+     */
+    checkRuns(runs) {
+      /* `-1` is the SDK declining to answer, not a number of prekeys. A page
+         that printed it as a count would be handing a reader a reading the SDK
+         refused to give, in the one sentence on the page about whether the
+         application can find any of this out. */
+      for (const [index, run] of runs.entries()) {
+        const negative = run.nots.find((text) => /reported -\d+ remaining/.test(text));
+        if (negative) {
+          throw new Red(
+            `run ${index + 1} printed checkPreKeyStatus()'s refusal as though it were a count of ` +
+              `prekeys:\n  ${negative}\n  The SDK returns -1 when it declines to answer, and the ` +
+              `page has to say so rather than\n  report it.`,
+          );
+        }
+      }
+
+      const counted = runs.find((run) =>
+        run.nots.some((text) => text.includes('remaining and needsReplenishment')),
+      );
+      if (!counted) {
+        throw new Red(
+          `neither press printed what checkPreKeyStatus() actually returned, so this pass never ` +
+            `showed\n  the SDK's health call reporting good numbers over an empty relay — the ` +
+            `half of the scenario\n  a reader cannot infer. Printed:\n  ` +
+            `${runs.map((run) => run.nots.join(' | ') || '(nothing)').join('\n  ')}`,
+        );
+      }
+
+      /* And the number, held against the relay's. The page says the call
+         counts local storage rather than the server; a run where the two agree
+         means it no longer does, and the sentence beside them is then wrong. */
+      const held = String(expected.exhausted.ec);
+      if (new RegExp(`reported ${held} remaining`).test(counted.nots.join(' '))) {
+        throw new Red(
+          `checkPreKeyStatus() reported the same ${held} the relay had left, so it is no longer ` +
+            `counting only\n  local storage. The page tells a reader the opposite, in the ` +
+            `sentence right beside it. Update both.`,
+        );
+      }
+    },
+  };
+}
+
 // --------------------------------------------------------------------- the run
 
 async function main() {
@@ -1810,6 +2150,7 @@ async function main() {
   const expected = await expectedFields(envelopeFields);
   const refusal = await expectedRefusal();
   const secondDevice = await expectedSecondDevice();
+  const preKeys = await expectedPreKeys();
 
   const held = { server: null, chrome: null, cdp: null, targets: [] };
   try {
@@ -1847,6 +2188,13 @@ async function main() {
       linking,
       origin,
       secondDeviceExpectation(secondDevice),
+    );
+
+    const prekeys = await visitScenario(cdp, origin, held, PREKEY_SLUG);
+    const { beacons: prekeyBeacons, ids: lastResorts } = checkScenario(
+      prekeys,
+      origin,
+      preKeysExpectation(preKeys),
     );
 
     /* Say which of the two things happened. Claiming a quiet window we never
@@ -1900,7 +2248,23 @@ async function main() {
         `${linkingBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
         `                  before a touch ${kb(linking.bytesBefore)} over ` +
         `${linking.before.length} file(s); the run drew ${kb(linking.bytesAfter)} over ` +
-        `${linking.after.length} chunk(s)`,
+        `${linking.after.length} chunk(s)\n` +
+        `  /demo:          ${PREKEY_SLUG} opened by fragment and run twice; the relay published ` +
+        `a bundle with no\n` +
+        `                  one-time prekey of either type and ${preKeys.exhausted.ec} left to ` +
+        `give, and the SDK called the handshake\n` +
+        `                  "${preKeys.fallback.usedKemPreKeyType}" with no record at warn or ` +
+        `error\n` +
+        `                  checkPreKeyStatus() answered ` +
+        `${preKeys.health ? preKeys.health.oneTimePreKeysRemaining : 'nothing'} while the relay ` +
+        `held ${preKeys.exhausted.ec}\n` +
+        `                  last-resort prekeys ` +
+        `${lastResorts.map((key) => key.slice(0, 12)).join(' then ')} — a fresh stash per run\n` +
+        `                  measured ${prekeyBeacons.length} beacon(s): ` +
+        `${prekeyBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
+        `                  before a touch ${kb(prekeys.bytesBefore)} over ` +
+        `${prekeys.before.length} file(s); the run drew ${kb(prekeys.bytesAfter)} over ` +
+        `${prekeys.after.length} chunk(s)`,
     );
   } finally {
     await teardown(held);

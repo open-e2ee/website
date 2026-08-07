@@ -73,4 +73,17 @@ export const SCENARIOS: ScenarioSummary[] = [
       label: 'Opening a session with a device you have never written to',
     },
   },
+  {
+    slug: 'run-out-of-prekeys',
+    title: 'Run out of one-time prekeys',
+    expectation:
+      'The server is left with no one-time prekeys, a new conversation is opened against it ' +
+      'anyway, and the handshake quietly settles for the fallback key instead.',
+    action: 'Empty the prekey stash',
+    source: './run-out-of-prekeys.ts',
+    link: {
+      href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/DEVICE_LIFECYCLE.md#prekey-types-explained',
+      label: 'Which prekey does what, and which one a session falls back to',
+    },
+  },
 ];
