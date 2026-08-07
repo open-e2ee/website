@@ -63,17 +63,26 @@ const declaredEnvelopeFields = await (async () => {
 function relayThatDeliversLate({ deliverAfterMs = 50, delivery = 'late' } = {}) {
   const relay = inMemoryRelay();
   const subscribe = relay.subscribe.bind(relay);
+  const subscribers = new Map();
   relay.demoDelivery = delivery;
-  relay.subscribe = (userId, deviceId, onEnvelope, options) =>
-    subscribe(
+  relay.subscribe = (userId, deviceId, onEnvelope, options) => {
+    /* The driver's own observer subscribes to the recipient's row before the
+       recipient's client does, so counting per row separates the two: the
+       page watching the server, then the device reading its mail. */
+    const key = `${userId}:${deviceId}`;
+    const nth = (subscribers.get(key) ?? 0) + 1;
+    subscribers.set(key, nth);
+    return subscribe(
       userId,
       deviceId,
       (envelope) => {
         if (relay.demoDelivery === 'never') return;
+        if (relay.demoDelivery === 'observer-only' && nth > 1) return;
         setTimeout(() => onEnvelope(envelope), deliverAfterMs).unref?.();
       },
       options,
     );
+  };
   return relay;
 }
 
@@ -384,6 +393,29 @@ test('fails on its deadline when the relay never delivers at all', async () => {
   }
 });
 
+test('fails on its deadline when the envelope lands but no device decrypts it', async () => {
+  /* The relay stores the row and the page sees it, and the receiving device
+     never reads it. The envelope wait is satisfied, so this is the only one of
+     the three that reaches the second deadline at all. */
+  const session = await startDemoSession({
+    relay: relayThatDeliversLate({ delivery: 'observer-only' }),
+    deadlineMs: 250,
+  });
+  try {
+    await assert.rejects(
+      () =>
+        failsIfSlow(
+          session.send(PROBE),
+          5000,
+          'the send hung waiting to be decrypted, so only the envelope wait is bounded',
+        ),
+      /never delivered the decrypted message/,
+    );
+  } finally {
+    await session.stop();
+  }
+});
+
 test('is still usable after a send has failed on its deadline', async () => {
   /* A send that fails leaves the envelope slot and every device callback
      armed unless they are cleared on the way out, and the next send would
@@ -391,7 +423,15 @@ test('is still usable after a send has failed on its deadline', async () => {
   const relay = relayThatDeliversLate({ delivery: 'never' });
   const session = await startDemoSession({ relay, deadlineMs: 250 });
   try {
-    await assert.rejects(() => session.send('the one that never lands'), /never delivered/);
+    await assert.rejects(
+      () =>
+        failsIfSlow(
+          session.send('the one that never lands'),
+          5000,
+          'the first send hung rather than failing, so this test cannot reach what it is for',
+        ),
+      /never delivered/,
+    );
 
     relay.demoDelivery = 'late';
     const exchange = await failsIfSlow(
