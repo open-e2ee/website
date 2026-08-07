@@ -394,19 +394,25 @@ function bareIdentifier(span) {
 }
 
 /*
- * A hand-written file directly under the public repository's `docs/`, and the
- * heading it aims at.
+ * A hand-written document in the public repository, and the heading it aims at.
  *
- * The name may not contain a slash, which is load-bearing rather than tidy:
- * `docs/api/**` is generated reference that the export publishes to the public
- * repository (`publicDocRoots`) and does **not** put in the npm package, so the
- * package cannot answer whether one of those files exists and this must not
- * guess. Excluding the slash is what keeps those links out of scope. Widen this
- * and every `docs/api/` link on the site fails a check it should never have
- * been given.
+ * Two shapes are in scope, because the site links both: a file one level under
+ * `docs/`, and a file at the repository root. The root-level set —
+ * `ARCHITECTURE.md`, `SECURITY.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`,
+ * `ADAPTERS.md` — was outside this pattern until now, so nine links on the site
+ * were exempt from the check written to catch exactly their failure mode. They
+ * all resolve today; nothing was broken, and nothing was watching either.
+ *
+ * Anything deeper than one segment stays out of scope, which is load-bearing
+ * rather than tidy. `docs/api/**` is generated reference that the export
+ * publishes to the public repository (`publicDocRoots`) and does **not** put in
+ * the npm package, so the package cannot answer whether one of those files
+ * exists and this must not guess. The site has no `docs/api/` link today; the
+ * exclusion is here so that the first one does not fail a check that was never
+ * able to judge it.
  */
 const PUBLIC_DOC_LINK =
-  /https:\/\/github\.com\/open-e2ee\/signal-protocol-js\/blob\/[^/"]+\/docs\/([A-Za-z0-9._-]+\.md)(?:#([A-Za-z0-9._-]+))?/g;
+  /https:\/\/github\.com\/open-e2ee\/signal-protocol-js\/blob\/[^/"]+\/([A-Za-z0-9._/-]+)(?:#([A-Za-z0-9._-]+))?/g;
 
 /*
  * The interface whose members are the SDK's whole hook surface, and the name
@@ -509,34 +515,44 @@ if (!surface) {
   const docsDir = join(surface.root, 'docs');
   const docs = existsSync(docsDir) ? new Set(await readdir(docsDir)) : null;
   const anchors = new Map();
+  const rootFiles = new Set(
+    (await readdir(surface.root, { withFileTypes: true }))
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name),
+  );
 
   for (const file of files) {
     const rel = relative(DIST, file);
     const html = await readFile(file, 'utf8');
-    for (const [, doc, anchor] of html.matchAll(PUBLIC_DOC_LINK)) {
-      if (!docs) {
+    for (const [, path, anchor] of html.matchAll(PUBLIC_DOC_LINK)) {
+      const segments = path.split('/');
+      const underDocs = segments.length === 2 && segments[0] === 'docs';
+      /* Out of scope rather than passing: see PUBLIC_DOC_LINK. */
+      if (segments.length > 1 && !underDocs) continue;
+      if (underDocs && !docs) {
         problems.push(
-          `${rel}: cannot verify the link to docs/${doc} — the ${surface.origin} copy of ${SDK_PACKAGE} ships no docs directory`,
+          `${rel}: cannot verify the link to ${path} — the ${surface.origin} copy of ${SDK_PACKAGE} ships no docs directory`,
         );
         continue;
       }
-      if (!docs.has(doc)) {
+      const published = underDocs ? docs : rootFiles;
+      if (!published.has(segments.at(-1))) {
         problems.push(
-          `${rel}: links to docs/${doc} in the public repository, which does not export that file — the URL is a 404. ` +
-            `Exported: ${[...docs].sort().join(', ')}`,
+          `${rel}: links to ${path} in the public repository, which does not export that file — the URL is a 404. ` +
+            `Exported ${underDocs ? 'under docs/' : 'at the root'}: ${[...published].sort().join(', ')}`,
         );
         continue;
       }
       if (!anchor) continue;
-      if (!anchors.has(doc)) {
-        const markdown = await readFile(join(docsDir, doc), 'utf8');
+      if (!anchors.has(path)) {
+        const markdown = await readFile(join(surface.root, path), 'utf8');
         anchors.set(
-          doc,
+          path,
           new Set([...markdown.matchAll(/^#{1,6} +(.+?)\s*$/gm)].map(([, head]) => slug(head))),
         );
       }
-      if (!anchors.get(doc).has(anchor)) {
-        problems.push(`${rel}: docs/${doc} has no heading that GitHub would number #${anchor}`);
+      if (!anchors.get(path).has(anchor)) {
+        problems.push(`${rel}: ${path} has no heading that GitHub would number #${anchor}`);
       }
     }
   }
