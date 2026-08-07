@@ -39,6 +39,7 @@ import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory
 import type { InMemorySignalProtocolStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import type { InMemorySignalProtocolRelayServer } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
+import { withDeadline } from './deadline.ts';
 
 export interface DemoSessionOptions {
   /** Account that types. Shown to the reader, so callers name it. */
@@ -205,28 +206,6 @@ function measure(name: string, from: string, to: string): number {
   return performance.measure(name, from, to).duration;
 }
 
-/**
- * Wait for something the relay owes us, or fail saying what never came.
- *
- * `inMemoryRelay()` hands the envelope to its subscriber inside `send()`, so
- * in this tab every one of these values has already arrived before it is
- * awaited. No relay that crosses anything — a BroadcastChannel, a socket, a
- * network — can promise that, and one that never delivers turns a bare
- * `await` into the worst failure a demo has available: no error, no rejection,
- * no console line, a spinner that runs until the reader closes the tab.
- *
- * So the wait is bounded, and reaching the bound is an ordinary rejection that
- * the surface above renders as a failure like any other. Loud and wrong beats
- * silent and stuck: a deadline that fires early costs a reader one confusing
- * error message, and one that never fires costs them the page.
- */
-function withDeadline<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const expired = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => reject(new Error(`the relay never delivered ${what} (waited ${ms}ms)`)), ms);
-  });
-  return Promise.race([promise, expired]).finally(() => clearTimeout(timer));
-}
 
 export async function startDemoSession(options: DemoSessionOptions = {}): Promise<DemoSession> {
   const sender = options.sender ?? 'alice';

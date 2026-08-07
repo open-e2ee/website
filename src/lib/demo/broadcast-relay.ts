@@ -45,6 +45,7 @@
 
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import type { Envelope } from '@open-e2ee/signal-protocol-sdk';
+import type { ISignalProtocolRelayServer } from '@open-e2ee/signal-protocol-sdk/remote/relay/types';
 
 /**
  * Every relay method allowed to cross the channel.
@@ -152,20 +153,18 @@ export interface BroadcastRelayOptions {
 
 const DEFAULT_CALL_TIMEOUT_MS = 10_000;
 
-/**
- * The relay surface, as an object the SDK will accept.
- *
- * Deliberately not `ISignalProtocolRelayServer`: this carries twelve methods
- * and that interface declares around forty, and the cast that hides the gap
- * belongs in one place with this comment beside it rather than at every call
- * site. The gap is not silent — `refuse()` below fills it with methods that
- * throw their own name.
- */
 export interface DemoRelay {
   /** `'host'` holds the relay; `'guest'` calls the tab that does. */
   readonly role: 'host' | 'guest';
-  /** Hand to `createSignalProtocolClient({ adapters: { relay } })`. */
-  readonly relay: unknown;
+  /**
+   * Hand to `createSignalProtocolClient({ adapters: { relay } })`.
+   *
+   * Typed as the full interface, which this does not implement — it carries
+   * what a session reaches and refuses the rest by name. The single cast that
+   * says so is at the bottom of this file, with its reasoning beside it,
+   * rather than repeated at every call site.
+   */
+  readonly relay: ISignalProtocolRelayServer;
   /** Stop listening and, if host, drop the relay. */
   close(): void;
 }
@@ -428,7 +427,18 @@ export async function broadcastRelay(options: BroadcastRelayOptions = {}): Promi
 
   return {
     role,
-    relay,
+    /*
+     * The one cast, and why it is a cast rather than an implementation.
+     *
+     * `ISignalProtocolRelayServer` declares around forty methods; a session
+     * reaches the fourteen above. Writing the other twenty-six to satisfy the
+     * compiler would be twenty-six places for a wrong answer to hide, and the
+     * compiler cannot tell a correct implementation from a plausible one. So
+     * they are present and they throw their own names, which is the honest
+     * shape and the one that reports a change in the SDK instead of absorbing
+     * it. The type says what the SDK requires; `refuse()` says what this is.
+     */
+    relay: relay as unknown as ISignalProtocolRelayServer,
     close() {
       stop();
       channel.close();
