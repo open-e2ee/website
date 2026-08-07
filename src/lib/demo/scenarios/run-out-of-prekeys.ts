@@ -29,9 +29,10 @@
  *    prints what it returns instead of leaving the reader to assume it helps.
  *
  * The relay's pool is emptied part-way through rather than at boot so that the
- * counts have a before as well as an after. That also matches the measured
- * cause: the WhatsApp study reads the exhausted companion devices as ones that
- * were offline long enough to spend their stash without replenishing it.
+ * counts have a before as well as an after. What that reproduces is the *state*
+ * the WhatsApp study measured, not a cause for it — the study offers being
+ * powered off long enough to spend the stash as one possible interpretation of
+ * its own figure, and this scenario has no opinion on which cause is at work.
  */
 
 /* demo:code:start */
@@ -240,10 +241,15 @@ export async function runOutOfPreKeys(): Promise<RunOutOfPreKeysResult> {
   const healthy = agreementSince(log.breadcrumbs, healthyFrom);
   const afterFirstConversation = await counts();
 
-  /* Now the stash is gone: the device has been offline too long to replenish
-     what it spent, so the relay has one-time prekeys for nobody. The signed and
-     last-resort keys stay, which is exactly the state the WhatsApp measurement
-     found on 13% of companion devices. */
+  /* From here the relay serves one-time prekeys to nobody, keeping its signed
+     and last-resort keys — the state the WhatsApp measurement found on 13% of
+     companion devices.
+
+     This models the state, not a cause: nothing here decides *why* the stash is
+     empty, and the injector drains the pools inside `getPreKeyBundle` rather
+     than on this call, so a count taken between here and the fetch below still
+     reads the old numbers. Every count this scenario prints is read after the
+     bundle, which is why they are 0. */
   relay.failures.configure({ exhaustOneTimePreKeys: true });
 
   /* Somebody who has never written to this account before opens a conversation
