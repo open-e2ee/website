@@ -1646,6 +1646,26 @@ async function expectedReinstall() {
   }
 
   /*
+   * And which codes those records carry, which the page prints by name and
+   * tells a reader to expect in their own logs. `REINSTALL_CODES` says why this
+   * is an exact set rather than a floor.
+   */
+  const seen = [...result.codes].sort();
+  const missing = REINSTALL_CODES.filter((code) => !seen.includes(code));
+  const extra = seen.filter((code) => !REINSTALL_CODES.includes(code));
+  if (missing.length > 0 || extra.length > 0) {
+    throw new Red(
+      `the reinstall's error codes are not the set the page names. Expected exactly ` +
+        `${REINSTALL_CODES.join(', ')};\n  this run carried ${seen.join(', ') || 'none'}` +
+        (missing.length > 0 ? `, missing ${missing.join(', ')}` : '') +
+        (extra.length > 0 ? `, and carrying ${extra.join(', ')} as well` : '') +
+        `.\n  Either the scenario stopped reading one of the four places the SDK puts a code, or ` +
+        `the SDK reports\n  something here it did not before. The page names these codes, so fix ` +
+        `the page and this list together.`,
+    );
+  }
+
+  /*
    * `verify()` throwing is what stops an application from rendering the changed
    * number a "safety number changed" banner is made of. If it starts answering,
    * the page's account of why the banner is hard to build is wrong.
@@ -1778,6 +1798,24 @@ const PREKEY_DENIALS = [
   'The SDK did warn',
   'returned nothing on this run',
 ];
+
+/*
+ * Every error code the reinstall produces, and nothing else.
+ *
+ * The page names these codes and tells a reader that each record carries one of
+ * them, so the set is copy rather than a diagnostic. It shipped wrong once: the
+ * scenario read a code from two of the four places the SDK puts one, saw the two
+ * records that carry `UNTRUSTED_IDENTITY`, missed the five that carry the other
+ * two, and the page told a reader to grep for a code most of the records do not
+ * have. Nothing was red, because the set was printed in the summary and asserted
+ * nowhere.
+ *
+ * Asserted as an exact set, in both directions. A missing code means the
+ * scenario stopped reading one of the four places, which is the mistake that
+ * happened; an extra one means the SDK reports something new here, and the page
+ * has to say so before it can go on claiming to list what a reader will see.
+ */
+const REINSTALL_CODES = ['INITIALIZATION_FAILED', 'PREKEY_NOT_FOUND', 'UNTRUSTED_IDENTITY'];
 
 /*
  * The branches the reinstall scenario renders when it cannot make its argument.

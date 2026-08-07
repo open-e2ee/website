@@ -239,13 +239,29 @@ async function currentIdentity(
   return identity;
 }
 
-/** Whatever error code a record is carrying, wherever the SDK put it. */
+/**
+ * Whatever error code a record is carrying, wherever the SDK put it.
+ *
+ * There are four places, and reading fewer of them is not a smaller version of
+ * this function — it is a wrong answer that looks like a small one. Reading
+ * only the top two attributes five of the seven records this scenario produces
+ * to the one code the other two carry, which would send a reader grepping their
+ * own logs for a code most of these records do not have. `client/retry.js` puts
+ * it at `data.errorCode`, and the nineteen `data: { error: … }` sites put an
+ * error object where `data.error.code` is the code.
+ */
 function codeOf(record: ScenarioLogRecord): string | null {
   for (const entry of record.payload) {
     if (typeof entry !== 'object' || entry === null) continue;
-    const payload = entry as { code?: unknown; error?: { code?: unknown } };
+    const payload = entry as {
+      code?: unknown;
+      error?: { code?: unknown };
+      data?: { errorCode?: unknown; error?: { code?: unknown } };
+    };
     if (typeof payload.code === 'string') return payload.code;
     if (typeof payload.error?.code === 'string') return payload.error.code;
+    if (typeof payload.data?.errorCode === 'string') return payload.data.errorCode;
+    if (typeof payload.data?.error?.code === 'string') return payload.data.error.code;
   }
   return null;
 }
