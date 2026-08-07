@@ -1,11 +1,13 @@
 /*
  * A real Chrome, driving a real build, served under the headers the site ships.
  *
- * Extracted from `demo-smoke.mjs` when `demo-driver-check.mjs` needed the same
- * three things: the production CSP read out of `public/_headers` rather than
- * retyped, a static server that applies it, and a CDP client. Two copies of a
- * CDP client in one `scripts/` directory would drift, and the one that drifted
- * would be the one nobody was watching.
+ * Extracted from `demo-smoke.mjs` when a second harness needed the same three
+ * things: the production CSP read out of `public/_headers` rather than retyped,
+ * a static server that applies it, and a CDP client. That second harness has
+ * since folded back into `demo-smoke.mjs`, and this stayed separate on its own
+ * merits — it is browser plumbing, and the file beside it is a set of claims
+ * about the demo. Mixing the two made both harder to read even when there was
+ * only one caller.
  *
  * Chrome is driven over CDP directly, the way the landing-page gauntlet's
  * viewport tooling was, and for the same reason: Node ships a WebSocket client,

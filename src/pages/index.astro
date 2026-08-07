@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BatteryMark from '../components/BatteryMark.astro';
-import CarrierPanel from '../components/CarrierPanel.astro';
+import LiveCarrierPanel from '../components/demo/LiveCarrierPanel.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import Icon from '../components/Icon.astro';
 import OsiMark from '../components/OsiMark.astro';
@@ -647,12 +647,29 @@ const trustLinks = [
           note said to revisit if no critic reported the boundary landing
           faster with it. None ever did. */}
       <div id="what-the-relay-stores" class="carrier-proof">
-        <h3>The same message, recorded</h3>
+        {/* The heading and the lead used to describe a recording, because a
+            recording was all this slot held. The panel underneath now runs the
+            SDK in the reader's own tab, and a caption that still said
+            "recorded" would be understating its own evidence — the opposite of
+            this page's usual failure, and no more accurate for it. Both
+            sentences are written for the live panel and stay true of the
+            recorded one, which is what a reader with no JavaScript sees.
+
+            "Against the in-memory relay" survives the rewrite deliberately.
+            The first draft moved that admission down into the panel's own
+            caption, where invariant 5 wants it, and dropped it here — and
+            `tests/site-content.test.mjs` failed, correctly: the sentence is
+            what stops "the installed SDK encrypts it here" from reading as a
+            claim about production infrastructure. It is now in both places,
+            which is the right number for the one disclosure this band exists
+            to make. */}
+        <h3>The same message, in your browser</h3>
         <p class="measure">
-          Not a mock-up: the plaintext as Bob&rsquo;s device decrypted it, and the row the relay
-          held, captured by running the documented quickstart against the in-memory relay.
+          Not a mock-up: type a sentence and the installed SDK encrypts it here, in this tab,
+          against the in-memory relay, with the row your relay would hold printed from the envelope
+          itself.
         </p>
-        <CarrierPanel />
+        <LiveCarrierPanel />
       </div>
 
       {/* A reader who has just read the row the relay held is at the moment of
