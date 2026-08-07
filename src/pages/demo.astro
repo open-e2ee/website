@@ -130,13 +130,6 @@ const description =
 </BaseLayout>
 
 <script>
-  import type { SecondDeviceResult } from '../lib/demo/scenarios/add-a-second-device.ts';
-  import type { FlipAByteResult } from '../lib/demo/scenarios/flip-a-byte.ts';
-  import type { ScenarioLogRecord } from '../lib/demo/scenarios/log.ts';
-
-  /** Rendering a scenario's own kind of result, once its module has arrived. */
-  type Describe = (value: unknown) => string;
-
   /*
    * What each scenario's button runs, keyed by the slug in the catalogue.
    *
@@ -149,20 +142,45 @@ const description =
    * Each `import()` stays inside its own function so that pressing one button
    * fetches one scenario. The 713 KB of SDK behind them is shared, and Vite
    * hands the second scenario the chunks the first already pulled.
+   *
+   * The renderers come the same way, in parallel, for the same reason: nothing
+   * a reader has not asked for belongs on this page's initial path, and what
+   * the page says about a result is only needed once there is a result. All
+   * three buttons pull the one render chunk, so the second press fetches
+   * nothing new. That leaves this script holding the wiring alone — which is
+   * all of it that runs before a press.
    */
   const PROGRAMS: Record<
     string,
     (output: HTMLElement, status: HTMLElement) => Promise<void>
   > = {
     'flip-a-byte': async (output, status) => {
-      const module = await import('../lib/demo/scenarios/flip-a-byte.ts');
+      const [scenario, render] = await Promise.all([
+        import('../lib/demo/scenarios/flip-a-byte.ts'),
+        import('../lib/demo/render.ts'),
+      ]);
       status.textContent = 'Booting two devices, then corrupting a message…';
-      renderFlipAByte(output, await module.runFlipAByte(), module.describePayload);
+      render.renderFlipAByte(output, await scenario.runFlipAByte(), scenario.describePayload);
     },
     'add-a-second-device': async (output, status) => {
-      const module = await import('../lib/demo/scenarios/add-a-second-device.ts');
+      const [scenario, render] = await Promise.all([
+        import('../lib/demo/scenarios/add-a-second-device.ts'),
+        import('../lib/demo/render.ts'),
+      ]);
       status.textContent = 'Booting two accounts, then linking a device onto one of them…';
-      renderSecondDevice(output, await module.runAddASecondDevice(), module.describePayload);
+      render.renderSecondDevice(
+        output,
+        await scenario.runAddASecondDevice(),
+        scenario.describePayload,
+      );
+    },
+    'run-out-of-prekeys': async (output, status) => {
+      const [scenario, render] = await Promise.all([
+        import('../lib/demo/scenarios/run-out-of-prekeys.ts'),
+        import('../lib/demo/render.ts'),
+      ]);
+      status.textContent = 'Spending the prekey stash, then opening a new conversation…';
+      render.renderRunOutOfPreKeys(output, await scenario.runOutOfPreKeys(), scenario.describePayload);
     },
   };
 
@@ -239,267 +257,5 @@ const description =
         run.disabled = false;
       }
     });
-  }
-
-  const el = <K extends keyof HTMLElementTagNameMap>(
-    tag: K,
-    text?: string,
-    className?: string,
-  ): HTMLElementTagNameMap[K] => {
-    const node = document.createElement(tag);
-    if (text !== undefined) node.textContent = text;
-    if (className) node.className = className;
-    return node;
-  };
-
-  const hex = (byte: number) => `0x${byte.toString(16).padStart(2, '0')}`;
-  const count = (value: number) => value.toLocaleString('en-US');
-
-  /* Every figure on this page comes out of a run, so the grammar around one has
-     to follow the number rather than the number a sentence was written for. */
-  const deviceCount = (value: number) => `${count(value)} device${value === 1 ? '' : 's'}`;
-
-  /*
-   * Everything printed here is read off the result, and every claim is
-   * conditional on what the run actually produced. The two lines this page
-   * exists to be able to write — no garbage plaintext, no silent drop — are
-   * checks against the observed values, not sentences waiting to be shown. A
-   * run where the plaintext came back wrong has to print that instead.
-   */
-  function renderFlipAByte(output: HTMLElement, result: FlipAByteResult, describePayload: Describe) {
-    output.replaceChildren();
-
-    /* The three rendered collections carry data attributes as well as classes.
-       `demo-smoke.mjs` reads them, and a harness that found them by class name
-       would break the next time this page is restyled — which is the one kind
-       of change that must never turn a scenario's evidence red. */
-    const happened = el('ol', undefined, 'scenario-steps');
-    happened.dataset.scenarioSteps = '';
-    const step = (text: string) => happened.append(el('li', text));
-
-    step(
-      `One byte changed on the way into the relay: byte ${count(result.flip.at)} of ` +
-        `${count(result.flip.of)}, ${hex(result.flip.before)} to ${hex(result.flip.after)}.`,
-    );
-    if (result.accepted) {
-      step(
-        `The sender was told it worked: message ${result.accepted.messageId}, accepted for ` +
-          `${result.accepted.recipientDeviceCount} device. Nothing on the sending side knows ` +
-          `anything is wrong.`,
-      );
-    }
-    if (result.refusal) {
-      step(
-        `The receiving device refused it — ${result.refusal.errorCode}: ` +
-          `${result.refusal.errorMessage}`,
-      );
-    } else {
-      step('The receiving device reported no error at all, which is not what should happen here.');
-    }
-    if (result.delivered === null) {
-      step('Nothing was ever delivered, so this run has no recovery to show.');
-    } else if (result.delivered === result.sentence) {
-      step(
-        `It asked the sender for the message again, and the resend arrived intact` +
-          (result.roundTripMs === null
-            ? '.'
-            : `, ${result.roundTripMs.toFixed(1)} ms after send.`),
-      );
-    } else {
-      step('Something other than the sent message was delivered. That is a defect, not a demo.');
-    }
-
-    output.append(el('h3', 'What happened'), happened);
-
-    /* The point of the scenario, and the half that a log alone does not make.
-       Both entries are assertions about this run's values. */
-    const notHappened = el('ul', undefined, 'scenario-nots');
-    notHappened.dataset.scenarioNots = '';
-
-    /* Three outcomes, not two. "Nothing was delivered" used to be folded in
-       with "the right thing was delivered", so a run that lost the recovery
-       race printed "the only text that reached the application is
-       byte-for-byte the sentence that was sent" about an application that
-       received no text at all. That is the one direction this page must never
-       round in: a claim of fail-closed, made on the strength of a run that
-       produced no evidence for it. A run with nothing to show says so. */
-    const garbage = el('li');
-    if (result.delivered === result.sentence) {
-      garbage.textContent =
-        'No garbage plaintext. The corrupted copy produced no output at all — the only text ' +
-        'that reached the application is byte-for-byte the sentence that was sent.';
-    } else if (result.delivered === null) {
-      garbage.textContent =
-        'Nothing reached the application at all: the corrupted copy produced no output, and no ' +
-        'resend arrived before this scenario stopped waiting. So this run cannot say that no ' +
-        'garbage plaintext reached it — it can only say that nothing did.';
-    } else {
-      garbage.textContent =
-        'Garbage plaintext reached the application. This is the failure this page exists to ' +
-        'show cannot happen, and on this run it did.';
-    }
-    notHappened.append(
-      garbage,
-      el(
-        'li',
-        result.refusal
-          ? 'No silent drop. The failure was named, the session was archived, and the sender was ' +
-              'asked to send it again — all of it in the log below.'
-          : 'No refusal was recorded, so this run cannot say the drop was not silent.',
-      ),
-    );
-    output.append(el('h3', 'What did not happen'), notHappened);
-
-    appendLog(output, result.records, result.debugRecords, 'both devices', describePayload);
-  }
-
-  /*
-   * Everything printed here is read off the result, and every claim is
-   * conditional on what the run produced. The scenario's own subject is an
-   * absence — a message the new device does not have — so the page checks the
-   * absence rather than announcing it: a run where the message turned up on
-   * the new device has to say that instead, however little sense it would
-   * make.
-   */
-  function renderSecondDevice(
-    output: HTMLElement,
-    result: SecondDeviceResult,
-    describePayload: Describe,
-  ) {
-    output.replaceChildren();
-
-    const happened = el('ol', undefined, 'scenario-steps');
-    happened.dataset.scenarioSteps = '';
-    const step = (text: string) => happened.append(el('li', text));
-
-    step(
-      `Before the link, the account had one device. “${result.before.text}” was accepted for ` +
-        `${deviceCount(result.before.recipientDeviceCount)} — message ${result.before.messageId}.`,
-    );
-    step(`The primary device showed a link: ${result.linked.qrCodeUrl}`);
-    step(
-      `The second device scanned it, answered with an ephemeral key of its own, and decrypted ` +
-        `the account identity the primary sent back. The relay linked it as device ` +
-        `${count(result.linked.deviceId)}, described as ${result.linked.platform}.`,
-    );
-    step(
-      `The sender then fetched device ${count(result.linked.deviceId)}'s prekey bundle and ` +
-        `established a session with it — the two calls at the end of the program above.`,
-    );
-    if (result.after) {
-      step(
-        `“${result.after.text}” was accepted for ` +
-          `${deviceCount(result.after.recipientDeviceCount)} — message ${result.after.messageId}.`,
-      );
-    } else {
-      step(
-        'The message sent after the link never reached every device before this scenario ' +
-          'stopped waiting, so this run has nothing to compare.',
-      );
-    }
-    output.append(el('h3', 'What happened'), happened);
-
-    /*
-     * The arithmetic, checked rather than asserted — and in three states, not
-     * two. "The device holds no scroll-back at all" and "the device holds a
-     * scroll-back without that message in it" are different runs, and only the
-     * second is evidence of anything. Folding the first into the second is how
-     * a page ends up printing a confident caption about a scroll-back it was
-     * never given, so the absent case says that it is absent.
-     */
-    const newDevice = result.scrollback.find((device) => device.deviceId === result.linked.deviceId);
-    const carriedOver = newDevice ? newDevice.messages.includes(result.before.text) : null;
-
-    const notHappened = el('ul', undefined, 'scenario-nots');
-    notHappened.dataset.scenarioNots = '';
-    notHappened.append(
-      el(
-        'li',
-        carriedOver === null
-          ? 'This run produced no scroll-back for the device it linked, so it cannot say what ' +
-              'that device can read. Nothing below is evidence about the message sent before ' +
-              'the link.'
-          : carriedOver
-            ? 'The message sent before the link is on the new device. Nothing in the protocol ' +
-                'can produce that, so either this scenario or the SDK is wrong — and this run ' +
-                'is not evidence of either.'
-            : 'No history followed the device. The message sent before the link is not on it, ' +
-                'because this device’s keys did not exist when that message was encrypted and ' +
-                'there was nothing to encrypt it to. That is arithmetic, not a decision.',
-      ),
-      el(
-        'li',
-        newDevice
-          ? `No back-fill. The new device holds the ` +
-              `${count(newDevice.messages.length)} message${newDevice.messages.length === 1 ? '' : 's'} ` +
-              `sent while it existed, and the device that was already there kept everything it ` +
-              `had. Nothing re-encrypted the older message to the newer key.`
-          : 'The new device never joined the session, so this run cannot say anything about ' +
-              'what it can read.',
-      ),
-    );
-    output.append(el('h3', 'What did not happen'), notHappened);
-
-    /* Both scroll-backs, side by side. This is the scenario's whole argument,
-       and it is rendered from what each device's own client decrypted. */
-    const devices = el('div', undefined, 'scenario-devices');
-    devices.dataset.scenarioScrollback = '';
-    for (const device of result.scrollback) {
-      const pane = el('div', undefined, 'scenario-device');
-      pane.dataset.scenarioDevice = String(device.deviceId);
-      const messages = el('ol', undefined, 'scenario-device-messages');
-      for (const message of device.messages) messages.append(el('li', message));
-      pane.append(
-        el('h4', `${device.label} (device ${count(device.deviceId)})`),
-        device.messages.length === 0 ? el('p', 'Nothing at all.', 'muted') : messages,
-      );
-      devices.append(pane);
-    }
-    output.append(el('h3', 'What each device can read'), devices);
-
-    appendLog(output, result.records, result.debugRecords, 'all three devices', describePayload);
-  }
-
-  /*
-   * The SDK's own records, under the heading that promises them.
-   *
-   * Shared by every scenario, and so is the sentence about the debug records:
-   * a page that counted them without printing them, and did not say so, would
-   * be showing a reader a log it had quietly edited.
-   */
-  function appendLog(
-    output: HTMLElement,
-    records: ScenarioLogRecord[],
-    debugRecords: number,
-    devices: string,
-    describePayload: Describe,
-  ) {
-    const log = el('div', undefined, 'scenario-log');
-    log.dataset.scenarioLog = '';
-    for (const record of records) log.append(line(record, describePayload));
-    output.append(
-      el('h3', 'What the SDK said'),
-      el(
-        'p',
-        `${count(records.length)} records at info and above, collected from ${devices}, in the ` +
-          `order they were logged. The SDK emitted ${count(debugRecords)} more at debug, which ` +
-          `are counted here and not printed.`,
-        'muted',
-      ),
-      log,
-    );
-  }
-
-  function line(record: ScenarioLogRecord, describePayload: Describe) {
-    const row = el('p', undefined, `scenario-log-line scenario-log-${record.level}`);
-    row.dataset.scenarioLogLine = record.level;
-    row.append(
-      el('span', record.role, 'scenario-log-role'),
-      el('span', record.level, 'scenario-log-level'),
-      el('span', record.message, 'scenario-log-message'),
-    );
-    const payload = record.payload.map(describePayload).join(' ');
-    if (payload) row.append(el('span', payload, 'scenario-log-payload'));
-    return row;
   }
 </script>

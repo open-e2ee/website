@@ -3329,6 +3329,22 @@ table.data td {
 }
 
 /*
+ * The one paragraph on a scenario that is not about this run.
+ *
+ * Set apart from the run's own findings above it, because it is the only text
+ * in a scenario's output that a reader cannot check against the numbers beside
+ * it — it is a citation, and it should not read as another thing the run just
+ * proved.
+ */
+.scenario-context {
+  margin-top: var(--oe-space-4);
+  padding-inline-start: var(--oe-space-3);
+  border-inline-start: 2px solid var(--oe-border);
+  max-width: var(--oe-content-measure);
+  color: var(--oe-muted);
+}
+
+/*
  * Two devices' scroll-backs, side by side.
  *
  * Side by side is the argument: the point of the second-device scenario is what
