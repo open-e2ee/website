@@ -133,6 +133,24 @@ const SCENARIO_RECOVERY = '[data-scenario-recovery]';
 const SCENARIO_LOG_LINE = '[data-scenario-log-line]';
 const SCENARIO_DEVICE = '[data-scenario-device]';
 
+/*
+ * The two-tab section's contract, which is not a scenario's.
+ *
+ * It has no slug, no fragment and no run: it is two windows holding one
+ * conversation, so the harness drives two tabs at once and the thing being
+ * checked is what each of them sees of the other. The role, the account and
+ * the peer are exposed as data because the harness has to know which tab it is
+ * looking at, and reading that out of the section's prose would make a copy
+ * edit a red run.
+ */
+const TWO_TAB_CONNECT = '[data-two-tab-connect]';
+const TWO_TAB_STATUS = '[data-two-tab-status]';
+const TWO_TAB_OUTPUT = '[data-two-tab-output]';
+const TWO_TAB_INPUT = '[data-two-tab-input]';
+const TWO_TAB_SEND = '[data-two-tab-send]';
+const TWO_TAB_LINE = '[data-two-tab-line]';
+const TWO_TAB_ROW = '[data-two-tab-row]';
+
 /* The beacon `/demo` is allowed to send, in full. Same reasoning as
    `DEMO_RUN_BODY`: the body is fixed before the browser starts, so a dimension
    derived from the run — a timing, a byte count, an error code — is a failure
@@ -153,6 +171,13 @@ const PROBE = `Smoke probe ${NONCE}: the staging key rotates at 09:00 UTC.`;
    "one beacon per page, not per sentence" a measurement rather than an
    assertion: a page asked once cannot tell the two apart. */
 const REPEAT_PROBE = `Second probe ${NONCE}: sent again, on a session already warm.`;
+
+/* One sentence per direction through the two-tab section, so the check covers
+   both halves of it: the tab holding the relay sends over its own copy, and
+   the tab without one sends over the channel and back. A section that only
+   ever worked outward would pass a one-way test. */
+const TAB_PROBE = `First tab ${NONCE}: the relay is holding this one.`;
+const TAB_REPLY = `Second tab ${NONCE}: answered from the other window.`;
 
 const DECRYPT_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 30000;
@@ -272,7 +297,7 @@ function findAny(haystack, texts) {
 }
 
 function findProbe(haystack) {
-  const found = findAny(haystack, [PROBE, REPEAT_PROBE]);
+  const found = findAny(haystack, [PROBE, REPEAT_PROBE, TAB_PROBE, TAB_REPLY]);
   if (found) return found;
   /* The nonce alone is enough: nothing else on the site contains it. */
   if (haystack?.includes(NONCE)) return 'nonce fragment';
@@ -908,6 +933,197 @@ async function visitScenario(cdp, origin, held, slug) {
     };
   } finally {
     tab.off();
+  }
+}
+
+/*
+ * What one tab of the two-tab section can see, including which tab it is.
+ *
+ * The rows are read as field/value pairs rather than as text, because the
+ * check they exist for is about a particular field: the pane must be printing
+ * a stored envelope, and the ciphertext in it must not be the sentence. Text
+ * scraped out of the whole pane would let a row that had stopped printing
+ * `ciphertext` at all go on passing a search for the absence of something.
+ */
+const TWO_TAB_SNAPSHOT = `(() => {
+  const output = document.querySelector(${JSON.stringify(TWO_TAB_OUTPUT)});
+  const rows = [...(output?.querySelectorAll(${JSON.stringify(TWO_TAB_ROW)}) ?? [])].map((row) => {
+    const fields = {};
+    const terms = [...row.querySelectorAll('dt')];
+    const values = [...row.querySelectorAll('dd')];
+    terms.forEach((term, index) => {
+      fields[term.textContent] = values[index]?.textContent ?? '';
+    });
+    return fields;
+  });
+  return {
+    status: document.querySelector(${JSON.stringify(TWO_TAB_STATUS)})?.textContent ?? '',
+    connected: Boolean(output) && !output.hidden,
+    role: output?.dataset.twoTabRole ?? null,
+    me: output?.dataset.twoTabMe ?? null,
+    peer: output?.dataset.twoTabPeer ?? null,
+    lines: [...(output?.querySelectorAll(${JSON.stringify(TWO_TAB_LINE)}) ?? [])].map(
+      (line) => line.textContent.replace(/\\s+/g, ' ').trim(),
+    ),
+    rows,
+  };
+})()`;
+
+/** True once the connect press has settled, whichever way it went. */
+const TWO_TAB_SETTLED = `(() => {
+  const button = document.querySelector(${JSON.stringify(TWO_TAB_CONNECT)});
+  const output = document.querySelector(${JSON.stringify(TWO_TAB_OUTPUT)});
+  return Boolean(output) && (!output.hidden || (Boolean(button) && !button.disabled));
+})()`;
+
+const sawLine = (text) =>
+  `[...document.querySelectorAll(${JSON.stringify(TWO_TAB_LINE)})].some((line) =>
+     line.textContent.includes(${JSON.stringify(text)}))`;
+
+/**
+ * Two tabs of `/demo`, one conversation, driven the way a reader would.
+ *
+ * Sequential rather than simultaneous, which is the whole reason this reads as
+ * cleanly as it does: the relay is claimed with a Web Lock, so whichever tab
+ * presses first holds it. Pressing both at once would still work and would
+ * make the roles a coin toss, and a check that has to accept either answer
+ * cannot say the second tab went through the first one.
+ */
+async function visitTwoTabs(cdp, origin, held) {
+  const tabs = [
+    { tab: await openTab(cdp, held), what: 'the first tab' },
+    { tab: await openTab(cdp, held), what: 'the second tab' },
+  ];
+  const [first, second] = tabs.map((entry) => entry.tab);
+  const read = (tab) => evaluate(cdp, tab.sessionId, TWO_TAB_SNAPSHOT);
+
+  /* Whatever the page reported about itself, on the failure path, so a red run
+     names the browser's complaint rather than only the wait that expired. */
+  const complaints = (tab) => () => {
+    const lines = [];
+    if (tab.cspViolations.length) {
+      lines.push(
+        `  The page reported ${tab.cspViolations.length} CSP violation(s):`,
+        ...tab.cspViolations.map((violation) => `    ${violation}`),
+      );
+    }
+    if (tab.pageErrors.length) {
+      lines.push(
+        `  The page threw ${tab.pageErrors.length} uncaught error(s):`,
+        ...tab.pageErrors.map((error) => `    ${error.split('\n')[0]}`),
+      );
+    }
+    return lines;
+  };
+
+  const type = async (tab, text) => {
+    await evaluate(
+      cdp,
+      tab.sessionId,
+      `document.querySelector(${JSON.stringify(TWO_TAB_INPUT)}).focus()`,
+      'demo',
+    );
+    await cdp.send('Input.insertText', { text }, tab.sessionId);
+    await evaluate(
+      cdp,
+      tab.sessionId,
+      `document.querySelector(${JSON.stringify(TWO_TAB_SEND)}).click()`,
+      'demo',
+    );
+  };
+
+  try {
+    for (const { tab, what } of tabs) {
+      await tab.navigate(`${origin}/demo`, `/demo in ${what}`);
+      const title = await evaluate(cdp, tab.sessionId, 'document.title');
+      if (!title) throw new Infra(`/demo rendered no title in ${what} — the build looks wrong`);
+      for (const [selector, describe] of [
+        [TWO_TAB_CONNECT, 'a control that connects it'],
+        [TWO_TAB_STATUS, 'a status line'],
+        [TWO_TAB_OUTPUT, 'a pane for the conversation'],
+      ]) {
+        if (!(await evaluate(cdp, tab.sessionId, present(selector)))) {
+          throw new Red(
+            `the two-tab section on /demo exposes no ${describe} (${selector}) in ${what}`,
+          );
+        }
+      }
+    }
+
+    /* The accounting boundary, on the tab whose bytes are reported. Nothing
+       either tab fetched before this moment can have been the section's. */
+    await first.quiet(IDLE_QUIET_MS, IDLE_MAX_MS);
+    await second.quiet(IDLE_QUIET_MS, IDLE_MAX_MS);
+    const interactedAt = Date.now();
+
+    const connected = [];
+    for (const { tab, what } of tabs) {
+      await evaluate(
+        cdp,
+        tab.sessionId,
+        `document.querySelector(${JSON.stringify(TWO_TAB_CONNECT)}).click()`,
+        'demo',
+      );
+      await waitFor(
+        cdp,
+        tab.sessionId,
+        TWO_TAB_SETTLED,
+        SCENARIO_TIMEOUT_MS,
+        `${what} neither connected nor reported a failure within ${SCENARIO_TIMEOUT_MS} ms`,
+        complaints(tab),
+      );
+      const state = await read(tab);
+      if (!state.connected) {
+        throw new Red(
+          `${what} could not join the two-tab section.\n` +
+            `  Its own status line reads: ${JSON.stringify(state.status)}`,
+        );
+      }
+      connected.push(state);
+    }
+
+    await type(first, TAB_PROBE);
+    await waitFor(
+      cdp,
+      second.sessionId,
+      sawLine(TAB_PROBE),
+      SCENARIO_TIMEOUT_MS,
+      `the second tab never showed the sentence the first tab sent, within ` +
+        `${SCENARIO_TIMEOUT_MS} ms`,
+      complaints(second),
+    );
+
+    await type(second, TAB_REPLY);
+    await waitFor(
+      cdp,
+      first.sessionId,
+      sawLine(TAB_REPLY),
+      SCENARIO_TIMEOUT_MS,
+      `the first tab never showed the sentence the second tab sent back, within ` +
+        `${SCENARIO_TIMEOUT_MS} ms`,
+      complaints(first),
+    );
+
+    const wentQuiet = (await first.quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS)) &&
+      (await second.quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS));
+    for (const { tab } of tabs) await tab.fillPostData();
+
+    const before = first.scripts.filter((script) => script.at < interactedAt);
+    const after = first.scripts.filter((script) => script.at >= interactedAt);
+    return {
+      connected,
+      ended: [await read(first), await read(second)],
+      requests: [...first.requests, ...second.requests],
+      cspViolations: [...first.cspViolations, ...second.cspViolations],
+      pageErrors: [...first.pageErrors, ...second.pageErrors],
+      wentQuiet,
+      before,
+      after,
+      bytesBefore: before.reduce((sum, script) => sum + script.bytes, 0),
+      bytesAfter: after.reduce((sum, script) => sum + script.bytes, 0),
+    };
+  } finally {
+    for (const { tab } of tabs) tab.off();
   }
 }
 
@@ -2151,6 +2367,132 @@ function checkScenario(pass, origin, expectation) {
 
 /* What `flip-a-byte` has to have printed, held against the same scenario run in
    this process. */
+/*
+ * The two tabs, judged against each other.
+ *
+ * The claim this section makes is not that a message arrived — the scenarios
+ * above it already move messages — but that it arrived *through a channel*,
+ * and that what went over that channel was an envelope. So the checks are in
+ * two halves: who each tab turned out to be and what it saw of the other, and
+ * what the relay pane is printing while it says so.
+ *
+ * The pane is the harder half and the reason the row is read as fields rather
+ * than as text. "The ciphertext is not the sentence" has to fail when the
+ * ciphertext stops being ciphertext, and a search for an absent string across
+ * a whole pane passes just as happily when the pane has stopped printing the
+ * field at all. `tests/demo-broadcast-relay.test.mjs` holds the stronger form
+ * of this claim — nothing crossing the channel in any encoding — because that
+ * one can watch every message rather than what a pane chose to render.
+ */
+function checkTwoTabs(pass, envelopeFields) {
+  const [first, second] = pass.connected;
+  const [firstEnded, secondEnded] = pass.ended;
+
+  if (first.role !== 'host' || second.role !== 'guest') {
+    throw new Red(
+      `the two tabs did not settle into one relay and one caller: the first reported ` +
+        `${JSON.stringify(first.role)} and the second ${JSON.stringify(second.role)}.\n` +
+        `  The first tab presses first, so it is the one that should be holding the relay.`,
+    );
+  }
+  if (first.me === second.me || first.me !== second.peer || second.me !== first.peer) {
+    throw new Red(
+      `the two tabs disagree about who is who: the first is ${JSON.stringify(first.me)} ` +
+        `writing to ${JSON.stringify(first.peer)}, the second is ${JSON.stringify(second.me)} ` +
+        `writing to ${JSON.stringify(second.peer)}`,
+    );
+  }
+
+  /*
+   * The label on a received line is the SDK's `senderId`, not the name the
+   * receiving tab was expecting, so this asserts what the protocol decided
+   * rather than what the page assumed.
+   */
+  const arrived = secondEnded.lines.find((line) => line.includes(TAB_PROBE));
+  if (!arrived?.startsWith(`${first.me} `)) {
+    throw new Red(
+      `the second tab showed the first tab's sentence but not as coming from ` +
+        `${JSON.stringify(first.me)}.\n  The line reads: ${JSON.stringify(arrived)}`,
+    );
+  }
+  const answered = firstEnded.lines.find((line) => line.includes(TAB_REPLY));
+  if (!answered?.startsWith(`${second.me} `)) {
+    throw new Red(
+      `the first tab showed the reply but not as coming from ${JSON.stringify(second.me)}.\n` +
+        `  The line reads: ${JSON.stringify(answered)}`,
+    );
+  }
+
+  if (firstEnded.rows.length === 0) {
+    throw new Red(
+      `the first tab sent a sentence and printed no row for it, so the section made its ` +
+        `argument about the relay with nothing on screen`,
+    );
+  }
+  for (const [index, row] of firstEnded.rows.entries()) {
+    const fields = Object.keys(row);
+    if (!fields.includes('ciphertext')) {
+      throw new Red(
+        `row ${index + 1} of the relay pane prints no ciphertext field, so the pane is no ` +
+          `longer showing a stored envelope.\n  It printed: ${fields.join(', ') || 'nothing'}`,
+      );
+    }
+    const invented = fields.filter((field) => !envelopeFields.has(field));
+    if (invented.length) {
+      throw new Red(
+        `the relay pane printed ${invented.length} field(s) the SDK's Envelope does not ` +
+          `declare (${invented.join(', ')}), so it is not printing the row it was handed`,
+      );
+    }
+    for (const [field, value] of Object.entries(row)) {
+      const how = findProbe(value);
+      if (how) {
+        throw new Red(
+          `the relay pane's ${field} carries the sentence that was typed — ${how}.\n` +
+            `  This is the claim the section exists to make, and it is false: what the relay ` +
+            `is holding\n  is readable.`,
+        );
+      }
+    }
+  }
+
+  const found = leaks(pass.requests, findProbe);
+  if (found.length) {
+    throw new Red(
+      `${found.length} request(s) from the two-tab section carried a typed sentence:\n` +
+        found.map((line) => `    ${line}`).join('\n'),
+    );
+  }
+
+  /* The section is deliberately unmeasured: `scenario_opened` is fired by a
+     `<details>` toggle, and this is not a scenario. A beacon appearing here is
+     a new event nobody registered. */
+  const beacons = beaconsIn(pass.requests);
+  if (beacons.length) {
+    throw new Red(
+      `the two-tab section sent ${beacons.length} beacon(s) to ${BEACON_PATH} ` +
+        `(${beacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}), and no event ` +
+        `is registered for it`,
+    );
+  }
+
+  if (pass.bytesBefore > PRE_INTERACTION_CEILING) {
+    throw new Red(
+      `/demo fetched ${kb(pass.bytesBefore)} of script before the section was connected, over ` +
+        `the ${kb(PRE_INTERACTION_CEILING)} tripwire`,
+    );
+  }
+  if (pass.bytesAfter === 0) {
+    throw new Red(
+      `connecting the section fetched no script at all, so either it was already on the page ` +
+        `before the press — which is what the tripwire above exists to prevent — or the ` +
+        `harness measured the wrong tab`,
+    );
+  }
+
+  return { beacons };
+}
+
 function flipExpectation(refusal) {
   return {
     slug: FLIP_SLUG,
@@ -2699,6 +3041,11 @@ async function main() {
       reinstallExpectation(reinstall),
     );
 
+    /* Two tabs at once, which is the only pass here that needs more than one:
+       the section's claim is that the second window is a second window. */
+    const twoTabs = await visitTwoTabs(cdp, origin, held);
+    checkTwoTabs(twoTabs, envelopeFields);
+
     /* Say which of the two things happened. Claiming a quiet window we never
        got would overstate the egress evidence on exactly the chatty pages
        where it is weakest. */
@@ -2782,7 +3129,21 @@ async function main() {
         `${reinstallBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
         `                  before a touch ${kb(reinstalled.bytesBefore)} over ` +
         `${reinstalled.before.length} file(s); the run drew ${kb(reinstalled.bytesAfter)} over ` +
-        `${reinstalled.after.length} chunk(s)`,
+        `${reinstalled.after.length} chunk(s)\n` +
+        `  /demo:          two tabs of the same page connected as ` +
+        `${twoTabs.connected.map((tab) => `${tab.me} (${tab.role})`).join(' and ')}, and each ` +
+        `read the\n` +
+        `                  other's sentence off the channel — the reply came back through the ` +
+        `tab holding the relay\n` +
+        `                  the relay pane printed ${twoTabs.ended[0].rows.length} stored row(s), ` +
+        `every field declared by the SDK's Envelope,\n` +
+        `                  the ciphertext carrying neither sentence in cleartext, ` +
+        `percent-encoded or base64 form\n` +
+        `                  measured 0 beacon(s): the section is not a scenario and registers no ` +
+        `event\n` +
+        `                  before a touch ${kb(twoTabs.bytesBefore)} over ` +
+        `${twoTabs.before.length} file(s); connecting drew ${kb(twoTabs.bytesAfter)} over ` +
+        `${twoTabs.after.length} chunk(s)`,
     );
   } finally {
     await teardown(held);

@@ -75,6 +75,7 @@ function preview(value: unknown): string {
 /** The row the relay is holding, printed as the relay holds it. */
 function renderEnvelope(envelope: Envelope, nth: number): HTMLElement {
   const row = el('div', undefined, 'two-tab-envelope');
+  row.dataset.twoTabRow = '';
   row.append(el('h5', `Row ${count(nth)}`));
   const fields = el('dl', undefined, 'two-tab-fields');
   for (const [key, value] of Object.entries(envelope)) {
@@ -103,6 +104,13 @@ export function mountTwoTab(
 ): void {
   root.replaceChildren();
 
+  /* The section's state as data rather than as prose. The smoke harness drives
+     two of these at once and has to know which tab it is looking at; reading
+     that out of the sentence below would make a copy edit a red run. */
+  root.dataset.twoTabRole = session.role;
+  root.dataset.twoTabMe = session.me;
+  root.dataset.twoTabPeer = session.peer;
+
   const identity = el('p', undefined, 'two-tab-identity');
   identity.append(
     'This tab is ',
@@ -117,12 +125,14 @@ export function mountTwoTab(
   const form = el('form', undefined, 'two-tab-composer');
   const label = el('label', `Message to ${session.peer}`, 'two-tab-label');
   const input = el('input', undefined, 'two-tab-input');
+  input.dataset.twoTabInput = '';
   input.type = 'text';
   input.id = 'two-tab-message';
   input.autocomplete = 'off';
   input.placeholder = 'Say something';
   label.htmlFor = input.id;
   const submit = el('button', 'Send', 'oe-button');
+  submit.dataset.twoTabSend = '';
   submit.type = 'submit';
   form.append(label, input, submit);
 
@@ -140,6 +150,7 @@ export function mountTwoTab(
 
   const line = (role: string, text: string) => {
     const item = el('li', undefined, 'two-tab-line');
+    item.dataset.twoTabLine = '';
     item.append(el('span', role, 'two-tab-role'), el('span', text, 'two-tab-text'));
     transcript.append(item);
     item.scrollIntoView({ block: 'nearest' });
