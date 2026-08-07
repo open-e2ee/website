@@ -162,6 +162,17 @@ export interface ReinstallResult {
   loud: ScenarioLogRecord[];
   /** Distinct error codes carried on those records, in first-seen order. */
   codes: string[];
+  /**
+   * How many of `loud` carry a code at all — three of the seven this run
+   * produces carry none.
+   *
+   * The page needs this separately from `codes` and `loud.length`, because
+   * what it tells a reader to expect from grepping their own logs is a
+   * distribution and not a set. Two versions of that sentence shipped as a
+   * distribution claim the run contradicts, both times because the number was
+   * written rather than measured.
+   */
+  coded: number;
   /** What accepting the identity change made possible, if anything. */
   accepted: Attempt;
   recovered: string | null;
@@ -412,9 +423,12 @@ export async function reinstallADevice(): Promise<ReinstallResult> {
 
     const loud = log.records.slice(loudFrom).filter((record) => record.level !== 'info');
     const codes: string[] = [];
+    let coded = 0;
     for (const record of loud) {
       const code = codeOf(record);
-      if (code && !codes.includes(code)) codes.push(code);
+      if (!code) continue;
+      coded += 1;
+      if (!codes.includes(code)) codes.push(code);
     }
 
     return {
@@ -433,6 +447,7 @@ export async function reinstallADevice(): Promise<ReinstallResult> {
       asked,
       loud,
       codes,
+      coded,
       accepted,
       recovered: recovered ? RECOVERED : null,
       strandedArrivedLater: arrived.includes(STRANDED),

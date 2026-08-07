@@ -1684,6 +1684,23 @@ async function expectedReinstall() {
   }
 
   /*
+   * And how they are spread across the records, which is the other half of what
+   * the page says and the half a check on the set cannot see. `REINSTALL_CODED`
+   * says why it is asserted separately.
+   */
+  if (result.loud.length !== REINSTALL_CODED.loud || result.coded !== REINSTALL_CODED.coded) {
+    throw new Red(
+      `the reinstall's records are not spread the way the page describes. Expected ` +
+        `${REINSTALL_CODED.coded} of ${REINSTALL_CODED.loud} records at warn or error to carry ` +
+        `a code and\n  ${REINSTALL_CODED.loud - REINSTALL_CODED.coded} to carry none; this run ` +
+        `had ${result.coded} of ${result.loud.length} carrying one and ` +
+        `${result.loud.length - result.coded} carrying none.\n  The page tells a reader how much ` +
+        `of this grepping for a single code accounts for, so that sentence and this ` +
+        `expectation\n  move together.`,
+    );
+  }
+
+  /*
    * `verify()` throwing is what stops an application from rendering the changed
    * number a "safety number changed" banner is made of. If it starts answering,
    * the page's account of why the banner is hard to build is wrong.
@@ -1747,6 +1764,7 @@ async function expectedReinstall() {
     asked: result.asked,
     loud: result.loud,
     codes: result.codes,
+    coded: result.coded,
     before: result.before,
     after: result.after,
   };
@@ -1820,13 +1838,15 @@ const PREKEY_DENIALS = [
 /*
  * Every error code the reinstall produces, and nothing else.
  *
- * The page names these codes and tells a reader that each record carries one of
- * them, so the set is copy rather than a diagnostic. It shipped wrong once: the
- * scenario read a code from two of the four places the SDK puts one, saw the two
- * records that carry `UNTRUSTED_IDENTITY`, missed the five that carry the other
- * two, and the page told a reader to grep for a code most of the records do not
+ * The page names these codes and tells a reader which of the records carry one,
+ * so the set is copy rather than a diagnostic. It shipped wrong once: the
+ * scenario read a code from two of the four places the SDK puts one, saw only
+ * the two records that carry `UNTRUSTED_IDENTITY`, missed the two that carry the
+ * other codes — `INITIALIZATION_FAILED` and `PREKEY_NOT_FOUND`, one record each
+ * — and the page told a reader to grep for a code most of the records do not
  * have. Nothing was red, because the set was printed in the summary and asserted
- * nowhere.
+ * nowhere. The remaining three records carry no code at all, which is what
+ * `REINSTALL_CODED` below is for.
  *
  * Asserted as an exact set, in both directions. A missing code means the
  * scenario stopped reading one of the four places, which is the mistake that
@@ -1834,6 +1854,25 @@ const PREKEY_DENIALS = [
  * has to say so before it can go on claiming to list what a reader will see.
  */
 const REINSTALL_CODES = ['INITIALIZATION_FAILED', 'PREKEY_NOT_FOUND', 'UNTRUSTED_IDENTITY'];
+
+/*
+ * How those codes are spread across the records: seven at warn or error, four
+ * carrying a code and three carrying none.
+ *
+ * The set above is not enough on its own, and twice now it has not been. The
+ * page does not only name the codes, it tells a reader how much of the noise
+ * grepping for one of them accounts for — and that is a distribution claim, so
+ * a check on the set leaves it unheld. Both sentences that shipped wrong here
+ * had the set right: "all of them carrying `UNTRUSTED_IDENTITY`" and then "each
+ * record carries one of those" were each contradicted by the three records that
+ * carry no code, while `REINSTALL_CODES` stayed green through both.
+ *
+ * Exact in both directions for the same reason the set is. A different split is
+ * either the scenario reading a code place it did not before, or the SDK
+ * changing what it reports — and either way the page's sentence about grepping
+ * is describing a run that no longer happens.
+ */
+const REINSTALL_CODED = { loud: 7, coded: 4 };
 
 /*
  * The branches the reinstall scenario renders when it cannot make its argument.
@@ -2523,6 +2562,24 @@ function reinstallExpectation(expected) {
               `out, so dropping it drops the point.\n  printed: ${notSilent}`,
           );
         }
+      }
+
+      /* And the spread, held to the run the same way the safety-number
+         arithmetic below is. Naming the codes is the easy half; what a reader
+         acts on is how much of the noise one of them accounts for, and that
+         sentence has been rewritten twice into a claim the run contradicts. */
+      const spread =
+        expected.coded === expected.loud.length
+          ? 'one on every record'
+          : `${expected.coded} of the ${expected.loud.length} carry one of those and ` +
+            `${expected.loud.length - expected.coded} carry none`;
+      if (!notSilent.includes(spread)) {
+        throw new Red(
+          `${where} did not print how the codes are spread across the records. The same run in ` +
+            `this process\n  produced "${spread}", and a reader told only which codes exist ` +
+            `will grep for one and conclude the\n  rest of the reinstall was quiet.\n  printed: ` +
+            `${notSilent}`,
+        );
       }
 
       /* The safety number, in halves, which is the closing argument. Both are

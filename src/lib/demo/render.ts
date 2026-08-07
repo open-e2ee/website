@@ -570,15 +570,35 @@ export function renderReinstallADevice(
    */
   const notSilent = el('li');
   if (result.loud.length > 0) {
+    /*
+     * How the codes are spread across the records, which is the load-bearing
+     * half of this sentence: it is what tells a reader what grepping their own
+     * logs for one of these codes actually turns up. Both numbers come off the
+     * run. Two earlier versions wrote the distribution instead of reading it —
+     * first "all of them carrying UNTRUSTED_IDENTITY", then "each record
+     * carries one of those" — and the run contradicted both, because three of
+     * the seven records carry no code at all.
+     */
+    const codeless = result.loud.length - result.coded;
+    const spread =
+      result.codes.length === 0
+        ? ''
+        : (result.codes.length === 1
+            ? `, carrying ${result.codes[0]}`
+            : `, carrying ${count(result.codes.length)} different error codes between them — ` +
+              `${result.codes.join(', ')}`) +
+          (codeless === 0
+            ? `, one on every record`
+            : `. ${count(result.coded)} of the ${count(result.loud.length)} carry one of those ` +
+              `and ${count(codeless)} carry none`) +
+          (result.codes.length > 1 || codeless > 0
+            ? `, so an application grepping its logs for any single one of them finds a fraction ` +
+              `of this`
+            : `, so grepping for that one code finds all of it`);
     notSilent.textContent =
       `It is not that the SDK said nothing. Across the reinstall it logged ` +
       `${count(result.loud.length)} records at warn or error` +
-      (result.codes.length === 1 ? `, all of them carrying ${result.codes[0]}` : '') +
-      (result.codes.length > 1
-        ? `, carrying ${count(result.codes.length)} different error codes between them — ` +
-          `${result.codes.join(', ')}. Each record carries one of those, so an application ` +
-          `grepping its logs for any single one of them finds a fraction of this`
-        : '') +
+      spread +
       `. All of it went to the logger. None of it reached a hook, a return value, or a ` +
       `rejected promise — the three places an application is built to look.`;
   } else {
