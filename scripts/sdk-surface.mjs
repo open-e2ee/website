@@ -164,7 +164,7 @@ export async function readSdkSurface() {
   }
   for (const names of subpaths.values()) for (const name of names) vocabulary.add(name);
 
-  return { origin, version: manifest.version, subpaths, vocabulary, members };
+  return { root, origin, version: manifest.version, subpaths, vocabulary, members };
 }
 
 /*

@@ -1,8 +1,9 @@
 /*
  * Post-build audit. Things a marketing site can silently get wrong and neither
  * `astro check` nor the test suite would notice: shipping a claim the verbal
- * identity forbids, shipping an internal link that 404s, and printing an
- * import or a symbol name the SDK does not actually export.
+ * identity forbids, shipping an internal link that 404s, linking to a doc the
+ * public repository does not export, and printing an import or a symbol name
+ * the SDK does not actually export.
  *
  * Run against dist/ after `npm run build`.
  */
@@ -336,6 +337,20 @@ function bareIdentifier(span) {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : null;
 }
 
+/* A file under the public repository's `docs/`, and the heading it aims at. */
+const PUBLIC_DOC_LINK =
+  /https:\/\/github\.com\/open-e2ee\/signal-protocol-js\/blob\/[^/"]+\/docs\/([A-Za-z0-9._-]+\.md)(?:#([A-Za-z0-9._-]+))?/g;
+
+/* GitHub's heading-to-fragment rule: case folded, punctuation dropped, spaces
+ * hyphenated. It also numbers repeated headings `-1`, `-2`; ours are unique,
+ * and a link to a repeated one fails here loudly rather than silently. */
+const slug = (heading) =>
+  heading
+    .toLowerCase()
+    .replace(/[^\w\- ]+/g, '')
+    .trim()
+    .replace(/ +/g, '-');
+
 const surface = await readSdkSurface();
 if (!surface) {
   problems.push(
@@ -397,6 +412,50 @@ if (!surface) {
       );
     }
   }
+
+  /*
+   * A link into the public repository's `docs/` resolves only if the export
+   * allowlist carries that file. `DEVICE_LIFECYCLE.md` is in the internal
+   * repository and not on the allowlist, so `/demo`'s link to it was a 404 on
+   * production from the day it shipped — reachable to whoever wrote it and to
+   * nobody else. The installed package ships exactly the exported docs, so
+   * this needs no network and cannot flake: a file that is not in there is a
+   * URL that 404s.
+   */
+  const docsDir = join(surface.root, 'docs');
+  const docs = existsSync(docsDir) ? new Set(await readdir(docsDir)) : null;
+  const anchors = new Map();
+
+  for (const file of files) {
+    const rel = relative(DIST, file);
+    const html = await readFile(file, 'utf8');
+    for (const [, doc, anchor] of html.matchAll(PUBLIC_DOC_LINK)) {
+      if (!docs) {
+        problems.push(
+          `${rel}: cannot verify the link to docs/${doc} — the ${surface.origin} copy of ${SDK_PACKAGE} ships no docs directory`,
+        );
+        continue;
+      }
+      if (!docs.has(doc)) {
+        problems.push(
+          `${rel}: links to docs/${doc} in the public repository, which does not export that file — the URL is a 404. ` +
+            `Exported: ${[...docs].sort().join(', ')}`,
+        );
+        continue;
+      }
+      if (!anchor) continue;
+      if (!anchors.has(doc)) {
+        const markdown = await readFile(join(docsDir, doc), 'utf8');
+        anchors.set(
+          doc,
+          new Set([...markdown.matchAll(/^#{1,6} +(.+?)\s*$/gm)].map(([, head]) => slug(head))),
+        );
+      }
+      if (!anchors.get(doc).has(anchor)) {
+        problems.push(`${rel}: docs/${doc} has no heading that GitHub would number #${anchor}`);
+      }
+    }
+  }
 }
 
 /* Social cards are produced in the design repo on their own schedule, so a
@@ -428,5 +487,5 @@ if (problems.length > 0) {
 
 console.log(
   `Build audit passed: ${files.length} pages, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts, every preloaded font loaded by a stylesheet, ` +
-    `every code identifier found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
+    `every code identifier and every linked public doc found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
 );
