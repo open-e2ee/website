@@ -272,16 +272,31 @@ const description =
        Both entries are assertions about this run's values. */
     const notHappened = el('ul', undefined, 'scenario-nots');
     notHappened.dataset.scenarioNots = '';
-    const intact = result.delivered === null || result.delivered === result.sentence;
+
+    /* Three outcomes, not two. "Nothing was delivered" used to be folded in
+       with "the right thing was delivered", so a run that lost the recovery
+       race printed "the only text that reached the application is
+       byte-for-byte the sentence that was sent" about an application that
+       received no text at all. That is the one direction this page must never
+       round in: a claim of fail-closed, made on the strength of a run that
+       produced no evidence for it. A run with nothing to show says so. */
+    const garbage = el('li');
+    if (result.delivered === result.sentence) {
+      garbage.textContent =
+        'No garbage plaintext. The corrupted copy produced no output at all — the only text ' +
+        'that reached the application is byte-for-byte the sentence that was sent.';
+    } else if (result.delivered === null) {
+      garbage.textContent =
+        'Nothing reached the application at all: the corrupted copy produced no output, and no ' +
+        'resend arrived before this scenario stopped waiting. So this run cannot say that no ' +
+        'garbage plaintext reached it — it can only say that nothing did.';
+    } else {
+      garbage.textContent =
+        'Garbage plaintext reached the application. This is the failure this page exists to ' +
+        'show cannot happen, and on this run it did.';
+    }
     notHappened.append(
-      el(
-        'li',
-        intact
-          ? 'No garbage plaintext. The corrupted copy produced no output at all — the only text ' +
-              'that reached the application is byte-for-byte the sentence that was sent.'
-          : 'Garbage plaintext reached the application. This is the failure this page exists to ' +
-              'show cannot happen, and on this run it did.',
-      ),
+      garbage,
       el(
         'li',
         result.refusal

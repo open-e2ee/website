@@ -66,6 +66,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
+import { SCENARIOS } from '../src/lib/demo/scenarios/catalog.ts';
 import { runFlipAByte } from '../src/lib/demo/scenarios/flip-a-byte.ts';
 import { EVENTS } from '../src/workers/site.ts';
 import {
@@ -1166,9 +1167,55 @@ function checkFallback(pass) {
  * A Node run that does not refuse is not a demo failure. It means the shipped
  * package accepted a ciphertext with a flipped byte, and there is no page left
  * worth checking.
+ *
+ * Deriving it is not enough on its own, and this was a real hole rather than a
+ * theoretical one. Both sides of the comparison come from the same scenario
+ * module, so a change to *what the scenario corrupts* moves the page and the
+ * expectation together and the check stays green: reintroducing the base64
+ * layer bug (§3 of the proof) made the page demonstrate `UNKNOWN` with a parse
+ * error, the Node run derive the same, and both error-surface assertions pass —
+ * the page was demonstrating something it does not claim, and only the
+ * liveness check caught it, with a message about device pairs. So the derived
+ * code is held against the code the scenario's own shipped copy names. That
+ * string is not computed from anything; it is what the reader is told, and it
+ * is the thing the page is actually claiming.
  */
+const CODE = /\b[A-Z][A-Z0-9_]{3,}\b/g;
+
+/** The error code the scenario's copy promises a reader, out of the copy. */
+function promisedErrorCode() {
+  const scenario = SCENARIOS.find((entry) => entry.slug === SCENARIO_SLUG);
+  if (!scenario) throw new Red(`no scenario in the catalogue is called ${SCENARIO_SLUG}`);
+
+  const copy = [scenario.title, scenario.expectation, scenario.action, scenario.link.label];
+  const codes = [...new Set(copy.join(' ').match(CODE) ?? [])];
+  if (codes.length !== 1) {
+    throw new Red(
+      `${SCENARIO_SLUG}'s copy names ${codes.length} error codes (${codes.join(', ') || 'none'}), ` +
+        `so there is\n  nothing for the derived expectation to be held against. The scenario has ` +
+        `to promise the reader\n  exactly one code, or this check is a comparison of a value ` +
+        `with itself.`,
+    );
+  }
+  return codes[0];
+}
+
 async function expectedRefusal() {
-  const result = await runFlipAByte();
+  /* A scenario that throws is a demo failure, not an environment one. It is
+     the same throw the page would show a reader in its status line, and the
+     harness saying "this says nothing about the demo" over it would be wrong
+     in the most expensive direction — the scenario's own guards (the base64
+     depth check, above all) report exactly here. */
+  let result;
+  try {
+    result = await runFlipAByte();
+  } catch (cause) {
+    throw new Red(
+      `the scenario could not complete a run in this process: ` +
+        `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
+        `would see in the scenario's status line, so /demo is broken rather than the harness.`,
+    );
+  }
   if (!result.refusal) {
     throw new Red(
       'the installed SDK was handed a ciphertext with one byte flipped and reported no error ' +
@@ -1182,6 +1229,19 @@ async function expectedRefusal() {
         `flipped:\n  sent:      ${result.sentence}\n  delivered: ${result.delivered}`,
     );
   }
+  const promised = promisedErrorCode();
+  if (result.refusal.errorCode !== promised) {
+    throw new Red(
+      `the scenario refuses with ${result.refusal.errorCode}, but /demo tells the reader it is ` +
+        `${promised}.\n  ${JSON.stringify(result.refusal.errorMessage)}\n  Both halves of this ` +
+        `harness's expectation come from the scenario module, so a change to what the scenario ` +
+        `corrupts\n  moves the page and the expectation together — this is the check that does ` +
+        `not move with them. Either the\n  scenario is corrupting something other than the ` +
+        `ciphertext the MAC covers, or the copy in catalog.ts\n  is now wrong about what a ` +
+        `reader will see.`,
+    );
+  }
+
   return { ...result.refusal, sentence: result.sentence };
 }
 
@@ -1198,6 +1258,7 @@ const SCENARIO_DENIALS = [
   'Garbage plaintext reached the application',
   'no recovery to show',
   'cannot say the drop was not silent',
+  'cannot say that no garbage plaintext reached it',
 ];
 
 /*
@@ -1311,8 +1372,13 @@ function checkScenario(pass, origin, expected) {
   const ids = pass.runs.map(fingerprintIn);
   if (ids.some((id) => id === null)) {
     throw new Red(
-      `a run printed no sending identity key fingerprint (${ids.join(', ')}), so the two runs ` +
-        `cannot be told\n  apart and neither of them proves a device pair was ever booted`,
+      `a run printed no sending identity key fingerprint (${ids.map(String).join(', ')}), so the ` +
+        `two runs cannot be\n  told apart and this pass cannot say whether the page ran the SDK ` +
+        `or replayed a recording.\n  It does not mean no device pair booted: the scenario got far ` +
+        `enough to print ` +
+        `${pass.runs.map((run) => run.logLines.length).join(' and ')} log record(s). The likelier ` +
+        `reading is\n  that the run failed before the sending device logged its identity, or ` +
+        `that the SDK stopped\n  reporting the fingerprint this check reads.`,
     );
   }
   if (ids[0] === ids[1]) {

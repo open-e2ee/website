@@ -162,29 +162,45 @@ function asBase64Text(bytes: Uint8Array): string | null {
  * `envelope.ciphertext` is not the ciphertext: it is base64 of a string that is
  * itself base64, because the transport encodes what the protocol had already
  * encoded. Flipping a byte of the outer form therefore flips a *character* of
- * the inner one — and about one time in eight that character lands outside the
- * base64 alphabet, so the inner decoder rejects the message before the MAC is
- * ever checked. The page then reports a parse error where it promised an
- * authentication failure. Both are the protocol refusing corrupt input, but
- * only one is the thing this scenario claims to show, and a demo that shows a
- * different failure every eighth press is not evidence of anything.
+ * the inner one. The flip turns over the low bit, and 6 of the alphabet's 64
+ * characters have their low-bit partner outside it — `+`, `/`, `A`, `Z`, `a`
+ * and `z` — so 6/64 = 9.4% of the time, about one press in eleven, the flipped
+ * character is not base64 at all and the inner decoder rejects the message
+ * before the MAC is ever checked. The page then reports a parse error where it
+ * promised an authentication failure. Both are the protocol refusing corrupt
+ * input, but only one is the thing this scenario claims to show, and a demo
+ * that shows a different failure on a tenth of its presses is not evidence of
+ * anything.
  *
  * So peel the encoding off, corrupt the real ciphertext, and put the encoding
- * back. The depth is discovered rather than assumed: this SDK wraps twice
- * today, and a scenario that hard-coded two would go on corrupting the wrong
- * layer, silently, on the day it wrapped once. Random ciphertext does not
- * accidentally read as base64 text for 2,000 bytes, so the test is safe in the
- * other direction.
+ * back. The depth is discovered rather than assumed, and then checked against
+ * what this SDK does — because those are two different things and only the
+ * second one fails loudly. `asBase64Text` recognises exactly the padded
+ * standard alphabet: an inner layer that became base64url, or unpadded, would
+ * not be recognised, `peel` would stop one layer short, and the scenario would
+ * go straight back to flipping encoding characters with nothing to say so. The
+ * discovery is what keeps this correct if the depth changes; the assertion is
+ * what stops it being silently wrong if the *alphabet* does.
  */
+const WRAPS = 2;
+
 function peel(ciphertext: string): { bytes: Uint8Array; layers: number } {
   let bytes = decode(ciphertext);
   let layers = 1;
   for (;;) {
     const text = asBase64Text(bytes);
-    if (text === null) return { bytes, layers };
+    if (text === null) break;
     bytes = decode(text);
     layers += 1;
   }
+  if (layers !== WRAPS) {
+    throw new Error(
+      `the envelope's ciphertext unwrapped to ${layers} base64 layer(s), not ${WRAPS} — this ` +
+        `scenario would be corrupting an encoding rather than the ciphertext the MAC covers, ` +
+        `and would report a parse error as if it were an authentication failure`,
+    );
+  }
+  return { bytes, layers };
 }
 
 function wrap(bytes: Uint8Array, layers: number): string {
