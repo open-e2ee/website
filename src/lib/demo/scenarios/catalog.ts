@@ -81,8 +81,18 @@ export const SCENARIOS: ScenarioSummary[] = [
       'anyway, and the handshake quietly settles for the fallback key instead.',
     action: 'Empty the prekey stash',
     source: './run-out-of-prekeys.ts',
+    /*
+     * This pointed at `signal-protocol-js/blob/main/docs/DEVICE_LIFECYCLE.md`
+     * and was a 404 on the live site from the moment LD6 merged.
+     * `DEVICE_LIFECYCLE.md` exists in the internal repository and is not on the
+     * export allowlist, so it has never existed in the public one — the URL is
+     * reachable to whoever wrote it and to nobody else. Nothing that *is*
+     * exported covers last-resort prekeys, so there was no equivalent GitHub
+     * page to move it to; the docs site has one, it is published, and it is the
+     * better destination anyway.
+     */
     link: {
-      href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/DEVICE_LIFECYCLE.md#prekey-types-explained',
+      href: 'https://docs.open-e2ee.dev/build/relay-and-prekeys',
       label: 'Which prekey does what, and which one a session falls back to',
     },
   },
@@ -94,8 +104,15 @@ export const SCENARIOS: ScenarioSummary[] = [
       'writing to it, and nothing tells the sending application that anything has changed.',
     action: 'Reinstall the device',
     source: './reinstall-a-device.ts',
+    /*
+     * No `/docs` segment. The docs site serves this page at `/build/...` and
+     * 308s `/docs/build/...` onto it, so both "work" — which is exactly why
+     * the redirecting one is worth not shipping: a reader following it pays a
+     * round trip, and a link that only resolves through a redirect is one
+     * routing change away from being a 404 nobody notices.
+     */
     link: {
-      href: 'https://docs.open-e2ee.dev/docs/build/identity-change-safety-numbers',
+      href: 'https://docs.open-e2ee.dev/build/identity-change-safety-numbers',
       label: 'Handling an identity change, and designing a check a user can finish',
     },
   },
