@@ -1167,7 +1167,12 @@ async function visitTwoTabs(cdp, origin, held) {
       if (!state.stopped) {
         throw new Red(
           `${what} could not shut its client down.\n` +
-            `  Its own status line reads: ${JSON.stringify(state.status)}`,
+            `  Its own status line reads: ${JSON.stringify(state.status)}\n` +
+            `  A "not a function" here is almost always a subscription: both subscribe() and\n` +
+            `  subscribeRetryRequests() on the demo relay must return the unsubscribe function\n` +
+            `  itself, never a promise of one. Note that the name in that message is minified in\n` +
+            `  a production build — the envelope one reports as a single mangled letter — so the\n` +
+            `  message tells you the shape of the fault and not which of the two it was.`,
         );
       }
       stopped.push(state);
