@@ -57,6 +57,18 @@ const PROBE = `Smoke probe ${NONCE}: the staging key rotates at 09:00 UTC.`;
 const DECRYPT_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 30000;
 
+/*
+ * The decrypted text appearing is not the end of the story for invariant 8.
+ * A demo that reported the plaintext to an analytics endpoint a beat later
+ * would have satisfied every assertion above while doing the exact thing this
+ * harness exists to forbid. So after the text lands, keep watching: hold at
+ * least QUIET_MS with no new request, and extend that window each time one
+ * arrives, up to SETTLE_MAX_MS. The cap is what stops a page that polls
+ * forever from hanging the run.
+ */
+const EGRESS_QUIET_MS = 2000;
+const EGRESS_SETTLE_MAX_MS = 10000;
+
 /* Two failure classes, because they mean different things to whoever ran this.
    An infrastructure fault says nothing about the demo; a red assertion does. */
 class Infra extends Error {}
@@ -261,25 +273,42 @@ function findProbe(haystack) {
   return null;
 }
 
-async function evaluate(cdp, sessionId, expression) {
+/*
+ * `blame` decides which failure class an exception becomes, and the choice is
+ * not cosmetic. Reading `document.title` is the harness talking to the page: if
+ * that throws, the harness is broken and the run says nothing about the demo.
+ * Clicking the demo's own send control is the demo running: if that throws, the
+ * demo is broken, which is precisely what a red result is for. Classifying the
+ * second as infrastructure told a reader "this says nothing about the demo"
+ * about the demo's own stack trace.
+ */
+async function evaluate(cdp, sessionId, expression, blame = 'harness') {
   const { result, exceptionDetails } = await cdp.send(
     'Runtime.evaluate',
     { expression, returnByValue: true, awaitPromise: true },
     sessionId,
   );
   if (exceptionDetails) {
-    throw new Infra(`page evaluation threw: ${exceptionDetails.text ?? 'unknown'}`);
+    const text = exceptionDetails.exception?.description ?? exceptionDetails.text ?? 'unknown';
+    if (blame === 'demo') throw new Red(`the demo threw while handling the send:\n  ${text}`);
+    throw new Infra(`page evaluation threw: ${text}`);
   }
   return result.value;
 }
 
-async function waitFor(cdp, sessionId, expression, timeoutMs, describe) {
+/*
+ * On timeout, say what else the page reported. A blocked script and a thrown
+ * handler both present as "the text never appeared", and the reader should not
+ * have to go and find the cause that the harness already had in hand.
+ */
+async function waitFor(cdp, sessionId, expression, timeoutMs, describe, context = () => []) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (await evaluate(cdp, sessionId, expression)) return true;
     await new Promise((r) => setTimeout(r, 100));
   }
-  throw new Red(describe);
+  const extra = context();
+  throw new Red(extra.length ? `${describe}\n${extra.join('\n')}` : describe);
 }
 
 // ---------------------------------------------------------------- the harness
@@ -356,12 +385,15 @@ async function run(headers, held) {
 
   const requests = [];
   const cspViolations = [];
+  const pageErrors = [];
   const postDataNeeded = [];
+  let lastRequestAt = Date.now();
 
   cdp.on((message) => {
     if (message.sessionId !== sessionId) return;
     if (message.method === 'Network.requestWillBeSent') {
       const { request, requestId } = message.params;
+      lastRequestAt = Date.now();
       requests.push({
         url: request.url,
         method: request.method,
@@ -370,7 +402,12 @@ async function run(headers, held) {
       });
       if (request.hasPostData && !request.postData) postDataNeeded.push(requestId);
     }
+    if (message.method === 'Runtime.exceptionThrown') {
+      const d = message.params.exceptionDetails;
+      pageErrors.push(d?.exception?.description ?? d?.text ?? 'unknown page exception');
+    }
     if (message.method === 'Network.webSocketFrameSent') {
+      lastRequestAt = Date.now();
       requests.push({
         url: message.params.response?.payloadData ? 'websocket frame' : 'websocket',
         method: 'WS',
@@ -390,6 +427,25 @@ async function run(headers, held) {
   await cdp.send('Runtime.enable', {}, sessionId);
   await cdp.send('Network.enable', {}, sessionId);
   await cdp.send('Log.enable', {}, sessionId);
+
+  /*
+   * Wait out the tail of network activity so a late send is still observed.
+   *
+   * The minimum hold is measured from the moment the text appeared, not from
+   * the last request. Without it, a slow decrypt would leave the connection
+   * already quiet for longer than the window and this would return at once —
+   * skipping exactly the interval the check exists to watch.
+   */
+  async function settleEgress() {
+    const start = Date.now();
+    const deadline = start + EGRESS_SETTLE_MAX_MS;
+    for (;;) {
+      const now = Date.now();
+      const quiet = Math.min(now - lastRequestAt, now - start);
+      if (quiet >= EGRESS_QUIET_MS || now >= deadline) return;
+      await new Promise((r) => setTimeout(r, Math.min(200, EGRESS_QUIET_MS - quiet)));
+    }
+  }
 
   const loaded = new Promise((resolve, reject) => {
     const off = cdp.on((m) => {
@@ -443,9 +499,23 @@ async function run(headers, held) {
 
     /* Type as a reader would: focus the field, insert text so the demo's own
        input handlers run, then press its send control. */
-    await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(INPUT)}).focus()`);
+    /* Blamed on the demo for the same reason as the click: the elements were
+       there a moment ago, so if they are gone now the demo's own script moved
+       them, and a demo that re-renders its panel out from under the reader is
+       not an infrastructure fault. */
+    await evaluate(
+      cdp,
+      sessionId,
+      `document.querySelector(${JSON.stringify(INPUT)}).focus()`,
+      'demo',
+    );
     await cdp.send('Input.insertText', { text: PROBE }, sessionId);
-    await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(SEND)}).click()`);
+    await evaluate(
+      cdp,
+      sessionId,
+      `document.querySelector(${JSON.stringify(SEND)}).click()`,
+      'demo',
+    );
 
     await waitFor(
       cdp,
@@ -453,7 +523,25 @@ async function run(headers, held) {
       `document.querySelector(${JSON.stringify(DECRYPTED)})?.textContent?.includes(${JSON.stringify(PROBE)}) === true`,
       DECRYPT_TIMEOUT_MS,
       `the typed sentence never appeared decrypted in ${DECRYPTED} within ${DECRYPT_TIMEOUT_MS} ms`,
+      () => {
+        const lines = [];
+        if (cspViolations.length) {
+          lines.push(
+            `  The page reported ${cspViolations.length} CSP violation(s), which is the likeliest cause:`,
+            ...cspViolations.map((v) => `    ${v}`),
+          );
+        }
+        if (pageErrors.length) {
+          lines.push(
+            `  The page threw ${pageErrors.length} uncaught error(s):`,
+            ...pageErrors.map((e) => `    ${e.split('\n')[0]}`),
+          );
+        }
+        return lines;
+      },
     );
+
+    await settleEgress();
 
     /* Pull bodies the browser did not hand over inline. */
     for (const requestId of postDataNeeded) {
@@ -489,7 +577,8 @@ async function run(headers, held) {
 
     console.log(
       `demo smoke: PASS — round-tripped a typed sentence in the browser, ` +
-        `${requests.length} request(s) observed, none carrying it, no CSP violation.`,
+        `${requests.length} request(s) observed (including a ${EGRESS_QUIET_MS} ms quiet window ` +
+        `after it decrypted), none carrying it, no CSP violation.`,
     );
   }
 }
