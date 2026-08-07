@@ -2000,11 +2000,16 @@ function preKeysExpectation(expected) {
 
       /* The counts, which are the before and after the whole scenario turns
          on. A page that printed the fallback without them would be asserting
-         the stash ran out rather than showing it. */
-      if (!run.steps.some((text) => text.includes('left to give'))) {
+         the stash ran out rather than showing it — and the numbers themselves
+         are checked, not just their presence, because "99 and 99 left to give"
+         beside a bundle with nothing in it is the one arrangement of this
+         scenario's own figures that contradicts the rest of it. */
+      const left = `${expected.exhausted.ec} and ${expected.exhausted.kem} left to give`;
+      if (!run.steps.some((text) => text.includes(left))) {
         throw new Red(
-          `${where} printed no step saying what the relay had left when it published the empty ` +
-            `bundle.\n  Steps printed:\n  ${run.steps.join('\n  ') || '(none)'}`,
+          `${where} printed no step saying "${left}" — what the relay actually had when it ` +
+            `published\n  the empty bundle, as the same scenario reported it in this process.\n  ` +
+            `Steps printed:\n  ${run.steps.join('\n  ') || '(none)'}`,
         );
       }
 
@@ -2048,6 +2053,21 @@ function preKeysExpectation(expected) {
      * argument and still pass.
      */
     checkRuns(runs) {
+      /* `-1` is the SDK declining to answer, not a number of prekeys. A page
+         that printed it as a count would be handing a reader a reading the SDK
+         refused to give, in the one sentence on the page about whether the
+         application can find any of this out. */
+      for (const [index, run] of runs.entries()) {
+        const negative = run.nots.find((text) => /reported -\d+ remaining/.test(text));
+        if (negative) {
+          throw new Red(
+            `run ${index + 1} printed checkPreKeyStatus()'s refusal as though it were a count of ` +
+              `prekeys:\n  ${negative}\n  The SDK returns -1 when it declines to answer, and the ` +
+              `page has to say so rather than\n  report it.`,
+          );
+        }
+      }
+
       const counted = runs.find((run) =>
         run.nots.some((text) => text.includes('remaining and needsReplenishment')),
       );
