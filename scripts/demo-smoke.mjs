@@ -178,7 +178,7 @@ const VIEWPORT = { width: 1280, height: 800 };
  * without the demo to compare against, and is measured in the proof rather than
  * here. This is the tripwire for the SDK arriving uninvited.
  *
- * The proof's table reports `/demo` lower — 14.5 KB before LD6 and 9.7 KB
+ * The proof's table reports `/demo` lower — 14.7 KB before LD6 and 9.7 KB
  * after — and both are right beside the figures above: it walks the module
  * graph on disk, while this counts what Chrome actually fetched, which includes
  * responses the static walk does not model. The ceiling is set against the
