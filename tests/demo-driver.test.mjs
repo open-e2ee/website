@@ -187,6 +187,70 @@ test('carries a second message on the established session', async () => {
   });
 });
 
+/*
+ * The regression this exists for, in the shape it actually took.
+ *
+ * `exchange()` used to drain its pending-envelope queue with `shift()`, on the
+ * reading that an envelope could arrive before the wait was installed. It
+ * cannot. What does arrive outside a send is a *second* envelope for a send
+ * that already resolved: a message that fails to decrypt makes the receiving
+ * device archive the session and ask the sender to send it again, and that
+ * resend lands after `onEnvelope` has been cleared. `shift()` then handed the
+ * stale envelope to the next send, which reported the previous sentence's
+ * ciphertext as its own.
+ *
+ * No scenario before `/demo` ever produced a second envelope outside a send, so
+ * the whole suite stayed green with the bug in place. The corruption here is
+ * deliberately blunt — a replacement ciphertext rather than a flipped byte,
+ * because this test is about the driver's bookkeeping and not about which error
+ * the protocol names.
+ */
+test('reports the envelope its own send produced, not one a retry left behind', async () => {
+  const handed = [];
+  let corrupted = false;
+
+  /* A failed decryption is a loud event, and the SDK's default logger writes
+     it to the console. Silencing it keeps a passing suite from printing what
+     looks like a stack of failures; nothing here asserts on the log. */
+  const quiet = { debug() {}, info() {}, warn() {}, error() {} };
+
+  const session = await startDemoSession({
+    logger: { sender: quiet, recipient: quiet },
+    tamper: (envelope) => {
+      handed.push(envelope.ciphertext);
+      if (corrupted) return envelope;
+      corrupted = true;
+      return { ...envelope, ciphertext: btoa(btoa('not the ciphertext you were looking for')) };
+    },
+  });
+
+  try {
+    await session.send(PROBE);
+    const second = await session.send('And the second one, after the retry.');
+
+    /* Three envelopes: the corrupted first, the resend the receiving device
+       asked for, and this send's own. The middle one is the one that used to
+       be handed back here. */
+    assert.equal(handed.length, 3, `the retry did not happen: ${handed.length} envelope(s)`);
+    assert.equal(second.decrypted.content, 'And the second one, after the retry.');
+
+    /* Compared by position rather than by value: these are 3.5 KB base64
+       strings, and an equality failure would print two of them where one
+       number says the whole thing. */
+    const reported = handed.indexOf(second.envelope.ciphertext);
+    assert.equal(
+      reported,
+      handed.length - 1,
+      `the second send reported envelope ${reported + 1} of ${handed.length} as its own. ` +
+        `Envelope 2 is the resend\n  the receiving device asked for when the first message ` +
+        `failed — it carries the first sentence, and\n  a send that hands it back reports the ` +
+        `previous message's ciphertext as this one's.`,
+    );
+  } finally {
+    await session.stop();
+  }
+});
+
 test('marks the timeline the browser Performance panel will show', async () => {
   await withSession(async (session) => {
     const before = performance.getEntriesByType('measure').length;
