@@ -11,7 +11,7 @@
  *   1. Nothing SDK-touching arrives before a reader asks (invariant 7). Node
  *      has no network to watch; here the run fails if the page has pulled more
  *      than PRE_INTERACTION_CEILING of JavaScript before the first click, which
- *      no build carrying the 713 KB SDK chunk can meet.
+ *      no build carrying the 713 KB SDK payload can meet.
  *   2. `import('./driver')` resolves to something that runs. In node that
  *      specifier is never exercised: the loader's own tests inject their import
  *      because there is no chunk to fetch.
@@ -50,10 +50,10 @@ const PROBE = 'Ship it Thursday. The staging key rotates at 09:00 UTC.';
 /*
  * Comfortably above a page whose only script is the loader and this fixture's
  * markup glue, and roughly two orders of magnitude below the smallest build
- * that contains the SDK — LD0 measured that at 713 KB gzip, of which the
- * smallest single chunk on the path is already larger than this. The ceiling
- * is a tripwire for a static import creeping into the loader, not a budget:
- * invariant 7's 10 KB budget is against the homepage, which LD2 owns.
+ * that contains the SDK — a static import puts the driver in the entry chunk,
+ * which the mutation test measures at 1761.5 KB before the first click. The
+ * ceiling is a tripwire for a static import creeping into the loader, not a
+ * budget: invariant 7's 10 KB budget is against the homepage, which LD2 owns.
  */
 const PRE_INTERACTION_CEILING = 20 * 1024;
 

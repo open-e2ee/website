@@ -26,13 +26,10 @@
  * as the published quickstart writes them.
  */
 
-import { createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
+import { DEFAULT_DEVICE_ID, createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
 import type { DecryptedEnvelope, Envelope, SendResult } from '@open-e2ee/signal-protocol-sdk';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
-
-/** Both sides run on device 1; the demo has no second-device story until LD5. */
-const DEVICE_ID = 1;
 
 export interface DemoSessionOptions {
   /** Account that types. Shown to the reader, so callers name it. */
@@ -147,7 +144,13 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
    */
   const pending: Envelope[] = [];
   let onEnvelope: ((envelope: Envelope) => void) | null = null;
-  const unsubscribeRelay = relay.subscribe(recipient, DEVICE_ID, (envelope) => {
+  /* `DEFAULT_DEVICE_ID` comes from the package rather than being written as 1:
+   * the client registers itself under the SDK's default, so a demo that pinned
+   * its own copy would subscribe to the wrong device the day that default
+   * moved — and the symptom would be `envelope-stored` never firing and
+   * `await envelopeArrived` hanging, not an error. Both sides run on that one
+   * device; the demo has no second-device story until LD5. */
+  const unsubscribeRelay = relay.subscribe(recipient, DEFAULT_DEVICE_ID, (envelope) => {
     if (onEnvelope) onEnvelope(envelope);
     else pending.push(envelope);
     emit({ type: 'envelope-stored', envelope });

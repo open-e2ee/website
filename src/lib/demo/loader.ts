@@ -4,7 +4,7 @@
  * This module is the only part of the demo that ships in the homepage's
  * pre-interaction payload, so it deliberately knows nothing about the protocol:
  * everything that touches `@open-e2ee/signal-protocol-sdk` lives behind the
- * dynamic `import()` below, in `./driver`. LD0 measured that chunk at 713 KB
+ * dynamic `import()` below, in `./driver`. LD0 measured that payload at 713 KB
  * gzip of real network transfer, against a homepage budget of 10 KB before a
  * reader asks for anything (invariant 7). One static import from a page script
  * would spend the whole budget at first paint.
