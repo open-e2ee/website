@@ -333,16 +333,33 @@ export function renderRunOutOfPreKeys(
   const notHappened = el('ul', undefined, 'scenario-nots');
   notHappened.dataset.scenarioNots = '';
 
-  /* The finding, and the only form of it this page is allowed to print: the
-     list of warnings the run produced, checked, rather than the sentence
-     somebody expected to be able to write about it. */
+  /*
+   * The finding, and the only form of it this page is allowed to print: the
+   * list of warnings the run produced, checked, rather than the sentence
+   * somebody expected to be able to write about it.
+   *
+   * It is printed beside what the SDK *did* log in the same window, because
+   * "no warning" on its own is a weak thing to have checked — an SDK that said
+   * nothing at all would satisfy it, and so would a broken filter. The numbers
+   * beside it are what make it a finding: the SDK is not quiet during the
+   * exhausted handshake, it is voluble in a channel an application is not
+   * watching, and it never once raises its voice to a level one is.
+   */
   const quiet = el('li');
   if (result.warnings.length === 0) {
+    const atInfo =
+      result.whileEmpty.records === 0
+        ? 'nothing at info either'
+        : `${count(result.whileEmpty.records)} at info and nothing above it`;
     quiet.textContent =
-      'No warning. Across the whole exhausted handshake the SDK logged nothing at warn or ' +
-      'error. It is not an error to run out — the session establishes, the message arrives, ' +
-      'and the only thing that changed is that the first messages of this conversation rest ' +
-      'on a key reused across every sender who arrives while the stash is empty.';
+      `No warning. Across the whole exhausted handshake the SDK logged nothing at warn or ` +
+      `error — ${atInfo}. What it logged instead was ` +
+      `${count(result.whileEmpty.breadcrumbs)} breadcrumbs, of which ` +
+      `${count(result.whileEmpty.namingFallback)} name the last-resort fallback outright. The ` +
+      `SDK is not keeping this from you; it is saying it somewhere no application is listening. ` +
+      `And it is not an error to run out — the session establishes, the message arrives, and ` +
+      `the only thing that changed is that the first messages of this conversation rest on a ` +
+      `key reused across every sender who arrives while the stash is empty.`;
   } else {
     quiet.textContent =
       `The SDK did warn: ${result.warnings.map((record) => record.message).join('; ')}. That ` +

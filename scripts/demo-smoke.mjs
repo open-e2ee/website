@@ -1466,6 +1466,26 @@ async function expectedPreKeys() {
   }
 
   /*
+   * And the check that keeps the one above from being vacuous.
+   *
+   * An empty `warnings` array proves nothing by itself: an SDK that logged
+   * nothing at all would produce one, and so would a filter that had quietly
+   * stopped working. What makes the silence a finding is that the SDK is
+   * talking throughout — in breadcrumbs, several of them naming the fallback —
+   * and never at a level an application would see. A run where the breadcrumbs
+   * dried up is a run where "no warning" is no longer evidence of anything, and
+   * the page would be printing a finding it did not observe.
+   */
+  if (result.whileEmpty.namingFallback === 0) {
+    throw new Red(
+      `the SDK dropped ${result.whileEmpty.breadcrumbs} breadcrumb(s) during the exhausted ` +
+        `handshake and none of them\n  named the last-resort fallback. The page's "no warning" ` +
+        `line is read against what the SDK did say;\n  with nothing said, an empty warn/error ` +
+        `list stops being evidence that exhaustion goes unreported.`,
+    );
+  }
+
+  /*
    * And the other half of the finding: the SDK's own prekey-health call cannot
    * see the exhaustion, because it counts this device's stored prekeys rather
    * than the server's. If it ever agrees with the server, the page's
@@ -1490,6 +1510,7 @@ async function expectedPreKeys() {
     exhausted: result.exhausted,
     fallback: result.fallback,
     health: result.health,
+    whileEmpty: result.whileEmpty,
   };
 }
 
@@ -2017,6 +2038,18 @@ function preKeysExpectation(expected) {
          the second is the answer to the question a reader asks immediately
          afterwards, and leaving it out would imply the SDK has a health call
          that covers this. */
+      /* The page's silence line has to carry what the SDK did say, for the
+         reason the expectation above spells out: "no warning" beside a count
+         of breadcrumbs naming the fallback is a finding, and on its own it is
+         a sentence about an empty array. */
+      if (!run.nots.some((text) => /name the last-resort fallback outright/.test(text))) {
+        throw new Red(
+          `${where} said the SDK gave no warning without saying what it gave instead. The ` +
+            `breadcrumbs naming\n  the fallback are what make the silence evidence rather than ` +
+            `an absence of logging.\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
+        );
+      }
+
       for (const promised of ['No warning', 'No signal from the health check']) {
         if (!run.nots.some((text) => text.startsWith(promised))) {
           throw new Red(

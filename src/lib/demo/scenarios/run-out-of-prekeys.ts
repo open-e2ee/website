@@ -120,6 +120,26 @@ export interface RunOutOfPreKeysResult {
    */
   warnings: ScenarioLogRecord[];
   /**
+   * What the SDK did log while the stash was empty, which is the other half of
+   * the finding and the half that keeps it from being vacuous.
+   *
+   * "No warning" read off an empty `warnings` array says nothing on its own: an
+   * SDK that logged nothing whatsoever would satisfy it, and so would a filter
+   * that was quietly broken. It is worth saying only beside what the SDK did
+   * do. Measured against `0.1.0-alpha.12`, the exhausted handshake produces no
+   * record at all at `info` or above and a long trail of breadcrumbs, several
+   * naming the fallback outright — so the SDK is not silent, it is talking
+   * somewhere an application is not listening. All three are counted here and
+   * printed, rather than asserted in a sentence.
+   */
+  whileEmpty: {
+    /** Records at `info` or above, of which `warnings` are the loud ones. */
+    records: number;
+    breadcrumbs: number;
+    /** Breadcrumbs whose message names the last-resort fallback. */
+    namingFallback: number;
+  };
+  /**
    * What `checkPreKeyStatus()` reported while the relay held none. The SDK
    * throttles the call and returns `-1` when it declines to answer, so the
    * page has to be able to tell a real count from a refusal.
@@ -205,8 +225,18 @@ export async function runOutOfPreKeys(): Promise<RunOutOfPreKeysResult> {
   const before = await counts();
 
   /* One ordinary conversation, which spends one one-time prekey of each type. */
+  const primary = session.recipientDevices[0];
   const healthyFrom = log.breadcrumbs.length;
   await session.send(FIRST);
+
+  /* Wait for that conversation to finish before anything starts watching for
+     complaints about the next one. The recipient decrypts after `send()` has
+     resolved, so a record belonging to this conversation can otherwise land
+     after the mark below and be counted against the exhausted handshake — the
+     page then prints a number that changes from press to press for a reason
+     that has nothing to do with prekeys. */
+  await settle(() => primary.received.some((message) => message.content === FIRST), DELIVERY_TIMEOUT_MS);
+
   const healthy = agreementSince(log.breadcrumbs, healthyFrom);
   const afterFirstConversation = await counts();
 
@@ -251,7 +281,6 @@ export async function runOutOfPreKeys(): Promise<RunOutOfPreKeysResult> {
       );
     }
 
-    const primary = session.recipientDevices[0];
     const arrived = await settle(
       () => primary.received.some((message) => message.content === SENTENCE),
       DELIVERY_TIMEOUT_MS,
@@ -276,6 +305,13 @@ export async function runOutOfPreKeys(): Promise<RunOutOfPreKeysResult> {
       sentence: SENTENCE,
       delivered: arrived ? SENTENCE : null,
       warnings: log.records.slice(warningsFrom).filter((record) => record.level !== 'info'),
+      whileEmpty: {
+        records: log.records.length - warningsFrom,
+        breadcrumbs: log.breadcrumbs.length - fallbackFrom,
+        namingFallback: log.breadcrumbs
+          .slice(fallbackFrom)
+          .filter((crumb) => crumb.message.includes('last-resort')).length,
+      },
       health,
       records: log.records,
       breadcrumbs: log.breadcrumbs,
