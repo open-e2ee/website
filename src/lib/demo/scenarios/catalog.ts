@@ -86,4 +86,17 @@ export const SCENARIOS: ScenarioSummary[] = [
       label: 'Which prekey does what, and which one a session falls back to',
     },
   },
+  {
+    slug: 'reinstall-a-device',
+    title: 'Reinstall the other device',
+    expectation:
+      'The receiving device is destroyed and built again from nothing, the sender keeps ' +
+      'writing to it, and nothing tells the sending application that anything has changed.',
+    action: 'Reinstall the device',
+    source: './reinstall-a-device.ts',
+    link: {
+      href: 'https://docs.open-e2ee.dev/docs/build/identity-change-safety-numbers',
+      label: 'Handling an identity change, and designing a check a user can finish',
+    },
+  },
 ];

@@ -40,6 +40,7 @@ import type { HookName } from '@open-e2ee/signal-protocol-sdk';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import { startDemoSession } from '../driver.ts';
 /* demo:code:end */
+import type { CompositeIdentityV1 } from '@open-e2ee/signal-protocol-sdk/keys';
 import { captureScenarioLog, type ScenarioBreadcrumb, type ScenarioLogRecord } from './log.ts';
 
 export { describePayload } from './log.ts';
@@ -221,6 +222,23 @@ function viewSafetyNumber(safetyNumber: {
   };
 }
 
+/**
+ * The account identity the relay is currently serving for a user.
+ *
+ * The relay answers `null` for a user it is holding nothing for, which is not a
+ * state this scenario can carry on from — both callers need the identity in
+ * order to say anything true about it. Failing here with a sentence is better
+ * than passing `null` into the SDK and reporting whatever it makes of that.
+ */
+async function currentIdentity(
+  relay: { getIdentityKey: (userId: string) => Promise<CompositeIdentityV1 | null> },
+  userId: string,
+): Promise<CompositeIdentityV1> {
+  const identity = await relay.getIdentityKey(userId);
+  if (!identity) throw new Error(`the relay is holding no account identity for ${userId}`);
+  return identity;
+}
+
 /** Whatever error code a record is carrying, wherever the SDK put it. */
 function codeOf(record: ScenarioLogRecord): string | null {
   for (const entry of record.payload) {
@@ -320,7 +338,7 @@ export async function reinstallADevice(): Promise<ReinstallResult> {
        the relay can compute. It stops two devices from rotating over each
        other; it does not establish that this device is the right one. */
     const rotate = await attempt(async () => {
-      const current = await relay.getIdentityKey(recipient);
+      const current = await currentIdentity(relay, recipient);
       await rebuilt!.rotateAccountIdentity(keys.deriveIdentityCommitment(current));
     });
     /* demo:code:end */
@@ -355,7 +373,7 @@ export async function reinstallADevice(): Promise<ReinstallResult> {
        discards every session bound to the identity that is gone; the SDK will
        not make it on the application's behalf. */
     const accepted = await attempt(async () => {
-      const current = await relay.getIdentityKey(recipient);
+      const current = await currentIdentity(relay, recipient);
       await session.senderClient.acceptIdentityRotation(recipient, current);
     });
     /* demo:code:end */

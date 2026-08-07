@@ -182,6 +182,18 @@ const description =
       status.textContent = 'Spending the prekey stash, then opening a new conversation…';
       render.renderRunOutOfPreKeys(output, await scenario.runOutOfPreKeys(), scenario.describePayload);
     },
+    'reinstall-a-device': async (output, status) => {
+      const [scenario, render] = await Promise.all([
+        import('../lib/demo/scenarios/reinstall-a-device.ts'),
+        import('../lib/demo/render.ts'),
+      ]);
+      status.textContent = 'Destroying the receiving device, then writing to it anyway…';
+      render.renderReinstallADevice(
+        output,
+        await scenario.reinstallADevice(),
+        scenario.describePayload,
+      );
+    },
   };
 
   /*

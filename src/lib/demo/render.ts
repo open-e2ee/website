@@ -31,6 +31,7 @@
 import type { SecondDeviceResult } from './scenarios/add-a-second-device.ts';
 import type { FlipAByteResult } from './scenarios/flip-a-byte.ts';
 import type { ScenarioLogRecord } from './scenarios/log.ts';
+import type { Attempt, ReinstallResult } from './scenarios/reinstall-a-device.ts';
 import type { RunOutOfPreKeysResult } from './scenarios/run-out-of-prekeys.ts';
 
 /** Rendering a scenario's own kind of result, once its module has arrived. */
@@ -425,6 +426,234 @@ export function renderRunOutOfPreKeys(
   output.append(context);
 
   appendLog(output, result.records, result.debugRecords, 'all three accounts', describePayload);
+}
+
+/** An error the run kept, quoted with the code it carried. */
+const quoteFailure = (attempt: Attempt) =>
+  attempt.ok
+    ? ''
+    : `${attempt.code ?? attempt.name}: ${attempt.message}` +
+      (attempt.cause ? ` — ${attempt.cause}` : '');
+
+/*
+ * The reinstall, and the difference between what the protocol noticed and what
+ * the application was told.
+ *
+ * The scenario this renders was planned around a "safety number changed" event.
+ * There is no such event, so there is no branch here that prints one. What
+ * there is instead is a rule this renderer follows more strictly than the
+ * others: every claim about an absence is printed from the collection that is
+ * empty, beside the collection that is not. "No hook fired" is printed from the
+ * fired list, next to how many were registered and on which devices; "no safety
+ * number" is printed from the error `verify()` actually threw. A run where the
+ * SDK started reporting any of this would print the report rather than the
+ * finding, and the page would have been overtaken by the SDK — which is the
+ * outcome this shape is designed to make visible rather than to hide.
+ */
+export function renderReinstallADevice(
+  output: HTMLElement,
+  result: ReinstallResult,
+  describePayload: Describe,
+) {
+  output.replaceChildren();
+
+  const happened = el('ol', undefined, 'scenario-steps');
+  happened.dataset.scenarioSteps = '';
+  const step = (text: string) => happened.append(el('li', text));
+
+  step(
+    result.established.delivered === result.established.sentence
+      ? `${result.sender} and ${result.recipient} were already talking: “${result.established.sentence}” ` +
+        `was sent, encrypted to ${result.recipient}'s device, and arrived.`
+      : `The opening message never arrived, so this run never had the working conversation the ` +
+        `rest of it is supposed to interrupt.`,
+  );
+
+  if (result.before) {
+    step(
+      `At that point the two of them could have compared safety numbers: ` +
+        `${result.before.numeric.split(' ').length} groups, ` +
+        `${result.before.numeric.replace(/ /g, '').length} digits, half belonging to each side. ` +
+        `The SDK put the trust at “${result.before.trustState ?? 'unreported'}” — generating a ` +
+        `number never promotes it.`,
+    );
+  }
+
+  step(
+    `Then ${result.recipient}'s device was destroyed and built again on device-local storage ` +
+      `that had never held anything: no identity, no session, no prekeys. That is a reinstall, ` +
+      `a replaced handset, or a restore that did not carry the keys.`,
+  );
+
+  /* The refusal is quoted rather than described. It is the relay's sentence and
+     the page has no business paraphrasing it. */
+  if (!result.publish.ok) {
+    step(
+      `Building the client did not fail — it came up offline and said so at warn. Asking it to ` +
+        `publish is what surfaced the reason, and the reason came from the relay: ` +
+        `${quoteFailure(result.publish)}. A reinstalled device cannot quietly become the account.`,
+    );
+  } else {
+    step(
+      `The rebuilt device published itself over the account identity without being challenged, ` +
+        `which is not what this run is meant to show and is worth more attention than the rest ` +
+        `of this page.`,
+    );
+  }
+
+  if (result.rotate.ok) {
+    step(
+      `It got back on the only way the SDK allows: rotateAccountIdentity, holding a commitment ` +
+        `over the identity the relay was already serving. That identity is public — anyone who ` +
+        `can read the relay can compute the commitment — so the check stops two devices ` +
+        `rotating over each other. It does not establish which of them is holding the phone.`,
+    );
+  } else {
+    step(`The rebuilt device could not rotate onto the account: ${quoteFailure(result.rotate)}.`);
+  }
+
+  step(
+    result.stranded.resolved
+      ? `And ${result.sender}, told nothing, wrote again. send() resolved.` +
+        (result.stranded.delivered === null
+          ? ` Nothing arrived.`
+          : ` The message arrived anyway, so this run has no stranded message to show.`)
+      : `${result.sender}'s send was rejected outright. That is a louder outcome than this ` +
+        `scenario was built to show — the sending application would have found out at the ` +
+        `call — and the page has been left behind by the SDK.`,
+  );
+
+  output.append(el('h3', 'What happened'), happened);
+
+  const notHappened = el('ul', undefined, 'scenario-nots');
+  notHappened.dataset.scenarioNots = '';
+
+  /*
+   * The finding. Printed from the empty list beside the full one, for the same
+   * reason the prekey scenario prints its breadcrumb counts: "nothing fired" is
+   * worth nothing on its own, because a run that registered nothing would
+   * satisfy it just as well.
+   */
+  const noEvent = el('li');
+  if (result.hooks.fired.length === 0) {
+    noEvent.textContent =
+      `No event. Every one of the ${count(result.hooks.registered.length)} hooks the SDK offers ` +
+      `was registered on ${result.hooks.devices.join(' and ')} before the device was ` +
+      `destroyed, and between the reinstall and the end of that send not one of them fired. ` +
+      `There is no onIdentityChanged to register: the SDK's hook surface has no entry for this ` +
+      `event, and the hooks it does have stayed quiet through all of it.`;
+  } else {
+    noEvent.textContent =
+      `The SDK did notify the application: ${result.hooks.fired.join(', ')}. That is a better ` +
+      `outcome than this scenario was built to show, and the page has been left behind by the SDK.`;
+  }
+
+  /* The call an application would build a banner from, and what it does. */
+  const noNumber = el('li');
+  if (!result.asked.ok) {
+    noNumber.textContent =
+      `And no safety number to show. verify() — the call that produces the number a “safety ` +
+      `number changed” banner would display — does not return a changed number here. It ` +
+      `throws: ${quoteFailure(result.asked)}. The application cannot render the comparison ` +
+      `until it has already decided to accept the change it was trying to ask the user about.`;
+  } else {
+    noNumber.textContent =
+      `verify() returned a safety number rather than refusing, so on this run the application ` +
+      `did have a changed number it could have shown.`;
+  }
+
+  /*
+   * The counterweight, and the difference from the prekey scenario. There the
+   * SDK never raised its voice; here it does, on the sending side, at error —
+   * just nowhere an application is required to be looking, and only after the
+   * receiving device's automatic retry forced the issue.
+   */
+  const notSilent = el('li');
+  if (result.loud.length > 0) {
+    notSilent.textContent =
+      `It is not that the SDK said nothing. Across the reinstall it logged ` +
+      `${count(result.loud.length)} records at warn or error` +
+      (result.codes.length > 0 ? `, carrying ${result.codes.join(', ')}` : '') +
+      `. All of it went to the logger. None of it reached a hook, a return value, or a ` +
+      `rejected promise — the three places an application is built to look.`;
+  } else {
+    notSilent.textContent =
+      `The SDK logged nothing at warn or error across the whole reinstall, so on this run even ` +
+      `the log had nothing to offer.`;
+  }
+
+  notHappened.append(noEvent, noNumber, notSilent);
+  output.append(el('h3', 'What did not happen'), notHappened);
+
+  /* The recovery, which is the part the docs promise and the part that shows
+     why the ceremony is the hard bit. */
+  const recovered = el('ol', undefined, 'scenario-steps');
+  recovered.dataset.scenarioRecovery = '';
+  const recoveryStep = (text: string) => recovered.append(el('li', text));
+
+  if (result.accepted.ok) {
+    recoveryStep(
+      `acceptIdentityRotation is the explicit decision, made out of band, that the SDK will ` +
+        `never make on the application's behalf. It discards every session bound to the ` +
+        `identity that is gone.`,
+    );
+    recoveryStep(
+      result.recovered !== null
+        ? `Delivery resumed straight after` +
+          (result.strandedArrivedLater
+            ? `, and “${result.stranded.sentence}” turned up too — it had been stuck, not lost.`
+            : `, though the stranded message never did arrive.`)
+        : `Delivery did not resume, so this run cannot show the recovery working.`,
+    );
+  } else {
+    recoveryStep(`Accepting the identity change failed: ${quoteFailure(result.accepted)}.`);
+  }
+
+  /* The halves are the whole point of printing the number at all. */
+  if (result.before && result.after) {
+    const localHeld = result.before.localHalf === result.after.localHalf;
+    const remoteMoved = result.before.remoteHalf !== result.after.remoteHalf;
+    recoveryStep(
+      localHeld && remoteMoved
+        ? `And the safety number changed — in half of itself. The first six groups are ` +
+          `${result.sender}'s own and are identical before and after; the last six are ` +
+          `${result.recipient}'s and are entirely different. That is the comparison a user is ` +
+          `asked to make: ${result.after.numeric.replace(/ /g, '').length} digits of which ` +
+          `${result.after.remoteHalf.replace(/ /g, '').length} moved, read aloud, against a ` +
+          `number they last saw weeks ago.`
+        : `The safety number after the change does not split the way this page expects — ` +
+          `${localHeld ? 'the far side’s half held still' : 'the near side’s half moved'} — so ` +
+          `the comparison is printed rather than described: before ${result.before.numeric}, ` +
+          `after ${result.after.numeric}.`,
+    );
+  }
+
+  output.append(el('h3', 'What it took to recover'), recovered);
+
+  /* Named as the market research names it, linked to the source, because a
+     page that tells a reader this is the industry's problem owes them the
+     means to check. */
+  const context = el('p', undefined, 'scenario-context');
+  context.dataset.scenarioContext = '';
+  context.append(
+    document.createTextNode(
+      'This is trust on first use, and first contact is unverified. Keybase renames the model ' +
+        'to fit what actually happens: not Trust On First Use but “TADA — Trust After Device ' +
+        'Additions”, because every phone upgrade re-runs the decision. Week one you add a ' +
+        '“safety number changed” banner and build a warning-fatigue machine — “Checking is ' +
+        'infeasible, since it happens way too often. Checking sucks. Even a cursory poll of ' +
+        'our security-conscious friends shows that no one bothers.” Whether an identity ' +
+        'change reaches a human, and what you ask them to do about it, is a thing you build. ',
+    ),
+  );
+  const citation = el('a', 'Keybase, “Chat apps are softer than TOFU”');
+  citation.href = 'https://keybase.io/blog/chat-apps-softer-than-tofu';
+  citation.target = '_blank';
+  citation.rel = 'noopener';
+  context.append(citation);
+  output.append(context);
+
+  appendLog(output, result.records, result.debugRecords, 'all three devices', describePayload);
 }
 
 /*

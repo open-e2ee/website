@@ -51,6 +51,7 @@ export const LABELS = new Set([
   'flip-a-byte',
   'add-a-second-device',
   'run-out-of-prekeys',
+  'reinstall-a-device',
 ]);
 
 const COLLECT_PATH = '/e';
