@@ -9,18 +9,22 @@
  * what a server would hold, and that the sentence is not on it.
  *
  * A claim like that is only worth as much as the surface it is made about.
- * `ISignalProtocolRelayServer` has around forty methods; a session reaches
- * `CARRIED_CALLS` and `CARRIED_STREAMS` below and nothing else, measured
+ * `ISignalProtocolRelayServer` declares **41** methods, counting the two
+ * interfaces it extends — `IProvisioningService` and `IKeyRotationService`,
+ * which is where the two prekey-metadata calls live. A session reaches the 15
+ * in `CARRIED_CALLS` and `CARRIED_STREAMS` below and nothing else, measured
  * rather than guessed. Those are the only things this relay carries, and it is
  * those two lists that the honesty test asserts against.
  *
- * Everything else throws its own name rather than returning a plausible
- * answer. A demo relay that quietly handed back `null` for a method the SDK
- * had started calling would keep working and stop being true, which is the
- * failure this page exists in order not to commit. That is not hypothetical:
- * the measured list was one short — `subscribeRetryRequests` is called by
- * every client at boot — and the refusal is what said so, at the call, instead
- * of the demo half-working.
+ * Every one of the other 26 throws its own name rather than returning a
+ * plausible answer, and `UncoveredRelayMethod` below is what makes that
+ * sentence true rather than aspirational: it fails the build naming any method
+ * that is neither carried nor refused. A demo relay that quietly handed back
+ * `null` for a method the SDK had started calling would keep working and stop
+ * being true, which is the failure this page exists in order not to commit.
+ * That is not hypothetical: the measured list was one short —
+ * `subscribeRetryRequests` is called by every client at boot — and the refusal
+ * is what said so, at the call, instead of the demo half-working.
  *
  * Retry requests are carried rather than dropped, and the reason is worth
  * stating: they are the SDK's answer to a message that would not decrypt, and
@@ -174,7 +178,7 @@ export interface DemoRelay {
  *
  * The alternative — returning `null`, `[]` or `undefined` to satisfy the type
  * — is how a demo goes on working while it stops being true. If the SDK ever
- * reaches for a thirteenth method, this page has to be the thing that reports
+ * reaches for a sixteenth method, this page has to be the thing that reports
  * it, because nothing else is watching.
  */
 function refuse(method: string): (...args: unknown[]) => never {
@@ -188,8 +192,26 @@ function refuse(method: string): (...args: unknown[]) => never {
   };
 }
 
-/** Method names on the full interface that this relay answers by refusing. */
+/**
+ * Method names on the full interface that this relay answers by refusing.
+ *
+ * The eight provisioning methods are here for the same reason as the rest,
+ * although no two-tab session can reach them: the demo links no second device.
+ * They were missing from the first draft of this list, which made the header's
+ * "everything else throws its own name" false — calling one gave
+ * `relay.createProvisioningSession is not a function`, an error about
+ * JavaScript rather than about this demo. `UncoveredRelayMethod` below now
+ * fails the build on that whole class rather than leaving it to be noticed.
+ */
 const REFUSED = [
+  'createProvisioningSession',
+  'connectNewDevice',
+  'sendProvisioningMessage',
+  'getProvisioningMessage',
+  'completeProvisioning',
+  'acknowledgeProvisioning',
+  'rollbackProvisioning',
+  'deleteProvisioningSession',
   'removeDevice',
   'markDeviceConnected',
   'markDeviceDisconnected',
@@ -209,6 +231,36 @@ const REFUSED = [
   'sendUnidentified',
   'sendMultiRecipientUnidentified',
 ] as const;
+
+/**
+ * Every method of the interface is either carried or refused. Nothing is
+ * absent.
+ *
+ * This is the guard behind the counts in the header, and it is written as an
+ * `Exclude` rather than an annotation because an annotation is the weaker
+ * shape: `readonly (keyof ISignalProtocolRelayServer)[]` on the arrays above
+ * would accept a list that has *lost* a name as readily as one that has all of
+ * them. `UncoveredRelayMethod` is the set of methods neither list mentions, and
+ * the assignment below fails the build naming them — which is what happens when
+ * the SDK adds one.
+ *
+ * `groupServer` is the interface's one property rather than a method, and
+ * `subscribe`/`subscribeRetryRequests` are registrations that this relay
+ * implements directly on both roles rather than through `CARRIED_CALLS`.
+ */
+type UncoveredRelayMethod = Exclude<
+  keyof ISignalProtocolRelayServer,
+  | CarriedCall
+  | (typeof REFUSED)[number]
+  | 'groupServer'
+  | 'subscribe'
+  | 'subscribeRetryRequests'
+>;
+
+const _everyRelayMethodIsCarriedOrRefused: [UncoveredRelayMethod] extends [never]
+  ? true
+  : ['these relay methods are neither carried nor refused', UncoveredRelayMethod] = true;
+void _everyRelayMethodIsCarriedOrRefused;
 
 let counter = 0;
 const nextId = (prefix: string) => `${prefix}-${++counter}-${Math.random().toString(36).slice(2, 8)}`;
@@ -430,8 +482,8 @@ export async function broadcastRelay(options: BroadcastRelayOptions = {}): Promi
     /*
      * The one cast, and why it is a cast rather than an implementation.
      *
-     * `ISignalProtocolRelayServer` declares around forty methods; a session
-     * reaches the fourteen above. Writing the other twenty-six to satisfy the
+     * `ISignalProtocolRelayServer` declares forty-one methods; a session
+     * reaches the fifteen above. Writing the other twenty-six to satisfy the
      * compiler would be twenty-six places for a wrong answer to hide, and the
      * compiler cannot tell a correct implementation from a plausible one. So
      * they are present and they throw their own names, which is the honest
