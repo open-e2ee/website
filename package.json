@@ -14,6 +14,7 @@
     "brand:sync": "oe-design export public/brand",
     "brand:check": "oe-design check public/brand",
     "capture:record": "node scripts/record-carrier-capture.mjs",
+    "demo:smoke": "node scripts/demo-smoke.mjs",
     "blog:cards": "node scripts/generate-blog-cards.mjs",
     "blog:cards:check": "node scripts/generate-blog-cards.mjs --check",
     "deploy": "npm run build && wrangler deploy",
