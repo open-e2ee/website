@@ -1,0 +1,236 @@
+/*
+ * One conversation, driven by the shipped SDK, for every demo surface to reuse.
+ *
+ * The homepage panel, the /demo scenarios and the two-tab relay all need the
+ * same three things — boot two clients, send a sentence, read what each stage
+ * produced — and the site has already paid once for that being written by hand:
+ * the recorded carrier panel's metadata list was maintained separately from the
+ * envelope and drifted from ten fields to six. So this module hands over the
+ * live `Envelope` object rather than a description of it (invariant 4), and the
+ * cryptography is the shipped cryptography (invariant 1): real
+ * `createSignalProtocolClient`, real PQXDH, real Double Ratchet. What is
+ * simulated is the infrastructure around it — `inMemoryStore()` for the device
+ * and `inMemoryRelay()` for the server — which is what the disclosure beside
+ * the demo has to say out loud (invariant 5).
+ *
+ * Nothing in here touches the DOM. It is imported dynamically by `./loader`,
+ * which is what keeps the 713 KB it pulls off the homepage's first paint, and
+ * it stays framework-free so that a plain `<script type="module">` can consume
+ * it under `script-src 'self'` — the only shape LD0 found that runs, since
+ * Astro emits island hydration as inline script that this CSP refuses.
+ *
+ * The barrel import is deliberate. LD0 measured subpath imports saving 4,208 B
+ * of 730,280 B (0.58%), because 71.4% of the payload is one chunk of SPQR
+ * Reed-Solomon tables that every route to `createSignalProtocolClient` pulls.
+ * The adapters have no barrel export and come from their own subpaths, exactly
+ * as the published quickstart writes them.
+ */
+
+import { DEFAULT_DEVICE_ID, createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
+import type { DecryptedEnvelope, Envelope, SendResult } from '@open-e2ee/signal-protocol-sdk';
+import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
+import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
+
+export interface DemoSessionOptions {
+  /** Account that types. Shown to the reader, so callers name it. */
+  sender?: string;
+  /** Account that receives and decrypts. */
+  recipient?: string;
+}
+
+/**
+ * What one send produced, at each stage a reader can be shown.
+ *
+ * `envelope` is the object the relay stored, and `decrypted` is the object the
+ * receiving device's `onMessageDecrypted` hook was handed. Neither is copied,
+ * reshaped or filtered: a pane that renders from these cannot drift from what
+ * the protocol did.
+ */
+export interface DemoExchange {
+  text: string;
+  result: SendResult;
+  envelope: Envelope;
+  decrypted: DecryptedEnvelope;
+  /** Handing the plaintext to the SDK until the relay accepted the envelope. */
+  encryptMs: number;
+  /** The same start, until the receiving device had the plaintext back. */
+  roundTripMs: number;
+}
+
+export type DemoEvent =
+  /** The SDK accepted the sentence and the relay acknowledged the envelope. */
+  | { type: 'message-sent'; text: string; result: SendResult; encryptMs: number }
+  /**
+   * The relay stored a row. This can arrive before `message-sent`: the relay
+   * accepts the envelope inside the send call, so the acknowledgement it
+   * returns is necessarily later. The order is reported as it happens rather
+   * than rearranged into the tidier story.
+   */
+  | { type: 'envelope-stored'; envelope: Envelope }
+  /** The receiving device decrypted it, on the device, after the relay. */
+  | { type: 'message-decrypted'; message: DecryptedEnvelope; roundTripMs: number };
+
+export interface DemoSession {
+  readonly sender: string;
+  readonly recipient: string;
+  /** Handshake cost, from the `oe-demo:boot` performance measure. */
+  readonly bootMs: number;
+  /** Watch the pipeline. Returns a function that stops delivery. */
+  on(listener: (event: DemoEvent) => void): () => void;
+  send(text: string): Promise<DemoExchange>;
+  /** Tear down both clients and the relay observer. */
+  stop(): Promise<void>;
+}
+
+/**
+ * Measure between two marks and hand back the duration.
+ *
+ * The numbers a demo surface prints come from `performance` rather than from
+ * `Date.now()` arithmetic so that a reader who opens their own Performance
+ * panel sees the same entries the page is quoting, under the same names.
+ */
+function measure(name: string, from: string, to: string): number {
+  return performance.measure(name, from, to).duration;
+}
+
+export async function startDemoSession(options: DemoSessionOptions = {}): Promise<DemoSession> {
+  const sender = options.sender ?? 'alice';
+  const recipient = options.recipient ?? 'bob';
+
+  performance.mark('oe-demo:boot:start');
+
+  const relay = inMemoryRelay();
+  await relay.registerDevice(sender, { encryptedDeviceName: new ArrayBuffer(0) });
+  await relay.registerDevice(recipient, { encryptedDeviceName: new ArrayBuffer(0) });
+
+  const [from, to] = await Promise.all([
+    createSignalProtocolClient({
+      identity: { userId: sender },
+      adapters: { storage: inMemoryStore(), relay },
+    }),
+    createSignalProtocolClient({
+      identity: { userId: recipient },
+      adapters: { storage: inMemoryStore(), relay },
+    }),
+  ]);
+
+  /* Publishing prekey bundles is what makes the first send an X3DH/PQXDH
+   * handshake rather than a failure; both sides do it because both sides are
+   * running in this tab. */
+  await Promise.all([from.syncToServer(), to.syncToServer()]);
+
+  const listeners = new Set<(event: DemoEvent) => void>();
+  const emit = (event: DemoEvent) => {
+    for (const listener of [...listeners]) {
+      try {
+        listener(event);
+      } catch {
+        /* a subscriber's render failure is its own to report */
+      }
+    }
+  };
+
+  /*
+   * Read the relay by subscribing to it, not by draining its mailbox.
+   *
+   * `getPendingMessages` is the published way to inspect the in-memory relay,
+   * and it is what `scripts/record-carrier-capture.mjs` uses — but that script
+   * reads the queue in the gap before any subscription starts. Here the
+   * receiving client is subscribed for the whole session and deletes each
+   * envelope once it has decrypted it, so a poll after `send()` resolves is a
+   * race against that delete. Subscribing gets the stored envelope handed over
+   * at the moment the relay accepts it, which is both deterministic and the
+   * more honest picture: this is what the server saw.
+   */
+  const pending: Envelope[] = [];
+  let onEnvelope: ((envelope: Envelope) => void) | null = null;
+  /* `DEFAULT_DEVICE_ID` comes from the package rather than being written as 1:
+   * the client registers itself under the SDK's default, so a demo that pinned
+   * its own copy would subscribe to the wrong device the day that default
+   * moved — and the symptom would be `envelope-stored` never firing and
+   * `await envelopeArrived` hanging, not an error. Both sides run on that one
+   * device; the demo has no second-device story until LD5. */
+  const unsubscribeRelay = relay.subscribe(recipient, DEFAULT_DEVICE_ID, (envelope) => {
+    if (onEnvelope) onEnvelope(envelope);
+    else pending.push(envelope);
+    emit({ type: 'envelope-stored', envelope });
+  });
+
+  let onDecrypted: ((message: DecryptedEnvelope) => void) | null = null;
+  to.registerHook('onMessageDecrypted', (message) => {
+    onDecrypted?.(message);
+  });
+  to.startRelaySubscription();
+
+  performance.mark('oe-demo:boot:end');
+  const bootMs = measure('oe-demo:boot', 'oe-demo:boot:start', 'oe-demo:boot:end');
+
+  let exchanges = 0;
+  /* Sends are serialized: two in flight would race for the same envelope and
+   * decryption callbacks, and a reader pressing send twice is ordinary. */
+  let queue: Promise<unknown> = Promise.resolve();
+
+  async function exchange(text: string): Promise<DemoExchange> {
+    const n = ++exchanges;
+    const mark = (stage: string) => `oe-demo:send:${n}:${stage}`;
+
+    const envelopeArrived = new Promise<Envelope>((resolve) => {
+      const queued = pending.shift();
+      if (queued) resolve(queued);
+      else onEnvelope = resolve;
+    });
+    const decryptedArrived = new Promise<DecryptedEnvelope>((resolve) => {
+      onDecrypted = resolve;
+    });
+
+    performance.mark(mark('start'));
+    let result: SendResult;
+    try {
+      result = await from.send(recipient, text);
+    } finally {
+      onEnvelope = null;
+    }
+    performance.mark(mark('accepted'));
+    const encryptMs = measure(`oe-demo:encrypt:${n}`, mark('start'), mark('accepted'));
+    emit({ type: 'message-sent', text, result, encryptMs });
+
+    const envelope = await envelopeArrived;
+    const decrypted = await decryptedArrived;
+    onDecrypted = null;
+
+    performance.mark(mark('decrypted'));
+    const roundTripMs = measure(`oe-demo:round-trip:${n}`, mark('start'), mark('decrypted'));
+    emit({ type: 'message-decrypted', message: decrypted, roundTripMs });
+
+    return { text, result, envelope, decrypted, encryptMs, roundTripMs };
+  }
+
+  return {
+    sender,
+    recipient,
+    bootMs,
+
+    on(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+
+    send(text) {
+      if (text.trim().length === 0) {
+        return Promise.reject(new Error('nothing to send: the message is empty'));
+      }
+      const run = queue.then(
+        () => exchange(text),
+        () => exchange(text),
+      );
+      queue = run.catch(() => {});
+      return run;
+    },
+
+    async stop() {
+      unsubscribeRelay();
+      listeners.clear();
+      await Promise.all([from.stop(), to.stop()]);
+    },
+  };
+}
