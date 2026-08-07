@@ -762,49 +762,69 @@ async function visitScenario(cdp, origin, held) {
 
     const runs = [];
     for (const attempt of [1, 2]) {
-      const before = runs.at(-1)?.text ?? null;
       await evaluate(
         cdp,
         sessionId,
         `document.querySelector(${JSON.stringify(`${SCENARIO} ${SCENARIO_RUN}`)}).click()`,
         'demo',
       );
-      /* The second run has to be waited for by its *content*, not by the pane
-         becoming visible: the pane from the first run is already visible, so a
-         visibility wait would return immediately and read the previous run's
-         output as this one's. */
-      await waitFor(
-        cdp,
-        sessionId,
-        `(() => {
-           const output = document.querySelector(
-             ${JSON.stringify(`${SCENARIO} ${SCENARIO_OUTPUT}`)},
-           );
-           if (!output || output.hidden) return false;
-           const text = (output.textContent ?? '').replace(/\\s+/g, ' ').trim();
-           return text.length > 0 && text !== ${JSON.stringify(before ?? '')};
-         })()`,
-        SCENARIO_TIMEOUT_MS,
-        `run ${attempt} of the ${SCENARIO_SLUG} scenario printed nothing within ` +
-          `${SCENARIO_TIMEOUT_MS} ms`,
-        () => {
-          const lines = [];
-          if (tab.cspViolations.length) {
-            lines.push(
-              `  The page reported ${tab.cspViolations.length} CSP violation(s), which is the ` +
-                `likeliest cause:`,
-              ...tab.cspViolations.map((v) => `    ${v}`),
-            );
-          }
-          if (tab.pageErrors.length) {
-            lines.push(
-              `  The page threw ${tab.pageErrors.length} uncaught error(s):`,
-              ...tab.pageErrors.map((e) => `    ${e.split('\n')[0]}`),
-            );
-          }
-          return lines;
-        },
-      );
+      /*
+       * Wait for the run to be over, not for the output to change.
+       *
+       * Waiting on changed text reads well and is wrong: a page replaying one
+       * recorded run prints identical text twice, so the wait would sit there
+       * until the cap and report a page that printed nothing — blaming a hang
+       * for what is actually the most interesting failure this harness can
+       * find. Let both runs finish, and let the checks below say what was
+       * wrong with them.
+       *
+       * The control is disabled synchronously by the click handler before its
+       * first await and re-enabled in its `finally`, so "enabled again with
+       * the pane showing" is exactly one completed run, whichever attempt it
+       * is.
+       */
+      try {
+        await waitFor(
+          cdp,
+          sessionId,
+          `(() => {
+             const scenario = document.querySelector(${JSON.stringify(SCENARIO)});
+             const run = scenario?.querySelector(${JSON.stringify(SCENARIO_RUN)});
+             const output = scenario?.querySelector(${JSON.stringify(SCENARIO_OUTPUT)});
+             return Boolean(run) && !run.disabled && Boolean(output) && !output.hidden;
+           })()`,
+          SCENARIO_TIMEOUT_MS,
+          `run ${attempt} of the ${SCENARIO_SLUG} scenario did not finish within ` +
+            `${SCENARIO_TIMEOUT_MS} ms`,
+          () => {
+            const lines = [];
+            if (tab.cspViolations.length) {
+              lines.push(
+                `  The page reported ${tab.cspViolations.length} CSP violation(s), which is the ` +
+                  `likeliest cause:`,
+                ...tab.cspViolations.map((v) => `    ${v}`),
+              );
+            }
+            if (tab.pageErrors.length) {
+              lines.push(
+                `  The page threw ${tab.pageErrors.length} uncaught error(s):`,
+                ...tab.pageErrors.map((e) => `    ${e.split('\n')[0]}`),
+              );
+            }
+            return lines;
+          },
+        );
+      } catch (error) {
+        /* The page writes its own failure into the status line, and a scenario
+           that could not run has already said why there. Reading it costs one
+           round trip on a path that has already failed. */
+        if (!(error instanceof Red)) throw error;
+        const status = await evaluate(cdp, sessionId, SCENARIO_SNAPSHOT).catch(() => null);
+        throw new Red(
+          `${error.message}\n  The page's own status line reads: ` +
+            `${JSON.stringify(status?.status ?? '(unreadable)')}`,
+        );
+      }
       runs.push(await read());
     }
 
