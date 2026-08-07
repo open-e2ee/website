@@ -1578,12 +1578,30 @@ async function expectedReinstall() {
   }
   /*
    * The refusal arrives in two parts and the page prints both, so both are
-   * checked. `message` is the SDK's own wrapper — "Failed to sync with server",
-   * which on its own could be a network error — and `cause` is the relay saying
-   * why. The page's claim is that a reinstalled device cannot quietly become
-   * the account; only the second sentence supports it, so a run that lost the
-   * cause would leave the page attributing a generic failure to a policy.
+   * checked here. `message` is the SDK's own wrapper — "Failed to sync with
+   * server", which on its own could be a network error — and `cause` is the
+   * relay saying why. The page's claim is that a reinstalled device cannot
+   * quietly become the account; only the second sentence supports it, so a run
+   * that lost the cause would leave the page attributing a generic failure to a
+   * policy.
+   *
+   * Both halves are asserted non-empty *here* because the page-side check
+   * cannot assert it there. `reinstallExpectation` looks for each half with
+   * `run.text.includes(half)`, and `includes('')` is true of every string — so
+   * an empty half is not a check that fails, it is a check that stops existing.
+   * That is not hypothetical: this comment used to claim both halves were
+   * checked when only `cause` was, and emptying the wrapper message left the
+   * whole suite green. These two guards are what make the page-side `includes`
+   * mean anything, so they belong to it as much as to this function.
    */
+  if (!result.publish.message.trim()) {
+    throw new Red(
+      `the relay refused the rebuilt device and the SDK wrapped the refusal in an empty message.\n` +
+        `  The page prints the SDK's wrapper beside the relay's reason to show that the wrapper ` +
+        `alone reads as a\n  network failure; with nothing there, the page prints the reason ` +
+        `twice and the check that it printed\n  the wrapper passes against the empty string.`,
+    );
+  }
   if (!result.publish.cause) {
     throw new Red(
       `the relay refused the rebuilt device with "${result.publish.message}" and no underlying ` +
