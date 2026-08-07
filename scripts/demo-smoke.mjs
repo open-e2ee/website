@@ -68,6 +68,7 @@ import { randomUUID } from 'node:crypto';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
 import { SCENARIOS } from '../src/lib/demo/scenarios/catalog.ts';
 import { runFlipAByte } from '../src/lib/demo/scenarios/flip-a-byte.ts';
+import { runAddASecondDevice } from '../src/lib/demo/scenarios/add-a-second-device.ts';
 import { EVENTS } from '../src/workers/site.ts';
 import {
   Cdp,
@@ -98,28 +99,40 @@ const CLAIM = '[data-demo-claim]';
 const FALLBACK = '[data-demo-fallback-note]';
 
 /*
- * `/demo`'s contract, on the same terms. The scenario is addressed by its slug
+ * `/demo`'s contract, on the same terms. A scenario is addressed by its slug
  * rather than by position: a second scenario landing on the page must not
  * silently move what this drives.
+ *
+ * The slug is a parameter rather than a constant because `/demo` now ships two
+ * scenarios and will ship more. What is shared is everything that is true of
+ * any scenario — it opens by fragment, it runs twice, it prints steps and
+ * non-events and the SDK's log, it sends one beacon and no other request. What
+ * is not shared is what the run should say, and that is derived per scenario by
+ * running it in this process. A second scenario driven by a copy of this
+ * function would be a second harness to keep honest.
  */
-const SCENARIO_SLUG = 'flip-a-byte';
-const SCENARIO = `[data-scenario="${SCENARIO_SLUG}"]`;
+const FLIP_SLUG = 'flip-a-byte';
+const SECOND_DEVICE_SLUG = 'add-a-second-device';
+
+const scenarioRoot = (slug) => `[data-scenario="${slug}"]`;
 const SCENARIO_RUN = '[data-scenario-run]';
 const SCENARIO_STATUS = '[data-scenario-status]';
 const SCENARIO_OUTPUT = '[data-scenario-output]';
 const SCENARIO_STEPS = '[data-scenario-steps]';
 const SCENARIO_NOTS = '[data-scenario-nots]';
 const SCENARIO_LOG_LINE = '[data-scenario-log-line]';
+const SCENARIO_DEVICE = '[data-scenario-device]';
 
 /* The beacon `/demo` is allowed to send, in full. Same reasoning as
    `DEMO_RUN_BODY`: the body is fixed before the browser starts, so a dimension
    derived from the run — a timing, a byte count, an error code — is a failure
    rather than something to be searched for. */
-const SCENARIO_BEACON_BODY = `scenario_opened /demo ${SCENARIO_SLUG}`;
+const scenarioBeaconBody = (slug) => `scenario_opened /demo ${slug}`;
 
-/* Two boots of two devices, a MAC failure, a session archive and a resend, all
-   in one tab. It ran in ~80 ms where this was written; the bound is for a
-   machine under load, not for the protocol. */
+/* The longest a scenario gets. The most expensive one boots three devices,
+   runs a provisioning handshake and sends twice; it ran in well under a second
+   where this was written, and the bound is for a machine under load rather than
+   for the protocol. */
 const SCENARIO_TIMEOUT_MS = 60000;
 
 const NONCE = randomUUID().slice(0, 8);
@@ -140,17 +153,26 @@ const VIEWPORT = { width: 1280, height: 800 };
 
 /*
  * Every script a page fetches before the reader asks for the SDK, which on
- * 2026-08-07 was 15.7 KB over six files on the homepage and 14.4 KB over five
+ * 2026-08-07 was 15.7 KB over six files on the homepage and 17.9 KB over five
  * on `/demo` — the theme and measurement scripts, each page's own script, and
  * a shared preload helper Vite splits out because two pages now import
- * dynamically. The interaction then pulls 1760.8 KB, so the tripwire sits two
- * orders of magnitude below any build that has the SDK on its initial path.
+ * dynamically. The interaction then pulls about 1770 KB, so the tripwire sits
+ * two orders of magnitude below any build that has the SDK on its initial path.
+ *
+ * `/demo` has 2.1 KB left, and it is the page under pressure: each scenario
+ * adds to the one script this page ships, so LD6 has less room here than the
+ * gzip ceiling suggests.
  *
  * These are wire bytes without compression: `chrome-harness.mjs` serves the
  * build as it is on disk, while Cloudflare compresses. So this is not
  * invariant 7's budget, which is 10 KB gzip and is a *delta* — it needs a build
  * without the demo to compare against, and is measured in the proof rather than
  * here. This is the tripwire for the SDK arriving uninvited.
+ *
+ * The proof's table reports `/demo` lower, at 14.5 KB, and the two numbers are
+ * both right: it walks the module graph on disk, while this counts what Chrome
+ * actually fetched, which includes responses the static walk does not model.
+ * The ceiling is set against the figure measured here.
  */
 const PRE_INTERACTION_CEILING = 20 * 1024;
 
@@ -336,8 +358,8 @@ const SNAPSHOT = `(() => {
  * harness that reached into a result object the page happened to expose would
  * pass on a page that computed the right answer and printed something else.
  */
-const SCENARIO_SNAPSHOT = `(() => {
-  const scenario = document.querySelector(${JSON.stringify(SCENARIO)});
+const scenarioSnapshot = (slug) => `(() => {
+  const scenario = document.querySelector(${JSON.stringify(scenarioRoot(slug))});
   const output = scenario?.querySelector(${JSON.stringify(SCENARIO_OUTPUT)});
   const flat = (node) => (node?.textContent ?? '').replace(/\\s+/g, ' ').trim();
   const list = (selector) =>
@@ -349,6 +371,16 @@ const SCENARIO_SNAPSHOT = `(() => {
     text: flat(output),
     steps: list(${JSON.stringify(SCENARIO_STEPS)}),
     nots: list(${JSON.stringify(SCENARIO_NOTS)}),
+    /* One entry per device pane the scenario printed, each carrying what that
+       device's own client decrypted. A scenario whose whole argument is that
+       one device has a message and another does not cannot be checked from
+       flattened page text: "is this sentence on the page" is true either way. */
+    devices: [...(output?.querySelectorAll(${JSON.stringify(SCENARIO_DEVICE)}) ?? [])].map(
+      (pane) => ({
+        deviceId: pane.dataset.scenarioDevice,
+        messages: [...pane.querySelectorAll('li')].map(flat),
+      }),
+    ),
     logLines: [...(output?.querySelectorAll(${JSON.stringify(SCENARIO_LOG_LINE)}) ?? [])].map(
       (row) => ({ level: row.dataset.scenarioLogLine, text: flat(row) }),
     ),
@@ -724,17 +756,19 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
  * from a device pair booted for that run. So the checks require the fixed parts
  * to match across both runs and the per-run parts to differ.
  */
-async function visitScenario(cdp, origin, held) {
+async function visitScenario(cdp, origin, held, slug) {
   const tab = await openTab(cdp, held);
   const { sessionId } = tab;
+  const SCENARIO = scenarioRoot(slug);
+  const snapshot = scenarioSnapshot(slug);
 
-  const read = () => evaluate(cdp, sessionId, SCENARIO_SNAPSHOT);
+  const read = () => evaluate(cdp, sessionId, snapshot);
 
   try {
-    /* The fragment, not the bare path: arriving at `/demo#flip-a-byte` is a
-       reader asking for this scenario by name, and opening it is what the page
+    /* The fragment, not the bare path: arriving at `/demo#<slug>` is a reader
+       asking for this scenario by name, and opening it is what the page
        promises to do about that. */
-    await tab.navigate(`${origin}/demo#${SCENARIO_SLUG}`, `/demo#${SCENARIO_SLUG}`);
+    await tab.navigate(`${origin}/demo#${slug}`, `/demo#${slug}`);
 
     const title = await evaluate(cdp, sessionId, 'document.title');
     if (!title) throw new Infra('/demo rendered no title — the served build looks wrong');
@@ -795,8 +829,7 @@ async function visitScenario(cdp, origin, held) {
              return Boolean(run) && !run.disabled && Boolean(output) && !output.hidden;
            })()`,
           SCENARIO_TIMEOUT_MS,
-          `run ${attempt} of the ${SCENARIO_SLUG} scenario did not finish within ` +
-            `${SCENARIO_TIMEOUT_MS} ms`,
+          `run ${attempt} of the ${slug} scenario did not finish within ${SCENARIO_TIMEOUT_MS} ms`,
           () => {
             const lines = [];
             if (tab.cspViolations.length) {
@@ -820,7 +853,7 @@ async function visitScenario(cdp, origin, held) {
            that could not run has already said why there. Reading it costs one
            round trip on a path that has already failed. */
         if (!(error instanceof Red)) throw error;
-        const status = await evaluate(cdp, sessionId, SCENARIO_SNAPSHOT).catch(() => null);
+        const status = await evaluate(cdp, sessionId, snapshot).catch(() => null);
         throw new Red(
           `${error.message}\n  The page's own status line reads: ` +
             `${JSON.stringify(status?.status ?? '(unreadable)')}`,
@@ -835,6 +868,7 @@ async function visitScenario(cdp, origin, held) {
     const before = tab.scripts.filter((script) => script.at < interactedAt);
     const after = tab.scripts.filter((script) => script.at >= interactedAt);
     return {
+      slug,
       opened,
       runs,
       requests: tab.requests,
@@ -1183,15 +1217,15 @@ function checkFallback(pass) {
 const CODE = /\b[A-Z][A-Z0-9_]{3,}\b/g;
 
 /** The error code the scenario's copy promises a reader, out of the copy. */
-function promisedErrorCode() {
-  const scenario = SCENARIOS.find((entry) => entry.slug === SCENARIO_SLUG);
-  if (!scenario) throw new Red(`no scenario in the catalogue is called ${SCENARIO_SLUG}`);
+function promisedErrorCode(slug) {
+  const scenario = SCENARIOS.find((entry) => entry.slug === slug);
+  if (!scenario) throw new Red(`no scenario in the catalogue is called ${slug}`);
 
   const copy = [scenario.title, scenario.expectation, scenario.action, scenario.link.label];
   const codes = [...new Set(copy.join(' ').match(CODE) ?? [])];
   if (codes.length !== 1) {
     throw new Red(
-      `${SCENARIO_SLUG}'s copy names ${codes.length} error codes (${codes.join(', ') || 'none'}), ` +
+      `${slug}'s copy names ${codes.length} error codes (${codes.join(', ') || 'none'}), ` +
         `so there is\n  nothing for the derived expectation to be held against. The scenario has ` +
         `to promise the reader\n  exactly one code, or this check is a comparison of a value ` +
         `with itself.`,
@@ -1229,7 +1263,7 @@ async function expectedRefusal() {
         `flipped:\n  sent:      ${result.sentence}\n  delivered: ${result.delivered}`,
     );
   }
-  const promised = promisedErrorCode();
+  const promised = promisedErrorCode(FLIP_SLUG);
   if (result.refusal.errorCode !== promised) {
     throw new Red(
       `the scenario refuses with ${result.refusal.errorCode}, but /demo tells the reader it is ` +
@@ -1246,19 +1280,126 @@ async function expectedRefusal() {
 }
 
 /*
- * Sentences `render()` prints when the run did *not* go the way the page
- * claims it goes. Each is the else-branch of a check against an observed
- * value, so any of them on screen means the page is being honest about a run
- * that failed — which is still a red harness result, and a far more
- * interesting one than a missing element.
+ * What linking a second device does, according to the installed SDK.
+ *
+ * Same stance as `expectedRefusal`: the scenario is run in this process first,
+ * and what it produced becomes the expectation the page is held to. The
+ * assertions below are about the SDK rather than about `/demo` — if the pre-link
+ * message turns up on a device that did not exist when it was encrypted, the
+ * page printing that faithfully is not the interesting problem.
+ *
+ * The claim is checked in both directions on purpose. "The new device does not
+ * have it" is satisfied by a device that has nothing at all, and by a run where
+ * the second message never arrived anywhere; the scenario is only evidence if
+ * the device that was there kept both sentences while the new one holds exactly
+ * the sentence sent after it was linked.
  */
-const SCENARIO_DENIALS = [
+async function expectedSecondDevice() {
+  let result;
+  try {
+    result = await runAddASecondDevice();
+  } catch (cause) {
+    throw new Red(
+      `the second-device scenario could not complete a run in this process: ` +
+        `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
+        `would see in the scenario's status line, so /demo is broken rather than the harness.`,
+    );
+  }
+
+  if (!result.after) {
+    throw new Red(
+      'the message sent after the link never reached every device, so there is nothing to ' +
+        'compare.\n  The scenario waited and gave up: the new device was linked and then did ' +
+        'not receive.',
+    );
+  }
+  if (result.before.recipientDeviceCount !== 1) {
+    throw new Red(
+      `the message sent before the link was encrypted to ` +
+        `${result.before.recipientDeviceCount} devices, not 1. The account had one device at ` +
+        `that point,\n  and the whole scenario is arithmetic about that number.`,
+    );
+  }
+  if (result.after.recipientDeviceCount !== 2) {
+    throw new Red(
+      `the message sent after the link was encrypted to ` +
+        `${result.after.recipientDeviceCount} devices, not 2. The link and the explicit ` +
+        `establishSession both\n  succeeded, so the new device should have been in that fan-out.`,
+    );
+  }
+
+  const primary = result.scrollback.find((device) => device.deviceId !== result.linked.deviceId);
+  const linked = result.scrollback.find((device) => device.deviceId === result.linked.deviceId);
+  if (!primary || !linked || result.scrollback.length !== 2) {
+    throw new Red(
+      `the run produced ${result.scrollback.length} device scroll-back(s) and the relay linked ` +
+        `device ${result.linked.deviceId};\n  the scenario compares exactly two devices.`,
+    );
+  }
+  if (linked.messages.includes(result.before.text)) {
+    throw new Red(
+      `the installed SDK delivered a message to a device that did not exist when it was ` +
+        `encrypted:\n  ${JSON.stringify(result.before.text)} is on device ` +
+        `${linked.deviceId}.\n  This is not the page being wrong.`,
+    );
+  }
+  if (!primary.messages.includes(result.before.text)) {
+    throw new Red(
+      `the device that was already there lost the message sent before the link, so "the new ` +
+        `device does not have it"\n  says nothing about linking — nothing has it. Device ` +
+        `${primary.deviceId} holds: ${JSON.stringify(primary.messages)}`,
+    );
+  }
+  for (const device of [primary, linked]) {
+    if (!device.messages.includes(result.after.text)) {
+      throw new Red(
+        `the message sent after the link is not on device ${device.deviceId}, which the sender ` +
+          `was told it was encrypted to.\n  That device holds: ${JSON.stringify(device.messages)}`,
+      );
+    }
+  }
+
+  return {
+    before: result.before,
+    after: result.after,
+    linked: result.linked,
+    primaryMessages: primary.messages,
+    linkedMessages: linked.messages,
+  };
+}
+
+/*
+ * Sentences the page prints when the run did *not* go the way it claims runs
+ * go. Each is the else-branch of a check against an observed value, so any of
+ * them on screen means the page is being honest about a run that failed — which
+ * is still a red harness result, and a far more interesting one than a missing
+ * element.
+ */
+const FLIP_DENIALS = [
   'reported no error at all',
   'Something other than the sent message was delivered',
   'Garbage plaintext reached the application',
   'no recovery to show',
   'cannot say the drop was not silent',
   'cannot say that no garbage plaintext reached it',
+];
+
+/*
+ * Each of these is a branch the page renders when it cannot make its argument.
+ * The page is right to print them; a run that reaches one is not a pass.
+ *
+ * `no scroll-back for the device it linked` is the state where the linked
+ * device produced no pane at all — which is not the same as a pane that simply
+ * lacks the pre-link message, and that difference is the whole point of the
+ * scenario. It shares its cause with `never joined the session`, so both
+ * render together, and the scan below reports the first match: the precise one
+ * has to come first, or the failure is reported as the vaguer of the two.
+ */
+const SECOND_DEVICE_DENIALS = [
+  'no scroll-back for the device it linked',
+  'is on the new device',
+  'never reached every device',
+  'never joined the session',
 ];
 
 /*
@@ -1282,11 +1423,40 @@ function fingerprintIn(run) {
   return null;
 }
 
-function checkScenario(pass, origin, expected) {
+/*
+ * The same job for the second-device scenario, which has no fingerprint on
+ * screen: its two info records are about the first send and carry no key
+ * material. The provisioning URL does. The primary device puts a fresh
+ * ephemeral public key in the QR code it shows, so the key differs on every
+ * press of a live demo and cannot differ on a replayed one.
+ */
+const QR_KEY = /link-device\?session=[^\s&]+&key=(\S+)/;
+
+function qrKeyIn(run) {
+  for (const step of run.steps) {
+    const found = QR_KEY.exec(step);
+    if (found) return found[1];
+  }
+  return null;
+}
+
+/*
+ * Everything that is true of any scenario `/demo` ships.
+ *
+ * `expectation` carries the rest: which slug this pass drove, the sentences
+ * that must never leave the tab, the page's own denial strings, the per-run
+ * checks, and the one value that has to differ between two live runs. All of
+ * those are derived from a run of the scenario in this process, never typed
+ * here — a harness holding the page to strings it was given by the same person
+ * who wrote the page is checking that nobody made a typo.
+ */
+function checkScenario(pass, origin, expectation) {
+  const { slug, secrets, denials, divergence, checkRun } = expectation;
+
   if (!pass.opened.open) {
     throw new Red(
-      `/demo#${SCENARIO_SLUG} did not open the scenario it names. The fragment is the whole ` +
-        `point of\n  addressing one: a reader who follows that link lands on a closed list.`,
+      `/demo#${slug} did not open the scenario it names. The fragment is the whole point of\n  ` +
+        `addressing one: a reader who follows that link lands on a closed list.`,
     );
   }
   if (pass.opened.outputVisible || pass.opened.text) {
@@ -1298,38 +1468,7 @@ function checkScenario(pass, origin, expected) {
   for (const [index, run] of pass.runs.entries()) {
     const where = `run ${index + 1}`;
 
-    /* The SDK's error surface, which is the reason this page exists. Both the
-       code and the message, because the code alone is a constant a page could
-       hold and the message is what the SDK actually said. */
-    for (const [what, value] of [
-      ['error code', expected.errorCode],
-      ['error message', expected.errorMessage],
-    ]) {
-      if (!run.text.includes(value)) {
-        throw new Red(
-          `${where} never printed the SDK's ${what}. The same scenario run in this process ` +
-            `against\n  the installed package reported ${JSON.stringify(value)}, and the page ` +
-            `printed:\n  ${run.text.slice(0, 400) || '(nothing)'}`,
-        );
-      }
-    }
-
-    /* And in the log pane, not only in the summary. The summary is this page's
-       prose about the run; the log is the SDK's own records, and a page that
-       printed the right sentence over an empty log would be describing a
-       failure rather than showing one. */
-    const named = run.logLines.filter(
-      (row) => row.text.includes(expected.errorCode) && row.text.includes(expected.errorMessage),
-    );
-    if (named.length === 0) {
-      throw new Red(
-        `${where} printed the refusal in its summary and no log record carrying it. The pane is ` +
-          `headed\n  "What the SDK said", so it has to be what the SDK said: ` +
-          `${run.logLines.length} record(s) shown.`,
-      );
-    }
-
-    for (const denial of SCENARIO_DENIALS) {
+    for (const denial of denials) {
       if (run.text.includes(denial)) {
         throw new Red(
           `${where} reported that the protocol did not hold: the page printed "${denial}".\n` +
@@ -1339,53 +1478,33 @@ function checkScenario(pass, origin, expected) {
       }
     }
 
-    /* Invariant: the scenario's two named non-events are on screen. They are
-       the half of the story a log does not tell, and the task they came from
-       names them. */
-    for (const promised of ['No garbage plaintext', 'No silent drop']) {
-      if (!run.nots.some((text) => text.startsWith(promised))) {
-        throw new Red(
-          `${where} did not say "${promised}". Naming what did not happen is the point of the ` +
-            `scenario;\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
-        );
-      }
-    }
-
-    if (!run.steps.some((text) => text.includes('One byte changed on the way into the relay'))) {
-      throw new Red(`${where} printed no step saying which byte was changed`);
-    }
-    if (!run.steps.some((text) => text.includes('the resend arrived intact'))) {
-      throw new Red(
-        `${where} never showed the recovery. Refusing is half the story; the sentence arriving ` +
-          `on the\n  resend is what makes it a protocol rather than a wall.`,
-      );
-    }
+    checkRun(run, where);
   }
 
   /*
    * The two runs, against each other. This is what a page cannot fake: the
-   * fixed strings are identical because both runs asked the same SDK, and the
-   * identity key fingerprint differs because each run boots its own pair of
-   * devices. A page with the output typed into it gets the first right and the
-   * second wrong.
+   * fixed strings are identical because both runs asked the same SDK, and one
+   * value differs because each run boots its own devices with their own keys. A
+   * page with the output typed into it gets the first right and the second
+   * wrong.
    */
-  const ids = pass.runs.map(fingerprintIn);
+  const ids = pass.runs.map(divergence.of);
   if (ids.some((id) => id === null)) {
     throw new Red(
-      `a run printed no sending identity key fingerprint (${ids.map(String).join(', ')}), so the ` +
-        `two runs cannot be\n  told apart and this pass cannot say whether the page ran the SDK ` +
-        `or replayed a recording.\n  It does not mean no device pair booted: the scenario got far ` +
-        `enough to print ` +
+      `a run printed no ${divergence.what} (${ids.map(String).join(', ')}), so the two runs ` +
+        `cannot be\n  told apart and this pass cannot say whether the page ran the SDK or ` +
+        `replayed a recording.\n  It does not mean no device booted: the scenario got far enough ` +
+        `to print ` +
         `${pass.runs.map((run) => run.logLines.length).join(' and ')} log record(s). The likelier ` +
-        `reading is\n  that the run failed before the sending device logged its identity, or ` +
-        `that the SDK stopped\n  reporting the fingerprint this check reads.`,
+        `reading is\n  that the run failed before that value existed, or that the SDK stopped ` +
+        `reporting it.`,
     );
   }
   if (ids[0] === ids[1]) {
     throw new Red(
-      `both runs reported identity key fingerprint ${ids[0]}. Every press boots a fresh pair of ` +
-        `devices with\n  fresh keys, so a repeated fingerprint means the page is printing a ` +
-        `recording rather than running the SDK.`,
+      `both runs reported ${divergence.what} ${ids[0]}. Every press boots fresh devices with ` +
+        `fresh keys,\n  so a repeated value means the page is printing a recording rather than ` +
+        `running the SDK.`,
     );
   }
   if (pass.runs[0].text === pass.runs[1].text) {
@@ -1394,10 +1513,10 @@ function checkScenario(pass, origin, expected) {
     );
   }
 
-  /* The sentence the scenario sends is fixed and lives in the module, so it is
-     on the page as source before it is ever encrypted. What must not happen is
-     it leaving in a request. */
-  const carried = leaks(pass.requests, (value) => findAny(value, [expected.sentence]));
+  /* The sentences a scenario sends are fixed and live in its module, so they
+     are on the page as source before they are ever encrypted. What must not
+     happen is one of them leaving in a request. */
+  const carried = leaks(pass.requests, (value) => findAny(value, secrets));
   if (carried.length) {
     throw new Red(
       `the scenario's sentence left the page in ${carried.length} request(s):\n  ` +
@@ -1451,10 +1570,10 @@ function checkScenario(pass, origin, expected) {
         `\n  It is one per scenario per page — not per run, and not per toggle.`,
     );
   }
-  if (beacons[0].postData !== SCENARIO_BEACON_BODY) {
+  if (beacons[0].postData !== scenarioBeaconBody(slug)) {
     throw new Red(
       `the scenario's beacon reads ${JSON.stringify(beacons[0].postData)}, not ` +
-        `${JSON.stringify(SCENARIO_BEACON_BODY)}.\n  It has grown a dimension, and everything ` +
+        `${JSON.stringify(scenarioBeaconBody(slug))}.\n  It has grown a dimension, and everything ` +
         `this page has to derive one from is a fact about a protocol\n  failure the reader ran — ` +
         `the error code, the byte position, the milliseconds. None of those may leave the tab.`,
     );
@@ -1488,6 +1607,187 @@ function checkScenario(pass, origin, expected) {
   return { beacons, ids };
 }
 
+/* What `flip-a-byte` has to have printed, held against the same scenario run in
+   this process. */
+function flipExpectation(refusal) {
+  return {
+    slug: FLIP_SLUG,
+    secrets: [refusal.sentence],
+    denials: FLIP_DENIALS,
+    divergence: { what: 'sending identity key fingerprint', of: fingerprintIn },
+    checkRun(run, where) {
+      /* The SDK's error surface, which is the reason this page exists. Both the
+         code and the message, because the code alone is a constant a page could
+         hold and the message is what the SDK actually said. */
+      for (const [what, value] of [
+        ['error code', refusal.errorCode],
+        ['error message', refusal.errorMessage],
+      ]) {
+        if (!run.text.includes(value)) {
+          throw new Red(
+            `${where} never printed the SDK's ${what}. The same scenario run in this process ` +
+              `against\n  the installed package reported ${JSON.stringify(value)}, and the page ` +
+              `printed:\n  ${run.text.slice(0, 400) || '(nothing)'}`,
+          );
+        }
+      }
+
+      /* And in the log pane, not only in the summary. The summary is this
+         page's prose about the run; the log is the SDK's own records, and a
+         page that printed the right sentence over an empty log would be
+         describing a failure rather than showing one. */
+      const named = run.logLines.filter(
+        (row) => row.text.includes(refusal.errorCode) && row.text.includes(refusal.errorMessage),
+      );
+      if (named.length === 0) {
+        throw new Red(
+          `${where} printed the refusal in its summary and no log record carrying it. The pane ` +
+            `is headed\n  "What the SDK said", so it has to be what the SDK said: ` +
+            `${run.logLines.length} record(s) shown.`,
+        );
+      }
+
+      /* Invariant: the scenario's two named non-events are on screen. They are
+         the half of the story a log does not tell, and the task they came from
+         names them. */
+      for (const promised of ['No garbage plaintext', 'No silent drop']) {
+        if (!run.nots.some((text) => text.startsWith(promised))) {
+          throw new Red(
+            `${where} did not say "${promised}". Naming what did not happen is the point of the ` +
+              `scenario;\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
+          );
+        }
+      }
+
+      if (!run.steps.some((text) => text.includes('One byte changed on the way into the relay'))) {
+        throw new Red(`${where} printed no step saying which byte was changed`);
+      }
+      if (!run.steps.some((text) => text.includes('the resend arrived intact'))) {
+        throw new Red(
+          `${where} never showed the recovery. Refusing is half the story; the sentence arriving ` +
+            `on the\n  resend is what makes it a protocol rather than a wall.`,
+        );
+      }
+    },
+  };
+}
+
+/*
+ * The same for `add-a-second-device`, whose subject is an absence.
+ *
+ * The check that matters reads the per-device panes rather than the page's
+ * text, and it runs in both directions: the sentence sent before the link is on
+ * the device that was there and not on the device that was not, and the
+ * sentence sent after is on both. Every one of those four facts is what the
+ * installed SDK did in this process a moment earlier.
+ */
+function secondDeviceExpectation(expected) {
+  const devices = (value) => new RegExp(`\\b${value} devices?\\b`);
+
+  return {
+    slug: SECOND_DEVICE_SLUG,
+    secrets: [expected.before.text, expected.after.text],
+    denials: SECOND_DEVICE_DENIALS,
+    divergence: { what: 'provisioning key', of: qrKeyIn },
+    checkRun(run, where) {
+      /* The SDK's own fan-out figures, in the steps that carry each sentence.
+         These are the numbers the scenario is an argument about, so a page that
+         printed the sentences without them would be telling the story with the
+         evidence removed. */
+      for (const [what, message] of [
+        ['before the link', expected.before],
+        ['after the link', expected.after],
+      ]) {
+        const step = run.steps.find((text) => text.includes(message.text));
+        if (!step) {
+          throw new Red(
+            `${where} printed no step for the message sent ${what}. Steps printed:\n  ` +
+              (run.steps.join('\n  ') || '(none)'),
+          );
+        }
+        if (!devices(message.recipientDeviceCount).test(step)) {
+          throw new Red(
+            `${where} said the message sent ${what} went to a different number of devices than ` +
+              `the SDK did.\n  This process saw ${message.recipientDeviceCount}; the page ` +
+              `printed: ${JSON.stringify(step)}`,
+          );
+        }
+      }
+
+      /* Both scroll-backs, compared to the ones the SDK produced here. This is
+         the assertion the whole scenario exists for. */
+      if (run.devices.length !== 2) {
+        throw new Red(
+          `${where} printed ${run.devices.length} device scroll-back(s), not 2. The scenario is ` +
+            `a comparison;\n  one column is not one.`,
+        );
+      }
+      const linked = run.devices.find(
+        (device) => device.deviceId === String(expected.linked.deviceId),
+      );
+      const primary = run.devices.find(
+        (device) => device.deviceId !== String(expected.linked.deviceId),
+      );
+      if (!linked || !primary) {
+        throw new Red(
+          `${where} printed no pane for the device the relay linked as ` +
+            `${expected.linked.deviceId}; panes are for device(s) ` +
+            `${run.devices.map((device) => device.deviceId).join(', ') || 'none'}`,
+        );
+      }
+      if (linked.messages.includes(expected.before.text)) {
+        throw new Red(
+          `${where} showed the message sent before the link on the device that was linked after ` +
+            `it.\n  The SDK did not deliver it there in this process, so the page is printing ` +
+            `something it was not given:\n  ${JSON.stringify(linked.messages)}`,
+        );
+      }
+      if (!primary.messages.includes(expected.before.text)) {
+        throw new Red(
+          `${where} showed the message sent before the link on neither device, so "the new ` +
+            `device does not have it"\n  is not about linking. Device ${primary.deviceId} ` +
+            `printed: ${JSON.stringify(primary.messages)}`,
+        );
+      }
+      for (const device of [primary, linked]) {
+        if (!device.messages.includes(expected.after.text)) {
+          throw new Red(
+            `${where} did not show the message sent after the link on device ` +
+              `${device.deviceId}, which the page itself said it was encrypted to.\n  That pane ` +
+              `printed: ${JSON.stringify(device.messages)}`,
+          );
+        }
+      }
+      if (JSON.stringify(linked.messages) !== JSON.stringify(expected.linkedMessages)) {
+        throw new Red(
+          `${where} printed a different scroll-back for the linked device than the SDK produced ` +
+            `in this process.\n  here: ${JSON.stringify(expected.linkedMessages)}\n  page: ` +
+            `${JSON.stringify(linked.messages)}`,
+        );
+      }
+
+      /* And the reason, in the page's own words. The scenario is only worth
+         shipping if a reader is told that the absence is arithmetic rather than
+         a gap someone means to close. */
+      for (const promised of ['No history followed the device', 'No back-fill']) {
+        if (!run.nots.some((text) => text.startsWith(promised))) {
+          throw new Red(
+            `${where} did not say "${promised}". Naming what did not happen is the point of the ` +
+              `scenario;\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
+          );
+        }
+      }
+      if (!run.nots.some((text) => text.includes('did not exist when that message was encrypted'))) {
+        throw new Red(
+          `${where} said the message is missing and never said why. Without the arithmetic — the ` +
+            `device's keys\n  did not exist when the message was encrypted — the page reads as ` +
+            `an apology for a limitation.`,
+        );
+      }
+    },
+  };
+}
+
 // --------------------------------------------------------------------- the run
 
 async function main() {
@@ -1509,6 +1809,7 @@ async function main() {
 
   const expected = await expectedFields(envelopeFields);
   const refusal = await expectedRefusal();
+  const secondDevice = await expectedSecondDevice();
 
   const held = { server: null, chrome: null, cdp: null, targets: [] };
   try {
@@ -1534,11 +1835,19 @@ async function main() {
     });
     checkFallback(starved);
 
-    /* `/demo` in its own tab, so the homepage's accounting above is about the
-       homepage. The scenario is run twice in that tab, which is what the two
-       runs are compared against each other for. */
-    const scenario = await visitScenario(cdp, origin, held);
-    const { beacons: scenarioBeacons, ids } = checkScenario(scenario, origin, refusal);
+    /* `/demo` in its own tab per scenario, so the homepage's accounting above is
+       about the homepage and each scenario's egress is about that scenario. Each
+       is run twice in its tab, which is what the two runs are compared against
+       each other for. */
+    const flip = await visitScenario(cdp, origin, held, FLIP_SLUG);
+    const { beacons: flipBeacons, ids } = checkScenario(flip, origin, flipExpectation(refusal));
+
+    const linking = await visitScenario(cdp, origin, held, SECOND_DEVICE_SLUG);
+    const { beacons: linkingBeacons, ids: keys } = checkScenario(
+      linking,
+      origin,
+      secondDeviceExpectation(secondDevice),
+    );
 
     /* Say which of the two things happened. Claiming a quiet window we never
        got would overstate the egress evidence on exactly the chatty pages
@@ -1566,17 +1875,32 @@ async function main() {
         `  the touch drew: ${kb(live.bytesAfter)} over ${live.after.length} chunk(s)\n` +
         `  those blocked:  the recorded capture stayed on screen ` +
         `("${starved.dom.fallbackNote}")\n` +
-        `  /demo:          ${SCENARIO_SLUG} opened by fragment and run twice; both runs printed ` +
+        `  /demo:          ${FLIP_SLUG} opened by fragment and run twice; both runs printed ` +
         `${refusal.errorCode}\n` +
         `                  ("${refusal.errorMessage}") in the SDK's own log, and the resend ` +
         `arrived intact\n` +
         `                  sending identity keys ${ids.join(' then ')} — a fresh device pair ` +
         `per run\n` +
-        `                  measured ${scenarioBeacons.length} beacon(s): ` +
-        `${scenarioBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
-        `                  before a touch ${kb(scenario.bytesBefore)} over ` +
-        `${scenario.before.length} file(s); the run drew ${kb(scenario.bytesAfter)} over ` +
-        `${scenario.after.length} chunk(s)`,
+        `                  measured ${flipBeacons.length} beacon(s): ` +
+        `${flipBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
+        `                  before a touch ${kb(flip.bytesBefore)} over ` +
+        `${flip.before.length} file(s); the run drew ${kb(flip.bytesAfter)} over ` +
+        `${flip.after.length} chunk(s)\n` +
+        `  /demo:          ${SECOND_DEVICE_SLUG} opened by fragment and run twice; each run ` +
+        `linked a device over\n` +
+        `                  the QR handshake and the sender was told ` +
+        `${secondDevice.before.recipientDeviceCount} device then ` +
+        `${secondDevice.after.recipientDeviceCount}\n` +
+        `                  the linked device's scroll-back held ` +
+        `${secondDevice.linkedMessages.length} of the ${secondDevice.primaryMessages.length} ` +
+        `sentences — not the one sent before it existed\n` +
+        `                  provisioning keys ${keys.map((key) => key.slice(0, 12)).join(' then ')} ` +
+        `— a fresh link per run\n` +
+        `                  measured ${linkingBeacons.length} beacon(s): ` +
+        `${linkingBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
+        `                  before a touch ${kb(linking.bytesBefore)} over ` +
+        `${linking.before.length} file(s); the run drew ${kb(linking.bytesAfter)} over ` +
+        `${linking.after.length} chunk(s)`,
     );
   } finally {
     await teardown(held);
