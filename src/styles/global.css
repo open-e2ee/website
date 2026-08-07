@@ -3329,6 +3329,45 @@ table.data td {
 }
 
 /*
+ * Two devices' scroll-backs, side by side.
+ *
+ * Side by side is the argument: the point of the second-device scenario is what
+ * one column has and the other does not, and a reader who has to scroll between
+ * them is reading two lists instead of one comparison. Below the breakpoint
+ * they stack, in linked order, so the shorter column still arrives second.
+ */
+.scenario-devices {
+  margin-top: var(--oe-space-3);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--oe-space-3);
+}
+
+.scenario-device {
+  border: 1px solid var(--oe-border);
+  border-radius: var(--oe-radius-sm);
+  background: var(--oe-surface-raised);
+  padding: var(--oe-space-3);
+  min-width: 0;
+}
+
+.scenario-device > h4 {
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+}
+
+.scenario-device-messages {
+  margin-top: var(--oe-space-2);
+  padding-inline-start: var(--oe-space-4);
+}
+
+.scenario-device-messages > li + li {
+  margin-top: var(--oe-space-2);
+}
+
+/*
  * The receiving device's own log, printed rather than summarised.
  *
  * It scrolls inside its own box in both directions. Vertically because a run
@@ -3351,7 +3390,10 @@ table.data td {
 
 .scenario-log-line {
   display: grid;
-  grid-template-columns: 5.5rem 3rem 1fr;
+  /* The role column holds the longest device name a scenario gives a logger,
+     not the longest one the first scenario happened to use: a role that
+     overflows lands on top of the level beside it. */
+  grid-template-columns: 8rem 3rem 1fr;
   gap: var(--oe-space-2);
   padding-block: var(--oe-space-1);
   border-inline-start: 2px solid transparent;

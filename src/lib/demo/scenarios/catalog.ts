@@ -51,4 +51,26 @@ export const SCENARIOS: ScenarioSummary[] = [
       label: 'What DECRYPTION_FAILED means in your own error handling',
     },
   },
+  {
+    slug: 'add-a-second-device',
+    title: 'Add a second device',
+    expectation:
+      'A second device is linked to the receiving account over the real QR handshake, and the ' +
+      'message sent before it existed is not on it.',
+    action: 'Link a second device',
+    source: './add-a-second-device.ts',
+    /*
+     * SESAME-ARTICLE-PENDING — the engineering journal's 2026-08 article on
+     * Sesame and multi-device is the destination this scenario was planned
+     * around, and it is not published yet. This link goes to the recipe for
+     * the call the scenario makes by hand instead, because it is a page that
+     * exists; the article replaces it when there is a URL to replace it with.
+     * There is no placeholder URL here on purpose: a link to a page nobody has
+     * written is a broken promise a reader finds before we do.
+     */
+    link: {
+      href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/RECIPES.md#direct-device-session',
+      label: 'Opening a session with a device you have never written to',
+    },
+  },
 ];

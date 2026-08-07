@@ -44,7 +44,7 @@ export const EVENTS = new Set([
  * scenario and an unbuilt one look the same in the dataset — which is the
  * question `/demo` is measured to answer.
  */
-export const LABELS = new Set(['expo', 'browser', 'node', 'flip-a-byte']);
+export const LABELS = new Set(['expo', 'browser', 'node', 'flip-a-byte', 'add-a-second-device']);
 
 const COLLECT_PATH = '/e';
 const MAX_BODY_BYTES = 128;

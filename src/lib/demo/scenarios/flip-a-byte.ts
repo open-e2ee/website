@@ -30,23 +30,12 @@
  */
 
 /* demo:code:start */
-import type { Envelope, ILogger } from '@open-e2ee/signal-protocol-sdk';
+import type { Envelope } from '@open-e2ee/signal-protocol-sdk';
 import { startDemoSession } from '../driver.ts';
 /* demo:code:end */
+import { captureScenarioLog, type ScenarioLogRecord } from './log.ts';
 
-/** Who produced a log record. Both devices run in this tab, so both are read. */
-export type ScenarioRole = 'sender' | 'recipient';
-
-/** The levels this scenario keeps. `debug` is counted, not kept. */
-export type ScenarioLevel = 'info' | 'warn' | 'error';
-
-export interface ScenarioLogRecord {
-  role: ScenarioRole;
-  level: ScenarioLevel;
-  message: string;
-  /** Whatever the SDK passed alongside the message, in the order it passed it. */
-  payload: unknown[];
-}
+export { describePayload } from './log.ts';
 
 /** Where the byte went over, in the envelope the relay was handed. */
 export interface FlipRecord {
@@ -100,16 +89,6 @@ const SENTENCE = 'Meet me at the north gate at 21:00. Bring the second key.';
  * answer and far short of a reader's patience.
  */
 const RECOVERY_TIMEOUT_MS = 10000;
-
-/** A payload rendered as text, without letting a cyclic object throw. */
-export function describePayload(value: unknown): string {
-  if (value instanceof Error) return `${value.name}: ${value.message}`;
-  try {
-    return JSON.stringify(value) ?? String(value);
-  } catch {
-    return String(value);
-  }
-}
 
 /*
  * The SDK names its failures in a `data` object, and does not always put it at
@@ -212,35 +191,15 @@ function wrap(bytes: Uint8Array, layers: number): string {
 }
 
 export async function runFlipAByte(): Promise<FlipAByteResult> {
-  const records: ScenarioLogRecord[] = [];
-  let debugRecords = 0;
-
-  /* One logger per device, each tagging its own records, so the printed log
-     can say which of the two spoke. `debug` is accepted and counted rather
-     than left off: the SDK fills in a missing method with its default, which
-     would put sixty-odd lines in the reader's console that the page then does
-     not account for. */
-  const capture = (role: ScenarioRole): ILogger => {
-    const at =
-      (level: ScenarioLevel) =>
-      (message: string, ...payload: unknown[]) => {
-        records.push({ role, level, message, payload: payload.filter((p) => p !== undefined) });
-      };
-    return {
-      debug: () => {
-        debugRecords += 1;
-      },
-      info: at('info'),
-      warn: at('warn'),
-      error: at('error'),
-    };
-  };
+  /* One logger per device, each tagging its own records, so the printed log can
+     say which of the two spoke. */
+  const log = captureScenarioLog();
 
   let flip: FlipRecord | null = null;
 
   /* demo:code:start */
   const session = await startDemoSession({
-    logger: { sender: capture('sender'), recipient: capture('recipient') },
+    logger: { sender: log.for('sender'), recipient: log.for('recipient') },
 
     /* The hostile bit, and all of it. One byte of the first envelope the relay
        is handed goes over by one; every later envelope passes through
@@ -298,7 +257,7 @@ export async function runFlipAByte(): Promise<FlipAByteResult> {
        no fallback prose if none does: a scenario that invented a refusal the
        protocol did not report would be the one lie this page cannot afford. */
     let refusal: Refusal | null = null;
-    for (const record of records) {
+    for (const record of log.records) {
       for (const payload of record.payload) {
         refusal ??= findRefusal(payload);
       }
@@ -309,8 +268,8 @@ export async function runFlipAByte(): Promise<FlipAByteResult> {
       flip,
       accepted,
       refusal,
-      records,
-      debugRecords,
+      records: log.records,
+      debugRecords: log.debugRecords,
       delivered: exchange?.decrypted.content ?? null,
       roundTripMs: exchange?.roundTripMs ?? null,
     };

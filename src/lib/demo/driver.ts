@@ -2,8 +2,9 @@
  * One conversation, driven by the shipped SDK, for every demo surface to reuse.
  *
  * The homepage panel, the /demo scenarios and the two-tab relay all need the
- * same three things — boot two clients, send a sentence, read what each stage
- * produced — and the site has already paid once for that being written by hand:
+ * same three things — boot the two accounts, send a sentence, read what each
+ * stage produced — and the site has already paid once for that being written
+ * by hand:
  * the recorded carrier panel's metadata list was maintained separately from the
  * envelope and drifted from ten fields to six. So this module hands over the
  * live `Envelope` object rather than a description of it (invariant 4), and the
@@ -32,9 +33,12 @@ import type {
   Envelope,
   ILogger,
   SendResult,
+  SignalProtocolClient,
 } from '@open-e2ee/signal-protocol-sdk';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
+import type { InMemorySignalProtocolStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
+import type { InMemorySignalProtocolRelayServer } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 
 export interface DemoSessionOptions {
   /** Account that types. Shown to the reader, so callers name it. */
@@ -82,10 +86,29 @@ export interface DemoExchange {
   result: SendResult;
   envelope: Envelope;
   decrypted: DecryptedEnvelope;
+  /**
+   * What each recipient device got back, in the order the devices were linked.
+   * With one device this is `[decrypted]`; the entries are the same objects.
+   */
+  deliveries: { deviceId: number; message: DecryptedEnvelope }[];
   /** Handing the plaintext to the SDK until the relay accepted the envelope. */
   encryptMs: number;
-  /** The same start, until the receiving device had the plaintext back. */
+  /** The same start, until every recipient device had the plaintext back. */
   roundTripMs: number;
+}
+
+/**
+ * One device of the receiving account, and everything it has decrypted.
+ *
+ * `received` is the device's scroll-back and grows for as long as the session
+ * runs. A device linked part-way through a conversation starts empty and stays
+ * empty about everything sent before it existed — which is a fact about the
+ * protocol rather than about this demo, and is the whole subject of the
+ * second-device scenario.
+ */
+export interface DemoRecipientDevice {
+  readonly deviceId: number;
+  readonly received: DecryptedEnvelope[];
 }
 
 export type DemoEvent =
@@ -106,10 +129,39 @@ export interface DemoSession {
   readonly recipient: string;
   /** Handshake cost, from the `oe-demo:boot` performance measure. */
   readonly bootMs: number;
+  /**
+   * The relay both accounts are registered with.
+   *
+   * Handed over because some of what a scenario has to show is a conversation
+   * with the server rather than with a client: linking a device is a
+   * provisioning session on the relay, and fetching a prekey bundle for a
+   * device the sender has never written to is a relay call the application
+   * makes by hand.
+   */
+  readonly relay: InMemorySignalProtocolRelayServer;
+  /** The sending device, for the SDK calls a scenario has to make itself. */
+  readonly senderClient: SignalProtocolClient;
+  /** The receiving account's primary device, and its storage. */
+  readonly recipientClient: SignalProtocolClient;
+  readonly recipientStorage: InMemorySignalProtocolStore;
+  /** Every device of the receiving account, primary first, in link order. */
+  readonly recipientDevices: readonly DemoRecipientDevice[];
+  /**
+   * Take a further device of the receiving account into the session: record
+   * what it decrypts, and make `send()` wait for it as well as for the
+   * primary.
+   *
+   * The client is built by the caller, because building it is the point of the
+   * scenario that does this — a linked device is created against storage
+   * provisioning has already written the account identity into, and hiding
+   * that call in here would hide the thing worth showing. Once handed over,
+   * the session stops it with the rest.
+   */
+  watchRecipientDevice(client: SignalProtocolClient): DemoRecipientDevice;
   /** Watch the pipeline. Returns a function that stops delivery. */
   on(listener: (event: DemoEvent) => void): () => void;
   send(text: string): Promise<DemoExchange>;
-  /** Tear down both clients and the relay observer. */
+  /** Tear down every client and the relay observer. */
   stop(): Promise<void>;
 }
 
@@ -134,6 +186,9 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
   await relay.registerDevice(sender, { encryptedDeviceName: new ArrayBuffer(0) });
   await relay.registerDevice(recipient, { encryptedDeviceName: new ArrayBuffer(0) });
 
+  const senderStorage = inMemoryStore();
+  const recipientStorage = inMemoryStore();
+
   /* The transform goes on the relay rather than on the client, because that is
    * where the corresponding real thing is: a relay that stores what it was
    * handed, or a network between the two. Nothing about the sending client
@@ -148,12 +203,12 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
   const [from, to] = await Promise.all([
     createSignalProtocolClient({
       identity: { userId: sender },
-      adapters: { storage: inMemoryStore(), relay },
+      adapters: { storage: senderStorage, relay },
       logger: options.logger?.sender,
     }),
     createSignalProtocolClient({
       identity: { userId: recipient },
-      adapters: { storage: inMemoryStore(), relay },
+      adapters: { storage: recipientStorage, relay },
       logger: options.logger?.recipient,
     }),
   ]);
@@ -192,19 +247,57 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
    * the client registers itself under the SDK's default, so a demo that pinned
    * its own copy would subscribe to the wrong device the day that default
    * moved — and the symptom would be `envelope-stored` never firing and
-   * `await envelopeArrived` hanging, not an error. Both sides run on that one
-   * device; the demo has no second-device story until LD5. */
+   * `await envelopeArrived` hanging, not an error.
+   *
+   * This is the demo watching the server, and it watches the primary device's
+   * row. A send to an account with a second device linked stores one envelope
+   * per device; the ones addressed to the other devices are not seen here, and
+   * `recipientDeviceCount` on the send result is what says how many there
+   * were. What each device then made of its own copy is on that device, in
+   * `recipientDevices`. */
   const unsubscribeRelay = relay.subscribe(recipient, DEFAULT_DEVICE_ID, (envelope) => {
     if (onEnvelope) onEnvelope(envelope);
     else pending.push(envelope);
     emit({ type: 'envelope-stored', envelope });
   });
 
-  let onDecrypted: ((message: DecryptedEnvelope) => void) | null = null;
-  to.registerHook('onMessageDecrypted', (message) => {
-    onDecrypted?.(message);
-  });
-  to.startRelaySubscription();
+  /*
+   * The receiving account's devices, each keeping what it decrypted.
+   *
+   * A device is a row here rather than a variable because the account can grow
+   * one: provisioning gives the recipient a second device part-way through a
+   * conversation, and everything downstream — what `send()` waits for, what
+   * `stop()` puts away, what a scenario prints as a scroll-back — has to
+   * follow the account rather than a pair fixed at boot.
+   */
+  interface WatchedDevice extends DemoRecipientDevice {
+    client: SignalProtocolClient;
+    received: DecryptedEnvelope[];
+    onDecrypted: ((message: DecryptedEnvelope) => void) | null;
+  }
+
+  const recipientDevices: WatchedDevice[] = [];
+
+  function watch(client: SignalProtocolClient): WatchedDevice {
+    const device: WatchedDevice = {
+      /* Read off the client rather than passed in: the device id came from the
+         relay when it linked the device, and a second copy of it here would be
+         a number this file believed rather than the one the SDK is using. */
+      deviceId: client.deviceId,
+      client,
+      received: [],
+      onDecrypted: null,
+    };
+    client.registerHook('onMessageDecrypted', (message) => {
+      device.received.push(message);
+      device.onDecrypted?.(message);
+    });
+    client.startRelaySubscription();
+    recipientDevices.push(device);
+    return device;
+  }
+
+  watch(to);
 
   performance.mark('oe-demo:boot:end');
   const bootMs = measure('oe-demo:boot', 'oe-demo:boot:start', 'oe-demo:boot:end');
@@ -236,9 +329,16 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
     const envelopeArrived = new Promise<Envelope>((resolve) => {
       onEnvelope = resolve;
     });
-    const decryptedArrived = new Promise<DecryptedEnvelope>((resolve) => {
-      onDecrypted = resolve;
-    });
+    /* Every device linked at the moment of the send, and only those: a device
+       linked while this one is in flight was not a recipient of it, and
+       waiting for it would wait forever. */
+    const waiting = [...recipientDevices];
+    const deliveriesArrived = waiting.map(
+      (device) =>
+        new Promise<{ deviceId: number; message: DecryptedEnvelope }>((resolve) => {
+          device.onDecrypted = (message) => resolve({ deviceId: device.deviceId, message });
+        }),
+    );
 
     performance.mark(mark('start'));
     let result: SendResult;
@@ -252,20 +352,30 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
     emit({ type: 'message-sent', text, result, encryptMs });
 
     const envelope = await envelopeArrived;
-    const decrypted = await decryptedArrived;
-    onDecrypted = null;
+    const deliveries = await Promise.all(deliveriesArrived);
+    for (const device of waiting) device.onDecrypted = null;
+    const decrypted = deliveries[0].message;
 
     performance.mark(mark('decrypted'));
     const roundTripMs = measure(`oe-demo:round-trip:${n}`, mark('start'), mark('decrypted'));
     emit({ type: 'message-decrypted', message: decrypted, roundTripMs });
 
-    return { text, result, envelope, decrypted, encryptMs, roundTripMs };
+    return { text, result, envelope, decrypted, deliveries, encryptMs, roundTripMs };
   }
 
   return {
     sender,
     recipient,
     bootMs,
+    relay,
+    senderClient: from,
+    recipientClient: to,
+    recipientStorage,
+    recipientDevices,
+
+    watchRecipientDevice(client) {
+      return watch(client);
+    },
 
     on(listener) {
       listeners.add(listener);
@@ -287,7 +397,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
     async stop() {
       unsubscribeRelay();
       listeners.clear();
-      await Promise.all([from.stop(), to.stop()]);
+      await Promise.all([from.stop(), ...recipientDevices.map((device) => device.client.stop())]);
     },
   };
 }
