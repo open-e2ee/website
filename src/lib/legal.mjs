@@ -18,8 +18,14 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * — it is the version that added the home page demo's event. The scenario event
  * on `/demo` is a second change on the same calendar day, and reusing the date
  * would leave two different notices answering to one version, which is the one
- * thing a version is for. So this change is dated to the day it takes effect
- * rather than the day it was written.
+ * thing a version is for.
+ *
+ * The version string is what disambiguates them, so it carries the suffix. The
+ * effective date does not move: it is a representation about when these terms
+ * apply, and the site starts collecting the eleventh event the moment this
+ * deploys. Dating it forward would have the page tell a reader that a notice
+ * takes effect tomorrow while the event it describes is already being
+ * collected — and `docs/launch.md` records the event as live on 2026-08-07.
  */
-export const privacyVersion = '2026-08-08';
-export const privacyEffectiveDate = 'August 8, 2026';
+export const privacyVersion = '2026-08-07.2';
+export const privacyEffectiveDate = 'August 7, 2026';
