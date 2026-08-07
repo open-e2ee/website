@@ -70,6 +70,7 @@ import { SCENARIOS } from '../src/lib/demo/scenarios/catalog.ts';
 import { runFlipAByte } from '../src/lib/demo/scenarios/flip-a-byte.ts';
 import { runAddASecondDevice } from '../src/lib/demo/scenarios/add-a-second-device.ts';
 import { runOutOfPreKeys } from '../src/lib/demo/scenarios/run-out-of-prekeys.ts';
+import { reinstallADevice } from '../src/lib/demo/scenarios/reinstall-a-device.ts';
 import { EVENTS } from '../src/workers/site.ts';
 import {
   Cdp,
@@ -115,6 +116,7 @@ const FALLBACK = '[data-demo-fallback-note]';
 const FLIP_SLUG = 'flip-a-byte';
 const SECOND_DEVICE_SLUG = 'add-a-second-device';
 const PREKEY_SLUG = 'run-out-of-prekeys';
+const REINSTALL_SLUG = 'reinstall-a-device';
 
 const scenarioRoot = (slug) => `[data-scenario="${slug}"]`;
 const SCENARIO_RUN = '[data-scenario-run]';
@@ -122,6 +124,12 @@ const SCENARIO_STATUS = '[data-scenario-status]';
 const SCENARIO_OUTPUT = '[data-scenario-output]';
 const SCENARIO_STEPS = '[data-scenario-steps]';
 const SCENARIO_NOTS = '[data-scenario-nots]';
+/* A second ordered list, for the scenario whose recovery is a separate
+   argument from what happened. Kept apart from the steps rather than appended
+   to them because "nothing told the application" and "here is the ceremony it
+   takes to recover" are checked against different things, and a first-match
+   scan over one merged list would report the wrong half. */
+const SCENARIO_RECOVERY = '[data-scenario-recovery]';
 const SCENARIO_LOG_LINE = '[data-scenario-log-line]';
 const SCENARIO_DEVICE = '[data-scenario-device]';
 
@@ -155,22 +163,29 @@ const VIEWPORT = { width: 1280, height: 800 };
 
 /*
  * Every script a page fetches before the reader asks for the SDK, which on
- * 2026-08-07 was 15.7 KB over six files on the homepage and 13.1 KB over five
+ * 2026-08-07 was 15.7 KB over six files on the homepage and 13.5 KB over five
  * on `/demo` — the theme and measurement scripts, each page's own script, and
  * a shared preload helper Vite splits out because two pages now import
- * dynamically. The interaction then pulls about 1770 KB, so the tripwire sits
+ * dynamically. The interaction then pulls about 1790 KB, so the tripwire sits
  * two orders of magnitude below any build that has the SDK on its initial path.
  *
- * `/demo` has 6.9 KB left, and it stopped being the page under pressure during
+ * `/demo` has 6.5 KB left, and it stopped being the page under pressure during
  * LD6. It had 2.0 KB left with two scenarios, because every scenario's
  * renderer — about four kilobytes of prose apiece — sat in the page's own
  * `<script>` and therefore on its initial path. The third scenario went 2.1 KB
  * over this tripwire and the prose was what tripped it. The renderers now live
  * in `src/lib/demo/render.ts`, fetched by the same press that fetches the
  * scenario, which is where code that cannot run until a reader presses the
- * button belongs. Measured either side of that move, on the same machine:
- * `/demo` was 18.0 KB over five files with two scenarios and is 13.1 KB over
- * five with three. A fourth scenario adds nothing here.
+ * button belongs. Measured on the same machine across that move and the
+ * scenario after it: `/demo` was 18.0 KB over five files with two scenarios,
+ * 13.1 KB over five with three, and is 13.5 KB over five with four.
+ *
+ * The fourth scenario's 0.4 KB is the whole of what a scenario now costs this
+ * page: one entry in the `PROGRAMS` map in `demo.astro`, which is two dynamic
+ * `import()` specifiers and a status line. Its prose, its runner and its
+ * renderer are all behind the press. That is the shape the LD6 move was for,
+ * and it is what makes the remaining 6.5 KB a budget for roughly a dozen more
+ * scenarios rather than for two.
  *
  * These are wire bytes without compression: `chrome-harness.mjs` serves the
  * build as it is on disk, while Cloudflare compresses. So this is not
@@ -381,6 +396,7 @@ const scenarioSnapshot = (slug) => `(() => {
     text: flat(output),
     steps: list(${JSON.stringify(SCENARIO_STEPS)}),
     nots: list(${JSON.stringify(SCENARIO_NOTS)}),
+    recovery: list(${JSON.stringify(SCENARIO_RECOVERY)}),
     /* One entry per device pane the scenario printed, each carrying what that
        device's own client decrypted. A scenario whose whole argument is that
        one device has a message and another does not cannot be checked from
@@ -1515,6 +1531,190 @@ async function expectedPreKeys() {
 }
 
 /*
+ * What destroying the receiving device and rebuilding it does, according to the
+ * installed SDK.
+ *
+ * This scenario's central claim is the strongest negative on the site: the
+ * application is told nothing. The plan it was built from expected a
+ * safety-number change event, the SDK has no such hook, and the page says so.
+ * That makes this expectation the thing standing between "the SDK has no
+ * identity-change event" and "the page asserts the SDK has no identity-change
+ * event" — so every assertion below is about the SDK, and each one fails when
+ * the SDK grows the thing the page says it lacks.
+ */
+async function expectedReinstall() {
+  let result;
+  try {
+    result = await reinstallADevice();
+  } catch (cause) {
+    throw new Red(
+      `the reinstall scenario could not complete a run in this process: ` +
+        `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
+        `would see in the scenario's status line, so /demo is broken rather than the harness.`,
+    );
+  }
+
+  if (result.established.delivered !== result.established.sentence) {
+    throw new Red(
+      `the opening message never arrived, so this run never had the working conversation the ` +
+        `reinstall is\n  supposed to interrupt. Everything after it would be about a first ` +
+        `contact instead.`,
+    );
+  }
+
+  /*
+   * The relay refusing the rebuilt device is the protocol half of the scenario.
+   * A run where it succeeds is a run where a device that has never seen the
+   * account took the account over, which would be a finding of an entirely
+   * different and much louder kind.
+   */
+  if (result.publish.ok) {
+    throw new Red(
+      `the rebuilt device published itself over the account identity and the relay allowed it. ` +
+        `That is not\n  a page that needs updating — a device with no prior relationship to the ` +
+        `account took it over.\n  Stop and look at the relay's identity provisioning before ` +
+        `touching /demo.`,
+    );
+  }
+  /*
+   * The refusal arrives in two parts and the page prints both, so both are
+   * checked. `message` is the SDK's own wrapper — "Failed to sync with server",
+   * which on its own could be a network error — and `cause` is the relay saying
+   * why. The page's claim is that a reinstalled device cannot quietly become
+   * the account; only the second sentence supports it, so a run that lost the
+   * cause would leave the page attributing a generic failure to a policy.
+   */
+  if (!result.publish.cause) {
+    throw new Red(
+      `the relay refused the rebuilt device with "${result.publish.message}" and no underlying ` +
+        `reason.\n  The page quotes the reason as the evidence that this is a policy rather than ` +
+        `a network failure,\n  and there is nothing to quote.`,
+    );
+  }
+  if (!result.rotate.ok) {
+    throw new Red(
+      `the rebuilt device could not get back onto the account even with an explicit rotation: ` +
+        `${result.rotate.code ?? result.rotate.name}: ${result.rotate.message}.\n  The scenario ` +
+        `then has no recovery to show, and the page's account of what it takes is untested.`,
+    );
+  }
+
+  /*
+   * The finding, asserted in the direction that makes it a finding. Every hook
+   * the SDK offers was registered before the device was destroyed; a run where
+   * one of them fires means the SDK now tells the application something, the
+   * page's central sentence is false, and the fix is to update both.
+   */
+  if (result.hooks.fired.length > 0) {
+    throw new Red(
+      `the SDK now notifies the application when the far identity changes: ` +
+        `${result.hooks.fired.join(', ')}.\n  That is an improvement, and it makes /demo wrong: ` +
+        `the scenario is built around no hook firing.\n  Update the page and this expectation ` +
+        `together.`,
+    );
+  }
+
+  /*
+   * And the check that keeps the one above from being vacuous, which this
+   * scenario needs more than the prekey one does. An empty `fired` list is
+   * exactly what a run that registered nothing produces, and it is also what a
+   * run that hooked the wrong device produces. Holding the registered list
+   * against the SDK's own union is what makes the silence evidence: these are
+   * all the hooks there are, they were live, and none of them fired.
+   */
+  if (result.hooks.registered.length === 0 || result.hooks.devices.length === 0) {
+    throw new Red(
+      `the run registered ${result.hooks.registered.length} hook(s) on ` +
+        `${result.hooks.devices.length} device(s), so "no hook fired" is a statement about an ` +
+        `empty\n  registration rather than about the SDK.`,
+    );
+  }
+
+  /*
+   * The other half of the finding: the SDK is not quiet, it is quiet *where an
+   * application looks*. A run with nothing at warn or error would make the
+   * page's "all of it went to the logger" line describe an absence of logging
+   * rather than a routing problem.
+   */
+  if (result.loud.length === 0) {
+    throw new Red(
+      `the SDK logged nothing at warn or error across the whole reinstall. The page's argument ` +
+        `is that it\n  says plenty and says all of it to the logger; with nothing said, "none ` +
+        `of it reached a hook" stops\n  being evidence about where the SDK reports and becomes ` +
+        `a sentence about an empty list.`,
+    );
+  }
+
+  /*
+   * `verify()` throwing is what stops an application from rendering the changed
+   * number a "safety number changed" banner is made of. If it starts answering,
+   * the page's account of why the banner is hard to build is wrong.
+   */
+  if (result.asked.ok) {
+    throw new Red(
+      `verify() now returns a safety number after the far identity has changed, rather than ` +
+        `throwing.\n  The page tells a reader the application cannot render the comparison until ` +
+        `it has already accepted\n  the change. Update both.`,
+    );
+  }
+
+  if (!result.accepted.ok || result.recovered === null) {
+    throw new Red(
+      `the run never recovered: acceptIdentityRotation ` +
+        `${result.accepted.ok ? 'succeeded' : 'failed'} and delivery ` +
+        `${result.recovered === null ? 'did not resume' : 'resumed'}.\n  The scenario would then ` +
+        `be showing a break with no way out, which is not what it says.`,
+    );
+  }
+  if (!result.after) {
+    throw new Red(
+      'the run produced no safety number after the change, so the comparison the page prints ' +
+        'has nothing on\n  one side of it.',
+    );
+  }
+
+  /*
+   * The split. The page's closing argument is that a user is asked to re-read
+   * sixty digits of which thirty moved; that is only true while the local half
+   * holds still and the remote half does not.
+   */
+  if (result.before.localHalf !== result.after.localHalf) {
+    throw new Red(
+      `the sending party's own half of the safety number changed across a reinstall of the ` +
+        `other device\n  (${result.before.localHalf} then ${result.after.localHalf}), which no ` +
+        `part of this scenario touched.`,
+    );
+  }
+  if (result.before.remoteHalf === result.after.remoteHalf) {
+    throw new Red(
+      `the far party's half of the safety number is unchanged after they rebuilt on a new ` +
+        `identity\n  (${result.after.remoteHalf}). The number is then not a function of the ` +
+        `identity it is supposed to\n  commit to, and the whole comparison is worthless.`,
+    );
+  }
+
+  return {
+    sender: result.sender,
+    recipient: result.recipient,
+    established: result.established,
+    /* All three sentences this scenario types, including the one that never
+       arrives. A stranded message is still plaintext the page had in hand, and
+       "it did not reach the recipient" is not the same claim as "it did not
+       reach the network". */
+    sentences: [result.established.sentence, result.stranded.sentence, result.recovered].filter(
+      (sentence) => typeof sentence === 'string',
+    ),
+    publish: result.publish,
+    hooks: result.hooks,
+    asked: result.asked,
+    loud: result.loud,
+    codes: result.codes,
+    before: result.before,
+    after: result.after,
+  };
+}
+
+/*
  * Sentences the page prints when the run did *not* go the way it claims runs
  * go. Each is the else-branch of a check against an observed value, so any of
  * them on screen means the page is being honest about a run that failed — which
@@ -1578,6 +1778,51 @@ const PREKEY_DENIALS = [
   'The SDK did warn',
   'returned nothing on this run',
 ];
+
+/*
+ * The branches the reinstall scenario renders when it cannot make its argument.
+ *
+ * Ordered most precise first, like the two lists above, but the first entry is
+ * here for a different reason than the rest: it is not a run that failed to
+ * reach the state the page describes, it is the relay letting a device with no
+ * prior relationship to the account publish under it. Everything below it is
+ * downstream of a run going differently; that one is a security finding, and it
+ * has to be the sentence the harness reports.
+ */
+const REINSTALL_DENIALS = [
+  'published itself over the account identity without being challenged',
+  'never had the working conversation',
+  'could not rotate onto the account',
+  'The SDK did notify the application',
+  'send was rejected outright',
+  'no stranded message to show',
+  'returned a safety number rather than refusing',
+  'logged nothing at warn or error',
+  'Accepting the identity change failed',
+  'Delivery did not resume',
+  'does not split the way this page expects',
+];
+
+/*
+ * The reinstall scenario's per-run value: the far party's half of the safety
+ * number, after they rebuilt.
+ *
+ * It is the strongest divergence value on the page. The other scenarios pick a
+ * fresh key because a fresh key is what a live run has and a recording does
+ * not; here the fresh value is also the scenario's subject — those thirty
+ * digits are a commitment to the identity the rebuilt device generated, and a
+ * page that printed the same ones twice would be showing a reader a safety
+ * number that does not depend on the identity it is supposed to commit to.
+ */
+const SAFETY_HALF = /went from [\d ]+ to ([\d ]+?)\./;
+
+function safetyHalfIn(run) {
+  for (const step of run.recovery) {
+    const found = SAFETY_HALF.exec(step);
+    if (found) return found[1];
+  }
+  return null;
+}
 
 /*
  * The prekey scenario's per-run value: the last-resort key the empty bundle
@@ -2128,6 +2373,142 @@ function preKeysExpectation(expected) {
   };
 }
 
+/*
+ * The same for `reinstall-a-device`, whose subject is an absence with no name.
+ *
+ * The other two silence scenarios can be held to something the SDK said. This
+ * one has to be held to a list it did not act on, so the page is required to
+ * print the registration beside the silence — the count of hooks, the devices
+ * they were live on — and required to print the SDK's own noise beside it, so
+ * that "nothing reached the application" is read against a logger that was busy
+ * rather than against a run where nothing happened at all.
+ */
+function reinstallExpectation(expected) {
+  return {
+    slug: REINSTALL_SLUG,
+    secrets: expected.sentences,
+    denials: REINSTALL_DENIALS,
+    divergence: { what: 'safety-number half', of: safetyHalfIn },
+    checkRun(run, where) {
+      /* The relay's own sentence, quoted rather than paraphrased. The page
+         claims a reinstalled device cannot quietly become the account; the
+         refusal is the evidence, and a page that summarised it would be asking
+         the reader to take the refusal on trust. */
+      for (const quoted of [expected.publish.message, expected.publish.cause]) {
+        if (!run.text.includes(quoted)) {
+          throw new Red(
+            `${where} never printed what came back when the rebuilt device tried to publish:\n  ` +
+              `${JSON.stringify(quoted)}\n  The same scenario run in this process against the ` +
+              `installed package got that sentence back.\n  Both halves ship: the SDK's wrapper ` +
+              `alone reads as a network failure, and the relay's reason is\n  what makes it a ` +
+              `policy. The page printed:\n  ${run.text.slice(0, 400) || '(nothing)'}`,
+          );
+        }
+      }
+
+      /* The finding, and the registration that makes it one. The count has to
+         be on screen: "no event fired" beside a number of hooks that were
+         listening is evidence, and on its own it is a sentence about an empty
+         array — the same trap the prekey scenario's breadcrumb counts exist to
+         avoid. */
+      const noEvent = run.nots.find((text) => text.startsWith('No event.'));
+      if (!noEvent) {
+        throw new Red(
+          `${where} did not say "No event." — the finding this scenario exists for. Naming what ` +
+            `did not\n  happen is the point; printed: ${run.nots.join(' | ') || '(nothing)'}`,
+        );
+      }
+      const registered = `${expected.hooks.registered.length} hooks`;
+      if (!noEvent.includes(registered)) {
+        throw new Red(
+          `${where} said no event fired without saying how many hooks were listening. The SDK ` +
+            `offers ${registered},\n  every one of them was registered by the run in this ` +
+            `process, and without that number on screen the\n  page is claiming a silence rather ` +
+            `than showing one.\n  printed: ${noEvent}`,
+        );
+      }
+      for (const device of expected.hooks.devices) {
+        if (!noEvent.includes(device)) {
+          throw new Red(
+            `${where} did not name ${JSON.stringify(device)} as a device the hooks were live ` +
+              `on. A silence that does not\n  say where it was measured is not evidence.\n  ` +
+              `printed: ${noEvent}`,
+          );
+        }
+      }
+
+      /* There is no hook to register, and the page has to say so outright. This
+         is the sentence a reader arrives looking for, and the one the plan this
+         scenario came from expected to be false. */
+      if (!noEvent.includes('no onIdentityChanged to register')) {
+        throw new Red(
+          `${where} reported the silence without saying that the SDK's hook surface has no entry ` +
+            `for this\n  event at all. A reader who has just watched every hook stay quiet will ` +
+            `assume they registered the\n  wrong one.\n  printed: ${noEvent}`,
+        );
+      }
+
+      /* And the counterweight. The page is not allowed to leave a reader with
+         "the SDK is silent" when it is not: it is loud in the log and quiet
+         everywhere an application is built to look. */
+      const notSilent = run.nots.find((text) => text.includes('It is not that the SDK said'));
+      if (!notSilent) {
+        throw new Red(
+          `${where} never said what the SDK did say. Without it the page reads as "the SDK ` +
+            `noticed nothing",\n  which is false — it logged ${expected.loud.length} record(s) ` +
+            `at warn or error in this process.\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
+        );
+      }
+      for (const code of expected.codes) {
+        if (!notSilent.includes(code)) {
+          throw new Red(
+            `${where} did not carry ${JSON.stringify(code)}, which the same run in this process ` +
+              `logged. That code is\n  what an application would have had to match on to find ` +
+              `out, so dropping it drops the point.\n  printed: ${notSilent}`,
+          );
+        }
+      }
+
+      /* The safety number, in halves, which is the closing argument. Both are
+         required: the near half proves the number did not simply regenerate,
+         and the far half is the thirty digits a user is asked to re-read. */
+      const split = run.recovery.find((text) => text.includes('changed — in half of itself'));
+      if (!split) {
+        throw new Red(
+          `${where} printed no comparison of the safety number before and after. The scenario ` +
+            `ends on what a\n  user would be asked to check, and without the halves the page ` +
+            `asserts a change rather than\n  showing one.\n  printed: ` +
+            `${run.recovery.join(' | ') || '(nothing)'}`,
+        );
+      }
+      const arithmetic =
+        `${expected.after.numeric.replace(/ /g, '').length} digits of which ` +
+        `${expected.after.remoteHalf.replace(/ /g, '').length} moved`;
+      if (!split.includes(arithmetic)) {
+        throw new Red(
+          `${where} did not print the arithmetic a user is handed — how much of the number they ` +
+            `have to re-read.\n  The same scenario run in this process produced "${arithmetic}".` +
+            `\n  printed: ${split}`,
+        );
+      }
+
+      /* The citation, checked for the same reason the prekey scenario's is: it
+         is the one claim in this output that the run did not produce. A page
+         that tells a reader warning fatigue is the industry's experience owes
+         them the source, and an unsourced version of that claim is exactly what
+         messaging.md forbids. */
+      for (const required of ['TADA', 'Keybase', 'no one bothers']) {
+        if (!run.text.includes(required)) {
+          throw new Red(
+            `${where} printed the scenario without ${JSON.stringify(required)}. The framing and ` +
+              `its source ship together\n  or neither ships.`,
+          );
+        }
+      }
+    },
+  };
+}
+
 // --------------------------------------------------------------------- the run
 
 async function main() {
@@ -2151,6 +2532,7 @@ async function main() {
   const refusal = await expectedRefusal();
   const secondDevice = await expectedSecondDevice();
   const preKeys = await expectedPreKeys();
+  const reinstall = await expectedReinstall();
 
   const held = { server: null, chrome: null, cdp: null, targets: [] };
   try {
@@ -2195,6 +2577,13 @@ async function main() {
       prekeys,
       origin,
       preKeysExpectation(preKeys),
+    );
+
+    const reinstalled = await visitScenario(cdp, origin, held, REINSTALL_SLUG);
+    const { beacons: reinstallBeacons, ids: halves } = checkScenario(
+      reinstalled,
+      origin,
+      reinstallExpectation(reinstall),
     );
 
     /* Say which of the two things happened. Claiming a quiet window we never
@@ -2264,7 +2653,23 @@ async function main() {
         `${prekeyBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
         `                  before a touch ${kb(prekeys.bytesBefore)} over ` +
         `${prekeys.before.length} file(s); the run drew ${kb(prekeys.bytesAfter)} over ` +
-        `${prekeys.after.length} chunk(s)`,
+        `${prekeys.after.length} chunk(s)\n` +
+        `  /demo:          ${REINSTALL_SLUG} opened by fragment and run twice; the receiving ` +
+        `device was rebuilt on\n` +
+        `                  empty storage and the relay refused it — the SDK reported ` +
+        `"${reinstall.publish.message}"\n` +
+        `                  over the relay's "${reinstall.publish.cause}" — and of the\n` +
+        `                  ${reinstall.hooks.registered.length} hooks the SDK offers — all ` +
+        `registered on ${reinstall.hooks.devices.join(' and ')} — none fired\n` +
+        `                  the SDK logged ${reinstall.loud.length} record(s) at warn or error ` +
+        `(${reinstall.codes.join(', ') || 'no code'}), all of it to the logger\n` +
+        `                  far safety-number halves ${halves.join(' then ')} — a fresh identity ` +
+        `per run\n` +
+        `                  measured ${reinstallBeacons.length} beacon(s): ` +
+        `${reinstallBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
+        `                  before a touch ${kb(reinstalled.bytesBefore)} over ` +
+        `${reinstalled.before.length} file(s); the run drew ${kb(reinstalled.bytesAfter)} over ` +
+        `${reinstalled.after.length} chunk(s)`,
     );
   } finally {
     await teardown(held);

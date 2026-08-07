@@ -538,8 +538,8 @@ export function renderReinstallADevice(
   if (result.hooks.fired.length === 0) {
     noEvent.textContent =
       `No event. Every one of the ${count(result.hooks.registered.length)} hooks the SDK offers ` +
-      `was registered on ${result.hooks.devices.join(' and ')} before the device was ` +
-      `destroyed, and between the reinstall and the end of that send not one of them fired. ` +
+      `was registered on ${result.hooks.devices.join(' and ')} as soon as each of them ` +
+      `existed, and between the reinstall and the end of that send not one of them fired. ` +
       `There is no onIdentityChanged to register: the SDK's hook surface has no entry for this ` +
       `event, and the hooks it does have stayed quiet through all of it.`;
   } else {
@@ -615,10 +615,11 @@ export function renderReinstallADevice(
     const remoteMoved = result.before.remoteHalf !== result.after.remoteHalf;
     recoveryStep(
       localHeld && remoteMoved
-        ? `And the safety number changed — in half of itself. The first six groups are ` +
-          `${result.sender}'s own and are identical before and after; the last six are ` +
-          `${result.recipient}'s and are entirely different. That is the comparison a user is ` +
-          `asked to make: ${result.after.numeric.replace(/ /g, '').length} digits of which ` +
+        ? `And the safety number changed — in half of itself. ${result.sender}'s own six groups ` +
+          `are identical before and after (${result.after.localHalf}); ${result.recipient}'s six ` +
+          `went from ${result.before.remoteHalf} to ${result.after.remoteHalf}. That is the ` +
+          `comparison a user is asked to make: ` +
+          `${result.after.numeric.replace(/ /g, '').length} digits of which ` +
           `${result.after.remoteHalf.replace(/ /g, '').length} moved, read aloud, against a ` +
           `number they last saw weeks ago.`
         : `The safety number after the change does not split the way this page expects — ` +
