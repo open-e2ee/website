@@ -227,11 +227,12 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
       if (note) note.textContent = reason;
     };
 
+    /* Only `loading` is worth saying from here. `failed` is published on the way
+       to rejecting `load()`, so anything this callback wrote about it would be
+       overwritten a microtask later by the catch in `boot()` — which is the line
+       a reader has always actually seen. */
     loader.subscribe((state) => {
       if (state.status === 'loading') setStatus('Loading the SDK…');
-      if (state.status === 'failed') {
-        fallBack('The live demo could not load, so this is the recording.');
-      }
     });
 
     /*
@@ -261,9 +262,9 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
           return session;
         })
         .catch((cause: unknown) => {
-          /* The loader's own failure already fell back; this catch exists for a
-             handshake that throws after the chunk arrived, which is a different
-             failure with the same remedy. */
+          /* Both shapes land here: a chunk that never arrived, and a handshake
+             that threw after it did. They read differently to us and identically
+             to a reader, who has the same recording either way. */
           fallBack('The live demo could not start, so this is the recording.');
           throw cause;
         });
