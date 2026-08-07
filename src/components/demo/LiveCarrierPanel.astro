@@ -1,0 +1,354 @@
+---
+import CarrierPanel from '../CarrierPanel.astro';
+import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
+
+/*
+ * The recording, made reproducible.
+ *
+ * `CarrierPanel` prints a round trip that happened once, on a machine the
+ * reader does not have. This component keeps that panel exactly where it was
+ * and puts a live one in front of it: the reader's own sentence, encrypted by
+ * the installed `@open-e2ee/signal-protocol-sdk` in their tab, with the
+ * envelope the relay held printed from the object itself.
+ *
+ * Three things about the shape are load-bearing rather than stylistic.
+ *
+ * **The recorded panel is the default, not the fallback that gets rendered on
+ * failure.** It is server-rendered and stays in the DOM; the script hides it
+ * and shows the live panel, and puts it back if the SDK never arrives
+ * (invariant 6). A failure handler that had to *construct* the fallback would
+ * be useless in the case that matters most — the script itself being blocked,
+ * unsupported, or never fetched — because then no handler runs at all.
+ *
+ * **The controls are live from the first paint**, before any SDK code exists.
+ * They are the activation trigger: focusing the field or pressing send starts
+ * the 713 KB import that invariant 7 keeps off the initial payload, and a send
+ * pressed early is queued rather than dropped. An input that appeared only
+ * once the chunk had landed would have nothing to trigger the landing.
+ *
+ * **Nothing here hand-writes an envelope field.** The metadata list is built by
+ * iterating the live object (invariant 4). The recorded panel's list was
+ * maintained by hand and drifted from ten fields to six, in the direction that
+ * flattered us, on the one panel whose whole job is not overstating the
+ * evidence.
+ */
+
+const installedVersion = sdkManifest.version;
+const packageName = sdkManifest.name;
+
+/* Long enough to hold a sentence a reader would actually send, short enough
+ * that the ciphertext underneath still looks like a wall rather than a line. */
+const MAX_LENGTH = 140;
+const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
+---
+
+<div class="live-carrier" data-demo="live-carrier-panel">
+  {/*
+    The recorded capture. Server-rendered, visible on arrival, and the state
+    the page returns to if the live demo cannot run. `data-demo-recorded` is
+    what the smoke harness asserts is still on screen when it blocks the chunk.
+  */}
+  <div class="live-carrier-recorded" data-demo-recorded>
+    {/*
+      The page's lead offers the reader a sentence to type. With scripts off
+      there is no field to type it into, and the fallback note above stays
+      correctly empty, because from where that reader sits nothing failed —
+      so nothing else on the page would ever say why the offer cannot be
+      taken up. This is the one line that only they see, and it is the only
+      honest place to put it: a script cannot write it.
+    */}
+    <noscript>
+      <p class="carrier-cipher-note live-carrier-noscript">
+        The panel below is a recording. The live version needs JavaScript — it runs the SDK
+        in your browser, so with scripts off there is nothing to run it with.
+      </p>
+    </noscript>
+    <CarrierPanel />
+    {/*
+      Empty, and server-rendered empty on purpose. It is filled only when the
+      script ran and then could not deliver a live demo — the one failure a
+      handler can actually describe. A reader with no JavaScript gets the
+      recorded panel with no apology attached, because nothing failed for them.
+    */}
+    <p class="carrier-cipher-note live-carrier-fallback-note" data-demo-fallback-note></p>
+  </div>
+
+  {/*
+    The live panel. `hidden` until the script runs, so a reader with no
+    JavaScript never sees an inert set of controls, and the recorded panel is
+    the only thing on the page.
+  */}
+  <figure class="carrier-panel live-carrier-live" data-demo-live hidden>
+    <div class="carrier-pane">
+      <span class="label">your device</span>
+      <div class="live-carrier-compose">
+        <label class="oe-visually-hidden" for="live-demo-input">
+          A sentence to encrypt, up to {MAX_LENGTH} characters
+        </label>
+        <input
+          id="live-demo-input"
+          class="live-carrier-input"
+          data-demo-input
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          maxlength={MAX_LENGTH}
+          placeholder={PLACEHOLDER}
+        />
+        <button class="oe-button live-carrier-send" data-demo-send type="button">
+          Encrypt it
+        </button>
+      </div>
+      <p class="carrier-cipher-note" data-demo-status role="status">
+        The SDK loads when you start typing.
+      </p>
+    </div>
+
+    <div class="carrier-pane carrier-pane-relay">
+      <span class="label">relay — the row in your database</span>
+      {/*
+        Hidden from assistive technology for the same reason the recorded
+        panel's blob is: several hundred base64 characters read aloud one at a
+        time, with no landmark to escape to, immediately before the line that
+        already carries the whole meaning. The note below states what it is and
+        how much of it there is, which is more than a listener could recover
+        from hearing it.
+      */}
+      <p class="carrier-cipher" data-demo-cipher aria-hidden="true"></p>
+      <p class="carrier-cipher-note" data-demo-cipher-note></p>
+      <dl class="carrier-meta" data-demo-meta></dl>
+      <p class="carrier-cipher-note" data-demo-meta-note></p>
+    </div>
+
+    <div class="carrier-pane">
+      <span class="label">the other device</span>
+      <p class="carrier-message" data-demo-decrypted></p>
+      <p class="carrier-cipher-note" data-demo-timing></p>
+    </div>
+
+    <figcaption class="carrier-caption">
+      {/*
+        Invariant 5, adjacent to the thing it discloses. The cryptography is
+        the shipped cryptography; what is simulated is the infrastructure
+        around it, and both stand-ins are named in the reader's own vocabulary
+        rather than as "a demo backend". The version is the installed one,
+        read from the package at build time, so it cannot drift from what the
+        page actually imported.
+      */}
+      {/*
+        `and{' '}` rather than a line break before the second `<code>`: Astro
+        collapses the whitespace between a text node and a following inline
+        element, so the source looks correctly spaced and the build reads
+        "and<code>inMemoryRelay()". `tests/site-content.test.mjs` catches it,
+        which is how this comment came to exist.
+      */}
+      <span>
+        real protocol and cryptography, simulated infrastructure — <code>inMemoryStore()</code>{' '}
+        and <code>inMemoryRelay()</code> run in this tab
+      </span>
+      <span>{packageName}@{installedVersion}</span>
+    </figcaption>
+  </figure>
+
+  {/*
+    Invariant 8's claim, stated where it can be checked, and phrased as an
+    instruction rather than a reassurance: the reader has the network tab and
+    the page has nothing to hide from it. It says nothing about the console,
+    because LD0 found WebKit prints an AES-CBC advisory whenever `crypto.subtle`
+    is asked for the cipher the double ratchet specifies — a clean-console
+    claim would be false on Safari.
+  */}
+  <p class="live-carrier-claim" data-demo-claim hidden>
+    That ran in this tab. Nothing left the page — check the network tab.
+  </p>
+</div>
+
+<script>
+  import { createDemoLoader } from '../../lib/demo/loader';
+  import type { DemoExchange, DemoSession } from '../../lib/demo/driver';
+
+  const panel = document.querySelector<HTMLElement>('[data-demo="live-carrier-panel"]');
+  if (panel) upgrade(panel);
+
+  function upgrade(panel: HTMLElement) {
+    const pick = <T extends HTMLElement>(selector: string) =>
+      panel.querySelector<T>(selector) as T;
+
+    const recorded = pick('[data-demo-recorded]');
+    const live = pick('[data-demo-live]');
+    const claim = pick('[data-demo-claim]');
+    const input = pick<HTMLInputElement>('[data-demo-input]');
+    const send = pick<HTMLButtonElement>('[data-demo-send]');
+    const status = pick('[data-demo-status]');
+    const cipher = pick('[data-demo-cipher]');
+    const cipherNote = pick('[data-demo-cipher-note]');
+    const meta = pick<HTMLDListElement>('[data-demo-meta]');
+    const metaNote = pick('[data-demo-meta-note]');
+    const decrypted = pick('[data-demo-decrypted]');
+    const timing = pick('[data-demo-timing]');
+
+    /* The upgrade itself. Running at all is the evidence that JavaScript works,
+       which is the one thing the recorded panel is the fallback for. */
+    recorded.hidden = true;
+    live.hidden = false;
+
+    const loader = createDemoLoader();
+    let session: DemoSession | null = null;
+    let booting: Promise<DemoSession> | null = null;
+    let inFlight = false;
+
+    /*
+     * Exactly two fields are held back, and the reader is told about both.
+     *
+     *   ciphertext — printed above as the bytes themselves, not as a table row.
+     *   id         — the in-memory relay counts sends, so this reads `msg-1`. A
+     *                production relay assigns its own format, and printing this
+     *                one would teach a reader something false about their own
+     *                database.
+     *
+     * This is a list of what is deliberately *not* shown. It is not a list of
+     * what is shown: every other field arrives by iterating the envelope, so a
+     * field the SDK adds appears here without anyone editing this file, and a
+     * field it removes vanishes rather than lingering as a stale row.
+     */
+    const HELD_BACK = new Set(['ciphertext', 'id']);
+
+    const setStatus = (text: string) => {
+      status.textContent = text;
+    };
+
+    /* A failed load is not an error box. It is the recorded panel, back where
+       it was, with one line saying why the reader is looking at a recording. */
+    const fallBack = (reason: string) => {
+      live.hidden = true;
+      claim.hidden = true;
+      recorded.hidden = false;
+      const note = recorded.querySelector<HTMLElement>('[data-demo-fallback-note]');
+      if (note) note.textContent = reason;
+    };
+
+    loader.subscribe((state) => {
+      if (state.status === 'loading') setStatus('Loading the SDK…');
+      if (state.status === 'failed') {
+        fallBack('The live demo could not load, so this is the recording.');
+      }
+    });
+
+    /*
+     * Boot on the first sign of interest, and only once.
+     *
+     * Focus is the earliest honest signal — a reader who has put the cursor in
+     * the field intends to type — and it lets the handshake overlap with their
+     * typing instead of starting after it.
+     *
+     * Scrolling the panel into view is deliberately not a signal. An
+     * IntersectionObserver here would warm the session before the first
+     * keystroke, which reads well until you notice it bills every reader who
+     * scrolls past for the whole import — 30 chunks, 679 KB gzip measured off
+     * this build, ~713 KB on the wire — of SDK they never asked for, the exact
+     * cost invariant 7 exists to keep off people who do not use the demo. A
+     * reader who clicks send without focusing first is covered anyway:
+     * `submit` awaits `boot()` rather than assuming a session exists.
+     */
+    const boot = () => {
+      if (booting) return booting;
+      booting = loader
+        .load()
+        .then(async (module) => {
+          setStatus('Booting two devices…');
+          session = await module.startDemoSession();
+          setStatus(`Two devices, ${Math.round(session.bootMs)} ms to a shared secret.`);
+          return session;
+        })
+        .catch((cause: unknown) => {
+          /* The loader's own failure already fell back; this catch exists for a
+             handshake that throws after the chunk arrived, which is a different
+             failure with the same remedy. */
+          fallBack('The live demo could not start, so this is the recording.');
+          throw cause;
+        });
+      return booting;
+    };
+
+    /*
+     * Fire and forget, but not unhandled.
+     *
+     * The failure this can produce is already dealt with — the catch inside
+     * `boot` puts the recorded panel back — yet the promise returned here has
+     * no reader, and a rejected promise nobody read is an uncaught error in the
+     * console. That is not a rare race: a request the browser refuses fails in
+     * about a millisecond, so the rejection lands long before the reader gets
+     * as far as pressing send. The blocked-chunk pass of `demo:smoke` found
+     * this by watching the console on a page that was otherwise recovering
+     * correctly.
+     */
+    input.addEventListener('focus', () => void boot().catch(() => {}), { once: true });
+
+    const render = (exchange: DemoExchange) => {
+      const envelope = exchange.envelope as unknown as Record<string, unknown>;
+
+      const bytes = Math.floor((String(envelope.ciphertext).length * 3) / 4);
+      cipher.textContent = String(envelope.ciphertext).slice(0, 420);
+      cipher.append(Object.assign(document.createElement('span'), { textContent: '…' }));
+      cipherNote.textContent =
+        `ciphertext — ${String(envelope.ciphertext).length.toLocaleString('en-US')} base64 ` +
+        `characters, ${bytes.toLocaleString('en-US')} bytes decoded, excerpt shown`;
+
+      /* Invariant 4: the rows are the envelope's own keys. Nothing in this
+         function names a field, so nothing in it can disagree with one. */
+      meta.replaceChildren();
+      let shown = 0;
+      for (const [field, value] of Object.entries(envelope)) {
+        if (HELD_BACK.has(field)) continue;
+        const dt = document.createElement('dt');
+        dt.textContent = field;
+        const dd = document.createElement('dd');
+        dd.textContent = typeof value === 'string' ? value : String(value);
+        meta.append(dt, dd);
+        shown += 1;
+      }
+      metaNote.textContent =
+        `${shown} more fields the relay held, and a relay-assigned envelope id, ` +
+        `in whatever format your relay assigns`;
+
+      decrypted.textContent = exchange.decrypted.content;
+      timing.textContent =
+        `encrypted in ${exchange.encryptMs.toFixed(1)} ms, ` +
+        `decrypted on the other device ${exchange.roundTripMs.toFixed(1)} ms after you pressed send`;
+      claim.hidden = false;
+    };
+
+    const submit = async () => {
+      const text = input.value.trim();
+      if (text.length === 0) {
+        setStatus('Type something first.');
+        input.focus();
+        return;
+      }
+      if (inFlight) return;
+
+      inFlight = true;
+      send.disabled = true;
+      setStatus(session ? 'Encrypting…' : 'Loading the SDK…');
+      try {
+        const ready = await boot();
+        const exchange = await ready.send(text);
+        render(exchange);
+        setStatus('Sent. Type another and press it again.');
+      } catch {
+        /* `fallBack` has already run for both failure shapes that reach here. */
+      } finally {
+        inFlight = false;
+        send.disabled = false;
+      }
+    };
+
+    send.addEventListener('click', submit);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        void submit();
+      }
+    });
+  }
+</script>

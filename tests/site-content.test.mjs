@@ -469,15 +469,32 @@ test('binds the names the reader brings, or says whose they are', async () => {
 });
 
 test('keeps the recorded carrier row on the page, wherever it sits', async () => {
-  const index = await flat('../src/pages/index.astro');
+  const [index, live] = await Promise.all([
+    flat('../src/pages/index.astro'),
+    flat('../src/components/demo/LiveCarrierPanel.astro'),
+  ]);
 
   /* The panel left the hero for the band whose copy raises the question it
    * answers. Moving it is a layout decision; dropping it is not, because it
    * is the only thing on the site that shows rather than states what the
-   * relay holds. A homepage that only asserts it has given up the argument. */
-  assert.match(index, /<CarrierPanel \/>/);
+   * relay holds. A homepage that only asserts it has given up the argument.
+   *
+   * It moved once more when the live demo landed: the page now renders
+   * `LiveCarrierPanel`, which renders the recording and puts a live panel in
+   * front of it. That is why this checks two files. The recording is not
+   * decoration underneath the live one — it is what a reader with no
+   * JavaScript, an unsupported browser or a chunk that never arrived sees, so
+   * a refactor that "simplified" it away would take the fallback with it.
+   *
+   * The lead's own provenance line went at the same time, and correctly: the
+   * sentence above the panel now describes a round trip in the reader's tab,
+   * which is not a thing that was captured. The recording's caption states
+   * where it came from, one line under the recording, which is the assertion
+   * in "does not overstate the one artefact that exists to not be
+   * overstated". */
+  assert.match(index, /<LiveCarrierPanel \/>/);
+  assert.match(live, /<CarrierPanel \/>/);
   assert.match(index, /Not a mock-up/);
-  assert.match(index, /captured by running the documented quickstart/);
 });
 
 test('shows every metadata field the relay was recorded holding', async () => {
@@ -1040,7 +1057,11 @@ test('keeps the signature diagram off the page that carries the plate', async ()
    * device on the screen. This asserts the split, not the deletion: a future
    * round that fixes the ratio in the design package and wants it back has to
    * come here and say so. */
-  assert.match(index, /<CarrierPanel \/>/);
+  /* The plate reaches this page through `LiveCarrierPanel`, which renders it
+   * as the live demo's fallback. Both spellings are checked on the other two
+   * pages: either one of them puts a plate on a screen that already has a
+   * signature device. */
+  assert.match(index, /<LiveCarrierPanel \/>/);
   assert.doesNotMatch(index, /<SignatureDiagram \/>/);
   assert.doesNotMatch(index, /import SignatureDiagram/);
 
@@ -1049,7 +1070,11 @@ test('keeps the signature diagram off the page that carries the plate', async ()
     ['product', product],
   ]) {
     assert.match(page, /<SignatureDiagram \/>/, `${name} lost the diagram`);
-    assert.doesNotMatch(page, /<CarrierPanel \/>/, `${name} now shares a screen with the plate`);
+    assert.doesNotMatch(
+      page,
+      /<(Live)?CarrierPanel \/>/,
+      `${name} now shares a screen with the plate`,
+    );
   }
 
   /* The caption used to point at the drawing — "inside a device outline" —

@@ -1,18 +1,29 @@
 /*
- * Drives the homepage live demo in a real browser and checks the two claims the
- * page makes about it: that a reader's own sentence round-trips through the SDK
- * in their tab, and that the sentence never leaves the page.
+ * Drives the homepage live demo in a real browser, then takes it away and
+ * checks what the page does without it.
  *
  *   npm run build && npm run demo:smoke
  *
- * The second claim is the one that needs a browser. "Nothing left the page —
- * check the network tab" is an invitation, and a reader who accepts it and
- * finds a request carrying their sentence has caught the site lying. So this
- * harness watches every request the page makes, including WebSocket frames,
- * and fails on any that carries the typed text in cleartext, percent-encoded,
- * or base64 form. The typed sentence carries a per-run nonce: the site ships a
- * recorded capture whose plaintext is a fixed string, and a fixed probe string
- * would either collide with it or quietly stop proving anything.
+ * Four claims, one run:
+ *
+ *   1. A reader's own sentence round-trips through the installed SDK in their
+ *      tab, under the site's unchanged `script-src 'self'`.
+ *   2. The sentence never leaves the page.
+ *   3. The metadata beside it is the live envelope's own fields, not a list
+ *      someone typed.
+ *   4. Nothing SDK-shaped is fetched before the reader asks for it.
+ *
+ * Then a second pass blocks every chunk the interaction pulled and checks the
+ * page lands back on the recorded capture rather than on a hole.
+ *
+ * Claim 2 is the one that needs a browser. "Nothing left the page — check the
+ * network tab" is an invitation, and a reader who accepts it and finds a
+ * request carrying their sentence has caught the site lying. So this harness
+ * watches every request the page makes, including WebSocket frames, and fails
+ * on any that carries the typed text in cleartext, percent-encoded, or base64
+ * form. The typed sentence carries a per-run nonce: the site ships a recorded
+ * capture whose plaintext is a fixed string, and a fixed probe string would
+ * either collide with it or quietly stop proving anything.
  *
  * It also fails on a CSP violation. The demo's whole premise is that it runs
  * under the site's unchanged `script-src 'self'` — and the failure mode is not
@@ -22,15 +33,23 @@
  * wakes up. That was measured in LD0. A demo built that way would look fine to
  * a test that only asked whether the markup was present.
  *
- * The Chrome, the server and the CDP client come from `./chrome-harness.mjs`,
- * shared with `demo-driver-check.mjs`. Headers come from `public/_headers`
- * rather than being retyped there, so the policy under test is the policy that
- * ships.
+ * Claims 3 and 4 and the blocked pass arrived from `demo-driver-check.mjs`,
+ * which proved them against a generated fixture page because the homepage panel
+ * did not exist yet. It does now, so the fixture would be proving them about a
+ * copy of the demo rather than about the demo — and the copy is the one that
+ * cannot break in front of a reader. The fixture, its build step and its
+ * throwaway output directory went with it.
+ *
+ * Chrome, the server and the CDP client come from `./chrome-harness.mjs`.
+ * Headers come from `public/_headers` rather than being retyped there, so the
+ * policy under test is the policy that ships.
  */
 
 import { existsSync, rmSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { startDemoSession } from '../src/lib/demo/driver.ts';
 import {
   Cdp,
   Infra,
@@ -39,26 +58,61 @@ import {
   productionHeaders,
   serve,
 } from './chrome-harness.mjs';
+import { readSdkSurface } from './sdk-surface.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const DIST = join(ROOT, 'dist');
 
 /*
- * The contract LD2 implements. The harness names the demo through data
- * attributes rather than class names or element structure so that restyling the
- * panel cannot break the test, and so that the test states plainly what the
- * demo has to expose.
+ * The demo's contract with this harness. It is named through data attributes
+ * rather than class names or element structure so that restyling the panel
+ * cannot break the test, and so that the test states plainly what the demo has
+ * to expose.
  */
 const PANEL = '[data-demo="live-carrier-panel"]';
 const INPUT = '[data-demo-input]';
 const SEND = '[data-demo-send]';
 const DECRYPTED = '[data-demo-decrypted]';
+const RECORDED = '[data-demo-recorded]';
+const META = '[data-demo-meta]';
+const CLAIM = '[data-demo-claim]';
+const FALLBACK = '[data-demo-fallback-note]';
 
 const NONCE = randomUUID().slice(0, 8);
 const PROBE = `Smoke probe ${NONCE}: the staging key rotates at 09:00 UTC.`;
 
 const DECRYPT_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 30000;
+
+/* A fixed viewport, so what the page chooses to fetch before the reader touches
+   anything is the same on every machine that runs this. */
+const VIEWPORT = { width: 1280, height: 800 };
+
+/*
+ * Every script the homepage fetches before the reader touches the demo, which
+ * on 2026-08-06 was 14.5 KB over five files — the theme and measurement
+ * scripts, two other page scripts, and the demo's own loader chunk. The
+ * interaction then pulls 1760.8 KB, so the tripwire sits two orders of
+ * magnitude below any build that has the SDK on its initial path.
+ *
+ * These are wire bytes without compression: `chrome-harness.mjs` serves the
+ * build as it is on disk, while Cloudflare compresses. So this is not
+ * invariant 7's budget, which is 10 KB gzip and is a *delta* — it needs a build
+ * without the demo to compare against, and is measured in the proof rather than
+ * here. This is the tripwire for the SDK arriving uninvited.
+ */
+const PRE_INTERACTION_CEILING = 20 * 1024;
+
+/*
+ * A floor on the expected set, not on what the page printed.
+ *
+ * The expectation itself is computed per run (see `expectedFields`), so this
+ * number is only here to catch the expectation collapsing: an `Envelope` that
+ * suddenly declares two fields would make an equality check trivially
+ * satisfiable, and a harness that passes because it expected nothing is worse
+ * than no harness. Ten is what the installed alpha.10 produces.
+ */
+const MIN_DERIVED_FIELDS = 10;
 
 /*
  * The decrypted text appearing is not the end of the story for invariant 8.
@@ -71,6 +125,12 @@ const LOAD_TIMEOUT_MS = 30000;
  */
 const EGRESS_QUIET_MS = 2000;
 const EGRESS_SETTLE_MAX_MS = 10000;
+
+/* Astro fetches a page's module scripts after the load event, so "before the
+   reader asked" means after the page has stopped asking for things of its own
+   accord — not after the load event. */
+const IDLE_QUIET_MS = 500;
+const IDLE_MAX_MS = 5000;
 
 // ---------------------------------------------------------------- the checks
 
@@ -92,6 +152,8 @@ function findProbe(haystack) {
   if (haystack.includes(NONCE)) return 'nonce fragment';
   return null;
 }
+
+const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
 
 /*
  * `blame` decides which failure class an exception becomes, and the choice is
@@ -131,6 +193,30 @@ async function waitFor(cdp, sessionId, expression, timeoutMs, describe, context 
   throw new Red(extra.length ? `${describe}\n${extra.join('\n')}` : describe);
 }
 
+const present = (selector) => `Boolean(document.querySelector(${JSON.stringify(selector)}))`;
+
+/*
+ * Everything the checks need to read off the panel, in one round trip so that
+ * no two assertions can disagree about which moment they are describing.
+ *
+ * `hidden` alone would not answer the question the invariants ask. A panel
+ * displayed away in CSS is as gone to a reader as one with the attribute set,
+ * and the recorded capture staying on screen is the thing being proved.
+ */
+const SNAPSHOT = `(() => {
+  const panel = document.querySelector(${JSON.stringify(PANEL)});
+  const visible = (element) => Boolean(element) && !element.hidden && element.offsetParent !== null;
+  const text = (selector) => panel.querySelector(selector)?.textContent?.trim() ?? '';
+  return {
+    decrypted: text(${JSON.stringify(DECRYPTED)}),
+    fallbackNote: text(${JSON.stringify(FALLBACK)}),
+    fields: [...panel.querySelectorAll(${JSON.stringify(META)} + ' dt')].map((dt) => dt.textContent),
+    values: [...panel.querySelectorAll(${JSON.stringify(META)} + ' dd')].map((dd) => dd.textContent),
+    recordedVisible: visible(panel.querySelector(${JSON.stringify(RECORDED)})),
+    claimVisible: visible(panel.querySelector(${JSON.stringify(CLAIM)})),
+  };
+})()`;
+
 // ---------------------------------------------------------------- the harness
 
 /*
@@ -145,9 +231,9 @@ async function waitFor(cdp, sessionId, expression, timeoutMs, describe, context 
  * report nothing because it would never exit.
  */
 async function teardown(held) {
-  if (held.cdp && held.targetId) {
+  for (const targetId of held.targets) {
     try {
-      await held.cdp.send('Target.closeTarget', { targetId: held.targetId });
+      await held.cdp.send('Target.closeTarget', { targetId });
     } catch {}
   }
   if (held.chrome) {
@@ -172,48 +258,33 @@ async function teardown(held) {
   }
 }
 
-async function main() {
-  if (!existsSync(DIST)) {
-    throw new Infra(`no dist/ to serve. Run \`npm run build\` first.`);
-  }
-  if (!existsSync(join(DIST, 'index.html'))) {
-    throw new Infra(`dist/ has no index.html. Run \`npm run build\` first.`);
-  }
-
-  const headers = productionHeaders();
-  const held = { server: null, chrome: null, cdp: null, targetId: null };
-  try {
-    await run(headers, held);
-  } finally {
-    await teardown(held);
-  }
-}
-
-async function run(headers, held) {
-  const { server, origin } = await serve(DIST, headers);
-  held.server = server;
-  const chrome = await launchChrome('demo-smoke-');
-  held.chrome = chrome;
-
-  const version = await fetch(`http://127.0.0.1:${chrome.port}/json/version`).then((r) => r.json());
-  const cdp = await Cdp.connect(version.webSocketDebuggerUrl);
-  held.cdp = cdp;
-
+/**
+ * Load the homepage in a fresh tab, type the probe, press send, and report
+ * everything the browser did.
+ *
+ * `blocked` is the list of URLs Chrome refuses before the page loads, which is
+ * how the second pass makes the demo's chunks never arrive.
+ */
+async function visit(cdp, origin, held, { blocked = [] } = {}) {
   const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
-  held.targetId = targetId;
+  held.targets.push(targetId);
   const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
 
   const requests = [];
+  const scripts = [];
   const cspViolations = [];
   const pageErrors = [];
+  const blockedRequests = [];
   const postDataNeeded = [];
+  const requestedAt = new Map();
   let lastRequestAt = Date.now();
 
-  cdp.on((message) => {
+  const off = cdp.on((message) => {
     if (message.sessionId !== sessionId) return;
     if (message.method === 'Network.requestWillBeSent') {
-      const { request, requestId } = message.params;
+      const { request, requestId, type } = message.params;
       lastRequestAt = Date.now();
+      requestedAt.set(requestId, { url: request.url, at: Date.now(), type });
       requests.push({
         url: request.url,
         method: request.method,
@@ -221,6 +292,18 @@ async function run(headers, held) {
         headers: JSON.stringify(request.headers ?? {}),
       });
       if (request.hasPostData && !request.postData) postDataNeeded.push(requestId);
+    }
+    if (message.method === 'Network.loadingFinished') {
+      const request = requestedAt.get(message.params.requestId);
+      /* `encodedDataLength` is bytes on the wire, which is the number the
+         budget is about — the site serves these compressed in production. */
+      if (request?.type === 'Script') {
+        scripts.push({ ...request, bytes: message.params.encodedDataLength });
+      }
+    }
+    if (message.method === 'Network.loadingFailed') {
+      const request = requestedAt.get(message.params.requestId);
+      if (request) blockedRequests.push({ ...request, reason: message.params.errorText });
     }
     if (message.method === 'Runtime.exceptionThrown') {
       const d = message.params.exceptionDetails;
@@ -243,111 +326,117 @@ async function run(headers, held) {
     }
   });
 
-  await cdp.send('Page.enable', {}, sessionId);
-  await cdp.send('Runtime.enable', {}, sessionId);
-  await cdp.send('Network.enable', {}, sessionId);
-  await cdp.send('Log.enable', {}, sessionId);
-
   /*
-   * Wait out the tail of network activity so a late send is still observed.
+   * Wait out network activity.
    *
-   * The minimum hold is measured from the moment the text appeared, not from
-   * the last request. Without it, a slow decrypt would leave the connection
-   * already quiet for longer than the window and this would return at once —
-   * skipping exactly the interval the check exists to watch.
+   * The minimum hold is measured from the moment waiting started, not from the
+   * last request. Without it, a slow decrypt would leave the connection already
+   * quiet for longer than the window and this would return at once — skipping
+   * exactly the interval the check exists to watch.
    *
    * Returns whether the quiet window was actually observed. A page that keeps
    * talking until the cap expires never gives us one, and the pass message has
    * to say so rather than claim a window it did not get.
    */
-  async function settleEgress() {
+  async function quiet(minQuietMs, capMs) {
     const start = Date.now();
-    const deadline = start + EGRESS_SETTLE_MAX_MS;
+    const deadline = start + capMs;
     for (;;) {
       const now = Date.now();
-      const quiet = Math.min(now - lastRequestAt, now - start);
-      if (quiet >= EGRESS_QUIET_MS) return true;
+      const settled = Math.min(now - lastRequestAt, now - start);
+      if (settled >= minQuietMs) return true;
       if (now >= deadline) return false;
-      await new Promise((r) => setTimeout(r, Math.min(200, EGRESS_QUIET_MS - quiet)));
+      await new Promise((r) => setTimeout(r, Math.min(200, minQuietMs - settled)));
     }
   }
 
-  const loaded = new Promise((resolve, reject) => {
-    const off = cdp.on((m) => {
-      if (m.sessionId === sessionId && m.method === 'Page.loadEventFired') {
-        off();
-        resolve();
-      }
-    });
-    setTimeout(() => {
-      off();
-      reject(new Infra(`the homepage did not fire load within ${LOAD_TIMEOUT_MS} ms`));
-    }, LOAD_TIMEOUT_MS);
-  });
-  await cdp.send('Page.navigate', { url: `${origin}/` }, sessionId);
-  await loaded;
-
-  /* Serving the built site at all is the infrastructure check. If the homepage
-     did not render, nothing below would mean anything. */
-  {
-    const titled = await evaluate(cdp, sessionId, 'document.title');
-    if (!titled) throw new Infra('the homepage rendered no title — the served build looks wrong');
-
-    const panelPresent = await evaluate(
-      cdp,
+  try {
+    for (const domain of ['Page', 'Runtime', 'Network', 'Log']) {
+      await cdp.send(`${domain}.enable`, {}, sessionId);
+    }
+    await cdp.send(
+      'Emulation.setDeviceMetricsOverride',
+      { ...VIEWPORT, deviceScaleFactor: 1, mobile: false },
       sessionId,
-      `Boolean(document.querySelector(${JSON.stringify(PANEL)}))`,
     );
-    if (!panelPresent) {
-      throw new Red(
-        `no live demo island on the homepage: nothing matches ${PANEL}.\n` +
-          `  The site served and rendered correctly (title: ${JSON.stringify(titled)}), so this is\n` +
-          `  the demo being absent rather than the harness failing to reach it.\n` +
-          `  LD2 adds the island; until then this harness is expected to fail here.`,
-      );
+    if (blocked.length) {
+      await cdp.send('Network.setBlockedURLs', { urls: blocked }, sessionId);
     }
 
+    const loaded = new Promise((resolve, reject) => {
+      const stop = cdp.on((m) => {
+        if (m.sessionId === sessionId && m.method === 'Page.loadEventFired') {
+          stop();
+          resolve();
+        }
+      });
+      setTimeout(() => {
+        stop();
+        reject(new Infra(`the homepage did not fire load within ${LOAD_TIMEOUT_MS} ms`));
+      }, LOAD_TIMEOUT_MS);
+    });
+    await cdp.send('Page.navigate', { url: `${origin}/` }, sessionId);
+    await loaded;
+
+    /* Serving the built site at all is the infrastructure check. If the
+       homepage did not render, nothing below would mean anything. */
+    const title = await evaluate(cdp, sessionId, 'document.title');
+    if (!title) throw new Infra('the homepage rendered no title — the served build looks wrong');
+
+    if (!(await evaluate(cdp, sessionId, present(PANEL)))) {
+      throw new Red(
+        `no live demo panel on the homepage: nothing matches ${PANEL}.\n` +
+          `  The site served and rendered correctly (title: ${JSON.stringify(title)}), so this is\n` +
+          `  the demo being absent rather than the harness failing to reach it.`,
+      );
+    }
     for (const [selector, what] of [
       [INPUT, 'a text input for the reader’s sentence'],
       [SEND, 'a control that sends it'],
       [DECRYPTED, 'a pane that shows the decrypted result'],
+      [RECORDED, 'the recorded capture it falls back to'],
     ]) {
-      const present = await evaluate(
-        cdp,
-        sessionId,
-        `Boolean(document.querySelector(${JSON.stringify(selector)}))`,
-      );
-      if (!present) {
-        throw new Red(`the demo island is present but exposes no ${what} (${selector})`);
+      if (!(await evaluate(cdp, sessionId, present(selector)))) {
+        throw new Red(`the demo panel is present but exposes no ${what} (${selector})`);
       }
     }
 
+    /* The demo's own claim must not be on screen before there is anything to
+       claim. It says a round trip "ran in this tab", which is false until one
+       has. */
+    const beforeInteraction = await evaluate(cdp, sessionId, SNAPSHOT);
+
+    await quiet(IDLE_QUIET_MS, IDLE_MAX_MS);
+    const interactedAt = Date.now();
+
     /* Type as a reader would: focus the field, insert text so the demo's own
-       input handlers run, then press its send control. */
-    /* Blamed on the demo for the same reason as the click: the elements were
+       input handlers run, then press its send control. Focus is also the
+       demo's load trigger, which is why it has to happen after the byte
+       accounting boundary rather than during setup.
+
+       Blamed on the demo for the same reason as the click: the elements were
        there a moment ago, so if they are gone now the demo's own script moved
        them, and a demo that re-renders its panel out from under the reader is
        not an infrastructure fault. */
-    await evaluate(
-      cdp,
-      sessionId,
-      `document.querySelector(${JSON.stringify(INPUT)}).focus()`,
-      'demo',
-    );
+    await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(INPUT)}).focus()`, 'demo');
     await cdp.send('Input.insertText', { text: PROBE }, sessionId);
-    await evaluate(
-      cdp,
-      sessionId,
-      `document.querySelector(${JSON.stringify(SEND)}).click()`,
-      'demo',
-    );
+    await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(SEND)}).click()`, 'demo');
 
+    /* Either outcome ends the wait. Which one was supposed to happen is the
+       caller's business: this pass is the same interaction in both passes, and
+       only the blocklist differs. */
     await waitFor(
       cdp,
       sessionId,
-      `document.querySelector(${JSON.stringify(DECRYPTED)})?.textContent?.includes(${JSON.stringify(PROBE)}) === true`,
+      `(() => {
+         const panel = document.querySelector(${JSON.stringify(PANEL)});
+         const decrypted = panel.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? '';
+         const note = panel.querySelector(${JSON.stringify(FALLBACK)})?.textContent ?? '';
+         return decrypted.length > 0 || note.length > 0;
+       })()`,
       DECRYPT_TIMEOUT_MS,
-      `the typed sentence never appeared decrypted in ${DECRYPTED} within ${DECRYPT_TIMEOUT_MS} ms`,
+      `the demo neither decrypted the typed sentence nor reported a failure within ` +
+        `${DECRYPT_TIMEOUT_MS} ms`,
       () => {
         const lines = [];
         if (cspViolations.length) {
@@ -366,7 +455,8 @@ async function run(headers, held) {
       },
     );
 
-    const wentQuiet = await settleEgress();
+    const wentQuiet = await quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS);
+    const dom = await evaluate(cdp, sessionId, SNAPSHOT);
 
     /* Pull bodies the browser did not hand over inline. */
     for (const requestId of postDataNeeded) {
@@ -376,43 +466,293 @@ async function run(headers, held) {
       } catch {}
     }
 
-    const leaks = [];
-    for (const request of requests) {
-      for (const [field, value] of [
-        ['url', request.url],
-        ['body', request.postData],
-        ['headers', request.headers],
-      ]) {
-        const how = findProbe(value);
-        if (how) leaks.push(`${request.method} ${request.url} — ${how} in the ${field}`);
-      }
-    }
-    if (leaks.length) {
-      throw new Red(
-        `the typed sentence left the page in ${leaks.length} request(s):\n  ${leaks.join('\n  ')}`,
-      );
-    }
+    /* A script *requested* before the interaction was requested without one,
+       whenever it happened to finish arriving. */
+    const before = scripts.filter((script) => script.at < interactedAt);
+    const after = scripts.filter((script) => script.at >= interactedAt);
+    return {
+      beforeInteraction,
+      dom,
+      requests,
+      cspViolations,
+      pageErrors,
+      blockedRequests,
+      wentQuiet,
+      before,
+      after,
+      bytesBefore: before.reduce((sum, script) => sum + script.bytes, 0),
+      bytesAfter: after.reduce((sum, script) => sum + script.bytes, 0),
+    };
+  } finally {
+    off();
+  }
+}
 
-    if (cspViolations.length) {
-      throw new Red(
-        `the demo ran but the page reported ${cspViolations.length} CSP violation(s):\n  ` +
-          cspViolations.join('\n  '),
+// ----------------------------------------------------------------- the verdict
+
+/*
+ * What the metadata pane must print, computed rather than counted.
+ *
+ * A count is the wrong assertion, and this harness shipped with one. Ten rows
+ * of the right names pass `>= 10` whether the panel iterated the envelope or
+ * carried a list someone typed — which is the drift the recorded panel already
+ * suffered, and the thing invariant 4 exists to stop. Adversarial review proved
+ * the hole by hand-typing the current ten field names and watching the run stay
+ * green.
+ *
+ * So the expectation is derived the same way the panel's rows are supposed to
+ * be: run the real driver here in Node, against the same installed package the
+ * browser loads, and take the keys of the envelope it produces. Subtract the
+ * fields the panel declares it holds back, read out of the panel source rather
+ * than retyped here, and what remains is the exact set the pane must show —
+ * no more, no less.
+ *
+ * That equality does not make a hand-typed list fail *today*: a list that
+ * happens to be correct right now prints the correct names. What it does is
+ * turn the next `Envelope` change into a red run instead of a silent
+ * divergence, which is the failure this guard is for. The list has to be caught
+ * at the source, and `tests/demo-panel.test.mjs` is where that happens.
+ */
+async function expectedFields(envelopeFields) {
+  const panelSource = await readFile(
+    new URL('../src/components/demo/LiveCarrierPanel.astro', import.meta.url),
+    'utf8',
+  );
+  const declared = panelSource.match(/HELD_BACK = new Set\(\[([^\]]*)\]\)/s)?.[1];
+  if (declared === undefined) {
+    throw new Infra(
+      'could not read HELD_BACK out of LiveCarrierPanel.astro, so this run cannot tell a ' +
+        'deliberately withheld field from a missing one',
+    );
+  }
+  const heldBack = new Set([...declared.matchAll(/'([^']+)'/g)].map((match) => match[1]));
+
+  let envelope;
+  try {
+    const session = await startDemoSession();
+    ({ envelope } = await session.send('probe for the expected field set'));
+  } catch (cause) {
+    throw new Infra(`the driver could not produce an envelope to expect: ${cause}`);
+  }
+
+  const expected = new Set(Object.keys(envelope).filter((field) => !heldBack.has(field)));
+  for (const field of heldBack) {
+    if (!envelopeFields.has(field)) {
+      throw new Infra(
+        `the panel withholds "${field}", which the installed SDK does not declare on Envelope — ` +
+          `the exclusion is stale and this run would expect the wrong set`,
       );
     }
+  }
+  if (expected.size < MIN_DERIVED_FIELDS) {
+    throw new Infra(
+      `a live envelope yielded only ${expected.size} printable field(s) ` +
+        `(${[...expected].join(', ') || 'none'}), fewer than the ${MIN_DERIVED_FIELDS} this SDK ` +
+        `should produce — the expectation has collapsed, so checking against it proves nothing`,
+    );
+  }
+  return expected;
+}
+
+function checkRoundTrip(pass, envelopeFields, expected) {
+  if (pass.beforeInteraction.claimVisible) {
+    throw new Red(
+      'the page claimed "that ran in this tab" before anything had run in this tab',
+    );
+  }
+
+  if (pass.dom.fallbackNote) {
+    throw new Red(`the demo fell back to the recording: ${pass.dom.fallbackNote}`);
+  }
+  if (!pass.dom.decrypted.includes(PROBE)) {
+    throw new Red(
+      `the typed sentence did not come back:\n  sent:      ${PROBE}\n` +
+        `  decrypted: ${pass.dom.decrypted || '(nothing)'}`,
+    );
+  }
+  if (pass.dom.recordedVisible) {
+    throw new Red('the live demo ran and the recorded capture is still on screen beside it');
+  }
+  if (!pass.dom.claimVisible) {
+    throw new Red('the demo round-tripped a sentence and never showed the claim about it');
+  }
+
+  const leaks = [];
+  for (const request of pass.requests) {
+    for (const [field, value] of [
+      ['url', request.url],
+      ['body', request.postData],
+      ['headers', request.headers],
+    ]) {
+      const how = findProbe(value);
+      if (how) leaks.push(`${request.method} ${request.url} — ${how} in the ${field}`);
+    }
+  }
+  if (leaks.length) {
+    throw new Red(
+      `the typed sentence left the page in ${leaks.length} request(s):\n  ${leaks.join('\n  ')}`,
+    );
+  }
+
+  if (pass.cspViolations.length) {
+    throw new Red(
+      `the demo ran but the page reported ${pass.cspViolations.length} CSP violation(s):\n  ` +
+        pass.cspViolations.join('\n  '),
+    );
+  }
+  if (pass.pageErrors.length) {
+    throw new Red(`the demo ran and the page threw:\n  ${pass.pageErrors.join('\n  ')}`);
+  }
+
+  /* Invariant 4. The rows have to be the envelope's own keys, so every name on
+     screen must be a field the installed package declares — a hand-written list
+     survives the SDK renaming a field, and this is what notices. */
+  const invented = pass.dom.fields.filter((field) => !envelopeFields.has(field));
+  if (invented.length) {
+    throw new Red(
+      `the metadata pane printed ${invented.join(', ')}, which the installed SDK does not ` +
+        `declare on Envelope — those rows cannot have come from the live object`,
+    );
+  }
+
+  /* And it has to be *every* one of them. `expected` is the key set of an
+     envelope this process built from the same package, less what the panel says
+     it withholds, so a missing row is a field the pane stopped showing and an
+     extra row is one it shows without the envelope having it. Either is the
+     pane and the object disagreeing, which is the whole of invariant 4. */
+  const printed = new Set(pass.dom.fields);
+  const missing = [...expected].filter((field) => !printed.has(field));
+  const extra = [...printed].filter((field) => !expected.has(field));
+  if (missing.length || extra.length) {
+    throw new Red(
+      `the metadata pane and the live envelope disagree about which fields exist:\n` +
+        (missing.length ? `  never printed: ${missing.join(', ')}\n` : '') +
+        (extra.length ? `  printed anyway: ${extra.join(', ')}\n` : '') +
+        `  expected exactly: ${[...expected].join(', ')}\n` +
+        `  the pane showed:  ${pass.dom.fields.join(', ') || '(nothing)'}\n` +
+        `A pane built by iterating the envelope cannot disagree with it. This one did, so it ` +
+        `is not being built that way.`,
+    );
+  }
+  if (pass.dom.fields.length !== printed.size) {
+    throw new Red(
+      `the metadata pane printed the same field twice: ${pass.dom.fields.join(', ')}`,
+    );
+  }
+  const empty = pass.dom.fields.filter((_, index) => !pass.dom.values[index]?.trim());
+  if (empty.length) {
+    throw new Red(`the metadata pane printed ${empty.join(', ')} with no value beside it`);
+  }
+
+  /* Invariant 7. Nothing SDK-shaped before the reader asked. */
+  if (pass.bytesBefore > PRE_INTERACTION_CEILING) {
+    throw new Red(
+      `${kb(pass.bytesBefore)} of JavaScript arrived before the first interaction, over the ` +
+        `${kb(PRE_INTERACTION_CEILING)} tripwire — something on the demo's static path reaches ` +
+        `the SDK:\n  ${pass.before.map((s) => `${s.url} (${s.bytes} B)`).join('\n  ')}`,
+    );
+  }
+  if (pass.after.length === 0) {
+    throw new Red(
+      'the interaction fetched no chunk at all — the SDK was already on the page before the ' +
+        'reader touched it, or the demo is not the code under test',
+    );
+  }
+}
+
+function checkFallback(pass) {
+  if (pass.dom.decrypted) {
+    throw new Red(
+      `every chunk the demo asked for was blocked and it printed "${pass.dom.decrypted}" anyway`,
+    );
+  }
+  if (!pass.dom.recordedVisible) {
+    throw new Red(
+      'the chunk never came and the recorded capture was taken off screen anyway — ' +
+        'invariant 6 requires it to stay as the load-failure state',
+    );
+  }
+  if (!pass.dom.fallbackNote) {
+    throw new Red('the demo could not load and the page had nothing to say about it');
+  }
+  if (pass.dom.claimVisible) {
+    throw new Red('the demo never ran and the page still claims something ran in this tab');
+  }
+  if (pass.pageErrors.length) {
+    throw new Red(
+      `a blocked chunk should be handled, not thrown:\n  ${pass.pageErrors.join('\n  ')}`,
+    );
+  }
+}
+
+// --------------------------------------------------------------------- the run
+
+async function main() {
+  if (!existsSync(DIST)) {
+    throw new Infra(`no dist/ to serve. Run \`npm run build\` first.`);
+  }
+  if (!existsSync(join(DIST, 'index.html'))) {
+    throw new Infra(`dist/ has no index.html. Run \`npm run build\` first.`);
+  }
+
+  const surface = await readSdkSurface();
+  const envelopeFields = surface?.members.get('Envelope');
+  if (!envelopeFields) {
+    throw new Infra(
+      'could not read an Envelope interface out of the installed SDK, so the metadata pane ' +
+        'has nothing to be checked against',
+    );
+  }
+
+  const expected = await expectedFields(envelopeFields);
+
+  const held = { server: null, chrome: null, cdp: null, targets: [] };
+  try {
+    const { server, origin } = await serve(DIST, productionHeaders());
+    held.server = server;
+    const chrome = await launchChrome('demo-smoke-');
+    held.chrome = chrome;
+
+    const { webSocketDebuggerUrl } = await fetch(
+      `http://127.0.0.1:${chrome.port}/json/version`,
+    ).then((response) => response.json());
+    const cdp = await Cdp.connect(webSocketDebuggerUrl);
+    held.cdp = cdp;
+
+    const live = await visit(cdp, origin, held);
+    checkRoundTrip(live, envelopeFields, expected);
+
+    /* Block every chunk the interaction asked for, so the dynamic import cannot
+       resolve however Vite chose to split it. Taking only the first request
+       would depend on whether a preload or the chunk itself won the race. */
+    const starved = await visit(cdp, origin, held, {
+      blocked: live.after.map((script) => script.url),
+    });
+    checkFallback(starved);
 
     /* Say which of the two things happened. Claiming a quiet window we never
        got would overstate the egress evidence on exactly the chatty pages
        where it is weakest. */
-    const watched = wentQuiet
+    const watched = live.wentQuiet
       ? `including a ${EGRESS_QUIET_MS} ms quiet window after it decrypted`
       : `the page was still making requests when the ` +
         `${EGRESS_SETTLE_MAX_MS / 1000} s settle cap expired`;
 
     console.log(
-      `demo smoke: PASS — round-tripped a typed sentence in the browser, ` +
-        `${requests.length} request(s) observed (${watched}), none carrying it, ` +
-        `no CSP violation.`,
+      `demo smoke: PASS — round-tripped a typed sentence on the homepage under the shipped CSP, ` +
+        `against ${surface.origin} @${surface.version}.\n` +
+        `  egress:         ${live.requests.length} request(s) observed (${watched}), none carrying it\n` +
+        `  metadata:       ${live.dom.fields.length} fields, exactly the set an envelope built ` +
+        `in this process yields less the withheld ones (${live.dom.fields.join(', ')})\n` +
+        `  before a touch: ${kb(live.bytesBefore)} of script over ${live.before.length} file(s), ` +
+        `under the ${kb(PRE_INTERACTION_CEILING)} tripwire (uncompressed — this server does ` +
+        `not gzip)\n` +
+        `  the touch drew: ${kb(live.bytesAfter)} over ${live.after.length} chunk(s)\n` +
+        `  those blocked:  the recorded capture stayed on screen ` +
+        `("${starved.dom.fallbackNote}")`,
     );
+  } finally {
+    await teardown(held);
   }
 }
 

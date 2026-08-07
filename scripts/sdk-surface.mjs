@@ -83,12 +83,38 @@ function collectVocabulary(sourceFile, into) {
   ts.forEachChild(sourceFile, visit);
 }
 
+/*
+ * Property names grouped by the interface that declares them.
+ *
+ * The flat vocabulary answers "is this a real name anywhere in the SDK", which
+ * is the right question for prose. The live demo asks a narrower one: it prints
+ * the fields of an envelope it built at runtime, and a test of that has to know
+ * which names belong to `Envelope` specifically. Declarations of the same name
+ * in several files union together, which is also how TypeScript reads them.
+ */
+function collectMembers(sourceFile, into) {
+  const visit = (node) => {
+    if (ts.isInterfaceDeclaration(node)) {
+      const names = into.get(node.name.text) ?? new Set();
+      for (const member of node.members) {
+        if (!ts.isPropertySignature(member) && !ts.isMethodSignature(member)) continue;
+        const name = member.name;
+        if (name && (ts.isIdentifier(name) || ts.isStringLiteral(name))) names.add(name.text);
+      }
+      into.set(node.name.text, names);
+    }
+    ts.forEachChild(node, visit);
+  };
+  ts.forEachChild(sourceFile, visit);
+}
+
 /**
  * @returns {Promise<{
  *   origin: string,
  *   version: string,
  *   subpaths: Map<string, Set<string>>,
  *   vocabulary: Set<string>,
+ *   members: Map<string, Set<string>>,
  * } | null>} `null` when no copy of the SDK can be found at all.
  */
 export async function readSdkSurface() {
@@ -130,13 +156,15 @@ export async function readSdkSurface() {
   /* Members and literals from every file the entries reach, not just the
    * entries, so a property declared two files deep still counts as real. */
   const vocabulary = new Set();
+  const members = new Map();
   for (const source of program.getSourceFiles()) {
     if (!source.fileName.startsWith(root)) continue;
     collectVocabulary(source, vocabulary);
+    collectMembers(source, members);
   }
   for (const names of subpaths.values()) for (const name of names) vocabulary.add(name);
 
-  return { origin, version: manifest.version, subpaths, vocabulary };
+  return { origin, version: manifest.version, subpaths, vocabulary, members };
 }
 
 /*

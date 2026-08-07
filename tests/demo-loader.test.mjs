@@ -11,8 +11,9 @@
  *
  * These tests inject the import function. The specifier itself is not a claim a
  * node test can check — there is no chunk in node — so it is proven in a real
- * browser by `scripts/demo-driver-check.mjs`, which blocks the chunk over the
- * wire and watches the same state machine land on `failed`.
+ * browser by `scripts/demo-smoke.mjs`, which blocks the chunk over the wire and
+ * watches the same state machine land on `failed` with the recorded capture
+ * still on the homepage.
  */
 
 import assert from 'node:assert/strict';

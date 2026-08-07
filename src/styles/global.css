@@ -1490,6 +1490,85 @@ a:hover {
   justify-content: space-between;
 }
 
+/*
+ * The live panel wears the recorded panel's clothes.
+ *
+ * It reuses `.carrier-panel`, `.carrier-pane` and `.carrier-meta` rather than
+ * restating them, because the two are the same object in two states and any
+ * divergence would read as the live one being a different, lesser thing. What
+ * is added here is only what the recording has no need of: a field to type in,
+ * a control to press, and the line that says nothing left the page.
+ */
+.live-carrier {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-3);
+}
+
+.live-carrier-compose {
+  margin-top: var(--oe-space-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--oe-space-2);
+  align-items: center;
+}
+
+/*
+ * The field takes the width the recorded plaintext took, so the swap from
+ * recording to live moves nothing sideways. `min-width` rather than a fixed
+ * basis: at 390 CSS px the button wraps underneath instead of squeezing the
+ * field down to a few characters.
+ */
+.live-carrier-input {
+  flex: 1 1 22ch;
+  min-width: 0;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--oe-foreground);
+  background: var(--oe-editor);
+  border: 1px solid var(--oe-border-control);
+  border-radius: var(--oe-radius-sm);
+  padding: var(--oe-space-2) var(--oe-space-3);
+}
+
+.live-carrier-input::placeholder {
+  color: var(--oe-muted);
+}
+
+.live-carrier-send {
+  flex: 0 0 auto;
+}
+
+.live-carrier-send:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* The claim sits under the panel, in the caption's voice, because it is a
+   statement about the panel rather than a line of the argument around it. */
+.live-carrier-claim,
+.live-carrier-fallback-note {
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+}
+
+.live-carrier-fallback-note:empty {
+  display: none;
+}
+
+/* Sits above the recorded panel for a reader with scripts off, where the
+   fallback note cannot appear — nothing failed for them, so nothing writes it. */
+.live-carrier-noscript {
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+  margin-block-end: var(--oe-space-3);
+}
+
 /* ------------------------------------------------------------ diagrams --- */
 
 /*
