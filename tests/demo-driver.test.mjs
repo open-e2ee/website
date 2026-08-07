@@ -343,6 +343,26 @@ test('rejects an empty send rather than posting an empty row', async () => {
   });
 });
 
+test('says so when the recipient has no device, instead of a TypeError', async () => {
+  /* `recipientDevices` is `readonly` in the type and a live array at runtime,
+     so a scenario holding it can empty it — and the emptied case used to be
+     the one path where every wait was satisfied and nothing had arrived.
+     `Promise.all([])` resolves at once, both deadlines passed, and the failure
+     the reader saw was `Cannot read properties of undefined (reading
+     'message')` from inside the driver, several stages after the cause. */
+  await withSession(async (session) => {
+    session.recipientDevices.length = 0;
+    await assert.rejects(
+      () => failsIfSlow(session.send(PROBE), 5000, 'the send hung rather than refusing'),
+      (error) => {
+        assert.ok(!(error instanceof TypeError), `the driver threw a TypeError: ${error.message}`);
+        assert.match(error.message, /no device linked/);
+        return true;
+      },
+    );
+  });
+});
+
 /*
  * The three below are about a relay that does not deliver inside `send()`.
  *

@@ -366,6 +366,24 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
        linked while this one is in flight was not a recipient of it, and
        waiting for it would wait forever. */
     const waiting = [...recipientDevices];
+    /*
+     * No recipient device is not a slow round trip, it is a scenario that
+     * cannot have one.
+     *
+     * `Promise.all([])` resolves at once, so without this the send goes out,
+     * both deadlines pass instantly, and `deliveries[0].message` throws
+     * `Cannot read properties of undefined (reading 'message')` — a
+     * `TypeError` about this file, several stages after the setup that caused
+     * it, in a demo whose subject is the round trip. Say it at the send.
+     */
+    if (waiting.length === 0) {
+      onEnvelope = null;
+      throw new Error(
+        `${recipient} has no device linked, so there is nothing to decrypt this ` +
+          `send. Link a device before sending: a scenario that sends to an ` +
+          `empty recipient has no round trip to show.`,
+      );
+    }
     const deliveriesArrived = waiting.map(
       (device) =>
         new Promise<{ deviceId: number; message: DecryptedEnvelope }>((resolve) => {
