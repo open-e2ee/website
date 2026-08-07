@@ -150,6 +150,7 @@ const TWO_TAB_INPUT = '[data-two-tab-input]';
 const TWO_TAB_SEND = '[data-two-tab-send]';
 const TWO_TAB_LINE = '[data-two-tab-line]';
 const TWO_TAB_ROW = '[data-two-tab-row]';
+const TWO_TAB_DISCONNECT = '[data-two-tab-disconnect]';
 
 /* The beacon `/demo` is allowed to send, in full. Same reasoning as
    `DEMO_RUN_BODY`: the body is fixed before the browser starts, so a dimension
@@ -965,6 +966,7 @@ const TWO_TAB_SNAPSHOT = `(() => {
     lines: [...(output?.querySelectorAll(${JSON.stringify(TWO_TAB_LINE)}) ?? [])].map(
       (line) => line.textContent.replace(/\\s+/g, ' ').trim(),
     ),
+    stopped: output ? 'twoTabStopped' in output.dataset : false,
     rows,
   };
 })()`;
@@ -979,6 +981,15 @@ const TWO_TAB_SETTLED = `(() => {
 const sawLine = (text) =>
   `[...document.querySelectorAll(${JSON.stringify(TWO_TAB_LINE)})].some((line) =>
      line.textContent.includes(${JSON.stringify(text)}))`;
+
+/** True once the disconnect press has settled, whichever way it went. */
+const TWO_TAB_STOP_SETTLED = `(() => {
+  const output = document.querySelector(${JSON.stringify(TWO_TAB_OUTPUT)});
+  const status = document.querySelector(${JSON.stringify(TWO_TAB_STATUS)});
+  if (!output) return false;
+  return 'twoTabStopped' in output.dataset ||
+    Boolean(status && status.textContent.includes('could not close cleanly'));
+})()`;
 
 /**
  * Two tabs of `/demo`, one conversation, driven the way a reader would.
@@ -1110,9 +1121,62 @@ async function visitTwoTabs(cdp, origin, held) {
 
     const before = first.scripts.filter((script) => script.at < interactedAt);
     const after = first.scripts.filter((script) => script.at >= interactedAt);
+    const ended = [await read(first), await read(second)];
+
+    /*
+     * Both tabs leave, and both have to manage it.
+     *
+     * This is the only place anything on this site calls `stop()`, and it is
+     * the one call that catches a relay whose `subscribe()` or
+     * `subscribeRetryRequests()` returned a promise instead of a function:
+     * every send, every delivery and every decryption works, and teardown
+     * throws `this.relayUnsubscribe is not a function`. A round trip on its
+     * own would have passed the whole way through that.
+     *
+     * The guest goes first. The host holds the relay, so stopping it first
+     * would strand the other tab and the failure would be about ordering here
+     * rather than about the page.
+     */
+    const stopped = [];
+    for (const [tab, what] of [
+      [second, 'the second tab'],
+      [first, 'the first tab'],
+    ]) {
+      if (!(await evaluate(cdp, tab.sessionId, present(TWO_TAB_DISCONNECT)))) {
+        throw new Red(
+          `${what} offers no way to disconnect (${TWO_TAB_DISCONNECT}), so nothing on this ` +
+            `site ever calls stop() and a teardown fault would ship unseen`,
+        );
+      }
+      await evaluate(
+        cdp,
+        tab.sessionId,
+        `document.querySelector(${JSON.stringify(TWO_TAB_DISCONNECT)}).click()`,
+        'demo',
+      );
+      await waitFor(
+        cdp,
+        tab.sessionId,
+        TWO_TAB_STOP_SETTLED,
+        SCENARIO_TIMEOUT_MS,
+        `${what} neither finished disconnecting nor reported a failure within ` +
+          `${SCENARIO_TIMEOUT_MS} ms`,
+        complaints(tab),
+      );
+      const state = await read(tab);
+      if (!state.stopped) {
+        throw new Red(
+          `${what} could not shut its client down.\n` +
+            `  Its own status line reads: ${JSON.stringify(state.status)}`,
+        );
+      }
+      stopped.push(state);
+    }
+
     return {
       connected,
-      ended: [await read(first), await read(second)],
+      ended,
+      stopped,
       requests: [...first.requests, ...second.requests],
       cspViolations: [...first.cspViolations, ...second.cspViolations],
       pageErrors: [...first.pageErrors, ...second.pageErrors],
@@ -2490,6 +2554,30 @@ function checkTwoTabs(pass, envelopeFields) {
     );
   }
 
+  /*
+   * Both tabs shut their clients down, which is the one thing a round trip
+   * cannot prove.
+   *
+   * `stop()` is where a subscription that handed back a promise instead of an
+   * unsubscribe function finally says so, and nothing else on this site calls
+   * it. A page whose teardown throws sends, delivers and decrypts exactly as
+   * this check has already watched it do.
+   */
+  if (pass.stopped.length !== 2) {
+    throw new Red(
+      `only ${pass.stopped.length} of the two tabs was driven through stop(), so teardown is ` +
+        `not covered and the harness is claiming more than it ran`,
+    );
+  }
+  for (const [index, state] of pass.stopped.entries()) {
+    const what = index === 0 ? 'the second tab' : 'the first tab';
+    if (!state.stopped) {
+      throw new Red(
+        `${what} did not finish stopping.\n  Its status line reads: ${JSON.stringify(state.status)}`,
+      );
+    }
+  }
+
   return { beacons };
 }
 
@@ -3141,6 +3229,9 @@ async function main() {
         `percent-encoded or base64 form\n` +
         `                  measured 0 beacon(s): the section is not a scenario and registers no ` +
         `event\n` +
+        `                  then both tabs were disconnected, guest first, and each shut its ` +
+        `client down without\n` +
+        `                  complaint — the only stop() this site performs\n` +
         `                  before a touch ${kb(twoTabs.bytesBefore)} over ` +
         `${twoTabs.before.length} file(s); connecting drew ${kb(twoTabs.bytesAfter)} over ` +
         `${twoTabs.after.length} chunk(s)`,

@@ -134,7 +134,22 @@ export function mountTwoTab(
   const submit = el('button', 'Send', 'oe-button');
   submit.dataset.twoTabSend = '';
   submit.type = 'submit';
-  form.append(label, input, submit);
+  /*
+   * Leaving, as something the reader does rather than something that happens.
+   *
+   * A tab that is closed takes its device and its subscriptions with it and
+   * nobody finds out whether putting them away worked. That matters more here
+   * than it reads: both `subscribe()` and `subscribeRetryRequests()` hand back
+   * an unsubscribe function synchronously, and a relay that returned a promise
+   * from either would send, deliver and decrypt perfectly and then fail in
+   * `stop()` — the one call no scenario on this page makes. So the tab has a
+   * way to leave, the smoke harness presses it in both tabs, and a teardown
+   * that throws says so on the status line.
+   */
+  const leave = el('button', 'Disconnect this tab', 'oe-button oe-button-secondary');
+  leave.dataset.twoTabDisconnect = '';
+  leave.type = 'button';
+  form.append(label, input, submit, leave);
 
   const transcript = el('ul', undefined, 'scenario-device-messages two-tab-transcript');
   const mine = el('div', undefined, 'scenario-device');
@@ -191,6 +206,31 @@ export function mountTwoTab(
         input.disabled = false;
         submit.disabled = false;
         input.focus();
+      });
+  });
+
+  leave.addEventListener('click', () => {
+    leave.disabled = true;
+    input.disabled = true;
+    submit.disabled = true;
+    setStatus('Closing this tab’s device and letting go of the relay…');
+    void session
+      .stop()
+      .then(() => {
+        root.dataset.twoTabStopped = '';
+        setStatus(
+          session.role === 'host'
+            ? `${session.me} has left and the relay went with it. Reload both tabs to start again.`
+            : `${session.me} has left. The other tab is still holding the relay.`,
+        );
+      })
+      .catch((error: unknown) => {
+        /* Loud, and not only on the console. A teardown that throws is the
+           failure this control exists to expose, so it goes where the reader
+           and the harness both read. */
+        setStatus(
+          `This tab could not close cleanly: ${error instanceof Error ? error.message : String(error)}`,
+        );
       });
   });
 }
