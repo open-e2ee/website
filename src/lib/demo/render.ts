@@ -356,7 +356,8 @@ export function renderRunOutOfPreKeys(
       `error — ${atInfo}. What it logged instead was ` +
       `${count(result.whileEmpty.breadcrumbs)} breadcrumbs, of which ` +
       `${count(result.whileEmpty.namingFallback)} name the last-resort fallback outright. The ` +
-      `SDK is not keeping this from you; it is saying it somewhere no application is listening. ` +
+      `SDK is not keeping this from you; it is saying it in a trace channel, never at a level ` +
+      `that asks you to act. ` +
       `And it is not an error to run out — the session establishes, the message arrives, and ` +
       `the only thing that changed is that the first messages of this conversation rest on a ` +
       `key reused across every sender who arrives while the stash is empty.`;
