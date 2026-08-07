@@ -195,13 +195,13 @@ function refuse(method: string): (...args: unknown[]) => never {
 /**
  * Method names on the full interface that this relay answers by refusing.
  *
- * The eight provisioning methods are here for the same reason as the rest,
- * although no two-tab session can reach them: the demo links no second device.
- * They were missing from the first draft of this list, which made the header's
- * "everything else throws its own name" false — calling one gave
+ * The eight `IProvisioningService` methods are here for the same reason as the
+ * rest, although no two-tab session can reach them: the demo links no second
+ * device. They were missing from the first draft of this list, which made the
+ * header's "everything else throws its own name" false — calling one gave
  * `relay.createProvisioningSession is not a function`, an error about
- * JavaScript rather than about this demo. `UncoveredRelayMethod` below now
- * fails the build on that whole class rather than leaving it to be noticed.
+ * JavaScript rather than about this demo. The two guards below fail the build
+ * on that whole class rather than leaving it to be noticed.
  */
 const REFUSED = [
   'createProvisioningSession',
@@ -233,34 +233,53 @@ const REFUSED = [
 ] as const;
 
 /**
- * Every method of the interface is either carried or refused. Nothing is
- * absent.
+ * On the interface, and deliberately not provided.
  *
- * This is the guard behind the counts in the header, and it is written as an
- * `Exclude` rather than an annotation because an annotation is the weaker
- * shape: `readonly (keyof ISignalProtocolRelayServer)[]` on the arrays above
- * would accept a list that has *lost* a name as readily as one that has all of
- * them. `UncoveredRelayMethod` is the set of methods neither list mentions, and
- * the assignment below fails the build naming them — which is what happens when
- * the SDK adds one.
- *
- * `groupServer` is the interface's one property rather than a method, and
- * `subscribe`/`subscribeRetryRequests` are registrations that this relay
- * implements directly on both roles rather than through `CARRIED_CALLS`.
+ * `groupServer` is a `readonly` **property**, not a method — the only one on
+ * the interface. `refuse('groupServer')` would satisfy the partition below and
+ * still be wrong: it would install a throwing function where the type declares
+ * an optional object. The two-tab demo has no group server, the property is
+ * optional, and `undefined` is a legal value of the declared type. So it is
+ * absent, and this list is where that decision is recorded rather than
+ * inferred from a gap.
  */
-type UncoveredRelayMethod = Exclude<
-  keyof ISignalProtocolRelayServer,
+const OMITTED = ['groupServer'] as const;
+
+/**
+ * Every member of the interface is carried, refused, or deliberately omitted.
+ *
+ * Two guards, because one direction is not enough. `Exclude` catches a member
+ * the SDK **adds** and nobody covers. The `satisfies` catches the reverse — a
+ * name kept in a list after the SDK has **removed** it, which otherwise sits
+ * there reading like coverage for a method that no longer exists.
+ *
+ * Both are written this way rather than as annotations because an annotation is
+ * the weaker shape: `readonly (keyof ISignalProtocolRelayServer)[]` on the
+ * arrays above accepts a list that has *lost* a name as readily as a complete
+ * one. That is the guard LD7 found itself holding.
+ */
+type RelayMember = keyof ISignalProtocolRelayServer;
+
+type CoveredRelayMember =
   | CarriedCall
-  | (typeof REFUSED)[number]
-  | 'groupServer'
   | 'subscribe'
   | 'subscribeRetryRequests'
->;
+  | (typeof REFUSED)[number]
+  | (typeof OMITTED)[number];
 
-const _everyRelayMethodIsCarriedOrRefused: [UncoveredRelayMethod] extends [never]
+const _everyRelayMemberIsCovered: [Exclude<RelayMember, CoveredRelayMember>] extends [never]
   ? true
-  : ['these relay methods are neither carried nor refused', UncoveredRelayMethod] = true;
-void _everyRelayMethodIsCarriedOrRefused;
+  : ['relay members in neither CARRIED, REFUSED nor OMITTED:', Exclude<RelayMember, CoveredRelayMember>] = true;
+void _everyRelayMemberIsCovered;
+
+const _noListNamesAMemberTheSdkDropped = [
+  ...CARRIED_CALLS,
+  'subscribe',
+  'subscribeRetryRequests',
+  ...REFUSED,
+  ...OMITTED,
+] satisfies readonly RelayMember[];
+void _noListNamesAMemberTheSdkDropped;
 
 let counter = 0;
 const nextId = (prefix: string) => `${prefix}-${++counter}-${Math.random().toString(36).slice(2, 8)}`;
@@ -482,10 +501,20 @@ export async function broadcastRelay(options: BroadcastRelayOptions = {}): Promi
     /*
      * The one cast, and why it is a cast rather than an implementation.
      *
-     * `ISignalProtocolRelayServer` declares forty-one methods; a session
-     * reaches the fifteen above. Writing the other twenty-six to satisfy the
-     * compiler would be twenty-six places for a wrong answer to hide, and the
-     * compiler cannot tell a correct implementation from a plausible one. So
+     * The cast stays, and it is not the thing enforcing the contract. `relay`
+     * is a `Record<string, unknown>` built from dynamically-keyed spreads, so
+     * a single `as` has nothing to check against — it fails ts(2352) — and
+     * restructuring the builder to earn a structural check would trade a
+     * guard that names the missing member for one that reports a shape
+     * mismatch. `CoveredRelayMember` above is the guard: **the two type-level
+     * checks police the names, this cast forgives the shapes, and `OMITTED` is
+     * where a shape decision gets written down.**
+     *
+     * As for why the shapes are forgiven at all: the interface has 42 members
+     * and this relay provides the 15 a two-tab session needs. Writing the
+     * other 26 to satisfy the compiler would be 26 places for a wrong answer
+     * to hide, and the compiler cannot tell a correct implementation from a
+     * plausible one. So
      * they are present and they throw their own names, which is the honest
      * shape and the one that reports a change in the SDK instead of absorbing
      * it. The type says what the SDK requires; `refuse()` says what this is.
