@@ -148,8 +148,62 @@ function textOf(html) {
     .replace(/\s+/g, ' ');
 }
 
+/*
+ * The text a built script can put on a page, near enough for these patterns.
+ *
+ * Escapes are decoded and whitespace collapsed for the same reason `textOf`
+ * collapses it: a sentence the bundler split across an escape or a newline is
+ * still one sentence by the time a reader has it.
+ */
+function scriptText(js) {
+  return js
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/\\[nrt]/g, ' ')
+    .replace(/\\(["'`\\])/g, '$1')
+    .replace(/\s+/g, ' ');
+}
+
 const files = await filesWith(DIST, '.html');
 const problems = [];
+
+/*
+ * Everything a reader can be shown, which is not the same as everything in the
+ * HTML.
+ *
+ * `/demo` writes its prose at runtime: every sentence `src/lib/demo/render.ts`
+ * produces ships as a string inside `dist/_astro/render.*.js` and reaches the
+ * page only once the scenario has run. So the scans below, run over `.html`
+ * alone, could not see the largest body of copy on the site — and `textOf`
+ * strips `<script>` before matching, so they could not see inline script text
+ * either. ld0-verify demonstrated the gap rather than argued it: two of this
+ * file's own TERMINOLOGY patterns, planted in the shipped quotation paragraph,
+ * built and passed this audit.
+ *
+ * So the prose scans take the built scripts too. Scanning them whole, rather
+ * than picking string literals out of them, is deliberate: a literal extractor
+ * that loses sync on minified output fails by going quiet, and a checker that
+ * goes quiet is the thing being fixed here. The cost is the reverse risk — a
+ * banned phrase could match a minified identifier and fail a build over text no
+ * reader sees. Measured rather than assumed: across all 54 built scripts,
+ * 2.05 MB including the whole SDK bundle and its crypto dependencies, these
+ * patterns match nothing today.
+ *
+ * Two limits worth knowing. A phrase the bundler split across a concatenation
+ * or a template hole (`"…the Signal " + name`) is invisible to any static scan
+ * of the output, here and in the HTML pass alike. And AUDIT/FIPS want their
+ * qualifier on the same *page*, which does not map onto a chunk: a scenario
+ * that ever needs to say "audited" has to carry "not yet audited" in the same
+ * chunk, which is where the sentence belongs anyway.
+ */
+const scripts = await filesWith(DIST, '.js');
+const prose = [
+  ...(await Promise.all(
+    files.map(async (file) => [relative(DIST, file), textOf(await readFile(file, 'utf8'))]),
+  )),
+  ...(await Promise.all(
+    scripts.map(async (file) => [relative(DIST, file), scriptText(await readFile(file, 'utf8'))]),
+  )),
+];
 
 /* Every href a page can reach, so a typo in a nav link fails the build. */
 const pages = new Set();
@@ -158,11 +212,7 @@ for (const file of files) {
   pages.add(rel.endsWith('/') && rel !== '/' ? rel.slice(0, -1) : rel);
 }
 
-for (const file of files) {
-  const rel = relative(DIST, file);
-  const html = await readFile(file, 'utf8');
-  const text = textOf(html);
-
+for (const [rel, text] of prose) {
   for (const pattern of BANNED) {
     const hit = text.match(pattern);
     if (hit) problems.push(`${rel}: banned claim ${pattern} — "${hit[0]}"`);
@@ -180,6 +230,12 @@ for (const file of files) {
   if (FIPS_MENTION.test(text.replace(FIPS_PUBLICATION, ' ')) && !FIPS_NEGATION.test(text)) {
     problems.push(`${rel}: mentions FIPS without stating that the SDK is not FIPS 140-validated`);
   }
+}
+
+/* Links are a property of the markup, so this pass stays on the pages. */
+for (const file of files) {
+  const rel = relative(DIST, file);
+  const html = await readFile(file, 'utf8');
 
   for (const [, href] of html.matchAll(/href="([^"]+)"/g)) {
     if (!href.startsWith('/') || href.startsWith('//')) continue;
@@ -551,6 +607,6 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `Build audit passed: ${files.length} pages, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts, every preloaded font loaded by a stylesheet, ` +
+  `Build audit passed: ${files.length} pages and ${scripts.length} scripts, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts, every preloaded font loaded by a stylesheet, ` +
     `every code identifier, every linked public doc, and every ${HOOKS_INTERFACE} member found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
 );
