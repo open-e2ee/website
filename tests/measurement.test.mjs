@@ -166,8 +166,8 @@ test('sets nothing on the device and reads nothing from it', async () => {
  * file gzipped and the budget is about their connection, not our disk. Counting
  * raw bytes taxed the comments at the same rate as the code, in the one file
  * whose comments are the documentation of a privacy claim; the budget is the
- * same promise measured where it lands. For scale: 1,233 B compressed today,
- * against a page that ships several hundred kilobytes of type.
+ * same promise measured where it lands. For scale: 1,233 B at Node's default
+ * level today, against a page that ships several hundred kilobytes of type.
  */
 test('stays small enough to be beneath notice', async () => {
   const bytes = gzipSync(await read('../public/measure.js')).byteLength;
