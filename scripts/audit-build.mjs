@@ -352,6 +352,17 @@ function bareIdentifier(span) {
 const PUBLIC_DOC_LINK =
   /https:\/\/github\.com\/open-e2ee\/signal-protocol-js\/blob\/[^/"]+\/docs\/([A-Za-z0-9._-]+\.md)(?:#([A-Za-z0-9._-]+))?/g;
 
+/*
+ * The interface whose members are the SDK's whole hook surface, and the name
+ * of the list `/demo` prints and calls exactly that surface.
+ *
+ * The page finds it by printing the list, so the check goes looking for the
+ * list rather than for a page: whichever page shows `WATCHED_HOOKS` is the one
+ * making the claim.
+ */
+const HOOKS_INTERFACE = 'SignalProtocolClientHooks';
+const WATCHED_HOOKS = 'WATCHED_HOOKS';
+
 /* GitHub's heading-to-fragment rule: case folded, punctuation dropped, spaces
  * hyphenated. It also numbers repeated headings `-1`, `-2`; ours are unique,
  * and a link to a repeated one fails here loudly rather than silently. */
@@ -473,6 +484,43 @@ if (!surface) {
       }
     }
   }
+
+  /*
+   * `/demo` prints a hand-written list of hook names and says of it, in as many
+   * words, that it is every hook the SDK offers. It has to be hand-written —
+   * the page shows it as code a reader could have written themselves — so only
+   * a check like this holds it equal to the SDK's hook surface.
+   *
+   * The list carries a type-level exhaustiveness guard too, and that one is not
+   * enough on its own. It is checked against the SDK the site type-checks
+   * against; this is checked against the copy the site was built against, which
+   * is the copy the shipped sentence is a claim about. The annotation that used
+   * to stand where that guard is now caught nothing at all: `HookName[]` widens,
+   * so a list short of a hook type-checked happily.
+   *
+   * One direction only. A hook the SDK gained and the list has not is what this
+   * catches, and it is the direction staleness runs in. A hook the SDK *lost*
+   * can still be found elsewhere on a page this size, so it is left to the
+   * exhaustiveness guard, which sees the list itself rather than the page.
+   */
+  const hooks = surface.members.get(HOOKS_INTERFACE);
+  if (!hooks || hooks.size === 0) {
+    problems.push(
+      `cannot verify the hook list: the ${surface.origin} copy of ${SDK_PACKAGE} declares no ${HOOKS_INTERFACE} members`,
+    );
+  } else {
+    for (const file of files) {
+      const html = await readFile(file, 'utf8');
+      if (!html.includes(WATCHED_HOOKS)) continue;
+      const missing = [...hooks].filter((hook) => !html.includes(hook));
+      if (missing.length > 0) {
+        problems.push(
+          `${relative(DIST, file)}: prints ${WATCHED_HOOKS} as every hook the SDK offers, but names ` +
+            `${hooks.size - missing.length} of the ${hooks.size} in ${HOOKS_INTERFACE} — missing ${missing.join(', ')}`,
+        );
+      }
+    }
+  }
 }
 
 /* Social cards are produced in the design repo on their own schedule, so a
@@ -504,5 +552,5 @@ if (problems.length > 0) {
 
 console.log(
   `Build audit passed: ${files.length} pages, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts, every preloaded font loaded by a stylesheet, ` +
-    `every code identifier and every linked public doc found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
+    `every code identifier, every linked public doc, and every ${HOOKS_INTERFACE} member found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
 );

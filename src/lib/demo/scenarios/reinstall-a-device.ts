@@ -50,13 +50,20 @@ export { describePayload } from './log.ts';
  * them fired" is a claim about a list the reader can see rather than about a
  * number they have to take on trust.
  *
- * Typed as `HookName[]` on purpose: the day the SDK adds a hook, this list stops
- * type-checking against the union and has to be brought up to date, which is the
- * only way a finding of this shape can be kept honest by the compiler rather
- * than by whoever reads it next.
+ * The `Exclude` below is what keeps the list honest, and an annotation is not.
+ * `HookName[]` widens: a list missing a name still satisfies it, so the day the
+ * SDK grows a fourteenth hook this file would go on compiling while the page
+ * watched thirteen fourteenths of the surface and went on saying it watched all
+ * of it. `Exclude` leaves the unwatched names behind instead, and assigning to
+ * a type that is `never` unless nothing was left behind turns them into a build
+ * error that names them.
+ *
+ * That check compares this list against the SDK the site type-checks against.
+ * `scripts/audit-build.mjs` makes the same comparison against the copy the site
+ * was built against, which is the one the page's claim is about.
  */
 /* demo:code:start */
-const WATCHED_HOOKS: HookName[] = [
+const WATCHED_HOOKS = [
   'onSessionEstablished',
   'onSessionDeleted',
   'onSessionArchived',
@@ -70,8 +77,14 @@ const WATCHED_HOOKS: HookName[] = [
   'onReadReceiptReceived',
   'onViewedReceiptReceived',
   'onTypingIndicatorReceived',
-];
+] as const satisfies readonly HookName[];
 /* demo:code:end */
+
+/** Every hook name `WATCHED_HOOKS` does not cover. Empty, and checked to be. */
+type UnwatchedHook = Exclude<HookName, (typeof WATCHED_HOOKS)[number]>;
+
+/* Fails the build, naming the hooks, if `UnwatchedHook` is anything but never. */
+true satisfies [UnwatchedHook] extends [never] ? true : UnwatchedHook;
 
 /** A call the scenario made, and what came back out of it. */
 export type Attempt =
@@ -135,7 +148,7 @@ export interface ReinstallResult {
    * that was destroyed is not among them: it stops before the window opens, and
    * a hook on a stopped device would prove nothing.
    */
-  hooks: { registered: HookName[]; fired: string[]; devices: string[] };
+  hooks: { registered: readonly HookName[]; fired: string[]; devices: string[] };
   /** What `verify()` did when the application asked for the safety numbers. */
   asked: Attempt;
   /**
