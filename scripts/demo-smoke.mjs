@@ -9,8 +9,8 @@
  *   1. A reader's own sentence round-trips through the installed SDK in their
  *      tab, under the site's unchanged `script-src 'self'`, twice.
  *   2. The sentence never leaves the page.
- *   3. What does leave the page is one measurement beacon of a shape fixed in
- *      advance, carrying nothing derived from the sentence.
+ *   3. The only thing the page posts anywhere is one measurement beacon, of a
+ *      shape fixed in advance, carrying nothing derived from the sentence.
  *   4. The metadata beside it is the live envelope's own fields, not a list
  *      someone typed.
  *   5. Nothing SDK-shaped is fetched before the reader asks for it.
@@ -34,6 +34,12 @@
  * took — each of which is a fact about what the reader typed, and none of which
  * would ever match a probe search. So the beacon is checked positively: the
  * whole body, against a string this file knows before the browser starts.
+ *
+ * Which is only worth anything if the beacon is the whole outbound story. A
+ * second endpoint on our own origin, posted a summary of the sentence, would
+ * pass claim 2 — same host, no probe text — and never be read by claim 3. So
+ * the page is allowed exactly one destination for anything it sends: every
+ * non-GET request has to be the beacon, and the beacon's body is read in full.
  *
  * It also fails on a CSP violation. The demo's whole premise is that it runs
  * under the site's unchanged `script-src 'self'` — and the failure mode is not
@@ -60,6 +66,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
+import { EVENTS } from '../src/workers/site.ts';
 import {
   Cdp,
   Infra,
@@ -644,32 +651,18 @@ async function expectedFields(envelopeFields) {
 }
 
 /*
- * The event names the collector accepts, read out of the Worker rather than
- * retyped here. A beacon carrying a name that source does not know is dropped
- * on arrival — the site would be measuring nothing and looking like it was, and
- * a copy of the list in this file would go stale in exactly the way that hides
- * it.
- */
-async function collectorEvents() {
-  const source = await readFile(new URL('../src/workers/site.ts', import.meta.url), 'utf8');
-  const declared = source.match(/const EVENTS = new Set\(\[([^\]]*)\]\)/s)?.[1];
-  if (declared === undefined) {
-    throw new Infra(
-      'could not read EVENTS out of src/workers/site.ts, so this run cannot tell a beacon the ' +
-        'collector keeps from one it silently drops',
-    );
-  }
-  return new Set([...declared.matchAll(/'([^']+)'/g)].map((match) => match[1]));
-}
-
-/*
  * What the page said to its own collector, checked as a whole string.
  *
  * Two sentences went through the demo in this pass, so a `demo_run` count is
  * the difference between the privacy notice's "one is sent per page" and a
  * panel that quietly measures each send.
+ *
+ * The accepted names come from the Worker's own `EVENTS`, imported rather than
+ * retyped: a beacon carrying a name that source does not know is dropped on
+ * arrival, so the site would be measuring nothing and looking like it was, and
+ * a copy of the list in this file would go stale in the way that hides it.
  */
-function checkBeacons(pass, events) {
+function checkBeacons(pass) {
   const beacons = beaconsIn(pass.requests);
 
   for (const beacon of beacons) {
@@ -682,7 +675,7 @@ function checkBeacons(pass, events) {
           `three things\n  src/workers/site.ts will store. Anything else is a field somebody added.`,
       );
     }
-    if (!events.has(shape[1])) {
+    if (!EVENTS.has(shape[1])) {
       throw new Red(
         `the page sent "${shape[1]}", which src/workers/site.ts does not accept — the collector ` +
           `drops it,\n  so the site is measuring nothing while looking like it is`,
@@ -715,7 +708,7 @@ function checkBeacons(pass, events) {
   return beacons;
 }
 
-function checkRoundTrip(pass, origin, envelopeFields, expected, events) {
+function checkRoundTrip(pass, origin, envelopeFields, expected) {
   if (pass.beforeInteraction.claimVisible) {
     throw new Red(
       'the page claimed "that ran in this tab" before anything had run in this tab',
@@ -776,7 +769,29 @@ function checkRoundTrip(pass, origin, envelopeFields, expected, events) {
     );
   }
 
-  checkBeacons(pass, events);
+  /* On our origin is not the same as accounted for. A page can post a summary
+     of what was typed — a length, a byte count, a timing — to a path of its own
+     and satisfy both checks above: same host, and no probe text to find. So the
+     page gets exactly one destination for anything it sends, and it is the
+     beacon whose whole body the next check reads. A GET is how the page fetches
+     what it needs to run; anything else is the page talking, and a WebSocket
+     frame is the page talking whatever its URL looks like. */
+  const sent = pass.requests.filter((request) => {
+    if (request.method === 'GET') return false;
+    if (!/^https?:/i.test(request.url)) return true;
+    return new URL(request.url).pathname !== BEACON_PATH;
+  });
+  if (sent.length) {
+    throw new Red(
+      `the demo page sent ${sent.length} request(s) somewhere other than ${BEACON_PATH}, where ` +
+        `nothing reads what they carry:\n  ` +
+        sent
+          .map((request) => `${request.method} ${request.url} — ${request.postData ?? '(no body)'}`)
+          .join('\n  '),
+    );
+  }
+
+  checkBeacons(pass);
 
   if (pass.cspViolations.length) {
     throw new Red(
@@ -899,7 +914,6 @@ async function main() {
   }
 
   const expected = await expectedFields(envelopeFields);
-  const events = await collectorEvents();
 
   const held = { server: null, chrome: null, cdp: null, targets: [] };
   try {
@@ -915,7 +929,7 @@ async function main() {
     held.cdp = cdp;
 
     const live = await visit(cdp, origin, held, { repeat: true });
-    checkRoundTrip(live, origin, envelopeFields, expected, events);
+    checkRoundTrip(live, origin, envelopeFields, expected);
 
     /* Block every chunk the interaction asked for, so the dynamic import cannot
        resolve however Vite chose to split it. Taking only the first request

@@ -1,8 +1,11 @@
 /*
  * The privacy notice makes specific promises about what the marketing site
- * measures. These tests hold the code to them: that the ten events the client
- * can send are the ten the server accepts and the ten the notice describes,
- * and that nothing in the path identifies a visitor.
+ * measures. These tests hold the code to them: that the events the client can
+ * send are the ones the server accepts and the ones the notice describes, and
+ * that nothing in the path identifies a visitor. All three legs are read from
+ * the code — the collector's own `EVENTS`, the files that send, and the notice
+ * itself — because a list retyped in this file agrees with the collector until
+ * the moment someone changes one of them.
  *
  * The collector itself is exercised through its exported `collect`, with a
  * stub dataset standing in for the Analytics Engine binding.
@@ -12,7 +15,7 @@ import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { collect } from '../src/workers/site.ts';
+import { EVENTS, collect } from '../src/workers/site.ts';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
@@ -26,18 +29,13 @@ const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
  */
 const SENDERS = ['../public/measure.js', '../src/components/demo/LiveCarrierPanel.astro'];
 
-const EVENTS = [
-  'demo_run',
-  'quickstart_open',
-  'runtime_select',
-  'install_copy',
-  'guide_finish',
-  'github_open',
-  'security_view',
-  'pricing_view',
-  'signup_start',
-  'enterprise_contact',
-];
+/*
+ * How the privacy notice counts the events, so the sentence a reader is asked
+ * to trust is checked against the collector rather than against a number typed
+ * beside it. Only the counts this site has plausibly reached are here; an
+ * eleventh event should fail loudly here and be added deliberately.
+ */
+const NUMBER_WORDS = { 9: 'nine', 10: 'ten', 11: 'eleven', 12: 'twelve' };
 
 /** A dataset binding that records what would have been written. */
 function stubEnv() {
@@ -56,7 +54,7 @@ const beacon = (body) =>
     headers: { origin: 'https://open-e2ee.dev' },
   });
 
-test('records each of the ten events and nothing else', async () => {
+test('records each event the collector accepts and nothing else', async () => {
   for (const event of EVENTS) {
     const env = stubEnv();
     await collect(beacon(`${event} /pricing`), env);
@@ -166,8 +164,10 @@ test('sets nothing on the device and reads nothing from it', async () => {
  * file gzipped and the budget is about their connection, not our disk. Counting
  * raw bytes taxed the comments at the same rate as the code, in the one file
  * whose comments are the documentation of a privacy claim; the budget is the
- * same promise measured where it lands. For scale: 1,233 B at Node's default
- * level today, against a page that ships several hundred kilobytes of type.
+ * same promise measured where it lands. For scale: 1,222 B today, against a
+ * page that ships several hundred kilobytes of type. Node's default level and
+ * level 9 both give that figure for this file, so the budget does not depend
+ * on which one a reader reaches for.
  */
 test('stays small enough to be beneath notice', async () => {
   const bytes = gzipSync(await read('../public/measure.js')).byteLength;
@@ -186,7 +186,7 @@ test('sends only the events the collector accepts', async () => {
   }
 
   for (const event of named) {
-    assert.ok(EVENTS.includes(event), `${event} is sent but the collector would drop it`);
+    assert.ok(EVENTS.has(event), `${event} is sent but the collector would drop it`);
   }
   for (const event of EVENTS) {
     assert.ok(named.has(event), `${event} is accepted but nothing on the site sends it`);
@@ -215,7 +215,7 @@ test('describes the measurement in the privacy notice it points at', async () =>
 
   assert.match(script, /\/legal\/privacy/);
   assert.match(privacy, /sets no cookie/i);
-  assert.match(privacy, /ten things/i);
+  assert.match(privacy, new RegExp(`${NUMBER_WORDS[EVENTS.size]} things`, 'i'));
   /* The demo's own paragraph, which is the only measurement claim on the site
    * made in front of something a reader typed. */
   assert.match(privacy, /neither the sentence nor anything derived from it/i);
