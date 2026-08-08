@@ -107,6 +107,24 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
     <div class="carrier-pane carrier-pane-relay">
       <span class="label">relay — the row in your database</span>
       {/*
+        What the pane will hold, until it holds it.
+
+        These two panes are the argument — the row a relay keeps, and the
+        sentence that comes out the far side — and before the first send they
+        were two labelled boxes with nothing in them, about a third of the
+        panel's height reserved for output that did not exist yet. A reader
+        skimming past got a label and a void, which reads as something that
+        failed to load rather than something waiting to be run.
+
+        So the space says what is coming instead of standing empty. It is
+        removed by the first render rather than overwritten, because these are
+        promises about the panel and every other line in it is a measurement.
+      */}
+      <p class="carrier-cipher-note" data-demo-idle>
+        The envelope your relay would store lands here — the ciphertext, then every field the
+        relay can read, printed from the object itself.
+      </p>
+      {/*
         Hidden from assistive technology for the same reason the recorded
         panel's blob is: several hundred base64 characters read aloud one at a
         time, with no landmark to escape to, immediately before the line that
@@ -122,6 +140,10 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
 
     <div class="carrier-pane">
       <span class="label">the other device</span>
+      <p class="carrier-cipher-note" data-demo-idle>
+        The same sentence lands here, decrypted by the receiving device, with what each half of
+        the trip cost.
+      </p>
       <p class="carrier-message" data-demo-decrypted></p>
       <p class="carrier-cipher-note" data-demo-timing></p>
     </div>
@@ -258,7 +280,13 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
         .then(async (module) => {
           setStatus('Booting two devices…');
           session = await module.startDemoSession();
-          setStatus(`Two devices, ${Math.round(session.bootMs)} ms to a shared secret.`);
+          /* The handshake number, with the thing to do next attached to it.
+             It read `Two devices, N ms to a shared secret.` and arrived on
+             the first keystroke — a timing for work the reader had not asked
+             for, standing in the one line that is otherwise the panel's only
+             instruction. The measurement is worth keeping; leading with it
+             is not. */
+          setStatus(`Two devices ready in ${Math.round(session.bootMs)} ms. Press Encrypt it.`);
           return session;
         })
         .catch((cause: unknown) => {
@@ -288,6 +316,11 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
     const render = (exchange: DemoExchange) => {
       const envelope = exchange.envelope as unknown as Record<string, unknown>;
 
+      /* The promises about what these panes would hold, retired by the thing
+         itself. Removed rather than emptied so the panel's height comes from
+         its content in both states. */
+      for (const idle of panel.querySelectorAll('[data-demo-idle]')) idle.remove();
+
       const bytes = Math.floor((String(envelope.ciphertext).length * 3) / 4);
       cipher.textContent = String(envelope.ciphertext).slice(0, 420);
       cipher.append(Object.assign(document.createElement('span'), { textContent: '…' }));
@@ -304,13 +337,27 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
         const dt = document.createElement('dt');
         dt.textContent = field;
         const dd = document.createElement('dd');
-        dd.textContent = typeof value === 'string' ? value : String(value);
+        /* A key the envelope carries with no value is still a key the relay
+           holds, so the row stays and the field is named. What it must not
+           print is `undefined` — the JavaScript literal is an artefact of how
+           this list is built, and on the one panel whose subject is what a
+           relay can read it looks like the page failed to fill a cell. */
+        if (value === undefined || value === null) {
+          dd.textContent = 'not set';
+          dd.classList.add('carrier-meta-unset');
+        } else {
+          dd.textContent = typeof value === 'string' ? value : String(value);
+        }
         meta.append(dt, dd);
         shown += 1;
       }
+      /* `shown` counts the rows that are on the screen, and this line called
+         them "more" — a reader who had just counted ten of them was told
+         there were ten further ones. What is genuinely not above is the
+         ciphertext, printed as bytes rather than as a row, and the id. */
       metaNote.textContent =
-        `${shown} more fields the relay held, and a relay-assigned envelope id, ` +
-        `in whatever format your relay assigns`;
+        `${shown} fields, read off the envelope itself — plus the ciphertext above, ` +
+        `and an id your relay assigns in whatever format it uses`;
 
       decrypted.textContent = exchange.decrypted.content;
       timing.textContent =
