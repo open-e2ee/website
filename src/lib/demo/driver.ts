@@ -11,7 +11,7 @@
  * cryptography is the shipped cryptography (invariant 1): real
  * `createSignalProtocolClient`, real PQXDH, real Double Ratchet. What is
  * simulated is the infrastructure around it — `inMemoryStore()` for the device
- * and `inMemoryRelay()` for the server — which is what the disclosure beside
+ * and `inMemoryRelay()` for the relay — which is what the disclosure beside
  * the demo has to say out loud (invariant 5).
  *
  * Nothing in here touches the DOM. It is imported dynamically by `./loader`,
@@ -163,7 +163,7 @@ export interface DemoSession {
    * The relay both accounts are registered with.
    *
    * Handed over because some of what a scenario has to show is a conversation
-   * with the server rather than with a client: linking a device is a
+   * with the relay rather than with a client: linking a device is a
    * provisioning session on the relay, and fetching a prekey bundle for a
    * device the sender has never written to is a relay call the application
    * makes by hand.
@@ -272,7 +272,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
    * envelope once it has decrypted it, so a poll after `send()` resolves is a
    * race against that delete. Subscribing gets the stored envelope handed over
    * at the moment the relay accepts it, which is both deterministic and the
-   * more honest picture: this is what the server saw.
+   * more honest picture: this is what the relay saw.
    */
   const pending: Envelope[] = [];
   let onEnvelope: ((envelope: Envelope) => void) | null = null;
@@ -282,7 +282,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
    * moved — and the symptom would be `envelope-stored` never firing, and the
    * send failing on its deadline well away from the line that broke.
    *
-   * This is the demo watching the server, and it watches the primary device's
+   * This is the demo watching the relay, and it watches the primary device's
    * row. A send to an account with a second device linked stores one envelope
    * per device; the ones addressed to the other devices are not seen here, and
    * `recipientDeviceCount` on the send result is what says how many there

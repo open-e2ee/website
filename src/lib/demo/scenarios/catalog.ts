@@ -77,7 +77,7 @@ export const SCENARIOS: ScenarioSummary[] = [
     slug: 'run-out-of-prekeys',
     title: 'Run out of one-time prekeys',
     expectation:
-      'The server is left with no one-time prekeys, a new conversation is opened against it ' +
+      'The relay is left with no one-time prekeys, a new conversation is opened against it ' +
       'anyway, and the handshake quietly settles for the fallback key instead.',
     action: 'Empty the prekey stash',
     source: './run-out-of-prekeys.ts',

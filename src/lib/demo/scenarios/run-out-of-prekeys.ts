@@ -1,5 +1,5 @@
 /*
- * Take the one-time prekeys away from the server and open a new conversation
+ * Take the one-time prekeys away from the relay and open a new conversation
  * anyway.
  *
  * The point of this scenario is what does *not* happen. The handshake succeeds,
@@ -23,9 +23,9 @@
  *    scenario planned to print "the warning the SDK gives you". There is no
  *    such warning. Printing one would have been the page's only lie.
  *  - `checkPreKeyStatus()`, the SDK's documented prekey-health call, counts the
- *    prekeys in *local* storage rather than the ones left on the server. The
- *    server is the side that runs out. So the call returns a healthy-looking
- *    number at the exact moment the server has none, which is why this scenario
+ *    prekeys in *local* storage rather than the ones left on the relay. The
+ *    relay is the side that runs out. So the call returns a healthy-looking
+ *    number at the exact moment the relay has none, which is why this scenario
  *    prints what it returns instead of leaving the reader to assume it helps.
  *
  * The relay's pool is emptied part-way through rather than at boot so that the

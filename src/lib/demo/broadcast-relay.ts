@@ -6,7 +6,7 @@
  * to another has been shown a data structure, not a protocol. So this module
  * puts the two accounts in two tabs and a real wire between them, and the
  * claim it exists to support is a negative one — that what crosses the wire is
- * what a server would hold, and that the sentence is not on it.
+ * what a relay would hold, and that the sentence is not on it.
  *
  * A claim like that is only worth as much as the surface it is made about.
  * `ISignalProtocolRelayServer` has 42 members — 41 methods and one property —
@@ -48,14 +48,14 @@
  * Why one relay rather than one per tab. A relay's state is not replicable at
  * this layer: `fetchPreKeyBundle` *consumes* a one-time prekey, and two tabs
  * each holding their own copy would hand the same one-time prekey to two
- * handshakes and call it a server. So exactly one tab holds the
+ * handshakes and call it a relay. So exactly one tab holds the
  * `inMemoryRelay()` — whichever wins an exclusive Web Lock, which is atomic
  * and needs no handshake — and every other tab calls into it. Both roles hand
  * back the same surface, so nothing downstream can tell which tab it is in,
  * and neither role can drift from the other by being written twice.
  *
  * This is demo infrastructure and is labelled as such wherever it is used
- * (D3). A real deployment has a server; this has a tab that volunteered.
+ * (D3). A real deployment has a relay; this has a tab that volunteered.
  */
 
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
@@ -317,7 +317,7 @@ const REFUSED = [
  * `groupServer` is a `readonly` **property**, not a method — the only one on
  * the interface. `refuse('groupServer')` would satisfy the partition below and
  * still be wrong: it would install a throwing function where the type declares
- * an optional object. The two-tab demo has no group server, the property is
+ * an optional object. The two-tab demo has no `groupServer`, the property is
  * optional, and `undefined` is a legal value of the declared type. So it is
  * absent, and this list is where that decision is recorded rather than
  * inferred from a gap.
