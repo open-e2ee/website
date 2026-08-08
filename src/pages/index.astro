@@ -682,9 +682,13 @@ const trustLinks = [
         </a>
         {/* The panel above shows the protocol working, which is the half a
             reader already expected. This is the way to the half that decides
-            an adoption, and it is the only entry point to `/demo`: the page
-            holds one scenario, and a nav slot is worth more than that. It
-            takes one when the page is a page rather than a scenario. */}
+            an adoption. It was once the only entry point to `/demo`, on the
+            reasoning that the page held one scenario and a nav slot was worth
+            more than that — with the condition for revisiting written into
+            the same sentence: it takes one when the page is a page rather
+            than a scenario. It holds four, so it now has the nav slot, and
+            this link keeps its deep target because a reader at this exact
+            point wants the byte, not the index. */}
         <a class="text-link" href="/demo#flip-a-byte">
           Now watch a byte change in transit, and the protocol refuse it
         </a>

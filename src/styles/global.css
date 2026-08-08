@@ -1429,6 +1429,60 @@ a:hover {
   background: var(--oe-surface-sunken);
 }
 
+/*
+ * The trust boundary, as a row between two panes rather than a hairline.
+ *
+ * It replaces `.carrier-pane + .carrier-pane`'s border by standing between the
+ * panes: with a boundary in the gap the two are no longer siblings in that
+ * selector's sense, so the plain rule is not drawn and this one is. That is
+ * deliberate — the boundary is the divider at these two joins, and drawing
+ * both would put a grey line and a gold line 2px apart.
+ *
+ * `--oe-diagram-boundary-dash: 2 6` is an SVG dasharray and cannot be handed
+ * to `border-style: dashed`, whose dash length is the browser's business. So
+ * the gradient below transcribes it — but not at face value, and that is the
+ * part worth writing down. The token counts viewBox units, and every diagram
+ * that uses it is scaled up on the way to the screen: `WhereQueriesRun` is a
+ * 720-unit viewBox painted 1132px wide, a factor of 1.57, so its boundary
+ * lands at 3.1px on, 9.4px off, 3.1px thick. Copying `2 6` into CSS pixels
+ * produced a line at 40% of the diagrams' scale — measurably the same token,
+ * visibly a different, finer, busier rule beside them.
+ *
+ * These are the rendered numbers, so this line matches the boundary on /learn
+ * at the width both are actually seen at.
+ */
+.carrier-boundary {
+  display: flex;
+  align-items: center;
+  gap: var(--oe-space-3);
+  padding: var(--oe-space-2) var(--oe-space-4);
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+}
+
+.carrier-boundary::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 3px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--oe-diagram-boundary) 0 3px,
+    transparent 3px 12.5px
+  );
+}
+
+/* The same fill the SVG boundary labels carry, so the word is the same colour
+   on the panel as it is inside a diagram on /learn. */
+.carrier-boundary-label {
+  color: var(--oe-sealed);
+  font-weight: 500;
+}
+
+.carrier-boundary-note {
+  color: var(--oe-muted);
+}
+
 .carrier-message {
   margin-top: var(--oe-space-3);
   font-size: 1rem;
@@ -1604,6 +1658,33 @@ a:hover {
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* A scenario's own figure sits between a heading and the list that reads it
+   out, so it carries the space of a paragraph rather than of a band. It also
+   takes the full width of the scenario body — which is the width the prose
+   beside it cannot use, being capped at the reading measure. */
+.scenario-figure {
+  margin-block: var(--oe-space-3) var(--oe-space-4);
+}
+
+/*
+ * The two labels swap weight here, and only here.
+ *
+ * In a `/learn` diagram the `.diagram-label`s name the parts — device, relay,
+ * ciphertext — so they are what the reader is meant to read, and the tick
+ * labels annotate them. This figure is the other way round: `0` and
+ * `1,986 bytes` are the ruler's ends, scaffolding for the one mark that is the
+ * whole subject. At the shared sizes the scaffolding was set two points larger
+ * than the subject and won the page, which is a hierarchy this drawing cannot
+ * afford — the mark is already the thinnest thing in it.
+ */
+.scenario-figure .diagram-label {
+  font-size: 11px;
+}
+
+.scenario-figure .diagram-tick-label {
+  font-size: 13px;
 }
 
 /* The wide composition stops being readable before it stops fitting, so it
