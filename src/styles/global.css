@@ -1466,6 +1466,16 @@ a:hover {
   padding-top: var(--oe-space-3);
 }
 
+/* The rule above the fields belongs to the fields. Empty — which is every
+   moment on the live panel before the first send — it was a stray horizontal
+   line floating in an otherwise blank pane, the one thing in it that looked
+   like a rendering fault rather than a pane waiting for input. */
+.carrier-meta:empty {
+  margin: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
 .carrier-meta dt {
   color: var(--oe-sealed);
   overflow-wrap: anywhere;
@@ -1475,6 +1485,13 @@ a:hover {
   margin: 0;
   color: var(--oe-muted);
   overflow-wrap: anywhere;
+}
+
+/* A field the envelope carries and did not fill. Set apart from the values
+   beside it so that "not set" is not read as one. */
+.carrier-meta dd.carrier-meta-unset {
+  font-style: italic;
+  opacity: 0.75;
 }
 
 .carrier-caption {
@@ -3252,14 +3269,23 @@ table.data td {
   padding: var(--oe-space-4) var(--oe-space-6);
 }
 
-/* The marker is removed and nothing replaces it, because the summary is a
-   two-line block and a triangle beside the first line of it reads as a bullet.
-   The whole row is the target either way. */
+/*
+ * The native marker is dropped and a drawn one takes its place on the trailing
+ * edge. A triangle beside the first line of a two-line summary reads as a
+ * bullet, which is why the browser's was removed; leaving the row with no
+ * affordance at all was the larger fault, because four bordered cards with a
+ * title and a sentence look like copy, not like controls.
+ *
+ * The grid puts the title and the marker on one row and lets the expectation
+ * run the full width underneath, so the marker is on the title's baseline and
+ * the sentence is not indented around it.
+ */
 .scenario-summary {
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: var(--oe-space-2);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--oe-space-2) var(--oe-space-4);
+  align-items: baseline;
   list-style: none;
 }
 
@@ -3280,8 +3306,98 @@ table.data td {
 }
 
 .scenario-expectation {
+  grid-column: 1 / -1;
   color: var(--oe-muted);
   max-width: var(--oe-content-measure);
+}
+
+/*
+ * The chevron, drawn from two borders so it needs no asset and inherits the
+ * text colour. `aria-hidden`: the state it shows is already on the `<details>`,
+ * and assistive technology announces that natively.
+ */
+.scenario-marker {
+  align-self: center;
+  flex: 0 0 auto;
+  justify-self: end;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 1.5px solid var(--oe-muted);
+  border-bottom: 1.5px solid var(--oe-muted);
+  transform: rotate(45deg);
+  transform-origin: center;
+  transition: transform 120ms ease;
+}
+
+[open] > .scenario-summary > .scenario-marker,
+[open] > .scenario-source-summary > .scenario-marker {
+  transform: rotate(-135deg);
+}
+
+.scenario-summary:hover .scenario-marker,
+.scenario-source-summary:hover .scenario-marker {
+  border-color: var(--oe-foreground);
+}
+
+/* Explicit placement, because the expectation below spans both columns and
+   auto-placement puts anything after it on a third row. The marker belongs on
+   the title's row, at the trailing edge. */
+.scenario-summary > .scenario-marker {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scenario-marker {
+    transition: none;
+  }
+}
+
+/*
+ * The listing, below the verdict and closed.
+ *
+ * It carries the filename it always carried, because that line is the claim —
+ * this is the module the button imported, not a retelling of it — and a reader
+ * who wants the seventy lines under it opens them.
+ */
+.scenario-source-summary {
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--oe-space-2) var(--oe-space-3);
+  list-style: none;
+  padding: var(--oe-space-2) 0;
+}
+
+.scenario-source-summary::-webkit-details-marker {
+  display: none;
+}
+
+.scenario-source-summary:focus-visible {
+  outline: 2px solid var(--oe-focus);
+  outline-offset: var(--oe-space-2);
+  border-radius: var(--oe-radius-sm);
+}
+
+.scenario-source-name {
+  font-family: var(--oe-metadata-font-family);
+  font-weight: var(--oe-metadata-weight);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-foreground);
+}
+
+.scenario-source-hint {
+  flex: 1 1 auto;
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+}
+
+.scenario-source > .code-block {
+  margin-top: var(--oe-space-2);
 }
 
 .scenario-body {
