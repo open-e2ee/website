@@ -1,4 +1,5 @@
 ---
+import CarrierBoundary from '../CarrierBoundary.astro';
 import CarrierPanel from '../CarrierPanel.astro';
 import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 
@@ -104,6 +105,8 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
       </p>
     </div>
 
+    <CarrierBoundary kind="seal" />
+
     <div class="carrier-pane carrier-pane-relay">
       <span class="label">relay — the row in your database</span>
       {/*
@@ -137,6 +140,8 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
       <dl class="carrier-meta" data-demo-meta></dl>
       <p class="carrier-cipher-note" data-demo-meta-note></p>
     </div>
+
+    <CarrierBoundary kind="open" />
 
     <div class="carrier-pane">
       <span class="label">the other device</span>

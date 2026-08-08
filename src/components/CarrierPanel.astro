@@ -1,4 +1,5 @@
 ---
+import CarrierBoundary from './CarrierBoundary.astro';
 import capture from '../data/carrier-capture.json';
 import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 
@@ -78,6 +79,11 @@ const recordedAtInstalled = capture.sdkVersion === installedVersion;
     <span class="label">device — bob</span>
     <p class="carrier-message">{capture.plaintext}</p>
   </div>
+
+  {/* This panel records one hop, so it crosses the boundary once and there is
+      no `open` to draw: the recording stops at the row, and the sentence
+      coming back out is the live panel's half of the story. */}
+  <CarrierBoundary kind="seal" />
 
   <div class="carrier-pane carrier-pane-relay">
     <span class="label">relay — the row in your database</span>

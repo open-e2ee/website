@@ -51,6 +51,130 @@ const el = <K extends keyof HTMLElementTagNameMap>(
 const hex = (byte: number) => `0x${byte.toString(16).padStart(2, '0')}`;
 const count = (value: number) => value.toLocaleString('en-US');
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const svg = <K extends keyof SVGElementTagNameMap>(
+  tag: K,
+  attrs: Record<string, string | number>,
+  text?: string,
+): SVGElementTagNameMap[K] => {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, String(value));
+  if (text !== undefined) node.textContent = text;
+  return node;
+};
+
+/*
+ * One byte of two thousand, drawn where it actually was.
+ *
+ * The first step of this scenario has always said "byte 993 of 1,986", and the
+ * number is the whole argument — a change of one part in two thousand, and the
+ * message is refused entire. As a figure in a sentence it is a statistic a
+ * reader skims. To scale it is a single mark in a long slab, and the ratio is
+ * read rather than computed.
+ *
+ * Every number here comes from `result.flip`, which the scenario's `tamper`
+ * hook fills in as it corrupts the envelope. Two of them vary run to run: `of`
+ * is the real decoded length of that run's ciphertext, and `before`/`after` are
+ * the byte that was actually there. The third does not, and the code should say
+ * so rather than let the drawing imply otherwise — `flip-a-byte.ts` picks its
+ * target with `Math.floor(bytes.length / 2)`, so the mark lands at the middle
+ * of the slab on every run. The mark is where the changed byte was; it is not a
+ * sample of where a changed byte might be, and the figure is titled for the
+ * ratio it shows rather than for a coordinate that is the same every time.
+ *
+ * The 720-unit viewBox is the width every diagram in `src/components/diagrams/`
+ * uses, so a stroke of 2 lands at the same weight on screen here as it does
+ * there.
+ */
+const flipRuler = (
+  flip: { at: number; of: number; before: number; after: number },
+  refused: boolean,
+) => {
+  const WIDTH = 720;
+  const ratio = flip.of > 0 ? Math.min(Math.max(flip.at / flip.of, 0), 1) : 0;
+  const x = ratio * WIDTH;
+
+  const figure = document.createElement('figure');
+  figure.className = 'diagram scenario-figure';
+
+  const root = svg('svg', {
+    viewBox: `0 0 ${WIDTH} 84`,
+    role: 'img',
+    'aria-labelledby': 'flip-ruler-title flip-ruler-desc',
+  });
+  root.append(
+    svg(
+      'title',
+      { id: 'flip-ruler-title' },
+      `One changed byte in a ${count(flip.of)}-byte encrypted message`,
+    ),
+    svg(
+      'desc',
+      { id: 'flip-ruler-desc' },
+      `A bar standing for the whole ${count(flip.of)}-byte encrypted message, with a single ` +
+        `mark at byte ${count(flip.at)} — the one byte that was changed.`,
+    ),
+    svg('rect', {
+      x: 0,
+      y: 30,
+      width: WIDTH,
+      height: 26,
+      fill: 'var(--oe-diagram-ciphertext-fill)',
+    }),
+    /* A channel cleared through the slab, and the mark laid in it.
+       `--oe-diagram-boundary` is a mid gold that reads on either page
+       background, which is what it is for on `/learn` — but nothing on
+       `/learn` draws it *on* the ciphertext fill, and that fill inverts
+       between themes. In light it is #34312d, and gold on it went from a mark
+       to a smudge exactly where the drawing has the most to say: inside the
+       message. The clear rect below fixes both themes at once by never letting
+       the two touch, and it costs nothing in meaning — a byte singled out of a
+       block is what the figure is about. */
+    svg('rect', {
+      x: Math.min(x, WIDTH - 2) - 3,
+      y: 30,
+      width: 8,
+      height: 26,
+      fill: 'var(--oe-surface)',
+    }),
+    /* Taller than the slab on both sides, so the position is legible from
+       outside the block as well as within it. */
+    svg('rect', {
+      x: Math.min(x, WIDTH - 2),
+      y: 18,
+      width: 2,
+      height: 50,
+      fill: 'var(--oe-diagram-boundary)',
+    }),
+    /* Centred on the mark, which the paragraph above establishes is the middle
+       of the slab. A label that tracked an arbitrary offset would need to swap
+       `text-anchor` at the ends to stop overhanging the drawing; there is no
+       run where it does, so there is no branch here to be written and never
+       taken. Moving the flip site is the change that has to revisit this. */
+    svg('text', { x, y: 12, 'text-anchor': 'middle', class: 'diagram-tick-label' },
+      `byte ${count(flip.at)} — ${hex(flip.before)} to ${hex(flip.after)}`),
+    svg('text', { x: 0, y: 80, class: 'diagram-label' }, '0'),
+    svg('text', { x: WIDTH, y: 80, 'text-anchor': 'end', class: 'diagram-label' },
+      `${count(flip.of)} bytes`),
+  );
+
+  figure.append(root);
+  /* The slab shows the proportion and the caption names it, because a reader
+     who takes one look at a mark this thin will read "almost nothing changed"
+     — which is right, and is only half of it. The other half is what the
+     device did with the rest, and the two belong in the same breath. */
+  figure.append(
+    el(
+      'figcaption',
+      refused
+        ? `One byte in ${count(flip.of)} changed. The receiving device refused all ${count(flip.of)}.`
+        : `One byte in ${count(flip.of)} changed.`,
+    ),
+  );
+  return figure;
+};
+
 /* Every figure on this page comes out of a run, so the grammar around one has
    to follow the number rather than the number a sentence was written for. */
 const deviceCount = (value: number) => `${count(value)} device${value === 1 ? '' : 's'}`;
@@ -105,7 +229,14 @@ export function renderFlipAByte(output: HTMLElement, result: FlipAByteResult, de
     step('Something other than the sent message was delivered. That is a defect, not a demo.');
   }
 
-  output.append(el('h3', 'What happened'), happened);
+  /* The drawing before the reading, for the same reason the run button now
+     sits above the listing: the ratio is the thing, and it is grasped in one
+     look. The steps below it then say in numbers what it just showed. */
+  output.append(
+    el('h3', 'What happened'),
+    flipRuler(result.flip, result.refusal !== null),
+    happened,
+  );
 
   /* The point of the scenario, and the half that a log alone does not make.
      Both entries are assertions about this run's values. */

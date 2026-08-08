@@ -35,21 +35,46 @@ const scenarios = SCENARIOS.map((scenario) => ({
   filename: scenario.source.replace(/^\.\//, ''),
 }));
 
-const title = 'Watch it fail closed';
+/*
+ * The name and the headline are two different strings, which is what every
+ * other page here already does — `title="Pricing"` over "Free under AGPL.
+ * Priced when you need it closed." This page collapsed them into one, and
+ * both jobs suffered: "Watch it fail closed" is a poor name for a nav slot,
+ * and it stopped being true of the page when the second scenario landed.
+ * Only one of the four fails closed. Two of them say the opposite in their
+ * own summary — the prekey handshake "quietly settles for the fallback key",
+ * and the reinstall tells the sending application nothing at all. A reader
+ * who took the old heading at face value and then read the third card had
+ * caught this site overstating itself, on the one page whose entire argument
+ * is that we do not.
+ */
+const title = 'Demo';
+/*
+ * No em dash in the heading. The first draft hung the honest half on one —
+ * "…when things go wrong — including when it says nothing" — and at display
+ * size the clause stopped being a qualifier and became a second headline
+ * competing with the first, with a hole either side of the dash where the
+ * line broke. Voice rule 2 wants the limit in the same breath as the claim,
+ * not in the same 42px type: it moved to the last sentence of the lede, one
+ * line below and still before any scenario.
+ */
+const heading = 'Four things that go wrong, and what the protocol does about each.';
 const description =
-  'Corrupt a message in transit and see what the Signal Protocol does about it, running in ' +
-  'your own browser against the installed SDK.';
+  'Four things that go wrong in a real deployment — a corrupted message, a second device, an ' +
+  'empty prekey stash, a reinstall — run against the installed SDK in your own browser.';
 ---
 
 <BaseLayout title={title} description={description}>
   <section class="section">
     <div class="container">
       <div class="stack">
-        <h1>{title}</h1>
+        <h1>{heading}</h1>
         <p class="lede measure">
-          Every library says it detects tampering. This page does it to itself: the scenarios
-          below run the installed SDK in this tab, break something on purpose, and print what the
-          receiving device said about it — its own log, unedited.
+          Every library documents its failure modes in prose. This page runs them: the scenarios
+          below drive the installed SDK in this tab, force each situation on purpose, and print
+          what the devices said about it — their own logs, unedited. In two of the four, what
+          they say is nothing at all, and that is the point of running them rather than
+          describing them.
         </p>
         {/*
           Invariant 5, before the reader has run anything rather than after.
