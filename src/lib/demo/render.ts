@@ -379,7 +379,7 @@ export function renderRunOutOfPreKeys(
    * device with a twelve-hour window, so it outlives the client that tripped
    * it: the second press builds a brand new client over brand new storage and
    * is refused anyway. Both branches are the same finding — the call tells the
-   * application nothing about the server being empty — and the second is the
+   * application nothing about the relay being empty — and the second is the
    * more emphatic one, so it is printed rather than engineered away.
    */
   const health = el('li');
@@ -400,7 +400,7 @@ export function renderRunOutOfPreKeys(
       `${count(result.health.oneTimePreKeysRemaining)} remaining and needsReplenishment ` +
       `${String(result.health.needsReplenishment)}, while the relay held ` +
       `${count(result.exhausted.ec)}. It counts the prekeys this device still has in its own ` +
-      `storage, and the server is the side that runs out.`;
+      `storage, and the relay is the side that runs out.`;
   }
   notHappened.append(quiet, health);
   output.append(el('h3', 'What did not happen'), notHappened);

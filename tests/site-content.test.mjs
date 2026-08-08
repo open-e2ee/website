@@ -2720,8 +2720,18 @@ test('says whether the adapters ship, wherever it says they are yours', async ()
 
   /* And the relay is defined where it is first demanded of the reader. Three
    * fresh readers in one wave, independently, called it the load-bearing noun
-   * the page never explains. */
-  assert.match(dist, /the server that holds public keys\s+and device lists and delivers the encrypted envelopes/);
+   * the page never explains.
+   *
+   * The definition used to open "the server that holds public keys", which is
+   * the one word `docs/messaging.md` §4 reserves against for this exact role.
+   * It now defines the relay as itself rather than by a banned synonym, so the
+   * assertion moved onto the part that carries the meaning. Asserting the
+   * words and not the dash keeps this from failing over punctuation. */
+  assert.match(
+    dist,
+    /it holds public keys\s+and\s+device lists\s+and\s+delivers the encrypted envelopes/,
+  );
+  assert.doesNotMatch(dist, /the server that holds public keys/);
 
   /* Every identifier above must be a real export. The build audit resolves
    * them against the installed package, so this asserts that the resolver is
@@ -2925,4 +2935,77 @@ test('shows a generic bucket for S3 only while there is no AWS client to name', 
 
   /* And that the export the entry stands for is really there. */
   assert.ok(manifest.exports['./remote/object-store/s3'], 's3 object store export is gone');
+});
+
+test("the demo's own source calls the relay a relay", async () => {
+  /*
+   * `docs/messaging.md` §4 fixes the vocabulary: the E2EE role is the **relay**,
+   * and "server" is the word avoided for it. The demo is where that slips,
+   * because its prose is written inches from SDK calls that legitimately carry
+   * "Server" in their names — `syncToServer`, `ISignalProtocolRelayServer` —
+   * and the eye stops seeing it. Two sentences shipped that way and reached the
+   * live site: the run-out-of-prekeys card, and the health-check line that
+   * managed to say "the relay held" and "the server is the side that runs out"
+   * in one breath.
+   *
+   * Why this is a source test and not another `audit-build.mjs` pattern. That
+   * audit is not blind to compiled demo copy — it scans built `.js` as well as
+   * `.html`, and has since the gap was demonstrated. The reason "server" is not
+   * one of its patterns is that it cannot be: the audit matches against whole
+   * chunks, and the word is *correct* nearly everywhere else on this site. The
+   * TLS article, `/learn`, and the architecture diagrams all discuss servers on
+   * purpose. A pattern there would have to be right about the whole site; this
+   * rule only has to be right about the demo, and scoping it to the demo's own
+   * source is what buys that.
+   *
+   * The scan reads source rather than `dist/`, so it runs without a build and
+   * points at the line to fix instead of at a hashed chunk.
+   *
+   * What this does NOT cover, and the title is narrow on purpose. Strings that
+   * originate in the SDK reach the page and this test cannot see them: the
+   * reinstall scenario prints `EncryptionError`'s own wrapper, "Failed to sync
+   * with server", quoted rather than paraphrased because the point of that
+   * card is what came back — `scripts/demo-smoke.mjs` asserts the page renders
+   * it. So a reader does still meet the word on `/demo`. Fixing that means
+   * changing the SDK's message, not this site's copy, and it belongs to the
+   * vocabulary pass over the SDK's API surface and its rendered errors.
+   */
+  const roots = ['../src/lib/demo/', '../src/components/demo/'];
+  const sources = [];
+  for (const root of roots) {
+    const dir = new URL(root, import.meta.url);
+    for (const name of await readdir(dir, { recursive: true })) {
+      if (/\.(?:ts|astro|mjs)$/.test(name)) sources.push([root + name, new URL(name, dir)]);
+    }
+  }
+  sources.push(['../src/pages/demo.astro', new URL('../src/pages/demo.astro', import.meta.url)]);
+
+  /* A glob that quietly matched nothing would pass this test forever. */
+  assert.ok(
+    sources.length >= 15,
+    `expected the whole demo source tree, found ${sources.length} files`,
+  );
+
+  /*
+   * Bare "server" only. A match touching an identifier character on either side
+   * is part of a name the SDK ships and this repository does not get to rename
+   * — those are queued as a deliberate API vocabulary pass. "server-rendered"
+   * is Astro's meaning, not the E2EE role, and is left alone.
+   */
+  const BARE_SERVER = /(?<![\w$])servers?(?![\w$])/gi;
+  const found = [];
+  for (const [label, url] of sources) {
+    const text = await readFile(url, 'utf8');
+    for (const hit of text.matchAll(BARE_SERVER)) {
+      if (/^-rendered/i.test(text.slice(hit.index + hit[0].length))) continue;
+      const line = text.slice(0, hit.index).split('\n').length;
+      found.push(`${label}:${line}: ${text.split('\n')[line - 1].trim()}`);
+    }
+  }
+
+  assert.deepEqual(
+    found,
+    [],
+    `the demo names the relay a "server" here — messaging.md §4 says relay:\n${found.join('\n')}`,
+  );
 });
