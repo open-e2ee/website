@@ -51,13 +51,26 @@ import {
  * echoed would let the host answer its own calls and never prove the guest's
  * side ran at all.
  *
- * **Do not `.unref()` this timer, or the poll in `waitForDelivery`.** These two
- * are the only things keeping the loop alive between a post and its delivery.
- * Unref'd, Node 22 drains the loop mid-test and the runner cancels all six —
- * while reporting `fail 0`, so the suite looks green and the file has not run.
- * That shipped on this branch for three heads: CI pins 22, this machine
- * defaults to 26, and 26 happens to keep the loop alive long enough. Under 22
- * the unref'd version is `pass 0, fail 0, cancelled 6`.
+ * **Do not `.unref()` this timer, or the poll in `waitForDelivery`.** Between
+ * a post and its delivery they are the only things holding the loop open. Both
+ * unref'd, Node 22 drains it mid-test and the runner cancels every test in the
+ * file while still reporting `fail 0`, so the suite reads green and the file
+ * has not run. That shipped for four heads on the branch this arrived on: CI
+ * pins 22, this machine defaults to 26, and 26 keeps the loop alive long
+ * enough to hide it.
+ *
+ * The two are not equals, and only one of them is caught. Measured on Node
+ * 22.22.2 against this file, one unref at a time:
+ *
+ *   - the poll in `waitForDelivery` — `pass 0, fail 0, cancelled 9`, exit 1.
+ *     The exit code catches this one; the counts alone do not.
+ *   - this timer — `pass 9, fail 0, cancelled 0`, exit 0. The poll still
+ *     carries the loop, so the file runs, the suite is green, and no gate here
+ *     reports anything.
+ *
+ * Keep this one ref'd on the argument above rather than on a test: a real
+ * channel's delivery outlives the call that posts, and nothing in this suite
+ * will tell you when the fake stops doing the same.
  */
 function channelHub() {
   const ports = new Set();
