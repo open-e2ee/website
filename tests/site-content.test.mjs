@@ -2927,7 +2927,7 @@ test('shows a generic bucket for S3 only while there is no AWS client to name', 
   assert.ok(manifest.exports['./remote/object-store/s3'], 's3 object store export is gone');
 });
 
-test('the demo calls the relay a relay, everywhere a reader can reach', async () => {
+test("the demo's own source calls the relay a relay", async () => {
   /*
    * `docs/messaging.md` §4 fixes the vocabulary: the E2EE role is the **relay**,
    * and "server" is the word avoided for it. The demo is where that slips,
@@ -2950,6 +2950,15 @@ test('the demo calls the relay a relay, everywhere a reader can reach', async ()
    *
    * The scan reads source rather than `dist/`, so it runs without a build and
    * points at the line to fix instead of at a hashed chunk.
+   *
+   * What this does NOT cover, and the title is narrow on purpose. Strings that
+   * originate in the SDK reach the page and this test cannot see them: the
+   * reinstall scenario prints `EncryptionError`'s own wrapper, "Failed to sync
+   * with server", quoted rather than paraphrased because the point of that
+   * card is what came back — `scripts/demo-smoke.mjs` asserts the page renders
+   * it. So a reader does still meet the word on `/demo`. Fixing that means
+   * changing the SDK's message, not this site's copy, and it belongs to the
+   * vocabulary pass over the SDK's API surface and its rendered errors.
    */
   const roots = ['../src/lib/demo/', '../src/components/demo/'];
   const sources = [];

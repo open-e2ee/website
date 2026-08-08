@@ -184,9 +184,11 @@ const problems = [];
  * that loses sync on minified output fails by going quiet, and a checker that
  * goes quiet is the thing being fixed here. The cost is the reverse risk — a
  * banned phrase could match a minified identifier and fail a build over text no
- * reader sees. Measured rather than assumed: across all 54 built scripts,
- * 2.05 MB including the whole SDK bundle and its crypto dependencies, these
- * patterns match nothing today.
+ * reader sees. Measured rather than assumed: across every built script — the
+ * whole SDK bundle and its crypto dependencies included — these patterns match
+ * nothing today. No script count or byte total is written here on purpose: the
+ * run prints the live count on success, and a figure quoted in a comment is one
+ * build away from being false with nothing to catch it.
  *
  * Two limits worth knowing. A phrase the bundler split across a concatenation
  * or a template hole (`"…the Signal " + name`) is invisible to any static scan
