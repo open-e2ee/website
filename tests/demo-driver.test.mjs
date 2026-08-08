@@ -19,6 +19,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
 
 const PROBE = 'Ship it Thursday. The staging key rotates at 09:00 UTC.';
@@ -42,6 +43,64 @@ const declaredEnvelopeFields = await (async () => {
       .map((match) => match[1]),
   );
 })();
+
+/**
+ * The real in-memory relay, made to behave like one that has to cross something.
+ *
+ * `inMemoryRelay()` hands each envelope to its subscriber inside `send()` — a
+ * property no relay over a BroadcastChannel, a socket or a network has. This
+ * keeps the real relay, real storage and real prekey consumption included, and
+ * moves only the moment of delivery to after the send has resolved. That one
+ * difference is the whole of what the driver used to get wrong.
+ *
+ * `subscribe` is wrapped rather than replaced, and its `Unsubscribe` is
+ * returned synchronously. Making relay methods `async` wholesale is a trap:
+ * `subscribe` and `subscribeRetryRequests` both return their unsubscribe
+ * function rather than a promise of one, and a client handed a promise instead
+ * fails much later, in `stop()`, complaining that `this.retryUnsubscribe is not
+ * a function`.
+ */
+function relayThatDeliversLate({ deliverAfterMs = 50, delivery = 'late' } = {}) {
+  const relay = inMemoryRelay();
+  const subscribe = relay.subscribe.bind(relay);
+  const subscribers = new Map();
+  relay.demoDelivery = delivery;
+  relay.subscribe = (userId, deviceId, onEnvelope, options) => {
+    /* The driver's own observer subscribes to the recipient's row before the
+       recipient's client does, so counting per row separates the two: the
+       page watching the server, then the device reading its mail. */
+    const key = `${userId}:${deviceId}`;
+    const nth = (subscribers.get(key) ?? 0) + 1;
+    subscribers.set(key, nth);
+    return subscribe(
+      userId,
+      deviceId,
+      (envelope) => {
+        if (relay.demoDelivery === 'never') return;
+        if (relay.demoDelivery === 'observer-only' && nth > 1) return;
+        setTimeout(() => onEnvelope(envelope), deliverAfterMs).unref?.();
+      },
+      options,
+    );
+  };
+  return relay;
+}
+
+/**
+ * Turn a hang into a failure, so that a regression reports itself.
+ *
+ * The defect these tests cover produces no error and no rejection. Racing the
+ * send against a tripwire is what makes it visible at all: without one, a
+ * driver that hangs shows up as a test run that stops, minutes later, with
+ * nothing that says which line stopped it.
+ */
+function failsIfSlow(promise, ms, message) {
+  let timer;
+  const tripwire = new Promise((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms);
+  });
+  return Promise.race([promise, tripwire]).finally(() => clearTimeout(timer));
+}
 
 /** Boot once per test and always tear down, subscription included. */
 async function withSession(run) {
@@ -282,4 +341,126 @@ test('rejects an empty send rather than posting an empty row', async () => {
   await withSession(async (session) => {
     await assert.rejects(() => session.send('   '), /empty/i);
   });
+});
+
+test('says so when the recipient has no device, instead of a TypeError', async () => {
+  /* `recipientDevices` is `readonly` in the type and a live array at runtime,
+     so a scenario holding it can empty it — and the emptied case used to be
+     the one path where every wait was satisfied and nothing had arrived.
+     `Promise.all([])` resolves at once, both deadlines passed, and the failure
+     the reader saw was `Cannot read properties of undefined (reading
+     'message')` from inside the driver, several stages after the cause. */
+  await withSession(async (session) => {
+    session.recipientDevices.length = 0;
+    await assert.rejects(
+      () => failsIfSlow(session.send(PROBE), 5000, 'the send hung rather than refusing'),
+      (error) => {
+        assert.ok(!(error instanceof TypeError), `the driver threw a TypeError: ${error.message}`);
+        assert.match(error.message, /no device linked/);
+        return true;
+      },
+    );
+  });
+});
+
+/*
+ * The three below are about a relay that does not deliver inside `send()`.
+ *
+ * Everything above this line runs on `inMemoryRelay()`, which does — and a
+ * driver can depend on that without anyone noticing, because every test passes
+ * and every scenario works. It did. The envelope wait was closed the instant
+ * `send()` resolved, which is correct only for a relay that has already
+ * delivered by then, and the two-tab relay is the first one here that has not.
+ */
+
+test('completes a round trip when the relay delivers after the send resolves', async () => {
+  const session = await startDemoSession({ relay: relayThatDeliversLate() });
+  try {
+    const exchange = await failsIfSlow(
+      session.send(PROBE),
+      5000,
+      'the send neither resolved nor rejected in 5s, against a relay that delivers late.\n' +
+        '  That is the hang: the envelope wait is closed before the envelope arrives, so\n' +
+        '  nothing is left to resolve it and nothing reports that it will not be. On the\n' +
+        '  page this is a spinner that never stops and an empty console.',
+    );
+    assert.equal(exchange.decrypted.content, PROBE);
+    assert.equal(exchange.envelope.senderUserId, 'alice');
+    assert.notEqual(exchange.envelope.ciphertext, PROBE);
+  } finally {
+    await session.stop();
+  }
+});
+
+test('fails on its deadline when the relay never delivers at all', async () => {
+  const session = await startDemoSession({
+    relay: relayThatDeliversLate({ delivery: 'never' }),
+    deadlineMs: 250,
+  });
+  try {
+    await assert.rejects(
+      () =>
+        failsIfSlow(
+          session.send(PROBE),
+          5000,
+          'the send waited past its own 250ms deadline, so the deadline is not bounding it',
+        ),
+      /never delivered the envelope/,
+      'a send whose envelope never arrives has to fail saying so, not wait',
+    );
+  } finally {
+    await session.stop();
+  }
+});
+
+test('fails on its deadline when the envelope lands but no device decrypts it', async () => {
+  /* The relay stores the row and the page sees it, and the receiving device
+     never reads it. The envelope wait is satisfied, so this is the only one of
+     the three that reaches the second deadline at all. */
+  const session = await startDemoSession({
+    relay: relayThatDeliversLate({ delivery: 'observer-only' }),
+    deadlineMs: 250,
+  });
+  try {
+    await assert.rejects(
+      () =>
+        failsIfSlow(
+          session.send(PROBE),
+          5000,
+          'the send hung waiting to be decrypted, so only the envelope wait is bounded',
+        ),
+      /never delivered the decrypted message/,
+    );
+  } finally {
+    await session.stop();
+  }
+});
+
+test('is still usable after a send has failed on its deadline', async () => {
+  /* A send that fails leaves the envelope slot and every device callback
+     armed unless they are cleared on the way out, and the next send would
+     then be resolved by the wrong message or by nothing at all. */
+  const relay = relayThatDeliversLate({ delivery: 'never' });
+  const session = await startDemoSession({ relay, deadlineMs: 250 });
+  try {
+    await assert.rejects(
+      () =>
+        failsIfSlow(
+          session.send('the one that never lands'),
+          5000,
+          'the first send hung rather than failing, so this test cannot reach what it is for',
+        ),
+      /never delivered/,
+    );
+
+    relay.demoDelivery = 'late';
+    const exchange = await failsIfSlow(
+      session.send(PROBE),
+      5000,
+      'the send after a failed one hung, so the failure left the waits armed',
+    );
+    assert.equal(exchange.decrypted.content, PROBE);
+  } finally {
+    await session.stop();
+  }
 });

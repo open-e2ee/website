@@ -1,0 +1,612 @@
+/*
+ * One relay, in one tab, reachable from the others.
+ *
+ * The scenarios on /demo run both accounts in a single tab, which makes the
+ * relay easy to disbelieve: a reader watching a sentence go from one variable
+ * to another has been shown a data structure, not a protocol. So this module
+ * puts the two accounts in two tabs and a real wire between them, and the
+ * claim it exists to support is a negative one — that what crosses the wire is
+ * what a server would hold, and that the sentence is not on it.
+ *
+ * A claim like that is only worth as much as the surface it is made about.
+ * `ISignalProtocolRelayServer` has 42 members — 41 methods and one property —
+ * counting the two interfaces it extends, `IProvisioningService` and
+ * `IKeyRotationService`, which is where the two prekey-metadata calls live.
+ *
+ * This relay provides 15 of them, the ones in `CARRIED_CALLS` and
+ * `CARRIED_STREAMS` below, and those two lists are what the honesty test
+ * asserts the channel against. 12 is the number a two-tab session was measured
+ * to actually reach; the other three are provided because they are reached on
+ * a path a clean run does not take — two prekey rotations and a retry request
+ * after a failed decrypt.
+ *
+ * Read that as a claim about the two-tab send path and nothing wider. The
+ * scenarios on the rest of /demo drive a relay directly rather than through
+ * this one, and between them they reach provisioning, rotation and injected
+ * failures — members this relay refuses. Running a scenario through here would
+ * report that at the call, by name, which is the point.
+ *
+ * Every one of the other 26 methods throws its own name rather than returning
+ * a plausible answer, and `CoveredRelayMember` below is what makes that
+ * sentence true rather than aspirational: it fails the build naming any member
+ * that is neither carried, refused, nor deliberately omitted. A relay that
+ * quietly handed back `null` for a method the SDK had started calling would
+ * keep working and stop being true, which is the failure this page exists in
+ * order not to commit.
+ * That is not hypothetical: the measured list was one short —
+ * `subscribeRetryRequests` is called by every client at boot — and the refusal
+ * is what said so, at the call, instead of the demo half-working.
+ *
+ * Retry requests are carried rather than dropped, and the reason is worth
+ * stating: they are the SDK's answer to a message that would not decrypt, and
+ * a wire between two tabs is the first place in this demo where that can
+ * happen for an ordinary reason. A relay that swallowed them would make the
+ * two-tab demo less reliable than the single-tab one and look like a protocol
+ * fault. A `RetryRequest` carries ids, timestamps, a reason and a ratchet
+ * public key — nothing a reader typed.
+ *
+ * Why one relay rather than one per tab. A relay's state is not replicable at
+ * this layer: `fetchPreKeyBundle` *consumes* a one-time prekey, and two tabs
+ * each holding their own copy would hand the same one-time prekey to two
+ * handshakes and call it a server. So exactly one tab holds the
+ * `inMemoryRelay()` — whichever wins an exclusive Web Lock, which is atomic
+ * and needs no handshake — and every other tab calls into it. Both roles hand
+ * back the same surface, so nothing downstream can tell which tab it is in,
+ * and neither role can drift from the other by being written twice.
+ *
+ * This is demo infrastructure and is labelled as such wherever it is used
+ * (D3). A real deployment has a server; this has a tab that volunteered.
+ */
+
+import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
+import type { Envelope } from '@open-e2ee/signal-protocol-sdk';
+import type { ISignalProtocolRelayServer } from '@open-e2ee/signal-protocol-sdk/remote/relay/types';
+
+/**
+ * Every relay method allowed to cross the channel.
+ *
+ * Measured from a real boot, sync, handshake and round trip rather than read
+ * off the interface: the interface is what a relay may be asked for, and this
+ * is what it was asked for. Two are here that the measurement did not reach —
+ * `uploadEcSignedPreKey` and `uploadKemLastResortPreKey` fire only when a
+ * signed prekey is due for rotation, which a fresh session's are not.
+ *
+ * The honesty test asserts against this list, so adding to it is a deliberate
+ * act with a test to answer to, and a method missing from it fails loudly on
+ * first use instead of being answered wrongly.
+ */
+export const CARRIED_CALLS = [
+  'registerDevice',
+  'provisionIdentityKey',
+  'uploadPreKeys',
+  'getPreKeyCount',
+  'getEcSignedPreKeyMetadata',
+  'getKemLastResortPreKeyMetadata',
+  'uploadEcSignedPreKey',
+  'uploadKemLastResortPreKey',
+  'getDevices',
+  'fetchPreKeyBundle',
+  'send',
+  'markDelivered',
+  'sendRetryRequest',
+] as const;
+
+export type CarriedCall = (typeof CARRIED_CALLS)[number];
+
+/**
+ * The two subscriptions, which are not calls.
+ *
+ * Both hand back an unsubscribe function rather than a promise of one, so
+ * neither can be a request/response over the channel. They are registrations,
+ * and what comes back on them arrives as pushes.
+ *
+ * Both, and it is worth naming them separately, because they fail identically
+ * and the first failure hides the second. `subscribe()`'s return is stored as
+ * `this.relayUnsubscribe` and `subscribeRetryRequests()`'s as
+ * `this.retryUnsubscribe`; making either one `async` returns a promise, which
+ * survives every send and every delivery and then throws
+ * `this.relayUnsubscribe is not a function` in `stop()`, a long way from the
+ * line that caused it. A client calls both at boot and `stop()` reaches
+ * `relayUnsubscribe` first, so a wrong `subscribeRetryRequests` reports the
+ * other name's error and looks like the other defect. Teardown in the tests is
+ * the only thing that runs this path at all.
+ */
+export const CARRIED_STREAMS = ['envelopes', 'retries'] as const;
+
+export type CarriedStream = (typeof CARRIED_STREAMS)[number];
+
+const CARRIED = new Set<string>(CARRIED_CALLS);
+
+/** Everything this module will ever put on the channel. */
+export type RelayMessage =
+  /** A guest asking the host to run one of `CARRIED_CALLS`. */
+  | { kind: 'call'; callId: string; method: CarriedCall; args: unknown[] }
+  /** The host's answer. `value` is whatever that method returns. */
+  | { kind: 'return'; callId: string; ok: true; value: unknown }
+  | { kind: 'return'; callId: string; ok: false; error: RelayError }
+  /** A guest asking to be subscribed to one device's row, on one stream. */
+  | { kind: 'watch'; watchId: string; stream: CarriedStream; userId: string; deviceId: number }
+  | { kind: 'unwatch'; watchId: string }
+  /** One stored row, on its way to the guest that asked for it. */
+  | { kind: 'envelope'; watchId: string; envelope: Envelope }
+  /** A receiving device asking a sender to try again. Carries no message. */
+  | { kind: 'retry'; watchId: string; request: unknown };
+
+/**
+ * What survives of a thrown error when it crosses the channel.
+ *
+ * `postMessage` structured-clones, and structured clone drops the prototype.
+ * An `EncryptionError` thrown in the host tab arrives in the guest as a plain
+ * object: no class, no `instanceof`, and — if only the message were carried —
+ * no `code` either. Code branching on `error.code` would then take one path in
+ * the tab holding the relay and another in the tab beside it, which is not one
+ * SDK behaving consistently, it is two.
+ *
+ * Class identity is not recoverable; the constructors are not on the wire. So
+ * the three fields the SDK's own handling reads are carried explicitly and the
+ * guest rebuilds an `Error` from them. `name` is what makes a `TypeError` from
+ * the relay still say `TypeError` in the tab that asked for it.
+ */
+export interface RelayError {
+  name: string;
+  message: string;
+  code?: string;
+}
+
+/** Flatten a thrown value into the three fields the channel carries. */
+function describeError(error: unknown): RelayError {
+  if (!(error instanceof Error)) return { name: 'Error', message: String(error) };
+  const { code } = error as Error & { code?: unknown };
+  return {
+    name: error.name,
+    message: error.message,
+    ...(typeof code === 'string' ? { code } : {}),
+  };
+}
+
+/** Rebuild the guest's side of a host failure, fields intact. */
+function reviveError(described: RelayError): Error {
+  const error = new Error(described.message);
+  error.name = described.name;
+  if (described.code !== undefined) (error as Error & { code?: string }).code = described.code;
+  return error;
+}
+
+/** The message kinds, for a test that wants to enumerate the wire. */
+export const MESSAGE_KINDS = [
+  'call',
+  'return',
+  'watch',
+  'unwatch',
+  'envelope',
+  'retry',
+] as const;
+
+/**
+ * The part of `BroadcastChannel` this uses.
+ *
+ * Narrowed to three members so that a test can supply a pair of linked fakes
+ * and read every byte that crossed. The honesty claim is about what goes onto
+ * the channel, and a claim about that is best made by a test holding the
+ * channel rather than by one inspecting the page afterwards.
+ */
+export interface RelayChannel {
+  postMessage(message: unknown): void;
+  addEventListener(type: 'message', listener: (event: { data: unknown }) => void): void;
+  close(): void;
+}
+
+export interface BroadcastRelayOptions {
+  /** Channel name, so two demos on one origin cannot hear each other. */
+  name?: string;
+  /** Supplied by tests. Defaults to a real `BroadcastChannel`. */
+  channel?: RelayChannel;
+  /**
+   * Which side this is. Defaults to `'elect'`, which asks for an exclusive Web
+   * Lock and takes the host role if it gets it. Tests pin it, because election
+   * across two fake channels in one process has no lock to arbitrate it.
+   */
+  role?: 'host' | 'guest' | 'elect';
+  /**
+   * How long a guest waits for the host to answer a call, in milliseconds.
+   *
+   * There is no answer to "the other tab closed" other than to say so. A call
+   * that waits forever is the same defect the driver had, one layer down, and
+   * it looks identical to the reader: a spinner and an empty console.
+   */
+  callTimeoutMs?: number;
+}
+
+const DEFAULT_CALL_TIMEOUT_MS = 10_000;
+
+export interface DemoRelay {
+  /** `'host'` holds the relay; `'guest'` calls the tab that does. */
+  readonly role: 'host' | 'guest';
+  /**
+   * Hand to `createSignalProtocolClient({ adapters: { relay } })`.
+   *
+   * Typed as the full interface, which this does not implement — it carries
+   * what a session reaches and refuses the rest by name. The single cast that
+   * says so is at the bottom of this file, with its reasoning beside it,
+   * rather than repeated at every call site.
+   */
+  readonly relay: ISignalProtocolRelayServer;
+  /** Stop listening and, if host, drop the relay. */
+  close(): void;
+}
+
+/**
+ * A method the demo does not carry, which says so instead of answering.
+ *
+ * The alternative — returning `null`, `[]` or `undefined` to satisfy the type
+ * — is how a demo goes on working while it stops being true. If the SDK ever
+ * reaches past the 15 this relay provides, this page has to be the thing that
+ * reports it, because nothing else is watching.
+ */
+function refuse(method: string): (...args: unknown[]) => never {
+  return () => {
+    throw refusal(method);
+  };
+}
+
+/**
+ * The refusal itself, built rather than thrown.
+ *
+ * A guest refuses locally and the host refuses over the wire, and both have to
+ * be the same refusal. Built once here so the wire cannot develop a second,
+ * shorter sentence that says less — and given a name and a code, because those
+ * are what a caller can branch on after a structured clone has taken the class
+ * away. A refusal that arrives as a bare string is not the same answer the
+ * single-tab scenarios give.
+ */
+function refusal(method: string): Error {
+  const error = new Error(
+    `the two-tab demo relay does not carry ${method}(). It carries what a ` +
+      `session was measured to reach: ${CARRIED_CALLS.join(', ')}, and the ` +
+      `${CARRIED_STREAMS.join(' and ')} subscriptions. If the SDK now needs ` +
+      `${method}(), add it here and to the test that enumerates the channel.`,
+  ) as Error & { code: string };
+  error.name = 'DemoRelayMethodNotCarried';
+  error.code = 'DEMO_RELAY_METHOD_NOT_CARRIED';
+  return error;
+}
+
+/**
+ * Method names on the full interface that this relay answers by refusing.
+ *
+ * The eight `IProvisioningService` methods are here for the same reason as the
+ * rest, although no two-tab session can reach them: the demo links no second
+ * device. They were missing from the first draft of this list, which made the
+ * header's "everything else throws its own name" false — calling one gave
+ * `relay.createProvisioningSession is not a function`, an error about
+ * JavaScript rather than about this demo. The two guards below fail the build
+ * on that whole class rather than leaving it to be noticed.
+ */
+const REFUSED = [
+  'createProvisioningSession',
+  'connectNewDevice',
+  'sendProvisioningMessage',
+  'getProvisioningMessage',
+  'completeProvisioning',
+  'acknowledgeProvisioning',
+  'rollbackProvisioning',
+  'deleteProvisioningSession',
+  'removeDevice',
+  'markDeviceConnected',
+  'markDeviceDisconnected',
+  'heartbeat',
+  'rotateIdentityKey',
+  'getIdentityKey',
+  'clearStaleKemPreKeys',
+  'getActiveDevices',
+  'createGroupState',
+  'getGroupState',
+  'getGroupJoinInfo',
+  'getGroupChanges',
+  'submitGroupChange',
+  'issueAuthCredential',
+  'refreshGroupSendEndorsements',
+  'fetchSenderCertificate',
+  'sendUnidentified',
+  'sendMultiRecipientUnidentified',
+] as const;
+
+/**
+ * On the interface, and deliberately not provided.
+ *
+ * `groupServer` is a `readonly` **property**, not a method — the only one on
+ * the interface. `refuse('groupServer')` would satisfy the partition below and
+ * still be wrong: it would install a throwing function where the type declares
+ * an optional object. The two-tab demo has no group server, the property is
+ * optional, and `undefined` is a legal value of the declared type. So it is
+ * absent, and this list is where that decision is recorded rather than
+ * inferred from a gap.
+ */
+const OMITTED = ['groupServer'] as const;
+
+/**
+ * Every member of the interface is carried, refused, or deliberately omitted.
+ *
+ * Two guards, because one direction is not enough. `Exclude` catches a member
+ * the SDK **adds** and nobody covers. The `satisfies` catches the reverse — a
+ * name kept in a list after the SDK has **removed** it, which otherwise sits
+ * there reading like coverage for a method that no longer exists.
+ *
+ * Both are written this way rather than as annotations because an annotation is
+ * the weaker shape: `readonly (keyof ISignalProtocolRelayServer)[]` on the
+ * arrays above accepts a list that has *lost* a name as readily as a complete
+ * one. That is the guard LD7 found itself holding.
+ */
+type RelayMember = keyof ISignalProtocolRelayServer;
+
+type CoveredRelayMember =
+  | CarriedCall
+  | 'subscribe'
+  | 'subscribeRetryRequests'
+  | (typeof REFUSED)[number]
+  | (typeof OMITTED)[number];
+
+const _everyRelayMemberIsCovered: [Exclude<RelayMember, CoveredRelayMember>] extends [never]
+  ? true
+  : ['relay members in neither CARRIED, REFUSED nor OMITTED:', Exclude<RelayMember, CoveredRelayMember>] = true;
+void _everyRelayMemberIsCovered;
+
+const _noListNamesAMemberTheSdkDropped = [
+  ...CARRIED_CALLS,
+  'subscribe',
+  'subscribeRetryRequests',
+  ...REFUSED,
+  ...OMITTED,
+] satisfies readonly RelayMember[];
+void _noListNamesAMemberTheSdkDropped;
+
+let counter = 0;
+const nextId = (prefix: string) => `${prefix}-${++counter}-${Math.random().toString(36).slice(2, 8)}`;
+
+/**
+ * Take the host role if it is going, without waiting for it if it is not.
+ *
+ * `ifAvailable` makes this atomic: exactly one tab is told it got the lock, no
+ * announcement round trip and no window in which two tabs both believe they
+ * are the host. The callback's promise is never resolved, so the lock is held
+ * until the tab goes away, at which point the browser releases it.
+ */
+async function winHostRole(name: string): Promise<boolean> {
+  if (!('locks' in navigator)) {
+    throw new Error(
+      'this browser has no Web Locks API, so the two tabs cannot agree which ' +
+        'of them holds the relay',
+    );
+  }
+  return new Promise<boolean>((resolve) => {
+    void navigator.locks.request(`oe-demo-relay:${name}`, { ifAvailable: true }, (lock) => {
+      resolve(lock !== null);
+      /* Held for the life of the tab when we won it; released immediately when
+         we did not, since a null lock was never taken. */
+      return lock === null ? undefined : new Promise<never>(() => {});
+    });
+  });
+}
+
+export async function broadcastRelay(options: BroadcastRelayOptions = {}): Promise<DemoRelay> {
+  const name = options.name ?? 'oe-demo';
+  const callTimeoutMs = options.callTimeoutMs ?? DEFAULT_CALL_TIMEOUT_MS;
+  const channel = options.channel ?? new BroadcastChannel(`oe-demo-relay:${name}`);
+  const role =
+    options.role && options.role !== 'elect'
+      ? options.role
+      : (await winHostRole(name))
+        ? 'host'
+        : 'guest';
+
+  const post = (message: RelayMessage) => channel.postMessage(message);
+
+  const base: Record<string, unknown> = {};
+  for (const method of REFUSED) base[method] = refuse(method);
+
+  let relay: Record<string, unknown>;
+  let stop: () => void;
+
+  if (role === 'host') {
+    const local = inMemoryRelay() as unknown as Record<string, (...args: unknown[]) => unknown>;
+    /* One subscription per watching guest, so an `unwatch` takes down that
+       guest's and nobody else's.
+
+       A guest that is closed or reloaded posts no `unwatch`, and its entry
+       stays here until this tab goes away — the host learns nothing about a
+       tab that stopped existing, since `BroadcastChannel` carries no such
+       event. What leaks is one closure per dead guest, delivering into a
+       channel nobody is listening on, which the demo's lifetime bounds. A real
+       relay would hold a connection whose loss it could see. */
+    const watches = new Map<string, () => void>();
+
+    channel.addEventListener('message', (event) => {
+      const message = event.data as RelayMessage;
+      if (!message || typeof message !== 'object') return;
+
+      if (message.kind === 'call') {
+        /* The host checks the list itself rather than trusting that the guest
+           checked it. A guest is another tab, and this one is the relay. */
+        if (!CARRIED.has(message.method)) {
+          post({
+            kind: 'return',
+            callId: message.callId,
+            ok: false,
+            error: describeError(refusal(String(message.method))),
+          });
+          return;
+        }
+        void (async () => {
+          try {
+            const value = await local[message.method](...message.args);
+            post({ kind: 'return', callId: message.callId, ok: true, value });
+          } catch (error) {
+            post({ kind: 'return', callId: message.callId, ok: false, error: describeError(error) });
+          }
+        })();
+        return;
+      }
+
+      if (message.kind === 'watch') {
+        if (watches.has(message.watchId)) return;
+        const { watchId, userId, deviceId } = message;
+        const unsubscribe =
+          message.stream === 'envelopes'
+            ? (local.subscribe(userId, deviceId, (envelope: Envelope) =>
+                post({ kind: 'envelope', watchId, envelope }),
+              ) as () => void)
+            : (local.subscribeRetryRequests(userId, deviceId, async (request: unknown) => {
+                post({ kind: 'retry', watchId, request });
+              }) as () => void);
+        watches.set(watchId, unsubscribe);
+        return;
+      }
+
+      if (message.kind === 'unwatch') {
+        watches.get(message.watchId)?.();
+        watches.delete(message.watchId);
+      }
+    });
+
+    relay = {
+      ...base,
+      ...Object.fromEntries(
+        CARRIED_CALLS.map((method) => [method, (...args: unknown[]) => local[method](...args)]),
+      ),
+      subscribe: (userId: string, deviceId: number, onEnvelope: (envelope: Envelope) => void) =>
+        local.subscribe(userId, deviceId, onEnvelope),
+      subscribeRetryRequests: (
+        userId: string,
+        deviceId: number,
+        handler: (request: unknown) => Promise<void>,
+      ) => local.subscribeRetryRequests(userId, deviceId, handler),
+    };
+
+    stop = () => {
+      for (const unsubscribe of watches.values()) unsubscribe();
+      watches.clear();
+    };
+  } else {
+    const waiting = new Map<
+      string,
+      { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> }
+    >();
+    const watchers = new Map<string, (value: unknown) => void>();
+
+    channel.addEventListener('message', (event) => {
+      const message = event.data as RelayMessage;
+      if (!message || typeof message !== 'object') return;
+
+      if (message.kind === 'return') {
+        const pending = waiting.get(message.callId);
+        if (!pending) return;
+        waiting.delete(message.callId);
+        clearTimeout(pending.timer);
+        if (message.ok) pending.resolve(message.value);
+        else pending.reject(reviveError(message.error));
+        return;
+      }
+
+      if (message.kind === 'envelope') watchers.get(message.watchId)?.(message.envelope);
+      else if (message.kind === 'retry') watchers.get(message.watchId)?.(message.request);
+    });
+
+    const call = (method: CarriedCall, args: unknown[]) =>
+      new Promise<unknown>((resolve, reject) => {
+        const callId = nextId('call');
+        const timer = setTimeout(() => {
+          waiting.delete(callId);
+          reject(
+            new Error(
+              `the tab holding the relay did not answer ${method}() within ` +
+                `${callTimeoutMs}ms. It has probably been closed; reload this tab.`,
+            ),
+          );
+        }, callTimeoutMs);
+        waiting.set(callId, { resolve, reject, timer });
+        post({ kind: 'call', callId, method, args });
+      });
+
+    /*
+     * Register a subscription, and hand back its unsubscribe now.
+     *
+     * Both subscriptions return their unsubscribe function rather than a
+     * promise of one, so neither can wait for the host to confirm. A client
+     * given a promise here stores it and fails much later, in `stop()`, saying
+     * `this.retryUnsubscribe is not a function` — which is a long way from the
+     * line that caused it.
+     *
+     * Nothing is missed in the gap before the host registers. The relay
+     * replays a device's stored rows to each new subscriber, so an envelope
+     * that arrived first is delivered on arrival of the watch instead.
+     */
+    const watch = (
+      stream: CarriedStream,
+      userId: string,
+      deviceId: number,
+      handler: (value: unknown) => void,
+    ) => {
+      const watchId = nextId('watch');
+      watchers.set(watchId, handler);
+      post({ kind: 'watch', watchId, stream, userId, deviceId });
+      return () => {
+        watchers.delete(watchId);
+        post({ kind: 'unwatch', watchId });
+      };
+    };
+
+    relay = {
+      ...base,
+      ...Object.fromEntries(
+        CARRIED_CALLS.map((method) => [method, (...args: unknown[]) => call(method, args)]),
+      ),
+      subscribe: (userId: string, deviceId: number, onEnvelope: (envelope: Envelope) => void) =>
+        watch('envelopes', userId, deviceId, onEnvelope as (value: unknown) => void),
+      subscribeRetryRequests: (
+        userId: string,
+        deviceId: number,
+        handler: (request: unknown) => Promise<void>,
+      ) => watch('retries', userId, deviceId, handler as (value: unknown) => void),
+    };
+
+    stop = () => {
+      for (const [callId, pending] of waiting) {
+        clearTimeout(pending.timer);
+        pending.reject(new Error(`the demo relay was closed before ${callId} was answered`));
+      }
+      waiting.clear();
+      watchers.clear();
+    };
+  }
+
+  return {
+    role,
+    /*
+     * The one cast, and why it is a cast rather than an implementation.
+     *
+     * The cast stays, and it is not the thing enforcing the contract. `relay`
+     * is a `Record<string, unknown>` built from dynamically-keyed spreads, so
+     * a single `as` has nothing to check against — it fails ts(2352) — and
+     * restructuring the builder to earn a structural check would trade a
+     * guard that names the missing member for one that reports a shape
+     * mismatch. `CoveredRelayMember` above is the guard: **the two type-level
+     * checks police the names, this cast forgives the shapes, and `OMITTED` is
+     * where a shape decision gets written down.**
+     *
+     * As for why the shapes are forgiven at all: the interface has 42 members,
+     * this relay provides the 15 a two-tab session needs, and 27 are left.
+     * Implementing them to satisfy the compiler would be 27 places for a wrong
+     * answer to hide, and the compiler cannot tell a correct implementation
+     * from a plausible one. So 26 are present and throw their own names, and
+     * `groupServer` is absent because the type says it may be. That is the
+     * honest shape, and the one that reports a change in the SDK instead of
+     * absorbing it: the type says what the SDK requires, `refuse()` says what
+     * this is.
+     */
+    relay: relay as unknown as ISignalProtocolRelayServer,
+    close() {
+      stop();
+      channel.close();
+    },
+  };
+}

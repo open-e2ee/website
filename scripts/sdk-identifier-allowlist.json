@@ -8,6 +8,7 @@
     "that was supposed to be ours. Say whose it is."
   ],
   "allow": [
+    "BroadcastChannel",
     "randomUUID",
     "webcrypto",
     "getRandomBytesAsync",
@@ -18,6 +19,7 @@
     "UNNotificationServiceExtension"
   ],
   "$provenance": {
+    "BroadcastChannel": "HTML Living Standard; the transport /demo's two-tab section carries the relay over, and website code rather than the SDK's per plan decision D3",
     "randomUUID": "Web Crypto API, and expo-crypto's re-export of it",
     "webcrypto": "node:crypto",
     "getRandomBytesAsync": "expo-crypto",
