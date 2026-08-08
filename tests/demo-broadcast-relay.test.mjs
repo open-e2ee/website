@@ -54,10 +54,10 @@ import {
  * **Do not `.unref()` this timer, or the poll in `waitForDelivery`.** Between
  * a post and its delivery they are the only things holding the loop open. Both
  * unref'd, Node 22 drains it mid-test and the runner cancels every test in the
- * file while still reporting `fail 0`, so the suite reads green and the file
- * has not run. That shipped for four heads on the branch this arrived on: CI
- * pins 22, this machine defaults to 26, and 26 keeps the loop alive long
- * enough to hide it.
+ * file while still reporting `fail 0`. The job exits 1 and CI goes red — but
+ * the summary a person scans reads green, and that is how it survived four
+ * heads. Locally there was not even a red to miss: CI pins 22, this machine
+ * defaults to 26, and 26 keeps the loop alive long enough to pass.
  *
  * The two are not equals, and only one of them is caught. Measured on Node
  * 22.22.2 against this file, one unref at a time:
