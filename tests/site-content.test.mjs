@@ -2720,8 +2720,18 @@ test('says whether the adapters ship, wherever it says they are yours', async ()
 
   /* And the relay is defined where it is first demanded of the reader. Three
    * fresh readers in one wave, independently, called it the load-bearing noun
-   * the page never explains. */
-  assert.match(dist, /the server that holds public keys\s+and device lists and delivers the encrypted envelopes/);
+   * the page never explains.
+   *
+   * The definition used to open "the server that holds public keys", which is
+   * the one word `docs/messaging.md` §4 reserves against for this exact role.
+   * It now defines the relay as itself rather than by a banned synonym, so the
+   * assertion moved onto the part that carries the meaning. Asserting the
+   * words and not the dash keeps this from failing over punctuation. */
+  assert.match(
+    dist,
+    /it holds public keys\s+and\s+device lists\s+and\s+delivers the encrypted envelopes/,
+  );
+  assert.doesNotMatch(dist, /the server that holds public keys/);
 
   /* Every identifier above must be a real export. The build audit resolves
    * them against the installed package, so this asserts that the resolver is
