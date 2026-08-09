@@ -238,9 +238,14 @@ const VIEWPORT = { width: 1280, height: 800 };
  * without the demo to compare against, and is measured in the proof rather than
  * here. This is the tripwire for the SDK arriving uninvited.
  *
- * The proof's table reports lower figures, and both are right: it walks the
- * module graph on disk, while this counts what Chrome actually fetched, which
- * includes responses the static walk does not model. The ceiling is set against
+ * The proof's table reports lower figures, and both are right. It sums the
+ * files on disk; this counts what Chrome received, and `encodedDataLength` is
+ * the whole response, headers included. Both see the same eight responses —
+ * there is no fetch here that the static walk misses — so the gap is a flat
+ * per-response cost, 686 bytes apiece from `chrome-harness.mjs`, and the
+ * 17.5 KB on disk arrives as the 22.8 KB above. Anything that changes those
+ * headers moves this number without a byte of script changing, which is one
+ * more reason it is a tripwire and not a budget. The ceiling is set against
  * the figure measured here.
  */
 const PRE_INTERACTION_CEILING = 32 * 1024;

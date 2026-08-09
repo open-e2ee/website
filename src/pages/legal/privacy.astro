@@ -163,7 +163,8 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
         </p>
         <p>
           The site sends a short message to our own servers when one of eleven things happens: you
-          run the live demo on the home page, open one of the scenarios on the demo page, open the
+          run the live demo on the home page, open one of the failure scenarios further down it,
+          open the
           quickstart, choose a runtime, copy the install command, follow the closing link of an
           article or the architecture guide, open one of our GitHub repositories, view the security
           model page, view the pricing page, open the console, or begin an enterprise enquiry. Each
@@ -296,13 +297,23 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           record.
         </p>
         <p>
-          <strong>Version {privacyVersion}:</strong> a second change on the same day, and the
-          reason this version carries a suffix rather than a later date. An eleventh event was
-          added, recording which scenario on the demo page was opened. The name of the scenario is
+          <strong>Version 2026-08-07.2:</strong> a second change on the same day, and the
+          reason that version carries a suffix rather than a later date. An eleventh event was
+          added, recording which scenario was opened. The name of the scenario is
           the second and last word any event on this site carries, and it describes the page
           rather than the visitor, as described in <a href="#cookies">Cookies and analytics</a>.
           Nothing else about the measurement changed: still no cookie, no storage, no identifier,
           and no IP-address record.
+        </p>
+        <p>
+          <strong>Version {privacyVersion}:</strong> no new event, no new category of information,
+          and nothing additional collected. The failure scenarios moved from a page of their own
+          onto the home page, and the message that records one names the page it happened on, so
+          the path in that message changed with the move — it now reads <code>scenario_opened /</code>
+          followed by the name of the scenario. This notice is versioned for it because the words
+          the site transmits changed, and a notice that quotes those words exactly, as this one
+          does, cannot describe them and stay unversioned. Still no cookie, no storage, no
+          identifier, and no IP-address record.
         </p>
         <p>
           For privacy questions or requests, email{' '}

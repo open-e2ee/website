@@ -16,7 +16,7 @@ test('pins the first Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-07-23');
   assert.equal(commercialTermsPath, '/legal/terms/2026-07-23');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-07-23');
-  assert.equal(privacyVersion, '2026-08-07.2');
+  assert.equal(privacyVersion, '2026-08-09');
 });
 
 /*
@@ -96,11 +96,36 @@ test('keeps the privacy version history truthful about when each event arrived',
   /* Every version but the newest is written out, because interpolating the
      constant into an older entry re-dates a change that already happened. */
   assert.match(privacy, /<strong>Version 2026-08-07:<\/strong> a tenth event was added/);
-  assert.match(privacy, /<strong>Version \{privacyVersion\}:<\/strong>[^<]{0,240}eleventh event/);
+  assert.match(privacy, /<strong>Version 2026-08-07\.2:<\/strong>[^<]{0,240}eleventh event/);
+
+  /*
+   * The eleventh event's entry was interpolated until the scenarios moved onto
+   * the home page and a twelfth version was published. That is the moment the
+   * bug this test exists for comes back: the entry describing the eleventh
+   * event's arrival is now about a past version, so it has to be written out,
+   * exactly as the tenth event's was when the eleventh arrived.
+   *
+   * Both directions are asserted. The match above fixes the old entry to its
+   * own literal date; the two below say the constant may not appear on either
+   * of the entries that already have one. A guard that only checked the newest
+   * entry existed would pass on a history where every line said "2026-08-09".
+   */
   assert.doesNotMatch(
     privacy,
     /<strong>Version \{privacyVersion\}:<\/strong> a tenth event was added/,
   );
+  assert.doesNotMatch(
+    privacy,
+    /<strong>Version \{privacyVersion\}:<\/strong>[^<]{0,240}eleventh event/,
+  );
+
+  /*
+   * And the newest entry is the interpolated one. It records a change to the
+   * transmitted string rather than a new event, so it is matched on what makes
+   * it a version at all — that no new event or category came with it — rather
+   * than on an ordinal it does not have.
+   */
+  assert.match(privacy, /<strong>Version \{privacyVersion\}:<\/strong> no new event/);
 });
 
 test('describes the implemented providers and the self-operated SDK boundary', async () => {
