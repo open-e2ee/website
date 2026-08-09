@@ -53,8 +53,11 @@ const answers = [
   {
     question: 'Has it been audited or validated?',
     answer:
-      'No third-party security audit has been performed; an independent review is planned, no firm is engaged, and no date is set. Separately, pure-JavaScript cryptography is not FIPS 140-validated, and no part of this SDK is offered as a validated cryptographic module. If your programme requires a validated module, this is the wrong choice and we would rather you learned it here than in week six.',
-    links: [{ href: '/security', label: 'The limits we publish rather than bury' }],
+      'Reviewed continuously by adversarial AI agents; not audited by any independent firm. Every change passes an adversarial AI review before it merges, and recurring whole-codebase AI audit passes run against the engineering repository. What that covers — and what it does not — is stated in the assurance summary. No independent firm has audited the SDK, and none is engaged. Separately, pure-JavaScript cryptography is not FIPS 140-validated, and no part of this SDK is offered as a validated cryptographic module. If your programme requires a validated module, this is the wrong choice and we would rather you learned it here than in week six.',
+    links: [
+      { href: docs.assurance, label: 'Assurance — what the checks cover, and what they do not' },
+      { href: '/security', label: 'The limits we publish rather than bury' },
+    ],
   },
   {
     question: 'What are the licence terms?',

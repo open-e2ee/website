@@ -872,10 +872,11 @@ test('states the same assurance figures on every page that states them', async (
 });
 
 test('publishes a response window that matches the SDK security policy', () => {
-  /* SECURITY.md in signal-protocol-js commits to acknowledgment within 48
-   * hours and an initial assessment within 7 days. A site that promises
-   * anything faster is writing a cheque the policy does not cover. */
-  assert.equal(reporting.acknowledgment, '48 hours');
+  /* SECURITY.md in signal-protocol-js commits to an acknowledgment window and
+   * an initial assessment within 7 days. A site that promises anything faster
+   * is writing a cheque the policy does not cover — which is why the window
+   * widened here on 2026-08-09 rather than narrowed. */
+  assert.equal(reporting.acknowledgment, '72 hours');
   assert.equal(reporting.assessment, '7 days');
   assert.equal(reporting.address, 'security@open-e2ee.dev');
 });
@@ -945,8 +946,69 @@ test('states the validation and audit position rather than omitting it', async (
   for (const page of [security, evaluate]) {
     assert.match(page, /not FIPS 140-validated/);
   }
-  assert.match(security, /No third-party security audit has been performed/i);
-  assert.match(evaluate, /No third-party security audit has been performed/i);
+
+  /* docs/messaging.md §7 fixes one sentence for audit status and binds its two
+   * halves together: the AI review, and the absence of a firm audit. Either
+   * half alone is a defect — the first overclaims, the second understates what
+   * actually runs — so both are asserted, on every page that raises the
+   * question at all.
+   *
+   * scripts/audit-build.mjs enforces the same pairing over rendered output and
+   * does not subsume this: it can only require the limit once some trigger
+   * word appears, so a page that drops the subject entirely satisfies it and
+   * says nothing. These pages are the ones that must not go quiet. */
+  for (const page of [security, evaluate]) {
+    assert.match(page, /Reviewed continuously by adversarial AI agents/);
+    assert.match(page, /not audited by any independent firm/);
+    assert.match(page, /No independent firm has audited the SDK, and none is engaged/);
+  }
+
+});
+
+test('does not revive the retired promise of an independent review, anywhere', async () => {
+  /* The promise was retired on 2026-08-09 (docs/messaging.md §2, §7) and it
+   * had shipped in five places by then: the landing page, /security,
+   * /evaluate, a blog post, and the comparison data. A guard on the two trust
+   * pages would have caught three of them.
+   *
+   * So this walks the tree the same way the relay-formula guard above does,
+   * and for the same reason: a list written by hand stops covering the page
+   * added after it. Comments come out first — the landing page explains what
+   * was retired, and explaining it means naming it. */
+  const sources = [];
+  const walk = async (dir) => {
+    for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
+      if (entry.isDirectory()) await walk(`${dir}${entry.name}/`);
+      else if (/\.(astro|mdx|mjs|ts)$/.test(entry.name)) sources.push(`${dir}${entry.name}`);
+    }
+  };
+  await walk('../src/');
+  assert.ok(sources.length > 30, `expected to walk the whole tree, found ${sources.length} files`);
+
+  const prose = (text) =>
+    text
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/^[ \t]*\/\/.*$/gm, ' ');
+
+  /* "Planned" is the word that shipped. The rest are the near misses a later
+   * edit reaches for, and "not yet audited" is the retired promise compressed
+   * into one adverb — it dates the absence of an audit against a future that
+   * was never committed to. */
+  const retired = [
+    /independent (?:security )?review is planned/i,
+    /plans? an independent (?:security )?review/i,
+    /\bnot yet audited\b/i,
+    /\bindependently audited\b/i,
+    /\bthird[- ]party audited\b/i,
+  ];
+
+  for (const source of sources) {
+    const text = prose(await read(source));
+    for (const promise of retired) {
+      assert.doesNotMatch(text, promise, `${source} revives a promise retired on 2026-08-09`);
+    }
+  }
 });
 
 test('renders a phone at the phone’s own width, so overflow is visible', async () => {
