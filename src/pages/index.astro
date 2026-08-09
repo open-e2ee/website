@@ -2,6 +2,8 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BatteryMark from '../components/BatteryMark.astro';
 import LiveCarrierPanel from '../components/demo/LiveCarrierPanel.astro';
+import ScenarioList from '../components/demo/ScenarioList.astro';
+import TwoTabSection from '../components/demo/TwoTabSection.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import Icon from '../components/Icon.astro';
 import OsiMark from '../components/OsiMark.astro';
@@ -9,6 +11,7 @@ import PlatformStrip from '../components/PlatformStrip.astro';
 import TypeScriptMark from '../components/TypeScriptMark.astro';
 import { MEASURED_ON, libsignalReadme } from '../lib/comparison.mjs';
 import { startupTier } from '../data/pricing.mjs';
+import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 
 const differentiators = [
   {
@@ -685,23 +688,91 @@ const trustLinks = [
           <span class="oe-button">Record this yourself</span>
           <span class="cta-sublabel">ten minutes · two clients · no account</span>
         </a>
-        {/* The panel above shows the protocol working, which is the half a
-            reader already expected. This is the way to the half that decides
-            an adoption. It was once the only entry point to `/demo`, on the
-            reasoning that the page held one scenario and a nav slot was worth
-            more than that — with the condition for revisiting written into
-            the same sentence: it takes one when the page is a page rather
-            than a scenario. It holds four, so it now has the nav slot, and
-            this link keeps its deep target because a reader at this exact
-            point wants the byte, not the index. */}
-        <a class="text-link" href="/demo#flip-a-byte">
-          Now watch a byte change in transit, and the protocol refuse it
-        </a>
+        {/* A text-link stood here reading "Now watch a byte change in transit,
+            and the protocol refuse it", pointing at `/demo#flip-a-byte`. The
+            scenarios it pointed at are now the next section down, and a link
+            that scrolls the reader one band forward is furniture: the heading
+            below makes the same offer in the same words, at the place the
+            reader arrives anyway.
+
+            The history is worth keeping because it records a condition that has
+            now been met twice. The link was once the *only* entry to the
+            scenarios, on the reasoning that one scenario did not earn a nav
+            slot — with the trigger for revisiting written into the same
+            sentence: it takes one when it is a page rather than a scenario. It
+            became a page, took the nav slot, and has now given both back, for
+            the reason the review found in every exemplar we checked. A reader
+            who has just watched one message work should be able to break the
+            next one without navigating. */}
       </div>
     </div>
   </section>
 
-  <section class="band band-surface">
+  {/*
+    The second half of the panel above, and deliberately the same band rather
+    than a new subject. The arc is one demo in two moves: a message goes end to
+    end, then the same SDK is asked to fail. Two headings that both said "here
+    is a demo" would read as two products.
+
+    `id` because `public/_redirects` sends `/demo` to this fragment, which is
+    what makes a bookmarked `/demo` land on the thing it asked for rather than
+    at the top of a long page. The four scenario slugs stay `id`s of their own
+    inside the list, so `/#flip-a-byte` works — but `/demo#flip-a-byte` resolves
+    here instead, because a destination fragment replaces the reader's. That
+    trade is argued in `_redirects` beside the rule.
+
+    No count in the heading. `/demo`'s h1 was "Four things that go wrong, and
+    what the protocol does about each", which stopped being maintainable the
+    moment a fifth scenario was worth adding, and named an inventory rather than
+    what the reader gets from it.
+  */}
+  <section id="when-something-goes-wrong" class="band band-surface">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>What it does when something goes wrong</h2>
+        <p class="measure">
+          Every library documents its failure modes in prose. These run them: each scenario below
+          drives the installed SDK in this tab, forces one situation on purpose, and prints what the
+          devices said about it — their own logs, unedited. In two of them, what they say is nothing
+          at all, and that is the point of running them rather than describing them.
+        </p>
+        {/*
+          Invariant 5, before the reader has run anything rather than after. The
+          cryptography is the shipped cryptography; the infrastructure under it
+          is not, and in a section whose whole subject is failure the reader has
+          to know which failures are real ones.
+
+          Repeated from the panel above rather than inherited from it. A reader
+          redirected from `/demo#flip-a-byte` lands on a scenario below this
+          line and never passes the panel's copy of it.
+        */}
+        <p class="muted measure">
+          Real protocol and real cryptography, simulated infrastructure — <code
+            >inMemoryStore()</code
+          >{' '}and <code>inMemoryRelay()</code> run in the browser, so every device and the relay
+          are this machine. {sdkManifest.name}@{sdkManifest.version}.
+        </p>
+      </div>
+
+      <ScenarioList />
+
+      <TwoTabSection />
+
+      {/*
+        The same invitation the panel above makes, in the place it is worth
+        more: this section runs a protocol failure and still has nothing to
+        report to anybody. What it does send is one beacon saying which scenario
+        was opened, which is why the sentence names it rather than claiming
+        silence.
+      */}
+      <p class="muted measure">
+        All of it runs here. The only thing this section sends is one beacon naming the scenario you
+        opened — no message content, no sizes, no timings. Check the network tab.
+      </p>
+    </div>
+  </section>
+
+  <section class="band">
     <div class="container">
       <div class="band-head">
         <h2>Why this exists at all</h2>
@@ -766,7 +837,7 @@ const trustLinks = [
       read as a disclosure about this SDK rather than a quotation about another
       one. It now opens the hero, where the reader is actually asking. */}
 
-  <section class="band">
+  <section class="band band-surface">
     <div class="container">
       <div class="band-head">
         <h2>Check the work</h2>

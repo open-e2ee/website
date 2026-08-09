@@ -19,7 +19,7 @@
     "UNNotificationServiceExtension"
   ],
   "$provenance": {
-    "BroadcastChannel": "HTML Living Standard; the transport /demo's two-tab section carries the relay over, and website code rather than the SDK's per plan decision D3",
+    "BroadcastChannel": "HTML Living Standard; the transport the two-tab section carries the relay over, and website code rather than the SDK's per plan decision D3",
     "randomUUID": "Web Crypto API, and expo-crypto's re-export of it",
     "webcrypto": "node:crypto",
     "getRandomBytesAsync": "expo-crypto",

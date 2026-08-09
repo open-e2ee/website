@@ -1,6 +1,6 @@
 /*
- * The driver is what the homepage panel, /demo, and the two-tab relay will all
- * run. It composes the installed package's public API and nothing else — no
+ * The driver is what the homepage panel, the failure scenarios, and the two-tab
+ * relay all run. It composes the installed package's public API and nothing else — no
  * fork, no shim, no re-typed constant (invariant 1) — so these tests do a real
  * PQXDH handshake and a real Double Ratchet round trip against real
  * `inMemoryStore()` and `inMemoryRelay()` adapters. Nothing here is stubbed:
@@ -258,8 +258,8 @@ test('carries a second message on the established session', async () => {
  * stale envelope to the next send, which reported the previous sentence's
  * ciphertext as its own.
  *
- * No scenario before `/demo` ever produced a second envelope outside a send, so
- * the whole suite stayed green with the bug in place. The corruption here is
+ * No scenario before `flip-a-byte` ever produced a second envelope outside a
+ * send, so the whole suite stayed green with the bug in place. The corruption here is
  * deliberately blunt — a replacement ciphertext rather than a flipped byte,
  * because this test is about the driver's bookkeeping and not about which error
  * the protocol names.

@@ -61,7 +61,12 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
   } catch {
     return; // dist/ absent — the build-output tests in this file all skip together.
   }
-  assert.ok(pages.length >= 17, `expected the full site in dist/, found ${pages.length} pages`);
+  /* 16 since /demo folded into the homepage. This is a floor on the walk
+   * finding the site, not a count anyone maintains for its own sake — but it is
+   * exactly met, so it reds the moment a route is dropped without being
+   * accounted for here. That is the intended behaviour and the reason it is not
+   * slack. */
+  assert.ok(pages.length >= 16, `expected the full site in dist/, found ${pages.length} pages`);
 
   const failures = [];
   const usingTagline = [];
@@ -905,6 +910,37 @@ test('permanently redirects the folded route to the page that absorbed it', asyn
    * file is the thing that decides whether the route exists. */
   const destination = await read('../src/pages/security.astro').catch(() => null);
   assert.ok(destination, 'the redirect points at a page this repo does not have');
+});
+
+test('sends the folded demo route at a section the homepage still has', async () => {
+  const redirects = await read('../public/_redirects');
+
+  /* Same reasoning as /evaluate above, with one difference that needs its own
+   * check: this destination carries a fragment. `/security/` is a route, and a
+   * route either exists or 404s loudly. `/#when-something-goes-wrong` is a
+   * route plus an anchor, and an anchor that has gone missing fails silently —
+   * the homepage serves 200, the browser finds nothing to scroll to, and every
+   * reader who followed a /demo link lands on the hero two bands above the
+   * thing they asked for. Nothing else on the site would notice. */
+  assert.match(redirects, /^\/demo \/#when-something-goes-wrong 308$/m);
+  assert.match(redirects, /^\/demo\/ \/#when-something-goes-wrong 308$/m);
+
+  /* So the anchor is read out of the rule rather than typed here a second time,
+   * and then looked for on the page. A rename that updates one and not the
+   * other is the failure this exists for, and hard-coding the id in the
+   * assertion would make this guard agree with whichever half was edited last.
+   *
+   * Source rather than dist, because CI runs `npm test` before `npm run build`
+   * and a redirect guard that skips on an unbuilt tree is worth nothing. */
+  const fragment = /^\/demo \/#([a-z-]+) 308$/m.exec(redirects)?.[1];
+  assert.ok(fragment, 'the /demo rule no longer targets a fragment');
+
+  const home = await read('../src/pages/index.astro');
+  assert.match(
+    home,
+    new RegExp(`<section id="${fragment}"`),
+    `_redirects sends /demo to #${fragment}, and no section on the homepage has that id`,
+  );
 });
 
 test('leaves the reviewer a path to the licence the review is for', async () => {
@@ -3228,7 +3264,7 @@ test("the demo's own source calls the relay a relay", async () => {
    * reinstall scenario prints `EncryptionError`'s own wrapper, "Failed to sync
    * with server", quoted rather than paraphrased because the point of that
    * card is what came back — `scripts/demo-smoke.mjs` asserts the page renders
-   * it. So a reader does still meet the word on `/demo`. Fixing that means
+   * it. So a reader does still meet the word in a scenario. Fixing that means
    * changing the SDK's message, not this site's copy, and it belongs to the
    * vocabulary pass over the SDK's API surface and its rendered errors.
    */
@@ -3240,7 +3276,12 @@ test("the demo's own source calls the relay a relay", async () => {
       if (/\.(?:ts|astro|mjs)$/.test(name)) sources.push([root + name, new URL(name, dir)]);
     }
   }
-  sources.push(['../src/pages/demo.astro', new URL('../src/pages/demo.astro', import.meta.url)]);
+  /* `../src/pages/demo.astro` was pushed here explicitly until the route folded
+   * into the homepage. Nothing replaces it: the scenarios and the two-tab
+   * section are now `src/components/demo/ScenarioList.astro` and
+   * `TwoTabSection.astro`, which the roots above already sweep. Pushing
+   * `index.astro` instead would have applied the demo's vocabulary rule to the
+   * whole marketing page, which is a different decision than this test makes. */
 
   /* A glob that quietly matched nothing would pass this test forever. */
   assert.ok(

@@ -443,7 +443,7 @@ const PUBLIC_DOC_LINK =
 
 /*
  * The interface whose members are the SDK's whole hook surface, and the name
- * of the list `/demo` prints and calls exactly that surface.
+ * of the list a page prints and calls exactly that surface.
  *
  * The page finds it by printing the list, so the check goes looking for the
  * list rather than for a page: whichever page shows `WATCHED_HOOKS` is the one
@@ -527,7 +527,7 @@ if (!surface) {
   /*
    * A link into the public repository's `docs/` resolves only if the export
    * allowlist carries that file. `DEVICE_LIFECYCLE.md` is in the internal
-   * repository and not on the allowlist, so `/demo`'s link to it was a 404 on
+   * repository and not on the allowlist, so a scenario's link to it was a 404 on
    * production from the day it shipped — reachable to whoever wrote it and to
    * nobody else.
    *
@@ -585,7 +585,7 @@ if (!surface) {
   }
 
   /*
-   * `/demo` prints a hand-written list of hook names and says of it, in as many
+   * A scenario prints a hand-written list of hook names and says of it, in as many
    * words, that it is every hook the SDK offers. It has to be hand-written —
    * the page shows it as code a reader could have written themselves — so only
    * a check like this holds it equal to the SDK's hook surface.

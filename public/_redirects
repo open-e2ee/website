@@ -10,3 +10,16 @@
 # crawlers, so the route has real inbound links even pre-launch.
 /evaluate /security/ 308
 /evaluate/ /security/ 308
+# /demo was the scenario page. It is now a section of the homepage, so the
+# target carries a fragment: Cloudflare's redirects support them in the
+# destination ("Can include fragments, query strings, splats, and placeholders"),
+# and only a line-leading # is a comment. The sitemap published /demo/ too.
+#
+# The cost, recorded because it is a real one: a destination fragment replaces
+# whatever fragment the reader arrived with, so /demo#flip-a-byte lands on the
+# section rather than on that scenario. Dropping the fragment here would invert
+# the trade — deep links would keep working and every bare /demo would land at
+# the top of the homepage, two bands above the thing it asked for. Bare /demo is
+# what the sitemap, the old nav item, and any bookmark all point at.
+/demo /#when-something-goes-wrong 308
+/demo/ /#when-something-goes-wrong 308

@@ -42,7 +42,7 @@ export const EVENTS = new Set([
  * The scenario slugs are here one at a time, as each scenario ships. A label
  * accepted before the page that sends it exists would make an unopened
  * scenario and an unbuilt one look the same in the dataset — which is the
- * question `/demo` is measured to answer.
+ * question the homepage scenarios are measured to answer.
  */
 export const LABELS = new Set([
   'expo',

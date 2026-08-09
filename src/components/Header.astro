@@ -13,17 +13,19 @@ const path = Astro.url.pathname;
  * It was a pull-quote two thirds down the homepage, where the reader who most
  * needed it had already left.
  *
- * Demo follows the same argument one step further. Product claims, Compare
- * cites, Demo runs — it is the only page on this site that answers a question
- * by executing the shipped package in the reader's own tab. It reached that
- * slot late: it was linked from exactly one inline anchor two thirds down the
- * homepage and from nowhere else, so the strongest evidence here was also the
- * hardest to find.
+ * There is no Demo slot. It held one, on the argument that Product claims,
+ * Compare cites and Demo runs — the only page that answered a question by
+ * executing the shipped package in the reader's own tab. That argument was
+ * right about the evidence and wrong about where it belonged: a demo behind a
+ * nav item is a demo a reader has to decide to visit, and the exemplars the
+ * design review checked all put the running thing directly under the code that
+ * describes it. The scenarios are now a homepage section, one band below the
+ * panel they are the second half of, and `public/_redirects` keeps `/demo`
+ * pointing at them.
  */
 const links = [
   { href: '/product', label: 'Product' },
   { href: '/compare', label: 'Compare' },
-  { href: '/demo', label: 'Demo' },
   { href: '/learn', label: 'Learn' },
   { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
   { href: '/security', label: 'Security' },

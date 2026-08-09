@@ -1,0 +1,97 @@
+---
+/*
+ * The one part of the demo that is not a scenario.
+ *
+ * A scenario is a program with a verdict, and this is a conversation with
+ * another window — no code block, no expectation line, and nothing for the run
+ * handler in `ScenarioList.astro` to run. It is also the only part whose relay
+ * is website code rather than the SDK's, which D3 requires be said in the
+ * reader's own words rather than a footnote, so the label is the second
+ * paragraph rather than a note under the fold.
+ *
+ * `h3`, not the `h2` it carried on `/demo`. It now sits inside the homepage band
+ * whose `h2` names the whole failure arc, and a second `h2` there would read as a
+ * third demo rather than the last part of this one.
+ */
+---
+
+<div class="two-tab stack">
+  <h3>Open this page in a second tab</h3>
+  <p class="measure">
+    The scenarios above run both accounts in one tab. That is the honest way to show a failure —
+    everything is in one screen and nothing is hidden — and the least convincing way to show a
+    delivery, because a sentence travelling between two variables is a data structure, not a
+    message. So this boots one account here, on a local store only this tab can read, and reaches
+    the other account through a <code>BroadcastChannel</code>. Two tabs, two stores, one relay. Type
+    in either one.
+  </p>
+  <p class="muted measure">
+    The channel is demo infrastructure: a <code>BroadcastChannel</code> implementation of the SDK's
+    relay interface, written for this page and living in this site's source, not the SDK's. It
+    carries what a relay carries — envelopes, public key material, and the calls a device makes to
+    register itself and fetch a bundle. What one tab hands the other is printed below, field by
+    field, as the relay stores it.
+  </p>
+  <div class="scenario-controls">
+    <button class="oe-button" type="button" data-two-tab-connect>Connect this tab</button>
+    <p class="scenario-status" data-two-tab-status role="status">Nothing has run yet.</p>
+  </div>
+  <div class="two-tab-session" data-two-tab-output hidden></div>
+</div>
+
+<script>
+  /*
+   * The two-tab section, on the same discipline as the scenario buttons: the SDK
+   * and the relay arrive on the press, never on the page.
+   *
+   * One press per tab and no second one. The session behind it owns a device, a
+   * subscription and a share of a channel, and a reader who pressed twice would
+   * get a second account of the same name arguing with the first over the same
+   * mail. So the button leaves once it has worked — it has nothing left to offer
+   * — and comes back only if the connection failed.
+   */
+  wireTwoTab();
+
+  function wireTwoTab() {
+    const connect = document.querySelector<HTMLButtonElement>('[data-two-tab-connect]');
+    const status = document.querySelector<HTMLElement>('[data-two-tab-status]');
+    const output = document.querySelector<HTMLElement>('[data-two-tab-output]');
+    if (!connect || !status || !output) return;
+
+    let connecting = false;
+    connect.addEventListener('click', async () => {
+      if (connecting) return;
+      connecting = true;
+      connect.disabled = true;
+      status.textContent = 'Loading the SDK…';
+
+      try {
+        const [twoTab, view] = await Promise.all([
+          import('../../lib/demo/two-tab.ts'),
+          import('../../lib/demo/two-tab-view.ts'),
+        ]);
+        status.textContent = 'Registering a device in this tab…';
+        const session = await twoTab.startTwoTabSession();
+        view.mountTwoTab(output, session, {
+          setStatus: (text) => {
+            status.textContent = text;
+          },
+        });
+        output.hidden = false;
+        connect.hidden = true;
+        status.textContent =
+          session.role === 'host'
+            ? `Connected as ${session.me}, holding the relay. Open this page in one more tab.`
+            : `Connected as ${session.me}, through the relay in the other tab.`;
+      } catch (cause) {
+        /* Same rule as a scenario: this promises live cryptography, so a tab
+           that could not boot one says why rather than showing a pane. */
+        status.textContent =
+          `This tab could not connect: ${cause instanceof Error ? cause.message : String(cause)}`;
+        output.hidden = true;
+        connecting = false;
+        connect.disabled = false;
+      }
+    });
+  }
+</script>

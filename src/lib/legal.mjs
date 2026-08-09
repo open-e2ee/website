@@ -16,7 +16,7 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
 /*
  * The privacy notice is versioned by date, and 2026-08-07 is already published
  * — it is the version that added the home page demo's event. The scenario event
- * on `/demo` is a second change on the same calendar day, and reusing the date
+ * on the homepage demo is a second change on the same calendar day, and reusing the date
  * would leave two different notices answering to one version, which is the one
  * thing a version is for.
  *
