@@ -40,11 +40,16 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  *
  * Here the notice trails the string rather than leading it: the fold shipped one
  * pull request ahead of this, so the site has been sending `scenario_opened /`
- * since that deployed. Both land on 2026-08-09, which is what makes the gap
- * harmless — there is no day on which a reader could have found this notice
- * quoting a string the site was not yet sending. Shipping the two further apart
- * would need the notice to go first. The same reasoning kept 2026-08-07.2 on
- * August 7 rather than moving it.
+ * since that deployed. That is the gap, and it is worth naming in the direction
+ * it actually ran: between the two deploys the published notice quoted
+ * `scenario_opened /demo`, a string the site had already stopped sending. What
+ * bounds it is that both land on 2026-08-09 — the window is shorter than the day
+ * this version names, so no dated notice was ever wrong for a whole day of its
+ * own effect. The reverse order is the one that cannot be bounded that way: a
+ * notice published ahead of the string describes transmission that is not
+ * happening yet, and it keeps describing it for as long as the second deploy is
+ * delayed. So a wider gap would need the notice to go first. The same reasoning
+ * kept 2026-08-07.2 on August 7 rather than moving it.
  */
 export const privacyVersion = '2026-08-09';
 export const privacyEffectiveDate = 'August 9, 2026';

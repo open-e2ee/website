@@ -282,11 +282,14 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
             `.measure` paragraph parked directly in a stack is capped by nothing
             — eight elements render that way, three on the home page, three
             here, two on /security, and this is not the change that fixes them.
-            That eight is counted by computed max-width rather than by shape,
-            because the shape overcounts twice: an element that is itself
-            `container measure stack` is capped correctly, since the rule only
-            reaches children, and a `callout measure` child brings a cap of its
-            own. `.band-head` caps at 62ch and is unaffected. */}
+            That eight is counted by computed max-width rather than by shape.
+            Counting by shape gives ten, and both of the two extra are
+            `callout measure` children of a stack — one here, one on /security.
+            The rule does reach them; `.callout` caps them anyway. An element
+            that is itself `container measure stack` is also capped correctly,
+            because the rule only reaches children, but that fact accounts for
+            none of the gap: all three of those on this site are band children,
+            never stack children. `.band-head` caps at 62ch and is unaffected. */}
         <p class="muted measure">
           Read from the GitHub API, the npm registry API, and the published package tarballs on
           {' '}{MEASURED_ON}. Dates are the ones those APIs returned. The axes are the ones this
