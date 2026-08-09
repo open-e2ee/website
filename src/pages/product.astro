@@ -210,8 +210,8 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
       <p class="muted measure">
         Browser and bare React Native stores are experimental. The Expo and Node stores are the
         complete ones — both implement <code>ISignalProtocolLocalStore</code> in full, so groups and
-        multi-device work on either. They differ in where the bytes land: the Expo store is
-        <code>expo-sqlite</code> with SQLCipher, the Node store is an encrypted filesystem under
+        multi-device work on either. They differ in where the bytes land: the Expo store is{' '}
+        <code>expo-sqlite</code> with SQLCipher, the Node store is an encrypted filesystem under{' '}
         <code>node:crypto</code> with 0600 permissions. You can also implement{' '}
         <code>ISignalProtocolLocalStore</code> or <code>ISignalProtocolRelayServer</code> yourself —
         they are documented interfaces, not internals.
@@ -265,23 +265,30 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
           in React Native, and its maintainers say plainly that use outside Signal is not something
           they support. That is the gap.
         </p>
+        {/* Both sentences, not the famous one on its own. The first is the
+            licence answer and the second is the roadmap answer, and a reader
+            planning a year of work needs the second one. src/lib/comparison.mjs
+            keeps them as separate fields for the homepage, which has room for
+            one. */}
+        <figure class="quote">
+          <blockquote>{libsignalReadme.quote} {libsignalReadme.continuation}</blockquote>
+          <figcaption>
+            <a href={libsignalReadme.href}>{libsignalReadme.attribution}</a>
+          </figcaption>
+        </figure>
+        {/* Inside the band head, where /compare had it, and not a direct child
+            of `.stack`. `.stack > *` sets `max-width: 100%` at the same
+            specificity as `.measure` and is written after it, so a `.measure`
+            paragraph parked directly in a stack is capped by nothing — twelve
+            elements on this site are in that state and this is not the change
+            that fixes them. `.band-head` caps at 62ch and is unaffected. */}
+        <p class="muted measure">
+          Read from the GitHub API, the npm registry API, and the published package tarballs on
+          {' '}{MEASURED_ON}. Dates are the ones those APIs returned. The axes are the ones this
+          SDK was built to change, so the table is not a quality ranking — and the column for our
+          own package is the one column nobody independent measured.
+        </p>
       </div>
-      {/* Both sentences, not the famous one on its own. The first is the licence
-          answer and the second is the roadmap answer, and a reader planning a
-          year of work needs the second one. src/lib/comparison.mjs keeps them
-          as separate fields for the homepage, which has room for one. */}
-      <figure class="quote">
-        <blockquote>{libsignalReadme.quote} {libsignalReadme.continuation}</blockquote>
-        <figcaption>
-          <a href={libsignalReadme.href}>{libsignalReadme.attribution}</a>
-        </figcaption>
-      </figure>
-      <p class="muted measure">
-        Read from the GitHub API, the npm registry API, and the published package tarballs on
-        {' '}{MEASURED_ON}. Dates are the ones those APIs returned. The axes are the ones this SDK
-        was built to change, so the table is not a quality ranking — and the column for our own
-        package is the one column nobody independent measured.
-      </p>
       <div class="table-scroll">
         <table class="data">
           <thead>
@@ -325,6 +332,15 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
           A table flattens the thing a table is worst at: what a project is good at. Two of the five
           below end with a recommendation that is not this SDK.
         </p>
+        <p class="muted measure">
+          {/* The explicit space is load-bearing, the same way it is in the
+              homepage band that summarises these projects: Astro collapses the
+              newline between a text node and a following inline element, and
+              this rendered as "the top of`src/lib/comparison.mjs`". */}
+          None of it should be taken on our word. Every project links to its repository, every date
+          came from a public API, and the commands that read them are in the comment at the top of{' '}
+          <code>src/lib/comparison.mjs</code>.
+        </p>
       </div>
       <dl class="definition-rows">
         {ordered.map(({ project, note }) => (
@@ -344,11 +360,6 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
           </div>
         ))}
       </dl>
-      <p class="muted measure">
-        Nothing here should be taken on our word. Every project links to its repository, every date
-        came from a public API, and the commands that read them are in the comment at the top of
-        <code>src/lib/comparison.mjs</code>.
-      </p>
       <p class="text-links">
         <a href="https://github.com/open-e2ee/signal-protocol-js#how-it-compares">
           The shorter table in the SDK README

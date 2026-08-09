@@ -3358,3 +3358,47 @@ test('alternates the band surface down every page', async () => {
   /* A regex that stopped matching would make every page trivially alternating. */
   assert.ok(checked > 30, `expected to be checking real bands, counted ${checked}`);
 });
+
+test('keeps the space in front of every inline code span', async () => {
+  /*
+   * Astro drops the newline between a text node and an inline element that
+   * follows it, so a paragraph broken for line length renders as
+   * "the Expo store is`expo-sqlite`" — one word, no space, in the middle of
+   * body copy. Nothing else catches it: the page builds, the audit passes, and
+   * the only symptom is on screen.
+   *
+   * It has now happened four times in three files. The homepage band that
+   * summarises the alternatives carries a comment about the first, /product
+   * shipped two in its storage paragraph, and the comparison fold wrote a
+   * fourth on its way in. `{' '}` at the end of the line is the fix.
+   *
+   * Source-based on purpose. `.github/workflows/ci.yml` runs the suite before
+   * the build, so a guard that reads dist/ never runs there.
+   *
+   * One direction only. The closing tag does not collapse the same way —
+   * `</code>` followed by a newline and a word keeps its space, which
+   * src/pages/legal/privacy.astro renders and proves.
+   */
+  const dir = new URL('../src/', import.meta.url);
+  const names = (await readdir(dir, { recursive: true })).filter((name) => name.endsWith('.astro'));
+  assert.ok(names.length > 20, `expected the whole component tree, found ${names.length}`);
+
+  let spans = 0;
+  for (const name of names) {
+    const source = (await readFile(new URL(name, dir), 'utf8'))
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ');
+    spans += (source.match(/<code>/g) ?? []).length;
+
+    const collapsed = source.match(/[\w,).]\n\s*<code>/);
+    assert.equal(
+      collapsed,
+      null,
+      `src/${name} ends a line with "${collapsed?.[0].split('\n')[0].slice(-24)}" and opens the ` +
+        `next with <code>, which renders with no space between them — end the line with {' '}`,
+    );
+  }
+
+  /* A regex that stopped matching would pass on every file in the tree. */
+  assert.ok(spans > 40, `expected to be scanning real code spans, counted ${spans}`);
+});
