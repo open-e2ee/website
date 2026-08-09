@@ -1248,11 +1248,27 @@ test('keeps the relay formula intact in the strings that travel alone', async ()
     'licensing',
   ];
   const descriptions = await Promise.all(
-    pages.map(async (page) => [page, await flat(`../src/pages/${page}.astro`)]),
+    pages.map(async (page) => {
+      const built = await readFile(
+        new URL(`../dist/${page === 'index' ? '' : `${page}/`}index.html`, import.meta.url),
+        'utf8',
+      ).catch(() => null);
+      return [page, await flat(`../src/pages/${page}.astro`), built];
+    }),
   );
 
-  for (const [page, source] of descriptions) {
-    const described = source.match(/description="([^"]+)"/)?.[1] ?? '';
+  for (const [page, source, built] of descriptions) {
+    /* Read the rendered string in preference to the source. A description that
+     * interpolates — /pricing quotes the entry price from pricing.mjs rather
+     * than typing it — is a prop expression, not a quoted literal, and the
+     * source regex saw an empty description where the page ships a correct
+     * one. The rendered page is also the more faithful subject: this test is
+     * about the sentence that travels alone, and that sentence is the one in
+     * the built <meta>, not the expression that produced it. */
+    const described =
+      built?.match(/<meta name="description" content="([^"]+)"/)?.[1] ??
+      source.match(/description=\{?[`"]([^`"]+)[`"]\}?/)?.[1] ??
+      '';
     assert.notEqual(described, '', `${page} has no meta description`);
     assert.doesNotMatch(
       described,
@@ -2059,6 +2075,63 @@ test('shows the price it calls published, and cannot drift from /pricing', async
   }
 });
 
+test('quotes the entry price from the module on every marketing page', async () => {
+  const { tiers } = await import('../src/data/pricing.mjs');
+
+  /* The landing page was single-sourced and four other surfaces were not, so
+   * the module prevented drift on exactly one of the five places the number
+   * appeared. /product, /evaluate and /pricing's own meta description each
+   * carried their own typed copy, all of them correct, all of them free to go
+   * stale independently at the next price change.
+   *
+   * Reading from the module is asserted on the source rather than the built
+   * page because a hard-coded "$5,000" and a rendered `startupTier.price` are
+   * byte-identical in `dist` today. That is the whole problem: the defect is
+   * invisible in the output until the day someone changes the price. */
+  const quoting = ['product', 'evaluate', 'pricing'];
+  for (const page of quoting) {
+    const source = await flat(`../src/pages/${page}.astro`);
+    assert.match(
+      source,
+      /startupTier\.price/,
+      `/${page} does not read the entry price from pricing.mjs`,
+    );
+  }
+
+  /* And no page reintroduces a typed figure. Comments are stripped first: the
+   * landing page's own comment recounts the drift incident by quoting the
+   * price, and a guard that failed on the history of the bug it prevents would
+   * be deleted by the next person who hit it. */
+  const strip = (text) => text.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ');
+  const pageDir = new URL('../src/pages/', import.meta.url);
+  for (const entry of await readdir(pageDir)) {
+    if (!entry.endsWith('.astro')) continue;
+    const body = strip(await read(`../src/pages/${entry}`));
+    for (const tier of tiers) {
+      if (tier.price === 'Free') continue;
+      assert.ok(
+        !body.includes(tier.price),
+        `src/pages/${entry} hard-codes ${tier.price}; read it from pricing.mjs instead`,
+      );
+    }
+  }
+
+  /* The legal pages are deliberately outside that sweep. /legal/terms and its
+   * frozen versioned copies state the fee as executed contract language, and a
+   * contract that re-prices itself when a marketing constant moves is a worse
+   * defect than the drift this module exists to stop.
+   *
+   * So the assertion here is the opposite of the one above, and it is
+   * deliberately not `terms.includes(startupTier.price)`. Tying the contract
+   * to the live constant would mean the next price rise turns this green test
+   * red until someone edits executed terms to match a marketing number — the
+   * precise coupling the exemption exists to prevent. What has to stay true is
+   * that the terms state a fee of their own and never read this module. */
+  const terms = await read('../src/components/CommercialTerms.astro');
+  assert.match(terms, /\$[\d,]+ per year/);
+  assert.doesNotMatch(terms, /startupTier|pricing\.mjs/);
+});
+
 test('does not read the ciphertext blob aloud, and does not eat spaces', async () => {
   const [panel, dist] = await Promise.all([
     flat('../src/components/CarrierPanel.astro'),
@@ -2147,6 +2220,31 @@ test('does not overstate the one artefact that exists to not be overstated', asy
   assert.match(index, /protocol code is pure TypeScript with no native crypto module/);
   assert.match(index, /needs a development build rather than Expo Go/);
   if (dist) assert.doesNotMatch(dist, /no prebuild step/);
+});
+
+test('does not deny a build step in the /product lead the page later explains', async () => {
+  const [source, dist] = await Promise.all([
+    flat('../src/pages/product.astro'),
+    readFile(new URL('../dist/product/index.html', import.meta.url), 'utf8').catch(() => null),
+  ]);
+
+  /* The landing page was scoped and /product was not, so the site contradicted
+   * itself across two pages and /product contradicted itself within one: the
+   * lead promised "No native modules. No prebuild step." and the storage
+   * section 100 lines below documented expo-sqlite with SQLCipher, which Expo
+   * Go does not carry. The lead now borrows the landing page's approved
+   * scoping instead of a third phrasing, because appending the limit to the
+   * unqualified claim was tried twice and read as a contradiction both times.
+   *
+   * The reconciliation stays where it was. This asserts the lead stops
+   * denying it, not that the explanation moved up. */
+  assert.match(source, /protocol code is\s*pure TypeScript with no native crypto module/);
+  assert.match(source, /needs a development build rather than Expo Go/);
+  assert.match(source, /SQLCipher requires a development build/);
+
+  if (!dist) return;
+  assert.doesNotMatch(dist, /No native modules\. No\s*prebuild step\./);
+  assert.match(dist, /needs a development build rather than Expo Go/);
 });
 
 test('names the cost of E2EE in the band whose title promises one', async () => {

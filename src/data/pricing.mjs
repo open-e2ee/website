@@ -8,8 +8,13 @@
  * quoting one price from two places is the same drift the carrier panel was
  * fixed for, and a stale price is worse than a vague one.
  *
- * `startupTier` is the entry price the landing page names. Change a number
- * here and both surfaces move together, or the test fails.
+ * `startupTier` is the entry price the marketing pages name. Change a number
+ * here and every rendered surface moves together, or the test fails.
+ *
+ * The legal text is deliberately not one of them. /legal/terms and its frozen
+ * versioned copies state the fee as executed contract language, and a contract
+ * that silently re-prices itself when a marketing constant changes is a worse
+ * defect than the drift this module prevents. Those figures stay hard-coded.
  */
 export const tiers = [
   {
@@ -65,12 +70,13 @@ export const tiers = [
 const startup = tiers.find((tier) => tier.name === 'Startup');
 
 /*
- * Thrown at build rather than typed as optional. The landing page prints this
- * tier's price in its licence cell, and the failure mode worth designing for
- * is someone renaming the entry tier here and the landing page quietly
- * rendering "from undefined per year" to every visitor. A build that stops is
- * the cheapest possible version of that mistake.
+ * Thrown at build rather than typed as optional. Four surfaces print this
+ * tier's price — the landing page's licence cell, /product's licensing band,
+ * /evaluate's licence answer, and /pricing's own meta description — and the
+ * failure mode worth designing for is someone renaming the entry tier here and
+ * every one of them quietly rendering "from undefined per year" to visitors. A
+ * build that stops is the cheapest possible version of that mistake.
  */
-if (!startup) throw new Error('pricing.mjs: no tier named "Startup" — the landing page quotes it.');
+if (!startup) throw new Error('pricing.mjs: no tier named "Startup" — four pages quote its price.');
 
 export const startupTier = startup;
