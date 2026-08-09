@@ -3317,7 +3317,7 @@ table.data td {
 }
 
 /*
- * `/demo` — a list of scenarios, each a closed disclosure.
+ * The homepage failure section — a list of scenarios, each a closed disclosure.
  *
  * Closed is the functional state, not a space-saving one: opening a scenario is
  * what the page measures, so a scenario that is open on arrival would report a

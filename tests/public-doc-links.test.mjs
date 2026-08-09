@@ -2,7 +2,7 @@
  * The build audit's check on links into the public repository, held to the
  * behaviours it is claimed to have.
  *
- * `/demo` shipped a link to `docs/DEVICE_LIFECYCLE.md`, which lives in the
+ * A scenario shipped a link to `docs/DEVICE_LIFECYCLE.md`, which lives in the
  * internal repository and is not on the export allowlist, so the URL was a 404
  * on production from the day it shipped — reachable to whoever wrote it and to
  * nobody else. The check that catches that was added with the fix, and was then

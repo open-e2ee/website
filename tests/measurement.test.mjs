@@ -31,7 +31,7 @@ const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
 const SENDERS = [
   '../public/measure.js',
   '../src/components/demo/LiveCarrierPanel.astro',
-  '../src/pages/demo.astro',
+  '../src/components/demo/ScenarioList.astro',
 ];
 
 /*
@@ -213,15 +213,15 @@ test('measures the demo without measuring what was typed into it', async () => {
 });
 
 /*
- * The same pinning for `/demo`, whose label is the one dimension any event on
- * this site carries beyond its own name. One argument past the event name, and
- * that argument is the slug the page already puts in its fragment — never a
- * count of records, a timing, or anything the scenario printed.
+ * The same pinning for the scenario list, whose label is the one dimension any
+ * event on this site carries beyond its own name. One argument past the event
+ * name, and that argument is the slug the section already puts in its fragment
+ * — never a count of records, a timing, or anything the scenario printed.
  */
 test('measures which scenario was opened, and nothing about what it did', async () => {
-  const page = await read('../src/pages/demo.astro');
-  assert.match(page, /window\.oeMeasure\?\.\('scenario_opened', slug\)/);
-  assert.equal([...page.matchAll(/oeMeasure/g)].length, 1, 'the page measures at one place');
+  const list = await read('../src/components/demo/ScenarioList.astro');
+  assert.match(list, /window\.oeMeasure\?\.\('scenario_opened', slug\)/);
+  assert.equal([...list.matchAll(/oeMeasure/g)].length, 1, 'the list measures at one place');
 });
 
 /*
@@ -236,7 +236,7 @@ test('accepts a scenario label only for a scenario the site actually ships', () 
   const slugs = new Set(SCENARIOS.map((scenario) => scenario.slug));
 
   for (const slug of slugs) {
-    assert.ok(LABELS.has(slug), `/demo ships ${slug} but the collector would drop its label`);
+    assert.ok(LABELS.has(slug), `the site ships ${slug} but the collector would drop its label`);
   }
   for (const label of LABELS) {
     if (runtimes.has(label)) continue;

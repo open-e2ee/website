@@ -101,11 +101,11 @@ const CLAIM = '[data-demo-claim]';
 const FALLBACK = '[data-demo-fallback-note]';
 
 /*
- * `/demo`'s contract, on the same terms. A scenario is addressed by its slug
- * rather than by position: a second scenario landing on the page must not
- * silently move what this drives.
+ * The scenario section's contract, on the same terms. A scenario is addressed
+ * by its slug rather than by position: a second scenario landing on the page
+ * must not silently move what this drives.
  *
- * The slug is a parameter rather than a constant because `/demo` now ships two
+ * The slug is a parameter rather than a constant because the site now ships two
  * scenarios and will ship more. What is shared is everything that is true of
  * any scenario — it opens by fragment, it runs twice, it prints steps and
  * non-events and the SDK's log, it sends one beacon and no other request. What
@@ -152,11 +152,16 @@ const TWO_TAB_LINE = '[data-two-tab-line]';
 const TWO_TAB_ROW = '[data-two-tab-row]';
 const TWO_TAB_DISCONNECT = '[data-two-tab-disconnect]';
 
-/* The beacon `/demo` is allowed to send, in full. Same reasoning as
+/* The beacon a scenario is allowed to send, in full. Same reasoning as
    `DEMO_RUN_BODY`: the body is fixed before the browser starts, so a dimension
    derived from the run — a timing, a byte count, an error code — is a failure
-   rather than something to be searched for. */
-const scenarioBeaconBody = (slug) => `scenario_opened /demo ${slug}`;
+   rather than something to be searched for.
+
+   The path is `/` because the scenarios are a homepage section now, which makes
+   this string identical in shape to `DEMO_RUN_BODY`. They still differ in the
+   part that matters: the panel sends one beacon per page, and a scenario sends
+   one per scenario with its slug attached. */
+const scenarioBeaconBody = (slug) => `scenario_opened / ${slug}`;
 
 /* The longest a scenario gets. The most expensive one boots three devices,
    runs a provisioning handshake and sends twice; it ran in well under a second
@@ -188,30 +193,44 @@ const LOAD_TIMEOUT_MS = 30000;
 const VIEWPORT = { width: 1280, height: 800 };
 
 /*
- * Every script a page fetches before the reader asks for the SDK, which on
- * 2026-08-07 was 15.7 KB over six files on the homepage and 13.5 KB over five
- * on `/demo` — the theme and measurement scripts, each page's own script, and
- * a shared preload helper Vite splits out because two pages now import
- * dynamically. The interaction then pulls about 1790 KB, so the tripwire sits
- * two orders of magnitude below any build that has the SDK on its initial path.
+ * Every script a page fetches before the reader asks for the SDK. The
+ * interaction then pulls about 1790 KB, so the tripwire sits two orders of
+ * magnitude below any build that has the SDK on its initial path.
  *
- * `/demo` has 6.5 KB left, and it stopped being the page under pressure during
- * LD6. It had 2.0 KB left with two scenarios, because every scenario's
- * renderer — about four kilobytes of prose apiece — sat in the page's own
- * `<script>` and therefore on its initial path. The third scenario went 2.1 KB
- * over this tripwire and the prose was what tripped it. The renderers now live
- * in `src/lib/demo/render.ts`, fetched by the same press that fetches the
- * scenario, which is where code that cannot run until a reader presses the
- * button belongs. Measured on the same machine across that move and the
- * scenario after it: `/demo` was 18.0 KB over five files with two scenarios,
- * 13.1 KB over five with three, and is 13.5 KB over five with four.
+ * The homepage is the page this measures, because it is now the only page with
+ * demo code on it. Measured on 2026-08-09, the build directly after `/demo`
+ * folded into it: 22.8 KB over eight files. Three of them are the demo's, and
+ * they are what moved —
  *
- * The fourth scenario's 0.4 KB is the whole of what a scenario now costs this
- * page: one entry in the `PROGRAMS` map in `demo.astro`, which is two dynamic
- * `import()` specifiers and a status line. Its prose, its runner and its
- * renderer are all behind the press. That is the shape the LD6 move was for,
- * and it is what makes the remaining 6.5 KB a budget for roughly a dozen more
- * scenarios rather than for two.
+ *   LiveCarrierPanel  4834 B  the panel, already here
+ *   ScenarioList      4398 B  the four scenarios, from `/demo`
+ *   TwoTabSection     2667 B  the two-tab relay, from `/demo`
+ *
+ * — against 11.2 KB of page furniture that has nothing to do with the demo:
+ * `theme-init.js`, `measure.js`, the theme toggle, the hero's copy button, and
+ * the preload helper Vite splits out for the dynamic imports.
+ *
+ * The ceiling moved from 20 KB to 32 KB with the fold, and the reason is worth
+ * writing down because "the budget went up when a page got bigger" is the shape
+ * of a tripwire being quietly retired. Nothing new runs before a touch: the
+ * three demo scripts are the wiring the two old pages already shipped, and the
+ * five furniture files were on both of those pages, so a reader who visited
+ * both fetched more than this. What the ceiling has always been calibrated
+ * against is the SDK's 713 KB, and 32 KB is as far below that as 20 KB was.
+ *
+ * One cost is genuinely new, and it is small. Each of the three carries its own
+ * `__vite__mapDeps` array naming the SDK chunk graph — 1090, 883 and 882 bytes
+ * — because Astro emits one script per component and each dynamic `import()`
+ * needs the graph. The site carried two of those before and carries three now,
+ * all on one page. It is not worth undoing: merging the wiring back into a
+ * single `<script>` would put one component's handler on another component's
+ * DOM to save 0.9 KB on a page that spends 1790.
+ *
+ * What a scenario costs is still about 0.4 KB: one entry in `ScenarioList`'s
+ * `PROGRAMS` map, which is two dynamic `import()` specifiers and a status line.
+ * Its prose, its runner and its renderer are all behind the press — the LD6
+ * move that put the renderers in `src/lib/demo/render.ts` is what makes that
+ * true. The remaining 9.2 KB is a budget for roughly a dozen more scenarios.
  *
  * These are wire bytes without compression: `chrome-harness.mjs` serves the
  * build as it is on disk, while Cloudflare compresses. So this is not
@@ -219,13 +238,12 @@ const VIEWPORT = { width: 1280, height: 800 };
  * without the demo to compare against, and is measured in the proof rather than
  * here. This is the tripwire for the SDK arriving uninvited.
  *
- * The proof's table reports `/demo` lower — 14.7 KB before LD6 and 9.7 KB
- * after — and both are right beside the figures above: it walks the module
- * graph on disk, while this counts what Chrome actually fetched, which includes
- * responses the static walk does not model. The ceiling is set against the
- * figure measured here.
+ * The proof's table reports lower figures, and both are right: it walks the
+ * module graph on disk, while this counts what Chrome actually fetched, which
+ * includes responses the static walk does not model. The ceiling is set against
+ * the figure measured here.
  */
-const PRE_INTERACTION_CEILING = 20 * 1024;
+const PRE_INTERACTION_CEILING = 32 * 1024;
 
 /*
  * A floor on the expected set, not on what the page printed.
@@ -402,7 +420,7 @@ const SNAPSHOT = `(() => {
 })()`;
 
 /*
- * Everything `/demo` printed about the scenario it just ran.
+ * Everything the page printed about the scenario it just ran.
  *
  * Read through the same data attributes the page renders, in one round trip.
  * The rendered text is what a reader sees, so it is what the checks read: a
@@ -797,8 +815,8 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
 }
 
 /**
- * Open `/demo` at the scenario's own fragment, run it twice, and report both
- * runs plus everything the browser did across them.
+ * Open the homepage at the scenario's own fragment, run it twice, and report
+ * both runs plus everything the browser did across them.
  *
  * Twice, because once cannot tell a live protocol failure from a page that
  * prints one. Every fixed string in the output — the error code, the SDK's
@@ -817,17 +835,18 @@ async function visitScenario(cdp, origin, held, slug) {
   const read = () => evaluate(cdp, sessionId, snapshot);
 
   try {
-    /* The fragment, not the bare path: arriving at `/demo#<slug>` is a reader
+    /* The fragment, not the bare path: arriving at `/#<slug>` is a reader
        asking for this scenario by name, and opening it is what the page
        promises to do about that. */
-    await tab.navigate(`${origin}/demo#${slug}`, `/demo#${slug}`);
+    await tab.navigate(`${origin}/#${slug}`, `/#${slug}`);
 
     const title = await evaluate(cdp, sessionId, 'document.title');
-    if (!title) throw new Infra('/demo rendered no title — the served build looks wrong');
+    if (!title)
+      throw new Infra('the homepage rendered no title — the served build looks wrong');
 
     if (!(await evaluate(cdp, sessionId, present(SCENARIO)))) {
       throw new Red(
-        `no scenario on /demo: nothing matches ${SCENARIO}.\n` +
+        `no scenario on the homepage: nothing matches ${SCENARIO}.\n` +
           `  The page served and rendered (title: ${JSON.stringify(title)}), so the scenario is ` +
           `absent rather than\n  unreachable.`,
       );
@@ -992,7 +1011,7 @@ const TWO_TAB_STOP_SETTLED = `(() => {
 })()`;
 
 /**
- * Two tabs of `/demo`, one conversation, driven the way a reader would.
+ * Two tabs of the homepage, one conversation, driven the way a reader would.
  *
  * Sequential rather than simultaneous, which is the whole reason this reads as
  * cleanly as it does: the relay is claimed with a Web Lock, so whichever tab
@@ -1045,9 +1064,10 @@ async function visitTwoTabs(cdp, origin, held) {
 
   try {
     for (const { tab, what } of tabs) {
-      await tab.navigate(`${origin}/demo`, `/demo in ${what}`);
+      await tab.navigate(`${origin}/`, `the homepage in ${what}`);
       const title = await evaluate(cdp, tab.sessionId, 'document.title');
-      if (!title) throw new Infra(`/demo rendered no title in ${what} — the build looks wrong`);
+      if (!title)
+        throw new Infra(`the homepage rendered no title in ${what} — the build looks wrong`);
       for (const [selector, describe] of [
         [TWO_TAB_CONNECT, 'a control that connects it'],
         [TWO_TAB_STATUS, 'a status line'],
@@ -1055,7 +1075,7 @@ async function visitTwoTabs(cdp, origin, held) {
       ]) {
         if (!(await evaluate(cdp, tab.sessionId, present(selector)))) {
           throw new Red(
-            `the two-tab section on /demo exposes no ${describe} (${selector}) in ${what}`,
+            `the two-tab section exposes no ${describe} (${selector}) in ${what}`,
           );
         }
       }
@@ -1500,8 +1520,8 @@ function checkFallback(pass) {
  * What the receiving device actually calls this failure, computed rather than
  * quoted.
  *
- * The same reasoning as `expectedFields`, applied to the claim `/demo` exists
- * to make. A harness carrying the string "MAC mismatch" would go green against
+ * The same reasoning as `expectedFields`, applied to the claim the scenario
+ * exists to make. A harness carrying the string "MAC mismatch" would go green against
  * a page that had that string typed into it, which is precisely the page this
  * one must never become — and it would go red the day the SDK reworded its
  * errors, teaching whoever ran it to update the string rather than look. So the
@@ -1558,14 +1578,14 @@ async function expectedRefusal() {
     throw new Red(
       `the scenario could not complete a run in this process: ` +
         `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
-        `would see in the scenario's status line, so /demo is broken rather than the harness.`,
+        `would see in the scenario's status line, so the page is broken rather than the harness.`,
     );
   }
   if (!result.refusal) {
     throw new Red(
       'the installed SDK was handed a ciphertext with one byte flipped and reported no error ' +
-        'at all.\n  This is not the page being wrong. Nothing on /demo is worth checking until ' +
-        'it is explained.',
+        'at all.\n  This is not the page being wrong. Nothing on it is worth checking until it ' +
+        'is explained.',
     );
   }
   if (result.delivered !== null && result.delivered !== result.sentence) {
@@ -1577,7 +1597,7 @@ async function expectedRefusal() {
   const promised = promisedErrorCode(FLIP_SLUG);
   if (result.refusal.errorCode !== promised) {
     throw new Red(
-      `the scenario refuses with ${result.refusal.errorCode}, but /demo tells the reader it is ` +
+      `the scenario refuses with ${result.refusal.errorCode}, but the page says it is ` +
         `${promised}.\n  ${JSON.stringify(result.refusal.errorMessage)}\n  Both halves of this ` +
         `harness's expectation come from the scenario module, so a change to what the scenario ` +
         `corrupts\n  moves the page and the expectation together — this is the check that does ` +
@@ -1595,7 +1615,7 @@ async function expectedRefusal() {
  *
  * Same stance as `expectedRefusal`: the scenario is run in this process first,
  * and what it produced becomes the expectation the page is held to. The
- * assertions below are about the SDK rather than about `/demo` — if the pre-link
+ * assertions below are about the SDK rather than about the page — if the pre-link
  * message turns up on a device that did not exist when it was encrypted, the
  * page printing that faithfully is not the interesting problem.
  *
@@ -1613,7 +1633,7 @@ async function expectedSecondDevice() {
     throw new Red(
       `the second-device scenario could not complete a run in this process: ` +
         `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
-        `would see in the scenario's status line, so /demo is broken rather than the harness.`,
+        `would see in the scenario's status line, so the page is broken rather than the harness.`,
     );
   }
 
@@ -1697,7 +1717,7 @@ async function expectedPreKeys() {
     throw new Red(
       `the prekey-exhaustion scenario could not complete a run in this process: ` +
         `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
-        `would see in the scenario's status line, so /demo is broken rather than the harness.`,
+        `would see in the scenario's status line, so the page is broken rather than the harness.`,
     );
   }
 
@@ -1761,7 +1781,7 @@ async function expectedPreKeys() {
     throw new Red(
       `the SDK now reports prekey exhaustion: ` +
         `${result.warnings.map((record) => `${record.level} ${record.message}`).join('; ')}.\n` +
-        `  That is an improvement, and it makes /demo wrong: the scenario is built around the ` +
+        `  That is an improvement, and it makes the page wrong: the scenario is built around the ` +
         `SDK saying nothing.\n  Update the page and this expectation together.`,
     );
   }
@@ -1835,7 +1855,7 @@ async function expectedReinstall() {
     throw new Red(
       `the reinstall scenario could not complete a run in this process: ` +
         `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
-        `would see in the scenario's status line, so /demo is broken rather than the harness.`,
+        `would see in the scenario's status line, so the page is broken rather than the harness.`,
     );
   }
 
@@ -1858,7 +1878,7 @@ async function expectedReinstall() {
       `the rebuilt device published itself over the account identity and the relay allowed it. ` +
         `That is not\n  a page that needs updating — a device with no prior relationship to the ` +
         `account took it over.\n  Stop and look at the relay's identity provisioning before ` +
-        `touching /demo.`,
+        `touching the page.`,
     );
   }
   /*
@@ -1911,9 +1931,9 @@ async function expectedReinstall() {
   if (result.hooks.fired.length > 0) {
     throw new Red(
       `the SDK now notifies the application when the far identity changes: ` +
-        `${result.hooks.fired.join(', ')}.\n  That is an improvement, and it makes /demo wrong: ` +
-        `the scenario is built around no hook firing.\n  Update the page and this expectation ` +
-        `together.`,
+        `${result.hooks.fired.join(', ')}.\n  That is an improvement, and it makes the page ` +
+        `wrong: the scenario is built around no hook firing.\n  Update the page and this ` +
+        `expectation together.`,
     );
   }
 
@@ -2262,7 +2282,7 @@ function qrKeyIn(run) {
 }
 
 /*
- * Everything that is true of any scenario `/demo` ships.
+ * Everything that is true of any scenario the site ships.
  *
  * `expectation` carries the rest: which slug this pass drove, the sentences
  * that must never leave the tab, the page's own denial strings, the per-run
@@ -2280,7 +2300,7 @@ function checkScenario(pass, origin, expectation) {
 
   if (!pass.opened.open) {
     throw new Red(
-      `/demo#${slug} did not open the scenario it names. The fragment is the whole point of\n  ` +
+      `/#${slug} did not open the scenario it names. The fragment is the whole point of\n  ` +
         `addressing one: a reader who follows that link lands on a closed list.`,
     );
   }
@@ -2356,7 +2376,7 @@ function checkScenario(pass, origin, expectation) {
   );
   if (offOrigin.length) {
     throw new Red(
-      `/demo talked to ${offOrigin.length} host(s) that are not this site:\n  ` +
+      `the page talked to ${offOrigin.length} host(s) that are not this site:\n  ` +
         offOrigin.map((request) => `${request.method} ${request.url}`).join('\n  '),
     );
   }
@@ -2372,7 +2392,7 @@ function checkScenario(pass, origin, expectation) {
   });
   if (sent.length) {
     throw new Red(
-      `/demo posted to ${sent.length} destination(s) other than ${BEACON_PATH}:\n  ` +
+      `the page posted to ${sent.length} destination(s) other than ${BEACON_PATH}:\n  ` +
         sent.map((request) => `${request.method} ${request.url}`).join('\n  '),
     );
   }
@@ -2385,14 +2405,14 @@ function checkScenario(pass, origin, expectation) {
     }
     if (!EVENTS.has(shape[1])) {
       throw new Red(
-        `/demo sent "${shape[1]}", which src/workers/site.ts does not accept — the collector ` +
+        `the page sent "${shape[1]}", which src/workers/site.ts does not accept — the collector ` +
           `drops it,\n  so the page is measuring nothing while looking like it is`,
       );
     }
   }
   if (beacons.length !== 1) {
     throw new Red(
-      `/demo sent ${beacons.length} beacon(s) for one scenario opened once and run twice:\n  ` +
+      `the page sent ${beacons.length} beacon(s) for one scenario opened once and run twice:\n  ` +
         (beacons.map((beacon) => JSON.stringify(beacon.postData)).join('\n  ') || '(none)') +
         `\n  It is one per scenario per page — not per run, and not per toggle.`,
     );
@@ -2410,23 +2430,23 @@ function checkScenario(pass, origin, expectation) {
      the SDK is 713 KB and every scenario needs it. */
   if (pass.bytesBefore > PRE_INTERACTION_CEILING) {
     throw new Red(
-      `${kb(pass.bytesBefore)} of JavaScript arrived on /demo before the reader ran anything, ` +
+      `${kb(pass.bytesBefore)} of JavaScript arrived on the page before the reader ran anything, ` +
         `over the ${kb(PRE_INTERACTION_CEILING)} tripwire:\n  ` +
         pass.before.map((s) => `${s.url} (${s.bytes} B)`).join('\n  '),
     );
   }
   if (pass.after.length === 0) {
     throw new Red(
-      'running the scenario fetched no chunk at all — the SDK was already on /demo before the ' +
+      'running the scenario fetched no chunk at all — the SDK was already on the page before the ' +
         'reader asked for it',
     );
   }
   if (pass.pageErrors.length) {
-    throw new Red(`/demo threw while running the scenario:\n  ${pass.pageErrors.join('\n  ')}`);
+    throw new Red(`the page threw while running the scenario:\n  ${pass.pageErrors.join('\n  ')}`);
   }
   if (pass.cspViolations.length) {
     throw new Red(
-      `/demo violated the site's own CSP ${pass.cspViolations.length} time(s):\n  ` +
+      `the page violated the site's own CSP ${pass.cspViolations.length} time(s):\n  ` +
         pass.cspViolations.join('\n  '),
     );
   }
@@ -2547,7 +2567,7 @@ function checkTwoTabs(pass, envelopeFields) {
 
   if (pass.bytesBefore > PRE_INTERACTION_CEILING) {
     throw new Red(
-      `/demo fetched ${kb(pass.bytesBefore)} of script before the section was connected, over ` +
+      `the page fetched ${kb(pass.bytesBefore)} of script before the section was connected, over ` +
         `the ${kb(PRE_INTERACTION_CEILING)} tripwire`,
     );
   }
@@ -3106,10 +3126,10 @@ async function main() {
     });
     checkFallback(starved);
 
-    /* `/demo` in its own tab per scenario, so the homepage's accounting above is
-       about the homepage and each scenario's egress is about that scenario. Each
-       is run twice in its tab, which is what the two runs are compared against
-       each other for. */
+    /* A fresh tab of the homepage per scenario, so the accounting above stays
+       about the page a reader lands on and each scenario's egress is about that
+       scenario alone. Each is run twice in its tab, which is what the two runs
+       are compared against each other for. */
     const flip = await visitScenario(cdp, origin, held, FLIP_SLUG);
     const { beacons: flipBeacons, ids } = checkScenario(flip, origin, flipExpectation(refusal));
 
@@ -3165,7 +3185,7 @@ async function main() {
         `  the touch drew: ${kb(live.bytesAfter)} over ${live.after.length} chunk(s)\n` +
         `  those blocked:  the recorded capture stayed on screen ` +
         `("${starved.dom.fallbackNote}")\n` +
-        `  /demo:          ${FLIP_SLUG} opened by fragment and run twice; both runs printed ` +
+        `  scenario:       ${FLIP_SLUG} opened by fragment and run twice; both runs printed ` +
         `${refusal.errorCode}\n` +
         `                  ("${refusal.errorMessage}") in the SDK's own log, and the resend ` +
         `arrived intact\n` +
@@ -3176,7 +3196,7 @@ async function main() {
         `                  before a touch ${kb(flip.bytesBefore)} over ` +
         `${flip.before.length} file(s); the run drew ${kb(flip.bytesAfter)} over ` +
         `${flip.after.length} chunk(s)\n` +
-        `  /demo:          ${SECOND_DEVICE_SLUG} opened by fragment and run twice; each run ` +
+        `  scenario:       ${SECOND_DEVICE_SLUG} opened by fragment and run twice; each run ` +
         `linked a device over\n` +
         `                  the QR handshake and the sender was told ` +
         `${secondDevice.before.recipientDeviceCount} device then ` +
@@ -3191,7 +3211,7 @@ async function main() {
         `                  before a touch ${kb(linking.bytesBefore)} over ` +
         `${linking.before.length} file(s); the run drew ${kb(linking.bytesAfter)} over ` +
         `${linking.after.length} chunk(s)\n` +
-        `  /demo:          ${PREKEY_SLUG} opened by fragment and run twice; the relay published ` +
+        `  scenario:       ${PREKEY_SLUG} opened by fragment and run twice; the relay published ` +
         `a bundle with no\n` +
         `                  one-time prekey of either type and ${preKeys.exhausted.ec} left to ` +
         `give, and the SDK called the handshake\n` +
@@ -3207,7 +3227,7 @@ async function main() {
         `                  before a touch ${kb(prekeys.bytesBefore)} over ` +
         `${prekeys.before.length} file(s); the run drew ${kb(prekeys.bytesAfter)} over ` +
         `${prekeys.after.length} chunk(s)\n` +
-        `  /demo:          ${REINSTALL_SLUG} opened by fragment and run twice; the receiving ` +
+        `  scenario:       ${REINSTALL_SLUG} opened by fragment and run twice; the receiving ` +
         `device was rebuilt on\n` +
         `                  empty storage and the relay refused it — the SDK reported ` +
         `"${reinstall.publish.message}"\n` +
@@ -3223,7 +3243,7 @@ async function main() {
         `                  before a touch ${kb(reinstalled.bytesBefore)} over ` +
         `${reinstalled.before.length} file(s); the run drew ${kb(reinstalled.bytesAfter)} over ` +
         `${reinstalled.after.length} chunk(s)\n` +
-        `  /demo:          two tabs of the same page connected as ` +
+        `  two tabs:       two tabs of the same page connected as ` +
         `${twoTabs.connected.map((tab) => `${tab.me} (${tab.role})`).join(' and ')}, and each ` +
         `read the\n` +
         `                  other's sentence off the channel — the reply came back through the ` +
