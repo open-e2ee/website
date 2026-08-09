@@ -33,9 +33,11 @@ From `RESEARCH-DOSSIER.md` and the editorial roadmap:
 - **Subreddit rules vary.** `r/cryptography` in particular is hostile to
   self-promotion and to non-experts giving crypto advice, correctly. Check each
   subreddit's current rules the day of posting, not today.
-- **Expect the audit question.** The honest answer is that OpenE2EE has not been
-  independently audited and a review is planned. Say that before someone asks;
-  being the one to raise it is the only version that builds trust.
+- **Expect the audit question.** The honest answer is the fixed sentence from
+  `docs/messaging.md` §7: reviewed continuously by adversarial AI agents, not
+  audited by any independent firm. Say both halves, and say them before someone
+  asks — being the one to raise it is the only version that builds trust. Do not
+  promise a firm review in any tense; that promise was retired on 2026-08-09.
 - **If a reply is hostile, do not defend the product.** Answer the technical
   point or say nothing.
 
@@ -112,8 +114,9 @@ no key agreement of any kind, and key agreement is the operation at the centre o
 both X3DH and the Double Ratchet.
 
 If it is useful, we wrote all of the above up with working Expo code here:
-[link to the Expo guide]. It has not been independently audited yet — a review is
-planned — and I would rather say that now than have you find out later.
+[link to the Expo guide]. Every change to it passes an adversarial AI review
+before it merges, and no independent firm has audited it — I would rather say
+that now than have you find out later.
 
 ---
 
@@ -238,9 +241,10 @@ retrofitting it, and retrofitting recovery into a shipped E2EE app is genuinely
 painful.
 
 If you want the SDK we work on, it is `@open-e2ee/signal-protocol-sdk` — pure
-TypeScript, runs in browser/Node/Expo, PQXDH by default. It is alpha and has not
-been independently audited; a review is planned. Do not take my word for any of
-the above just because I build one of these.
+TypeScript, runs in browser/Node/Expo, PQXDH by default. It is alpha, it is
+reviewed continuously by adversarial AI agents, and it is not audited by any
+independent firm. Do not take my word for any of the above just because I build
+one of these.
 
 ---
 
