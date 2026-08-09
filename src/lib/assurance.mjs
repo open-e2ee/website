@@ -64,8 +64,9 @@ export const dependencies = {
  *
  * The acknowledgment window widened from 48 hours to 72 hours on 2026-08-09; the
  * 7-day initial assessment is unchanged. The SDK's own SECURITY.md and README
- * still say 48 and have to be moved in their own repository before the two
- * agree again — this file is the site's copy of that policy, not its source.
+ * agree as of that date, through signal-protocol-js-internal#127 and the export
+ * that carried it to signal-protocol-js#5 — this file is the site's copy of that
+ * policy, not its source, so a future change starts there and arrives here.
  */
 export const reporting = {
   address: 'security@open-e2ee.dev',
