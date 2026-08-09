@@ -37,7 +37,7 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
    * had not changed, not that the site kept its promise. When the founder
    * dropped the footer tagline on 2026-08-04 it failed for the correct edit,
    * and it would have passed happily if a tagline had appeared unannotated on
-   * any of the other sixteen pages.
+   * any of the site's other pages.
    *
    * So it now runs the design package's own checker over every built page.
    * `findTaglines` looks for the registered tagline strings in the rendered
@@ -61,12 +61,12 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
   } catch {
     return; // dist/ absent — the build-output tests in this file all skip together.
   }
-  /* 16 since /demo folded into the homepage. This is a floor on the walk
-   * finding the site, not a count anyone maintains for its own sake — but it is
-   * exactly met, so it reds the moment a route is dropped without being
-   * accounted for here. That is the intended behaviour and the reason it is not
-   * slack. */
-  assert.ok(pages.length >= 16, `expected the full site in dist/, found ${pages.length} pages`);
+  /* 15 since /compare folded into /product, which followed /demo folding into
+   * the homepage. This is a floor on the walk finding the site, not a count
+   * anyone maintains for its own sake — but it is exactly met, so it reds the
+   * moment a route is dropped without being accounted for here. That is the
+   * intended behaviour and the reason it is not slack. */
+  assert.ok(pages.length >= 15, `expected the full site in dist/, found ${pages.length} pages`);
 
   const failures = [];
   const usingTagline = [];
@@ -1345,15 +1345,7 @@ test('keeps the relay formula intact in the strings that travel alone', async ()
    * CarrierPanel disproves six fields later — and it was served four times, as
    * description, og:description, og:image:alt and twitter:description. The
    * diagram guard above covers the drawings; nothing covered this. */
-  const pages = [
-    'index',
-    'product',
-    'security',
-    'learn',
-    'compare',
-    'pricing',
-    'licensing',
-  ];
+  const pages = ['index', 'product', 'security', 'learn', 'pricing', 'licensing'];
   const descriptions = await Promise.all(
     pages.map(async (page) => {
       const built = await readFile(

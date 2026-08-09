@@ -26,3 +26,14 @@
 # somebody else wrote.
 /demo /#when-something-goes-wrong 308
 /demo/ /#when-something-goes-wrong 308
+# /compare was the comparison page. Its table and its five project notes are now
+# the two bands under "How it compares" on /product, so the destination carries
+# that section's id.
+#
+# The fragment costs less here than it did for /demo: /compare published no deep
+# links of its own — it had no ids on any of its four sections — so nothing that
+# arrives with a fragment can have it replaced. The sitemap had already given
+# /compare/ to crawlers, and it was a nav item on every page of the site, which
+# is the widest inbound surface any route here has had.
+/compare /product/#how-it-compares 308
+/compare/ /product/#how-it-compares 308
