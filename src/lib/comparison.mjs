@@ -178,7 +178,7 @@ export const notes = [
   {
     key: 'oe',
     heading: 'This SDK',
-    body: 'An independent TypeScript implementation of the published Signal Protocol specifications, running in Expo, React Native, modern browsers, and Node from one package, with post-quantum PQXDH on by default and failing closed. Storage and transport are yours to compose. It is 0.1.x alpha, it is not yet audited, and it is not wire-compatible with Signal Messenger — each of those is stated at length elsewhere on this site rather than left for you to discover.',
+    body: 'An independent TypeScript implementation of the published Signal Protocol specifications, running in Expo, React Native, modern browsers, and Node from one package, with post-quantum PQXDH on by default and failing closed. Storage and transport are yours to compose. It is 0.1.x alpha, it is reviewed by adversarial AI agents but not audited by any independent firm, and it is not wire-compatible with Signal Messenger — each of those is stated at length elsewhere on this site rather than left for you to discover.',
     verdict:
       'The case for it is the row above: the Signal Protocol, in the runtimes the other Signal Protocol libraries do not reach.',
   },

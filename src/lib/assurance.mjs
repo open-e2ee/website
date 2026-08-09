@@ -59,10 +59,17 @@ export const dependencies = {
      install pulls in is already named above. */
 };
 
-/** Response commitment, which must match SECURITY.md exactly. */
+/**
+ * Response commitment, which must match SECURITY.md exactly.
+ *
+ * The acknowledgment window widened from 48 hours to 72 hours on 2026-08-09; the
+ * 7-day initial assessment is unchanged. The SDK's own SECURITY.md and README
+ * still say 48 and have to be moved in their own repository before the two
+ * agree again — this file is the site's copy of that policy, not its source.
+ */
 export const reporting = {
   address: 'security@open-e2ee.dev',
-  acknowledgment: '48 hours',
+  acknowledgment: '72 hours',
   assessment: '7 days',
 };
 

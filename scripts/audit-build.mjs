@@ -102,10 +102,29 @@ const TERMINOLOGY = [
  * What must carry the qualifier is a claim of security review, not the word.
  * The privacy notice needs "auditors" among professional advisers and "audit"
  * among record-retention purposes, and neither asserts anything about the SDK.
+ *
+ * The accepted qualifier is the second half of the fixed formula in
+ * docs/messaging.md §7, and only that half. "Not yet audited" used to be
+ * accepted here and is not any more: "yet" is the retired promise in one word,
+ * and a gate that keeps taking it lets the retired copy back in one page at a
+ * time.
  */
-const AUDIT_NEGATIONS = [/not yet audited/i, /no third-party security audit/i];
+const AUDIT_NEGATIONS = [/not audited by any independent firm/i, /no independent firm has audited/i];
 const AUDIT_MENTION =
   /\baudit(ed|able)\b|\b(?:security|third[- ]party|independent|external|formal|code)[- ](?:review[- ])?audits?\b/i;
+
+/*
+ * The other direction of the same rule, and the one no pattern above can see.
+ *
+ * §7 binds two halves together: adversarial AI review, and the statement that
+ * no independent firm has audited the SDK. AI review stated alone is a banned
+ * claim (§2) — it reads as an assurance story with the limit filed off. But a
+ * page can say "reviewed continuously by adversarial AI agents" without ever
+ * writing "audited", so AUDIT_MENTION never fires on it and the page ships.
+ * Hence a mention rule of its own, pointed the other way, sharing the same
+ * negations.
+ */
+const AI_REVIEW_MENTION = /\badversarial AI\b|\bAI (?:review|audit|agents?)\b/i;
 
 /*
  * FIPS, on the same principle as "audited": what must be qualified is the
@@ -194,8 +213,9 @@ const problems = [];
  * or a template hole (`"…the Signal " + name`) is invisible to any static scan
  * of the output, here and in the HTML pass alike. And AUDIT/FIPS want their
  * qualifier on the same *page*, which does not map onto a chunk: a scenario
- * that ever needs to say "audited" has to carry "not yet audited" in the same
- * chunk, which is where the sentence belongs anyway.
+ * that ever needs to say "audited" has to carry "not audited by any
+ * independent firm" in the same chunk, which is where the sentence belongs
+ * anyway.
  */
 const scripts = await filesWith(DIST, '.js');
 const prose = [
@@ -225,8 +245,13 @@ for (const [rel, text] of prose) {
     if (hit) problems.push(`${rel}: naming violation ${pattern} — "${hit[0]}"`);
   }
 
-  if (AUDIT_MENTION.test(text) && !AUDIT_NEGATIONS.some((n) => n.test(text))) {
-    problems.push(`${rel}: mentions an audit without the "not yet audited" qualifier`);
+  if (
+    (AUDIT_MENTION.test(text) || AI_REVIEW_MENTION.test(text)) &&
+    !AUDIT_NEGATIONS.some((n) => n.test(text))
+  ) {
+    problems.push(
+      `${rel}: claims an audit or an AI review without "not audited by any independent firm"`,
+    );
   }
 
   if (FIPS_MENTION.test(text.replace(FIPS_PUBLICATION, ' ')) && !FIPS_NEGATION.test(text)) {

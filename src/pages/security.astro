@@ -299,11 +299,15 @@ const outOfScope = [
       </div>
       <dl class="definition-rows">
         <div>
-          <dt>Not yet audited</dt>
+          <dt>Not audited by any independent firm</dt>
           <dd>
-            No third-party security audit has been performed. An independent review is planned. The
-            codebase is structured for review — narrow state transitions, injectable adapters, small
-            protocol seams — but structure is not certification.
+            Reviewed continuously by adversarial AI agents; not audited by any independent firm.
+            Every change passes an adversarial AI review before it merges, and recurring
+            whole-codebase AI audit passes run against the engineering repository. What that covers
+            — and what it does not — is stated in the <a href={docs.assurance}>assurance summary</a>.
+            No independent firm has audited the SDK, and none is engaged. The codebase is structured
+            for review — narrow state transitions, injectable adapters, small protocol seams — but
+            structure is not certification, and neither is a machine reading it.
           </dd>
         </div>
         <div>
