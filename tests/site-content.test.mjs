@@ -851,22 +851,97 @@ test('reaches the security review pack from the homepage and the footer', async 
   /* Both build their links from a data array now, so the path is quoted
    * rather than written as an attribute. On the homepage it belongs in the
    * "Check the work" band with the rest of the evidence, not in a third row
-   * of hero links competing with the one action the hero is for. */
-  assert.match(index, /href: '\/evaluate'/);
-  assert.match(footer, /href: '\/evaluate'/);
-  assert.match(footer, /Security review pack/);
+   * of hero links competing with the one action the hero is for.
+   *
+   * The destination is /security. It was /evaluate, which asked the questions
+   * /security answers and rendered the same pinned specifications from the
+   * same module; both surfaces linked to both, so a reader met one body of
+   * content under two names. What has to stay true is that the pack is
+   * reachable from each surface exactly once — a second entry pointing at the
+   * same page under the other name is the defect this replaced. */
+  assert.match(index, /href: '\/security'/);
+  assert.match(footer, /href: '\/security'/);
+  assert.match(footer, /Security model and review pack/);
+
+  /* Absence is asserted against the link data, not the raw source. Both files
+   * carry a comment naming /evaluate to record why the second entry went, and
+   * a guard that forbade the word outright would forbid explaining itself —
+   * the same reason the relay-formula guards on this page read the rendered
+   * output rather than the file. */
+  for (const source of [index, footer]) {
+    const hrefs = [...source.matchAll(/href: '([^']+)'/g)].map((match) => match[1]);
+    assert.ok(!hrefs.includes('/evaluate'), 'a link still points at the folded page');
+    assert.equal(
+      hrefs.filter((href) => href === '/security').length,
+      1,
+      'the review pack is reachable more than once under more than one name',
+    );
+  }
+});
+
+test('permanently redirects the folded route to the page that absorbed it', async () => {
+  const redirects = await read('../public/_redirects');
+
+  /* The sitemap published https://open-e2ee.dev/evaluate/ to crawlers for as
+   * long as the page existed, so deleting the route without a redirect strands
+   * a URL search engines already hold. "Pre-launch, no customers" was the first
+   * answer here and it was wrong on the facts: a published sitemap entry is an
+   * inbound link whether or not a human ever followed it.
+   *
+   * Both slash forms, because the sitemap used the trailing one and a hand-
+   * written link uses whichever it was typed with. The legal folds above set
+   * that convention and this follows it rather than inventing a second shape. */
+  assert.match(redirects, /^\/evaluate \/security\/ 308$/m);
+  assert.match(redirects, /^\/evaluate\/ \/security\/ 308$/m);
+
+  /* And the destination is a route this repo actually has. A 308 to a 404 is
+   * worse than the dead route it replaced, because it also tells the crawler
+   * the move is permanent.
+   *
+   * Checked against the page source rather than dist. CI runs `npm test`
+   * before `npm run build`, so a dist-reading assertion there either fails on
+   * a tree that was never built or gets written as a skip — and a redirect
+   * guard that quietly passes on an unbuilt tree is worth nothing. The source
+   * file is the thing that decides whether the route exists. */
+  const destination = await read('../src/pages/security.astro').catch(() => null);
+  assert.ok(destination, 'the redirect points at a page this repo does not have');
+});
+
+test('leaves the reviewer a path to the licence the review is for', async () => {
+  /* /evaluate linked /licensing and /legal/terms inline. Folding it left this
+   * page closing on an enterprise meeting and a quickstart, both of which
+   * assume the licence question is already settled — and the reader who gets
+   * to the end of the threat model is usually the person it is not settled for.
+   *
+   * /licensing rather than /pricing: the question at that point is which
+   * licence governs, not what a tier costs, and /licensing carries the
+   * /legal/terms link itself, so one link restores the whole path.
+   *
+   * Matched as a whole anchor, label included, rather than on the href alone.
+   * The first version of this guard asserted `href="/licensing"` and passed
+   * while the close band pointed at /pricing, because the footer links
+   * Licensing from every page on the site — it was measuring the layout, not
+   * the change.
+   *
+   * That full-anchor form is also what makes reading the source safe here. The
+   * link carries a comment naming both /licensing and /pricing to record the
+   * choice between them, and a guard on the bare href would be satisfied by
+   * its own explanation; no comment on this page contains the rendered anchor.
+   * Source rather than dist because CI tests before it builds. */
+  const source = await read('../src/pages/security.astro');
+  assert.match(source, /<a href="\/licensing">Which licence your product needs<\/a>/);
 });
 
 test('states the same assurance figures on every page that states them', async () => {
-  const [security, evaluate] = await Promise.all([
-    flat('../src/pages/security.astro'),
-    flat('../src/pages/evaluate.astro'),
-  ]);
+  /* This walked /security and /evaluate. /evaluate is gone — it rendered the
+   * same `specifications` array from the same module, which is what made the
+   * two pages a duplicate rather than a pair. The guard is kept rather than
+   * folded into the page's other tests because the property it protects is
+   * about any page that states a figure, and the next such page has to inherit
+   * it: read from assurance.mjs, or do not state the number. */
+  const pages = [await flat('../src/pages/security.astro')];
 
-  /* Both pages read the figures from src/lib/assurance.mjs rather than
-   * writing them out, which is the only reason they cannot disagree. A page
-   * that hardcodes one has opted out of that guarantee. */
-  for (const page of [security, evaluate]) {
+  for (const page of pages) {
     assert.match(page, /from '\.\.\/lib\/assurance\.mjs'/);
     assert.doesNotMatch(page, new RegExp(checks.assertions));
     assert.doesNotMatch(page, /\b351 modules\b/);
@@ -940,12 +1015,9 @@ test('counts the dependency footprint from the installed tree, not from memory',
 });
 
 test('states the validation and audit position rather than omitting it', async () => {
-  const [security, evaluate] = await Promise.all([
-    flat('../src/pages/security.astro'),
-    flat('../src/pages/evaluate.astro'),
-  ]);
+  const pages = [await flat('../src/pages/security.astro')];
 
-  for (const page of [security, evaluate]) {
+  for (const page of pages) {
     assert.match(page, /not FIPS 140-validated/);
   }
 
@@ -959,7 +1031,7 @@ test('states the validation and audit position rather than omitting it', async (
    * does not subsume this: it can only require the limit once some trigger
    * word appears, so a page that drops the subject entirely satisfies it and
    * says nothing. These pages are the ones that must not go quiet. */
-  for (const page of [security, evaluate]) {
+  for (const page of pages) {
     assert.match(page, /Reviewed continuously by adversarial AI agents/);
     assert.match(page, /not audited by any independent firm/);
     assert.match(page, /No independent firm has audited the SDK, and none is engaged/);
@@ -1243,7 +1315,6 @@ test('keeps the relay formula intact in the strings that travel alone', async ()
     'security',
     'learn',
     'compare',
-    'evaluate',
     'pricing',
     'licensing',
   ];
@@ -1290,7 +1361,7 @@ test('gives the security page something to do at the end of it', async () => {
    * and used to arrive at two links weighted the same as the sentences above
    * them. The close has to carry an action of button weight. */
   const close = security.slice(security.lastIndexOf('Read the primary sources'));
-  assert.match(close, /<a class="oe-button" href="\/evaluate">/);
+  assert.match(close, /<a class="oe-button" href="https:\/\/console\.open-e2ee\.dev\/contact\?plan=enterprise">/);
   assert.match(close, /class="oe-button oe-button-secondary"/);
 });
 
@@ -2082,13 +2153,15 @@ test('quotes the entry price from the module on every marketing page', async () 
    * the module prevented drift on exactly one of the five places the number
    * appeared. /product, /evaluate and /pricing's own meta description each
    * carried their own typed copy, all of them correct, all of them free to go
-   * stale independently at the next price change.
+   * stale independently at the next price change. /evaluate has since folded
+   * into /security, which is why the list below names two pages and not three;
+   * the sweep further down is what covers the ones nobody thought to list.
    *
    * Reading from the module is asserted on the source rather than the built
    * page because a hard-coded "$5,000" and a rendered `startupTier.price` are
    * byte-identical in `dist` today. That is the whole problem: the defect is
    * invisible in the output until the day someone changes the price. */
-  const quoting = ['product', 'evaluate', 'pricing'];
+  const quoting = ['product', 'pricing'];
   for (const page of quoting) {
     const source = await flat(`../src/pages/${page}.astro`);
     assert.match(
@@ -2103,18 +2176,45 @@ test('quotes the entry price from the module on every marketing page', async () 
    * price, and a guard that failed on the history of the bug it prevents would
    * be deleted by the next person who hit it. */
   const strip = (text) => text.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ');
-  const pageDir = new URL('../src/pages/', import.meta.url);
-  for (const entry of await readdir(pageDir)) {
-    if (!entry.endsWith('.astro')) continue;
-    const body = strip(await read(`../src/pages/${entry}`));
+
+  /* Recursive, with the exemption named rather than implied. The first version
+   * called `readdir` without recursion and so covered the top level only, which
+   * happened to exclude src/pages/legal/ — the one directory that must be
+   * excluded. A guard that gets the right answer because it never looked is
+   * indistinguishable from one that looked and decided, right up until someone
+   * adds src/pages/solutions/ and it silently stops covering that too. */
+  const marketingPages = [];
+  const walk = async (dir) => {
+    for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        if (`${dir}${entry.name}/` === '../src/pages/legal/') continue;
+        await walk(`${dir}${entry.name}/`);
+      } else if (entry.name.endsWith('.astro')) {
+        marketingPages.push(`${dir}${entry.name}`);
+      }
+    }
+  };
+  await walk('../src/pages/');
+  assert.ok(marketingPages.length > 5, `expected to walk the pages, found ${marketingPages.length}`);
+
+  for (const page of marketingPages) {
+    const body = strip(await read(page));
     for (const tier of tiers) {
       if (tier.price === 'Free') continue;
       assert.ok(
         !body.includes(tier.price),
-        `src/pages/${entry} hard-codes ${tier.price}; read it from pricing.mjs instead`,
+        `${page} hard-codes ${tier.price}; read it from pricing.mjs instead`,
       );
     }
   }
+
+  /* And the exemption is real: a sweep that reported nothing in the legal tree
+   * would mean the walk had missed the figure rather than that it was clean.
+   * The page itself is a two-line delegation — src/pages/legal/terms.astro
+   * renders <CommercialTerms canonical="/legal/terms" /> — so the figure lives
+   * in the component, and that is what has to still carry it. */
+  assert.match(await read('../src/pages/legal/terms.astro'), /CommercialTerms/);
+  assert.match(await read('../src/components/CommercialTerms.astro'), /\$[\d,]+ per year/);
 
   /* The legal pages are deliberately outside that sweep. /legal/terms and its
    * frozen versioned copies state the fee as executed contract language, and a

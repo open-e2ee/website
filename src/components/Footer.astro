@@ -12,8 +12,11 @@ const groups = [
          A footer link is read by someone who did not find what they wanted in
          the nav, so it spends the extra words. */
       { href: '/demo', label: 'Demo in your browser' },
-      { href: '/security', label: 'Security model' },
-      { href: '/evaluate', label: 'Security review pack' },
+      /* One entry, not two. This sat above a "Security review pack" link to
+         /evaluate until that page folded into this one, and a footer column
+         listing the same destination twice under two names is worse than the
+         split it replaced. */
+      { href: '/security', label: 'Security model and review pack' },
       { href: '/pricing', label: 'Pricing' },
       { href: '/licensing', label: 'Licensing' },
     ],

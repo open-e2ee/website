@@ -129,13 +129,18 @@ const runtimes = [
 
 /*
  * Everything a reader can check, in the band that exists to be checked. The
- * security model and the review pack used to sit in a third row of links in
- * the hero, where they read as afterthoughts to the CTA rather than as the
- * page's answer to "prove it".
+ * security model used to sit in a third row of links in the hero, where it
+ * read as an afterthought to the CTA rather than as the page's answer to
+ * "prove it".
+ *
+ * A second entry here pointed at /evaluate as "the security review pack". That
+ * page asked the questions /security answers and rendered the same pinned
+ * specifications from the same module, so the two links sent a reader to one
+ * body of content under two names. /security absorbed it and this list names
+ * it once.
  */
 const trustLinks = [
   { href: '/security', label: 'What the relay can and cannot see' },
-  { href: '/evaluate', label: 'The security review pack' },
   {
     href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/SECURITY.md',
     label: 'The security model and threat model',
