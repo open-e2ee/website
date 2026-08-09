@@ -1,11 +1,15 @@
 /*
- * The comparison page makes claims about other people's projects, which is the
- * one place on this site where being wrong costs somebody else something.
+ * The comparison makes claims about other people's projects, which is the one
+ * place on this site where being wrong costs somebody else something.
  *
  * These tests hold the shape that keeps it honest: one source for the data, a
- * measurement date on the page, an axis this SDK loses, and a verdict that
+ * measurement date beside the table, an axis this SDK loses, and a verdict that
  * sends the reader elsewhere. None of them can check that a figure is true —
  * only re-measuring does that, and src/lib/comparison.mjs records how.
+ *
+ * The subject was /compare until that page folded into /product. Every
+ * assertion below names the page it reads, so the fold moved the file names and
+ * left the contract alone.
  */
 
 import assert from 'node:assert/strict';
@@ -16,6 +20,16 @@ import { MEASURED_ON, axes, libsignalReadme, notes, projects } from '../src/lib/
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
 
+/* Copy only. An Astro page's comments are not served, and /product's carry
+ * dates for their own decisions — the founder review of the h1, most of all.
+ * A guard that reads them cannot tell a rendered claim from a note about one. */
+const copy = async (path) =>
+  (await read(path))
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/^[ \t]*\/\/.*$/gm, ' ')
+    .replace(/\s+/g, ' ');
+
 test('dates the measurement and prints the date where the table is', async () => {
   assert.match(MEASURED_ON, /^\d{4}-\d{2}-\d{2}$/);
   assert.ok(!Number.isNaN(Date.parse(MEASURED_ON)), `${MEASURED_ON} is not a date`);
@@ -23,12 +37,12 @@ test('dates the measurement and prints the date where the table is', async () =>
   /* messaging.md §1.3: a comparison with no date is a claim that quietly
    * becomes false. Rendering MEASURED_ON is what makes the page checkable, so
    * the page has to import it rather than restate a date in prose. */
-  const compare = await flat('../src/pages/compare.astro');
-  assert.match(compare, /MEASURED_ON/);
+  const product = await copy('../src/pages/product.astro');
+  assert.match(product, /MEASURED_ON/);
   assert.doesNotMatch(
-    compare,
+    product,
     /\b20\d\d-\d\d-\d\d\b/,
-    'dates on the page belong in comparison.mjs, where they are measured',
+    'dates in the copy belong in comparison.mjs, where they are measured',
   );
 });
 
@@ -81,16 +95,25 @@ test('quotes libsignal accurately and attributes it', async () => {
   assert.match(libsignalReadme.attribution, /signalapp\/libsignal/);
   assert.match(libsignalReadme.href, /^https:\/\/github\.com\/signalapp\/libsignal/);
 
-  /* messaging.md §5 names this the strongest single quote available, and it is
-   * strongest above the fold on the page that answers "why not libsignal".
-   * It spent a release two thirds of the way down the homepage. */
-  const compare = await flat('../src/pages/compare.astro');
-  assert.match(compare, /page-hero[\s\S]*libsignalReadme\.quote/);
+  /* messaging.md §5 names this the strongest single quote available, and a
+   * quotation is evidence for the table rather than a footnote to it: it goes
+   * above the rows it explains. It spent a release two thirds of the way down
+   * the homepage, and a release on a route of its own.
+   *
+   * Both sentences ship together here. The second is the one about APIs
+   * changing without notice, which is what "unsupported" costs a reader who is
+   * planning a roadmap, and quoting only the famous half loses it. */
+  const product = await flat('../src/pages/product.astro');
+  assert.match(product, /\{libsignalReadme\.quote\}\s*\{libsignalReadme\.continuation\}/);
+  assert.ok(
+    product.indexOf('libsignalReadme.quote') < product.indexOf('axes.map'),
+    'the table is above the quotation that justifies it',
+  );
 });
 
 test('keeps the matrix in one place', async () => {
   const pages = await readdir(new URL('../src/pages', import.meta.url));
-  const others = pages.filter((page) => page.endsWith('.astro') && page !== 'compare.astro');
+  const others = pages.filter((page) => page.endsWith('.astro') && page !== 'product.astro');
 
   for (const page of others) {
     const source = await read(`../src/pages/${page}`);
@@ -98,23 +121,37 @@ test('keeps the matrix in one place', async () => {
     assert.doesNotMatch(
       imported,
       /\baxes\b/,
-      `${page} renders the matrix; /compare owns it so the two cannot drift`,
+      `${page} renders the matrix; /product owns it so the two cannot drift`,
     );
   }
 });
 
-test('links the comparison from the nav and from the pages that summarise it', async () => {
-  const [header, index, product] = await Promise.all([
+test('keeps the comparison reachable now that it has no route of its own', async () => {
+  const [header, index, product, redirects] = await Promise.all([
     flat('../src/components/Header.astro'),
     flat('../src/pages/index.astro'),
     flat('../src/pages/product.astro'),
+    read('../public/_redirects'),
   ]);
 
-  assert.match(header, /href: '\/compare'/);
-  for (const page of [index, product]) {
-    assert.match(page, /href="\/compare"/);
-    /* Both summarise the matrix in prose. Importing the date means the summary
-     * ages with the measurement instead of outliving it. */
-    assert.match(page, /MEASURED_ON/);
+  /* The section id is the whole reachability story: it is the redirect target
+   * for the retired route and the anchor the homepage summary points at. */
+  assert.match(product, /id="how-it-compares"/);
+  assert.match(index, /href="\/product#how-it-compares"/);
+  /* The homepage summarises the matrix in prose. Importing the date means the
+   * summary ages with the measurement instead of outliving it. */
+  assert.match(index, /MEASURED_ON/);
+
+  /* Not a nav item, and not a route. Both were true of /compare for eleven
+   * releases, so both are the shapes an edit would restore by habit. */
+  assert.doesNotMatch(header, /href: '\/compare'/);
+  const pages = await readdir(new URL('../src/pages', import.meta.url), { recursive: true });
+  assert.ok(!pages.includes('compare.astro'), '/compare is a page again');
+
+  for (const path of ['/compare', '/compare/']) {
+    assert.ok(
+      redirects.split('\n').some((line) => line.startsWith(`${path} /product/#how-it-compares `)),
+      `${path} does not redirect to the section that replaced it`,
+    );
   }
 });

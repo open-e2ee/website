@@ -1,10 +1,10 @@
 /*
  * Every claim this site makes about somebody else's project.
  *
- * One module, because the same matrix appears on /compare and is summarised on
- * /product and the homepage, and a claim about a competitor that says one thing
- * on one page and another on the next is the kind of mistake that is read as
- * dishonesty rather than as drift.
+ * One module, because the matrix appears on /product and is summarised on the
+ * homepage, and a claim about a competitor that says one thing on one page and
+ * another on the next is the kind of mistake that is read as dishonesty rather
+ * than as drift.
  *
  * Three rules hold here:
  *
@@ -19,7 +19,7 @@
  *   Fair, or it is worthless. libsignal and ts-mls are both very actively
  *   maintained and both say so here. The axes are the ones this SDK was built
  *   to change; they are not a quality ranking, and a reader who needs MLS
- *   should leave this page and use ts-mls.
+ *   should leave this site and use ts-mls.
  *
  * How to re-measure:
  *   gh api repos/OWNER/REPO --jq '.pushed_at, .archived, .license.spdx_id'

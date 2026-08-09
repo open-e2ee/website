@@ -6,16 +6,20 @@ import ThemeToggle from './ThemeToggle.astro';
 const path = Astro.url.pathname;
 
 /*
- * Nav follows the funnel: evaluate, choose, learn, build, verify, buy, read.
+ * Nav follows the funnel: choose, learn, build, verify, buy, read.
  *
- * Compare sits directly after Product because "why not libsignal" is the first
- * question anyone asks and the answer is a quote from libsignal's own README.
- * It was a pull-quote two thirds down the homepage, where the reader who most
- * needed it had already left.
+ * There is no Compare slot. It held one, directly after Product, because "why
+ * not libsignal" is the first question anyone asks. The question is real; the
+ * route was not. A reader asks it while they are weighing this package, which
+ * is what /product is for, so the nav item interrupted the one comparison it
+ * existed to serve — and one product's claims split across two routes is two
+ * surfaces to keep true. The table and the five project notes are now the two
+ * bands under "How it compares" on /product, and `public/_redirects` keeps
+ * `/compare` pointing at them.
  *
- * There is no Demo slot. It held one, on the argument that Product claims,
- * Compare cites and Demo runs — the only page that answered a question by
- * executing the shipped package in the reader's own tab. That argument was
+ * There is no Demo slot either. It held one, on the argument that Product
+ * claims, Compare cites and Demo runs — the only page that answered a question
+ * by executing the shipped package in the reader's own tab. That argument was
  * right about the evidence and wrong about where it belonged: a demo behind a
  * nav item is a demo a reader has to decide to visit, and the exemplars the
  * design review checked all put the running thing directly under the code that
@@ -25,7 +29,6 @@ const path = Astro.url.pathname;
  */
 const links = [
   { href: '/product', label: 'Product' },
-  { href: '/compare', label: 'Compare' },
   { href: '/learn', label: 'Learn' },
   { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
   { href: '/security', label: 'Security' },

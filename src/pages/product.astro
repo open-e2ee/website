@@ -4,7 +4,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import SignatureDiagram from '../components/SignatureDiagram.astro';
 import capture from '../data/carrier-capture.json';
 import { codeThemes } from '../lib/code-theme.mjs';
-import { MEASURED_ON } from '../lib/comparison.mjs';
+import { MEASURED_ON, axes, libsignalReadme, notes, projects } from '../lib/comparison.mjs';
 import { startupTier } from '../data/pricing.mjs';
 
 /*
@@ -73,6 +73,24 @@ const adapters = [
   },
 ];
 
+/*
+ * The comparison lives here, in the two bands below, and used to be a page of
+ * its own at /compare.
+ *
+ * It was a nav item because "why not libsignal" is the first question anyone
+ * asks. But a reader only asks it while they are weighing this package, and
+ * that is this page — sending them to a second route to find the answer put a
+ * navigation step inside the one comparison they came to make, and split the
+ * claims across two surfaces that each had to be kept true. The nav item is
+ * gone, `public/_redirects` keeps `/compare` pointing at the first of these two
+ * bands, and the homepage still summarises them in four rows.
+ *
+ * The data stays in src/lib/comparison.mjs. It is the one file on this site
+ * that makes claims about other people's projects, and the homepage summary and
+ * these bands read the same measurements so neither can drift from the other.
+ */
+const byKey = Object.fromEntries(notes.map((note) => [note.key, note]));
+const ordered = projects.map((project) => ({ project, note: byKey[project.key] }));
 ---
 
 <BaseLayout
@@ -192,8 +210,8 @@ const adapters = [
       <p class="muted measure">
         Browser and bare React Native stores are experimental. The Expo and Node stores are the
         complete ones — both implement <code>ISignalProtocolLocalStore</code> in full, so groups and
-        multi-device work on either. They differ in where the bytes land: the Expo store is
-        <code>expo-sqlite</code> with SQLCipher, the Node store is an encrypted filesystem under
+        multi-device work on either. They differ in where the bytes land: the Expo store is{' '}
+        <code>expo-sqlite</code> with SQLCipher, the Node store is an encrypted filesystem under{' '}
         <code>node:crypto</code> with 0600 permissions. You can also implement{' '}
         <code>ISignalProtocolLocalStore</code> or <code>ISignalProtocolRelayServer</code> yourself —
         they are documented interfaces, not internals.
@@ -237,23 +255,129 @@ const adapters = [
     </div>
   </section>
 
-  <section class="band">
-    <div class="container measure stack">
-      <h2>How it compares</h2>
-      <p>
-        Four alternatives, on the axes this SDK was built to change: the official
-        <code>@signalapp/libsignal-client</code>, the two older JavaScript ports, and
-        <code>ts-mls</code>, which implements a different protocol and implements it well. Every
-        figure measured from public APIs and dated, and two of the five entries end in a
-        recommendation that is not this package.
-      </p>
-      <p class="text-links">
-        <a href="/compare">The full comparison, measured on {MEASURED_ON}</a>
+  <section class="band" id="how-it-compares">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>How it compares</h2>
+        <p class="measure">
+          libsignal is excellent, actively maintained, and the most scrutinised Signal Protocol
+          code there is. It is also a native Node addon that does not run in a browser, in Expo, or
+          in React Native, and its maintainers say plainly that use outside Signal is not something
+          they support. That is the gap.
+        </p>
+        {/* Both sentences, not the famous one on its own. The first is the
+            licence answer and the second is the roadmap answer, and a reader
+            planning a year of work needs the second one. src/lib/comparison.mjs
+            keeps them as separate fields for the homepage, which has room for
+            one. */}
+        <figure class="quote">
+          <blockquote>{libsignalReadme.quote} {libsignalReadme.continuation}</blockquote>
+          <figcaption>
+            <a href={libsignalReadme.href}>{libsignalReadme.attribution}</a>
+          </figcaption>
+        </figure>
+        {/* Inside the band head, where /compare had it, and not a direct child
+            of `.stack`. `.stack > *` sets `max-width: 100%` at the same
+            specificity as `.measure` and is written after it, so a bare
+            `.measure` paragraph parked directly in a stack is capped by nothing
+            — eight elements render that way, three on the home page, three
+            here, two on /security, and this is not the change that fixes them.
+            That eight is counted by computed max-width rather than by shape,
+            because the shape overcounts twice: an element that is itself
+            `container measure stack` is capped correctly, since the rule only
+            reaches children, and a `callout measure` child brings a cap of its
+            own. `.band-head` caps at 62ch and is unaffected. */}
+        <p class="muted measure">
+          Read from the GitHub API, the npm registry API, and the published package tarballs on
+          {' '}{MEASURED_ON}. Dates are the ones those APIs returned. The axes are the ones this
+          SDK was built to change, so the table is not a quality ranking — and the column for our
+          own package is the one column nobody independent measured.
+        </p>
+      </div>
+      <div class="table-scroll">
+        <table class="data">
+          <thead>
+            <tr>
+              <th scope="col">&nbsp;</th>
+              {projects.map((project) => (
+                <th scope="col">
+                  {project.ours ? (
+                    <code>{project.name}</code>
+                  ) : (
+                    <a href={project.href}><code>{project.name}</code></a>
+                  )}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {axes.map((row) => (
+              <tr>
+                <th scope="row">{row.axis}</th>
+                {row.cells.map((cell) => <td>{cell}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="muted measure">
+        A licence row is not a scorecard either. <code>ts-mls</code> is MIT, which already permits
+        proprietary use, so &ldquo;no commercial licence offered&rdquo; costs its users nothing.
+        Ours is AGPL-3.0-or-later with a commercial licence available, which is a cost to some
+        readers and the reason the row is there.
       </p>
     </div>
   </section>
 
   <section class="band band-surface">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>What each one is actually for</h2>
+        <p class="measure">
+          A table flattens the thing a table is worst at: what a project is good at. Two of the five
+          below end with a recommendation that is not this SDK.
+        </p>
+        <p class="muted measure">
+          {/* The explicit space is load-bearing, the same way it is in the
+              homepage band that summarises these projects: Astro collapses the
+              newline between a text node and a following inline element, and
+              this rendered as "the top of`src/lib/comparison.mjs`". */}
+          None of it should be taken on our word. Every project links to its repository, every date
+          came from a public API, and the commands that read them are in the comment at the top of{' '}
+          <code>src/lib/comparison.mjs</code>.
+        </p>
+      </div>
+      <dl class="definition-rows">
+        {ordered.map(({ project, note }) => (
+          <div>
+            <dt>
+              {note.heading} —{' '}
+              {project.ours ? (
+                <code>{project.name}</code>
+              ) : (
+                <a href={project.href}><code>{project.name}</code></a>
+              )}
+            </dt>
+            <dd>
+              <p>{note.body}</p>
+              <p class="verdict">{note.verdict}</p>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p class="text-links">
+        <a href="https://github.com/open-e2ee/signal-protocol-js#how-it-compares">
+          The shorter table in the SDK README
+        </a>
+      </p>
+    </div>
+  </section>
+
+  {/* Plain band, not band-surface. The comparison arrived as two bands rather
+      than the one summary paragraph that used to link to /compare, so the
+      alternation down this page shifted by one and this section absorbs it.
+      tests/site-content.test.mjs checks the alternation on every page. */}
+  <section class="band">
     <div class="container measure stack">
       <h2>Licensing</h2>
       <p>

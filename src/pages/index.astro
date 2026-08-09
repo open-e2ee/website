@@ -776,9 +776,13 @@ const trustLinks = [
     <div class="container">
       <div class="band-head">
         <h2>Why this exists at all</h2>
+        {/* "the full matrix … is in the SDK README" was true and is still true,
+            and it sent a reader off the site for a table that now sits one link
+            below on /product. The README version is shorter; naming the fuller
+            one first is the honest order. */}
         <p class="measure">
           If something else fit, you should use it. Here is the honest state of the alternatives;
-          the full matrix, with links to every project, is in the SDK README.
+          the full matrix, with links to every project, is on the product page.
         </p>
       </div>
       <dl class="definition-rows">
@@ -826,8 +830,11 @@ const trustLinks = [
         </div>
       </dl>
       <p class="text-links">
-        <a href="/compare">The full comparison, measured on {MEASURED_ON}</a>
-        <a href="/product">See the SDK surface</a>
+        {/* One link, not two. "See the SDK surface" pointed at /product as
+            well, and once the comparison moved there the row offered the same
+            page twice under two names. /product is already linked twice further
+            up this page and sits first in the nav. */}
+        <a href="/product#how-it-compares">The full comparison, measured on {MEASURED_ON}</a>
       </p>
     </div>
   </section>
