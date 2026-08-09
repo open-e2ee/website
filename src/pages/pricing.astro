@@ -3,12 +3,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
 /* Single-sourced so the landing page can quote the entry price without
  * risking drift. See src/data/pricing.mjs. */
-import { tiers } from '../data/pricing.mjs';
+import { startupTier, tiers } from '../data/pricing.mjs';
 ---
 
 <BaseLayout
   title="Pricing"
-  description="The complete SDK is free under AGPL-3.0. Commercial production rights for proprietary products start at $5,000 per year."
+  description={`The complete SDK is free under AGPL-3.0. Commercial production rights for proprietary products start at ${startupTier.price} ${startupTier.period}.`}
 >
   <header class="page-hero">
     <div class="container measure">

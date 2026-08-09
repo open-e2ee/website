@@ -5,6 +5,7 @@ import SignatureDiagram from '../components/SignatureDiagram.astro';
 import capture from '../data/carrier-capture.json';
 import { codeThemes } from '../lib/code-theme.mjs';
 import { MEASURED_ON } from '../lib/comparison.mjs';
+import { startupTier } from '../data/pricing.mjs';
 
 /*
  * Every subpath and symbol on this page is copied from the SDK's own public
@@ -82,10 +83,18 @@ const adapters = [
     <div class="container measure">
       <p class="label">Signal Protocol SDK</p>
       <h1>The Signal Protocol, where your app actually runs.</h1>
+      {/* "No native modules. No prebuild step." was true of the crypto and false of the storage
+          this page documents 100 lines further down: the encrypted Expo store is expo-sqlite with
+          SQLCipher, which Expo Go does not carry. The lead contradicted its own page. Scoped here
+          the way the landing page scopes it — to the protocol code, which really is pure
+          TypeScript — because appending the limit to the unqualified claim was tried twice and
+          read as a contradiction both times. The full reconciliation stays in the storage section,
+          which has room to say that `npx expo prebuild` is not a command the reader types. */}
       <p class="lead">
-        Pure TypeScript. Expo, React Native, browsers, and Node. Post-quantum PQXDH and the Double
-        Ratchet, multi-device, groups, sealed sender, encrypted attachments. No native modules. No
-        prebuild step.
+        Expo, React Native, browsers, and Node from one package. Post-quantum PQXDH and the Double
+        Ratchet, multi-device, groups, sealed sender, encrypted attachments. The protocol code is
+        pure TypeScript with no native crypto module to link — the encrypted Expo store uses
+        SQLCipher, which needs a development build rather than Expo Go.
       </p>
       <p class="honesty">
         It still sees metadata. We document exactly what, and what sealed sender does and
@@ -249,7 +258,8 @@ const adapters = [
       <h2>Licensing</h2>
       <p>
         The complete SDK is available under AGPL-3.0. Proprietary products purchase annual
-        commercial production rights at a published price, starting at $5,000 per year.
+        commercial production rights at a published price, starting at {startupTier.price}{' '}
+        {startupTier.period}.
       </p>
       <p class="text-links">
         <a href="/pricing">License for closed source</a>

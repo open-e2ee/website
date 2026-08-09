@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { checks, dependencies, docs, reporting, specifications } from '../lib/assurance.mjs';
+import { startupTier } from '../data/pricing.mjs';
 
 /*
  * The page for the reviewer, not the buyer.
@@ -62,7 +63,7 @@ const answers = [
   {
     question: 'What are the licence terms?',
     answer:
-      'AGPL-3.0 for the complete SDK, with no held-back features. Proprietary products buy annual commercial production rights at a published price rather than by negotiation, starting at $5,000 per year; Growth and Enterprise scopes are set by a signed order form.',
+      `AGPL-3.0 for the complete SDK, with no held-back features. Proprietary products buy annual commercial production rights at a published price rather than by negotiation, starting at ${startupTier.price} ${startupTier.period}; Growth and Enterprise scopes are set by a signed order form.`,
     links: [
       { href: '/licensing', label: 'What AGPL use requires' },
       { href: '/legal/terms', label: 'Commercial terms' },
