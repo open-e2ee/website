@@ -5,3 +5,8 @@
 /privacy /legal/privacy/ 308
 /privacy/ /legal/privacy/ 308
 /terms/* /legal/terms/:splat 308
+# /evaluate was the security review pack. It folded into /security, which now
+# carries every claim it made. The sitemap had already published /evaluate/ to
+# crawlers, so the route has real inbound links even pre-launch.
+/evaluate /security/ 308
+/evaluate/ /security/ 308

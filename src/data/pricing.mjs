@@ -15,6 +15,8 @@
  * versioned copies state the fee as executed contract language, and a contract
  * that silently re-prices itself when a marketing constant changes is a worse
  * defect than the drift this module prevents. Those figures stay hard-coded.
+ * Changing the price there is not an edit to the existing terms: it is a new
+ * dated terms version, with the superseded one kept as published.
  */
 export const tiers = [
   {
@@ -70,13 +72,23 @@ export const tiers = [
 const startup = tiers.find((tier) => tier.name === 'Startup');
 
 /*
- * Thrown at build rather than typed as optional. Four surfaces print this
+ * Thrown at build rather than typed as optional. Three surfaces print this
  * tier's price — the landing page's licence cell, /product's licensing band,
- * /evaluate's licence answer, and /pricing's own meta description — and the
- * failure mode worth designing for is someone renaming the entry tier here and
- * every one of them quietly rendering "from undefined per year" to visitors. A
- * build that stops is the cheapest possible version of that mistake.
+ * and /pricing's own meta description — and the failure mode worth designing
+ * for is someone renaming the entry tier here and every one of them quietly
+ * rendering "from undefined per year" to visitors. A build that stops is the
+ * cheapest possible version of that mistake.
+ *
+ * There were four until /evaluate folded into /security; its licence answer
+ * was one of the near-verbatim restatements that died with the page. The
+ * message deliberately carries no count, because the one it used to carry was
+ * stale within a single pull request — a number in a diagnostic goes out of
+ * date exactly the way a number in copy does, which is what this module exists
+ * to stop. The comment above can be checked against the imports; a string
+ * thrown on a path nothing reaches cannot.
  */
-if (!startup) throw new Error('pricing.mjs: no tier named "Startup" — four pages quote its price.');
+if (!startup) {
+  throw new Error('pricing.mjs: no tier named "Startup" — the marketing pages quote its price.');
+}
 
 export const startupTier = startup;

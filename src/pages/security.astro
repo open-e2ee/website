@@ -74,7 +74,7 @@ const outOfScope = [
 
 <BaseLayout
   title="Security model"
-  description="What the relay can and cannot see, what sealed sender does not hide, the threat model boundary, and the current audit status of the OpenE2EE Signal Protocol SDK."
+  description="The security review pack for the OpenE2EE Signal Protocol SDK: what the relay can and cannot see, what sealed sender does not hide, the threat model boundary, pinned specification revisions, dependency and test figures, audit and validation status, and how to report a vulnerability."
 >
   <header class="page-hero">
     <div class="container measure">
@@ -224,9 +224,12 @@ const outOfScope = [
         <div>
           <dt>{dependencies.direct}</dt>
           <dd>
-            direct production dependencies, resolving to {dependencies.resolved} packages in total.
-            The published repository runs a build, a typecheck, and a production-tree advisory audit
-            on every change.
+            direct production dependencies &mdash; {dependencies.names.join(', ')} &mdash; resolving
+            to {dependencies.resolved} packages in total. The only transitive edges are the @noble
+            packages depending on one another, so the resolved tree adds nothing that list does not
+            already name. Everything else is a development or optional peer dependency. The
+            published repository runs a build, a typecheck, and a production-tree advisory audit on
+            every change.
           </dd>
         </div>
         <div>
@@ -240,8 +243,10 @@ const outOfScope = [
           <dt>{reporting.acknowledgment}</dt>
           <dd>
             to acknowledge a vulnerability report sent to{' '}
-            <a href={`mailto:${reporting.address}`}>{reporting.address}</a>, and{' '}
-            {reporting.assessment} to an initial assessment.
+            <a href={`mailto:${reporting.address}`}>{reporting.address}</a> rather than to a public
+            issue, and {reporting.assessment} to an initial assessment. The full policy, including
+            disclosure handling and severity targets, is{' '}
+            <a href={docs.reporting}>in the repository</a>.
           </dd>
         </div>
       </dl>
@@ -256,7 +261,7 @@ const outOfScope = [
       </p>
       <p class="text-links">
         <a href={docs.assurance}>Assurance — what runs, what is not published, and why</a>
-        <a href="/evaluate">The full security review pack</a>
+        <a href={docs.thirdParty}>Third-party notices</a>
       </p>
     </div>
   </section>
@@ -317,7 +322,7 @@ const outOfScope = [
             offered as a validated module. The ML-KEM implementation follows FIPS 203, but
             following a standard and being validated against it are different things, and only the
             second satisfies a programme that requires validation. If yours does, this is the wrong
-            choice, and it is better to know now.
+            choice, and we would rather you learned it here than in week six.
           </dd>
         </div>
         <div>
@@ -339,7 +344,8 @@ const outOfScope = [
           <dt>Post-quantum means confidentiality, not signatures</dt>
           <dd>
             Post-quantum key agreement is the default and fails closed, using ML-KEM-1024 for PQXDH
-            and an ML-KEM Braid ratchet. Identity signatures remain classical Ed25519 and X25519.
+            and an ML-KEM Braid ratchet. There is no public disabled mode. Identity signatures
+            remain classical Ed25519 and X25519.
             The protection is against harvest-now-decrypt-later, not against a quantum adversary
             forging identities.
           </dd>
@@ -374,16 +380,21 @@ const outOfScope = [
       <div class="band-head">
         <h2>Read the primary sources</h2>
         <p class="measure">
-          This page is a summary. These are the documents it summarises, and they win any
-          disagreement.
+          For the platform or security engineer who has been handed this SDK and a questionnaire:
+          this page is a summary, these are the documents it summarises, and the documents win any
+          disagreement with it.
         </p>
       </div>
       <ul class="rows rows-single">
         <li><a href={`${DOCS}/docs/SECURITY.md`}>Security model and threat model</a></li>
         <li><a href={`${DOCS}/docs/PROTOCOL_POLICY.md`}>Protocol policy and post-quantum modes</a></li>
-        <li><a href={`${DOCS}/ARCHITECTURE.md`}>Architecture</a></li>
+        <li><a href={`${DOCS}/ARCHITECTURE.md`}>Architecture and layer model</a></li>
         <li><a href={`${DOCS}/docs/E2EE.md`}>How the encryption works</a></li>
+        <li><a href={docs.deviations}>DEVIATIONS &mdash; every difference, and what it costs</a></li>
+        <li><a href={docs.assurance}>Assurance &mdash; what runs, what is published, and why</a></li>
+        <li><a href={docs.thirdParty}>Third-party notices</a></li>
         <li><a href={`${DOCS}/SECURITY.md`}>Reporting a vulnerability</a></li>
+        <li><a href={docs.license}>LICENSE</a></li>
       </ul>
     </div>
   </section>
@@ -391,23 +402,49 @@ const outOfScope = [
   {/*
     The page ended on two links of the same weight as the sentences around them,
     which left the reader who had just finished the threat model with nothing to
-    do. The review pack leads because the person who reads this page to the end
-    is usually reading it on someone else's behalf.
+    do. The call to action leads because the person who reads this page to the
+    end is usually reading it on someone else's behalf.
+
+    That call used to be "get the security review pack", pointing at /evaluate.
+    There is no /evaluate now: it asked the same questions this page answers and
+    rendered the same `specifications` array from the same module, so a reader
+    who followed the link arrived at a restatement of the page they had just
+    finished. This page is the pack. What only /evaluate offered was the way out
+    of documents entirely — a scoped review under an enterprise agreement — and
+    that is the action here now.
   */}
   <section class="band">
     <div class="container measure stack">
       <h2>Take this to whoever signs it off</h2>
       <p>
-        This page is the summary; the documents above are the evidence. The review pack collects
-        them with the pinned specification revisions, dependency and test figures, and current
-        audit status in one place.
+        This page is the summary; the documents above are the evidence. Between them they carry the
+        pinned specification revisions, the dependency and test figures, and the current audit
+        status, each dated where it is measured.
+      </p>
+      <p>
+        If you need more than documents, enterprise and OEM agreements include a scoped security
+        review, service levels, and negotiated portfolio or redistribution rights. That is a
+        conversation rather than a checkout, and it starts with a meeting.
       </p>
       <div class="actions">
-        <a class="oe-button" href="/evaluate">Get the security review pack</a>
+        <a class="oe-button" href="https://console.open-e2ee.dev/contact?plan=enterprise">
+          Plan a security review
+        </a>
         <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/start/quickstart">
           Build your first encrypted message
         </a>
       </div>
+      {/*
+        /evaluate linked /licensing and /legal/terms inline, and folding it left
+        the reviewer who has to answer "what may we ship this under" with two
+        buttons that both assume the answer is already agreed. /licensing rather
+        than /pricing because the question at this point is which licence
+        governs, not what a tier costs — and /licensing carries the /legal/terms
+        link itself, so this restores the whole path rather than half of it.
+      */}
+      <p class="text-links">
+        <a href="/licensing">Which licence your product needs</a>
+      </p>
       <p class="muted">
         A question about the threat model, or an answer you need for a questionnaire — email{' '}
         <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>. No licence, meeting, or
