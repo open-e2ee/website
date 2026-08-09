@@ -259,17 +259,9 @@ const adapters = [
   </section>
 
   {/*
-    The h1 of this page is one of the three strings the design contract lists
-    as proposed rather than approved, and the contract asks any surface that
-    uses one to say so. That annotation used to live in the global footer,
-    where it qualified a tagline on all seventeen pages and told every visitor
-    about our internal review state. The footer tagline is gone; this page
-    still uses one, so the annotation lives here and nowhere else.
-
-    Placed at the end rather than under the headline on purpose. It has to be
-    on the page, and it does not have to be the second thing a reader meets.
+    The h1 was approved by founder review on 2026-08-09, so the proposed-copy
+    annotation that used to close this page is gone. The design contract now
+    requires the annotation only for proposed taglines, and this page no
+    longer uses one; tests/site-content.test.mjs holds that line.
   */}
-  <div class="container">
-    <p class="tagline-note">Headline wording on this page is proposed, not final.</p>
-  </div>
 </BaseLayout>

@@ -711,21 +711,10 @@ a:hover {
   max-width: 36ch;
 }
 
-/* `.footer-tagline` and `.footer-brand .footer-provisional` stood here. Both
- * are unused now that the footer carries no tagline, so both are deleted
- * rather than left behind as dead rules that describe a component the site no
- * longer has. What replaces them qualifies the one remaining surface that
- * uses a proposed tagline — the /product h1 — and is deliberately the quietest
- * thing on that page: end of the document, metadata type, muted. */
-.tagline-note {
-  margin-top: var(--oe-space-6);
-  margin-bottom: var(--oe-space-6);
-  color: var(--oe-muted);
-  font-family: var(--oe-metadata-font-family);
-  font-weight: var(--oe-metadata-weight);
-  font-size: var(--oe-metadata-size);
-  letter-spacing: var(--oe-metadata-tracking);
-}
+/* `.footer-tagline`, `.footer-provisional`, and `.tagline-note` all stood
+ * here across the tagline review's lifetime. The /product h1 was approved on
+ * 2026-08-09, no page uses a proposed tagline anymore, and the rules went
+ * with the annotations they styled. */
 
 .footer-grid h2 {
   font-size: 0.75rem;
