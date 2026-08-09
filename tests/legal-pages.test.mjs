@@ -16,7 +16,7 @@ test('pins the first Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-07-23');
   assert.equal(commercialTermsPath, '/legal/terms/2026-07-23');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-07-23');
-  assert.equal(privacyVersion, '2026-08-07.2');
+  assert.equal(privacyVersion, '2026-08-09');
 });
 
 /*
@@ -96,10 +96,33 @@ test('keeps the privacy version history truthful about when each event arrived',
   /* Every version but the newest is written out, because interpolating the
      constant into an older entry re-dates a change that already happened. */
   assert.match(privacy, /<strong>Version 2026-08-07:<\/strong> a tenth event was added/);
-  assert.match(privacy, /<strong>Version \{privacyVersion\}:<\/strong>[^<]{0,240}eleventh event/);
-  assert.doesNotMatch(
-    privacy,
-    /<strong>Version \{privacyVersion\}:<\/strong> a tenth event was added/,
+  assert.match(privacy, /<strong>Version 2026-08-07\.2:<\/strong>[^<]{0,240}eleventh event/);
+
+  /*
+   * Exactly one entry may interpolate the constant, and this is the whole rule.
+   *
+   * It replaces a pair of doesNotMatch assertions keyed to each old entry's
+   * prose ("a tenth event was added", "eleventh event"). Those were correct for
+   * the history they were written against and self-defeating after it: catching
+   * the next bump needed a new hand-written assertion, and nothing forced anyone
+   * to write it. Simulate a 2026-08-10 bump where the maintainer forgets to
+   * literalise 2026-08-09 and two entries interpolate — the prose-keyed version
+   * passes, because neither of its two sentences is the one left interpolated.
+   * Counting does not care which entry it is, so it never needs rewriting.
+   *
+   * The three literal matches above are not redundant to this. Counting sees
+   * only how many entries interpolate, not whether a past entry still exists:
+   * delete the .2 entry outright and the count is still 1. They also do the
+   * other half of the work here — with all three older entries pinned to their
+   * own literal dates, "exactly one interpolates" can only be satisfied by the
+   * newest, so the pair together says what a per-entry assertion used to say
+   * and stays true across every future bump.
+   */
+  const interpolated = privacy.match(/<strong>Version \{privacyVersion\}:<\/strong>/g) ?? [];
+  assert.equal(
+    interpolated.length,
+    1,
+    `${interpolated.length} changelog entries interpolate the constant; exactly one may`,
   );
 });
 

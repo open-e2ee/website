@@ -3283,9 +3283,13 @@ test("the demo's own source calls the relay a relay", async () => {
    * `index.astro` instead would have applied the demo's vocabulary rule to the
    * whole marketing page, which is a different decision than this test makes. */
 
-  /* A glob that quietly matched nothing would pass this test forever. */
+  /* A glob that quietly matched nothing would pass this test forever. The floor
+     is the tree's actual size rather than a loose lower bound: at 15 it had two
+     files of slack, which is exactly enough to delete both components the fold
+     moved here and still sweep green. Adding a file keeps this passing; losing
+     one is what it is for. */
   assert.ok(
-    sources.length >= 15,
+    sources.length >= 17,
     `expected the whole demo source tree, found ${sources.length} files`,
   );
 
@@ -3311,4 +3315,54 @@ test("the demo's own source calls the relay a relay", async () => {
     [],
     `the demo names the relay a "server" here — messaging.md §4 says relay:\n${found.join('\n')}`,
   );
+});
+
+/*
+ * Every page is a stack of `band` sections that alternate with `band band-surface`,
+ * which is what puts a visible edge between one section and the next. Two in a
+ * row on the same surface read as one long section: nothing overlaps, nothing
+ * warns, and the page just quietly loses a division it was written to have.
+ *
+ * There was no guard on this until a section was inserted into the middle of the
+ * homepage and the two below it had to be flipped by hand to keep the sequence.
+ * That reconstruction happened to be correct, which is the problem — it was
+ * checked by eye against a convention nothing enforced, and being right that time
+ * is not a property of the process.
+ *
+ * Read from `src/pages`, not from `dist`: CI runs the test suite before the build
+ * (`.github/workflows/ci.yml`), so a guard that needs built output skips there and
+ * only ever runs locally.
+ */
+test('alternates the band surface down every page', async () => {
+  const dir = new URL('../src/pages/', import.meta.url);
+  const names = (await readdir(dir, { recursive: true })).filter((name) =>
+    name.endsWith('.astro'),
+  );
+  assert.ok(names.length > 10, `expected the whole page tree, found ${names.length}`);
+
+  let checked = 0;
+  for (const name of names) {
+    const source = await readFile(new URL(name, dir), 'utf8');
+
+    /* Any attribute order: the homepage's folded-demo section carries an `id`
+       before its class. `band-head` is an inner heading, not a band, and is
+       excluded by matching the class as a whole token. */
+    const bands = [...source.matchAll(/<section\b[^>]*?\bclass="([^"]*)"/g)]
+      .map((match) => match[1].split(/\s+/))
+      .filter((classes) => classes.includes('band'))
+      .map((classes) => classes.includes('band-surface'));
+
+    for (let i = 1; i < bands.length; i += 1) {
+      assert.notEqual(
+        bands[i],
+        bands[i - 1],
+        `src/pages/${name} puts two ${bands[i] ? 'band-surface' : 'plain band'} ` +
+          `sections in a row at positions ${i} and ${i + 1}`,
+      );
+    }
+    checked += bands.length;
+  }
+
+  /* A regex that stopped matching would make every page trivially alternating. */
+  assert.ok(checked > 30, `expected to be checking real bands, counted ${checked}`);
 });

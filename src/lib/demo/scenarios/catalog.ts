@@ -24,7 +24,7 @@
  */
 
 export interface ScenarioSummary {
-  /** The fragment. `/demo#flip-a-byte` has to land on this scenario. */
+  /** The fragment. `/#flip-a-byte` has to land on this scenario. */
   slug: string;
   title: string;
   /** One sentence, in the future tense: what pressing run will do. */

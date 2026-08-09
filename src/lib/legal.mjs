@@ -14,18 +14,37 @@ export const commercialTermsPath = '/legal/terms/2026-07-23';
 export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
 
 /*
- * The privacy notice is versioned by date, and 2026-08-07 is already published
- * — it is the version that added the home page demo's event. The scenario event
- * on the homepage demo is a second change on the same calendar day, and reusing the date
- * would leave two different notices answering to one version, which is the one
- * thing a version is for.
+ * The privacy notice is versioned by date. Two versions were published on
+ * 2026-08-07: the first added the home page demo's event, and the second added
+ * the scenario event, which at that time fired on `/demo`. Reusing the bare
+ * date would have left two different notices answering to one version, which is
+ * the one thing a version is for, so the second carried a `.2` suffix. That is
+ * what the suffix recorded. Its changelog entry still records the suffix and the
+ * event, but no longer says the event fired on `/demo`: the route is gone, and
+ * an entry that named it would send a reader looking for a page.
  *
- * The version string is what disambiguates them, so it carries the suffix. The
- * effective date does not move: it is a representation about when these terms
- * apply, and the site starts collecting the eleventh event the moment this
- * deploys. Dating it forward would have the page tell a reader that a notice
- * takes effect tomorrow while the event it describes is already being
- * collected — and `docs/launch.md` records the event as live on 2026-08-07.
+ * This version needs no suffix: it is a later day. It exists because the
+ * scenarios moved onto the home page and the transmitted string moved with
+ * them — `scenario_opened /demo <slug>` became `scenario_opened / <slug>`. No
+ * new event, no new category, nothing additional collected; only the page-path
+ * token, because the page moved. It is versioned anyway, and the reason is the
+ * notice's own standard: section 5 quotes the transmitted words exactly rather
+ * than describing them loosely, so changing those words changes the notice. A
+ * published notice that quotes a string the site no longer sends is wrong about
+ * the one thing it was written to be precise about.
+ *
+ * The effective date tracks the version and does not run ahead of it. It is a
+ * representation about when this notice applies, and dating it forward would
+ * tell a reader a notice takes effect tomorrow while the string it describes is
+ * already going out.
+ *
+ * Here the notice trails the string rather than leading it: the fold shipped one
+ * pull request ahead of this, so the site has been sending `scenario_opened /`
+ * since that deployed. Both land on 2026-08-09, which is what makes the gap
+ * harmless — there is no day on which a reader could have found this notice
+ * quoting a string the site was not yet sending. Shipping the two further apart
+ * would need the notice to go first. The same reasoning kept 2026-08-07.2 on
+ * August 7 rather than moving it.
  */
-export const privacyVersion = '2026-08-07.2';
-export const privacyEffectiveDate = 'August 7, 2026';
+export const privacyVersion = '2026-08-09';
+export const privacyEffectiveDate = 'August 9, 2026';

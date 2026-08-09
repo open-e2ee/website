@@ -213,10 +213,21 @@ const VIEWPORT = { width: 1280, height: 800 };
  * The ceiling moved from 20 KB to 32 KB with the fold, and the reason is worth
  * writing down because "the budget went up when a page got bigger" is the shape
  * of a tripwire being quietly retired. Nothing new runs before a touch: the
- * three demo scripts are the wiring the two old pages already shipped, and the
- * five furniture files were on both of those pages, so a reader who visited
- * both fetched more than this. What the ceiling has always been calibrated
- * against is the SDK's 713 KB, and 32 KB is as far below that as 20 KB was.
+ * three demo scripts are the wiring the two old pages already shipped, and four
+ * of the five furniture files were on both of them. The hero's copy button is
+ * the exception and has always been the homepage's alone.
+ *
+ * That is not the same as the fold being free, and the comparison worth writing
+ * down is the unflattering one. Cold, a reader who wanted both pages fetched 11
+ * responses and now fetches 8. Warm — the normal case, because these are hashed
+ * assets on a long cache — the two old pages shared everything except their own
+ * demo script, so their union was 7 files and 16,915 B against 8 files and
+ * 17,888 B here: 973 bytes and one file *more*, not less. The fold is a change
+ * to how the site is arranged, not a byte saving, and a reader who had already
+ * visited both pages pays slightly for it.
+ *
+ * What the ceiling has always been calibrated against is the SDK's 713 KB, and
+ * 32 KB is as far below that as 20 KB was.
  *
  * One cost is genuinely new, and it is small. Each of the three carries its own
  * `__vite__mapDeps` array naming the SDK chunk graph — 1090, 883 and 882 bytes
@@ -238,9 +249,14 @@ const VIEWPORT = { width: 1280, height: 800 };
  * without the demo to compare against, and is measured in the proof rather than
  * here. This is the tripwire for the SDK arriving uninvited.
  *
- * The proof's table reports lower figures, and both are right: it walks the
- * module graph on disk, while this counts what Chrome actually fetched, which
- * includes responses the static walk does not model. The ceiling is set against
+ * The proof's table reports lower figures, and both are right. It sums the
+ * files on disk; this counts what Chrome received, and `encodedDataLength` is
+ * the whole response, headers included. Both see the same eight responses —
+ * there is no fetch here that the static walk misses — so the gap is a flat
+ * per-response cost, 686 bytes apiece from `chrome-harness.mjs`, and the
+ * 17.5 KB on disk arrives as the 22.8 KB above. Anything that changes those
+ * headers moves this number without a byte of script changing, which is one
+ * more reason it is a tripwire and not a budget. The ceiling is set against
  * the figure measured here.
  */
 const PRE_INTERACTION_CEILING = 32 * 1024;
