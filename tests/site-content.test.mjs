@@ -30,7 +30,7 @@ import {
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
 
-test('annotates the taglines as proposed, as the design contract requires', async () => {
+test('keeps the tagline contract: proposed lines annotated, approved lines free', async () => {
   /*
    * This used to pin three exact strings in Footer.astro. That guard was
    * right about the risk and wrong about the mechanism: it proved the footer
@@ -40,10 +40,12 @@ test('annotates the taglines as proposed, as the design contract requires', asyn
    * any of the other sixteen pages.
    *
    * So it now runs the design package's own checker over every built page.
-   * `findTaglines` looks for the three proposed strings in the rendered text;
-   * `checkTaglineAnnotation` passes a page that contains none, or one that
-   * contains some and also matches ANNOTATION_PATTERN. That is the contract
-   * verbatim, applied to what visitors actually receive.
+   * `findTaglines` looks for the registered tagline strings in the rendered
+   * text; `checkTaglineAnnotation` passes a page that contains none or only
+   * approved ones, and requires ANNOTATION_PATTERN wherever a *proposed*
+   * tagline appears. Since the founder review of 2026-08-09 the /product h1
+   * is approved and needs no annotation; the contract still bites if a
+   * proposed line (today: the primary) ever ships here unannotated.
    *
    * It is also the whole enforcement chain on this site. `npm run build` runs
    * brand:check and audit-build.mjs, and neither greps for taglines, so the
@@ -73,9 +75,9 @@ test('annotates the taglines as proposed, as the design contract requires', asyn
   assert.deepEqual(failures, [], `pages using a proposed tagline with no annotation: ${failures}`);
 
   /* The footer is global, so a tagline there put one on every page. Now
-   * exactly one surface uses one — the /product h1 — and it annotates itself.
-   * If this list grows, the annotation decision is being made again by
-   * accident somewhere, and `docs/decisions.md` §1 is still open. */
+   * exactly one surface uses one — the /product h1, approved 2026-08-09.
+   * If this list grows, a tagline shipped somewhere new without anyone
+   * deciding it should. */
   assert.deepEqual(usingTagline, ['product/index.html']);
 });
 
