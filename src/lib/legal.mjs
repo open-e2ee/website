@@ -19,7 +19,9 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * the scenario event, which at that time fired on `/demo`. Reusing the bare
  * date would have left two different notices answering to one version, which is
  * the one thing a version is for, so the second carried a `.2` suffix. That is
- * what the suffix recorded, and the changelog entry for it still reads that way.
+ * what the suffix recorded. Its changelog entry still records the suffix and the
+ * event, but no longer says the event fired on `/demo`: the route is gone, and
+ * an entry that named it would send a reader looking for a page.
  *
  * This version needs no suffix: it is a later day. It exists because the
  * scenarios moved onto the home page and the transmitted string moved with
@@ -32,10 +34,17 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * the one thing it was written to be precise about.
  *
  * The effective date tracks the version and does not run ahead of it. It is a
- * representation about when this notice applies, and the site begins sending
- * the new string the moment this deploys; dating it forward would tell a reader
- * a notice takes effect tomorrow while the string it describes is already going
- * out. The same reasoning kept 2026-08-07.2 on August 7 rather than moving it.
+ * representation about when this notice applies, and dating it forward would
+ * tell a reader a notice takes effect tomorrow while the string it describes is
+ * already going out.
+ *
+ * Here the notice trails the string rather than leading it: the fold shipped one
+ * pull request ahead of this, so the site has been sending `scenario_opened /`
+ * since that deployed. Both land on 2026-08-09, which is what makes the gap
+ * harmless — there is no day on which a reader could have found this notice
+ * quoting a string the site was not yet sending. Shipping the two further apart
+ * would need the notice to go first. The same reasoning kept 2026-08-07.2 on
+ * August 7 rather than moving it.
  */
 export const privacyVersion = '2026-08-09';
 export const privacyEffectiveDate = 'August 9, 2026';

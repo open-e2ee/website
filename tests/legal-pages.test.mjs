@@ -99,33 +99,31 @@ test('keeps the privacy version history truthful about when each event arrived',
   assert.match(privacy, /<strong>Version 2026-08-07\.2:<\/strong>[^<]{0,240}eleventh event/);
 
   /*
-   * The eleventh event's entry was interpolated until the scenarios moved onto
-   * the home page and a twelfth version was published. That is the moment the
-   * bug this test exists for comes back: the entry describing the eleventh
-   * event's arrival is now about a past version, so it has to be written out,
-   * exactly as the tenth event's was when the eleventh arrived.
+   * Exactly one entry may interpolate the constant, and this is the whole rule.
    *
-   * Both directions are asserted. The match above fixes the old entry to its
-   * own literal date; the two below say the constant may not appear on either
-   * of the entries that already have one. A guard that only checked the newest
-   * entry existed would pass on a history where every line said "2026-08-09".
+   * It replaces a pair of doesNotMatch assertions keyed to each old entry's
+   * prose ("a tenth event was added", "eleventh event"). Those were correct for
+   * the history they were written against and self-defeating after it: catching
+   * the next bump needed a new hand-written assertion, and nothing forced anyone
+   * to write it. Simulate a 2026-08-10 bump where the maintainer forgets to
+   * literalise 2026-08-09 and two entries interpolate — the prose-keyed version
+   * passes, because neither of its two sentences is the one left interpolated.
+   * Counting does not care which entry it is, so it never needs rewriting.
+   *
+   * The three literal matches above are not redundant to this. Counting sees
+   * only how many entries interpolate, not whether a past entry still exists:
+   * delete the .2 entry outright and the count is still 1. They also do the
+   * other half of the work here — with all three older entries pinned to their
+   * own literal dates, "exactly one interpolates" can only be satisfied by the
+   * newest, so the pair together says what a per-entry assertion used to say
+   * and stays true across every future bump.
    */
-  assert.doesNotMatch(
-    privacy,
-    /<strong>Version \{privacyVersion\}:<\/strong> a tenth event was added/,
+  const interpolated = privacy.match(/<strong>Version \{privacyVersion\}:<\/strong>/g) ?? [];
+  assert.equal(
+    interpolated.length,
+    1,
+    `${interpolated.length} changelog entries interpolate the constant; exactly one may`,
   );
-  assert.doesNotMatch(
-    privacy,
-    /<strong>Version \{privacyVersion\}:<\/strong>[^<]{0,240}eleventh event/,
-  );
-
-  /*
-   * And the newest entry is the interpolated one. It records a change to the
-   * transmitted string rather than a new event, so it is matched on what makes
-   * it a version at all — that no new event or category came with it — rather
-   * than on an ordinal it does not have.
-   */
-  assert.match(privacy, /<strong>Version \{privacyVersion\}:<\/strong> no new event/);
 });
 
 test('describes the implemented providers and the self-operated SDK boundary', async () => {
