@@ -152,7 +152,7 @@ export const notes = [
   {
     key: 'libsignal',
     heading: 'The official implementation',
-    body: 'The implementation Signal Messenger itself uses, and by a distance the most scrutinised Signal Protocol code that exists. It is very actively maintained — 0.99.3 published 2026-07-31, repository pushed the same day — post-quantum, and AGPL-3.0. It is also a Rust core reached through a Node native addon: the published 0.99.3 tarball carries six prebuilt binaries, for macOS, Linux, and Windows on arm64 and x64. There is no browser build, no Expo build, and no React Native build, and the README does not describe use outside Signal as a supported case.',
+    body: 'The implementation Signal Messenger itself uses, and by a distance the most scrutinised Signal Protocol code that exists. It is very actively maintained, post-quantum, and AGPL-3.0 — 0.99.3 published 2026-07-31, with the repository pushed the same day. It is also a Rust core reached through a Node native addon: the published 0.99.3 tarball carries six prebuilt binaries, for macOS, Linux, and Windows on arm64 and x64. There is no browser build, no Expo build, and no React Native build, and the README does not describe use outside Signal as a supported case.',
     verdict:
       'If you are shipping a desktop or server application on Node, this is the one to reach for first.',
   },
