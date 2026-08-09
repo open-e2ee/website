@@ -278,10 +278,15 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
         </figure>
         {/* Inside the band head, where /compare had it, and not a direct child
             of `.stack`. `.stack > *` sets `max-width: 100%` at the same
-            specificity as `.measure` and is written after it, so a `.measure`
-            paragraph parked directly in a stack is capped by nothing — twelve
-            elements on this site are in that state and this is not the change
-            that fixes them. `.band-head` caps at 62ch and is unaffected. */}
+            specificity as `.measure` and is written after it, so a bare
+            `.measure` paragraph parked directly in a stack is capped by nothing
+            — eight elements render that way, three on the home page, three
+            here, two on /security, and this is not the change that fixes them.
+            That eight is counted by computed max-width rather than by shape,
+            because the shape overcounts twice: an element that is itself
+            `container measure stack` is capped correctly, since the rule only
+            reaches children, and a `callout measure` child brings a cap of its
+            own. `.band-head` caps at 62ch and is unaffected. */}
         <p class="muted measure">
           Read from the GitHub API, the npm registry API, and the published package tarballs on
           {' '}{MEASURED_ON}. Dates are the ones those APIs returned. The axes are the ones this

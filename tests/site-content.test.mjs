@@ -3359,25 +3359,34 @@ test('alternates the band surface down every page', async () => {
   assert.ok(checked > 30, `expected to be checking real bands, counted ${checked}`);
 });
 
-test('keeps the space in front of every inline code span', async () => {
+test('keeps the space on both sides of every inline code span', async () => {
   /*
-   * Astro drops the newline between a text node and an inline element that
-   * follows it, so a paragraph broken for line length renders as
-   * "the Expo store is`expo-sqlite`" — one word, no space, in the middle of
-   * body copy. Nothing else catches it: the page builds, the audit passes, and
-   * the only symptom is on screen.
+   * Astro drops a newline that falls between a text node and an inline element,
+   * in both directions. A paragraph broken for line length renders as
+   * "the Expo store is`expo-sqlite`", or as "`scenario_opened /`followed by the
+   * name" — one word, no space, in the middle of body copy. Nothing else
+   * catches it: the page builds, the audit passes, and the only symptom is on
+   * screen.
    *
-   * It has now happened four times in three files. The homepage band that
+   * It has now happened five times in three files. The homepage band that
    * summarises the alternatives carries a comment about the first, /product
-   * shipped two in its storage paragraph, and the comparison fold wrote a
-   * fourth on its way in. `{' '}` at the end of the line is the fix.
+   * shipped two in its storage paragraph, the comparison fold wrote a fourth on
+   * its way in, and the privacy notice shipped the fifth. `{' '}` at the end of
+   * the line is the fix in both directions.
+   *
+   * That fifth one is why this checks both. An earlier version of this comment
+   * claimed the closing tag was safe and cited privacy.astro as the proof. The
+   * file has both forms: one span sits inline with a literal space around it,
+   * the other ends its line, and only the second collapses. Reading the first
+   * and generalising from it declared a defect impossible while the site served
+   * it.
    *
    * Source-based on purpose. `.github/workflows/ci.yml` runs the suite before
    * the build, so a guard that reads dist/ never runs there.
    *
-   * One direction only. The closing tag does not collapse the same way —
-   * `</code>` followed by a newline and a word keeps its space, which
-   * src/pages/legal/privacy.astro renders and proves.
+   * A word character on the far side is what makes it a defect. A line opening
+   * with `)` closes a JSX branch and never wanted a space, and one opening with
+   * a full stop wants the punctuation tight against the span.
    */
   const dir = new URL('../src/', import.meta.url);
   const names = (await readdir(dir, { recursive: true })).filter((name) => name.endsWith('.astro'));
@@ -3390,12 +3399,20 @@ test('keeps the space in front of every inline code span', async () => {
       .replace(/\/\*[\s\S]*?\*\//g, ' ');
     spans += (source.match(/<code>/g) ?? []).length;
 
-    const collapsed = source.match(/[\w,).]\n\s*<code>/);
+    const before = source.match(/[\w,).]\n\s*<code>/);
     assert.equal(
-      collapsed,
+      before,
       null,
-      `src/${name} ends a line with "${collapsed?.[0].split('\n')[0].slice(-24)}" and opens the ` +
+      `src/${name} ends a line with "${before?.[0].split('\n')[0].slice(-24)}" and opens the ` +
         `next with <code>, which renders with no space between them — end the line with {' '}`,
+    );
+
+    const after = source.match(/<\/code>\n\s*(\w[^\n]{0,23})/);
+    assert.equal(
+      after,
+      null,
+      `src/${name} ends a line with </code> and opens the next with "${after?.[1]}", which ` +
+        `renders with no space between them — end the line with {' '}`,
     );
   }
 
