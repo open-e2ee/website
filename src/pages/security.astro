@@ -252,12 +252,13 @@ const outOfScope = [
       </dl>
       <p class="muted measure">
         What those checks are, in the terms used elsewhere on this site: cryptographic known-answer
-        checks for ML-KEM, hashing, AEAD, and signature primitives against published vector data;
-        conformance scenarios for session, group, and sealed-sender invariants, checked against
-        known-answer material and against behaviour documented in the published specifications;
-        property-based checks over protocol and encoding invariants; multi-device, group lifecycle,
-        provisioning, and relay-delivery integration flows; every storage, relay, and object-store
-        adapter; and the quickstart printed in the README, executed as written on every change.
+        checks run ML-KEM, hashing, AEAD, and signature primitives against published vector data.
+        Conformance scenarios check session, group, and sealed-sender invariants against
+        known-answer material and against behaviour documented in the published specifications.
+        Property-based checks run over protocol and encoding invariants. Integration flows cover
+        multi-device, group lifecycle, provisioning, and relay delivery. Adapter suites cover every
+        storage, relay, and object-store adapter. The quickstart printed in the README is executed
+        as written on every change.
       </p>
       <p class="text-links">
         <a href={docs.assurance}>Assurance — what runs, what is not published, and why</a>
