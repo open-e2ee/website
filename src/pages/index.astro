@@ -413,10 +413,21 @@ const trustLinks = [
 
       {/* A reader who has just read the row the relay held is at the moment of
           highest intent on the page, and used to find the next button four
-          folds away in the footer. */}
+          folds away in the footer.
+
+          Outlined rather than filled, and that is a rule about the band rather
+          than a preference for this link. "Open the second device" is the one
+          free-standing filled button in this band, because it is the only
+          action that finishes the argument the band is making. The composer's
+          "Encrypt it" is filled too and is not competing with it: it sits
+          against its own text field inside the panel's border, which is a form
+          control rather than an offer. A third filled button out here, with
+          nothing attached to it, made the band a row of equal offers with no
+          answer to "which of these am I meant to press". This is the way out of
+          the band, and it is a weight quieter than the way through it. */}
       <div class="actions">
         <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
-          <span class="oe-button">Record this yourself</span>
+          <span class="oe-button oe-button-secondary">Record this yourself</span>
           <span class="cta-sublabel">ten minutes · two clients · no account</span>
         </a>
         {/* A text-link stood here reading "Now watch a byte change in transit,

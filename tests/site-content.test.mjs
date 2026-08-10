@@ -14,7 +14,8 @@ import test from 'node:test';
 import tokens from '@open-e2ee/design/tokens' with { type: 'json' };
 import capture from '../src/data/carrier-capture.json' with { type: 'json' };
 import { checks, dependencies, reporting, specifications } from '../src/lib/assurance.mjs';
-import { CAPTIONS } from '../src/lib/demo/figure.ts';
+import { RATCHET_STEPS } from '@open-e2ee/design/diagram';
+import { CAPTIONS, INCOMING_CAPTIONS } from '../src/lib/demo/figure.ts';
 import { codeSurfaces, codeThemes, shellSurface } from '../src/lib/code-theme.mjs';
 import { cssRules, ruleFor } from './css-rules.mjs';
 import {
@@ -3482,12 +3483,40 @@ test('keeps the demo figure, its captions and its visibility rules on one state 
   );
 
   /* The caption is announced in full every time the state changes, so the brief
-     sets a ceiling on it. Twenty words is about five seconds of speech. */
-  for (const [state, caption] of Object.entries(CAPTIONS)) {
-    const words = caption.split(/\s+/).filter(Boolean);
+     sets a ceiling on it. Twenty words is about five seconds of speech. Both
+     maps are held to it: a receiving tab hears the incoming one instead, and
+     it is the same live region and the same reader. */
+  for (const [name, map] of [
+    ['', CAPTIONS],
+    ['incoming ', INCOMING_CAPTIONS],
+  ]) {
+    for (const [state, caption] of Object.entries(map)) {
+      const words = caption.split(/\s+/).filter(Boolean);
+      assert.ok(
+        words.length <= 20,
+        `the ${name}"${state}" caption is ${words.length} words, over the 20-word budget: ${caption}`,
+      );
+    }
+  }
+
+  /*
+   * The incoming map overrides states rather than adding them.
+   *
+   * It is a `Partial`, so a typo in one of its keys is a caption that silently
+   * never applies — the receiving tab would keep hearing "opened on the second
+   * device" in the tab that is the second device. TypeScript cannot catch it
+   * either: every string in the union is a valid key whether or not the run
+   * reaches it.
+   */
+  for (const state of Object.keys(INCOMING_CAPTIONS)) {
     assert.ok(
-      words.length <= 20,
-      `the "${state}" caption is ${words.length} words, over the 20-word budget: ${caption}`,
+      states.includes(state),
+      `INCOMING_CAPTIONS answers for "${state}", which is not a state the figure has`,
+    );
+    assert.notEqual(
+      INCOMING_CAPTIONS[state],
+      CAPTIONS[state],
+      `the incoming caption for "${state}" is the outgoing one, so the override says nothing`,
     );
   }
 
@@ -3560,4 +3589,29 @@ test('keeps the demo figure, its captions and its visibility rules on one state 
     'the accent bars are no longer tagged with their own single state, so more than one can be ' +
       'visible at a time',
   );
+
+  /*
+   * The ratchet run is a fourth party to the same agreement.
+   *
+   * `RATCHET_STEPS` in the diagram grammar decides how many steps the drawing
+   * emits, `figure.ts` clamps the counter to its own copy of that number, and
+   * `global.css` needs a rule per step to light one. A grammar that grew a
+   * fifth step would draw one nothing ever lights and clamp the counter one
+   * short of the drawing, in silence, in both directions at once.
+   */
+  assert.equal(
+    Number(source.match(/^const RATCHET_STEPS = (\d+);$/m)?.[1]),
+    RATCHET_STEPS,
+    'figure.ts clamps the ratchet counter to a different number of steps than the diagram ' +
+      'grammar draws',
+  );
+  const lit = [...css.matchAll(/\[data-figure-ratchet~='(\d+)'\] \[data-figure-step='(\d+)'\]/g)];
+  assert.deepEqual(
+    lit.map(([, count]) => Number(count)),
+    Array.from({ length: RATCHET_STEPS }, (_, index) => index + 1),
+    'the ratchet steps the stylesheet can light and the steps the drawing emits disagree',
+  );
+  for (const [, count, step] of lit) {
+    assert.equal(count, step, `the rule for ${count} lit steps lights step ${step}`);
+  }
 });

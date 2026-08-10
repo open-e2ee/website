@@ -214,6 +214,22 @@ const PAIR_FRAGMENT = 'demo-pair';
         and <code>inMemoryRelay()</code> run in this tab
       </span>
       <span>{packageName}@{installedVersion}</span>
+      {/*
+        Invariant 8's claim, stated where it can be checked, and phrased as an
+        instruction rather than a reassurance: the reader has the network tab
+        and the page has nothing to hide from it. It says nothing about the
+        console, because LD0 found WebKit prints an AES-CBC advisory whenever
+        `crypto.subtle` is asked for the cipher the double ratchet specifies —
+        a clean-console claim would be false on Safari.
+
+        In the caption rather than under the pairing controls, where it was a
+        sentence floating between two blocks and belonging to neither. This is
+        the panel's disclosure line and the caption is where the panel's other
+        disclosure already is.
+      */}
+      <span class="live-carrier-claim" data-demo-claim hidden>
+        That ran in this tab. Nothing left the page — check the network tab.
+      </span>
     </figcaption>
   </figure>
 
@@ -252,24 +268,13 @@ const PAIR_FRAGMENT = 'demo-pair';
       </button>
     </div>
   </div>
-
-  {/*
-    Invariant 8's claim, stated where it can be checked, and phrased as an
-    instruction rather than a reassurance: the reader has the network tab and
-    the page has nothing to hide from it. It says nothing about the console,
-    because LD0 found WebKit prints an AES-CBC advisory whenever `crypto.subtle`
-    is asked for the cipher the double ratchet specifies — a clean-console
-    claim would be false on Safari.
-  */}
-  <p class="live-carrier-claim" data-demo-claim hidden>
-    That ran in this tab. Nothing left the page — check the network tab.
-  </p>
 </div>
 
 <script>
+  import { ciphertextBytes } from '../../lib/demo/ciphertext';
   import { createDemoLoader } from '../../lib/demo/loader';
   import type { DemoExchange, DemoSession } from '../../lib/demo/driver';
-  import type { StageFigure, StageState } from '../../lib/demo/figure';
+  import type { StageDirection, StageFigure, StageState } from '../../lib/demo/figure';
   import type { Presence } from '../../lib/demo/presence';
   import type { TwoTabSession } from '../../lib/demo/two-tab';
 
@@ -354,6 +359,39 @@ const PAIR_FRAGMENT = 'demo-pair';
     let figureLoading: Promise<void> | null = null;
     let lastState: StageState = 'idle';
 
+    /*
+     * What the figure would have been told, for the stretch before it exists.
+     *
+     * Everything below can happen before the chunk lands — a tab opened on the
+     * pairing fragment names both ends and counts a message while the import is
+     * still in flight — and a call that went to a null figure would be a fact
+     * the drawing never receives, silently, on exactly the slow connection
+     * where the gap is widest. So each of the three is remembered and replayed
+     * on mount, in the same order the run produced them.
+     */
+    let lastDirection: StageDirection = 'out';
+    let lastLabels: [string, string] = ['this tab', 'second device'];
+    let lastCipher: unknown = null;
+    let messages = 0;
+
+    const mounted = (ready: StageFigure) => {
+      figure = ready;
+      ready.direction(lastDirection);
+      ready.label(...lastLabels);
+      ready.ratchet(messages);
+      if (lastCipher !== null) ready.cipher(lastCipher);
+      ready.jump(lastState);
+    };
+
+    /* Remembered for the same reason the labels are: the relay reports the
+       stored row a few milliseconds after the press that started the import,
+       and a strip handed to a figure that did not exist yet is a lane the run
+       leaves empty for good. */
+    const printCipher = (value: unknown) => {
+      lastCipher = value;
+      figure?.cipher(value);
+    };
+
     const stage = (state: StageState) => {
       lastState = state;
       if (figure) {
@@ -365,14 +403,27 @@ const PAIR_FRAGMENT = 'demo-pair';
         .then((module) => {
           const root = document.querySelector<HTMLElement>('[data-demo-figure]');
           if (!root) return;
-          figure = module.mountStageFigure(root);
-          figure.jump(lastState);
+          mounted(module.mountStageFigure(root));
         })
         .catch(() => {
           /* Same reasoning as the SDK chunk: a figure that never arrived leaves
              the drawing at the state the build shipped, and the panel beside it
              is where the evidence was always going to be. */
         });
+    };
+
+    /* Which way the next states travel. The near device is always this tab, so
+       a tab that is receiving watches the same trip from the other end. */
+    const face = (direction: StageDirection) => {
+      lastDirection = direction;
+      figure?.direction(direction);
+    };
+
+    /* One ratchet step per message the session carries, in either direction —
+       which is what the double ratchet itself advances on. */
+    const ratcheted = () => {
+      messages += 1;
+      figure?.ratchet(messages);
     };
 
     /* A failed load is not an error box. It is the recorded panel, back where
@@ -422,10 +473,11 @@ const PAIR_FRAGMENT = 'demo-pair';
           session.on((event) => {
             if (event.type === 'message-sent') {
               established();
+              ratcheted();
               stage('encrypted');
               stage('in-transit');
             } else if (event.type === 'envelope-stored') {
-              figure?.cipher((event.envelope as unknown as Record<string, unknown>).ciphertext);
+              printCipher((event.envelope as unknown as Record<string, unknown>).ciphertext);
               stage('stored-at-relay');
               stage('delivered');
             } else {
@@ -492,11 +544,19 @@ const PAIR_FRAGMENT = 'demo-pair';
          its content in both states. */
       for (const idle of panel.querySelectorAll('[data-demo-idle]')) idle.remove();
 
-      const bytes = Math.floor((String(envelope.ciphertext).length * 3) / 4);
-      cipher.textContent = String(envelope.ciphertext).slice(0, 420);
+      /* Decoded rather than divided by four thirds. The field is base64 of
+         base64 — the SDK serialises the message to a base64 document and the
+         row carries that document encoded again — so the arithmetic that
+         stood here reported the size of the inner document and called it
+         bytes, a third again over the real figure, on the one line whose
+         subject is how much the relay is holding. `ciphertext.ts` peels it,
+         and the figure's hex strip is taken from the same bytes. */
+      const encoded = String(envelope.ciphertext);
+      const bytes = ciphertextBytes(encoded)?.length ?? 0;
+      cipher.textContent = encoded.slice(0, 420);
       cipher.append(Object.assign(document.createElement('span'), { textContent: '…' }));
       cipherNote.textContent =
-        `ciphertext — ${String(envelope.ciphertext).length.toLocaleString('en-US')} base64 ` +
+        `ciphertext — ${encoded.length.toLocaleString('en-US')} base64 ` +
         `characters, ${bytes.toLocaleString('en-US')} bytes decoded, excerpt shown`;
 
       /* Invariant 4: the rows are the envelope's own keys. Nothing in this
@@ -587,12 +647,29 @@ const PAIR_FRAGMENT = 'demo-pair';
       if (!paired) {
         nearLabel.textContent = 'your device · this tab';
         farLabel.textContent = 'the second device · also this tab';
+        labelFigure('also this tab');
         return;
       }
       nearLabel.textContent = `${paired.me} · this tab`;
       farLabel.textContent = peerHere
         ? `${peerHere} · the other tab`
         : `${paired.peer} · no tab has it yet`;
+      labelFigure(peerHere ? 'the other tab' : 'no tab yet');
+    };
+
+    /*
+     * The same two facts, in the figure's own vocabulary.
+     *
+     * Short forms rather than the pane labels above. The figure is a 520-unit
+     * canvas whose type is set in those units, so `alice-4f2c · the other tab`
+     * is a label wider than the device it names; and a generated identifier is
+     * the one part of those lines the drawing does not need, because the
+     * drawing is about which window a device is in. The near end is never
+     * written from here at all — it is this tab in every state the figure has.
+     */
+    const labelFigure = (far: string) => {
+      lastLabels = ['this tab', far];
+      figure?.label(...lastLabels);
     };
 
     const pairUrl = () => {
@@ -612,13 +689,16 @@ const PAIR_FRAGMENT = 'demo-pair';
      * — carries no activation, so no tab is opened and the link below the
      * button is revealed instead. Both paths reach the same fragment.
      */
+    let linkOffered = false;
     const openSecondTab = () => {
       const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } })
         .userActivation;
       const opened = activation?.isActive === true
         ? window.open(pairUrl(), '_blank', 'noopener')
         : null;
-      if (!opened) pairLink.hidden = false;
+      if (opened) return;
+      linkOffered = true;
+      pairLink.hidden = false;
     };
 
     const join = () => {
@@ -638,6 +718,26 @@ const PAIR_FRAGMENT = 'demo-pair';
           paired = started;
 
           for (const idle of panel.querySelectorAll('[data-demo-idle]')) idle.remove();
+          /*
+           * The solo run's output, taken down with the session that produced it.
+           *
+           * A reader who typed once before pairing had that round trip's
+           * ciphertext, its field table and its decrypted line still on screen
+           * beside the paired conversation's first stored row — two answers to
+           * "what does the relay hold", one of them from a pair of clients that
+           * no longer exists, and the older one reading as an unstyled
+           * duplicate of the newer. The panes are the same panes in both modes;
+           * what changes is which session is writing to them, so the handover
+           * empties them rather than layering.
+           */
+          cipher.textContent = '';
+          cipherNote.textContent = '';
+          meta.replaceChildren();
+          metaNote.textContent = '';
+          decrypted.textContent = '';
+          timing.textContent = '';
+          claim.hidden = true;
+
           sentLines.hidden = false;
           receivedLines.hidden = false;
           rows.hidden = false;
@@ -651,9 +751,27 @@ const PAIR_FRAGMENT = 'demo-pair';
             rows,
             setStatus: setPairStatus,
             onEnvelope: (envelope) => {
-              figure?.cipher((envelope as unknown as Record<string, unknown>).ciphertext);
+              printCipher((envelope as unknown as Record<string, unknown>).ciphertext);
             },
-            onReceived: () => stage('opened'),
+            /*
+             * The other end of the trip, drawn from this tab's point of view.
+             *
+             * Two states and no more. `two-tab.ts` publishes `sent`,
+             * `received` and `envelope-stored`, and none of them is a receipt:
+             * the row this tab watches the relay for is the one addressed to
+             * its peer, which is its own outgoing one. So a receiving tab is
+             * told that an envelope arrived and that it decrypted — it is told
+             * nothing about the other tab's encryption or the other tab's
+             * storage, and the figure does not draw what it was not told. The
+             * two are shown in sequence because they arrived together, the
+             * same presentation `session-established` and `encrypted` get.
+             */
+            onReceived: () => {
+              ratcheted();
+              face('in');
+              stage('delivered');
+              stage('opened');
+            },
           });
 
           peerIdentity.textContent =
@@ -667,11 +785,28 @@ const PAIR_FRAGMENT = 'demo-pair';
             onJoin: (peer) => {
               peerHere = peer.me;
               describe();
+              /* The offer of a second tab, withdrawn by the second tab
+                 arriving. It stays on screen until then even though the button
+                 above it has gone, because it is the only route left to the
+                 fragment when a pop-up blocker ate the window; what makes it
+                 wrong is a tab that already has its pair still advertising a
+                 place for a third. */
+              pairLink.hidden = true;
               setPairStatus(`${peer.me} is here, in another tab. Type in either one.`);
+              /* The figure acknowledges the second window, once, and only
+                 while it is still the newest thing that has happened. A tab
+                 that has already sent something is further along than this
+                 and must not be walked backwards to say so. */
+              if (!announced) stage('peer-connected');
             },
             onLeave: () => {
               peerHere = null;
               describe();
+              /* The status line says to open a second tab again, so the route
+                 to it comes back — but only for a reader who was given it in
+                 the first place, rather than appearing now for one whose
+                 browser opens windows. */
+              pairLink.hidden = !linkOffered;
               setPairStatus('The other tab has gone. Open a second one again to carry on.');
             },
           });
@@ -767,6 +902,10 @@ const PAIR_FRAGMENT = 'demo-pair';
           const conversation = paired;
           await conversation.send(text);
           established();
+          /* Back to this tab's own point of view, which the last thing it
+             received may have turned around. */
+          face('out');
+          ratcheted();
           stage('encrypted');
           stage('in-transit');
           stage('stored-at-relay');

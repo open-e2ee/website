@@ -72,6 +72,7 @@ import { runAddASecondDevice } from '../src/lib/demo/scenarios/add-a-second-devi
 import { runOutOfPreKeys } from '../src/lib/demo/scenarios/run-out-of-prekeys.ts';
 import { reinstallADevice } from '../src/lib/demo/scenarios/reinstall-a-device.ts';
 import { CAPTIONS } from '../src/lib/demo/figure.ts';
+import { hexStrip } from '../src/lib/demo/ciphertext.ts';
 import { EVENTS } from '../src/workers/site.ts';
 import {
   Cdp,
@@ -497,6 +498,13 @@ const SNAPSHOT = `(() => {
         hex: [...document.querySelectorAll(${JSON.stringify(FIGURE_HEX_LINE)})]
           .map((line) => line.textContent.trim())
           .filter(Boolean),
+        /* Read off the rendered box rather than the attribute that asks for it:
+           the ramp is drawn once at build time and revealed a step at a time by
+           CSS, so a run that counted the attribute would pass on a stylesheet
+           that reveals nothing. */
+        ratchet: [...document.querySelectorAll('[data-figure-step]')]
+          .filter((step) => getComputedStyle(step).display !== 'none')
+          .map((step) => step.dataset.figureStep),
       };
     })(),
   };
@@ -1690,6 +1698,7 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
   }
 
   checkFigure(pass);
+  if (pass.repeated) checkFigureMoves(pass.afterFirst, pass.dom);
 
   /* Invariant 7. Nothing SDK-shaped before the reader asked. */
   if (pass.bytesBefore > PRE_INTERACTION_CEILING) {
@@ -1765,16 +1774,89 @@ function checkFigure(pass) {
       }`,
     );
   }
-  const base64 = pass.dom.cipher.replace(/[^A-Za-z0-9+/=]/g, '');
-  const head = Buffer.from(base64.slice(0, Math.ceil(strip.length / 3) * 4), 'base64')
-    .subarray(0, strip.length)
-    .toString('hex')
-    .replace(/../g, '$& ')
-    .trim();
-  if (strip.join(' ') !== head) {
+  /*
+   * The same bytes, reached from the panel's own text.
+   *
+   * `hexStrip` is the function the figure ran, imported rather than reimplemented
+   * — the alternative is a second copy of the peel and the offset in the file
+   * whose job is to disagree with the first one. What makes this a check rather
+   * than a tautology is the input: the figure was handed `envelope.ciphertext`
+   * by the SDK, and this is handed the excerpt the panel printed on screen. If
+   * the lane were drawing bytes from anywhere but the row beside it, the two
+   * would not meet.
+   *
+   * The excerpt is enough. The panel prints 420 characters of the outer
+   * document, which peel to 234 real bytes, and the strip's window ends at 178.
+   */
+  const printed = hexStrip(pass.dom.cipher.replace(/[^A-Za-z0-9+/=]/g, ''))
+    .join(' ')
+    .split(/\s+/)
+    .filter(Boolean);
+  if (strip.join(' ') !== printed.join(' ')) {
     throw new Red(
       `the figure's byte strip is not the ciphertext the panel printed beside it:\n` +
-        `  in the figure: ${strip.join(' ')}\n  in the panel:  ${head}`,
+        `  in the figure: ${strip.join(' ')}\n  in the panel:  ${printed.join(' ') || '(nothing)'}`,
+    );
+  }
+}
+
+/*
+ * Two sends, two different strips.
+ *
+ * The first cut of the lane decoded one base64 layer and printed the head of
+ * what came out, which is the head of the *inner* base64 document — and a
+ * prekey header that two messages on one session share byte for byte. The strip
+ * was therefore identical on every send: a still image of ciphertext, standing
+ * under a caption claiming those are the bytes of the row that was just stored.
+ * It rendered perfectly, it decoded correctly, and it was the one thing on the
+ * page that was not evidence.
+ *
+ * Nothing about the fix is self-checking. The offset is a measurement of where
+ * one build of the SDK puts its per-message material, and an SDK that moves it
+ * takes the strip back to a constant without moving a line of this repository.
+ * So the run sends twice and reads the lane both times.
+ */
+function checkFigureMoves(first, second) {
+  /*
+   * The ramp, counted where it is drawn.
+   *
+   * One step per message is the whole claim the four blocks make, and the only
+   * way to see it is two messages: a ramp frozen at one step and a ramp that
+   * lights every block at once both look correct in a single frame.
+   */
+  const litBefore = first.figure?.ratchet ?? [];
+  const litAfter = second.figure?.ratchet ?? [];
+  if (litAfter.length <= litBefore.length) {
+    throw new Red(
+      'the figure sent two messages and its ratchet did not advance — ' +
+        `${litBefore.length} step(s) lit after the first, ${litAfter.length} after the second\n` +
+        '  the ramp is drawn at build time and revealed by the ' +
+        "[data-figure-ratchet~='N'] rules in global.css, driven by figure.ratchet()",
+    );
+  }
+  const expected = litAfter.map((_, index) => String(index + 1)).join(' ');
+  if (litAfter.join(' ') !== expected) {
+    throw new Red(
+      `the figure's ratchet lit steps out of order: ${litAfter.join(' ') || '(none)'} — ` +
+        `a ramp reads left to right, so ${litAfter.length} message(s) light ${expected}`,
+    );
+  }
+
+  const before = (first.figure?.hex ?? []).join(' ').trim();
+  const after = (second.figure?.hex ?? []).join(' ').trim();
+  if (before.length === 0 || after.length === 0) {
+    throw new Red(
+      'the figure printed no bytes on one of two sends, so there is nothing to compare — ' +
+        `first "${before}", second "${after}"`,
+    );
+  }
+  if (before === after) {
+    throw new Red(
+      'the figure printed the same bytes for two different messages, so the relay lane is ' +
+        'showing a constant rather than this envelope:\n' +
+        `  both sends: ${before}\n` +
+        '  the strip is sampled from a stretch of the envelope that no longer varies per ' +
+        'message — HEX_OFFSET in src/lib/demo/ciphertext.ts is the measurement that moved',
     );
   }
 }

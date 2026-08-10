@@ -2,11 +2,13 @@
 import {
   BOUNDARY_MIN_GUTTER,
   CIPHERTEXT_FILL,
+  RATCHET_FILLS,
   boundaryLine,
   contentBarRects,
   deviceOutline,
   metadataTicks,
   notchedSlabPath,
+  ratchetRects,
   slabPath,
 } from '@open-e2ee/design/diagram';
 import { CAPTIONS } from '../../lib/demo/figure';
@@ -41,6 +43,21 @@ import { CAPTIONS } from '../../lib/demo/figure';
  * OpenE2EE mark. Drawing it as the mark would put the vendor's logo on the one
  * node this project insists the reader hosts themselves, and it would spend the
  * page's one signature-device budget on a diagram that does not need it.
+ *
+ * ------------------------------------------------------------- perspective ---
+ *
+ * The near device is always this tab, so a tab that is receiving sees the same
+ * composition mirrored: the envelope crosses the near boundary inward and the
+ * near device is the one that gains readable content. That is one CSS transform
+ * on the group below rather than a second set of positions, which is what keeps
+ * "there is one drawing" true — a mirrored composition whose shapes were
+ * emitted twice is two drawings that happen to agree today.
+ *
+ * Text is outside the mirrored group, because mirrored type is unreadable. The
+ * two boundary labels are the one part of the drawing that is not symmetric
+ * under the flip — crossing inward at the near boundary is opening, not sealing
+ * — so both are drawn at both positions and `data-figure-facing` picks the pair
+ * the current direction needs.
  */
 
 /* One canvas, in viewBox units. The column this sits in is around 440 CSS px
@@ -117,6 +134,42 @@ const TRANSIT_IN_X = OPEN_X - SLAB_WIDTH / 2;
 
 const KEY = { width: 26, height: 22, notch: 7, y: 140 };
 
+/*
+ * The ratchet run: how far the session has advanced, under the device that
+ * advanced it.
+ *
+ * Four upright steps, each a discrete solid fill from the grammar's own ramp —
+ * `RATCHET_FILLS` — and never an opacity ramp, which is what the package's
+ * comment on `ratchetRects` is about. One step lights per message the session
+ * carries, which is what a double ratchet does per message.
+ *
+ * It sits under the near device and inside the mirrored group, so a receiving
+ * tab sees the run under the device that just encrypted. The width is checked
+ * against the device rather than eyeballed: a run that overhung its device
+ * would be claiming the ratchet belongs to the canvas.
+ */
+const RATCHET_STEP_WIDTH = 12;
+const RATCHET_GAP = 12;
+const RATCHET_HEIGHT = 12;
+const RATCHET_Y = 196;
+const ratchet = ratchetRects({
+  x: NEAR_X,
+  y: RATCHET_Y,
+  width: RATCHET_STEP_WIDTH,
+  height: RATCHET_HEIGHT,
+  gap: RATCHET_GAP,
+});
+const ratchetSpan =
+  ratchet.length * RATCHET_STEP_WIDTH + (ratchet.length - 1) * RATCHET_GAP;
+if (ratchetSpan !== DEVICE_WIDTH) {
+  throw new Error(
+    `the ratchet run is ${ratchetSpan} units wide under an ${DEVICE_WIDTH}-unit device`,
+  );
+}
+if (ratchet.length > RATCHET_FILLS.length) {
+  throw new Error('a ratchet step without its own solid fill would have to use alpha');
+}
+
 const slab = (x: number, shear = 0) =>
   slabPath({ x, y: SLAB_TOP, width: SLAB_WIDTH, height: SLAB_HEIGHT, shear });
 
@@ -149,6 +202,7 @@ const LANE_RULE_Y = 210;
 
 const ACCENTS = [
   { state: 'devices-ready', x: NEAR_X, width: DEVICE_WIDTH, y: DEVICE_RULE_Y },
+  { state: 'peer-connected', x: FAR_X, width: DEVICE_WIDTH, y: DEVICE_RULE_Y },
   { state: 'session-established', x: NEAR_X, width: WIDTH - NEAR_X * 2, y: DEVICE_RULE_Y },
   { state: 'encrypted', x: SEALED_X, width: SLAB_WIDTH, y: SLAB_RULE_Y },
   { state: 'in-transit', x: TRANSIT_OUT_X, width: SLAB_WIDTH, y: SLAB_RULE_Y },
@@ -159,8 +213,11 @@ const ACCENTS = [
 
 /* Once the devices exist they stay drawn, so the part lists are suffixes of
    the state order rather than single names. */
-const AFTER_READY =
-  'devices-ready session-established encrypted in-transit stored-at-relay delivered opened';
+/* One long string rather than a concatenation, past the width the rest of this
+   file keeps: `tests/site-content.test.mjs` reads these three lists out of the
+   source and compares them to the state order, and a `+` between two halves is
+   a token in the middle of the list it is reading. */
+const AFTER_READY = 'devices-ready peer-connected session-established encrypted in-transit stored-at-relay delivered opened';
 const AFTER_SESSION = 'session-established encrypted in-transit stored-at-relay delivered opened';
 const AT_RELAY = 'stored-at-relay delivered opened';
 
@@ -184,91 +241,134 @@ const HEX_LEADING = 14;
     viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
     data-figure-stage
     data-stage-state="idle"
+    data-figure-direction="out"
     aria-hidden="true"
   >
     <text x={NEAR_X} y={40} class="diagram-label" data-figure-near-label>this tab</text>
-    <text x={SEAL_X} y={40} text-anchor="middle" class="diagram-boundary-label">seal</text>
     <text x={(LANE_LEFT + LANE_RIGHT) / 2} y={40} text-anchor="middle" class="diagram-label">
       relay
     </text>
-    <text x={OPEN_X} y={40} text-anchor="middle" class="diagram-boundary-label">open</text>
     <text x={WIDTH - NEAR_X} y={40} text-anchor="end" class="diagram-label" data-figure-far-label>
       second device
     </text>
 
-    <g set:html={boundaryLine({ x: SEAL_X, top: BOUNDARY_TOP, bottom: BOUNDARY_BOTTOM })} />
-    <g set:html={boundaryLine({ x: OPEN_X, top: BOUNDARY_TOP, bottom: BOUNDARY_BOTTOM })} />
+    {/* Which boundary seals and which one opens is a fact about the direction
+        of travel, not about the position. Sending, the near one seals;
+        receiving, it is the one the envelope is opened at. */}
+    <text x={SEAL_X} y={40} text-anchor="middle" class="diagram-boundary-label" data-figure-facing="out">seal</text>
+    <text x={SEAL_X} y={40} text-anchor="middle" class="diagram-boundary-label" data-figure-facing="in">open</text>
+    <text x={OPEN_X} y={40} text-anchor="middle" class="diagram-boundary-label" data-figure-facing="out">open</text>
+    <text x={OPEN_X} y={40} text-anchor="middle" class="diagram-boundary-label" data-figure-facing="in">seal</text>
 
-    {
-      [NEAR_X, FAR_X].map((x) => (
-        <g
-          set:html={deviceOutline({
-            x,
-            y: DEVICE_TOP,
-            width: DEVICE_WIDTH,
-            height: DEVICE_HEIGHT,
-            bars: 0,
-          })}
-        />
-      ))
-    }
+    <g class="demo-figure-mirror">
+      <g set:html={boundaryLine({ x: SEAL_X, top: BOUNDARY_TOP, bottom: BOUNDARY_BOTTOM })} />
+      <g set:html={boundaryLine({ x: OPEN_X, top: BOUNDARY_TOP, bottom: BOUNDARY_BOTTOM })} />
 
-    {/* Readable content, which the near device has as soon as it is up and the
-        far device has only once it has decrypted something. */}
-    <g data-figure-part={AFTER_READY}>
       {
-        bars(NEAR_X).map((rect) => (
-          <rect
-            x={rect.x}
-            y={rect.y}
-            width={rect.width}
-            height={rect.height}
-            fill="var(--oe-diagram-content-bar)"
+        [NEAR_X, FAR_X].map((x) => (
+          <g
+            set:html={deviceOutline({
+              x,
+              y: DEVICE_TOP,
+              width: DEVICE_WIDTH,
+              height: DEVICE_HEIGHT,
+              bars: 0,
+            })}
           />
         ))
       }
-    </g>
-    <g data-figure-part="opened">
+
+      {/* Readable content, which the sending device has as soon as it is up and
+          the receiving device has only once it has decrypted something. Which
+          of the two is the near one is what the mirror decides. */}
+      <g data-figure-part={AFTER_READY}>
+        {
+          bars(NEAR_X).map((rect) => (
+            <rect
+              x={rect.x}
+              y={rect.y}
+              width={rect.width}
+              height={rect.height}
+              fill="var(--oe-diagram-content-bar)"
+            />
+          ))
+        }
+      </g>
+      <g data-figure-part="opened">
+        {
+          bars(FAR_X).map((rect) => (
+            <rect
+              x={rect.x}
+              y={rect.y}
+              width={rect.width}
+              height={rect.height}
+              fill="var(--oe-diagram-content-bar)"
+            />
+          ))
+        }
+      </g>
+
+      {/* The derived key, in both devices and nowhere else. */}
+      <g data-figure-part={AFTER_SESSION}>
+        <path d={key(NEAR_X)} fill={CIPHERTEXT_FILL} />
+        <path d={key(FAR_X)} fill={CIPHERTEXT_FILL} />
+      </g>
+
+      {/* The session's own advance, one solid step per message it has carried.
+          Drawn under the device that encrypted, so it mirrors with everything
+          else. Each step is lit by `data-figure-ratchet` on the canvas. */}
+      <g data-figure-part={AFTER_SESSION}>
+        {
+          ratchet.map((rect, index) => (
+            <rect
+              x={rect.x}
+              y={rect.y}
+              width={rect.width}
+              height={rect.height}
+              fill={RATCHET_FILLS[index]}
+              data-figure-step={index + 1}
+            />
+          ))
+        }
+      </g>
+
+      {/* The envelope, in each place it is ever in. Upright is at rest; sheared
+          is in transit, and both transit positions straddle a boundary. */}
+      <g data-figure-part="encrypted">
+        <path d={slab(SEALED_X)} fill={CIPHERTEXT_FILL} />
+        <g set:html={ticks(SEALED_X)} />
+      </g>
+      <g data-figure-part="in-transit">
+        <path d={slab(TRANSIT_OUT_X, SHEAR)} fill={CIPHERTEXT_FILL} />
+        <g set:html={ticks(TRANSIT_OUT_X)} />
+      </g>
+      <g data-figure-part={AT_RELAY}>
+        <path d={slab(RELAY_X)} fill={CIPHERTEXT_FILL} />
+        <g set:html={ticks(RELAY_X)} />
+      </g>
+      <g data-figure-part="delivered">
+        <path d={slab(TRANSIT_IN_X, SHEAR)} fill={CIPHERTEXT_FILL} />
+        <g set:html={ticks(TRANSIT_IN_X)} />
+      </g>
+
       {
-        bars(FAR_X).map((rect) => (
+        ACCENTS.map((accent) => (
           <rect
-            x={rect.x}
-            y={rect.y}
-            width={rect.width}
-            height={rect.height}
-            fill="var(--oe-diagram-content-bar)"
+            x={accent.x}
+            y={accent.y}
+            width={accent.width}
+            height={3}
+            class="demo-figure-accent"
+            data-figure-part={accent.state}
           />
         ))
       }
-    </g>
-
-    {/* The derived key, in both devices and nowhere else. */}
-    <g data-figure-part={AFTER_SESSION}>
-      <path d={key(NEAR_X)} fill={CIPHERTEXT_FILL} />
-      <path d={key(FAR_X)} fill={CIPHERTEXT_FILL} />
-    </g>
-
-    {/* The envelope, in each place it is ever in. Upright is at rest; sheared
-        is in transit, and both transit positions straddle a boundary. */}
-    <g data-figure-part="encrypted">
-      <path d={slab(SEALED_X)} fill={CIPHERTEXT_FILL} />
-      <g set:html={ticks(SEALED_X)} />
-    </g>
-    <g data-figure-part="in-transit">
-      <path d={slab(TRANSIT_OUT_X, SHEAR)} fill={CIPHERTEXT_FILL} />
-      <g set:html={ticks(TRANSIT_OUT_X)} />
-    </g>
-    <g data-figure-part={AT_RELAY}>
-      <path d={slab(RELAY_X)} fill={CIPHERTEXT_FILL} />
-      <g set:html={ticks(RELAY_X)} />
-    </g>
-    <g data-figure-part="delivered">
-      <path d={slab(TRANSIT_IN_X, SHEAR)} fill={CIPHERTEXT_FILL} />
-      <g set:html={ticks(TRANSIT_IN_X)} />
     </g>
 
     {/* The row's own bytes, written by the script from the envelope the SDK
-        produced. Empty in the shipped HTML, because nothing has been sent. */}
+        produced. Empty in the shipped HTML, because nothing has been sent, and
+        outside the mirrored group because mirrored hex is unreadable — the lane
+        is centred on the canvas, so it needs no flip either way. */}
     <text x={LANE_LEFT + 2} y={HEX_TOP} class="demo-figure-hex" data-figure-part={AT_RELAY}>
       {
         Array.from({ length: HEX_LINES }, (_, index) => (
@@ -276,19 +376,6 @@ const HEX_LEADING = 14;
         ))
       }
     </text>
-
-    {
-      ACCENTS.map((accent) => (
-        <rect
-          x={accent.x}
-          y={accent.y}
-          width={accent.width}
-          height={3}
-          class="demo-figure-accent"
-          data-figure-part={accent.state}
-        />
-      ))
-    }
   </svg>
 
   {/*
