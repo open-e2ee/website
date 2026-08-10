@@ -2,7 +2,9 @@
 import {
   BOUNDARY_MIN_GUTTER,
   CIPHERTEXT_FILL,
+  PLAINTEXT_STROKE,
   RATCHET_FILLS,
+  STROKE_WIDTH,
   boundaryLine,
   contentBarRects,
   deviceOutline,
@@ -135,23 +137,38 @@ const TRANSIT_IN_X = OPEN_X - SLAB_WIDTH / 2;
 const KEY = { width: 26, height: 22, notch: 7, y: 140 };
 
 /*
- * The ratchet run: how far the session has advanced, under the device that
- * advanced it.
+ * The ratchet run: how far the session has advanced.
  *
  * Four upright steps, each a discrete solid fill from the grammar's own ramp —
  * `RATCHET_FILLS` — and never an opacity ramp, which is what the package's
  * comment on `ratchetRects` is about. One step lights per message the session
  * carries, which is what a double ratchet does per message.
  *
- * It sits under the near device and inside the mirrored group, so a receiving
- * tab sees the run under the device that just encrypted. The width is checked
- * against the device rather than eyeballed: a run that overhung its device
- * would be claiming the ratchet belongs to the canvas.
+ * All four are on the canvas from the moment a session exists. A run that drew
+ * only the lit steps was a row of one or two squares floating under a device,
+ * with nothing to say how many positions there were or that they were a run at
+ * all — and the grammar asks a ratchet to read as *arriving somewhere*, which
+ * needs the distance visible. A step that has not been taken is therefore drawn
+ * open: stroked, unfilled, at the grammar's own stroke weight. That is the same
+ * open-versus-filled distinction the devices and the envelope use, so the run
+ * costs the figure no new vocabulary and no alpha.
+ *
+ * Outside the mirrored group, unlike everything else in the composition. The
+ * session ratchet is not at either end of the trip — both devices step it, and
+ * they step it together — so a run that swapped corners when the drawing
+ * mirrored was answering a question about sides that the ratchet does not have.
+ * It stays under the left-hand device, which is always this tab.
+ *
+ * The width is checked against the device rather than eyeballed: a run that
+ * overhung its device would be claiming the ratchet belongs to the canvas.
  */
 const RATCHET_STEP_WIDTH = 12;
 const RATCHET_GAP = 12;
-const RATCHET_HEIGHT = 12;
-const RATCHET_Y = 196;
+/* Upright, and tall enough that the open form reads as an outline: at the
+   grammar's 4-unit stroke a 12-unit square is very nearly solid, and the two
+   states of a step have to be told apart at a glance. */
+const RATCHET_HEIGHT = 18;
+const RATCHET_Y = 200;
 const ratchet = ratchetRects({
   x: NEAR_X,
   y: RATCHET_Y,
@@ -169,6 +186,18 @@ if (ratchetSpan !== DEVICE_WIDTH) {
 if (ratchet.length > RATCHET_FILLS.length) {
   throw new Error('a ratchet step without its own solid fill would have to use alpha');
 }
+/* The open steps carry a stroke, which straddles the rect's edge, so the run
+   occupies half a stroke more than its rectangles on every side. */
+const RATCHET_BOTTOM = RATCHET_Y + RATCHET_HEIGHT + STROKE_WIDTH / 2;
+if (RATCHET_BOTTOM > HEIGHT) {
+  throw new Error(`the ratchet run reaches ${RATCHET_BOTTOM} on a ${HEIGHT}-unit canvas`);
+}
+
+/* The run's own name, in the voice the other lane labels use. Set beside the
+   steps rather than above them: the band between the device accent and the
+   canvas floor is the run's, and there is no room over it for a line of type. */
+const RATCHET_LABEL_X = NEAR_X + ratchetSpan + 12;
+const RATCHET_LABEL_Y = RATCHET_Y + RATCHET_HEIGHT - 4;
 
 const slab = (x: number, shear = 0) =>
   slabPath({ x, y: SLAB_TOP, width: SLAB_WIDTH, height: SLAB_HEIGHT, shear });
@@ -314,24 +343,6 @@ const HEX_LEADING = 14;
         <path d={key(FAR_X)} fill={CIPHERTEXT_FILL} />
       </g>
 
-      {/* The session's own advance, one solid step per message it has carried.
-          Drawn under the device that encrypted, so it mirrors with everything
-          else. Each step is lit by `data-figure-ratchet` on the canvas. */}
-      <g data-figure-part={AFTER_SESSION}>
-        {
-          ratchet.map((rect, index) => (
-            <rect
-              x={rect.x}
-              y={rect.y}
-              width={rect.width}
-              height={rect.height}
-              fill={RATCHET_FILLS[index]}
-              data-figure-step={index + 1}
-            />
-          ))
-        }
-      </g>
-
       {/* The envelope, in each place it is ever in. Upright is at rest; sheared
           is in transit, and both transit positions straddle a boundary. */}
       <g data-figure-part="encrypted">
@@ -360,6 +371,50 @@ const HEX_LEADING = 14;
             height={3}
             class="demo-figure-accent"
             data-figure-part={accent.state}
+          />
+        ))
+      }
+    </g>
+
+    {/*
+      The session's own advance, one step per message it has carried.
+
+      Outside the mirrored group on purpose — see the geometry above. The whole
+      run is drawn from the moment a session exists: every step open, and the
+      taken ones filled over the top by the group below. Two rects per step
+      rather than one that changes, because a stylesheet that switched a fill
+      would be a second copy of the grammar living in the CSS.
+    */}
+    <g data-figure-part={AFTER_SESSION}>
+      {
+        ratchet.map((rect) => (
+          <rect
+            x={rect.x}
+            y={rect.y}
+            width={rect.width}
+            height={rect.height}
+            fill="none"
+            stroke={PLAINTEXT_STROKE}
+            stroke-width={STROKE_WIDTH}
+          />
+        ))
+      }
+      <text x={RATCHET_LABEL_X} y={RATCHET_LABEL_Y} class="diagram-label">ratchet</text>
+    </g>
+
+    {/* The steps this session has actually taken. Each is lit by
+        `data-figure-ratchet` on the canvas, which lists the steps rather than
+        counting them. */}
+    <g data-figure-part={AFTER_SESSION}>
+      {
+        ratchet.map((rect, index) => (
+          <rect
+            x={rect.x}
+            y={rect.y}
+            width={rect.width}
+            height={rect.height}
+            fill={RATCHET_FILLS[index]}
+            data-figure-step={index + 1}
           />
         ))
       }

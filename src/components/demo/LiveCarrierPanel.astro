@@ -171,13 +171,6 @@ const PAIR_FRAGMENT = 'demo-pair';
       <p class="carrier-cipher-note" data-demo-cipher-note></p>
       <dl class="carrier-meta" data-demo-meta></dl>
       <p class="carrier-cipher-note" data-demo-meta-note></p>
-      {/*
-        The paired panel's rows, printed key by key rather than summarised.
-        Separate from the list above because that one is a single round trip's
-        envelope and this is a conversation's, one row per send, and a reader
-        comparing two of them is doing the thing the pane is for.
-      */}
-      <div class="two-tab-envelopes" data-demo-rows hidden></div>
     </div>
 
     <CarrierBoundary kind="open" />
@@ -301,7 +294,6 @@ const PAIR_FRAGMENT = 'demo-pair';
     const farLabel = pick('[data-demo-far-label]');
     const sentLines = pick('[data-demo-sent]');
     const receivedLines = pick('[data-demo-received]');
-    const rows = pick('[data-demo-rows]');
 
     const connect = pick<HTMLButtonElement>('[data-two-tab-connect]');
     const pairLink = pick<HTMLAnchorElement>('[data-two-tab-pair-link]');
@@ -536,9 +528,18 @@ const PAIR_FRAGMENT = 'demo-pair';
       stage('session-established');
     };
 
-    const render = (exchange: DemoExchange) => {
-      const envelope = exchange.envelope as unknown as Record<string, unknown>;
-
+    /*
+     * The row the relay is holding, printed the one way this page prints a row.
+     *
+     * Solo and paired both arrive here. They used to arrive at two different
+     * printers — this one, and a second inside `two-tab-view.ts` that summarised
+     * long values, dropped the not-set treatment and stringified an absent field
+     * to the literal `undefined`. A reader who paired therefore got a worse
+     * account of the row than a reader who did not, on the pane the section
+     * exists for, and the two lists disagreed about how many fields an envelope
+     * even has.
+     */
+    const printRow = (envelope: Record<string, unknown>) => {
       /* The promises about what these panes would hold, retired by the thing
          itself. Removed rather than emptied so the panel's height comes from
          its content in both states. */
@@ -589,6 +590,10 @@ const PAIR_FRAGMENT = 'demo-pair';
       metaNote.textContent =
         `${shown} fields, read off the envelope itself — plus the ciphertext above, ` +
         `and an id your relay assigns in whatever format it uses`;
+    };
+
+    const render = (exchange: DemoExchange) => {
+      printRow(exchange.envelope as unknown as Record<string, unknown>);
 
       decrypted.textContent = exchange.decrypted.content;
       timing.textContent =
@@ -717,7 +722,6 @@ const PAIR_FRAGMENT = 'demo-pair';
           const started = await twoTab.startTwoTabSession();
           paired = started;
 
-          for (const idle of panel.querySelectorAll('[data-demo-idle]')) idle.remove();
           /*
            * The solo run's output, taken down with the session that produced it.
            *
@@ -725,10 +729,16 @@ const PAIR_FRAGMENT = 'demo-pair';
            * ciphertext, its field table and its decrypted line still on screen
            * beside the paired conversation's first stored row — two answers to
            * "what does the relay hold", one of them from a pair of clients that
-           * no longer exists, and the older one reading as an unstyled
-           * duplicate of the newer. The panes are the same panes in both modes;
-           * what changes is which session is writing to them, so the handover
-           * empties them rather than layering.
+           * no longer exists. The panes are the same panes in both modes; what
+           * changes is which session is writing to them, so the handover empties
+           * them rather than layering.
+           *
+           * The lines that say what a pane is *going* to hold are deliberately
+           * left alone. They are removed by the first row printed into the pane,
+           * whichever session prints it, and a tab that arrived on the pairing
+           * fragment has not printed one yet — clearing them here gave that
+           * reader a labelled grey band with nothing in it and no promise that
+           * anything was coming, which is what a broken pane looks like.
            */
           cipher.textContent = '';
           cipherNote.textContent = '';
@@ -738,9 +748,15 @@ const PAIR_FRAGMENT = 'demo-pair';
           timing.textContent = '';
           claim.hidden = true;
 
+          /* The composer's own line still offered to load the SDK when the
+             reader started typing, to a tab that had just loaded it and in some
+             cases had already decrypted a sentence with it. */
+          setStatus(
+            'The SDK is loaded in this tab. What you type is encrypted for the other one.',
+          );
+
           sentLines.hidden = false;
           receivedLines.hidden = false;
-          rows.hidden = false;
           peers.hidden = false;
           connect.hidden = true;
 
@@ -748,23 +764,34 @@ const PAIR_FRAGMENT = 'demo-pair';
             identity: peers,
             sent: sentLines,
             received: receivedLines,
-            rows,
             setStatus: setPairStatus,
+            /*
+             * Every row the relay takes, in either direction, printed into the
+             * pane and drawn in the lane.
+             *
+             * The pane holds the newest row rather than a growing list. "The row
+             * in your database" is a claim about what is there now, and a list
+             * that only ever grew in one direction made it false twice over: a
+             * tab watched only its own outgoing rows, so the row it had just
+             * been sent never appeared at all, and the row it had sent first
+             * stayed at the top long after the relay had taken two more.
+             */
             onEnvelope: (envelope) => {
-              printCipher((envelope as unknown as Record<string, unknown>).ciphertext);
+              const row = envelope as unknown as Record<string, unknown>;
+              printRow(row);
+              printCipher(row.ciphertext);
             },
             /*
              * The other end of the trip, drawn from this tab's point of view.
              *
              * Two states and no more. `two-tab.ts` publishes `sent`,
-             * `received` and `envelope-stored`, and none of them is a receipt:
-             * the row this tab watches the relay for is the one addressed to
-             * its peer, which is its own outgoing one. So a receiving tab is
-             * told that an envelope arrived and that it decrypted — it is told
-             * nothing about the other tab's encryption or the other tab's
-             * storage, and the figure does not draw what it was not told. The
-             * two are shown in sequence because they arrived together, the
-             * same presentation `session-established` and `encrypted` get.
+             * `received` and `envelope-stored`, and none of them is a receipt.
+             * A receiving tab is told that the relay took a row addressed to it
+             * and that the row decrypted here — it is told nothing about when
+             * the other tab encrypted, and the figure does not draw what it was
+             * not told. The two are shown in sequence because they arrived
+             * together, the same presentation `session-established` and
+             * `encrypted` get.
              */
             onReceived: () => {
               ratcheted();

@@ -1703,10 +1703,14 @@ a:hover {
  *
  * The near device is always this tab. A tab that is receiving is watching the
  * same trip from the other end, so the composition is mirrored about the
- * canvas centre: the envelope crosses the near boundary inward, the readable
- * content ends up in the near device, and the ratchet run sits under whichever
- * device did the encrypting. `DemoFigure.astro` emits the shapes once and this
- * flips them, which is what keeps the drawing single.
+ * canvas centre: the envelope crosses the near boundary inward and the readable
+ * content ends up in the near device. `DemoFigure.astro` emits the shapes once
+ * and this flips them, which is what keeps the drawing single.
+ *
+ * The ratchet run is emitted outside this group and does not flip. Both devices
+ * step the session ratchet, so it belongs to neither end, and a run that
+ * changed corners with the direction was answering a question about sides that
+ * the ratchet does not have.
  *
  * `transform-box` is left at its `view-box` initial value on purpose: the flip
  * has to be about the middle of the canvas, not about the group's own bounding
@@ -1735,6 +1739,10 @@ a:hover {
  * The canvas lists the steps that are lit rather than counting them, so this
  * is one rule per step with the same `~=` idiom the parts use. A count in an
  * attribute would need a rule per (count, step) pair and would say nothing more.
+ *
+ * Only the filled steps are addressed here. The open ones underneath carry no
+ * `data-figure-step` and are on screen for as long as the session is, which is
+ * what gives a reader the length of the run to measure the lit part against.
  */
 .demo-figure [data-figure-step] {
   display: none;
@@ -3935,46 +3943,6 @@ table.data td {
   overflow-wrap: anywhere;
 }
 
-/* The row as stored, so it scrolls inside its own box rather than pushing the
-   page sideways: one field of it is a few thousand characters wide. */
-.two-tab-envelopes {
-  margin-top: var(--oe-space-2);
-  max-height: 18rem;
-  overflow: auto;
-}
-
-.two-tab-envelope + .two-tab-envelope {
-  margin-top: var(--oe-space-3);
-  border-top: 1px solid var(--oe-border);
-  padding-top: var(--oe-space-3);
-}
-
-.two-tab-envelope > h5 {
-  font-family: var(--oe-metadata-font-family);
-  font-size: var(--oe-metadata-size);
-  letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-muted);
-}
-
-.two-tab-fields {
-  margin-top: var(--oe-space-2);
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--oe-space-1) var(--oe-space-3);
-  font-family: var(--oe-font-mono);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-}
-
-.two-tab-fields > dt {
-  color: var(--oe-muted);
-}
-
-.two-tab-fields > dd {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
 @media (max-width: 40rem) {
   /* The three-column log header stops being a grid before it starts eliding
      the message, which is the column that carries the meaning. */
@@ -3989,10 +3957,6 @@ table.data td {
   /* Same reason one line down: the sender's name is the narrow column, and at
      this width it costs the message more than it is worth. */
   .two-tab-line {
-    grid-template-columns: 1fr;
-  }
-
-  .two-tab-fields {
     grid-template-columns: 1fr;
   }
 }

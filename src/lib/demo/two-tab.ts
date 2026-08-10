@@ -41,13 +41,16 @@ import { withDeadline } from './deadline.ts';
 /** How long a send waits for the relay to acknowledge the envelope. */
 const ENVELOPE_DEADLINE_MS = 10_000;
 
+/** Whose message a stored row carries: one this tab sent, or one it was sent. */
+export type EnvelopeDirection = 'out' | 'in';
+
 export type TwoTabEvent =
   /** This tab's own send was accepted, and the relay is holding the row. */
   | { type: 'sent'; text: string; result: SendResult; envelope: Envelope }
   /** The other tab sent something and this device decrypted it. */
   | { type: 'received'; message: DecryptedEnvelope }
-  /** The relay stored a row addressed to the other tab. What the relay sees. */
-  | { type: 'envelope-stored'; envelope: Envelope };
+  /** A row the relay is holding, either way round. What the relay sees. */
+  | { type: 'envelope-stored'; envelope: Envelope; direction: EnvelopeDirection };
 
 export interface TwoTabSession {
   /** `'host'` holds the relay for every tab; `'guest'` calls into it. */
@@ -107,20 +110,44 @@ export async function startTwoTabSession(options: TwoTabOptions = {}): Promise<T
   client.startRelaySubscription();
 
   /*
-   * Watch the row the relay holds for the *other* tab.
+   * Watch both rows the relay holds: the one addressed to the other tab, and
+   * the one addressed to this one.
    *
    * This is the demo looking at the relay, not this device reading its mail —
-   * the mail is the subscription above. A relay genuinely does hold this, and
-   * showing it is the point: it is the pane where a reader can see that what
-   * the relay has is ciphertext.
+   * the mail is the subscription above, and this watch neither consumes a row
+   * nor acknowledges one. A relay genuinely does hold both, and showing them is
+   * the point: it is the pane where a reader can see that what the relay has is
+   * ciphertext.
+   *
+   * The inbound watch is what makes the pane true on a tab that has not sent
+   * anything. Without it a receiving tab had a relay pane it could never fill,
+   * and a figure whose byte strip either stood empty or went on showing the
+   * bytes of the last message this tab *sent* — under a caption about the
+   * message it had just been handed.
+   *
+   * Two subscribers on one address is not a race. The relay's `subscribe` is
+   * fan-out: it appends to a list, replays what is pending to the arriving
+   * subscriber only, and deletes nothing — removal is `markDelivered`'s, which
+   * only the client calls. The client subscribes first, above, so this is never
+   * the first subscriber on its own address.
    */
   const pending: Envelope[] = [];
   let onEnvelope: ((envelope: Envelope) => void) | null = null;
-  const unwatch = wire.relay.subscribe(peer, DEFAULT_DEVICE_ID, (envelope: Envelope) => {
+  const unwatchOut = wire.relay.subscribe(peer, DEFAULT_DEVICE_ID, (envelope: Envelope) => {
     if (onEnvelope) onEnvelope(envelope);
     else pending.push(envelope);
-    emit({ type: 'envelope-stored', envelope });
+    emit({ type: 'envelope-stored', envelope, direction: 'out' });
   });
+  /* Deliberately not wired to `onEnvelope`: that resolver belongs to this tab's
+     own send, and a row arriving from the other tab mid-send would resolve it
+     with someone else's envelope. */
+  const unwatchIn = wire.relay.subscribe(me, DEFAULT_DEVICE_ID, (envelope: Envelope) => {
+    emit({ type: 'envelope-stored', envelope, direction: 'in' });
+  });
+  const unwatch = () => {
+    unwatchOut();
+    unwatchIn();
+  };
 
   let queue: Promise<unknown> = Promise.resolve();
 

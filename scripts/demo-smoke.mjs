@@ -178,7 +178,6 @@ const TWO_TAB_OUTPUT = '[data-two-tab-output]';
 const TWO_TAB_INPUT = '[data-two-tab-input]';
 const TWO_TAB_SEND = '[data-two-tab-send]';
 const TWO_TAB_LINE = '[data-two-tab-line]';
-const TWO_TAB_ROW = '[data-two-tab-row]';
 const TWO_TAB_DISCONNECT = '[data-two-tab-disconnect]';
 
 /*
@@ -1076,40 +1075,49 @@ async function visitScenario(cdp, origin, held, slug) {
 /*
  * What one tab of the paired demo can see, including which tab it is.
  *
- * The rows are read as field/value pairs rather than as text, because the
- * check they exist for is about a particular field: the pane must be printing
- * a stored envelope, and the ciphertext in it must not be the sentence. Text
- * scraped out of the whole pane would let a row that had stopped printing
- * `ciphertext` at all go on passing a search for the absence of something.
+ * The row is read as field/value pairs rather than as text, because the checks
+ * it exists for are about particular fields: the pane must print every key the
+ * live envelope has and no others, and none of them may carry the sentence.
+ * Text scraped out of the whole pane would let a pane that had stopped printing
+ * a field go on passing a search for the absence of something.
  *
- * The lines and the rows are read from the document, and they used to be read
+ * The lines and the row are read from the document, and they used to be read
  * from inside `[data-two-tab-output]`. That element used to be the whole
  * conversation — its own composer, its own transcript, its own relay pane, in a
  * section of its own. It is now the block that says who this tab is, and the
- * transcript and the stored rows are in the demo panel's own panes, because
+ * transcript and the stored row are in the demo panel's own panes, because
  * there is one panel and one set of panes whether the conversation is with this
  * tab or another one.
  *
  * Scoping to the output element would therefore find nothing, and it would find
  * nothing *quietly* — an empty transcript reads exactly like a message that
  * never arrived. What is preserved is the assertion, not the selector: every
- * line and every row on the page is still read, still by data attribute, and
- * still checked field by field. There is nothing else on the page emitting
- * either attribute, so the widened scope admits no lines this check did not
- * already own.
+ * line on the page is still read, still by data attribute, and the row is still
+ * checked field by field.
+ *
+ * The row itself now comes from `[data-demo-meta]`, which is where the panel
+ * prints it in both modes. The paired demo used to have a printer of its own
+ * emitting `[data-two-tab-row]`, and it was the weaker of the two: it
+ * summarised long values, wrote the literal `undefined` into a cell, and showed
+ * eight fields where the panel showed ten. Reading the one surviving printer
+ * lets the paired pane face the same field-by-field check as the solo one,
+ * which is a stricter test than the one this replaced, not a looser one.
  */
 const TWO_TAB_SNAPSHOT = `(() => {
   const output = document.querySelector(${JSON.stringify(TWO_TAB_OUTPUT)});
-  const rows = [...document.querySelectorAll(${JSON.stringify(TWO_TAB_ROW)})].map((row) => {
-    const fields = {};
-    const terms = [...row.querySelectorAll('dt')];
-    const values = [...row.querySelectorAll('dd')];
-    terms.forEach((term, index) => {
-      fields[term.textContent] = values[index]?.textContent ?? '';
-    });
-    return fields;
-  });
   return {
+    fields: [...document.querySelectorAll(${JSON.stringify(META)} + ' dt')].map(
+      (dt) => dt.textContent,
+    ),
+    values: [...document.querySelectorAll(${JSON.stringify(META)} + ' dd')].map(
+      (dd) => dd.textContent,
+    ),
+    cipher: document.querySelector(${JSON.stringify(CIPHER)})?.textContent ?? '',
+    /* The lane beside this tab's own panel, so a receiving tab's strip can be
+       held against the row that tab is printing. */
+    hex: [...document.querySelectorAll(${JSON.stringify(FIGURE_HEX_LINE)})]
+      .map((line) => line.textContent.trim())
+      .filter(Boolean),
     status: document.querySelector(${JSON.stringify(TWO_TAB_STATUS)})?.textContent ?? '',
     connected: Boolean(output) && !output.hidden,
     role: output?.dataset.twoTabRole ?? null,
@@ -1125,7 +1133,6 @@ const TWO_TAB_SNAPSHOT = `(() => {
       const link = document.querySelector(${JSON.stringify(TWO_TAB_PAIR_LINK)});
       return Boolean(link) && !link.hidden;
     })(),
-    rows,
   };
 })()`;
 
@@ -1797,6 +1804,69 @@ function checkFigure(pass) {
       `the figure's byte strip is not the ciphertext the panel printed beside it:\n` +
         `  in the figure: ${strip.join(' ')}\n  in the panel:  ${printed.join(' ') || '(nothing)'}`,
     );
+  }
+}
+
+/*
+ * The relay pane and the byte lane, on a tab that is receiving.
+ *
+ * A tab watched only the rows it had sent. So the pane and the strip on a
+ * receiving tab showed one of two things, both false: nothing at all, on a tab
+ * that had never sent, or the bytes of that tab's own previous outbound message
+ * — sitting beside a slab and a caption describing the message it had just been
+ * handed. It rendered perfectly. It was a picture of the wrong envelope.
+ *
+ * The last thing to happen in the run is the second tab's reply, so afterwards
+ * both tabs are looking at that one row: the tab that sent it, and the tab it
+ * was addressed to. That gives an assertion neither tab can pass alone —
+ * equality of the two printed ciphertexts across two browser tabs, which is
+ * false the moment either tab goes back to printing only its own sends.
+ *
+ * Then each tab's own strip against its own pane, which is what makes the lane
+ * evidence rather than decoration on the receiving side too.
+ */
+function checkTwoTabRelayView(first, second) {
+  const cipherOf = (side, ended) => {
+    const text = (ended.cipher ?? '').replace(/[^A-Za-z0-9+/=]/g, '');
+    if (text.length === 0) {
+      throw new Red(
+        `the ${side} tab printed no ciphertext in its relay pane after the conversation, so ` +
+          `there is no row on screen to check`,
+      );
+    }
+    return text;
+  };
+  const firstCipher = cipherOf('first', first);
+  const secondCipher = cipherOf('second', second);
+  if (firstCipher !== secondCipher) {
+    throw new Red(
+      'the two tabs are looking at different rows after the last message, so at least one of ' +
+        'them is not showing the row the relay most recently took:\n' +
+        `  first tab:  ${firstCipher.slice(0, 48)}…\n` +
+        `  second tab: ${secondCipher.slice(0, 48)}…\n` +
+        '  the reply was the last thing stored, so both panes have to be on it — a tab that ' +
+        'watches\n  only its own sends stays on the row it sent instead',
+    );
+  }
+
+  for (const [side, ended] of [
+    ['first', first],
+    ['second', second],
+  ]) {
+    const strip = (ended.hex ?? []).join(' ').split(/\s+/).filter(Boolean);
+    if (strip.length === 0) {
+      throw new Red(
+        `the ${side} tab's figure printed no bytes in its relay lane, with a row on screen ` +
+          `beside it`,
+      );
+    }
+    const printed = hexStrip(cipherOf(side, ended)).join(' ').split(/\s+/).filter(Boolean);
+    if (strip.join(' ') !== printed.join(' ')) {
+      throw new Red(
+        `the ${side} tab's byte strip is not the ciphertext of the row in its own pane:\n` +
+          `  in the figure: ${strip.join(' ')}\n  in the panel:  ${printed.join(' ') || '(nothing)'}`,
+      );
+    }
   }
 }
 
@@ -2864,7 +2934,7 @@ function checkScenario(pass, origin, expectation) {
  * of this claim — nothing crossing the channel in any encoding — because that
  * one can watch every message rather than what a pane chose to render.
  */
-function checkTwoTabs(pass, envelopeFields) {
+function checkTwoTabs(pass, envelopeFields, expected) {
   const [first, second] = pass.connected;
   const [firstEnded, secondEnded] = pass.ended;
 
@@ -2905,38 +2975,83 @@ function checkTwoTabs(pass, envelopeFields) {
     );
   }
 
-  if (firstEnded.rows.length === 0) {
-    throw new Red(
-      `the first tab sent a sentence and printed no row for it, so the section made its ` +
-        `argument about the relay with nothing on screen`,
-    );
-  }
-  for (const [index, row] of firstEnded.rows.entries()) {
-    const fields = Object.keys(row);
-    if (!fields.includes('ciphertext')) {
+  /*
+   * The relay pane, on both tabs, against the same expectation the solo pane
+   * faces.
+   *
+   * Both ends print a row now, and both print it with the panel's own printer,
+   * so a field the pane invents, a field it drops and a value that carries the
+   * sentence are all failures here in the words the solo check uses.
+   */
+  for (const [side, ended] of [
+    ['first', firstEnded],
+    ['second', secondEnded],
+  ]) {
+    if (ended.fields.length === 0) {
       throw new Red(
-        `row ${index + 1} of the relay pane prints no ciphertext field, so the pane is no ` +
-          `longer showing a stored envelope.\n  It printed: ${fields.join(', ') || 'nothing'}`,
+        `the ${side} tab finished the conversation with nothing in its relay pane, so the ` +
+          `section made its argument about the relay with an empty box`,
       );
     }
-    const invented = fields.filter((field) => !envelopeFields.has(field));
+    const invented = ended.fields.filter((field) => !envelopeFields.has(field));
     if (invented.length) {
       throw new Red(
-        `the relay pane printed ${invented.length} field(s) the SDK's Envelope does not ` +
-          `declare (${invented.join(', ')}), so it is not printing the row it was handed`,
+        `the ${side} tab's relay pane printed ${invented.length} field(s) the SDK's Envelope ` +
+          `does not declare (${invented.join(', ')}), so it is not printing the row it was handed`,
       );
     }
-    for (const [field, value] of Object.entries(row)) {
-      const how = findProbe(value);
+    const printed = new Set(ended.fields);
+    const missing = [...expected].filter((field) => !printed.has(field));
+    const extra = [...printed].filter((field) => !expected.has(field));
+    if (missing.length || extra.length) {
+      throw new Red(
+        `the ${side} tab's relay pane and the live envelope disagree about which fields ` +
+          `exist:\n` +
+          (missing.length ? `  never printed: ${missing.join(', ')}\n` : '') +
+          (extra.length ? `  printed anyway: ${extra.join(', ')}\n` : '') +
+          `  expected exactly: ${[...expected].join(', ')}\n` +
+          `  the pane showed:  ${ended.fields.join(', ') || '(nothing)'}`,
+      );
+    }
+    /* The literal the paired printer used to write into a cell for a field the
+       envelope carries without a value. It is not a value; it is the shape of
+       the bug, on the pane whose subject is what a relay can read. */
+    const stringified = ended.fields.filter(
+      (_, index) => (ended.values[index] ?? '').trim() === 'undefined',
+    );
+    if (stringified.length) {
+      throw new Red(
+        `the ${side} tab's relay pane printed the literal "undefined" beside ` +
+          `${stringified.join(', ')} — an absent field has to be shown as absent, not as the ` +
+          `way JavaScript spells it`,
+      );
+    }
+    const blank = ended.fields.filter((_, index) => !(ended.values[index] ?? '').trim());
+    if (blank.length) {
+      throw new Red(
+        `the ${side} tab's relay pane printed ${blank.join(', ')} with no value beside it`,
+      );
+    }
+    for (const [index, field] of ended.fields.entries()) {
+      const how = findProbe(ended.values[index] ?? '');
       if (how) {
         throw new Red(
-          `the relay pane's ${field} carries the sentence that was typed — ${how}.\n` +
-            `  This is the claim the section exists to make, and it is false: what the relay ` +
-            `is holding\n  is readable.`,
+          `the ${side} tab's relay pane prints ${field} carrying the sentence that was typed — ` +
+            `${how}.\n  This is the claim the section exists to make, and it is false: what the ` +
+            `relay\n  is holding is readable.`,
         );
       }
     }
+    const how = findProbe(ended.cipher);
+    if (how) {
+      throw new Red(
+        `the ${side} tab's relay pane prints a ciphertext carrying the sentence that was ` +
+          `typed — ${how}`,
+      );
+    }
   }
+
+  checkTwoTabRelayView(firstEnded, secondEnded);
 
   const found = leaks(pass.requests, findProbe);
   if (found.length) {
@@ -3550,7 +3665,7 @@ async function main() {
     /* Two tabs at once, which is the only pass here that needs more than one:
        the section's claim is that the second window is a second window. */
     const twoTabs = await visitTwoTabs(cdp, origin, held);
-    checkTwoTabs(twoTabs, envelopeFields);
+    checkTwoTabs(twoTabs, envelopeFields, expected);
 
     /* Say which of the two things happened. Claiming a quiet window we never
        got would overstate the egress evidence on exactly the chatty pages
@@ -3641,10 +3756,12 @@ async function main() {
         `read the\n` +
         `                  other's sentence off the channel — the reply came back through the ` +
         `tab holding the relay\n` +
-        `                  the relay pane printed ${twoTabs.ended[0].rows.length} stored row(s), ` +
-        `every field declared by the SDK's Envelope,\n` +
-        `                  the ciphertext carrying neither sentence in cleartext, ` +
-        `percent-encoded or base64 form\n` +
+        `                  both relay panes ended on the same stored row — the reply — with all ` +
+        `${twoTabs.ended[0].fields.length} fields declared by\n` +
+        `                  the SDK's Envelope, each tab's byte strip matching the row in its own ` +
+        `pane, and the\n` +
+        `                  ciphertext carrying neither sentence in cleartext, percent-encoded or ` +
+        `base64 form\n` +
         `                  measured 0 beacon(s): the section is not a scenario and registers no ` +
         `event\n` +
         `                  then both tabs were disconnected, guest first, and each shut its ` +
