@@ -14,6 +14,8 @@ import {
 import {
   COMPOSITIONS,
   BUNDLE_SIZE,
+  CONTENT_COLUMNS,
+  FIELD_COLUMNS,
   PRIVATE_KEY_SIZE,
   RATCHET_SIZE,
   type BoundaryPlace,
@@ -21,6 +23,7 @@ import {
   type DeviceSide,
   type StageComposition,
 } from '../../lib/demo/stage-geometry';
+import { STEP_CAPTIONS } from '../../lib/demo/stage-view';
 import { STEPS } from '../../lib/demo/trace';
 
 /*
@@ -356,6 +359,7 @@ const boundaryWord = (boundary: BoundaryPlace) => LABELS.boundary[boundary.side]
                 class="demo-stage-figure-content"
                 data-stage-part={CONTENT_PARTS[side]}
                 data-stage-content={side}
+                data-stage-columns={CONTENT_COLUMNS}
               >
                 {Array.from({ length: device.content.lines }, (_, index) => (
                   <tspan
@@ -480,6 +484,7 @@ const boundaryWord = (boundary: BoundaryPlace) => LABELS.boundary[boundary.side]
             class="demo-stage-figure-fields"
             data-stage-part={AT_RELAY}
             data-stage-fields
+            data-stage-columns={FIELD_COLUMNS}
           >
             {Array.from({ length: composition.relay.fields.lines }, (_, index) => (
               <tspan
@@ -541,4 +546,23 @@ const boundaryWord = (boundary: BoundaryPlace) => LABELS.boundary[boundary.side]
       </svg>
     ))
   }
+
+  {/*
+    The drawing, in words, for every reader who does not get the drawing.
+
+    Both canvases are `aria-hidden`, so this is not a description of a picture
+    standing beside it — for a screen reader it is the whole of the stage. That
+    is why `stage-view.ts` writes what became true at each step rather than what
+    moved on the canvas: "the relay is holding the row" is the fact, and "the
+    slab slides into the middle slot" is the animation, and only one of those is
+    worth announcing.
+
+    Polite rather than assertive. The steps arrive a few hundred milliseconds
+    apart under playback, and an assertive region would interrupt itself eight
+    times on the way through one message. It ships holding the idle line because
+    that is the true state of a page that has run nothing.
+  */}
+  <figcaption class="demo-stage-figure-caption" data-stage-caption aria-live="polite">
+    {STEP_CAPTIONS.idle}
+  </figcaption>
 </figure>

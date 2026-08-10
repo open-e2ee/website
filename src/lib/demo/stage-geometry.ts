@@ -305,26 +305,34 @@ export const ACCENT_HEIGHT = 3;
 /**
  * How many characters of the sentence fit on one line inside a device.
  *
- * Derived rather than chosen. The content is set in the mono face at 13 units,
- * which advances about 7.8 units a character, and the usable width is the
- * device less its inset on both sides. The script slices to this, so a sentence
- * that is too long is clipped by a number this file computed rather than by the
- * edge of a box.
+ * Derived rather than chosen, but an estimate rather than a measurement. The
+ * sentence is set in the sans face — the stylesheet says why it is not mono: a
+ * monospaced sentence reads as payload, and this one is the reader's own words
+ * — and a proportional face has no single advance to divide by. So this uses
+ * 7.8 units a character at 13 units, about 0.6em, which sits well above the
+ * ~0.5em that ordinary lowercase prose averages and therefore yields a column
+ * count ordinary prose does not fill.
+ *
+ * It is not an upper bound, and no number here could be one that still left the
+ * box usable: a line of capitals would advance nearer 0.95em and could reach
+ * the edge. The box is what stops that case. Making this honest costs a line of
+ * prose; making it exact would cost measuring text in the browser, which this
+ * drawing deliberately does not do.
  */
-const MONO_ADVANCE = 7.8;
-export const CONTENT_COLUMNS = Math.floor((DEVICE.width - CONTENT.inset * 2) / MONO_ADVANCE);
+const SANS_ADVANCE = 7.8;
+export const CONTENT_COLUMNS = Math.floor((DEVICE.width - CONTENT.inset * 2) / SANS_ADVANCE);
 export const CONTENT_LINES = CONTENT.lines;
 
 /**
- * The same arithmetic for the metadata beside the stored row.
+ * The same arithmetic for the metadata beside the stored row, and here it is
+ * exact rather than estimated.
  *
- * The metadata is set two units smaller than the sentence, so it advances less
- * per character, and it has only the part of a slot the envelope is not
- * standing in. Both numbers are computed rather than chosen for the same reason
- * the sentence's are: a line that is too long should be cut by the width that
- * is really there, not by the edge of the drawing.
+ * The metadata is mono, where every character advances the same distance, so
+ * dividing by an advance is the right instrument rather than an approximation
+ * of one. It is set two units smaller than the sentence, and it has only the
+ * part of a slot the envelope is not standing in.
  */
-const FIELD_ADVANCE = MONO_ADVANCE * (11 / 13);
+const FIELD_ADVANCE = 7.8 * (11 / 13);
 export const FIELD_COLUMNS = Math.floor((SLOT_WIDTH - FIELD_INSET) / FIELD_ADVANCE);
 export const FIELD_LINE_COUNT = FIELD_LINES;
 

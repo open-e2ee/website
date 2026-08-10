@@ -30,7 +30,7 @@ const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
  */
 const SENDERS = [
   '../public/measure.js',
-  '../src/components/demo/LiveCarrierPanel.astro',
+  '../src/components/demo/DemoConsole.astro',
   '../src/components/demo/ScenarioList.astro',
 ];
 
@@ -207,9 +207,9 @@ test('sends only the events the collector accepts', async () => {
  * beacon off the wire in a browser.
  */
 test('measures the demo without measuring what was typed into it', async () => {
-  const panel = await read('../src/components/demo/LiveCarrierPanel.astro');
+  const panel = await read('../src/components/demo/DemoConsole.astro');
   assert.match(panel, /window\.oeMeasure\?\.\('demo_run'\)/);
-  assert.equal([...panel.matchAll(/oeMeasure/g)].length, 1, 'the panel measures at one place');
+  assert.equal([...panel.matchAll(/oeMeasure/g)].length, 1, 'the console measures at one place');
 });
 
 /*

@@ -509,7 +509,7 @@ test('binds the names the reader brings, or says whose they are', async () => {
 test('keeps the recorded carrier row on the page, wherever it sits', async () => {
   const [index, live] = await Promise.all([
     flat('../src/pages/index.astro'),
-    flat('../src/components/demo/LiveCarrierPanel.astro'),
+    flat('../src/components/demo/DemoConsole.astro'),
   ]);
 
   /* The panel left the hero for the band whose copy raises the question it
@@ -517,12 +517,13 @@ test('keeps the recorded carrier row on the page, wherever it sits', async () =>
    * is the only thing on the site that shows rather than states what the
    * relay holds. A homepage that only asserts it has given up the argument.
    *
-   * It moved once more when the live demo landed: the page now renders
-   * `LiveCarrierPanel`, which renders the recording and puts a live panel in
-   * front of it. That is why this checks two files. The recording is not
-   * decoration underneath the live one — it is what a reader with no
-   * JavaScript, an unsupported browser or a chunk that never arrived sees, so
-   * a refactor that "simplified" it away would take the fallback with it.
+   * It moved once more when the live demo landed, and again when the demo
+   * became three columns: the page renders `DemoConsole`, which renders the
+   * recording under the live console. That is why this checks two files. The
+   * recording is not decoration underneath the live one — it is what a reader
+   * with no JavaScript, an unsupported browser or a chunk that never arrived
+   * sees, so a refactor that "simplified" it away would take the fallback with
+   * it.
    *
    * The lead's own provenance line went at the same time, and correctly: the
    * sentence above the panel now describes a round trip in the reader's tab,
@@ -530,7 +531,7 @@ test('keeps the recorded carrier row on the page, wherever it sits', async () =>
    * where it came from, one line under the recording, which is the assertion
    * in "does not overstate the one artefact that exists to not be
    * overstated". */
-  assert.match(index, /<LiveCarrierPanel \/>/);
+  assert.match(index, /<DemoConsole \/>/);
   assert.match(live, /<CarrierPanel \/>/);
   assert.match(index, /Not a mock-up/);
 });
@@ -1267,11 +1268,14 @@ test('keeps the signature diagram off the page that carries the plate', async ()
    * device on the screen. This asserts the split, not the deletion: a future
    * round that fixes the ratio in the design package and wants it back has to
    * come here and say so. */
-  /* The plate reaches this page through `LiveCarrierPanel`, which renders it
-   * as the live demo's fallback. Both spellings are checked on the other two
-   * pages: either one of them puts a plate on a screen that already has a
-   * signature device. */
-  assert.match(index, /<LiveCarrierPanel \/>/);
+  /* The plate reaches this page through `DemoConsole`, which renders it as the
+   * live demo's fallback. Every spelling is checked on the other two pages: any
+   * one of them puts a plate on a screen that already has a signature device.
+   *
+   * The demo's own three-column figure is not a second signature device. It
+   * draws the relay as an outlined container rather than as the mark, which is
+   * the discrimination that keeps this page inside the one-device cap. */
+  assert.match(index, /<DemoConsole \/>/);
   assert.doesNotMatch(index, /<SignatureDiagram \/>/);
   assert.doesNotMatch(index, /import SignatureDiagram/);
 
@@ -1282,7 +1286,7 @@ test('keeps the signature diagram off the page that carries the plate', async ()
     assert.match(page, /<SignatureDiagram \/>/, `${name} lost the diagram`);
     assert.doesNotMatch(
       page,
-      /<(Live)?CarrierPanel \/>/,
+      /<(Live)?CarrierPanel \/>|<DemoConsole \/>/,
       `${name} now shares a screen with the plate`,
     );
   }

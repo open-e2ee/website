@@ -26,7 +26,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
+import { MAX_SPEED, MIN_SPEED, createPlayback } from '../src/lib/demo/playback.ts';
 import { startDemoRun } from '../src/lib/demo/run.ts';
+import { FIELD_NAMES, envelopeFields } from '../src/lib/demo/stage-view.ts';
 import { STEPS } from '../src/lib/demo/trace.ts';
 
 const OUTBOUND = 'Ship it Thursday. The staging key rotates at 09:00 UTC.';
@@ -264,6 +266,30 @@ test('hands over the live envelope the relay held, not a description of it', asy
   });
 });
 
+/*
+ * The drawing prints four envelope fields by name, which is the one place in
+ * the demo where a field name is written down rather than iterated. A name that
+ * stops matching the envelope does not throw and does not blank the drawing
+ * loudly — `envelopeFields()` reads `undefined` and prints an empty slot beside
+ * a label that still looks right. That is the failure this exists to make loud,
+ * and it can only be caught against a real envelope, because the SDK's own
+ * declaration is a superset of what a send actually puts on the object.
+ */
+test('prints only envelope fields a real send produced', async () => {
+  await withRun(async (run) => {
+    const sent = await run.send('a', OUTBOUND);
+    const keys = new Set(Object.keys(sent.envelope));
+    const missing = FIELD_NAMES.filter((field) => !keys.has(field));
+    assert.deepEqual(
+      missing,
+      [],
+      `the drawing labels ${missing.join(', ')}, which a real envelope does not carry — the ` +
+        `drawing would print an empty value under a label that still reads correctly. The ` +
+        `envelope has: ${[...keys].join(', ')}`,
+    );
+  });
+});
+
 test('the reply is a real send from the other device, not the first drawn backwards', async () => {
   await withRun(async (run) => {
     await run.send('a', OUTBOUND);
@@ -319,6 +345,81 @@ test('cues carry no measurement at all', async () => {
       );
       for (const value of Object.values(cue)) {
         assert.equal(typeof value, 'string', 'a cue carried a non-string field');
+      }
+    }
+  });
+});
+
+/*
+ * The transport's whole promise, checked end to end against a real recording
+ * rather than against the hand-written reel in `demo-playback.test.mjs`.
+ *
+ * That test proves the pace layer shows the same cues at any speed. This one
+ * proves the thing a reader can actually see: the cues carry the drawing's
+ * *printed figures* — the byte count and the timestamp under the relay — and
+ * those were formatted into strings by `envelopeFields()` before anything
+ * reached the reel. So a speed has no number in scope to scale, and the two
+ * runs below are identical character for character rather than merely
+ * equivalent.
+ *
+ * A cue built the way the console builds one, so the payload under test is the
+ * payload that ships.
+ */
+test('every printed figure is the same at a quarter speed and at four times', async () => {
+  await withRun(async (run) => {
+    await run.send('a', OUTBOUND);
+
+    const reel = run.trace.events.map((event) => {
+      const base = { step: event.step, actor: event.actor };
+      if (event.step !== 'stored-at-relay') return base;
+      return {
+        ...base,
+        fields: envelopeFields(event.detail.envelope, event.measures.ciphertextBytes),
+      };
+    });
+    assert.ok(
+      reel.some((cue) => cue.fields),
+      'the recording produced no stored row, so this test compared two reels with no figures in them',
+    );
+
+    /** Play the whole reel at one speed, with the waits under the test's control. */
+    const playAt = (speed) => {
+      let pending = null;
+      const shown = [];
+      const playback = createPlayback({
+        show: (cue) => shown.push(cue),
+        speed,
+        schedule: (fire) => {
+          pending = fire;
+          return () => {
+            pending = null;
+          };
+        },
+      });
+      playback.push(...reel);
+      playback.play();
+      /* Bounded rather than a bare `while`: a reel that rescheduled itself
+         without advancing should fail this test, not hang the suite. */
+      for (let turn = 0; pending && turn < 100; turn += 1) {
+        const fire = pending;
+        pending = null;
+        fire();
+      }
+      return shown;
+    };
+
+    const slow = playAt(MIN_SPEED);
+    const fast = playAt(MAX_SPEED);
+
+    assert.equal(slow.length, reel.length, 'the slow run did not reach the end of the reel');
+    assert.deepEqual(fast, slow, 'the drawing printed different figures at a different speed');
+
+    /* And no number reached the reel to be scaled in the first place, which is
+       the reason the equality above holds rather than a coincidence of it. */
+    for (const cue of slow) {
+      for (const value of [...Object.values(cue), ...(cue.fields ?? [])]) {
+        if (Array.isArray(value)) continue;
+        assert.equal(typeof value, 'string', `a stage cue carried ${JSON.stringify(value)}`);
       }
     }
   });

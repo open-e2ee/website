@@ -2057,6 +2057,323 @@ a:hover {
   fill: var(--oe-muted);
 }
 
+/* ---------------------------------------------------- the demo console --- */
+
+/* The band the homepage gives the demo: its one paragraph of lead, then the
+   console. Not `.stack`, whose `align-items: flex-start` would shrink the
+   console to its content width instead of letting it take the band. */
+.demo-band {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-4);
+}
+
+/*
+ * The demo console: the drawing, a transport under it, and three columns.
+ *
+ * The columns are the two devices with the relay between them, in that order in
+ * the source, so the stacked layout is the source order and needs no `order`
+ * property to produce it. Reading down a narrow screen gives A, then the relay,
+ * then B — the path the message actually takes.
+ *
+ * The controls are `.oe-button` from @open-e2ee/design rather than a set defined
+ * here. There is nothing about a demo control that differs from a control
+ * anywhere else on the site, and a second button style maintained beside the
+ * shipped one is the drift this sheet has paid for before.
+ */
+.demo-console {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-6);
+}
+
+/*
+ * `[hidden]` has to beat the `display` rules below it.
+ *
+ * The relay's row is a grid and its ciphertext is a block, and either
+ * declaration overrides the user agent's `display: none` for the attribute —
+ * so the script would set `hidden` and nothing would disappear. The panel above
+ * carries the same guard for the same reason. Scoped to the console and stated
+ * as `display` alone, so it hides an element without also deciding anything
+ * else about one.
+ */
+.demo-console [hidden] {
+  display: none;
+}
+
+.demo-console-transport {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-3);
+}
+
+.demo-console-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--oe-space-2);
+}
+
+.demo-console-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oe-space-2);
+  font-family: var(--oe-metadata-font-family);
+  font-weight: var(--oe-metadata-weight);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+}
+
+.demo-console-speed select {
+  min-height: var(--oe-control-height-sm);
+  padding: var(--oe-space-1) var(--oe-space-2);
+  border: 1px solid var(--oe-border-control);
+  border-radius: var(--oe-control-radius);
+  background: var(--oe-surface-raised);
+  color: var(--oe-foreground);
+  font: inherit;
+  letter-spacing: normal;
+}
+
+/* The same affordance the shipped button gives, because these controls ship
+   disabled together and one of them looking available would be a lie about
+   which of them can be pressed. */
+.demo-console-speed select:disabled {
+  opacity: var(--oe-button-disabled-opacity);
+  cursor: not-allowed;
+}
+
+.demo-console-note {
+  margin: 0;
+  color: var(--oe-muted);
+}
+
+/* One line of reserved height. The region is empty on arrival and fills on the
+   first action, and without a floor the columns below it would step down the
+   page the first time the console said anything. */
+.demo-console-status {
+  margin: 0;
+  min-height: calc(var(--oe-metadata-size) * 1.5);
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  line-height: 1.5;
+  color: var(--oe-muted);
+}
+
+/*
+ * Three columns above the breakpoint, one below it.
+ *
+ * `minmax(0, 1fr)` rather than `1fr`: a grid track's automatic minimum is the
+ * content's own minimum, and the ciphertext block is a `<pre>` whose minimum is
+ * its longest line. With a bare `1fr` that block sets the width of the whole
+ * column, the row grows past the page, and the document scrolls sideways at
+ * every width. The zero minimum is what lets the block scroll inside itself
+ * instead.
+ */
+.demo-console-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--oe-space-4);
+}
+
+@media (min-width: 48rem) {
+  .demo-console-columns {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.demo-console-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-3);
+  min-width: 0;
+  padding: var(--oe-space-4);
+  border: 1px solid var(--oe-border);
+  border-radius: var(--oe-radius-sm);
+  background: var(--oe-surface);
+}
+
+.demo-console-heading {
+  margin: 0;
+  font-family: var(--oe-metadata-font-family);
+  font-weight: var(--oe-metadata-weight);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+}
+
+/*
+ * The two conversations.
+ *
+ * A floor rather than a fixed height, so an empty conversation holds the shape
+ * the first message will arrive into and the relay's column beside it does not
+ * jump when it does. The list grows past the floor rather than scrolling: the
+ * demo sends a handful of messages, and a scrollbar would hide the one the
+ * reader just sent.
+ */
+.demo-console-conversation {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-2);
+  min-height: 4.5rem;
+}
+
+.demo-console-bubble {
+  padding: var(--oe-space-2) var(--oe-space-3);
+  border: 1px solid var(--oe-border-control);
+  border-radius: var(--oe-radius-sm);
+  background: var(--oe-surface-raised);
+  overflow-wrap: anywhere;
+}
+
+/* A stack rather than a row. The column is a third of the page at the widest
+   layout this has, and three controls side by side in it would wrap into a
+   ragged two lines at most widths rather than at a few. */
+.demo-console-compose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-2);
+}
+
+.demo-console-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-1);
+  min-width: 0;
+}
+
+.demo-console-field-label {
+  font-family: var(--oe-metadata-font-family);
+  font-weight: var(--oe-metadata-weight);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+}
+
+.demo-console-field input {
+  min-width: 0;
+  min-height: var(--oe-control-height-md);
+  padding: var(--oe-space-2) var(--oe-space-3);
+  border: 1px solid var(--oe-border-control);
+  border-radius: var(--oe-control-radius);
+  background: var(--oe-surface-raised);
+  color: var(--oe-foreground);
+  font: inherit;
+}
+
+.demo-console-field input:disabled {
+  opacity: var(--oe-button-disabled-opacity);
+  cursor: not-allowed;
+}
+
+.demo-console-empty {
+  margin: 0;
+  color: var(--oe-muted);
+}
+
+/*
+ * What the relay is holding, as bytes.
+ *
+ * It scrolls on both axes inside its own border: the lines are a fixed width
+ * the script chose, and the height grows with the message. Containing both here
+ * is what the column's zero minimum width above is for.
+ */
+.demo-console-hex {
+  margin: 0;
+  padding: var(--oe-space-2);
+  max-height: 9rem;
+  overflow: auto;
+  border: 1px solid var(--oe-border);
+  border-radius: var(--oe-radius-sm);
+  background: var(--oe-surface-sunken);
+  font-family: var(--oe-font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--oe-muted);
+}
+
+/* Field name against value, read off the envelope. The value track takes a zero
+   minimum for the same reason the column does: a base64 value has no wrapping
+   opportunity in it, and `anywhere` is what gives it one. */
+.demo-console-row {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--oe-space-1) var(--oe-space-3);
+  font-family: var(--oe-font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.demo-console-row dt {
+  color: var(--oe-muted);
+}
+
+.demo-console-row dd {
+  margin: 0;
+  color: var(--oe-foreground);
+  overflow-wrap: anywhere;
+}
+
+.demo-console-row-note {
+  margin: 0;
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  line-height: 1.5;
+  color: var(--oe-muted);
+}
+
+/*
+ * The measurement each column is responsible for.
+ *
+ * `margin-top: auto` puts it against the bottom of its column, and the grid
+ * stretches the three columns to a common height, so the three figures sit on
+ * one line however much conversation is above them. Each carries its own span
+ * in words beside it: two adjacent durations that overlap without saying so
+ * invite exactly one wrong subtraction.
+ */
+.demo-console-metric {
+  margin: 0;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-1);
+}
+
+/* Tabular figures: the number is replaced in place as the run proceeds, and
+   proportional digits would shift the text beside it on every write. */
+.demo-console-metric-value {
+  font-family: var(--oe-font-mono);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--oe-foreground);
+}
+
+.demo-console-metric-label {
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  line-height: 1.5;
+  color: var(--oe-muted);
+}
+
+/*
+ * The recorded capture, which is what the console shows before its script runs
+ * and again if the run could not be brought up. It carries its own panel
+ * styling; all this owes it is the gap that separates it from the columns.
+ */
+.demo-console-recorded {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-3);
+}
+
 /* ------------------------------------------------------------ diagrams --- */
 
 /*

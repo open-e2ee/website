@@ -71,8 +71,7 @@ import { runFlipAByte } from '../src/lib/demo/scenarios/flip-a-byte.ts';
 import { runAddASecondDevice } from '../src/lib/demo/scenarios/add-a-second-device.ts';
 import { runOutOfPreKeys } from '../src/lib/demo/scenarios/run-out-of-prekeys.ts';
 import { reinstallADevice } from '../src/lib/demo/scenarios/reinstall-a-device.ts';
-import { CAPTIONS } from '../src/lib/demo/figure.ts';
-import { hexStrip } from '../src/lib/demo/ciphertext.ts';
+import { STEP_CAPTIONS } from '../src/lib/demo/stage-view.ts';
 import { EVENTS } from '../src/workers/site.ts';
 import {
   Cdp,
@@ -93,34 +92,48 @@ const DIST = join(ROOT, 'dist');
  * cannot break the test, and so that the test states plainly what the demo has
  * to expose.
  */
-const PANEL = '[data-demo="live-carrier-panel"]';
-const INPUT = '[data-demo-input]';
-const SEND = '[data-demo-send]';
-const DECRYPTED = '[data-demo-decrypted]';
-const RECORDED = '[data-demo-recorded]';
-const META = '[data-demo-meta]';
-const CLAIM = '[data-demo-claim]';
-const CIPHER = '[data-demo-cipher]';
-const FALLBACK = '[data-demo-fallback-note]';
+const CONSOLE = '[data-demo="console"]';
+const EXCHANGE = '[data-console-exchange]';
+const INPUT = '[data-console-message]';
+const SEND = '[data-console-send]';
+const STATUS = '[data-console-status]';
+const META = '[data-console-row]';
+const CIPHER = '[data-console-hex]';
+const RELAY_EMPTY = '[data-console-relay-empty]';
+const RECORDED = '[data-console-recorded]';
+
+/* The far device's conversation. A round trip is proved by the sentence
+   appearing in the column that did not type it, which is the whole of what the
+   two-window arrangement used to prove with a second window. */
+const DECRYPTED = '[data-console-conversation="b"]';
+
+/* The names the page is really running the SDK under. Read rather than assumed:
+   the component renders them into the headings and into these attributes from
+   one constant, and the captions below are written in whichever names the run
+   actually used. */
+const NAME_A = 'consoleNameA';
+const NAME_B = 'consoleNameB';
 
 /*
- * The figure beside the panel, on the same terms and for a specific reason.
+ * The drawing above the columns, on the same terms and for a specific reason.
  *
  * Every part of it is drawn at build time and the client module only names the
- * state, so a figure whose script never mounted looks exactly like a figure
- * that mounted and had nothing to report: the whole drawing is on screen either
- * way, in the state the build shipped. There is no error, no gap and no empty
- * box to notice. The module also fails soft on purpose — it looks the figure up
- * by selector and returns quietly if the element is not there, which is right
- * for a page whose evidence is the panel, and which means a renamed attribute
- * silently disconnects the two halves of the stage.
+ * step, so a drawing whose script never mounted looks exactly like one that
+ * mounted and had nothing to report: the whole thing is on screen either way,
+ * in the state the build shipped. There is no error, no gap and no empty box to
+ * notice.
  *
- * So the state and the printed bytes are read here, and the checks hold them
- * against the round trip that just happened in the panel next to it.
+ * So the step and the caption are read here, and the checks hold them against
+ * the round trip that just happened in the columns underneath.
  */
-const FIGURE_STAGE = '[data-figure-stage]';
-const FIGURE_CAPTION = '[data-demo-figure-caption]';
-const FIGURE_HEX_LINE = '[data-figure-hex-line]';
+const FIGURE_STAGE = '[data-demo-stage-figure]';
+const FIGURE_CAPTION = '[data-stage-caption]';
+
+/* The lit part of a ratchet run, read off the rendered box rather than the
+   attribute that asks for it: the ramp is drawn once at build time and revealed
+   a step at a time by CSS, so a run that counted the attribute would pass on a
+   stylesheet that reveals nothing. */
+const FIGURE_STEP = '[data-stage-step]';
 
 /*
  * The state the figure must be in once a sentence has completed a round trip,
@@ -162,52 +175,6 @@ const SCENARIO_RECOVERY = '[data-scenario-recovery]';
 const SCENARIO_LOG_LINE = '[data-scenario-log-line]';
 const SCENARIO_DEVICE = '[data-scenario-device]';
 
-/*
- * The two-tab section's contract, which is not a scenario's.
- *
- * It has no slug, no fragment and no run: it is two windows holding one
- * conversation, so the harness drives two tabs at once and the thing being
- * checked is what each of them sees of the other. The role, the account and
- * the peer are exposed as data because the harness has to know which tab it is
- * looking at, and reading that out of the section's prose would make a copy
- * edit a red run.
- */
-const TWO_TAB_CONNECT = '[data-two-tab-connect]';
-const TWO_TAB_STATUS = '[data-two-tab-status]';
-const TWO_TAB_OUTPUT = '[data-two-tab-output]';
-const TWO_TAB_INPUT = '[data-two-tab-input]';
-const TWO_TAB_SEND = '[data-two-tab-send]';
-const TWO_TAB_LINE = '[data-two-tab-line]';
-const TWO_TAB_DISCONNECT = '[data-two-tab-disconnect]';
-
-/*
- * The link that appears when the pairing press could not open a tab itself.
- *
- * It is also half of this harness's proof that it did not. The press opens the
- * second device in a new tab, gated on `navigator.userActivation`, and a click
- * dispatched from `Runtime.evaluate` carries none — provided nothing trusted
- * ran in the seconds before it, which is a precondition this file has to keep
- * rather than assume (see `type`). A press that did open one leaves the run
- * with a third tab that joins as a second guest on a name of its own, and
- * presence then pairs two of the three; the run goes red somewhere downstream
- * and says a line is missing rather than that a third participant is here.
- *
- * So the reveal is asserted where it happens, next to a count of the browser's
- * pages across the press. The count is the direct evidence and this is the
- * corroborating one: they fail together, and a page that stopped revealing the
- * link at all is caught by this half alone.
- */
-const TWO_TAB_PAIR_LINK = '[data-two-tab-pair-link]';
-
-/* The fragment the pairing control sends the second tab to, and the one that
-   tab acts on. Read out of the panel rather than written here: the panel emits
-   it as an attribute for exactly this reason, so the harness and the page
-   cannot come to hold different fragments. */
-const PAIR_FRAGMENT = `(() => {
-  const panel = document.querySelector('[data-pair-fragment]');
-  return panel ? panel.dataset.pairFragment : null;
-})()`;
-
 /* The beacon a scenario is allowed to send, in full. Same reasoning as
    `DEMO_RUN_BODY`: the body is fixed before the browser starts, so a dimension
    derived from the run — a timing, a byte count, an error code — is a failure
@@ -234,18 +201,6 @@ const PROBE = `Smoke probe ${NONCE}: the staging key rotates at 09:00 UTC.`;
    assertion: a page asked once cannot tell the two apart. */
 const REPEAT_PROBE = `Second probe ${NONCE}: sent again, on a session already warm.`;
 
-/* One sentence per direction through the two-tab section, so the check covers
-   both halves of it: the tab holding the relay sends over its own copy, and
-   the tab without one sends over the channel and back. A section that only
-   ever worked outward would pass a one-way test. */
-const TAB_PROBE = `First tab ${NONCE}: the relay is holding this one.`;
-const TAB_REPLY = `Second tab ${NONCE}: answered from the other window.`;
-/* Sent before anything is paired, so the pairing that follows is a handover
-   from a session that already ran rather than a first boot. That is the order
-   a reader arrives in — type, be convinced, then ask whether the two devices
-   were really separate — and it is the only order that reaches the handover. */
-const TAB_SOLO = `First tab ${NONCE}: typed alone, before any pairing.`;
-
 const DECRYPT_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 30000;
 
@@ -258,45 +213,33 @@ const VIEWPORT = { width: 1280, height: 800 };
  * interaction then pulls about 1790 KB, so the tripwire sits two orders of
  * magnitude below any build that has the SDK on its initial path.
  *
- * The homepage is the page this measures, because it is now the only page with
- * demo code on it. Measured on 2026-08-09, the build directly after `/demo`
- * folded into it: 22.8 KB over eight files. Three of them are the demo's, and
- * they are what moved —
+ * The homepage is the page this measures, because it is the only page with demo
+ * code on it. Measured on 2026-08-10, on the three-column console: 22.2 KB over
+ * seven responses by this harness's own count. Two of the seven are the demo's,
+ * at the sizes the build wrote to disk —
  *
- *   LiveCarrierPanel  4834 B  the panel, already here
- *   ScenarioList      4398 B  the four scenarios, from `/demo`
- *   TwoTabSection     2667 B  the two-tab relay, from `/demo`
+ *   DemoConsole   6170 B  the drawing, the transport and the three columns
+ *   ScenarioList  3672 B  the four scenarios
  *
- * — against 11.2 KB of page furniture that has nothing to do with the demo:
+ * — against the page furniture that has nothing to do with the demo:
  * `theme-init.js`, `measure.js`, the theme toggle, the hero's copy button, and
- * the preload helper Vite splits out for the dynamic imports.
+ * the preload helper Vite splits out for the dynamic imports, 8047 B between
+ * them. The two instruments do not reconcile and are not meant to: the harness
+ * counts what the browser fetched, the breakdown counts what the build emitted.
  *
- * The ceiling moved from 20 KB to 32 KB with the fold, and the reason is worth
- * writing down because "the budget went up when a page got bigger" is the shape
- * of a tripwire being quietly retired. Nothing new runs before a touch: the
- * three demo scripts are the wiring the two old pages already shipped, and four
- * of the five furniture files were on both of them. The hero's copy button is
- * the exception and has always been the homepage's alone.
+ * The ceiling is 32 KB and moved there from 20 KB when `/demo` folded into this
+ * page, which is worth writing down because "the budget went up when a page got
+ * bigger" is the shape of a tripwire being quietly retired. What it has always
+ * been calibrated against is the SDK's 713 KB, and 32 KB is as far below that as
+ * 20 KB was. Nothing that runs before a touch is new: the two demo scripts are
+ * wiring the site already shipped, on one page instead of two.
  *
- * That is not the same as the fold being free, and the comparison worth writing
- * down is the unflattering one. Cold, a reader who wanted both pages fetched 11
- * responses and now fetches 8. Warm — the normal case, because these are hashed
- * assets on a long cache — the two old pages shared everything except their own
- * demo script, so their union was 7 files and 16,915 B against 8 files and
- * 17,888 B here: 973 bytes and one file *more*, not less. The fold is a change
- * to how the site is arranged, not a byte saving, and a reader who had already
- * visited both pages pays slightly for it.
- *
- * What the ceiling has always been calibrated against is the SDK's 713 KB, and
- * 32 KB is as far below that as 20 KB was.
- *
- * One cost is genuinely new, and it is small. Each of the three carries its own
- * `__vite__mapDeps` array naming the SDK chunk graph — 1090, 883 and 882 bytes
- * — because Astro emits one script per component and each dynamic `import()`
- * needs the graph. The site carried two of those before and carries three now,
- * all on one page. It is not worth undoing: merging the wiring back into a
- * single `<script>` would put one component's handler on another component's
- * DOM to save 0.9 KB on a page that spends 1790.
+ * One cost is small and worth naming. Each demo script carries its own
+ * `__vite__mapDeps` array naming the SDK chunk graph, because Astro emits one
+ * script per component and each dynamic `import()` needs the graph. It is not
+ * worth undoing: merging the wiring into a single `<script>` would put one
+ * component's handler on another component's DOM to save under a kilobyte on a
+ * page that spends 1790.
  *
  * What a scenario costs is still about 0.4 KB: one entry in `ScenarioList`'s
  * `PROGRAMS` map, which is two dynamic `import()` specifiers and a status line.
@@ -393,7 +336,7 @@ function findAny(haystack, texts) {
 }
 
 function findProbe(haystack) {
-  const found = findAny(haystack, [PROBE, REPEAT_PROBE, TAB_PROBE, TAB_REPLY]);
+  const found = findAny(haystack, [PROBE, REPEAT_PROBE]);
   if (found) return found;
   /* The nonce alone is enough: nothing else on the site contains it. */
   if (haystack?.includes(NONCE)) return 'nonce fragment';
@@ -505,42 +448,65 @@ const terms = (cdp, sessionId, parts) => async () => {
 const present = (selector) => `Boolean(document.querySelector(${JSON.stringify(selector)}))`;
 
 /*
- * Everything the checks need to read off the panel, in one round trip so that
+ * Everything the checks need to read off the console, in one round trip so that
  * no two assertions can disagree about which moment they are describing.
  *
- * `hidden` alone would not answer the question the invariants ask. A panel
+ * `hidden` alone would not answer the question the invariants ask. An element
  * displayed away in CSS is as gone to a reader as one with the attribute set,
- * and the recorded capture staying on screen is the thing being proved.
+ * and "the relay is holding nothing" is a claim the page makes by showing one
+ * element and not another.
  */
 const SNAPSHOT = `(() => {
-  const panel = document.querySelector(${JSON.stringify(PANEL)});
+  const root = document.querySelector(${JSON.stringify(CONSOLE)});
   const visible = (element) => Boolean(element) && !element.hidden && element.offsetParent !== null;
-  const text = (selector) => panel.querySelector(selector)?.textContent?.trim() ?? '';
+  const text = (selector) => root.querySelector(selector)?.textContent?.trim() ?? '';
+  const said = (selector) =>
+    [...root.querySelectorAll(selector + ' li')].map((item) => item.textContent.trim());
   return {
-    decrypted: text(${JSON.stringify(DECRYPTED)}),
+    names: { a: root.dataset.${NAME_A} ?? '', b: root.dataset.${NAME_B} ?? '' },
+    /* Each column's conversation as its own list. Flattened page text would
+       answer "is the sentence somewhere on the page", which is true the moment
+       it is typed — the claim being checked is that it reached the other one. */
+    sent: said(${JSON.stringify('[data-console-conversation="a"]')}),
+    decrypted: said(${JSON.stringify(DECRYPTED)}).join('\\n'),
     cipher: text(${JSON.stringify(CIPHER)}),
-    fallbackNote: text(${JSON.stringify(FALLBACK)}),
-    fields: [...panel.querySelectorAll(${JSON.stringify(META)} + ' dt')].map((dt) => dt.textContent),
-    values: [...panel.querySelectorAll(${JSON.stringify(META)} + ' dd')].map((dd) => dd.textContent),
-    recordedVisible: visible(panel.querySelector(${JSON.stringify(RECORDED)})),
-    claimVisible: visible(panel.querySelector(${JSON.stringify(CLAIM)})),
+    status: text(${JSON.stringify(STATUS)}),
+    fields: [...root.querySelectorAll(${JSON.stringify(META)} + ' dt')].map((dt) => dt.textContent),
+    values: [...root.querySelectorAll(${JSON.stringify(META)} + ' dd')].map((dd) => dd.textContent),
+    /* The relay's two mutually exclusive states, both read: a page that showed
+       neither would pass a check written against only one of them. */
+    holdingNothing: visible(root.querySelector(${JSON.stringify(RELAY_EMPTY)})),
+    holdingRow: visible(root.querySelector(${JSON.stringify(META)})),
+    /* The recorded capture: what the page shows before its script runs and what
+       it goes back to if the run cannot be brought up. Read as visibility
+       rather than as presence, because it is always in the HTML. */
+    recorded: visible(root.querySelector(${JSON.stringify(RECORDED)})),
     figure: (() => {
       const stage = document.querySelector(${JSON.stringify(FIGURE_STAGE)});
       if (!stage) return null;
+      /*
+       * The drawing ships two whole compositions, wide and stacked, and CSS
+       * shows one. Both carry every ratchet step, so a query across the figure
+       * counts each lit step twice — and would keep passing if the visible
+       * composition lit none of them and the hidden one lit them all.
+       *
+       * The display property of an element inside a hidden subtree computes to
+       * its own value rather than to none, so the filter below cannot find the
+       * boundary by itself. The composition is found first, and everything is
+       * read inside it.
+       */
+      const shown = [...stage.querySelectorAll('svg')].find(
+        (svg) => getComputedStyle(svg).display !== 'none',
+      );
       return {
         state: stage.dataset.stageState ?? null,
+        compositions: stage.querySelectorAll('svg').length,
+        showing: shown ? [...shown.classList].find((name) => name.endsWith('wide') || name.endsWith('stacked')) ?? null : null,
         caption:
           document.querySelector(${JSON.stringify(FIGURE_CAPTION)})?.textContent?.trim() ?? '',
-        hex: [...document.querySelectorAll(${JSON.stringify(FIGURE_HEX_LINE)})]
-          .map((line) => line.textContent.trim())
-          .filter(Boolean),
-        /* Read off the rendered box rather than the attribute that asks for it:
-           the ramp is drawn once at build time and revealed a step at a time by
-           CSS, so a run that counted the attribute would pass on a stylesheet
-           that reveals nothing. */
-        ratchet: [...document.querySelectorAll('[data-figure-step]')]
+        ratchet: [...(shown?.querySelectorAll(${JSON.stringify(FIGURE_STEP)}) ?? [])]
           .filter((step) => getComputedStyle(step).display !== 'none')
-          .map((step) => step.dataset.figureStep),
+          .map((step) => step.dataset.stageStep),
       };
     })(),
   };
@@ -790,8 +756,31 @@ async function openTab(cdp, held, { blocked = [] } = {}) {
 }
 
 /**
- * Load the homepage in a fresh tab, type the probe, press send, and report
- * everything the browser did.
+ * Put a sentence through the composer the way a reader does.
+ *
+ * The field is cleared by hand rather than selected and overtyped: the console
+ * reads `input.value` when send is pressed and nothing else, so this is the same
+ * thing a reader does and two fewer round trips. `Input.insertText` rather than
+ * assigning the value, so the page's own input handling runs.
+ */
+async function type(cdp, sessionId, text) {
+  await evaluate(
+    cdp,
+    sessionId,
+    `(() => {
+       const input = document.querySelector(${JSON.stringify(INPUT)});
+       input.focus();
+       input.value = '';
+     })()`,
+    'demo',
+  );
+  await cdp.send('Input.insertText', { text }, sessionId);
+  await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(SEND)}).click()`, 'demo');
+}
+
+/**
+ * Load the homepage in a fresh tab, exchange keys, type the probe, press send,
+ * and report everything the browser did.
  */
 async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
   const tab = await openTab(cdp, held, { blocked });
@@ -805,44 +794,97 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
     const title = await evaluate(cdp, sessionId, 'document.title');
     if (!title) throw new Infra('the homepage rendered no title — the served build looks wrong');
 
-    if (!(await evaluate(cdp, sessionId, present(PANEL)))) {
+    if (!(await evaluate(cdp, sessionId, present(CONSOLE)))) {
       throw new Red(
-        `no live demo panel on the homepage: nothing matches ${PANEL}.\n` +
+        `no demo console on the homepage: nothing matches ${CONSOLE}.\n` +
           `  The site served and rendered correctly (title: ${JSON.stringify(title)}), so this is\n` +
           `  the demo being absent rather than the harness failing to reach it.`,
       );
     }
     for (const [selector, what] of [
+      [EXCHANGE, 'a control that establishes the session'],
       [INPUT, 'a text input for the reader’s sentence'],
       [SEND, 'a control that sends it'],
-      [DECRYPTED, 'a pane that shows the decrypted result'],
-      [RECORDED, 'the recorded capture it falls back to'],
+      [DECRYPTED, 'a conversation on the far device'],
+      [STATUS, 'a status line to report a failure in'],
+      [FIGURE_STAGE, 'the drawing above the columns'],
     ]) {
       if (!(await evaluate(cdp, sessionId, present(selector)))) {
-        throw new Red(`the demo panel is present but exposes no ${what} (${selector})`);
+        throw new Red(`the demo console is present but exposes no ${what} (${selector})`);
       }
     }
 
-    /* The demo's own claim must not be on screen before there is anything to
-       claim. It says a round trip "ran in this tab", which is false until one
-       has. */
+    /* Read before anything is pressed. The page must not be showing a stored
+       row, a decrypted sentence, or a drawing past `idle` — every one of those
+       is a claim about a run, and no run has happened. */
     const beforeInteraction = await evaluate(cdp, sessionId, SNAPSHOT);
 
     await quiet(IDLE_QUIET_MS, IDLE_MAX_MS);
     const interactedAt = Date.now();
 
-    /* Type as a reader would: focus the field, insert text so the demo's own
-       input handlers run, then press its send control. Focus is also the
-       demo's load trigger, which is why it has to happen after the byte
-       accounting boundary rather than during setup.
+    /*
+     * Press as a reader would, in the order the console requires.
+     *
+     * Key exchange is its own control and the send control stays unavailable
+     * until a session exists, so a harness that went straight for send would
+     * press a disabled button and report the demo as broken. Pressing exchange
+     * first is not the harness being polite about the UI — it is the harness
+     * driving the two steps the page actually has.
+     *
+     * The chunk arrives on this press, which is why it happens after the byte
+     * accounting boundary rather than during setup.
+     *
+     * Blamed on the demo for the same reason as the click: the elements were
+     * there a moment ago, so if they are gone now the demo's own script moved
+     * them, and a demo that re-renders itself out from under the reader is not
+     * an infrastructure fault.
+     */
+    await evaluate(
+      cdp,
+      sessionId,
+      `document.querySelector(${JSON.stringify(EXCHANGE)}).click()`,
+      'demo',
+    );
 
-       Blamed on the demo for the same reason as the click: the elements were
-       there a moment ago, so if they are gone now the demo's own script moved
-       them, and a demo that re-renders its panel out from under the reader is
-       not an infrastructure fault. */
-    await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(INPUT)}).focus()`, 'demo');
-    await cdp.send('Input.insertText', { text: PROBE }, sessionId);
-    await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(SEND)}).click()`, 'demo');
+    /* Either outcome ends the wait: a session, or a status line saying why
+       there is not one. Waiting on the button alone would not distinguish them
+       — `enable()` re-runs on both paths. */
+    await waitFor(
+      cdp,
+      sessionId,
+      `(() => {
+         const root = document.querySelector(${JSON.stringify(CONSOLE)});
+         const send = root.querySelector(${JSON.stringify(SEND)});
+         const status = root.querySelector(${JSON.stringify(STATUS)})?.textContent ?? '';
+         return !send.disabled || /did not finish/.test(status);
+       })()`,
+      DECRYPT_TIMEOUT_MS,
+      `the demo neither established a session nor reported a failure within ` +
+        `${DECRYPT_TIMEOUT_MS} ms of the key exchange being pressed`,
+      () => {
+        const lines = [];
+        if (cspViolations.length) {
+          lines.push(
+            `  The page reported ${cspViolations.length} CSP violation(s), which is the likeliest cause:`,
+            ...cspViolations.map((v) => `    ${v}`),
+          );
+        }
+        if (pageErrors.length) {
+          lines.push(
+            `  The page threw ${pageErrors.length} uncaught error(s):`,
+            ...pageErrors.map((e) => `    ${e.split('\n')[0]}`),
+          );
+        }
+        return lines;
+      },
+    );
+
+    /* What the exchange alone did, before a sentence is typed. The relay has
+       carried two public bundles by now and is still holding no row, which is a
+       claim the page makes and this is where it is true. */
+    const afterExchange = await evaluate(cdp, sessionId, SNAPSHOT);
+
+    await type(cdp, sessionId, PROBE);
 
     /* Either outcome ends the wait. Which one was supposed to happen is the
        caller's business: this pass is the same interaction in both passes, and
@@ -851,10 +893,10 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
       cdp,
       sessionId,
       `(() => {
-         const panel = document.querySelector(${JSON.stringify(PANEL)});
-         const decrypted = panel.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? '';
-         const note = panel.querySelector(${JSON.stringify(FALLBACK)})?.textContent ?? '';
-         return decrypted.length > 0 || note.length > 0;
+         const root = document.querySelector(${JSON.stringify(CONSOLE)});
+         const far = root.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? '';
+         const status = root.querySelector(${JSON.stringify(STATUS)})?.textContent ?? '';
+         return far.length > 0 || /did not finish/.test(status);
        })()`,
       DECRYPT_TIMEOUT_MS,
       `the demo neither decrypted the typed sentence nor reported a failure within ` +
@@ -882,29 +924,15 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
     const afterFirst = await evaluate(cdp, sessionId, SNAPSHOT);
 
     if (repeat) {
-      /* Clearing the field by hand rather than selecting and overtyping: the
-         panel reads `input.value` when send is pressed and nothing else, so
-         this is the same thing a reader does and two fewer CDP round trips. */
-      await evaluate(
-        cdp,
-        sessionId,
-        `(() => {
-           const input = document.querySelector(${JSON.stringify(INPUT)});
-           input.focus();
-           input.value = '';
-         })()`,
-        'demo',
-      );
-      await cdp.send('Input.insertText', { text: REPEAT_PROBE }, sessionId);
-      await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(SEND)}).click()`, 'demo');
+      await type(cdp, sessionId, REPEAT_PROBE);
       await waitFor(
         cdp,
         sessionId,
         `(() => {
-           const panel = document.querySelector(${JSON.stringify(PANEL)});
-           const decrypted = panel.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? '';
-           const note = panel.querySelector(${JSON.stringify(FALLBACK)})?.textContent ?? '';
-           return decrypted.includes(${JSON.stringify(REPEAT_PROBE)}) || note.length > 0;
+           const root = document.querySelector(${JSON.stringify(CONSOLE)});
+           const far = root.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? '';
+           const status = root.querySelector(${JSON.stringify(STATUS)})?.textContent ?? '';
+           return far.includes(${JSON.stringify(REPEAT_PROBE)}) || /did not finish/.test(status);
          })()`,
         DECRYPT_TIMEOUT_MS,
         `the demo returned the first sentence and then never returned the second within ` +
@@ -913,28 +941,28 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
     }
 
     /*
-     * The figure holds each state for a beat so that a reader can see the
-     * sequence, so it is still working through the run when the panel has
-     * finished it. Waiting for its last state rather than sampling whenever the
-     * panel settled is the difference between checking the figure and checking
-     * how fast this machine is.
+     * The drawing replays the recording at a reader's pace, so it is still
+     * working through the run when the columns have finished it. Waiting for its
+     * last step rather than sampling whenever the conversation settled is the
+     * difference between checking the drawing and checking how fast this machine
+     * is.
      *
-     * A missing figure ends the wait rather than exhausting it: the check below
+     * A missing drawing ends the wait rather than exhausting it: the check below
      * has a sentence to say about that, and a timeout would report it as a
-     * figure that never advanced.
+     * drawing that never advanced.
      */
     await waitFor(
       cdp,
       sessionId,
       `(() => {
-         const panel = document.querySelector(${JSON.stringify(PANEL)});
-         const note = panel.querySelector(${JSON.stringify(FALLBACK)})?.textContent ?? '';
-         if (note.length > 0) return true;
+         const root = document.querySelector(${JSON.stringify(CONSOLE)});
+         const status = root.querySelector(${JSON.stringify(STATUS)})?.textContent ?? '';
+         if (/did not finish/.test(status)) return true;
          const stage = document.querySelector(${JSON.stringify(FIGURE_STAGE)});
          return !stage || stage.dataset.stageState === ${JSON.stringify(FIGURE_END_STATE)};
        })()`,
       DECRYPT_TIMEOUT_MS,
-      `the panel completed a round trip and the figure beside it never reached ` +
+      `the columns completed a round trip and the drawing above them never reached ` +
         `${JSON.stringify(FIGURE_END_STATE)} within ${DECRYPT_TIMEOUT_MS} ms`,
     );
 
@@ -948,7 +976,9 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
     const before = scripts.filter((script) => script.at < interactedAt);
     const after = scripts.filter((script) => script.at >= interactedAt);
     return {
+      names: dom.names,
       beforeInteraction,
+      afterExchange,
       afterFirst,
       dom,
       repeated: repeat,
@@ -1140,550 +1170,6 @@ async function visitScenario(cdp, origin, held, slug) {
  * lets the paired pane face the same field-by-field check as the solo one,
  * which is a stricter test than the one this replaced, not a looser one.
  */
-const TWO_TAB_SNAPSHOT = `(() => {
-  const output = document.querySelector(${JSON.stringify(TWO_TAB_OUTPUT)});
-  return {
-    fields: [...document.querySelectorAll(${JSON.stringify(META)} + ' dt')].map(
-      (dt) => dt.textContent,
-    ),
-    values: [...document.querySelectorAll(${JSON.stringify(META)} + ' dd')].map(
-      (dd) => dd.textContent,
-    ),
-    cipher: document.querySelector(${JSON.stringify(CIPHER)})?.textContent ?? '',
-    /* The lane beside this tab's own panel, so a receiving tab's strip can be
-       held against the row that tab is printing. */
-    hex: [...document.querySelectorAll(${JSON.stringify(FIGURE_HEX_LINE)})]
-      .map((line) => line.textContent.trim())
-      .filter(Boolean),
-    status: document.querySelector(${JSON.stringify(TWO_TAB_STATUS)})?.textContent ?? '',
-    /* The other half of the stage, read in the same breath as the status line
-       so the two can be held against each other. They are one account of one
-       session and a run where they disagree is a run telling the reader two
-       different things at once. */
-    figureState:
-      document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.stageState ?? null,
-    figureCaption:
-      document.querySelector(${JSON.stringify(FIGURE_CAPTION)})?.textContent?.trim() ?? '',
-    /* The ratchet run, as the list of lit steps the drawing carries. Its
-       contract is "how many messages this session has carried", and a session
-       here is a pair of tabs — so a count that survived the solo run before it
-       is describing a session that did not exist. */
-    figureRatchet:
-      document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.figureRatchet ?? '',
-    /* Whether a reader who has just been told to open a second tab has
-       anything to press. Either route counts; none is the defect. */
-    pairingOffered: (() => {
-      const shown = (selector) => {
-        const node = document.querySelector(selector);
-        return Boolean(node) && !node.hidden && node.offsetParent !== null;
-      };
-      return (
-        shown(${JSON.stringify(TWO_TAB_CONNECT)}) || shown(${JSON.stringify(TWO_TAB_PAIR_LINK)})
-      );
-    })(),
-    connected: Boolean(output) && !output.hidden,
-    role: output?.dataset.twoTabRole ?? null,
-    me: output?.dataset.twoTabMe ?? null,
-    peer: output?.dataset.twoTabPeer ?? null,
-    lines: [...document.querySelectorAll(${JSON.stringify(TWO_TAB_LINE)})].map(
-      (line) => line.textContent.replace(/\\s+/g, ' ').trim(),
-    ),
-    stopped: output ? 'twoTabStopped' in output.dataset : false,
-    /* Hidden means a window was opened by the press, which this harness must
-       never cause. See TWO_TAB_PAIR_LINK. */
-    pairLinkShown: (() => {
-      const link = document.querySelector(${JSON.stringify(TWO_TAB_PAIR_LINK)});
-      return Boolean(link) && !link.hidden;
-    })(),
-  };
-})()`;
-
-/** True once the connect press has settled, whichever way it went. */
-const TWO_TAB_SETTLED = `(() => {
-  const button = document.querySelector(${JSON.stringify(TWO_TAB_CONNECT)});
-  const output = document.querySelector(${JSON.stringify(TWO_TAB_OUTPUT)});
-  return Boolean(output) && (!output.hidden || (Boolean(button) && !button.disabled));
-})()`;
-
-/* The solo panel has finished its trip: the figure reached the last state and
-   the decrypted pane is holding the sentence that got there. */
-const soloRoundTripDone = `(() => {
-  const stage = document.querySelector(${JSON.stringify(FIGURE_STAGE)});
-  const out = document.querySelector(${JSON.stringify(DECRYPTED)});
-  return Boolean(stage) && stage.dataset.stageState === ${JSON.stringify(FIGURE_END_STATE)} &&
-    Boolean(out) && out.textContent.includes(${JSON.stringify(TAB_SOLO)});
-})()`;
-
-const sawLine = (text) =>
-  `[...document.querySelectorAll(${JSON.stringify(TWO_TAB_LINE)})].some((line) =>
-     line.textContent.includes(${JSON.stringify(text)}))`;
-
-/*
- * True once the arriving tab has settled, whichever way it went.
- *
- * `TWO_TAB_SETTLED` cannot answer for that tab. It treats an enabled connect
- * button as a settled failure, and the arriving tab has one of those from first
- * paint until its own script runs — so a poll landing in that window would read
- * "settled, not connected" and the run would go red saying the page refused to
- * connect, on a page that had not been asked yet.
- *
- * So this waits on the two things that are only ever true afterwards: the
- * conversation block is showing, or the panel has written its own failure. The
- * failure sentence is matched on "could not connect", which is the panel's
- * wording for a boot that threw.
- */
-const TWO_TAB_ARRIVAL_SETTLED = `(() => {
-  const output = document.querySelector(${JSON.stringify(TWO_TAB_OUTPUT)});
-  const status = document.querySelector(${JSON.stringify(TWO_TAB_STATUS)});
-  if (!output) return false;
-  if (!output.hidden) return true;
-  return Boolean(status && status.textContent.includes('could not connect'));
-})()`;
-
-/** True once the disconnect press has settled, whichever way it went. */
-const TWO_TAB_STOP_SETTLED = `(() => {
-  const output = document.querySelector(${JSON.stringify(TWO_TAB_OUTPUT)});
-  const status = document.querySelector(${JSON.stringify(TWO_TAB_STATUS)});
-  if (!output) return false;
-  return 'twoTabStopped' in output.dataset ||
-    Boolean(status && status.textContent.includes('could not close cleanly'));
-})()`;
-
-/**
- * Two tabs of the homepage, one conversation, driven the way a reader would.
- *
- * Strictly sequential, and now for two reasons rather than one.
- *
- * The relay is claimed with a Web Lock, so whichever tab gets there first holds
- * it. Pressing both at once would still work and would make the roles a coin
- * toss, and a check that has to accept either answer cannot say the second tab
- * went through the first one.
- *
- * The second tab is also no longer a tab that presses anything. The reader
- * opens it from the first one, and it arrives on the pairing fragment and
- * connects itself — so this opens it *after* the first tab is already host, and
- * asserts that it became a guest without a press. That ordering is not a
- * convenience here: a second tab that loaded first would win the lock and the
- * first tab's press would find the relay already claimed.
- */
-async function visitTwoTabs(cdp, origin, held) {
-  const tabs = [{ tab: await openTab(cdp, held), what: 'the first tab' }];
-  const first = tabs[0].tab;
-  const read = (tab) => evaluate(cdp, tab.sessionId, TWO_TAB_SNAPSHOT);
-
-  /* Whatever the page reported about itself, on the failure path, so a red run
-     names the browser's complaint rather than only the wait that expired. */
-  const complaints = (tab) => () => {
-    const lines = [];
-    if (tab.cspViolations.length) {
-      lines.push(
-        `  The page reported ${tab.cspViolations.length} CSP violation(s):`,
-        ...tab.cspViolations.map((violation) => `    ${violation}`),
-      );
-    }
-    if (tab.pageErrors.length) {
-      lines.push(
-        `  The page threw ${tab.pageErrors.length} uncaught error(s):`,
-        ...tab.pageErrors.map((error) => `    ${error.split('\n')[0]}`),
-      );
-    }
-    return lines;
-  };
-
-  /*
-   * Type into the composer and press send.
-   *
-   * `Input.insertText` is a trusted input event, and a trusted event hands the
-   * page transient user activation for the next few seconds. After the two tabs
-   * are paired that is free; before them it is a trap. The pairing press below
-   * is a synthetic `.click()`, and a page still holding activation from a
-   * keystroke this harness delivered moments earlier is *right* to open the
-   * second device itself — leaving this run with three participants, the tab
-   * the page opened and the one opened below, and presence pairing the wrong
-   * two of them. It cost an afternoon to find, because the third tab is a guest
-   * like the second and every visible thing about it looks correct.
-   *
-   * So a send made before pairing writes the value rather than typing it. The
-   * composer registers no `input` listener — its only one is on `focus`, which
-   * the line above fires either way — so both paths reach the send handler
-   * having changed exactly the same state.
-   */
-  const type = async (tab, text, { activation = true } = {}) => {
-    await evaluate(
-      cdp,
-      tab.sessionId,
-      `document.querySelector(${JSON.stringify(TWO_TAB_INPUT)}).focus()`,
-      'demo',
-    );
-    if (activation) {
-      await cdp.send('Input.insertText', { text }, tab.sessionId);
-    } else {
-      await evaluate(
-        cdp,
-        tab.sessionId,
-        `document.querySelector(${JSON.stringify(TWO_TAB_INPUT)}).value = ` +
-          `${JSON.stringify(text)}`,
-        'demo',
-      );
-    }
-    await evaluate(
-      cdp,
-      tab.sessionId,
-      `document.querySelector(${JSON.stringify(TWO_TAB_SEND)}).click()`,
-      'demo',
-    );
-  };
-
-  /* How many pages this browser is holding, counted rather than described: the
-     one thing that proves no tab opened itself is that the number did not
-     change. */
-  const pageCount = async () => {
-    const { targetInfos } = await cdp.send('Target.getTargets', {});
-    return targetInfos.filter((target) => target.type === 'page').length;
-  };
-
-  /* The controls the demo has to expose for any of this to be drivable, checked
-     in each tab as it arrives rather than assumed from the other one. */
-  const requireControls = async (tab, what) => {
-    const title = await evaluate(cdp, tab.sessionId, 'document.title');
-    if (!title)
-      throw new Infra(`the homepage rendered no title in ${what} — the build looks wrong`);
-    for (const [selector, describe] of [
-      [TWO_TAB_CONNECT, 'a control that opens the second device'],
-      [TWO_TAB_PAIR_LINK, 'a link to the second device for when a window cannot be opened'],
-      [TWO_TAB_STATUS, 'a status line'],
-      [TWO_TAB_OUTPUT, 'a block naming who this tab is'],
-    ]) {
-      if (!(await evaluate(cdp, tab.sessionId, present(selector)))) {
-        throw new Red(`the demo exposes no ${describe} (${selector}) in ${what}`);
-      }
-    }
-  };
-
-  let second;
-  try {
-    await first.navigate(`${origin}/`, 'the homepage in the first tab');
-    await requireControls(first, 'the first tab');
-
-    /* The fragment the page itself publishes, so the second tab is sent to the
-       destination the pairing control actually produces. A harness that hard-
-       coded it would keep passing after the page changed it, driving a tab that
-       arrived on an ordinary anchor and never connected — which reads as a
-       broken auto-connect rather than as two files disagreeing. */
-    const fragment = await evaluate(cdp, first.sessionId, PAIR_FRAGMENT);
-    if (!fragment) {
-      throw new Red(
-        'the demo panel publishes no pairing fragment (data-pair-fragment), so there is no ' +
-          'destination for the second device and nothing here can know where the page sends it',
-      );
-    }
-
-    /* The accounting boundary, on the tab whose bytes are reported. Nothing
-       this tab fetched before this moment can have been the demo's. */
-    await first.quiet(IDLE_QUIET_MS, IDLE_MAX_MS);
-    const interactedAt = Date.now();
-
-    /*
-     * One solo round trip first, so what follows is a handover.
-     *
-     * The boundary above is drawn before this rather than after it because
-     * typing is a touch: everything this tab fetches from here on was fetched
-     * because the reader did something, which is exactly what the pre-
-     * interaction budget is a claim about.
-     *
-     * This is here to reach a state a fresh pairing cannot. The panel carries
-     * one `announced` flag for "a session has been established", and it used
-     * to survive the handover, so a tab that had typed before pairing skipped
-     * `peer-connected` when the second tab arrived — leaving the caption
-     * saying two devices were up in this tab while the status line said the
-     * other tab was here. Pairing a tab that had never typed passed straight
-     * through that.
-     */
-    await type(first, TAB_SOLO, { activation: false });
-    await waitFor(
-      cdp,
-      first.sessionId,
-      soloRoundTripDone,
-      SCENARIO_TIMEOUT_MS,
-      `the first tab never completed a solo round trip before pairing, within ` +
-        `${SCENARIO_TIMEOUT_MS} ms`,
-      async () => [
-        ...(await terms(cdp, first.sessionId, {
-          "the figure's state": `document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.stageState ?? null`,
-          'the decrypted pane': `document.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? null`,
-          'the sentence it wanted': JSON.stringify(TAB_SOLO),
-        })()),
-        ...complaints(first)(),
-      ],
-    );
-
-    const connected = [];
-
-    /*
-     * The first tab presses, and becomes the host.
-     *
-     * The press is also what would open the second device in a real browser.
-     * Here it must not, and the two assertions below are how this run knows it
-     * did not: the browser is holding no page it was not holding before, and
-     * the page revealed the link instead — see `TWO_TAB_PAIR_LINK`.
-     */
-    const pagesBeforePress = await pageCount();
-    await evaluate(
-      cdp,
-      first.sessionId,
-      `document.querySelector(${JSON.stringify(TWO_TAB_CONNECT)}).click()`,
-      'demo',
-    );
-    await waitFor(
-      cdp,
-      first.sessionId,
-      TWO_TAB_SETTLED,
-      SCENARIO_TIMEOUT_MS,
-      `the first tab neither connected nor reported a failure within ${SCENARIO_TIMEOUT_MS} ms`,
-      complaints(first),
-    );
-    const host = await read(first);
-    if (!host.connected) {
-      throw new Red(
-        `the first tab could not open a device.\n` +
-          `  Its own status line reads: ${JSON.stringify(host.status)}`,
-      );
-    }
-    const pagesAfterPress = await pageCount();
-    if (pagesAfterPress !== pagesBeforePress) {
-      throw new Red(
-        `the first tab's pairing press opened ${pagesAfterPress - pagesBeforePress} page(s): ` +
-          `this browser held ${pagesBeforePress} before it and ${pagesAfterPress} after.\n` +
-          `  This run is now describing three tabs rather than two. The third is a guest exactly\n` +
-          `  like the second, so nothing about it looks wrong — it simply joins, and presence\n` +
-          `  pairs two of the three while the fourth-wall assertions below go on passing.\n` +
-          `  A press opens a window only with user activation, and this harness must never carry\n` +
-          `  any: check what ran before the press for a trusted Input event (see \`type\`), and do\n` +
-          `  not relax this count — a run that tolerates a third participant is not checking the\n` +
-          `  thing it claims to.`,
-      );
-    }
-    if (!host.pairLinkShown) {
-      throw new Red(
-        `the first tab's pairing press opened a window instead of revealing ` +
-          `${TWO_TAB_PAIR_LINK}.\n` +
-          `  A click dispatched by this harness carries no user activation unless something\n` +
-          `  trusted ran just before it, so the page must not have opened a window here — and if\n` +
-          `  it did, this run is describing three tabs rather than two, with the third joining as\n` +
-          `  a second guest and presence pairing two of the three. Restore the activation gate in\n` +
-          `  LiveCarrierPanel.astro rather than relaxing this check — a run that tolerates a\n` +
-          `  third participant is not checking the thing it claims to.`,
-      );
-    }
-    connected.push(host);
-
-    /*
-     * The second tab is opened the way the reader's browser would open it, on
-     * the fragment the first tab's control produces, and connects itself.
-     *
-     * Nothing here presses anything, which makes this the stronger check: the
-     * arriving tab has to detect the fragment, boot its own client, lose the
-     * lock election to the tab that already holds it, and come up as a guest,
-     * with no help from the harness at all.
-     */
-    second = await openTab(cdp, held);
-    tabs.push({ tab: second, what: 'the second tab' });
-    await second.navigate(`${origin}/#${fragment}`, 'the pairing link in the second tab');
-    await requireControls(second, 'the second tab');
-    await waitFor(
-      cdp,
-      second.sessionId,
-      TWO_TAB_ARRIVAL_SETTLED,
-      SCENARIO_TIMEOUT_MS,
-      `the second tab neither connected on arrival nor reported a failure within ` +
-        `${SCENARIO_TIMEOUT_MS} ms — a tab opened on /#${fragment} is supposed to join by ` +
-        `itself, with nothing pressed`,
-      complaints(second),
-    );
-    const guest = await read(second);
-    if (!guest.connected) {
-      throw new Red(
-        `the second tab did not join on arrival at /#${fragment}.\n` +
-          `  Its own status line reads: ${JSON.stringify(guest.status)}`,
-      );
-    }
-    connected.push(guest);
-
-    /*
-     * The handover, read on the tab that performed it and before anything else
-     * touches the stage.
-     *
-     * The first tab has now run a solo session and taken on a paired one. Both
-     * halves of its stage are describing that, and this is the only moment they
-     * can be compared: the next line types, and typing moves the figure on.
-     */
-    await waitFor(
-      cdp,
-      first.sessionId,
-      `(document.querySelector(${JSON.stringify(TWO_TAB_STATUS)})?.textContent ?? '')
-         .includes(${JSON.stringify(guest.me)})`,
-      SCENARIO_TIMEOUT_MS,
-      `the first tab never named the second one on its status line within ` +
-        `${SCENARIO_TIMEOUT_MS} ms, though the second reported itself connected`,
-      complaints(first),
-    );
-    /*
-     * Waited for rather than sampled.
-     *
-     * `figure.ts` holds each state for `MIN_DWELL_MS` before it renders the
-     * next, so the status line naming the second tab and the drawing agreeing
-     * with it are not the same instant — on a busy browser they were a second
-     * apart. The first shape of this check sampled instead: it polled until the
-     * state stopped changing and read whatever was there. That looks stricter
-     * and is weaker, because a dwell gap is indistinguishable from a settled
-     * figure, and it reported "still on devices-ready" on a run whose figure
-     * reached `peer-connected` a moment later.
-     *
-     * Waiting for the value is not waiting until the assertion cannot fail:
-     * the claim R3-3 makes is that the handover *reaches* this state, and a
-     * handover that suppresses it as old news never arrives here at all.
-     */
-    await waitFor(
-      cdp,
-      first.sessionId,
-      `document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.stageState === ` +
-        `'peer-connected'`,
-      SCENARIO_TIMEOUT_MS,
-      `the first tab's status line named ${JSON.stringify(guest.me)}, but its figure never ` +
-        `reached "peer-connected" within ${SCENARIO_TIMEOUT_MS} ms.\n` +
-        `  The two halves of the stage are describing different sessions. This tab typed once\n` +
-        `  before pairing, and the flag that says "a session has been established" has to be\n` +
-        `  cleared by the handover — the paired session has established nothing yet — or the\n` +
-        `  arrival of the second tab is suppressed as old news.`,
-      complaints(first),
-    );
-    const handover = await read(first);
-
-    await type(first, TAB_PROBE);
-    await waitFor(
-      cdp,
-      second.sessionId,
-      sawLine(TAB_PROBE),
-      SCENARIO_TIMEOUT_MS,
-      `the second tab never showed the sentence the first tab sent, within ` +
-        `${SCENARIO_TIMEOUT_MS} ms`,
-      complaints(second),
-    );
-
-    await type(second, TAB_REPLY);
-    await waitFor(
-      cdp,
-      first.sessionId,
-      sawLine(TAB_REPLY),
-      SCENARIO_TIMEOUT_MS,
-      `the first tab never showed the sentence the second tab sent back, within ` +
-        `${SCENARIO_TIMEOUT_MS} ms`,
-      complaints(first),
-    );
-
-    const wentQuiet = (await first.quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS)) &&
-      (await second.quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS));
-    for (const { tab } of tabs) await tab.fillPostData();
-
-    const before = first.scripts.filter((script) => script.at < interactedAt);
-    const after = first.scripts.filter((script) => script.at >= interactedAt);
-    const ended = [await read(first), await read(second)];
-
-    /*
-     * Both tabs leave, and both have to manage it.
-     *
-     * This is the only place anything on this site calls `stop()`, and it is
-     * the one call that catches a relay whose `subscribe()` or
-     * `subscribeRetryRequests()` returned a promise instead of a function:
-     * every send, every delivery and every decryption works, and teardown
-     * throws `this.relayUnsubscribe is not a function`. A round trip on its
-     * own would have passed the whole way through that.
-     *
-     * The guest goes first. The host holds the relay, so stopping it first
-     * would strand the other tab and the failure would be about ordering here
-     * rather than about the page.
-     */
-    const stopped = [];
-    /* What the host is left holding once the guest has gone and before it
-       stops itself — the state a reader who reloaded their second tab is
-       actually sitting in front of. Filled by the first pass below. */
-    let bereft = null;
-    for (const [tab, what] of [
-      [second, 'the second tab'],
-      [first, 'the first tab'],
-    ]) {
-      if (!(await evaluate(cdp, tab.sessionId, present(TWO_TAB_DISCONNECT)))) {
-        throw new Red(
-          `${what} offers no way to disconnect (${TWO_TAB_DISCONNECT}), so nothing on this ` +
-            `site ever calls stop() and a teardown fault would ship unseen`,
-        );
-      }
-      await evaluate(
-        cdp,
-        tab.sessionId,
-        `document.querySelector(${JSON.stringify(TWO_TAB_DISCONNECT)}).click()`,
-        'demo',
-      );
-      await waitFor(
-        cdp,
-        tab.sessionId,
-        TWO_TAB_STOP_SETTLED,
-        SCENARIO_TIMEOUT_MS,
-        `${what} neither finished disconnecting nor reported a failure within ` +
-          `${SCENARIO_TIMEOUT_MS} ms`,
-        complaints(tab),
-      );
-      const state = await read(tab);
-      if (!state.stopped) {
-        throw new Red(
-          `${what} could not shut its client down.\n` +
-            `  Its own status line reads: ${JSON.stringify(state.status)}\n` +
-            `  A "not a function" here is almost always a subscription: both subscribe() and\n` +
-            `  subscribeRetryRequests() on the demo relay must return the unsubscribe function\n` +
-            `  itself, never a promise of one. Note that the name in that message is minified in\n` +
-            `  a production build — the envelope one reports as a single mangled letter — so the\n` +
-            `  message tells you the shape of the fault and not which of the two it was.`,
-        );
-      }
-      stopped.push(state);
-
-      if (tab === second) {
-        /* Waited on the status line rather than on the control, because the
-           control is the thing under test: a run that waited for it would
-           report a timeout where it should report what the page is showing. */
-        await waitFor(
-          cdp,
-          first.sessionId,
-          `!(document.querySelector(${JSON.stringify(TWO_TAB_STATUS)})?.textContent ?? '')
-             .includes(${JSON.stringify(guest.me)})`,
-          SCENARIO_TIMEOUT_MS,
-          `the first tab never noticed the second one leaving, within ${SCENARIO_TIMEOUT_MS} ms`,
-          complaints(first),
-        );
-        bereft = await read(first);
-      }
-    }
-
-    return {
-      connected,
-      handover,
-      bereft,
-      ended,
-      stopped,
-      requests: [...first.requests, ...second.requests],
-      cspViolations: [...first.cspViolations, ...second.cspViolations],
-      pageErrors: [...first.pageErrors, ...second.pageErrors],
-      wentQuiet,
-      before,
-      after,
-      bytesBefore: before.reduce((sum, script) => sum + script.bytes, 0),
-      bytesAfter: after.reduce((sum, script) => sum + script.bytes, 0),
-    };
-  } finally {
-    for (const { tab } of tabs) tab.off();
-  }
-}
-
 // ----------------------------------------------------------------- the verdict
 
 /*
@@ -1710,14 +1196,14 @@ async function visitTwoTabs(cdp, origin, held) {
  * at the source, and `tests/demo-panel.test.mjs` is where that happens.
  */
 async function expectedFields(envelopeFields) {
-  const panelSource = await readFile(
-    new URL('../src/components/demo/LiveCarrierPanel.astro', import.meta.url),
+  const consoleSource = await readFile(
+    new URL('../src/components/demo/DemoConsole.astro', import.meta.url),
     'utf8',
   );
-  const declared = panelSource.match(/HELD_BACK = new Set\(\[([^\]]*)\]\)/s)?.[1];
+  const declared = consoleSource.match(/HELD_BACK = new Set\(\[([^\]]*)\]\)/s)?.[1];
   if (declared === undefined) {
     throw new Infra(
-      'could not read HELD_BACK out of LiveCarrierPanel.astro, so this run cannot tell a ' +
+      'could not read HELD_BACK out of DemoConsole.astro, so this run cannot tell a ' +
         'deliberately withheld field from a missing one',
     );
   }
@@ -1735,7 +1221,7 @@ async function expectedFields(envelopeFields) {
   for (const field of heldBack) {
     if (!envelopeFields.has(field)) {
       throw new Infra(
-        `the panel withholds "${field}", which the installed SDK does not declare on Envelope — ` +
+        `the console withholds "${field}", which the installed SDK does not declare on Envelope — ` +
           `the exclusion is stale and this run would expect the wrong set`,
       );
     }
@@ -1809,33 +1295,84 @@ function checkBeacons(pass) {
 }
 
 function checkRoundTrip(pass, origin, envelopeFields, expected) {
-  if (pass.beforeInteraction.claimVisible) {
+  /*
+   * Nothing may be claimed before anything has run.
+   *
+   * Three separate claims, and all three are checked, because the console can
+   * make any one of them without the others: a drawing past `idle` says a
+   * protocol step happened, a stored row says the relay took an envelope, and a
+   * sentence in either column says a device holds one. The page ships with the
+   * drawing complete in its HTML, so the first of these is the one a build could
+   * get wrong without anyone noticing.
+   */
+  const before = pass.beforeInteraction;
+  if (before.figure && before.figure.state !== 'idle') {
     throw new Red(
-      'the page claimed "that ran in this tab" before anything had run in this tab',
+      `the drawing was showing "${before.figure.state}" before anything had been pressed — ` +
+        `the shipped HTML is claiming a protocol step that has not happened`,
+    );
+  }
+  if (!before.holdingNothing || before.holdingRow) {
+    throw new Red(
+      'the relay column was showing a stored row before anything had been sent',
+    );
+  }
+  if (before.sent.length || before.decrypted) {
+    throw new Red(
+      `a conversation had a sentence in it before anything had been typed:\n` +
+        `  ${pass.names.a}: ${before.sent.join(' / ') || '(nothing)'}\n` +
+        `  ${pass.names.b}: ${before.decrypted || '(nothing)'}`,
+    );
+  }
+  /* The recorded capture is for the reader who cannot run the demo. This reader
+     can, and the script has already said so by enabling the controls, so a
+     recording still on screen would put a round trip from another machine
+     underneath a live one and leave the reader to work out which is which. */
+  if (before.recorded) {
+    throw new Red(
+      'the console is interactive and the recorded capture is still on the page, so two round ' +
+        'trips are showing at once and only one of them happened in this tab',
     );
   }
 
-  if (pass.dom.fallbackNote) {
-    throw new Red(`the demo fell back to the recording: ${pass.dom.fallbackNote}`);
+  /* The key exchange is a real step and it is not a send. Public bundles went
+     through the relay, and the relay is still holding no message — which is the
+     distinction the console gives its own control to make. */
+  if (pass.afterExchange.holdingRow) {
+    throw new Red(
+      'the key exchange alone put a stored row in the relay column — the exchange is being ' +
+        'drawn as a message, or the send ran without being pressed',
+    );
+  }
+
+  if (/did not finish/.test(pass.dom.status)) {
+    throw new Red(`the demo reported a failure: ${pass.dom.status}`);
   }
   if (!pass.afterFirst.decrypted.includes(PROBE)) {
     throw new Red(
-      `the typed sentence did not come back:\n  sent:      ${PROBE}\n` +
-        `  decrypted: ${pass.afterFirst.decrypted || '(nothing)'}`,
+      `the typed sentence did not reach the far device:\n  sent:      ${PROBE}\n` +
+        `  ${pass.names.b} has: ${pass.afterFirst.decrypted || '(nothing)'}`,
     );
   }
   if (pass.repeated && !pass.dom.decrypted.includes(REPEAT_PROBE)) {
     throw new Red(
       `the demo returned the first sentence and not the second. The session was already warm ` +
         `and the ratchet had moved on:\n  sent:      ${REPEAT_PROBE}\n` +
-        `  decrypted: ${pass.dom.decrypted || '(nothing)'}`,
+        `  ${pass.names.b} has: ${pass.dom.decrypted || '(nothing)'}`,
     );
   }
-  if (pass.dom.recordedVisible) {
-    throw new Red('the live demo ran and the recorded capture is still on screen beside it');
+  /* The sending device kept its own copy, which is what makes the far column a
+     round trip rather than the only place the sentence was ever rendered. */
+  if (!pass.dom.sent.some((line) => line.includes(PROBE))) {
+    throw new Red(
+      `the far device has the sentence and the device that typed it does not:\n` +
+        `  ${pass.names.a}: ${pass.dom.sent.join(' / ') || '(nothing)'}`,
+    );
   }
-  if (!pass.dom.claimVisible) {
-    throw new Red('the demo round-tripped a sentence and never showed the claim about it');
+  if (!pass.dom.holdingRow || pass.dom.holdingNothing) {
+    throw new Red(
+      'a sentence completed a round trip and the relay column still says it is holding nothing',
+    );
   }
 
   const carried = leaks(pass.requests, findProbe);
@@ -1967,71 +1504,90 @@ function checkFigure(pass) {
   const figure = pass.dom.figure;
   if (!figure) {
     throw new Red(
-      `the panel completed a round trip and ${FIGURE_STAGE} matched nothing on the page — the ` +
-        `stage shipped its left half only`,
+      `the columns completed a round trip and ${FIGURE_STAGE} matched nothing on the page — the ` +
+        `demo shipped without its drawing`,
+    );
+  }
+  /* Both compositions ship, and exactly one is on screen. A build that emitted
+     one, or a stylesheet that showed both, is invisible to every other check
+     here: the ratchet read is scoped to whichever is showing, so it would go on
+     passing against the wrong one. */
+  if (figure.compositions !== 2) {
+    throw new Red(
+      `the drawing shipped ${figure.compositions} composition(s) rather than the wide and ` +
+        `stacked pair the layout switches between`,
+    );
+  }
+  if (!figure.showing) {
+    throw new Red(
+      'both of the drawing\'s compositions are hidden — the viewport matched neither the wide ' +
+        'rule nor the stacked one, so the reader sees no drawing at all',
     );
   }
   if (figure.state !== FIGURE_END_STATE) {
     throw new Red(
-      `the panel decrypted the sentence and the figure beside it is showing ` +
+      `the far device decrypted the sentence and the drawing above it is showing ` +
         `${figure.state ? `"${figure.state}"` : 'no state at all'} rather than ` +
-        `"${FIGURE_END_STATE}" — the two halves of the stage are describing different runs`,
+        `"${FIGURE_END_STATE}" — the drawing and the columns are describing different runs`,
     );
   }
 
-  /* The caption is the whole of the figure for a screen reader: the drawing is
-     aria-hidden, and this line is the live region that replaces it. Held
-     against the module's own list so that a state reached without its caption
-     following is a failure rather than a silent blank. */
-  const expectedCaption = CAPTIONS[FIGURE_END_STATE];
+  /*
+   * The caption is the whole of the drawing for a screen reader: both
+   * compositions are aria-hidden, and this line is the live region that replaces
+   * them. Held against the module's own list so that a step reached without its
+   * caption following is a failure rather than a silent blank.
+   *
+   * The names are substituted from the attributes the page is really running
+   * under rather than from a pair written here, because that is what the module
+   * does — a caption naming an account the run did not use is the failure this
+   * would otherwise hide.
+   */
+  const expectedCaption = STEP_CAPTIONS[FIGURE_END_STATE]
+    .replace(/\{from\}/g, pass.names.a)
+    .replace(/\{to\}/g, pass.names.b);
   if (figure.caption !== expectedCaption) {
     throw new Red(
-      `the figure reached "${FIGURE_END_STATE}" and the caption under it reads something else:\n` +
+      `the drawing reached "${FIGURE_END_STATE}" and the caption under it reads something else:\n` +
         `  on screen: ${figure.caption || '(nothing)'}\n  expected:  ${expectedCaption}`,
     );
   }
 
-  /* Invariant 4 again, on the other half of the stage. The relay lane prints
-     bytes, and bytes drawn rather than read are the exact thing this page says
-     it does not do — so they have to be the ciphertext of the envelope the
-     panel printed beside them, decoded from its own base64 here. */
-  const strip = figure.hex.join(' ').split(/\s+/).filter(Boolean);
+  /* Invariant 4, on the bytes. The relay column prints the ciphertext it is
+     holding, and bytes drawn rather than read are the exact thing this page says
+     it does not do — so they have to be well-formed, and they have to not be the
+     sentence. */
+  const strip = pass.dom.cipher.split(/\s+/).filter(Boolean);
   if (strip.length === 0) {
     throw new Red(
-      'the figure reached the relay lane and printed no bytes in it — the hex strip is empty ' +
-        'after a real envelope went past it',
+      'the relay column printed no bytes — the hex strip is empty after a real envelope went ' +
+        'through it',
     );
   }
   const malformed = strip.filter((byte) => !/^[0-9a-f]{2}$/.test(byte));
   if (malformed.length) {
     throw new Red(
-      `the figure's byte strip is not bytes: ${malformed.slice(0, 6).join(' ')}${
+      `the relay column's byte strip is not bytes: ${malformed.slice(0, 6).join(' ')}${
         malformed.length > 6 ? ' …' : ''
       }`,
     );
   }
   /*
-   * The same bytes, reached from the panel's own text.
+   * Decoded, the strip must not be the sentence.
    *
-   * `hexStrip` is the function the figure ran, imported rather than reimplemented
-   * — the alternative is a second copy of the peel and the offset in the file
-   * whose job is to disagree with the first one. What makes this a check rather
-   * than a tautology is the input: the figure was handed `envelope.ciphertext`
-   * by the SDK, and this is handed the excerpt the panel printed on screen. If
-   * the lane were drawing bytes from anywhere but the row beside it, the two
-   * would not meet.
-   *
-   * The excerpt is enough. The panel prints 420 characters of the outer
-   * document, which peel to 234 real bytes, and the strip's window ends at 178.
+   * This is the claim the column exists to make, checked rather than asserted: a
+   * page that printed the plaintext as hex would satisfy every shape test above
+   * and be exactly the demo this site says it is not. Latin-1 rather than UTF-8
+   * because the strip is a window into the middle of a document and may cut a
+   * multi-byte character in half — decoding byte for byte cannot throw, and a
+   * sentence of ASCII would still be plainly there.
    */
-  const printed = hexStrip(pass.dom.cipher.replace(/[^A-Za-z0-9+/=]/g, ''))
-    .join(' ')
-    .split(/\s+/)
-    .filter(Boolean);
-  if (strip.join(' ') !== printed.join(' ')) {
+  const decoded = Buffer.from(strip.join(''), 'hex').toString('latin1');
+  const leaked = findProbe(decoded);
+  if (leaked) {
     throw new Red(
-      `the figure's byte strip is not the ciphertext the panel printed beside it:\n` +
-        `  in the figure: ${strip.join(' ')}\n  in the panel:  ${printed.join(' ') || '(nothing)'}`,
+      `the bytes the relay column printed decode to the sentence itself (${leaked}) — the strip ` +
+        `is not ciphertext`,
     );
   }
 }
@@ -2054,132 +1610,6 @@ function checkFigure(pass) {
  * Then each tab's own strip against its own pane, which is what makes the lane
  * evidence rather than decoration on the receiving side too.
  */
-/*
- * The stage's two halves, told to agree at the moment they are most likely not
- * to, and a departure told to leave a way back.
- *
- * Both of these are states rather than transitions, which is why they get their
- * own function: they are read once, at a moment the rest of the run walks
- * straight past, and neither is visible to a scanner reading the source. The
- * figure caption and the status line are separate elements written by separate
- * code paths, and a source scan can only prove that both paths exist.
- */
-function checkPairingLifecycle(handover, bereft, guestName) {
-  if (handover.figureState !== 'peer-connected') {
-    throw new Red(
-      `the first tab's status line says ${JSON.stringify(guestName)} has arrived, but its ` +
-        `figure is still on ${JSON.stringify(handover.figureState)}.\n` +
-        `  Its caption reads:     ${JSON.stringify(handover.figureCaption)}\n` +
-        `  Its status line reads: ${JSON.stringify(handover.status)}\n` +
-        `  The two halves of the stage are describing different sessions. This tab typed once\n` +
-        `  before pairing, and the flag that says "a session has been established" has to be\n` +
-        `  cleared by the handover — the paired session has established nothing yet — or the\n` +
-        `  arrival of the second tab is suppressed as old news.`,
-    );
-  }
-  const expected = CAPTIONS['peer-connected'];
-  if (handover.figureCaption !== expected) {
-    throw new Red(
-      `the first tab's figure reached "peer-connected" with the wrong caption under it.\n` +
-        `  It reads:    ${JSON.stringify(handover.figureCaption)}\n` +
-        `  It should be ${JSON.stringify(expected)}`,
-    );
-  }
-
-  /*
-   * The ratchet run belongs to the session under it, and a handover is a new
-   * session.
-   *
-   * `figure.ts` calls this "how many messages this session has carried". The
-   * counter behind it lived on the panel and spanned everything the tab had
-   * ever done, so the solo round trip this run makes before it pairs left a
-   * step lit under a pairing that had carried nothing — and a peer that
-   * reloaded, which comes back under a new name, went on adding to the run of
-   * the session it replaced. Both are the same seam: the moment this tab
-   * learns what the other one is called.
-   *
-   * Empty rather than a number, because the drawing lights steps by listing
-   * them. Both halves are checked: cleared when the peer is met, and counting
-   * again afterwards — a reset that never counted again would pass the first.
-   */
-  if (handover.figureRatchet !== '') {
-    throw new Red(
-      `the pairing inherited the solo run's ratchet: the figure lit ` +
-        `${JSON.stringify(handover.figureRatchet)} at the handover, before the two tabs had ` +
-        `exchanged anything.\n` +
-        `  The run says how many messages this session has carried, and this session had just\n` +
-        `  begun. Clear the count where the peer is learned rather than where the panel boots —\n` +
-        `  the same seam a reloaded tab comes back through, under a new name.`,
-    );
-  }
-  const carried = '1 2';
-  if (bereft.figureRatchet !== carried) {
-    throw new Red(
-      `the paired session carried two messages — one sent, one received — and the figure lit ` +
-        `${JSON.stringify(bereft.figureRatchet)} rather than ${JSON.stringify(carried)}.\n` +
-        `  Fewer means the run stopped following the conversation; more means it is still\n` +
-        `  counting something from before the two tabs met.`,
-    );
-  }
-
-  if (!bereft.pairingOffered) {
-    throw new Red(
-      `the second tab left, and the first tab offers nothing to open another one.\n` +
-        `  Its status line reads: ${JSON.stringify(bereft.status)}\n` +
-        `  That line tells the reader to open a second tab again, and neither the pairing\n` +
-        `  button nor the fallback link is on screen to do it with. A reload of the second tab\n` +
-        `  is an ordinary accident; it must not be the end of the demo. Restore the control on\n` +
-        `  departure rather than relaxing this — the instruction and the affordance are one\n` +
-        `  claim, and a run where only the sentence survives is the defect.`,
-    );
-  }
-}
-
-function checkTwoTabRelayView(first, second) {
-  const cipherOf = (side, ended) => {
-    const text = (ended.cipher ?? '').replace(/[^A-Za-z0-9+/=]/g, '');
-    if (text.length === 0) {
-      throw new Red(
-        `the ${side} tab printed no ciphertext in its relay pane after the conversation, so ` +
-          `there is no row on screen to check`,
-      );
-    }
-    return text;
-  };
-  const firstCipher = cipherOf('first', first);
-  const secondCipher = cipherOf('second', second);
-  if (firstCipher !== secondCipher) {
-    throw new Red(
-      'the two tabs are looking at different rows after the last message, so at least one of ' +
-        'them is not showing the row the relay most recently took:\n' +
-        `  first tab:  ${firstCipher.slice(0, 48)}…\n` +
-        `  second tab: ${secondCipher.slice(0, 48)}…\n` +
-        '  the reply was the last thing stored, so both panes have to be on it — a tab that ' +
-        'watches\n  only its own sends stays on the row it sent instead',
-    );
-  }
-
-  for (const [side, ended] of [
-    ['first', first],
-    ['second', second],
-  ]) {
-    const strip = (ended.hex ?? []).join(' ').split(/\s+/).filter(Boolean);
-    if (strip.length === 0) {
-      throw new Red(
-        `the ${side} tab's figure printed no bytes in its relay lane, with a row on screen ` +
-          `beside it`,
-      );
-    }
-    const printed = hexStrip(cipherOf(side, ended)).join(' ').split(/\s+/).filter(Boolean);
-    if (strip.join(' ') !== printed.join(' ')) {
-      throw new Red(
-        `the ${side} tab's byte strip is not the ciphertext of the row in its own pane:\n` +
-          `  in the figure: ${strip.join(' ')}\n  in the panel:  ${printed.join(' ') || '(nothing)'}`,
-      );
-    }
-  }
-}
-
 /*
  * Two sends, two different strips.
  *
@@ -2208,32 +1638,36 @@ function checkFigureMoves(first, second) {
   const litAfter = second.figure?.ratchet ?? [];
   if (litAfter.length <= litBefore.length) {
     throw new Red(
-      'the figure sent two messages and its ratchet did not advance — ' +
+      'the drawing sent two messages and its ratchet did not advance — ' +
         `${litBefore.length} step(s) lit after the first, ${litAfter.length} after the second\n` +
         '  the ramp is drawn at build time and revealed by the ' +
-        "[data-figure-ratchet~='N'] rules in global.css, driven by figure.ratchet()",
+        "[data-stage-ratchet-a~='N'] rules in global.css, driven by the cue's ratchet counts",
     );
   }
-  const expected = litAfter.map((_, index) => String(index + 1)).join(' ');
-  if (litAfter.join(' ') !== expected) {
+  /* Two runs, one per device, and the read is scoped to the composition on
+     screen — so each step number appears once per side and the sorted set of
+     numbers is what a ramp reading left to right must produce. */
+  const rungs = [...new Set(litAfter)].sort();
+  const expected = rungs.map((_, index) => String(index + 1));
+  if (rungs.join(' ') !== expected.join(' ')) {
     throw new Red(
-      `the figure's ratchet lit steps out of order: ${litAfter.join(' ') || '(none)'} — ` +
-        `a ramp reads left to right, so ${litAfter.length} message(s) light ${expected}`,
+      `the drawing's ratchet lit steps out of order: ${rungs.join(' ') || '(none)'} — ` +
+        `a ramp reads from its start, so ${rungs.length} lit step(s) are ${expected.join(' ')}`,
     );
   }
 
-  const before = (first.figure?.hex ?? []).join(' ').trim();
-  const after = (second.figure?.hex ?? []).join(' ').trim();
+  const before = first.cipher.trim();
+  const after = second.cipher.trim();
   if (before.length === 0 || after.length === 0) {
     throw new Red(
-      'the figure printed no bytes on one of two sends, so there is nothing to compare — ' +
+      'the relay column printed no bytes on one of two sends, so there is nothing to compare — ' +
         `first "${before}", second "${after}"`,
     );
   }
   if (before === after) {
     throw new Red(
-      'the figure printed the same bytes for two different messages, so the relay lane is ' +
-        'showing a constant rather than this envelope:\n' +
+      'the relay column printed the same bytes for two different messages, so it is showing a ' +
+        'constant rather than this envelope:\n' +
         `  both sends: ${before}\n` +
         '  the strip is sampled from a stretch of the envelope that no longer varies per ' +
         'message — HEX_OFFSET in src/lib/demo/ciphertext.ts is the measurement that moved',
@@ -2242,32 +1676,44 @@ function checkFigureMoves(first, second) {
 }
 
 function checkFallback(pass) {
-  if (pass.dom.decrypted) {
+  if (pass.dom.decrypted || pass.dom.sent.length) {
     throw new Red(
-      `every chunk the demo asked for was blocked and it printed "${pass.dom.decrypted}" anyway`,
+      `every chunk the demo asked for was blocked and a conversation filled anyway:\n` +
+        `  ${pass.names.a}: ${pass.dom.sent.join(' / ') || '(nothing)'}\n` +
+        `  ${pass.names.b}: ${pass.dom.decrypted || '(nothing)'}`,
     );
   }
-  if (!pass.dom.recordedVisible) {
+  if (pass.dom.holdingRow || !pass.dom.holdingNothing) {
     throw new Red(
-      'the chunk never came and the recorded capture was taken off screen anyway — ' +
-        'invariant 6 requires it to stay as the load-failure state',
+      'every chunk the demo asked for was blocked and the relay column is showing a stored row',
     );
   }
-  if (!pass.dom.fallbackNote) {
-    throw new Red('the demo could not load and the page had nothing to say about it');
+  /* The load-failure state has two halves and both are checked: a line saying
+     what failed, and the recorded capture back on the page. Either alone is a
+     worse page than the pair — a silent failure leaves a reader pressing a
+     button that has stopped working, and a page that only apologises has
+     nothing left on it showing what a relay holds. */
+  if (!pass.dom.recorded) {
+    throw new Red(
+      'every chunk the demo asked for was blocked and the recorded capture is not on the page, ' +
+        'so a reader whose demo cannot run is left with no evidence at all',
+    );
   }
-  if (pass.dom.claimVisible) {
-    throw new Red('the demo never ran and the page still claims something ran in this tab');
+  if (!/did not finish/.test(pass.dom.status)) {
+    throw new Red(
+      `the demo could not load and the page had nothing to say about it — its status line ` +
+        `reads ${JSON.stringify(pass.dom.status)}`,
+    );
   }
 
-  /* The figure makes the same claim in pictures, and it is drawn at build time
-     — every state of it is already in the HTML when the chunk that would have
-     driven it fails to arrive. Showing the end of a run that never started is
-     the one way this page could still lie after the fallback caught it. */
-  if (pass.dom.figure?.state === FIGURE_END_STATE) {
+  /* The drawing makes the same claim in pictures, and it is drawn at build time
+     — every step of it is already in the HTML when the chunk that would have
+     driven it fails to arrive. Showing any step of a run that never started is
+     the one way this page could still lie after the failure was reported. */
+  if (pass.dom.figure && pass.dom.figure.state !== 'idle') {
     throw new Red(
-      `the demo could not load and the figure beside it is showing "${FIGURE_END_STATE}" — a ` +
-        `round trip that did not happen`,
+      `the demo could not load and the drawing is showing "${pass.dom.figure.state}" — a ` +
+        `protocol step that did not happen`,
     );
   }
   /* Nothing ran, so nothing may be reported as having run. A demo_run recorded
@@ -3227,243 +2673,6 @@ function checkScenario(pass, origin, expectation) {
 
 /* What `flip-a-byte` has to have printed, held against the same scenario run in
    this process. */
-/*
- * The two tabs, judged against each other.
- *
- * The claim this section makes is not that a message arrived — the scenarios
- * above it already move messages — but that it arrived *through a channel*,
- * and that what went over that channel was an envelope. So the checks are in
- * two halves: who each tab turned out to be and what it saw of the other, and
- * what the relay pane is printing while it says so.
- *
- * The pane is the harder half and the reason the row is read as fields rather
- * than as text. "The ciphertext is not the sentence" has to fail when the
- * ciphertext stops being ciphertext, and a search for an absent string across
- * a whole pane passes just as happily when the pane has stopped printing the
- * field at all. `tests/demo-broadcast-relay.test.mjs` holds the stronger form
- * of this claim — nothing crossing the channel in any encoding — because that
- * one can watch every message rather than what a pane chose to render.
- */
-function checkTwoTabs(pass, envelopeFields, expected) {
-  const [first, second] = pass.connected;
-  const [firstEnded, secondEnded] = pass.ended;
-
-  if (first.role !== 'host' || second.role !== 'guest') {
-    throw new Red(
-      `the two tabs did not settle into one relay and one caller: the first reported ` +
-        `${JSON.stringify(first.role)} and the second ${JSON.stringify(second.role)}.\n` +
-        `  The first tab connects first and is opened first, so it is the one that should be\n` +
-        `  holding the relay; the second arrives on the pairing fragment afterwards and should\n` +
-        `  find the lock already taken.`,
-    );
-  }
-  /*
-   * Neither tab may name a correspondent it has not met.
-   *
-   * Read at the moment the first tab finished connecting, which is before the
-   * second tab exists at all. A session mints its own account name, so the
-   * only thing that can tell this tab what the other is called is the other
-   * tab — and there isn't one yet. A page that has a name here has guessed it,
-   * which is the assumption that used to make a reloaded tab unrecoverable:
-   * the returning tab came back holding new keys under the name the first tab
-   * was still writing to, and the relay refused it, correctly.
-   */
-  if (first.peer !== null) {
-    throw new Red(
-      `the first tab was already addressing ${JSON.stringify(first.peer)} before a second tab ` +
-        `existed.\n` +
-        `  Nothing had announced itself at that point, so this name was assumed rather than\n` +
-        `  learned. Assuming it is what stops a reloaded tab from ever rejoining: it comes back\n` +
-        `  with fresh keys, and a relay that already holds that name refuses them.`,
-    );
-  }
-
-  /* And once they have met, each is writing to the other — read at the end,
-     because that is the earliest point at which both have been told. */
-  if (
-    firstEnded.me === secondEnded.me ||
-    firstEnded.me !== secondEnded.peer ||
-    secondEnded.me !== firstEnded.peer
-  ) {
-    throw new Red(
-      `the two tabs disagree about who is who: the first is ${JSON.stringify(firstEnded.me)} ` +
-        `writing to ${JSON.stringify(firstEnded.peer)}, the second is ` +
-        `${JSON.stringify(secondEnded.me)} writing to ${JSON.stringify(secondEnded.peer)}`,
-    );
-  }
-
-  /*
-   * The label on a received line is the SDK's `senderId`, not the name the
-   * receiving tab was expecting, so this asserts what the protocol decided
-   * rather than what the page assumed.
-   */
-  const arrived = secondEnded.lines.find((line) => line.includes(TAB_PROBE));
-  if (!arrived?.startsWith(`${first.me} `)) {
-    throw new Red(
-      `the second tab showed the first tab's sentence but not as coming from ` +
-        `${JSON.stringify(first.me)}.\n  The line reads: ${JSON.stringify(arrived)}`,
-    );
-  }
-  const answered = firstEnded.lines.find((line) => line.includes(TAB_REPLY));
-  if (!answered?.startsWith(`${second.me} `)) {
-    throw new Red(
-      `the first tab showed the reply but not as coming from ${JSON.stringify(second.me)}.\n` +
-        `  The line reads: ${JSON.stringify(answered)}`,
-    );
-  }
-
-  /*
-   * The relay pane, on both tabs, against the same expectation the solo pane
-   * faces.
-   *
-   * Both ends print a row now, and both print it with the panel's own printer,
-   * so a field the pane invents, a field it drops and a value that carries the
-   * sentence are all failures here in the words the solo check uses.
-   */
-  for (const [side, ended] of [
-    ['first', firstEnded],
-    ['second', secondEnded],
-  ]) {
-    if (ended.fields.length === 0) {
-      throw new Red(
-        `the ${side} tab finished the conversation with nothing in its relay pane, so the ` +
-          `section made its argument about the relay with an empty box`,
-      );
-    }
-    const invented = ended.fields.filter((field) => !envelopeFields.has(field));
-    if (invented.length) {
-      throw new Red(
-        `the ${side} tab's relay pane printed ${invented.length} field(s) the SDK's Envelope ` +
-          `does not declare (${invented.join(', ')}), so it is not printing the row it was handed`,
-      );
-    }
-    const printed = new Set(ended.fields);
-    const missing = [...expected].filter((field) => !printed.has(field));
-    const extra = [...printed].filter((field) => !expected.has(field));
-    if (missing.length || extra.length) {
-      throw new Red(
-        `the ${side} tab's relay pane and the live envelope disagree about which fields ` +
-          `exist:\n` +
-          (missing.length ? `  never printed: ${missing.join(', ')}\n` : '') +
-          (extra.length ? `  printed anyway: ${extra.join(', ')}\n` : '') +
-          `  expected exactly: ${[...expected].join(', ')}\n` +
-          `  the pane showed:  ${ended.fields.join(', ') || '(nothing)'}`,
-      );
-    }
-    /* The literal the paired printer used to write into a cell for a field the
-       envelope carries without a value. It is not a value; it is the shape of
-       the bug, on the pane whose subject is what a relay can read. */
-    const stringified = ended.fields.filter(
-      (_, index) => (ended.values[index] ?? '').trim() === 'undefined',
-    );
-    if (stringified.length) {
-      throw new Red(
-        `the ${side} tab's relay pane printed the literal "undefined" beside ` +
-          `${stringified.join(', ')} — an absent field has to be shown as absent, not as the ` +
-          `way JavaScript spells it`,
-      );
-    }
-    const blank = ended.fields.filter((_, index) => !(ended.values[index] ?? '').trim());
-    if (blank.length) {
-      throw new Red(
-        `the ${side} tab's relay pane printed ${blank.join(', ')} with no value beside it`,
-      );
-    }
-    for (const [index, field] of ended.fields.entries()) {
-      const how = findProbe(ended.values[index] ?? '');
-      if (how) {
-        throw new Red(
-          `the ${side} tab's relay pane prints ${field} carrying the sentence that was typed — ` +
-            `${how}.\n  This is the claim the section exists to make, and it is false: what the ` +
-            `relay\n  is holding is readable.`,
-        );
-      }
-    }
-    const how = findProbe(ended.cipher);
-    if (how) {
-      throw new Red(
-        `the ${side} tab's relay pane prints a ciphertext carrying the sentence that was ` +
-          `typed — ${how}`,
-      );
-    }
-  }
-
-  checkTwoTabRelayView(firstEnded, secondEnded);
-  checkPairingLifecycle(pass.handover, pass.bereft, second.me);
-
-  const found = leaks(pass.requests, findProbe);
-  if (found.length) {
-    throw new Red(
-      `${found.length} request(s) from the two-tab section carried a typed sentence:\n` +
-        found.map((line) => `    ${line}`).join('\n'),
-    );
-  }
-
-  /*
-   * The pairing is deliberately unmeasured, and the solo run before it is not.
-   *
-   * `scenario_opened` is fired by a `<details>` toggle and this is not a
-   * scenario, so nothing about opening a second tab, joining, sending between
-   * them or disconnecting may report anything. What this section does report is
-   * the one solo round trip it makes before it pairs — the same `demo_run` the
-   * homepage press already sends, from the same code — so the number to hold it
-   * to is exactly one, not zero. Zero would fail the moment the run learned to
-   * type, which is how this check read for a while; anything above one is the
-   * paired half of the section reporting on itself.
-   */
-  const beacons = beaconsIn(pass.requests);
-  const bodies = beacons.map((beacon) => beacon.postData ?? '');
-  if (bodies.length !== 1 || !bodies[0].startsWith('demo_run ')) {
-    throw new Red(
-      `the two-tab section sent ${beacons.length} beacon(s) to ${BEACON_PATH} ` +
-        `(${bodies.map((body) => JSON.stringify(body)).join(', ') || 'none'}).\n` +
-        `  It should send exactly one, "demo_run", for the solo round trip it makes before it\n` +
-        `  pairs. Pairing two tabs, sending between them and disconnecting are all unmeasured,\n` +
-        `  so a second beacon is a new event nobody registered.`,
-    );
-  }
-
-  if (pass.bytesBefore > PRE_INTERACTION_CEILING) {
-    throw new Red(
-      `the page fetched ${kb(pass.bytesBefore)} of script before the section was connected, over ` +
-        `the ${kb(PRE_INTERACTION_CEILING)} tripwire`,
-    );
-  }
-  if (pass.bytesAfter === 0) {
-    throw new Red(
-      `connecting the section fetched no script at all, so either it was already on the page ` +
-        `before the press — which is what the tripwire above exists to prevent — or the ` +
-        `harness measured the wrong tab`,
-    );
-  }
-
-  /*
-   * Both tabs shut their clients down, which is the one thing a round trip
-   * cannot prove.
-   *
-   * `stop()` is where a subscription that handed back a promise instead of an
-   * unsubscribe function finally says so, and nothing else on this site calls
-   * it. A page whose teardown throws sends, delivers and decrypts exactly as
-   * this check has already watched it do.
-   */
-  if (pass.stopped.length !== 2) {
-    throw new Red(
-      `only ${pass.stopped.length} of the two tabs was driven through stop(), so teardown is ` +
-        `not covered and the harness is claiming more than it ran`,
-    );
-  }
-  for (const [index, state] of pass.stopped.entries()) {
-    const what = index === 0 ? 'the second tab' : 'the first tab';
-    if (!state.stopped) {
-      throw new Red(
-        `${what} did not finish stopping.\n  Its status line reads: ${JSON.stringify(state.status)}`,
-      );
-    }
-  }
-
-  return { beacons };
-}
-
 function flipExpectation(refusal) {
   return {
     slug: FLIP_SLUG,
@@ -4012,11 +3221,6 @@ async function main() {
       reinstallExpectation(reinstall),
     );
 
-    /* Two tabs at once, which is the only pass here that needs more than one:
-       the section's claim is that the second window is a second window. */
-    const twoTabs = await visitTwoTabs(cdp, origin, held);
-    checkTwoTabs(twoTabs, envelopeFields, expected);
-
     /* Say which of the two things happened. Claiming a quiet window we never
        got would overstate the egress evidence on exactly the chatty pages
        where it is weakest. */
@@ -4041,8 +3245,8 @@ async function main() {
         `under the ${kb(PRE_INTERACTION_CEILING)} tripwire (uncompressed — this server does ` +
         `not gzip)\n` +
         `  the touch drew: ${kb(live.bytesAfter)} over ${live.after.length} chunk(s)\n` +
-        `  those blocked:  the recorded capture stayed on screen ` +
-        `("${starved.dom.fallbackNote}")\n` +
+        `  those blocked:  nothing ran, nothing was claimed, and the page said so ` +
+        `("${starved.dom.status}")\n` +
         `  scenario:       ${FLIP_SLUG} opened by fragment and run twice; both runs printed ` +
         `${refusal.errorCode}\n` +
         `                  ("${refusal.errorMessage}") in the SDK's own log, and the resend ` +
@@ -4100,32 +3304,7 @@ async function main() {
         `${reinstallBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
         `                  before a touch ${kb(reinstalled.bytesBefore)} over ` +
         `${reinstalled.before.length} file(s); the run drew ${kb(reinstalled.bytesAfter)} over ` +
-        `${reinstalled.after.length} chunk(s)\n` +
-        `  two tabs:       two tabs of the same page connected as ` +
-        `${twoTabs.connected.map((tab) => `${tab.me} (${tab.role})`).join(' and ')}, and each ` +
-        `read the\n` +
-        `                  other's sentence off the channel — the reply came back through the ` +
-        `tab holding the relay\n` +
-        `                  both relay panes ended on the same stored row — the reply — with all ` +
-        `${twoTabs.ended[0].fields.length} fields declared by\n` +
-        `                  the SDK's Envelope, each tab's byte strip matching the row in its own ` +
-        `pane, and the\n` +
-        `                  ciphertext carrying neither sentence in cleartext, percent-encoded or ` +
-        `base64 form\n` +
-        `                  the first tab had typed alone before any of it, and the handover moved ` +
-        `its figure on to\n` +
-        `                  "${twoTabs.handover.figureState}" rather than suppressing it as ` +
-        `already-said\n` +
-        `                  measured ${beaconsIn(twoTabs.requests).length} beacon(s): ` +
-        `${beaconsIn(twoTabs.requests)
-          .map((beacon) => JSON.stringify(beacon.postData))
-          .join(', ')} — the solo run only; pairing is not a scenario\n` +
-        `                  then both tabs were disconnected, guest first, and each shut its ` +
-        `client down without\n` +
-        `                  complaint — the only stop() this site performs\n` +
-        `                  before a touch ${kb(twoTabs.bytesBefore)} over ` +
-        `${twoTabs.before.length} file(s); connecting drew ${kb(twoTabs.bytesAfter)} over ` +
-        `${twoTabs.after.length} chunk(s)`,
+        `${reinstalled.after.length} chunk(s)`,
     );
   } finally {
     await teardown(held);

@@ -1,0 +1,656 @@
+---
+import CarrierPanel from '../CarrierPanel.astro';
+import DemoStage from './DemoStage.astro';
+
+/*
+ * The demo: one drawing, a transport, and three columns under it.
+ *
+ * Two SDK clients run in this page. There is no second window and nothing to
+ * pair — the reader gets both ends of the conversation at once, which is what
+ * the homepage's own quickstart sample twenty lines above already shows: one
+ * relay, `alice`, `bob`. The demo is a live rendering of the code the reader
+ * has just read.
+ *
+ * ------------------------------------------------------ the recorded row ---
+ *
+ * `CarrierPanel` prints a round trip that happened once, on a machine that is
+ * not the reader's, and it is server-rendered and visible on arrival. It is the
+ * page's answer to a reader whose scripts are off, whose browser the SDK will
+ * not run in, or whose chunk never arrived: without it the homepage only
+ * *asserts* what a relay holds, and the one artefact on the site that shows it
+ * instead would have gone out with a layout change.
+ *
+ * The script hides it as soon as the console is interactive, and puts it back
+ * if the run could not be brought up. So it is the state the page starts in and
+ * the state it returns to, never decoration under a working demo.
+ *
+ * ------------------------------------------------------------- two clocks ---
+ *
+ * The protocol runs at full speed and is recorded; the drawing replays that
+ * recording at the reader's pace. Play, pause, step, reset and speed act on the
+ * replay and never on the crypto, and every number printed on this page comes
+ * from the recording. `trace.ts` makes that structural rather than promised: the
+ * pace layer is handed cues with every measurement stripped out, so slowing the
+ * animation cannot move a figure — there is no figure in scope for it to move.
+ *
+ * The copy under the transport says so in the reader's own words, because a
+ * reader who sees a round-trip figure appear before the envelope has visibly
+ * arrived is owed an explanation and should not have to infer one.
+ *
+ * --------------------------------------------------------------- the names ---
+ *
+ * `NAMES` is rendered into the column headings *and* into the root's data
+ * attributes, and the script starts the run with the values it reads back. One
+ * source, so the label over a column and the account the SDK is really using
+ * cannot drift. A script cannot read this frontmatter directly — `define:vars`
+ * writes an inline script and the site's CSP has no inline scripts in it — so
+ * the DOM is the channel, and it is the same DOM the reader is looking at.
+ */
+const NAMES = { a: 'alice', b: 'bob' } as const;
+
+/*
+ * The speeds the transport offers.
+ *
+ * `playback.ts` clamps to a quarter and four times, so these are the ends and
+ * two steps between them rather than a range someone might widen here and have
+ * silently clamped there. A number in this list that the pace layer would refuse
+ * is a control that lies about what it does.
+ */
+const SPEEDS = [
+  { value: 0.25, label: '¼×' },
+  { value: 0.5, label: '½×' },
+  { value: 1, label: '1×' },
+  { value: 2, label: '2×' },
+  { value: 4, label: '4×' },
+] as const;
+---
+
+<div
+  class="demo-console"
+  data-demo="console"
+  data-console-name-a={NAMES.a}
+  data-console-name-b={NAMES.b}
+>
+  <DemoStage />
+
+  <div class="demo-console-transport">
+    {/*
+      The transport is disabled in the shipped HTML and the script enables it.
+
+      A control that does nothing is worse than a control that is not there yet:
+      the reader presses it, nothing happens, and they conclude the demo is
+      broken rather than that a chunk is still arriving. Every button here needs
+      a module that has not been fetched, so every one of them ships disabled and
+      is turned on by the script that can honour it. A reader without scripts
+      gets controls that are visibly unavailable rather than dishonestly live,
+      and the recorded capture below them rather than nothing to look at.
+    */}
+    <div class="demo-console-controls" role="group" aria-label="Replay">
+      <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-play disabled>Play</button>
+      <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-step disabled>Step</button>
+      <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-reset disabled>Reset</button>
+      <label class="demo-console-speed">
+        Speed
+        <select data-console-speed disabled>
+          {
+            SPEEDS.map((speed) => (
+              <option value={speed.value} selected={speed.value === 1}>
+                {speed.label}
+              </option>
+            ))
+          }
+        </select>
+      </label>
+    </div>
+
+    <p class="demo-console-note measure">
+      The protocol runs at full speed and is recorded; what moves below is a replay of that
+      recording. The transport changes the replay, never the crypto — and never a printed number.
+    </p>
+
+    <p class="demo-console-status" data-console-status role="status" aria-live="polite"></p>
+  </div>
+
+  <div class="demo-console-columns">
+    {/* ------------------------------------------------------------ alice --- */}
+    <section class="demo-console-column" aria-labelledby="demo-console-a">
+      <h3 class="demo-console-heading" id="demo-console-a">{NAMES.a}</h3>
+
+      <ol class="demo-console-conversation" data-console-conversation="a"></ol>
+
+      <div class="demo-console-compose">
+        {/*
+          Key exchange is a real call and gets its own control, because it is
+          genuinely a separate step from sending and a reader asked to watch key
+          agreement should not have to infer it from the first message. It is
+          `establishSession` on the client, with the bundle fetched from the
+          relay — not a staged animation of one.
+        */}
+        <button type="button" class="oe-button oe-button-secondary" data-console-exchange disabled>
+          Exchange keys
+        </button>
+        <label class="demo-console-field">
+          <span class="demo-console-field-label">Message</span>
+          <input
+            type="text"
+            data-console-message
+            value="the carrier reads the address, not the letter"
+            disabled
+          />
+        </label>
+        <button type="button" class="oe-button demo-console-send" data-console-send disabled>
+          Send
+        </button>
+      </div>
+
+      <p class="demo-console-metric">
+        <span class="demo-console-metric-value" data-console-metric-a>—</span>
+        <span class="demo-console-metric-label">
+          send · handing the plaintext to the SDK until the relay accepted the envelope
+        </span>
+      </p>
+    </section>
+
+    {/* ------------------------------------------------------------ relay --- */}
+    <section class="demo-console-column demo-console-column-relay" aria-labelledby="demo-console-relay">
+      <h3 class="demo-console-heading" id="demo-console-relay">relay</h3>
+
+      {/*
+        An inspector rather than a conversation. It answers one question — what
+        is the relay actually holding — with the row itself: the bytes, then
+        every field on the envelope, read off the object the relay stored rather
+        than from a description of it. The two fields it holds back are named
+        where they are held back, by the script.
+      */}
+      <p class="demo-console-empty" data-console-relay-empty>Holding nothing.</p>
+      <pre class="demo-console-hex" data-console-hex hidden></pre>
+      <dl class="demo-console-row" data-console-row hidden></dl>
+      <p class="demo-console-row-note" data-console-row-note hidden></p>
+
+      <p class="demo-console-metric">
+        <span class="demo-console-metric-value" data-console-metric-relay>—</span>
+        <span class="demo-console-metric-label">
+          what the relay is holding · it never needs the plaintext to hold it
+        </span>
+      </p>
+    </section>
+
+    {/* -------------------------------------------------------------- bob --- */}
+    <section class="demo-console-column" aria-labelledby="demo-console-b">
+      <h3 class="demo-console-heading" id="demo-console-b">{NAMES.b}</h3>
+
+      <ol class="demo-console-conversation" data-console-conversation="b"></ol>
+
+      <p class="demo-console-metric">
+        <span class="demo-console-metric-value" data-console-metric-b>—</span>
+        <span class="demo-console-metric-label">
+          round trip · the same start, until the far device had the plaintext back
+        </span>
+      </p>
+    </section>
+  </div>
+
+  {/*
+    The recorded capture: server-rendered, visible on arrival, hidden by the
+    script once the console can actually be pressed, and restored if the run
+    could not be brought up.
+
+    The `<noscript>` is the only thing on the page that can address the reader
+    it is for, because the script that would otherwise explain the panel is the
+    thing that is not running. The copy above this component offers that reader
+    an interaction — "type a sentence" — and a page that makes an offer to
+    someone who cannot take it owes them the reason in the same breath.
+  */}
+  <div class="demo-console-recorded" data-console-recorded>
+    <noscript>
+      <p class="demo-console-note measure">
+        The live demo needs JavaScript, which is off here, so what follows is a recording of a
+        round trip rather than one running in this tab. Every value in it came off a real
+        envelope.
+      </p>
+    </noscript>
+    <CarrierPanel />
+  </div>
+</div>
+
+<script>
+  /*
+   * The console's wiring.
+   *
+   * Nothing protocol-shaped is imported at the top of this file. `run.ts` pulls
+   * the SDK behind it and the homepage is measured for what it fetches before a
+   * reader asks for anything, so every import that carries weight is inside
+   * `chunks()`, on the far side of a press.
+   *
+   * ------------------------------------------------- what follows which clock ---
+   *
+   * Two things arrive from the recording and they are deliberately on different
+   * clocks.
+   *
+   * The metrics print the moment the measurement exists. They describe a run
+   * that has already finished at full speed, they are not part of the story
+   * being paced, and holding them back would make the transport look like it was
+   * timing something.
+   *
+   * Everything that tells the story — the drawing, the two conversations, the
+   * row in the relay's column — waits for the reel. A reader watching at a
+   * quarter speed should not be shown the sentence arriving at the far device
+   * before the envelope has visibly got there. `apply()` is the one place those
+   * three move, so they cannot fall out of step with each other.
+   */
+  import type { DemoRun, DeviceActor } from '../../lib/demo/run';
+  import type { Playback } from '../../lib/demo/playback';
+  import type { StageCue, StageView } from '../../lib/demo/stage-view';
+  import type { TraceEvent } from '../../lib/demo/trace';
+
+  const mount = document.querySelector<HTMLElement>('[data-demo="console"]');
+  if (mount) upgrade(mount);
+
+  function upgrade(root: HTMLElement) {
+    const need = <E extends Element>(selector: string): E => {
+      const found = root.querySelector<E>(selector);
+      if (!found) throw new Error(`demo console: ${selector} is missing from the markup`);
+      return found;
+    };
+
+    const play = need<HTMLButtonElement>('[data-console-play]');
+    const step = need<HTMLButtonElement>('[data-console-step]');
+    const reset = need<HTMLButtonElement>('[data-console-reset]');
+    const speed = need<HTMLSelectElement>('[data-console-speed]');
+    const exchange = need<HTMLButtonElement>('[data-console-exchange]');
+    const message = need<HTMLInputElement>('[data-console-message]');
+    const send = need<HTMLButtonElement>('[data-console-send]');
+    const status = need<HTMLElement>('[data-console-status]');
+    const hex = need<HTMLElement>('[data-console-hex]');
+    const row = need<HTMLElement>('[data-console-row]');
+    const rowNote = need<HTMLElement>('[data-console-row-note]');
+    const relayEmpty = need<HTMLElement>('[data-console-relay-empty]');
+    const recorded = need<HTMLElement>('[data-console-recorded]');
+    const conversations: Record<DeviceActor, HTMLElement> = {
+      a: need<HTMLElement>('[data-console-conversation="a"]'),
+      b: need<HTMLElement>('[data-console-conversation="b"]'),
+    };
+    const metrics = {
+      a: need<HTMLElement>('[data-console-metric-a]'),
+      b: need<HTMLElement>('[data-console-metric-b]'),
+      relay: need<HTMLElement>('[data-console-metric-relay]'),
+    };
+
+    const names = { a: root.dataset.consoleNameA ?? 'a', b: root.dataset.consoleNameB ?? 'b' };
+
+    /*
+     * Exactly two fields are held back, and the reader is told about both.
+     *
+     *   ciphertext — printed above as the bytes themselves, not as a table row.
+     *   id         — the in-memory relay counts sends, so this reads `msg-1`. A
+     *                production relay assigns its own format, and printing this
+     *                one would teach a reader something false about their own
+     *                database.
+     *
+     * A list of what is deliberately not shown, and never a list of what is:
+     * every other field arrives by iterating the envelope, so a field the SDK
+     * adds appears without anyone editing this file, and one it removes vanishes
+     * rather than lingering as a stale row.
+     */
+    const HELD_BACK = new Set(['ciphertext', 'id']);
+
+    type Loaded = {
+      run: typeof import('../../lib/demo/run');
+      playback: typeof import('../../lib/demo/playback');
+      stage: typeof import('../../lib/demo/stage-view');
+      ciphertext: typeof import('../../lib/demo/ciphertext');
+    };
+
+    /** The row the relay took, waiting for the reel to reach the step that took it. */
+    interface Row {
+      readonly envelope: Record<string, unknown>;
+      readonly bytes: number;
+    }
+
+    let loaded: Loaded | null = null;
+    let run: DemoRun | null = null;
+    let stage: StageView | null = null;
+    let reel: Playback<StageCue> | null = null;
+    let starting: Promise<void> | null = null;
+    let busy = false;
+    let exchanged = false;
+    let sent = 0;
+    let bytesHeld = 0;
+    let rowsHeld = 0;
+    const pending: Row[] = [];
+
+    const say = (text: string) => {
+      status.textContent = text;
+    };
+
+    /*
+     * One event, the first time a sentence completes a round trip on this page,
+     * carrying nothing about it — not the sentence, not its length, not the
+     * byte counts or the milliseconds printed beside it. The beacon reads
+     * `demo_run /` and there is no third field for it to read.
+     *
+     * Once per page rather than once per send. The question it exists to answer
+     * (plan D5) is whether readers who ran the demo go on to enter and finish
+     * the quickstart, and its denominator is readers; counting sends would
+     * measure how much someone enjoyed pressing the button. Nothing here
+     * identifies a page view, so this is the closest a cookieless model gets to
+     * "a reader ran it", and it is deliberately the conservative direction.
+     *
+     * `public/measure.js` owns the beacon; this owns the moment. The site's
+     * delegated click handler reads links, and this is a button in a module it
+     * knows nothing about.
+     */
+    let reportedRun = false;
+    const reportRun = () => {
+      if (reportedRun) return;
+      reportedRun = true;
+      window.oeMeasure?.('demo_run');
+    };
+    const ms = (value: number) => `${value.toFixed(1)} ms`;
+    const count = (value: number) => value.toLocaleString('en-US');
+
+    /*
+     * Sending waits for a session; the transport waits for a run.
+     *
+     * Key exchange is its own action because it is its own step, so the send
+     * button stays unavailable until a session exists rather than quietly
+     * establishing one on the way past. That is the founder's ask and it is also
+     * the honest arrangement: a reader who never presses "Exchange keys" should
+     * not be shown a session appearing without one.
+     */
+    const enable = () => {
+      const running = run !== null;
+      play.disabled = !running;
+      step.disabled = !running;
+      reset.disabled = !running;
+      speed.disabled = !running;
+      exchange.disabled = busy || exchanged;
+      message.disabled = busy;
+      send.disabled = busy || !exchanged;
+    };
+
+    /**
+     * The four modules the console needs, fetched together on the first press.
+     *
+     * One `Promise.all` rather than four awaited in turn: they are independent,
+     * and a reader who pressed a button is waiting on the slowest of them rather
+     * than on their sum. The SDK is behind `run`, which is the whole reason any
+     * of this is here instead of at the top of the file.
+     */
+    async function chunks(): Promise<Loaded> {
+      const [runModule, playback, stageModule, ciphertext] = await Promise.all([
+        import('../../lib/demo/run'),
+        import('../../lib/demo/playback'),
+        import('../../lib/demo/stage-view'),
+        import('../../lib/demo/ciphertext'),
+      ]);
+      return { run: runModule, playback, stage: stageModule, ciphertext };
+    }
+
+    /**
+     * Bring the run up, once, however many controls asked for it.
+     *
+     * The promise is shared rather than re-entered: a reader who presses
+     * "Exchange keys" and then "Send" before the chunk lands has asked for one
+     * run, and two would boot two pairs of devices against two relays and record
+     * both into one drawing.
+     */
+    function start(): Promise<void> {
+      if (run) return Promise.resolve();
+      if (starting) return starting;
+
+      say('Fetching the SDK…');
+      const attempt = (async () => {
+        const parts = await chunks();
+        loaded = parts;
+
+        const figure = document.querySelector<HTMLElement>('[data-demo-stage-figure]');
+        if (!figure) throw new Error('demo console: the stage is missing from the page');
+        stage = parts.stage.mountStage(figure, names);
+
+        /*
+         * The pace, with the per-step dwell `playback.ts` already publishes.
+         *
+         * Keyed on the same step names the recording uses, so a step added to
+         * the protocol arrives here with a dwell rather than silently taking a
+         * default. The dwell is a constant and is not derived from a duration
+         * token: `tokens.css` collapses those to a hundredth of a millisecond
+         * under `prefers-reduced-motion`, and a reader who asked for less motion
+         * should lose the motion, not the information.
+         */
+        reel = parts.playback.createPlayback<StageCue>({
+          show: apply,
+          dwellMs: parts.playback.STEP_DWELL_MS,
+        });
+        reel.setSpeed(Number(speed.value));
+        /* The label follows the transport's own state rather than the press that
+           was aimed at it, so a reel that runs dry and parks reads as parked. */
+        reel.on((state) => {
+          play.textContent = state === 'playing' ? 'Pause' : 'Play';
+        });
+
+        run = await parts.run.startDemoRun({ a: names.a, b: names.b });
+        run.trace.on(record);
+        say('');
+      })();
+
+      starting = attempt.finally(() => {
+        starting = null;
+      });
+      return starting;
+    }
+
+    /** Recorded: print what was measured, and queue the story for the reel. */
+    function record(event: TraceEvent) {
+      printMetrics(event);
+      if (event.step === 'stored-at-relay') {
+        const envelope = (event.detail as { envelope?: Record<string, unknown> })?.envelope;
+        if (envelope) pending.push({ envelope, bytes: event.measures?.ciphertextBytes ?? 0 });
+      }
+      reel?.push(toCue(event));
+      reel?.play();
+    }
+
+    function printMetrics(event: TraceEvent) {
+      const measures = event.measures;
+      if (!measures) return;
+      if (typeof measures.encryptMs === 'number') metrics.a.textContent = ms(measures.encryptMs);
+      if (typeof measures.roundTripMs === 'number') metrics.b.textContent = ms(measures.roundTripMs);
+      if (typeof measures.ciphertextBytes === 'number') {
+        bytesHeld += measures.ciphertextBytes;
+        rowsHeld += 1;
+        const rows = `${count(rowsHeld)} row${rowsHeld === 1 ? '' : 's'}`;
+        metrics.relay.textContent = `${rows} · ${count(bytesHeld)} bytes`;
+      }
+    }
+
+    /**
+     * A recorded event as something the drawing can be given.
+     *
+     * A projection and nothing else: it reads the event and returns a cue, and
+     * every number it touches becomes a string on the way. That ordering is what
+     * makes the transport unable to move a printed figure — by the time a cue is
+     * on the reel there is no number left in it to scale.
+     */
+    function toCue(event: TraceEvent): StageCue {
+      const detail = (event.detail ?? {}) as Record<string, unknown>;
+      /* A trace event's `from` and `to` may name the relay, and a sentence
+         belongs to a device. Asked rather than asserted: which actor a step
+         belongs to is a fact about the recording, and a cast here would let a
+         step recorded against the relay put a sentence inside a relay slot. */
+      const device = (actor: TraceEvent['from']): DeviceActor | null =>
+        actor === 'a' || actor === 'b' ? actor : null;
+      const from = device(event.from);
+      const to = device(event.to);
+      const base: StageCue = {
+        step: event.step,
+        actor: event.actor,
+        ...(event.from === undefined ? {} : { from: event.from }),
+        ...(event.to === undefined ? {} : { to: event.to }),
+      };
+
+      if (event.step === 'encrypted' && from && typeof detail.text === 'string') {
+        return { ...base, sentence: { side: from, text: detail.text } };
+      }
+      if (event.step === 'stored-at-relay' && loaded) {
+        const envelope = (detail.envelope ?? {}) as Record<string, unknown>;
+        const bytes = event.measures?.ciphertextBytes ?? 0;
+        return { ...base, fields: loaded.stage.envelopeFields(envelope, bytes) };
+      }
+      if (event.step === 'opened' && to) {
+        const opened = detail.decrypted as { content?: unknown } | undefined;
+        const text = typeof opened?.content === 'string' ? opened.content : '';
+        return { ...base, sentence: { side: to, text }, ratchet: { a: sent, b: sent } };
+      }
+      return base;
+    }
+
+    /** One step of the story, everywhere it is told. */
+    function apply(cue: StageCue) {
+      stage?.show(cue);
+      if (cue.sentence) bubble(cue.sentence.side, cue.sentence.text);
+      if (cue.step === 'stored-at-relay') {
+        const next = pending.shift();
+        if (next) showRow(next.envelope, next.bytes);
+      }
+    }
+
+    /* The relay's column: the bytes, then every field that is not held back. */
+    function showRow(envelope: Record<string, unknown>, bytes: number) {
+      if (!loaded) return;
+      const encoded = String(envelope.ciphertext);
+      hex.textContent = loaded.ciphertext.hexStrip(envelope.ciphertext).join('\n');
+      hex.hidden = false;
+      relayEmpty.hidden = true;
+
+      row.replaceChildren();
+      let shown = 0;
+      for (const [field, value] of Object.entries(envelope)) {
+        if (HELD_BACK.has(field)) continue;
+        const term = document.createElement('dt');
+        term.textContent = field;
+        const definition = document.createElement('dd');
+        definition.textContent = String(value);
+        row.append(term, definition);
+        shown += 1;
+      }
+      /* The note is a sibling of the list rather than its last child: a `<dl>`
+         may hold terms, definitions and grouping `<div>`s, and a paragraph
+         inside one is invalid however well it renders. */
+      rowNote.textContent =
+        `${count(shown)} fields, read off the envelope itself — plus the ciphertext above, ` +
+        `${count(encoded.length)} base64 characters and ${count(bytes)} bytes of it, and the ` +
+        'relay-assigned id, which this in-memory relay numbers in a way yours would not.';
+      row.hidden = false;
+      rowNote.hidden = false;
+    }
+
+    function bubble(side: DeviceActor, text: string) {
+      const item = document.createElement('li');
+      item.className = 'demo-console-bubble';
+      item.textContent = text;
+      conversations[side].append(item);
+    }
+
+    /* One place that turns a thrown error into a sentence, so no path can fail
+       silently and leave a reader pressing a button that has stopped working. */
+    async function guard(what: string, action: () => Promise<void>) {
+      busy = true;
+      enable();
+      try {
+        await action();
+      } catch (error) {
+        say(`${what} did not finish: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+        busy = false;
+        /* If nothing was ever brought up, the demo could not run and the page
+           owes the reader the recording again — the status line above says
+           why. A failure after a run exists is one action's failure, not the
+           demo's, and the reader keeps what they have already watched. */
+        recorded.hidden = run !== null;
+        enable();
+      }
+    }
+
+    exchange.addEventListener('click', () => {
+      void guard('the key exchange', async () => {
+        await start();
+        await run?.exchangeKeys();
+        exchanged = true;
+        say(
+          'Session established. Both public bundles went through the relay; the private halves ' +
+            'never left their devices.',
+        );
+      });
+    });
+
+    send.addEventListener('click', () => {
+      const text = message.value.trim();
+      if (text === '') {
+        say('Type something to send.');
+        return;
+      }
+      void guard('the send', async () => {
+        await start();
+        sent += 1;
+        await run?.send('a', text);
+        /* After the send resolves, not when it was pressed: the round trip is
+           the thing being counted, and a press that threw is not one. */
+        reportRun();
+      });
+    });
+
+    play.addEventListener('click', () => {
+      if (!reel) return;
+      if (reel.state === 'playing') reel.pause();
+      else reel.play();
+    });
+
+    step.addEventListener('click', () => {
+      reel?.pause();
+      reel?.step();
+    });
+
+    speed.addEventListener('change', () => {
+      reel?.setSpeed(Number(speed.value));
+    });
+
+    reset.addEventListener('click', () => {
+      void guard('the reset', async () => {
+        reel?.reset();
+        stage?.clear();
+        await run?.reset();
+        exchanged = false;
+        sent = 0;
+        bytesHeld = 0;
+        rowsHeld = 0;
+        pending.length = 0;
+        for (const side of ['a', 'b'] as const) conversations[side].replaceChildren();
+        metrics.a.textContent = '—';
+        metrics.b.textContent = '—';
+        metrics.relay.textContent = '—';
+        hex.hidden = true;
+        row.hidden = true;
+        rowNote.hidden = true;
+        relayEmpty.hidden = false;
+        say('Reset. Fresh devices, a fresh relay, and nothing recorded.');
+      });
+    });
+
+    /* The composer answers the return key, because a text field beside a button
+       is a form to everyone who has ever used one. */
+    message.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        send.click();
+      }
+    });
+
+    /* The console is interactive from here, so the recording stops being what
+       the reader is looking at. This runs on script execution rather than on
+       the first press: a reader who can press the buttons is not the reader
+       the recording is for. */
+    recorded.hidden = true;
+    enable();
+  }
+</script>
