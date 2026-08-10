@@ -58,28 +58,40 @@ export type DwellTable = Readonly<Record<string, number>>;
 /**
  * The reading pace, per step, at speed 1.
  *
- * Chosen, not measured — see the header. Longer where there is something to
- * read: the envelope's fields at `stored-at-relay`, and the key agreement,
- * which is the one step of the protocol most readers have never been shown.
- * Shorter where the step is a handover the eye only has to follow.
+ * Chosen, not measured — see the header. Each value is the step's caption in
+ * `stage-view.ts` at roughly four words a second, rounded up, because the dwell
+ * a step needs is set by how much there is to read at it and by nothing else.
+ * That makes `stored-at-relay` the longest hold on the reel: it carries the most
+ * words, and they are the ones the product is actually arguing.
+ *
+ * These were far shorter once, and every one of them was too short to read. The
+ * mistake worth not repeating is that the shortfall was invisible from here —
+ * the numbers looked like a considered ramp, and only lining them up against the
+ * caption strings showed that five of the eight steps could not be finished even
+ * at the slowest speed the control offered. **Re-derive from the captions
+ * whenever the captions change**, rather than nudging a number that reads low.
+ *
+ * Speed 1 is meant to be the readable setting rather than a baseline to escape
+ * from, so `MIN_SPEED` is for a reader who wants to dwell and `MAX_SPEED` is for
+ * one who has seen it already. Neither exists to rescue this table.
  *
  * A step with no entry gets `DEFAULT_DWELL_MS`, so an added step paces sensibly
  * before anyone has decided what it is worth.
  */
 export const STEP_DWELL_MS: DwellTable = {
   idle: 0,
-  'devices-ready': 600,
-  'bundles-published': 600,
-  'session-established': 900,
-  encrypted: 800,
-  'in-transit': 700,
-  'stored-at-relay': 900,
-  delivered: 700,
-  opened: 900,
+  'devices-ready': 3500,
+  'bundles-published': 3500,
+  'session-established': 5000,
+  encrypted: 2500,
+  'in-transit': 3250,
+  'stored-at-relay': 5750,
+  delivered: 2000,
+  opened: 3000,
 };
 
-/** What an unlisted step is held for. */
-export const DEFAULT_DWELL_MS = 700;
+/** What an unlisted step is held for. Long enough for a short sentence. */
+export const DEFAULT_DWELL_MS = 3000;
 
 /**
  * The slowest and fastest the transport may be driven.
@@ -122,9 +134,15 @@ export interface Playback<C extends Cued> {
    * when it ran out.
    */
   push(...cues: C[]): void;
+  /** Run the reel. A reel already played through starts again from the top. */
   play(): void;
   pause(): void;
-  /** Show the next cue and stay stopped. The transport's step button. */
+  /**
+   * Show the next cue and stay stopped. The transport's step button.
+   *
+   * A reel already played through steps from the top, so this stays useful
+   * after the protocol has finished — which is when it is reached for.
+   */
   step(): void;
   /** Drop the reel and go back to the beginning. Shows nothing. */
   reset(): void;
@@ -183,6 +201,25 @@ export function createPlayback<C extends Cued>(options: PlaybackOptions<C>): Pla
     cancel = null;
   }
 
+  /**
+   * Send the cursor back to the start when the reel has already been spent.
+   *
+   * The reel is a recording, not a queue that is consumed by being watched, and
+   * this is the difference between the two. A run pushes its cues as the trace
+   * records them and the transport plays them straight through, so by the time
+   * anyone reaches for Play or Step the cursor is already at the end. Without
+   * this, both controls are live, enabled, and incapable of showing a frame —
+   * which is what shipped, and it is the one affordance a reader needs to take
+   * the protocol at their own pace.
+   *
+   * Only `play` and `step` rewind. `push` deliberately does not: a cue arriving
+   * from a still-running protocol extends the recording and must never throw the
+   * reader back to the beginning of it.
+   */
+  function rewindIfSpent(): void {
+    if (cursor >= reel.length) cursor = 0;
+  }
+
   /** Show the cue under the cursor and move past it. */
   function showNext(): C | null {
     const cue = reel[cursor];
@@ -226,6 +263,7 @@ export function createPlayback<C extends Cued>(options: PlaybackOptions<C>): Pla
 
     play() {
       if (state === 'playing') return;
+      rewindIfSpent();
       moveTo('playing');
       tick();
     },
@@ -238,6 +276,7 @@ export function createPlayback<C extends Cued>(options: PlaybackOptions<C>): Pla
 
     step() {
       stopWaiting();
+      rewindIfSpent();
       const cue = showNext();
       moveTo(cue === null ? 'done' : 'paused');
     },

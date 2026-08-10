@@ -360,8 +360,14 @@ const SPEEDS = [
      */
     const enable = () => {
       const running = run !== null;
-      play.disabled = !running;
-      step.disabled = !running;
+      /* Play and Step answer for the reel, not for the run. A live run with an
+         empty reel has nothing either of them can show, and a control that is
+         lit and does nothing is worse than one that is plainly unavailable —
+         the reader presses it, sees no frame, and concludes the page is broken
+         rather than that there is nothing recorded yet. */
+      const hasReel = (reel?.length ?? 0) > 0;
+      play.disabled = !running || !hasReel;
+      step.disabled = !running || !hasReel;
       reset.disabled = !running;
       speed.disabled = !running;
       exchange.disabled = busy || exchanged;
@@ -448,6 +454,9 @@ const SPEEDS = [
         if (envelope) pending.push({ envelope, bytes: event.measures?.ciphertextBytes ?? 0 });
       }
       reel?.push(toCue(event));
+      /* The first cue is what makes the transport worth offering, so the
+         controls are re-read here rather than only on a press. */
+      enable();
       reel?.play();
     }
 

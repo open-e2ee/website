@@ -272,3 +272,74 @@ test('clamps the speed rather than accepting a useless one', () => {
   playback.setSpeed(Number.NaN);
   assert.equal(playback.speed, 1, 'a speed that is not a number should fall back to real time');
 });
+
+/*
+ * The transport is reached for after the protocol has finished, not during it.
+ *
+ * A run pushes its cues as fast as the trace records them and the reel plays
+ * them straight through, so by the time a reader presses Play or Step the
+ * cursor is already spent. The version of this that shipped left both controls
+ * enabled and incapable of showing a frame, which reads as a broken page rather
+ * than as an empty reel — so these two tests are about the state the reader
+ * actually arrives in, not about a reel caught mid-flight.
+ */
+test('a reel that has played through plays again rather than sitting spent', () => {
+  const { playback, shown } = playAll(1);
+  assert.equal(playback.state, 'done');
+  assert.equal(shown.length, REEL.length, 'the reel should have run dry before this is a test of replay');
+
+  const clock = fakeClock();
+  const replayed = [];
+  const again = createPlayback({ show: (cue) => replayed.push(cue), schedule: clock.schedule });
+  again.push(...REEL);
+  again.play();
+  clock.drain();
+  assert.equal(again.state, 'done');
+
+  again.play();
+  clock.drain();
+  assert.deepEqual(
+    replayed.map((cue) => cue.step),
+    [...REEL, ...REEL].map((cue) => cue.step),
+    'pressing play on a spent reel showed nothing, so the recording cannot be re-watched',
+  );
+});
+
+test('a reel that has played through steps from the top', () => {
+  const clock = fakeClock();
+  const shown = [];
+  const playback = createPlayback({ show: (cue) => shown.push(cue), schedule: clock.schedule });
+  playback.push(...REEL);
+  playback.play();
+  clock.drain();
+  assert.equal(playback.state, 'done');
+  const afterRun = shown.length;
+
+  playback.step();
+  assert.equal(shown.length, afterRun + 1, 'step on a spent reel showed no frame at all');
+  assert.equal(shown.at(-1).step, REEL[0].step, 'step should have gone back to the first cue');
+  assert.equal(playback.state, 'paused', 'a step that showed a frame should park paused');
+
+  playback.step();
+  assert.equal(shown.at(-1).step, REEL[1].step, 'a second step should advance rather than rewind again');
+});
+
+test('a cue arriving mid-run extends the reel instead of rewinding it', () => {
+  const clock = fakeClock();
+  const shown = [];
+  const playback = createPlayback({ show: (cue) => shown.push(cue), schedule: clock.schedule });
+  playback.push(REEL[0]);
+  playback.play();
+  clock.drain();
+  assert.equal(playback.state, 'done', 'the reel should have run dry with one cue shown');
+
+  /* The protocol is still going, and a reader watching it must not be thrown
+     back to the beginning because the transport happened to catch up. */
+  playback.push(REEL[1]);
+  clock.drain();
+  assert.deepEqual(
+    shown.map((cue) => cue.step),
+    [REEL[0].step, REEL[1].step],
+    'a push after the reel ran dry replayed the recording instead of continuing it',
+  );
+});
