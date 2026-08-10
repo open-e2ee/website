@@ -1,11 +1,11 @@
 /*
- * The alpha.5 rename made every exported `Signal` spell `SignalProtocol`, and
- * the pre-rename names are still what a person reaches for from memory. Four
- * of them shipped to the marketing site before the identifier gate existed.
+ * Every exported `Signal` spells `SignalProtocol`. The shorter forms are what
+ * a person reaches for from memory, and several of them reached the marketing
+ * site before the identifier gate existed.
  *
- * These tests hold the gate to the whole family rather than the four we
- * happened to find: every pre-rename name must be rejected, and each must
- * point at the real export, so a fifth one cannot arrive quietly.
+ * These tests hold the gate to the whole family rather than to the ones that
+ * were caught by hand: every short form must be rejected, and each must point
+ * at the real export, so the next one cannot arrive quietly.
  */
 
 import assert from 'node:assert/strict';
@@ -16,11 +16,10 @@ import { readSdkSurface, suggest } from '../scripts/sdk-surface.mjs';
 const PRE_RENAME = [
   'ISignalRelayServer',
   'ISignalLocalStore',
-  /* Was `MockSignalRelayServer` until alpha.10 renamed the adapter itself. The
-   * entry has to track the real export or it stops standing for anything: the
-   * class it was the "minus Protocol" form of no longer exists under any
-   * spelling, so the list would have been asserting against a name with no
-   * export behind it rather than against the rename this gate is for. */
+  /* Each entry has to track the real export or it stops standing for
+   * anything. When an adapter itself is renamed, its entry here must be
+   * renamed with it — otherwise the list asserts against a name with no
+   * export behind it rather than against the short form this gate is for. */
   'InMemorySignalRelayServer',
   'ConvexSignalRelayServer',
   'SignalRemoteObjectStore',

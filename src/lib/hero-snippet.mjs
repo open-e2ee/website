@@ -92,10 +92,8 @@ const PACKAGE = capture.packageName;
  * `experimental` is not decoration. When the installed SDK marks a store
  * experimental in ADAPTERS.md, the flag puts the word in the option's own
  * label, where the choice is actually made, and a test holds the selector to
- * exactly the SDK's markers. Since alpha.14 no store carries the marker —
- * the web store graduated in alpha.13 and the bare React Native store in
- * alpha.14 — so every flag is false, and the machinery stays for the next
- * store that ships experimental.
+ * exactly the SDK's markers. No store carries the marker now, so every flag is
+ * false, and the machinery stays for the next store that ships experimental.
  */
 export const storageOptions = [
   {
