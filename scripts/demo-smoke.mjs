@@ -1161,37 +1161,6 @@ async function visitScenario(cdp, origin, held, slug) {
   }
 }
 
-/*
- * What one tab of the paired demo can see, including which tab it is.
- *
- * The row is read as field/value pairs rather than as text, because the checks
- * it exists for are about particular fields: the pane must print every key the
- * live envelope has and no others, and none of them may carry the sentence.
- * Text scraped out of the whole pane would let a pane that had stopped printing
- * a field go on passing a search for the absence of something.
- *
- * The lines and the row are read from the document, and they used to be read
- * from inside `[data-two-tab-output]`. That element used to be the whole
- * conversation — its own composer, its own transcript, its own relay pane, in a
- * section of its own. It is now the block that says who this tab is, and the
- * transcript and the stored row are in the demo panel's own panes, because
- * there is one panel and one set of panes whether the conversation is with this
- * tab or another one.
- *
- * Scoping to the output element would therefore find nothing, and it would find
- * nothing *quietly* — an empty transcript reads exactly like a message that
- * never arrived. What is preserved is the assertion, not the selector: every
- * line on the page is still read, still by data attribute, and the row is still
- * checked field by field.
- *
- * The row itself now comes from `[data-demo-meta]`, which is where the panel
- * prints it in both modes. The paired demo used to have a printer of its own
- * emitting `[data-two-tab-row]`, and it was the weaker of the two: it
- * summarised long values, wrote the literal `undefined` into a cell, and showed
- * eight fields where the panel showed ten. Reading the one surviving printer
- * lets the paired pane face the same field-by-field check as the solo one,
- * which is a stricter test than the one this replaced, not a looser one.
- */
 // ----------------------------------------------------------------- the verdict
 
 /*
@@ -1667,9 +1636,12 @@ function checkFigureMoves(first, second) {
     );
   }
   /* Two runs, one per device, and the read is scoped to the composition on
-     screen — so each step number appears once per side and the sorted set of
-     numbers is what a ramp reading left to right must produce. */
-  const rungs = [...new Set(litAfter)].sort();
+     screen, so each step number appears once per side and the duplicates have to
+     go. They are dropped in the order they were read: a `Set` keeps first-seen
+     order, and sorting the result afterwards would make ordering unobservable —
+     which is the one property the comparison below exists to test. A ramp that
+     lit 2 before 1 has to fail here, and after a sort it cannot. */
+  const rungs = [...new Set(litAfter)];
   const expected = rungs.map((_, index) => String(index + 1));
   if (rungs.join(' ') !== expected.join(' ')) {
     throw new Red(
