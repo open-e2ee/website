@@ -117,10 +117,22 @@ const OPENED = 'opened';
  * holds. The check is here because these strings are written by hand.
  */
 const SUFFIXES = [AFTER_READY, AFTER_PUBLISHED, AFTER_SESSION, AFTER_ENCRYPTED, AT_RELAY, OPENED];
+
+/*
+ * Searched through a `readonly string[]` view rather than through `STEPS`.
+ *
+ * `STEPS.indexOf(parts[0])` does not compile: `parts[0]` is a string and the
+ * parameter is a `Step`. The cast that satisfies the compiler — `parts[0] as
+ * Step` — asserts the one thing this loop exists to prove, because the strings
+ * above are written by hand and the question is whether they are steps at all.
+ * Widening the haystack keeps that a runtime question, so a typo in any of the
+ * six constants still throws while the page is being built.
+ */
+const STEP_ORDER: readonly string[] = STEPS;
 for (const list of SUFFIXES) {
   const parts = list.split(' ');
-  const at = STEPS.indexOf(parts[0]);
-  if (at < 0 || parts.join(' ') !== STEPS.slice(at).join(' ')) {
+  const at = STEP_ORDER.indexOf(parts[0]);
+  if (at < 0 || parts.join(' ') !== STEP_ORDER.slice(at).join(' ')) {
     throw new Error(`demo stage: "${list}" is not a suffix of the step order`);
   }
 }

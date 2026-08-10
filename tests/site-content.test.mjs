@@ -3645,3 +3645,89 @@ test('keeps the demo figure, its captions and its visibility rules on one state 
     assert.equal(count, step, `the rule for ${count} lit steps lights step ${step}`);
   }
 });
+
+test('runs the stage geometry, so its build-time checks are not dark', async () => {
+  /*
+   * The point of this test is the import.
+   *
+   * `stage-geometry.ts` carries about ten checks that throw while it is being
+   * loaded — the device ratio, the boundary gutters, nothing past the canvas,
+   * the stored envelope inside its slot. They only run when something imports
+   * the module, and until the layout lands the only importer is
+   * `DemoStage.astro`, which no page mounts yet. So every one of those checks
+   * was dark: proved to work, and not running.
+   *
+   * That is the shape of the failure worth naming. A check that cannot run
+   * reports exactly like a check that passes, and the gates were green because
+   * nothing asked. `astro check` did not cover it either — it type-checks
+   * unreferenced files but never executes their frontmatter, which is how a
+   * deliberate typo in one of the stage's step constants built cleanly.
+   *
+   * Importing here makes them run under `npm test` whether or not any page
+   * mounts the component, which is the property that should not depend on the
+   * layout. The assertions below are secondary; a throw during the import is
+   * this test's real failure mode.
+   */
+  const geometry = await import('../src/lib/demo/stage-geometry.ts');
+  assert.deepEqual(
+    geometry.COMPOSITIONS.map((composition) => composition.id),
+    ['wide', 'stacked'],
+    'the stage no longer offers exactly the two compositions the stylesheet switches between',
+  );
+});
+
+test('keeps the demo stage showing something at every step the run records', async () => {
+  /*
+   * The stage's visibility list, held to the step order the same way.
+   *
+   * `global.css` carries a hand-written pair per step —
+   * `[data-stage-state='x'] [data-stage-part~='x']` — and nothing derives it
+   * from anything. A step added to `STEPS` and forgotten here draws a reader an
+   * empty canvas at that step, which is the whole of the feature going blank
+   * while every gate stays green: the CSS is valid, the markup is valid, and
+   * `astro check` has no opinion about a string in one file and not another.
+   *
+   * This guard exists because the figure's equivalent was narrowed to
+   * `[data-figure-part~=` and took this list out of scope on its way past. It
+   * was never the figure guard's subject; it was in scope by accident, and an
+   * accident is not coverage. The build-time check in `DemoStage.astro` does
+   * not reach it either — that one reads the accent list, and the accent list
+   * and the visibility list are two different hand-written lists. A step can be
+   * in one and missing from the other.
+   *
+   * `idle` is the exception and it is deliberate rather than an omission:
+   * before anything has run there is nothing on the canvas that has happened,
+   * and a stage that drew something would be making a claim the run has not.
+   */
+  const trace = await read('../src/lib/demo/trace.ts');
+  const steps = [...trace.matchAll(/^ {2}'([a-z-]+)',$/gm)].map(([, step]) => step);
+  assert.ok(
+    steps.length >= 8,
+    `expected to be reading the STEPS array in trace.ts, found ${JSON.stringify(steps)}`,
+  );
+  assert.equal(steps[0], 'idle', 'the step order no longer starts at idle');
+
+  const css = await read('../src/styles/global.css');
+  const shown = cssRules(css).filter(
+    (rule) => rule.selector.includes('[data-stage-part~=') && /display:\s*inline/.test(rule.body),
+  );
+  assert.equal(
+    shown.length,
+    1,
+    `expected one rule showing the stage's parts, found ${shown.length}`,
+  );
+  const pairs = [
+    ...shown[0].selector.matchAll(
+      /\[data-stage-state='([a-z-]+)'\] \[data-stage-part~='([a-z-]+)'\]/g,
+    ),
+  ];
+  assert.deepEqual(
+    pairs.map(([, state]) => state),
+    steps.filter((step) => step !== 'idle'),
+    'a step can be reached that shows none of the stage — the visibility rule and the step ' +
+      'order disagree',
+  );
+  for (const [, state, part] of pairs) {
+    assert.equal(part, state, `the stage rule for "${state}" shows the parts of "${part}"`);
+  }
+});
