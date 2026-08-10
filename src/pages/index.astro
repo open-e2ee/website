@@ -259,11 +259,12 @@ const trustLinks = [
         </div>
         {/* Below the actions, never above them. The hero headline's floor is
             33px specifically because at 390px that is the difference between a
-            three-line and a four-line headline, and it lands the primary button
-            at 654 against a real-device fold of 664 — ten pixels of margin.
-            Anything inserted between the lead and the button spends that margin
-            and puts the page's one primary action under the fold, which is an
-            acceptance gate rather than a preference.
+            three-line and a four-line headline. At that width the primary
+            button's bottom measures 361px and the third action's 421px against
+            a real-device fold of 664 (headless Chrome, 2026-08-09), so the
+            whole block clears the fold — margin that anything inserted between
+            the lead and the actions spends. The primary action staying above
+            the fold is an acceptance gate rather than a preference.
 
             The runtime question is the first one a visitor has, and it was
             answered until now only by three links two screens down and a

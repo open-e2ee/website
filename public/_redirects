@@ -19,7 +19,7 @@
 # whatever fragment the reader arrived with, so /demo#flip-a-byte lands on the
 # section rather than on that scenario. Dropping the fragment here would invert
 # the trade — deep links would keep working and every bare /demo would land at
-# the top of the homepage, two bands above the thing it asked for. Bare /demo is
+# the top of the homepage, a band above the thing it asked for. Bare /demo is
 # what the sitemap, the old nav item, and any bookmark all point at. The one
 # deep link the site itself published was /demo#flip-a-byte on the homepage, and
 # the commit that folded the page deleted it, so the cost falls only on a link
