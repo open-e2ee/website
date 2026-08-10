@@ -3290,11 +3290,13 @@ test("the demo's own source calls the relay a relay", async () => {
     }
   }
   /* `../src/pages/demo.astro` was pushed here explicitly until the route folded
-   * into the homepage. Nothing replaces it: the scenarios and the two-tab
-   * section are now `src/components/demo/ScenarioList.astro` and
-   * `TwoTabSection.astro`, which the roots above already sweep. Pushing
-   * `index.astro` instead would have applied the demo's vocabulary rule to the
-   * whole marketing page, which is a different decision than this test makes. */
+   * into the homepage. Nothing replaces it: everything that route held is now a
+   * component under the roots above, which they already sweep — the scenarios
+   * in `ScenarioList.astro`, the pairing and the transcript inside
+   * `LiveCarrierPanel.astro` since the stage absorbed `TwoTabSection.astro`.
+   * Pushing `index.astro` instead would have applied the demo's vocabulary rule
+   * to the whole marketing page, which is a different decision than this test
+   * makes. */
 
   /* A glob that quietly matched nothing would pass this test forever. The floor
      is the tree's actual size rather than a loose lower bound: at 15 it had two
@@ -3437,8 +3439,15 @@ test('keeps the space on both sides of every inline code span', async () => {
   }
 
   /* A regex that stopped matching would pass on every file in the tree. The
-   * floor is the tree's measured count: 42 spans on 2026-08-09, down six
-   * from the pre-cut tree — the spans that left with the hero's disclosure
-   * list. */
-  assert.ok(spans >= 42, `expected to be scanning real code spans, counted ${spans}`);
+   * floor is the tree's measured count: 40 spans on 2026-08-10, down two from
+   * 42 on 2026-08-09, which was itself down six from the pre-cut tree — the
+   * spans that left with the hero's disclosure list. The two most recent went
+   * with `TwoTabSection.astro`, whose explanatory paragraph named
+   * `inMemoryStore()` and `inMemoryRelay()`; the section is now part of the
+   * demo panel and the panel's caption already names both.
+   *
+   * Re-measure and record the reason when this moves. The number is a tripwire
+   * for a regex that has stopped matching, so it is only worth what its last
+   * measurement was worth. */
+  assert.ok(spans >= 40, `expected to be scanning real code spans, counted ${spans}`);
 });

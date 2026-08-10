@@ -1,11 +1,13 @@
 /*
- * The two-tab section's DOM, and only its DOM.
+ * The two-tab conversation, rendered into the stage the single-tab demo built.
  *
- * `render.ts` beside this one prints a scenario's finished result: one run, one
- * verdict, one call. This prints a conversation that is still going, where
- * every line arrives from an event and the reader is holding the other end of
- * it in another window. Different job, different file, and the page fetches
- * whichever of the two the press needs.
+ * This used to own a section of its own: its own composer, its own transcript,
+ * its own pair of panes under a heading further down the page. The stage
+ * replaced all of that. There is one panel now — one field to type in, one
+ * relay pane, one far pane — and it shows either the round trip this tab made
+ * with itself or the conversation this tab is having with another one. So what
+ * is left here is the second of those two renderings, writing into elements the
+ * panel owns rather than into a root it fills.
  *
  * The relay pane is the argument this section exists to make, so it is not a
  * summary of the envelope. It is the row itself, key by key, read off the
@@ -17,13 +19,13 @@
  *
  * A third tab is a guest like the second, which means it registers the same
  * account and device the second one did on storage of its own, and the two
- * will disagree about whose mail is whose. The section's prose asks for one
- * more tab rather than more tabs for that reason.
+ * will disagree about whose mail is whose. The pairing control opens exactly
+ * one, and the panel's prose asks for one more tab rather than more tabs.
  *
  * The type imports here are types only, so this module carries no SDK. The
  * six-line element helper is a copy of `render.ts`'s rather than an import of
  * it, because importing it would pull four scenarios' worth of rendering into
- * the chunk this section fetches.
+ * the chunk this fetches.
  */
 
 import type { Envelope } from '@open-e2ee/signal-protocol-sdk';
@@ -78,159 +80,80 @@ function renderEnvelope(envelope: Envelope, nth: number): HTMLElement {
   row.dataset.twoTabRow = '';
   row.append(el('h5', `Row ${count(nth)}`));
   const fields = el('dl', undefined, 'two-tab-fields');
-  for (const [key, value] of Object.entries(envelope)) {
-    fields.append(el('dt', key), el('dd', preview(value)));
+  for (const [field, value] of Object.entries(envelope)) {
+    fields.append(el('dt', field), el('dd', preview(value)));
   }
   row.append(fields);
   return row;
 }
 
 export interface TwoTabViewOptions {
-  /** The page's own status line, which owns the words outside this block. */
+  /**
+   * The block that says who this tab is. Carries the roles as data, because
+   * the smoke harness drives two of these at once and has to know which tab it
+   * is looking at; reading that out of a sentence would make a copy edit a red
+   * run.
+   */
+  identity: HTMLElement;
+  /** This tab's own sends. */
+  sent: HTMLElement;
+  /** What arrived from the other tab and decrypted here. */
+  received: HTMLElement;
+  /** The rows the relay is holding, printed field by field. */
+  rows: HTMLElement;
+  /** The page's own status line, which owns the words outside these panes. */
   setStatus: (text: string) => void;
+  /** Handed every stored row, for the figure beside the panel. */
+  onEnvelope?: (envelope: Envelope) => void;
+  /** Called when a line from the other tab lands here. */
+  onReceived?: () => void;
 }
 
 /**
- * Fill `root` with this tab's half of the conversation, wired to `session`.
+ * Wire `session` to the stage's panes.
  *
  * Renders nothing on its own account: every line below the composer comes from
- * an event the session emitted, so a section with an empty transcript is a
- * section where nothing has been sent, not one where the rendering broke.
+ * an event the session emitted, so an empty transcript is a stage where nothing
+ * has been sent, not one where the rendering broke.
+ *
+ * Returns the unsubscribe the session handed back, so the panel can let go of
+ * the panes when the reader disconnects.
  */
-export function mountTwoTab(
-  root: HTMLElement,
-  session: TwoTabSession,
-  { setStatus }: TwoTabViewOptions,
-): void {
-  root.replaceChildren();
+export function mountTwoTab(session: TwoTabSession, options: TwoTabViewOptions): () => void {
+  const { identity, sent, received, rows, setStatus } = options;
 
-  /* The section's state as data rather than as prose. The smoke harness drives
-     two of these at once and has to know which tab it is looking at; reading
-     that out of the sentence below would make a copy edit a red run. */
-  root.dataset.twoTabRole = session.role;
-  root.dataset.twoTabMe = session.me;
-  root.dataset.twoTabPeer = session.peer;
+  identity.dataset.twoTabRole = session.role;
+  identity.dataset.twoTabMe = session.me;
+  identity.dataset.twoTabPeer = session.peer;
 
-  const identity = el('p', undefined, 'two-tab-identity');
-  identity.append(
-    'This tab is ',
-    el('strong', session.me),
-    ', writing to ',
-    el('strong', session.peer),
+  setStatus(
     session.role === 'host'
-      ? '. It is holding the relay, so keep it open.'
-      : '. The first tab is holding the relay.',
+      ? `Connected as ${session.me}. This tab is holding the relay, so keep it open.`
+      : `Connected as ${session.me}, through the relay in the other tab.`,
   );
 
-  const form = el('form', undefined, 'two-tab-composer');
-  const label = el('label', `Message to ${session.peer}`, 'two-tab-label');
-  const input = el('input', undefined, 'two-tab-input');
-  input.dataset.twoTabInput = '';
-  input.type = 'text';
-  input.id = 'two-tab-message';
-  input.autocomplete = 'off';
-  input.placeholder = 'Say something';
-  label.htmlFor = input.id;
-  const submit = el('button', 'Send', 'oe-button');
-  submit.dataset.twoTabSend = '';
-  submit.type = 'submit';
-  /*
-   * Leaving, as something the reader does rather than something that happens.
-   *
-   * A tab that is closed takes its device and its subscriptions with it and
-   * nobody finds out whether putting them away worked. That matters more here
-   * than it reads: both `subscribe()` and `subscribeRetryRequests()` hand back
-   * an unsubscribe function synchronously, and a relay that returned a promise
-   * from either would send, deliver and decrypt perfectly and then fail in
-   * `stop()` — the one call no scenario on this page makes. So the tab has a
-   * way to leave, the smoke harness presses it in both tabs, and a teardown
-   * that throws says so on the status line.
-   */
-  const leave = el('button', 'Disconnect this tab', 'oe-button oe-button-secondary');
-  leave.dataset.twoTabDisconnect = '';
-  leave.type = 'button';
-  form.append(label, input, submit, leave);
-
-  const transcript = el('ul', undefined, 'scenario-device-messages two-tab-transcript');
-  const mine = el('div', undefined, 'scenario-device');
-  mine.append(el('h4', 'This tab'), transcript);
-
-  const envelopes = el('div', undefined, 'two-tab-envelopes');
-  const relay = el('div', undefined, 'scenario-device');
-  relay.append(el('h4', `What the relay is holding for ${session.peer}`), envelopes);
-
-  const panes = el('div', undefined, 'scenario-devices');
-  panes.append(mine, relay);
-  root.append(identity, form, panes);
-
-  const line = (role: string, text: string) => {
+  const line = (into: HTMLElement, role: string, text: string) => {
     const item = el('li', undefined, 'two-tab-line');
     item.dataset.twoTabLine = '';
     item.append(el('span', role, 'two-tab-role'), el('span', text, 'two-tab-text'));
-    transcript.append(item);
+    into.append(item);
     item.scrollIntoView({ block: 'nearest' });
   };
 
   let stored = 0;
-  session.on((event) => {
+  return session.on((event) => {
     if (event.type === 'sent') {
-      line(`${session.me} →`, event.text);
+      line(sent, `${session.me} →`, event.text);
     } else if (event.type === 'received') {
       /* `senderId` off the decrypted message rather than `session.peer`: the
          label should say who the SDK decided this came from, which is the
          claim being demonstrated, not who this tab was expecting. */
-      line(`${event.message.senderId} →`, event.message.content);
+      line(received, `${event.message.senderId} →`, event.message.content);
+      options.onReceived?.();
     } else {
       stored += 1;
-      envelopes.append(renderEnvelope(event.envelope, stored));
+      rows.append(renderEnvelope(event.envelope, stored));
+      options.onEnvelope?.(event.envelope);
     }
-  });
-
-  form.addEventListener('submit', (submitted) => {
-    submitted.preventDefault();
-    const text = input.value;
-    if (text.trim().length === 0) return;
-    input.disabled = true;
-    submit.disabled = true;
-    setStatus('Encrypting, and handing the envelope to the relay…');
-    void session
-      .send(text)
-      .then(() => {
-        input.value = '';
-        setStatus(`The relay is holding it for ${session.peer}.`);
-      })
-      .catch((error: unknown) => {
-        setStatus(`The send failed: ${error instanceof Error ? error.message : String(error)}`);
-      })
-      .finally(() => {
-        input.disabled = false;
-        submit.disabled = false;
-        input.focus();
-      });
-  });
-
-  leave.addEventListener('click', () => {
-    leave.disabled = true;
-    input.disabled = true;
-    submit.disabled = true;
-    setStatus('Closing this tab’s device and letting go of the relay…');
-    void session
-      .stop()
-      .then(() => {
-        root.dataset.twoTabStopped = '';
-        setStatus(
-          session.role === 'host'
-            ? `${session.me} has left and the relay went with it. Reload both tabs to start again.`
-            : `${session.me} has left. The other tab is still holding the relay.`,
-        );
-      })
-      .catch((error: unknown) => {
-        /* Loud, and not only on the console. A teardown that throws is the
-           failure this control exists to expose, so it goes where the reader
-           and the harness both read. */
-        setStatus(
-          `This tab could not close cleanly: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      });
   });
 }

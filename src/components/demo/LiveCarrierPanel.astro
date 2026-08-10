@@ -4,7 +4,7 @@ import CarrierPanel from '../CarrierPanel.astro';
 import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 
 /*
- * The recording, made reproducible.
+ * The recording, made reproducible — and then made into a stage.
  *
  * `CarrierPanel` prints a round trip that happened once, on a machine the
  * reader does not have. This component keeps that panel exactly where it was
@@ -12,7 +12,7 @@ import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
  * the installed `@open-e2ee/signal-protocol-sdk` in their tab, with the
  * envelope the relay held printed from the object itself.
  *
- * Three things about the shape are load-bearing rather than stylistic.
+ * Four things about the shape are load-bearing rather than stylistic.
  *
  * **The recorded panel is the default, not the fallback that gets rendered on
  * failure.** It is server-rendered and stays in the DOM; the script hides it
@@ -32,6 +32,14 @@ import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
  * maintained by hand and drifted from ten fields to six, in the direction that
  * flattered us, on the one panel whose whole job is not overstating the
  * evidence.
+ *
+ * **There is one composer, and it has two things it can be wired to.** Solo,
+ * it drives `./driver`'s pair of clients in this tab. Paired, it drives
+ * `./two-tab`'s single client and reaches the other tab's. The panes are the
+ * same panes either way, and which one is live is decided by whether a real
+ * session with a real other tab exists — never by anything the page assumed.
+ * A second device is drawn only once a tab has said, over its own channel,
+ * that it has a client up.
  */
 
 const installedVersion = sdkManifest.version;
@@ -41,9 +49,20 @@ const packageName = sdkManifest.name;
  * that the ciphertext underneath still looks like a wall rather than a line. */
 const MAX_LENGTH = 140;
 const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
+
+/*
+ * The fragment the pairing control opens, and the one the arriving tab acts on.
+ *
+ * Deliberately not `#demo`. That anchor is the hero's scroll target and a
+ * link a reader may well have bookmarked, and a page that started a 713 KB
+ * import because someone followed it would be spending the budget invariant 7
+ * protects on a reader who only asked to look. This fragment exists for one
+ * purpose and is only ever produced by the control below.
+ */
+const PAIR_FRAGMENT = 'demo-pair';
 ---
 
-<div class="live-carrier" data-demo="live-carrier-panel">
+<div class="live-carrier" data-demo="live-carrier-panel" data-pair-fragment={PAIR_FRAGMENT}>
   {/*
     The recorded capture. Server-rendered, visible on arrival, and the state
     the page returns to if the live demo cannot run. `data-demo-recorded` is
@@ -81,7 +100,13 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
   */}
   <figure class="carrier-panel live-carrier-live" data-demo-live hidden>
     <div class="carrier-pane">
-      <span class="label">your device</span>
+      {/*
+        Who is at this end, always on screen rather than only once something
+        has been paired. Solo it says both devices are in this tab, because
+        both of them are; paired it says which account this tab holds. Neither
+        line is ever written from anything but a session that exists.
+      */}
+      <span class="label" data-demo-near-label>your device · this tab</span>
       <div class="live-carrier-compose">
         <label class="oe-visually-hidden" for="live-demo-input">
           A sentence to encrypt, up to {MAX_LENGTH} characters
@@ -90,19 +115,26 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
           id="live-demo-input"
           class="live-carrier-input"
           data-demo-input
+          data-two-tab-input
           type="text"
           autocomplete="off"
           spellcheck="false"
           maxlength={MAX_LENGTH}
           placeholder={PLACEHOLDER}
         />
-        <button class="oe-button live-carrier-send" data-demo-send type="button">
+        <button
+          class="oe-button live-carrier-send"
+          data-demo-send
+          data-two-tab-send
+          type="button"
+        >
           Encrypt it
         </button>
       </div>
       <p class="carrier-cipher-note" data-demo-status role="status">
         The SDK loads when you start typing.
       </p>
+      <ul class="two-tab-transcript live-carrier-transcript" data-demo-sent hidden></ul>
     </div>
 
     <CarrierBoundary kind="seal" />
@@ -139,18 +171,26 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
       <p class="carrier-cipher-note" data-demo-cipher-note></p>
       <dl class="carrier-meta" data-demo-meta></dl>
       <p class="carrier-cipher-note" data-demo-meta-note></p>
+      {/*
+        The paired panel's rows, printed key by key rather than summarised.
+        Separate from the list above because that one is a single round trip's
+        envelope and this is a conversation's, one row per send, and a reader
+        comparing two of them is doing the thing the pane is for.
+      */}
+      <div class="two-tab-envelopes" data-demo-rows hidden></div>
     </div>
 
     <CarrierBoundary kind="open" />
 
     <div class="carrier-pane">
-      <span class="label">the other device</span>
+      <span class="label" data-demo-far-label>the second device · also this tab</span>
       <p class="carrier-cipher-note" data-demo-idle>
         The same sentence lands here, decrypted by the receiving device, with what each half of
         the trip cost.
       </p>
       <p class="carrier-message" data-demo-decrypted></p>
       <p class="carrier-cipher-note" data-demo-timing></p>
+      <ul class="two-tab-transcript live-carrier-transcript" data-demo-received hidden></ul>
     </div>
 
     <figcaption class="carrier-caption">
@@ -178,6 +218,42 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
   </figure>
 
   {/*
+    The pairing control, and the one thing on this page that needs a second
+    window. It is the primary action under the panel rather than a section of
+    its own further down: a reader who has just watched a sentence travel
+    between two clients in one tab is at the moment the question "but were they
+    really separate?" occurs to them, and the answer is one press away.
+  */}
+  <div class="live-carrier-pairing">
+    <button class="oe-button" type="button" data-two-tab-connect>Open the second device</button>
+    {/*
+      The same destination as a link, revealed when the press could not open a
+      tab itself — a blocked pop-up, or a browser that does not tell a page
+      whether a click was a real one. Hidden rather than absent so the reveal
+      costs no layout and the destination is the same string in both paths.
+    */}
+    <a
+      class="live-carrier-pair-link"
+      data-two-tab-pair-link
+      href={`#${PAIR_FRAGMENT}`}
+      target="_blank"
+      rel="noopener"
+      hidden
+    >
+      Open the second device in a new tab
+    </a>
+    <p class="scenario-status" data-two-tab-status role="status">
+      Both devices are in this tab until you open a second one.
+    </p>
+    <div class="live-carrier-peers" data-two-tab-output hidden>
+      <p class="two-tab-identity" data-two-tab-identity></p>
+      <button class="oe-button oe-button-secondary" type="button" data-two-tab-disconnect>
+        Disconnect this tab
+      </button>
+    </div>
+  </div>
+
+  {/*
     Invariant 8's claim, stated where it can be checked, and phrased as an
     instruction rather than a reassurance: the reader has the network tab and
     the page has nothing to hide from it. It says nothing about the console,
@@ -193,6 +269,9 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
 <script>
   import { createDemoLoader } from '../../lib/demo/loader';
   import type { DemoExchange, DemoSession } from '../../lib/demo/driver';
+  import type { StageFigure, StageState } from '../../lib/demo/figure';
+  import type { Presence } from '../../lib/demo/presence';
+  import type { TwoTabSession } from '../../lib/demo/two-tab';
 
   const panel = document.querySelector<HTMLElement>('[data-demo="live-carrier-panel"]');
   if (panel) upgrade(panel);
@@ -213,6 +292,18 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
     const metaNote = pick('[data-demo-meta-note]');
     const decrypted = pick('[data-demo-decrypted]');
     const timing = pick('[data-demo-timing]');
+    const nearLabel = pick('[data-demo-near-label]');
+    const farLabel = pick('[data-demo-far-label]');
+    const sentLines = pick('[data-demo-sent]');
+    const receivedLines = pick('[data-demo-received]');
+    const rows = pick('[data-demo-rows]');
+
+    const connect = pick<HTMLButtonElement>('[data-two-tab-connect]');
+    const pairLink = pick<HTMLAnchorElement>('[data-two-tab-pair-link]');
+    const pairStatus = pick('[data-two-tab-status]');
+    const peers = pick('[data-two-tab-output]');
+    const peerIdentity = pick('[data-two-tab-identity]');
+    const leave = pick<HTMLButtonElement>('[data-two-tab-disconnect]');
 
     /* The upgrade itself. Running at all is the evidence that JavaScript works,
        which is the one thing the recorded panel is the fallback for. */
@@ -244,6 +335,46 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
       status.textContent = text;
     };
 
+    const setPairStatus = (text: string) => {
+      pairStatus.textContent = text;
+    };
+
+    /*
+     * The figure beside the panel, fetched on the same press that fetches the
+     * SDK and never before it.
+     *
+     * It is a few hundred bytes of DOM handling with no protocol code in it,
+     * and it still waits: the pre-interaction payload is measured, the whole
+     * drawing is already in the HTML, and a module that only decides which
+     * parts of it are on screen has nothing to do until a reader has asked for
+     * something. Until it lands the figure sits in the state the build shipped
+     * it in, which is the state a page that has run nothing is honestly in.
+     */
+    let figure: StageFigure | null = null;
+    let figureLoading: Promise<void> | null = null;
+    let lastState: StageState = 'idle';
+
+    const stage = (state: StageState) => {
+      lastState = state;
+      if (figure) {
+        figure.advance(state);
+        return;
+      }
+      if (figureLoading) return;
+      figureLoading = import('../../lib/demo/figure')
+        .then((module) => {
+          const root = document.querySelector<HTMLElement>('[data-demo-figure]');
+          if (!root) return;
+          figure = module.mountStageFigure(root);
+          figure.jump(lastState);
+        })
+        .catch(() => {
+          /* Same reasoning as the SDK chunk: a figure that never arrived leaves
+             the drawing at the state the build shipped, and the panel beside it
+             is where the evidence was always going to be. */
+        });
+    };
+
     /* A failed load is not an error box. It is the recorded panel, back where
        it was, with one line saying why the reader is looking at a recording. */
     const fallBack = (reason: string) => {
@@ -259,7 +390,10 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
        overwritten a microtask later by the catch in `boot()` — which is the line
        a reader has always actually seen. */
     loader.subscribe((state) => {
-      if (state.status === 'loading') setStatus('Loading the SDK…');
+      if (state.status === 'loading') {
+        setStatus('Loading the SDK…');
+        stage('sdk-loading');
+      }
     });
 
     /*
@@ -285,6 +419,20 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
         .then(async (module) => {
           setStatus('Booting two devices…');
           session = await module.startDemoSession();
+          session.on((event) => {
+            if (event.type === 'message-sent') {
+              established();
+              stage('encrypted');
+              stage('in-transit');
+            } else if (event.type === 'envelope-stored') {
+              figure?.cipher((event.envelope as unknown as Record<string, unknown>).ciphertext);
+              stage('stored-at-relay');
+              stage('delivered');
+            } else {
+              stage('opened');
+            }
+          });
+          stage('devices-ready');
           /* The handshake number, with the thing to do next attached to it.
              It read `Two devices, N ms to a shared secret.` and arrived on
              the first keystroke — a timing for work the reader had not asked
@@ -316,7 +464,25 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
      * this by watching the console on a page that was otherwise recovering
      * correctly.
      */
-    input.addEventListener('focus', () => void boot().catch(() => {}), { once: true });
+    input.addEventListener(
+      'focus',
+      () => {
+        /* Paired, the other module owns this tab's client and booting a second
+           pair of devices behind it would be 713 KB of nothing. */
+        if (paired) return;
+        void boot().catch(() => {});
+      },
+      { once: true },
+    );
+
+    /* PQXDH runs inside the first `send()`, so the first report of a sealed
+       envelope is also the first evidence of a session. Said once. */
+    let announced = false;
+    const established = () => {
+      if (announced) return;
+      announced = true;
+      stage('session-established');
+    };
 
     const render = (exchange: DemoExchange) => {
       const envelope = exchange.envelope as unknown as Record<string, unknown>;
@@ -384,6 +550,10 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
      * identifies a page view, so this is the closest a cookieless model gets to
      * "a reader ran it", and it is deliberately the conservative direction.
      *
+     * Solo only, and that is not an oversight. The paired panel is a
+     * conversation between two windows, has never been a measured surface, and
+     * `demo:smoke` fails the run if a beacon appears while it is being driven.
+     *
      * `public/measure.js` owns the beacon; this owns the moment. The site's
      * delegated click handler reads links, and this is a button in a module it
      * knows nothing about.
@@ -394,6 +564,191 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
       reportedRun = true;
       window.oeMeasure?.('demo_run');
     };
+
+    /* ------------------------------------------------------------ pairing --- */
+
+    let paired: TwoTabSession | null = null;
+    let joining: Promise<void> | null = null;
+    let unmount: (() => void) | null = null;
+    let presence: Presence | null = null;
+    let peerHere: string | null = null;
+
+    /*
+     * Who is at each end, in the panes rather than in a sentence.
+     *
+     * Solo, both devices are in this tab and the labels say so — the panel is
+     * two clients talking to each other, and a label that implied otherwise
+     * would be the one lie this whole band exists to avoid. Paired, the far
+     * label names the account this tab is writing to, and says whether a tab
+     * holding it has actually announced itself. It never names a peer that has
+     * not.
+     */
+    const describe = () => {
+      if (!paired) {
+        nearLabel.textContent = 'your device · this tab';
+        farLabel.textContent = 'the second device · also this tab';
+        return;
+      }
+      nearLabel.textContent = `${paired.me} · this tab`;
+      farLabel.textContent = peerHere
+        ? `${peerHere} · the other tab`
+        : `${paired.peer} · no tab has it yet`;
+    };
+
+    const pairUrl = () => {
+      const url = new URL(window.location.href);
+      url.hash = `#${panel.dataset.pairFragment ?? ''}`;
+      return url.toString();
+    };
+
+    /*
+     * Opening the second tab, only when the browser says a person asked.
+     *
+     * `window.open` is called before anything is awaited, because a browser
+     * counts a click as permission to open a window for a short moment and the
+     * SDK import is longer than that moment. The activation check in front of
+     * it is what makes this deterministic rather than dependent on a pop-up
+     * blocker's mood: a synthetic click — the smoke harness's, or any script's
+     * — carries no activation, so no tab is opened and the link below the
+     * button is revealed instead. Both paths reach the same fragment.
+     */
+    const openSecondTab = () => {
+      const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } })
+        .userActivation;
+      const opened = activation?.isActive === true
+        ? window.open(pairUrl(), '_blank', 'noopener')
+        : null;
+      if (!opened) pairLink.hidden = false;
+    };
+
+    const join = () => {
+      if (joining) return joining;
+      connect.disabled = true;
+      setPairStatus('Loading the SDK…');
+      stage('sdk-loading');
+
+      joining = Promise.all([
+        import('../../lib/demo/two-tab'),
+        import('../../lib/demo/two-tab-view'),
+        import('../../lib/demo/presence'),
+      ])
+        .then(async ([twoTab, view, presenceModule]) => {
+          setPairStatus('Registering a device in this tab…');
+          const started = await twoTab.startTwoTabSession();
+          paired = started;
+
+          for (const idle of panel.querySelectorAll('[data-demo-idle]')) idle.remove();
+          sentLines.hidden = false;
+          receivedLines.hidden = false;
+          rows.hidden = false;
+          peers.hidden = false;
+          connect.hidden = true;
+
+          unmount = view.mountTwoTab(started, {
+            identity: peers,
+            sent: sentLines,
+            received: receivedLines,
+            rows,
+            setStatus: setPairStatus,
+            onEnvelope: (envelope) => {
+              figure?.cipher((envelope as unknown as Record<string, unknown>).ciphertext);
+            },
+            onReceived: () => stage('opened'),
+          });
+
+          peerIdentity.textContent =
+            started.role === 'host'
+              ? `This tab is ${started.me} and is holding the relay, so keep it open.`
+              : `This tab is ${started.me}. The other tab is holding the relay.`;
+
+          presence = presenceModule.openPresence({
+            me: started.me,
+            role: started.role,
+            onJoin: (peer) => {
+              peerHere = peer.me;
+              describe();
+              setPairStatus(`${peer.me} is here, in another tab. Type in either one.`);
+            },
+            onLeave: () => {
+              peerHere = null;
+              describe();
+              setPairStatus('The other tab has gone. Open a second one again to carry on.');
+            },
+          });
+          presence.announce();
+
+          describe();
+          stage('devices-ready');
+        })
+        .catch((cause: unknown) => {
+          /* Same rule as a scenario: this promises live cryptography, so a tab
+             that could not boot one says why rather than showing a pane. */
+          setPairStatus(
+            `This tab could not connect: ${cause instanceof Error ? cause.message : String(cause)}`,
+          );
+          peers.hidden = true;
+          connect.hidden = false;
+          connect.disabled = false;
+          joining = null;
+        });
+
+      return joining;
+    };
+
+    connect.addEventListener('click', () => {
+      openSecondTab();
+      void join();
+    });
+
+    /*
+     * Leaving, as something the reader does rather than something that happens.
+     *
+     * A tab that is closed takes its device and its subscriptions with it and
+     * nobody finds out whether putting them away worked. That matters more here
+     * than it reads: both `subscribe()` and `subscribeRetryRequests()` hand back
+     * an unsubscribe function synchronously, and a relay that returned a promise
+     * from either would send, deliver and decrypt perfectly and then fail in
+     * `stop()` — the one call no scenario on this page makes. So the tab has a
+     * way to leave, the smoke harness presses it in both tabs, and a teardown
+     * that throws says so on the status line.
+     */
+    leave.addEventListener('click', () => {
+      const going = paired;
+      if (!going) return;
+      leave.disabled = true;
+      setPairStatus('Closing this tab’s device and letting go of the relay…');
+      void going
+        .stop()
+        .then(() => {
+          unmount?.();
+          unmount = null;
+          presence?.close();
+          presence = null;
+          paired = null;
+          peerHere = null;
+          peers.dataset.twoTabStopped = '';
+          describe();
+          setPairStatus(
+            going.role === 'host'
+              ? `${going.me} has left and the relay went with it. Reload both tabs to start again.`
+              : `${going.me} has left. The other tab is still holding the relay.`,
+          );
+        })
+        .catch((error: unknown) => {
+          /* Loud, and not only on the console. A teardown that throws is the
+             failure this control exists to expose, so it goes where the reader
+             and the harness both read. */
+          setPairStatus(
+            `This tab could not close cleanly: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+    });
+
+    /* The other tab finds out this one has gone, rather than holding a label
+       for a device that is not there any more. */
+    window.addEventListener('pagehide', () => presence?.close());
+
+    /* ------------------------------------------------------------- typing --- */
 
     const submit = async () => {
       const text = input.value.trim();
@@ -406,15 +761,35 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
 
       inFlight = true;
       send.disabled = true;
-      setStatus(session ? 'Encrypting…' : 'Loading the SDK…');
       try {
-        const ready = await boot();
-        const exchange = await ready.send(text);
-        render(exchange);
-        reportRun();
-        setStatus('Sent. Type another and press it again.');
-      } catch {
-        /* `fallBack` has already run for both failure shapes that reach here. */
+        if (paired) {
+          setStatus('Encrypting, and handing the envelope to the relay…');
+          const conversation = paired;
+          await conversation.send(text);
+          established();
+          stage('encrypted');
+          stage('in-transit');
+          stage('stored-at-relay');
+          input.value = '';
+          setStatus(`The relay is holding it for ${conversation.peer}.`);
+          claim.hidden = false;
+        } else {
+          setStatus(session ? 'Encrypting…' : 'Loading the SDK…');
+          const ready = await boot();
+          const exchange = await ready.send(text);
+          render(exchange);
+          reportRun();
+          setStatus('Sent. Type another and press it again.');
+        }
+      } catch (cause: unknown) {
+        /* `fallBack` has already run for the solo failures that reach here. A
+           paired send has no recording to fall back to — the other tab is the
+           other half of it — so it says what went wrong and stays where it is. */
+        if (paired) {
+          setStatus(
+            `That send did not go through: ${cause instanceof Error ? cause.message : String(cause)}`,
+          );
+        }
       } finally {
         inFlight = false;
         send.disabled = false;
@@ -428,5 +803,18 @@ const PLACEHOLDER = 'Type a sentence and watch it become the row below.';
         void submit();
       }
     });
+
+    /*
+     * The tab that was opened by the press in the other one.
+     *
+     * Read once, from the fragment the page loaded with, and never from a
+     * `hashchange`. Every other link to this band uses `#demo`, and a listener
+     * would turn any of them into a 713 KB import for a reader who only
+     * followed an anchor.
+     */
+    if (window.location.hash === `#${panel.dataset.pairFragment ?? ''}`) {
+      panel.scrollIntoView({ block: 'center' });
+      void join();
+    }
   }
 </script>
