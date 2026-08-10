@@ -468,9 +468,39 @@ async function waitFor(cdp, sessionId, expression, timeoutMs, describe, context 
     if (await evaluate(cdp, sessionId, expression)) return true;
     await new Promise((r) => setTimeout(r, 100));
   }
-  const extra = context();
+  const extra = await context();
   throw new Red(extra.length ? `${describe}\n${extra.join('\n')}` : describe);
 }
+
+/*
+ * What each half of a compound wait was holding when it ran out of time.
+ *
+ * A conjunction that times out names the whole condition and none of its parts.
+ * "The first tab never completed a solo round trip" is equally true of a figure
+ * that stalled with the text decrypted and of a decryption that never landed
+ * under a figure that arrived, and the timeout alone cannot tell them apart —
+ * so the one run in six that fails teaches nothing, and the next reader starts
+ * from where this one started.
+ *
+ * Read at the moment of the failure rather than polled throughout, because what
+ * is wanted is the state the run ended in, and a term that changed while the
+ * wait was running would be reported as whichever sample happened to be kept.
+ */
+const terms = (cdp, sessionId, parts) => async () => {
+  const lines = [];
+  for (const [name, expression] of Object.entries(parts)) {
+    let held;
+    try {
+      held = await evaluate(cdp, sessionId, expression);
+    } catch (error) {
+      /* The page being unreadable is itself the answer, and it must not replace
+         the failure that is already on its way up. */
+      held = `unreadable: ${error.message}`;
+    }
+    lines.push(`  ${name}: ${JSON.stringify(held)}`);
+  }
+  return lines;
+};
 
 const present = (selector) => `Boolean(document.querySelector(${JSON.stringify(selector)}))`;
 
@@ -1377,7 +1407,14 @@ async function visitTwoTabs(cdp, origin, held) {
       SCENARIO_TIMEOUT_MS,
       `the first tab never completed a solo round trip before pairing, within ` +
         `${SCENARIO_TIMEOUT_MS} ms`,
-      complaints(first),
+      async () => [
+        ...(await terms(cdp, first.sessionId, {
+          "the figure's state": `document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.stageState ?? null`,
+          'the decrypted pane': `document.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? null`,
+          'the sentence it wanted': JSON.stringify(TAB_SOLO),
+        })()),
+        ...complaints(first)(),
+      ],
     );
 
     const connected = [];
