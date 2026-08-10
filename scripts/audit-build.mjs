@@ -86,8 +86,8 @@ const TERMINOLOGY = [
    * appear in exist to be precise about who this project is not affiliated
    * with, so getting the name wrong defeats the disclaimer. */
   /\bSignal Foundation\b/i,
-  /* Compatibility shorthand retired in 0.1.0-alpha.5: it implies an
-   * endorsement or an interop guarantee that does not exist. */
+  /* Compatibility shorthand: each implies an endorsement or an interop
+   * guarantee that does not exist. */
   /\bSignal-(?:inspired|style|styled|aligned|grade|compatible)\b/i,
   /* libsignal is the reference implementation; it is not "Signal's", and
    * public prose names it "the reference implementation". */

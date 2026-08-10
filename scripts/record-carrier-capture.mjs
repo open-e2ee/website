@@ -17,9 +17,9 @@
  * renders as the recorded file, so the code on the page cannot drift from the
  * code that produced the row beneath it — there is one copy and it is executed.
  *
- * Re-record when the program stops being true of the installed package: an
- * identifier rename (alpha.10 moved both adapters off the word "mock"), a
- * changed factory signature, a new envelope field. A bump on its own does not
+ * Re-record when the program stops being true of the installed package: a
+ * renamed identifier, a changed factory signature, a new envelope field. A
+ * bump on its own does not
  * need one, and `tests/site-content.test.mjs` is what makes that safe — it
  * checks every recorded field name against the installed `Envelope` type, so a
  * release that drops a field fails the build instead of leaving the caption

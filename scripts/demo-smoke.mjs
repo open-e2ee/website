@@ -268,7 +268,9 @@ const PRE_INTERACTION_CEILING = 32 * 1024;
  * number is only here to catch the expectation collapsing: an `Envelope` that
  * suddenly declares two fields would make an equality check trivially
  * satisfiable, and a harness that passes because it expected nothing is worse
- * than no harness. Ten is what the installed alpha.10 produces.
+ * than no harness. Ten is a floor, not the expectation: if the installed
+ * `Envelope` ever declares fewer, this fails loudly rather than letting the
+ * equality check pass on a shrunken set.
  */
 const MIN_DERIVED_FIELDS = 10;
 
