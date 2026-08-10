@@ -15,7 +15,7 @@ questions after a 10-second screenshot test:
 5. What should the developer do next?
 
 After 30 seconds, the developer must also understand the supported runtimes,
-the application-owned storage and relay model, the alpha status, and the main
+the application-owned storage and relay model, the maturity caveat, and the main
 security boundary.
 
 Optimize for qualified starts of the existing ten-minute quickstart. Keep one
@@ -127,7 +127,7 @@ Use fresh-context critics that do not receive the builder's explanations:
 2. A conversion critic checks the offer, objections, action hierarchy, and
    friction to the quickstart.
 3. A developer-credibility critic checks the install command, TypeScript code,
-   technical claims, alpha limit, license, and relay boundary.
+   technical claims, maturity caveat, license, and relay boundary.
 4. A visual-design critic compares real screenshots with the three reference
    sites and the OpenE2EE design contract.
 5. An accessibility critic checks both themes, keyboard use, focus, contrast,
@@ -160,7 +160,7 @@ The result passes only when all these conditions are true:
 - The TypeScript sample comes from the recorded quickstart and uses accessible
   syntax colors in light and dark mode.
 - The page states the supported runtimes and the application-owned adapters.
-  It also states the fixed relay formula and alpha limit without a banned claim.
+  It also states the fixed relay formula and maturity caveat without a banned claim.
 - The visual decision has a written comparison. A kept visual improves
   comprehension and remains readable on mobile. A removed visual leaves no
   unexplained claim or broken proof path.
