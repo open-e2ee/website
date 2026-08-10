@@ -268,6 +268,7 @@ const PAIR_FRAGMENT = 'demo-pair';
   import { createDemoLoader } from '../../lib/demo/loader';
   import type { DemoExchange, DemoSession } from '../../lib/demo/driver';
   import type { StageDirection, StageFigure, StageState } from '../../lib/demo/figure';
+  import type { Playback } from '../../lib/demo/playback';
   import type { Presence } from '../../lib/demo/presence';
   import type { TwoTabSession } from '../../lib/demo/two-tab';
 
@@ -347,7 +348,22 @@ const PAIR_FRAGMENT = 'demo-pair';
      * something. Until it lands the figure sits in the state the build shipped
      * it in, which is the state a page that has run nothing is honestly in.
      */
+    /**
+     * How long this panel holds each state, in milliseconds.
+     *
+     * `--oe-duration-normal`. A local relay answers in single digits, so without
+     * a floor the seal, the transit and the storage land inside one frame and a
+     * reader sees the last of the three. Flat across every state, because this
+     * panel's figure is a status line for the pane beside it rather than the
+     * thing being read.
+     */
+    const PANEL_DWELL_MS = 180;
+
     let figure: StageFigure | null = null;
+    /* The reading pace, in the same lazy chunk as the drawing it paces. The
+       figure holds no clock of its own — `playback.ts` says why — so the two
+       arrive together or neither is any use. */
+    let reel: Playback<{ step: StageState }> | null = null;
     let figureLoading: Promise<void> | null = null;
     let lastState: StageState = 'idle';
 
@@ -366,13 +382,18 @@ const PAIR_FRAGMENT = 'demo-pair';
     let lastCipher: unknown = null;
     let messages = 0;
 
-    const mounted = (ready: StageFigure) => {
+    const mounted = (ready: StageFigure, paced: Playback<{ step: StageState }>) => {
       figure = ready;
+      reel = paced;
       ready.direction(lastDirection);
       ready.label(...lastLabels);
       ready.ratchet(messages);
       if (lastCipher !== null) ready.cipher(lastCipher);
-      ready.jump(lastState);
+      /* Caught up to where the run already is, rather than replayed from the
+         start. The states passed while the chunk was in flight are gone and
+         should be: a reader whose figure arrives at `stored-at-relay` is owed
+         the state the run is in, not an animation of the part they missed. */
+      ready.show(lastState);
     };
 
     /* Remembered for the same reason the labels are: the relay reports the
@@ -386,16 +407,34 @@ const PAIR_FRAGMENT = 'demo-pair';
 
     const stage = (state: StageState) => {
       lastState = state;
-      if (figure) {
-        figure.advance(state);
+      if (reel) {
+        reel.push({ step: state });
+        reel.play();
         return;
       }
       if (figureLoading) return;
-      figureLoading = import('../../lib/demo/figure')
-        .then((module) => {
+      figureLoading = Promise.all([
+        import('../../lib/demo/figure'),
+        import('../../lib/demo/playback'),
+      ])
+        .then(([figureModule, playbackModule]) => {
           const root = document.querySelector<HTMLElement>('[data-demo-figure]');
           if (!root) return;
-          mounted(module.mountStageFigure(root));
+          const ready = figureModule.mountStageFigure(root);
+          mounted(
+            ready,
+            playbackModule.createPlayback<{ step: StageState }>({
+              show: (cue) => ready.show(cue.step),
+              /* One dwell for every state, built from the caption list rather
+                 than written out. `tests/site-content.test.mjs` already pins
+                 that list to `StageState`, so a state added without a dwell is
+                 impossible rather than merely unlikely — and this panel wants
+                 the flat pace it has always had, not the stage's per-step one. */
+              dwellMs: Object.fromEntries(
+                Object.keys(figureModule.CAPTIONS).map((state) => [state, PANEL_DWELL_MS]),
+              ),
+            }),
+          );
         })
         .catch(() => {
           /* Same reasoning as the SDK chunk: a figure that never arrived leaves

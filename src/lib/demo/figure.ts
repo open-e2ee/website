@@ -8,9 +8,15 @@
  * is constructed here, so there is no second copy of the drawing to drift from
  * the first one.
  *
- * Every state below is entered from something the SDK reported. Nothing is on a
- * timer. Two of them need saying out loud, because they look like animation
- * frames and are not:
+ * It has no clock. `show()` puts a state on screen and returns; what decides
+ * when the next one may replace it is `playback.ts`, which owns the reading
+ * pace and is the only place a duration is chosen. That separation is the point
+ * rather than tidiness — the figure is driven by a recording of a run that
+ * really happened, and a drawing that also held the pacing would be a drawing
+ * able to change what it was reporting by changing how fast it reported it.
+ *
+ * Every state below is entered from something the SDK reported. Two of them
+ * need saying out loud, because they look like animation frames and are not:
  *
  *   `in-transit` is the interval between the client returning an envelope and
  *   the relay confirming it holds the row. Something really is outstanding for
@@ -115,15 +121,6 @@ export const INCOMING_CAPTIONS: Readonly<Partial<Record<StageState, string>>> = 
 };
 
 /**
- * How long a state stays on screen before the next one may replace it.
- *
- * `--oe-duration-normal`, in milliseconds. A local relay answers in single
- * digits, so without a floor the seal, the transit and the storage would land
- * inside one frame and a reader would see the last of the three.
- */
-const MIN_DWELL_MS = 180;
-
-/**
  * How many steps the ratchet run is drawn with.
  *
  * `RATCHET_STEPS` from the diagram grammar, repeated here as the ceiling the
@@ -139,10 +136,15 @@ const MIN_DWELL_MS = 180;
 const RATCHET_STEPS = 4;
 
 export interface StageFigure {
-  /** Queue a state, holding each one long enough to be seen. */
-  advance(state: StageState): void;
-  /** Show a state now, dropping anything queued behind it. */
-  jump(state: StageState): void;
+  /**
+   * Put a state on screen, now.
+   *
+   * There is no queued form and no delayed form, because there is no clock in
+   * here to hold one against. A caller that wants states paced calls this from
+   * `playback.ts`; a caller catching a figure up to where a run already is
+   * calls it directly.
+   */
+  show(state: StageState): void;
   /** Which way the next states are travelling, and whose captions they get. */
   direction(value: StageDirection): void;
   /** Print the real ciphertext in the relay lane. */
@@ -170,44 +172,8 @@ export function mountStageFigure(root: HTMLElement): StageFigure {
     }
   };
 
-  /* Read per call rather than once: a reader who turns motion down mid-page
-     gets the next state immediately rather than at the next reload. */
-  const settle = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  const queue: StageState[] = [];
-  let timer: number | null = null;
-
-  const pump = () => {
-    const next = queue.shift();
-    if (next === undefined) {
-      timer = null;
-      return;
-    }
-    show(next);
-    timer = window.setTimeout(pump, MIN_DWELL_MS);
-  };
-
-  const clear = () => {
-    queue.length = 0;
-    if (timer !== null) window.clearTimeout(timer);
-    timer = null;
-  };
-
   return {
-    advance(state) {
-      if (settle()) {
-        clear();
-        show(state);
-        return;
-      }
-      queue.push(state);
-      if (timer === null) pump();
-    },
-
-    jump(state) {
-      clear();
-      show(state);
-    },
+    show,
 
     direction(value) {
       facing = value;
