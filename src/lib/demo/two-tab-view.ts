@@ -68,6 +68,16 @@ export interface TwoTabViewOptions {
   onEnvelope?: (envelope: Envelope, direction: EnvelopeDirection) => void;
   /** Called when a line from the other tab lands here. */
   onReceived?: () => void;
+  /**
+   * Called when this tab learns what the other one is called, including the
+   * time after that when the answer changes.
+   *
+   * The second call is the interesting one. A tab that reloads comes back under
+   * a new name, so a second `met` is a different correspondent on a different
+   * session — and anything the panel is counting per session has to start again
+   * here, because this is the only moment either side is told.
+   */
+  onMet?: (peer: string) => void;
 }
 
 /**
@@ -109,6 +119,7 @@ export function mountTwoTab(session: TwoTabSession, options: TwoTabViewOptions):
       line(sent, `${session.me} →`, event.text);
     } else if (event.type === 'met') {
       identity.dataset.twoTabPeer = event.peer;
+      options.onMet?.(event.peer);
     } else if (event.type === 'received') {
       /* `senderId` off the decrypted message rather than `session.peer`: the
          label should say who the SDK decided this came from, which is the

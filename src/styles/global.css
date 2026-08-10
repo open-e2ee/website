@@ -1689,6 +1689,7 @@ a:hover {
 
 .demo-figure [data-stage-state='devices-ready'] [data-figure-part~='devices-ready'],
 .demo-figure [data-stage-state='peer-connected'] [data-figure-part~='peer-connected'],
+.demo-figure [data-stage-state='peer-gone'] [data-figure-part~='peer-gone'],
 .demo-figure [data-stage-state='session-established'] [data-figure-part~='session-established'],
 .demo-figure [data-stage-state='encrypted'] [data-figure-part~='encrypted'],
 .demo-figure [data-stage-state='in-transit'] [data-figure-part~='in-transit'],

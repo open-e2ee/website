@@ -770,20 +770,33 @@ const PAIR_FRAGMENT = 'demo-pair';
           peers.hidden = false;
           connect.hidden = true;
 
-          /* The solo run's progress, retired with the solo run's panes.
-             `established()` fires once per session and the flag it sets was
-             surviving the handover, so a reader who typed before pairing had
-             `peer-connected` suppressed when the second tab arrived — the
-             caption stayed on "two devices are up" while the status line said
-             the other tab was here. The paired session has established nothing
-             yet, so clearing it is also simply true. */
-          announced = false;
-
           unmount = view.mountTwoTab(started, {
             identity: peers,
             sent: sentLines,
             received: receivedLines,
             setStatus: setPairStatus,
+            /*
+             * A new correspondent is a new session, and both of the counters
+             * this panel keeps per session start again here.
+             *
+             * This is the seam that knows. `meet()` fires it once when the
+             * second tab first names itself and again whenever that answer
+             * changes, which is what a reloaded tab coming back under a new
+             * name looks like — and nothing else on this page is told.
+             *
+             * `messages` is the ratchet run, whose contract is how many
+             * messages *this session* has carried. Left alone it spanned both
+             * halves of a reload, drawing three steps over a session that had
+             * carried one. `announced` is "PQXDH has run", and left alone it
+             * suppressed the arrival of the second tab as old news: first for
+             * a reader who had typed solo before pairing, and then again for
+             * every rejoin after a tab had sent anything at all.
+             */
+            onMet: () => {
+              messages = 0;
+              figure?.ratchet(0);
+              announced = false;
+            },
             /*
              * Every row the relay takes, in either direction, printed into the
              * pane and drawn in the lane.
@@ -884,6 +897,21 @@ const PAIR_FRAGMENT = 'demo-pair';
               connect.disabled = false;
               pairLink.hidden = !linkOffered;
               setPairStatus('The other tab has gone. Open a second one again to carry on.');
+
+              /*
+               * The drawing, walked back off a claim that has stopped being
+               * true.
+               *
+               * Only this one state. `peer-connected` is the single caption
+               * whose subject is the other tab and whose tense is present —
+               * "the far device is another window now" — so a departure left
+               * it asserting a window that had closed, directly above a far
+               * label reading "no tab has it yet". Every state after it
+               * narrates a trip that did happen and stays as it is: the
+               * sentence really was sealed, stored and opened, and a reader
+               * who steps away mid-read should not find the evidence rewound.
+               */
+              if (lastState === 'peer-connected') stage('peer-gone');
             },
           });
           presence.announce();

@@ -62,6 +62,7 @@ export type StageState =
   | 'sdk-loading'
   | 'devices-ready'
   | 'peer-connected'
+  | 'peer-gone'
   | 'session-established'
   | 'encrypted'
   | 'in-transit'
@@ -85,6 +86,13 @@ export const CAPTIONS: Readonly<Record<StageState, string>> = {
   'sdk-loading': 'Fetching the SDK. None of it was downloaded until you asked.',
   'devices-ready': 'Two devices are up, each with its own store and published key bundle.',
   'peer-connected': 'A second tab announced itself. The far device is another window now, not this one.',
+  /* The one state a run enters by losing something, and the reason it exists.
+     Every other caption here is either present tense about something that is
+     still true or past tense about a trip that finished. `peer-connected` is
+     present tense about a tab, so a departure leaves it asserting a second
+     window that has closed — directly above a far label reading "no tab has it
+     yet". A state that narrates the loss is the only honest way back. */
+  'peer-gone': 'The other tab has closed. This device is on its own until a second one opens.',
   'session-established':
     'Session established with PQXDH and ML-KEM. Both devices hold the derived key.',
   encrypted: 'Encrypted on this device. The plaintext and the private keys stay here.',

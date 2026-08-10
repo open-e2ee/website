@@ -232,6 +232,9 @@ const LANE_RULE_Y = 210;
 const ACCENTS = [
   { state: 'devices-ready', x: NEAR_X, width: DEVICE_WIDTH, y: DEVICE_RULE_Y },
   { state: 'peer-connected', x: FAR_X, width: DEVICE_WIDTH, y: DEVICE_RULE_Y },
+  /* Back on the near device, which is what is left. Same bar as `devices-ready`
+     in a different state, and deliberately so: this tab holds one device again. */
+  { state: 'peer-gone', x: NEAR_X, width: DEVICE_WIDTH, y: DEVICE_RULE_Y },
   { state: 'session-established', x: NEAR_X, width: WIDTH - NEAR_X * 2, y: DEVICE_RULE_Y },
   { state: 'encrypted', x: SEALED_X, width: SLAB_WIDTH, y: SLAB_RULE_Y },
   { state: 'in-transit', x: TRANSIT_OUT_X, width: SLAB_WIDTH, y: SLAB_RULE_Y },
@@ -246,7 +249,7 @@ const ACCENTS = [
    file keeps: `tests/site-content.test.mjs` reads these three lists out of the
    source and compares them to the state order, and a `+` between two halves is
    a token in the middle of the list it is reading. */
-const AFTER_READY = 'devices-ready peer-connected session-established encrypted in-transit stored-at-relay delivered opened';
+const AFTER_READY = 'devices-ready peer-connected peer-gone session-established encrypted in-transit stored-at-relay delivered opened';
 const AFTER_SESSION = 'session-established encrypted in-transit stored-at-relay delivered opened';
 const AT_RELAY = 'stored-at-relay delivered opened';
 

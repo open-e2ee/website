@@ -1134,6 +1134,12 @@ const TWO_TAB_SNAPSHOT = `(() => {
       document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.stageState ?? null,
     figureCaption:
       document.querySelector(${JSON.stringify(FIGURE_CAPTION)})?.textContent?.trim() ?? '',
+    /* The ratchet run, as the list of lit steps the drawing carries. Its
+       contract is "how many messages this session has carried", and a session
+       here is a pair of tabs — so a count that survived the solo run before it
+       is describing a session that did not exist. */
+    figureRatchet:
+      document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.figureRatchet ?? '',
     /* Whether a reader who has just been told to open a second tab has
        anything to press. Either route counts; none is the defect. */
     pairingOffered: (() => {
@@ -2040,6 +2046,42 @@ function checkPairingLifecycle(handover, bereft, guestName) {
       `the first tab's figure reached "peer-connected" with the wrong caption under it.\n` +
         `  It reads:    ${JSON.stringify(handover.figureCaption)}\n` +
         `  It should be ${JSON.stringify(expected)}`,
+    );
+  }
+
+  /*
+   * The ratchet run belongs to the session under it, and a handover is a new
+   * session.
+   *
+   * `figure.ts` calls this "how many messages this session has carried". The
+   * counter behind it lived on the panel and spanned everything the tab had
+   * ever done, so the solo round trip this run makes before it pairs left a
+   * step lit under a pairing that had carried nothing — and a peer that
+   * reloaded, which comes back under a new name, went on adding to the run of
+   * the session it replaced. Both are the same seam: the moment this tab
+   * learns what the other one is called.
+   *
+   * Empty rather than a number, because the drawing lights steps by listing
+   * them. Both halves are checked: cleared when the peer is met, and counting
+   * again afterwards — a reset that never counted again would pass the first.
+   */
+  if (handover.figureRatchet !== '') {
+    throw new Red(
+      `the pairing inherited the solo run's ratchet: the figure lit ` +
+        `${JSON.stringify(handover.figureRatchet)} at the handover, before the two tabs had ` +
+        `exchanged anything.\n` +
+        `  The run says how many messages this session has carried, and this session had just\n` +
+        `  begun. Clear the count where the peer is learned rather than where the panel boots —\n` +
+        `  the same seam a reloaded tab comes back through, under a new name.`,
+    );
+  }
+  const carried = '1 2';
+  if (bereft.figureRatchet !== carried) {
+    throw new Red(
+      `the paired session carried two messages — one sent, one received — and the figure lit ` +
+        `${JSON.stringify(bereft.figureRatchet)} rather than ${JSON.stringify(carried)}.\n` +
+        `  Fewer means the run stopped following the conversation; more means it is still\n` +
+        `  counting something from before the two tabs met.`,
     );
   }
 
