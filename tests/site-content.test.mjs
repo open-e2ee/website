@@ -30,6 +30,20 @@ import {
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
 
+/*
+ * Build-output assertions skip when dist/ is absent, so `npm test` still runs
+ * on an unbuilt tree locally. In CI the workflow builds before it tests, so an
+ * absent page there means the ordering regressed — and a plain skip would hide
+ * exactly that. Every dist-reading guard in this file calls this instead of
+ * returning bare: locally it is a no-op, in CI it fails the test.
+ */
+const skipUnbuilt = (page) => {
+  assert.ok(
+    !process.env.CI,
+    `${page} is missing — CI builds before it tests, so a dist-reading assertion must never skip here`,
+  );
+};
+
 test('keeps the tagline contract: proposed lines annotated, approved lines free', async () => {
   /*
    * This used to pin three exact strings in Footer.astro. That guard was
@@ -59,7 +73,9 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
   try {
     pages = (await readdir(distDir, { recursive: true })).filter((name) => name.endsWith('.html'));
   } catch {
-    return; // dist/ absent — the build-output tests in this file all skip together.
+    // dist/ absent — the build-output tests in this file all skip together.
+    skipUnbuilt('dist/');
+    return;
   }
   /* 15 since /compare folded into /product, which followed /demo folding into
    * the homepage. This is a floor on the walk finding the site, not a count
@@ -109,7 +125,7 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
   const dist = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
-  if (!dist) return;
+  if (!dist) return skipUnbuilt('dist/index.html');
   assert.equal((dist.match(/ten minutes · two clients · no account/g) ?? []).length, 2);
   const heroStart = dist.indexOf('<section class="hero">');
   assert.notEqual(heroStart, -1, 'the hero section is not on the built page');
@@ -136,7 +152,7 @@ test('says the release is alpha on the page that sells it', async () => {
   const dist = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
-  if (!dist) return;
+  if (!dist) return skipUnbuilt('dist/index.html');
   const copy = dist.slice(dist.indexOf('<div class="hero-copy">'), dist.indexOf('<div class="hero-demo">'));
   assert.doesNotMatch(copy, /0\.1\.x alpha/);
   assert.match(dist, /0\.1\.x alpha/);
@@ -534,7 +550,8 @@ test('shows every metadata field the relay was recorded holding', async () => {
     assert.ok(recorded.includes(key), `relayRecord.${key} is absent from metadataFields`);
   }
 
-  if (!dist) return; /* `npm test` before a build checks the source contract only. */
+  /* `npm test` before a build checks the source contract only. */
+  if (!dist) return skipUnbuilt('dist/index.html');
 
   for (const field of recorded) {
     if (held.has(field)) {
@@ -903,11 +920,10 @@ test('permanently redirects the folded route to the page that absorbed it', asyn
    * worse than the dead route it replaced, because it also tells the crawler
    * the move is permanent.
    *
-   * Checked against the page source rather than dist. CI runs `npm test`
-   * before `npm run build`, so a dist-reading assertion there either fails on
-   * a tree that was never built or gets written as a skip — and a redirect
-   * guard that quietly passes on an unbuilt tree is worth nothing. The source
-   * file is the thing that decides whether the route exists. */
+   * Checked against the page source rather than dist: the source file is the
+   * thing that decides whether the route exists, and a source-side guard also
+   * holds on an unbuilt tree, where a redirect guard that quietly skips is
+   * worth nothing. */
   const destination = await read('../src/pages/security.astro').catch(() => null);
   assert.ok(destination, 'the redirect points at a page this repo does not have');
 });
@@ -930,8 +946,8 @@ test('sends the folded demo route at a section the homepage still has', async ()
    * other is the failure this exists for, and hard-coding the id in the
    * assertion would make this guard agree with whichever half was edited last.
    *
-   * Source rather than dist, because CI runs `npm test` before `npm run build`
-   * and a redirect guard that skips on an unbuilt tree is worth nothing. */
+   * Source rather than dist, so the guard also holds on an unbuilt tree —
+   * a redirect guard that skips without a build is worth nothing. */
   const fragment = /^\/demo \/#([a-z-]+) 308$/m.exec(redirects)?.[1];
   assert.ok(fragment, 'the /demo rule no longer targets a fragment');
 
@@ -963,7 +979,7 @@ test('leaves the reviewer a path to the licence the review is for', async () => 
    * link carries a comment naming both /licensing and /pricing to record the
    * choice between them, and a guard on the bare href would be satisfied by
    * its own explanation; no comment on this page contains the rendered anchor.
-   * Source rather than dist because CI tests before it builds. */
+   * Source rather than dist, so the guard also runs on an unbuilt tree. */
   const source = await read('../src/pages/security.astro');
   assert.match(source, /<a href="\/licensing">Which licence your product needs<\/a>/);
 });
@@ -1352,6 +1368,7 @@ test('keeps the relay formula intact in the strings that travel alone', async ()
         new URL(`../dist/${page === 'index' ? '' : `${page}/`}index.html`, import.meta.url),
         'utf8',
       ).catch(() => null);
+      if (!built) skipUnbuilt(`dist/${page === 'index' ? '' : `${page}/`}index.html`);
       return [page, await flat(`../src/pages/${page}.astro`), built];
     }),
   );
@@ -2155,7 +2172,7 @@ test('shows the price it calls published, and cannot drift from /pricing', async
   assert.match(index, /from \$\{startupTier\.price\}/);
   assert.match(index, /href: '\/pricing'/);
 
-  if (!dist) return;
+  if (!dist) return skipUnbuilt('dist/index.html');
   assert.doesNotMatch(dist, /at a published price/);
   assert.ok(
     dist.includes(startupTier.price),
@@ -2165,7 +2182,7 @@ test('shows the price it calls published, and cannot drift from /pricing', async
 
   /* And the page it links to still renders every tier, so the link does not
    * lead somewhere that lost the number the cell just promised. */
-  if (!pricingPage) return;
+  if (!pricingPage) return skipUnbuilt('dist/pricing/index.html');
   for (const tier of tiers) {
     assert.ok(
       pricingPage.includes(tier.price),
@@ -2271,7 +2288,7 @@ test('does not read the ciphertext blob aloud, and does not eat spaces', async (
    * says everything the blob says and in less than a second. */
   assert.match(panel, /<p class="carrier-cipher" aria-hidden="true">/);
   assert.match(panel, /base64 characters, \$\{/);
-  if (!dist) return;
+  if (!dist) return skipUnbuilt('dist/index.html');
 
   /* Astro collapses the whitespace between a text node and a following inline
    * element, which silently joined "archived in 2021." to the package name
@@ -2288,7 +2305,7 @@ test('quotes no number it did not measure', async () => {
   const dist = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
-  if (!dist) return;
+  if (!dist) return skipUnbuilt('dist/index.html');
 
   /* Every number this page prints is one it can show its working for: the
    * ciphertext lengths are read off the recording, the version comes from the
@@ -2335,6 +2352,7 @@ test('does not overstate the one artefact that exists to not be overstated', asy
   assert.match(index, /against the in-memory relay/);
   /* Absence is asserted against the rendered page, not the source: the comment
    * recording *why* the adjective went has to be free to quote it. */
+  if (!dist) skipUnbuilt('dist/index.html');
   if (dist) {
     assert.doesNotMatch(dist, /real round trip/);
     assert.match(dist, /recorded by running the quickstart/);
@@ -2370,7 +2388,7 @@ test('does not deny a build step in the /product lead the page later explains', 
   assert.match(source, /needs a development build rather than Expo Go/);
   assert.match(source, /SQLCipher requires a development build/);
 
-  if (!dist) return;
+  if (!dist) return skipUnbuilt('dist/product/index.html');
   assert.doesNotMatch(dist, /No native modules\. No\s*prebuild step\./);
   assert.match(dist, /needs a development build rather than Expo Go/);
 });
@@ -2467,9 +2485,11 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
    * and the runtime-name check moves to the source instead: a runtime named in
    * an `alt` or an `aria-label` is still the lead naming a runtime, and
    * stripping tags is exactly what would hide it. */
-  const leadSource = (await readFile(new URL('../dist/index.html', import.meta.url), 'utf8')
-    .catch(() => null))
-    ?.match(/<p class="lead">([\s\S]*?)<\/p>/)?.[1];
+  const leadPage = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
+    () => null,
+  );
+  if (!leadPage) skipUnbuilt('dist/index.html');
+  const leadSource = leadPage?.match(/<p class="lead">([\s\S]*?)<\/p>/)?.[1];
   const lead = leadSource
     ?.replace(/<[^>]+>/g, '')
     .replace(/&rsquo;/g, '’')
@@ -2590,6 +2610,7 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
   const dist = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
+  if (!dist) skipUnbuilt('dist/index.html');
   if (dist) {
     assert.doesNotMatch(dist, /carries them sealed/);
     /* The boundary claim itself is asserted below against the carrier band's
@@ -2642,7 +2663,8 @@ test('carries what the OSI mark is licensed on, wherever the mark is', async () 
   const built = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
-  if (!built || !/class="osi-mark"/.test(built)) return;
+  if (!built) return skipUnbuilt('dist/index.html');
+  if (!/class="osi-mark"/.test(built)) return;
 
   /* Not "somewhere on the page": the anchor is the mark's own parent. A link
    * beside it, or a footer link to opensource.org, is not the logo being
@@ -2789,7 +2811,7 @@ test('draws the TypeScript logo the way its branding page publishes it', async (
   const built = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
-  if (!built) return;
+  if (!built) return skipUnbuilt('dist/index.html');
   const rendered = built.match(/<span class="ts-mark">[\s\S]*?<\/span>/)?.[0];
   assert.ok(rendered, 'the TypeScript mark is not on the built page');
   assert.match(rendered, /fill="#fff"/i, 'the built page draws the "TS" as a hole');
@@ -2896,7 +2918,7 @@ test('spaces the three marks in the lead identically', async () => {
   const built = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
-  if (!built) return;
+  if (!built) return skipUnbuilt('dist/index.html');
   const battery = built.match(/<span class="battery-mark">[\s\S]*?<\/span>/)?.[0];
   assert.ok(battery, 'the battery mark is not on the built page');
   const view = battery.match(/viewBox="([^"]+)"/)?.[1].split(/\s+/).map(Number);
@@ -2999,7 +3021,7 @@ test('says whether the adapters ship, wherever it says they are yours', async ()
   const dist = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
-  if (!dist) return;
+  if (!dist) return skipUnbuilt('dist/index.html');
 
   assert.doesNotMatch(dist, /SDK ships adapters for both/);
   assert.match(dist, /yours to supply/);
@@ -3321,9 +3343,8 @@ test("the demo's own source calls the relay a relay", async () => {
  * checked by eye against a convention nothing enforced, and being right that time
  * is not a property of the process.
  *
- * Read from `src/pages`, not from `dist`: CI runs the test suite before the build
- * (`.github/workflows/ci.yml`), so a guard that needs built output skips there and
- * only ever runs locally.
+ * Read from `src/pages`, not from `dist`, so the guard also runs on an unbuilt
+ * tree rather than skipping without a build.
  */
 test('alternates the band surface down every page', async () => {
   const dir = new URL('../src/pages/', import.meta.url);
