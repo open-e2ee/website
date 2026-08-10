@@ -98,7 +98,7 @@ export const axes = [
   {
     axis: 'Maintained',
     cells: [
-      'Yes — 0.1.x alpha, active',
+      'Yes — 0.1.x, active',
       'Yes — very active; repo push 2026-07-31',
       'No — archived, last push 2021-08-04',
       'No — last npm publish 2023-05-06, last repo push 2023-07-18',
@@ -178,7 +178,7 @@ export const notes = [
   {
     key: 'oe',
     heading: 'This SDK',
-    body: 'An independent TypeScript implementation of the published Signal Protocol specifications, running in Expo, React Native, modern browsers, and Node from one package, with post-quantum PQXDH on by default and failing closed. Storage and transport are yours to compose. It is 0.1.x alpha, it is reviewed by adversarial AI agents but not audited by any independent firm, and it is not wire-compatible with Signal Messenger — each of those is stated at length elsewhere on this site rather than left for you to discover.',
+    body: 'An independent TypeScript implementation of the published Signal Protocol specifications, running in Expo, React Native, modern browsers, and Node from one package, with post-quantum PQXDH on by default and failing closed. Storage and transport are yours to compose. It is 0.1.x, it is reviewed by adversarial AI agents but not audited by any independent firm, and it is not wire-compatible with Signal Messenger — each of those is stated at length elsewhere on this site rather than left for you to discover.',
     verdict:
       'The case for it is the row above: the Signal Protocol, in the runtimes the other Signal Protocol libraries do not reach.',
   },
