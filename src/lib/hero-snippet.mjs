@@ -89,13 +89,12 @@ const PACKAGE = capture.packageName;
  * forgot the `await` would hand the client a pending promise where a store
  * belongs.
  *
- * `experimental` is not decoration. index.astro carries the sentence "The
- * bare React Native store is experimental; the Expo, Node, and browser
- * stores are not", /product carries the same grade, two tests hold them to
- * it, and a selector that offered all five as peers would be the one place
- * on the page where that line is contradicted by the thing it describes.
- * The flag puts the word in the option's own label, where the choice is
- * actually made.
+ * `experimental` is not decoration. index.astro's quickstart caveat carries
+ * the sentence "The bare React Native store is experimental", /product
+ * carries the same grade, two tests hold them to it, and a selector that
+ * offered all five as peers would be the one place on the page where that
+ * line is contradicted by the thing it describes. The flag puts the word in
+ * the option's own label, where the choice is actually made.
  */
 export const storageOptions = [
   {

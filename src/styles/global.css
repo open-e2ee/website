@@ -292,22 +292,6 @@ code {
   max-width: 58ch;
 }
 
-/*
- * The one paragraph on the page that quotes somebody else. A rule on the
- * inline start marks it as citation rather than as our own claim, which is
- * also what stops libsignal's sentence being read as a disclosure about this
- * SDK — the failure the standalone blockquote band had when it carried the
- * same words at h2 weight with no question in front of them.
- */
-.stance {
-  font-size: 0.9375rem;
-  line-height: 1.55;
-  color: var(--oe-muted);
-  max-width: 56ch;
-  border-inline-start: 2px solid var(--oe-border);
-  padding-inline-start: var(--oe-space-4);
-}
-
 /* ------------------------------------------------------------- linkage --- */
 
 a {
@@ -849,8 +833,8 @@ a:hover {
  *
  * `justify-items: center` rather than a max-width on the grid, because the
  * children want different widths: the copy wants a reading measure, the panel
- * wants the program, the objections want two columns of prose, and the platform
- * strip wants the container. The three that cap themselves do it below.
+ * wants the program, and the platform strip wants the container. The one that
+ * caps itself does it below.
  */
 .hero-grid {
   /* Named so the strip below can subtract it. A second copy of this clamp is a
@@ -872,9 +856,8 @@ a:hover {
  * section" rather than "here is what that panel runs on".
  *
  * It is the panel's caption. The strip and the demo are already the same
- * 1100px box — the copy above is a 768px reading measure and the objections
- * below are 896px — so the grouping is a fact about the layout that the spacing
- * was contradicting.
+ * 1100px box — the copy above is a 768px reading measure — so the grouping is
+ * a fact about the layout that the spacing was contradicting.
  *
  * 16px flat rather than a fraction of the gap. A fraction holds one ratio at
  * every width, which is the tempting version and the wrong one here: at 390 the
@@ -956,9 +939,10 @@ a:hover {
  * is a line of centred body copy the reader does not have to walk back to the
  * left edge for.
  *
- * There were two capped children here. The other was `.maturity`, which has
- * moved to the foot of the hero — it is not part of the offer, and it was
- * costing this column three lines of centred mono directly above the button.
+ * There were two capped children here. The other was `.maturity`, which moved
+ * to the foot of the hero and was then cut from this page — it was not part of
+ * the offer, and it was costing this column three lines of centred mono
+ * directly above the button.
  */
 .hero-copy {
   display: flex;
@@ -1293,98 +1277,6 @@ a:hover {
  */
 .hero-snippet.code-block pre {
   font-size: clamp(0.8125rem, 1.8cqi, 1.125rem);
-}
-
-/*
- * The objections, which are the one part of the hero that is not centred.
- *
- * They are paragraphs of argument rather than short blocks of offer, and
- * centred argument is where a ragged left edge starts costing real reading. So
- * the group is centred and its text is not.
- *
- * Two columns from 60rem, because the two `.stance` paragraphs are a matched
- * pair — same question form, same citation rule down the inline start — and
- * stacking them under an 832px panel sets two short lines against a wide empty
- * right half. `.honesty` is not one of the pair: it answers no "why not", it
- * states the security boundary, so it takes its own row underneath, and
- * `.maturity` takes the row under that.
- *
- * Those rows are indented by exactly the rule and the padding a `.stance` puts
- * in front of its own text, so all four paragraphs share one left edge. Centring
- * it instead was tried and looked like a mistake: a paragraph with no rule
- * beginning 230px into an otherwise flush-left block reads as something that
- * failed to line up rather than as something placed.
- */
-.hero-objections {
-  display: grid;
-  /* The scale is 1, 2, 3, 4, 6, 8, 12, 16, 24 — there is no 5, and asking for
-     one is silent: `gap: var(--oe-space-4)` is an invalid value, so the grid
-     falls back to `normal`, which is zero. That shipped for one build and put
-     the two citation rules end to end on a phone, reading as one paragraph
-     with one rule. `tests/site-content.test.mjs` now checks every spacing
-     token this file names against the package that defines them. */
-  gap: var(--oe-space-6);
-  width: 100%;
-  max-width: 56rem;
-  text-align: start;
-}
-
-@media (min-width: 60rem) {
-  .hero-objections {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .hero-objections .honesty {
-    grid-column: 1 / -1;
-    padding-inline-start: calc(var(--oe-space-4) + 2px);
-  }
-
-  /* The maturity line takes a full row for the same reason and shares the
-     same left edge, but with a margin rather than padding: it is the one
-     paragraph here that carries a rule over it, and padding would start that
-     rule 18px to the left of the text it belongs to. */
-  .hero-objections .maturity {
-    grid-column: 1 / -1;
-    margin-inline-start: calc(var(--oe-space-4) + 2px);
-  }
-}
-
-/*
- * The excerpt's own disclosure, in the space the excerpt's question creates.
- *
- * It borrows the metadata typeface from `.maturity` rather than the body face
- * on purpose: this is not part of the argument, it is the bill of materials
- * for the code above it, and it should read as annotation attached to the
- * panel rather than as another paragraph competing with the offer. The rule on
- * top ties it to the panel the way `.maturity`'s rule ties that line to the
- * button.
- */
-.excerpt-drops {
-  border-top: 1px solid var(--oe-border);
-  padding-top: var(--oe-space-3);
-  color: var(--oe-muted);
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-.excerpt-drops-title {
-  font-family: var(--oe-metadata-font-family);
-  font-weight: var(--oe-metadata-weight);
-  font-size: var(--oe-metadata-size);
-  letter-spacing: var(--oe-metadata-tracking);
-  margin-bottom: var(--oe-space-2);
-}
-
-.excerpt-drops ul {
-  margin: 0;
-  padding-inline-start: var(--oe-space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--oe-space-1);
-}
-
-.excerpt-drops code {
-  font-size: 0.9em;
 }
 
 .maturity {
@@ -2850,8 +2742,8 @@ table.data td {
  * difference matters enough to write down. The wrap is gone from this panel:
  * `.code-block:not(.hero-snippet)` excludes it, so 91 characters scroll
  * sideways instead of folding into 35 rows. Measured at 390 with the panel
- * always open, the panel is 467px and the objections begin at 1,526 — one fold
- * of code, not three. Most of what the disclosure was built to save had already
+ * always open, the panel was 467px and what followed it began at 1,526 — one
+ * fold of code, not three. Most of what the disclosure was built to save had already
  * been paid back by the scroll, and what was left of it was an affordance
  * between a reader and the page's primary evidence.
  *
