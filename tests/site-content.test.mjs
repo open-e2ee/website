@@ -3421,7 +3421,8 @@ test('keeps the space on both sides of every inline code span', async () => {
   }
 
   /* A regex that stopped matching would pass on every file in the tree. The
-   * floor is the tree's measured count: 40 spans on 2026-08-09, after the
-   * hero's disclosure list took its seven spans with it. */
-  assert.ok(spans >= 40, `expected to be scanning real code spans, counted ${spans}`);
+   * floor is the tree's measured count: 42 spans on 2026-08-09, down six
+   * from the pre-cut tree — the spans that left with the hero's disclosure
+   * list. */
+  assert.ok(spans >= 42, `expected to be scanning real code spans, counted ${spans}`);
 });
