@@ -136,13 +136,11 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
 });
 
 test('states maturity as the version plus the before-1.0 caveat, with no stage adjective', async () => {
-  /* messaging.md §4 retired "alpha" with the 0.1.0 release: the maturity
-   * claim is the version number itself plus the before-1.0 caveat, and every
-   * stage adjective — alpha included, now that the stage it named has ended —
-   * is banned alongside the softer words it used to guard against. The pages
-   * that grade the release — /product and /security — carry the canonical
-   * line; the homepage carries none since the founder cut its hero
-   * disclosure paragraphs on 2026-08-09, but the negative still binds it. */
+  /* messaging.md §4: the maturity claim is the version number itself plus the
+   * before-1.0 caveat. No stage adjective may stand in for it. The pages that
+   * grade the release — /product and /security — carry the canonical line;
+   * the homepage carries no maturity line at all, but the negative binds it
+   * too, so one cannot reappear there unstated. */
   const [index, product, security] = await Promise.all([
     flat('../src/pages/index.astro'),
     flat('../src/pages/product.astro'),
@@ -152,8 +150,8 @@ test('states maturity as the version plus the before-1.0 caveat, with no stage a
   for (const page of [product, security]) {
     assert.match(page, /0\.1\.x — public APIs and persisted formats may change before 1\.0\./);
   }
-  /* The lookahead exempts version identifiers — "alpha.14" in a source
-   * comment names a release, not a stage. */
+  /* The lookahead exempts version identifiers: a prerelease suffix inside a
+   * version — `0.1.0-alpha.14` — names a release, not a maturity stage. */
   for (const page of [index, product, security]) {
     assert.doesNotMatch(page, /\b(?:alpha|beta|early access|preview)\b(?![.-]?\d)/i);
   }
@@ -372,12 +370,11 @@ test('does not expand measurement to the control this round added', async () => 
 });
 
 test('marks the experimental stores in the selector, and only those', async () => {
-  /* Since alpha.14 the installed ADAPTERS.md marks no store experimental —
-   * the web store graduated in alpha.13, the bare React Native store in
-   * alpha.14 — so every selector flag must be false. The marker machinery
-   * stays wired in HeroSnippet.astro so the next store that ships
-   * experimental gets the label from its flag alone, and the maturity test
-   * further down holds these flags to the installed ADAPTERS.md. */
+  /* The installed ADAPTERS.md marks no store experimental, so every selector
+   * flag must be false. The marker machinery stays wired in HeroSnippet.astro
+   * so the next store that ships experimental gets the label from its flag
+   * alone, and the maturity test further down holds these flags to the
+   * installed ADAPTERS.md. */
   const experimental = storageOptions.filter((option) => option.experimental).map((o) => o.id);
   assert.deepEqual(experimental.sort(), []);
   assert.deepEqual(
@@ -1049,11 +1046,11 @@ test('counts the dependency footprint from the installed tree, not from memory',
    * declared production dependencies, and `resolved` must be the size of the
    * closure over them.
    *
-   * The count moved in alpha.10, when `protobufjs` left the production tree
-   * and took `long` with it. Before that the resolved figure was one larger
-   * than the direct one, and the assertion guarding it said only "resolved is
-   * larger" — which was true of the arithmetic and proved nothing about the
-   * package. A figure this cheap to check should not be maintained by hand. */
+   * Both figures move with the dependency tree, so neither may be asserted as
+   * a hand-typed constant: an assertion that only relates them to each other —
+   * "resolved is larger" — is true of the arithmetic and proves nothing about
+   * the package. A figure this cheap to check should not be maintained by
+   * hand. */
   const manifestOf = async (name) =>
     JSON.parse(
       await readFile(new URL(`../node_modules/${name}/package.json`, import.meta.url), 'utf8'),
@@ -1198,16 +1195,13 @@ test('keeps the store-maturity claims matched to the shipped release', async () 
     flat('../src/pages/index.astro'),
   ]);
 
-  /* This test has pinned three successive facts, each true of the release the
-   * page installs. Through alpha.7 it guarded the Node store's coverage gap;
-   * alpha.9 closed that. Through alpha.13 it guarded the experimental line —
-   * "The bare React Native store is experimental" — after the browser store
-   * cleared its marker. alpha.14 graduated the bare React Native store too:
-   * the exported backend-conformance kit and the Hermes reference-backend
-   * gate moved its checklist into per-change CI, and the installed
-   * ADAPTERS.md now marks no store experimental. Both pages must say all
-   * four implement the interface in full, and every superseded grade must
-   * be gone. */
+  /* The grade a page prints must be the grade the installed release carries.
+   * All four stores implement the interface in full and the installed
+   * ADAPTERS.md marks none of them experimental, so both pages must say so
+   * and no superseded grade may survive anywhere on either page. The
+   * positive and the negatives are asserted together because a page that
+   * gains the current sentence while keeping an old one still misgrades the
+   * release. */
   /* `{' '}` sits between "implement" and the inline <code> element because
    * Astro collapses the newline there; the regex admits it. */
   assert.match(
@@ -1618,8 +1612,8 @@ test('never sets text in the border colour', async () => {
    * system holds it to 3:1 — a line's threshold, not a word's. It reaches
    * 3.41–4.60 across the six surfaces, so it fails 4.5:1 on six of the eight
    * surface-and-mode pairs. Sixteen rules had it as `color`, among them the
-   * alpha caveat and the terms under the primary button: the two places the
-   * page states its own limits were the two hardest on it to read. */
+   * maturity caveat and the terms under the primary button: the two places
+   * the page states its own limits were the two hardest on it to read. */
   assert.doesNotMatch(css, /color: var\(--oe-subtle\)/);
 });
 
@@ -2362,10 +2356,11 @@ test('does not overstate the one artefact that exists to not be overstated', asy
    * adjective costs more here than anywhere else on the site.
    *
    * The disclosure names the adapter rather than calling it a mock, which is
-   * the alpha.10 vocabulary and is also the more precise of the two: nothing
-   * in that relay is a test double, and a reader who discounts the exhibit as
-   * mocked has discounted real ciphertext. What it simulates is the
-   * infrastructure, and that is the part the sentence has to keep admitting. */
+   * both the approved vocabulary (`messaging.md` §4) and the more precise of
+   * the two: nothing in that relay is a test double, and a reader who
+   * discounts the exhibit as mocked has discounted real ciphertext. What it
+   * simulates is the infrastructure, and that is the part the sentence has to
+   * keep admitting. */
   assert.match(panel, /recorded by running the quickstart/);
   assert.match(index, /against the in-memory relay/);
   /* Absence is asserted against the rendered page, not the source: the comment
@@ -3038,13 +3033,11 @@ test('states store maturity as an implementation fact, not a grade', async () =>
    * two ways on the unqualified sentence — some read "experimental" as a
    * grade on the runtime itself, others reconstructed the right answer by
    * elimination — so the caveat learned to name both sides in checkable
-   * implementation terms. alpha.14 closed the split: the bare React Native
-   * store graduated when the exported backend-conformance kit and the
-   * Hermes reference-backend gate moved its checklist into per-change CI,
-   * and the installed ADAPTERS.md marks no store experimental. The caveat
-   * keeps the same discipline with one side: it states what the stores
-   * implement, which is a checkable fact about the installed package. The
-   * negatives keep a grade word from drifting in anywhere on the page. */
+   * implementation terms. No store is experimental now, and the caveat keeps
+   * the same discipline with one side: it states what the stores implement,
+   * which is a checkable fact about the installed package rather than a grade
+   * a reader has to interpret. The negatives keep a grade word from drifting
+   * in anywhere on the page. */
   assert.match(
     index,
     /The Expo, Node, browser, and bare React Native stores implement the storage interface in full\./,
@@ -3138,7 +3131,7 @@ test('grades exactly the runtimes the SDK marks experimental, and no others', as
       .map((line) => line.match(/local\/store\/([a-z-]+)/)?.[1])
       .filter(Boolean),
   );
-  /* An empty `marked` is a legitimate state — since alpha.14 the SDK marks no
+  /* An empty `marked` is a legitimate state — the SDK currently marks no
      store experimental — so emptiness cannot double as drift detection. The
      anchor-integrity check is separate: every graded store's module path must
      still appear in ADAPTERS.md, or the document has been restructured out
@@ -3173,7 +3166,7 @@ test('grades exactly the runtimes the SDK marks experimental, and no others', as
   /* The sentence that grades them: the side that implements the storage
      interface in full, then — only while a store carries the marker — the
      side that is experimental. The experimental clause is optional in the
-     regex because since alpha.14 no store carries it and the caveat has one
+     regex because no store carries the marker now and the caveat has one
      side; each subject may be singular or plural, so a graduation or a new
      marker does not break the anchor. Matching is case-insensitive because
      the caveat says "browser" mid-sentence where the strip says "Browser". */

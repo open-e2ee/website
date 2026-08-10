@@ -52,8 +52,8 @@ const visible = capture.metadataFields.filter((entry) => !HELD_BACK.has(entry.fi
  * honest in between.
  *
  * It is re-recorded when the program in it stops being true of the package —
- * alpha.10 renamed both adapters, so the recorded file named two subpaths that
- * no longer existed and it had to be run again. A version bump on its own does
+ * a renamed subpath or a changed call in the quickstart leaves the recorded
+ * file describing an API that no longer exists. A version bump on its own does
  * not earn one: a re-record proves the envelope's shape on one day, and the
  * check below proves the shape held across every release since the recording,
  * which is the stronger of the two claims and the one a sceptical reader is
@@ -65,10 +65,10 @@ const visible = capture.metadataFields.filter((entry) => !HELD_BACK.has(entry.fi
  * installed type declarations. A release that drops a field fails the build
  * rather than shipping a caption that has quietly become false.
  *
- * The line is printed only when the two versions differ, which today they do
- * not. Naming the same version twice in one caption answers a question no
- * reader has yet — the gap is what raises it, and until there is a gap the
- * stamp above already says everything the line would.
+ * The line is printed only when the two versions differ. Naming the same
+ * version twice in one caption answers a question no reader has yet — the gap
+ * is what raises it, and with no gap the stamp above already says everything
+ * the line would.
  */
 const installedVersion = sdkManifest.version;
 const recordedAtInstalled = capture.sdkVersion === installedVersion;

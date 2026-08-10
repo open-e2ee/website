@@ -51,12 +51,11 @@ export const dependencies = {
     'async-lock',
     'unique-names-generator',
   ],
-  /* There is no transitive entry to name. `protobufjs` left the production
-     tree in alpha.10 — it is a development dependency now, where the wire
-     tests use it as an independent oracle — and `long` left with it. The only
-     edges left inside the tree are the `@noble` packages depending on one
-     another, so the resolved count equals the direct one and every package an
-     install pulls in is already named above. */
+  /* There is no transitive entry to name. The only edges inside the tree are
+     the `@noble` packages depending on one another, so the resolved count
+     equals the direct one and every package an install pulls in is already
+     named above. (`protobufjs` is a development dependency, where the wire
+     tests use it as an independent oracle, so it is not in this closure.) */
 };
 
 /**

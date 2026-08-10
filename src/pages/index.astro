@@ -570,15 +570,11 @@ const trustLinks = [
         <span>Start where you are:</span>
         {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
       </p>
-      {/* This sentence tracks the shipped release, not a remembered one:
-          alpha.13 cleared the web store's `(experimental)` marker, and
-          alpha.14 cleared the bare React Native store's when its graduation
-          gates — the exported backend-conformance kit, the Hermes
-          reference-backend gate, interruption, storage-pressure — moved into
-          per-change CI. Since alpha.14 the installed ADAPTERS.md marks no
-          store experimental, and the maturity test derives both sides of the
-          sentence from that file, so a store the SDK newly marks fails the
-          build instead of drifting. */}
+      {/* This sentence tracks the shipped release, not a remembered one. The
+          installed ADAPTERS.md marks no store experimental, so the sentence
+          has one side; the maturity test derives both sides from that file,
+          so a store the SDK newly marks fails the build instead of drifting
+          into a page that quietly keeps grading it the old way. */}
       <p class="muted measure">
         The Expo, Node, browser, and bare React Native stores implement the storage interface
         in full.{' '}
