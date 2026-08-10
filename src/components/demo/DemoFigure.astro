@@ -1,0 +1,449 @@
+---
+import {
+  BOUNDARY_MIN_GUTTER,
+  CIPHERTEXT_FILL,
+  PLAINTEXT_STROKE,
+  RATCHET_FILLS,
+  STROKE_WIDTH,
+  boundaryLine,
+  contentBarRects,
+  deviceOutline,
+  metadataTicks,
+  notchedSlabPath,
+  ratchetRects,
+  slabPath,
+} from '@open-e2ee/design/diagram';
+import { CAPTIONS } from '../../lib/demo/figure';
+
+/*
+ * The stage's figure: where the sentence in the panel beside it currently is.
+ *
+ * Every shape is drawn here, at build time, from `@open-e2ee/design/diagram`.
+ * Nothing is constructed in the browser and nothing is fetched to make the
+ * first paint — the reader gets the whole diagram in the HTML and the script
+ * only names which state it is in. That is what keeps the figure off the
+ * pre-interaction budget the panel's SDK import is measured against, and it is
+ * also why a reader whose script never arrives still sees the drawing rather
+ * than a gap where one was going to be.
+ *
+ * All nine states are drawn at once and CSS shows one. The alternative —
+ * building each state's geometry on demand — would put a second copy of this
+ * composition in a module, and the two copies would disagree the first time
+ * either moved. `global.css` owns the visibility rules under `.demo-figure`.
+ *
+ * The grammar this obeys is `design/DESIGN.md`'s, and three of its rules do the
+ * most work here:
+ *
+ *   Open form, stroked, with content bars — a device holding readable content.
+ *   Filled form, no stroke — ciphertext. Its fill never changes, in any state,
+ *   because "partly encrypted" is not a thing that happens; the accent bar
+ *   below the composition is what moves instead.
+ *   A filled notched slab is a private key, and may only be drawn inside a
+ *   device outline. There is deliberately never one in the relay lane.
+ *
+ * The relay is a labelled lane between the two boundaries rather than the
+ * OpenE2EE mark. Drawing it as the mark would put the vendor's logo on the one
+ * node this project insists the reader hosts themselves, and it would spend the
+ * page's one signature-device budget on a diagram that does not need it.
+ *
+ * ------------------------------------------------------------- perspective ---
+ *
+ * The near device is always this tab, so a tab that is receiving sees the same
+ * composition mirrored: the envelope crosses the near boundary inward and the
+ * near device is the one that gains readable content. That is one CSS transform
+ * on the group below rather than a second set of positions, which is what keeps
+ * "there is one drawing" true — a mirrored composition whose shapes were
+ * emitted twice is two drawings that happen to agree today.
+ *
+ * Text is outside the mirrored group, because mirrored type is unreadable. The
+ * two boundary labels are the one part of the drawing that is not symmetric
+ * under the flip — crossing inward at the near boundary is opening, not sealing
+ * — so both are drawn at both positions and `data-figure-facing` picks the pair
+ * the current direction needs.
+ */
+
+/* One canvas, in viewBox units. The column this sits in is around 440 CSS px
+   at the desktop breakpoint, so a 520-unit canvas renders near 1:1 and the
+   stroke weights land where the grammar's constants intend them to. */
+const WIDTH = 520;
+const HEIGHT = 224;
+
+const DEVICE_WIDTH = 84;
+const DEVICE_HEIGHT = 118;
+const DEVICE_TOP = 60;
+const NEAR_X = 4;
+const FAR_X = WIDTH - DEVICE_WIDTH - 4;
+
+const SEAL_X = 140;
+const OPEN_X = 380;
+const LANE_LEFT = 190;
+const LANE_RIGHT = 330;
+const BOUNDARY_TOP = 52;
+const BOUNDARY_BOTTOM = 196;
+
+/*
+ * The clear space either side of a boundary, checked at build time.
+ *
+ * The gutter is the drawing's own claim that encryption happens at a *place*
+ * rather than across a region, and the grammar puts a floor under it. The floor
+ * is per side: a boundary with 90 units of room on the left and 6 on the right
+ * is not compliant, and a check that added the two would call it so. The first
+ * draft of this file added them, and passed with the envelope overlapping the
+ * near device's outline.
+ *
+ * What is measured is the composition's fixed furniture — device edge to
+ * boundary, boundary to lane edge. The envelope positions below are deliberately
+ * not measured: an envelope crossing the boundary is the event this figure
+ * exists to draw, and a rule that kept it out of the gutter would forbid the
+ * drawing from showing the thing it is about.
+ */
+const gutters = [
+  ['seal', 'the near device', SEAL_X - (NEAR_X + DEVICE_WIDTH)],
+  ['seal', 'the relay lane', LANE_LEFT - SEAL_X],
+  ['open', 'the relay lane', OPEN_X - LANE_RIGHT],
+  ['open', 'the far device', FAR_X - OPEN_X],
+] as const;
+for (const [boundary, neighbour, gutter] of gutters) {
+  if (gutter < BOUNDARY_MIN_GUTTER) {
+    throw new Error(
+      `${gutter} units between the ${boundary} boundary and ${neighbour}, under the ` +
+        `${BOUNDARY_MIN_GUTTER} the diagram grammar requires`,
+    );
+  }
+}
+
+const SLAB_WIDTH = 36;
+const SLAB_HEIGHT = 52;
+const SLAB_TOP = 96;
+const SHEAR = 9;
+
+/*
+ * Where the sealed envelope is, per state.
+ *
+ * `encrypted` stands in the clear space between the near device and the seal,
+ * not touching either: it has left the device and has not yet crossed. The two
+ * transit positions straddle a boundary each, which is the one moment in the
+ * whole sequence that a still picture can carry on its own.
+ *
+ * The state is called `encrypted` because the homepage may not use "sealed"
+ * loosely; `figure.ts` carries the reasoning. The geometry keeps the grammar's
+ * own vocabulary, because these names are never read by anyone but us.
+ */
+const SEALED_X = 96;
+const TRANSIT_OUT_X = SEAL_X - SLAB_WIDTH / 2;
+const RELAY_X = LANE_LEFT + (LANE_RIGHT - LANE_LEFT - SLAB_WIDTH) / 2;
+const TRANSIT_IN_X = OPEN_X - SLAB_WIDTH / 2;
+
+const KEY = { width: 26, height: 22, notch: 7, y: 140 };
+
+/*
+ * The ratchet run: how far the session has advanced.
+ *
+ * Four upright steps, each a discrete solid fill from the grammar's own ramp —
+ * `RATCHET_FILLS` — and never an opacity ramp, which is what the package's
+ * comment on `ratchetRects` is about. One step lights per message the session
+ * carries, which is what a double ratchet does per message.
+ *
+ * All four are on the canvas from the moment a session exists. A run that drew
+ * only the lit steps was a row of one or two squares floating under a device,
+ * with nothing to say how many positions there were or that they were a run at
+ * all — and the grammar asks a ratchet to read as *arriving somewhere*, which
+ * needs the distance visible. A step that has not been taken is therefore drawn
+ * open: stroked, unfilled, at the grammar's own stroke weight. That is the same
+ * open-versus-filled distinction the devices and the envelope use, so the run
+ * costs the figure no new vocabulary and no alpha.
+ *
+ * Outside the mirrored group, unlike everything else in the composition. The
+ * session ratchet is not at either end of the trip — both devices step it, and
+ * they step it together — so a run that swapped corners when the drawing
+ * mirrored was answering a question about sides that the ratchet does not have.
+ * It stays under the left-hand device, which is always this tab.
+ *
+ * The width is checked against the device rather than eyeballed: a run that
+ * overhung its device would be claiming the ratchet belongs to the canvas.
+ */
+const RATCHET_STEP_WIDTH = 12;
+const RATCHET_GAP = 12;
+/* Upright, and tall enough that the open form reads as an outline: at the
+   grammar's 4-unit stroke a 12-unit square is very nearly solid, and the two
+   states of a step have to be told apart at a glance. */
+const RATCHET_HEIGHT = 18;
+const RATCHET_Y = 200;
+const ratchet = ratchetRects({
+  x: NEAR_X,
+  y: RATCHET_Y,
+  width: RATCHET_STEP_WIDTH,
+  height: RATCHET_HEIGHT,
+  gap: RATCHET_GAP,
+});
+const ratchetSpan =
+  ratchet.length * RATCHET_STEP_WIDTH + (ratchet.length - 1) * RATCHET_GAP;
+if (ratchetSpan !== DEVICE_WIDTH) {
+  throw new Error(
+    `the ratchet run is ${ratchetSpan} units wide under an ${DEVICE_WIDTH}-unit device`,
+  );
+}
+if (ratchet.length > RATCHET_FILLS.length) {
+  throw new Error('a ratchet step without its own solid fill would have to use alpha');
+}
+/* The open steps carry a stroke, which straddles the rect's edge, so the run
+   occupies half a stroke more than its rectangles on every side. */
+const RATCHET_BOTTOM = RATCHET_Y + RATCHET_HEIGHT + STROKE_WIDTH / 2;
+if (RATCHET_BOTTOM > HEIGHT) {
+  throw new Error(`the ratchet run reaches ${RATCHET_BOTTOM} on a ${HEIGHT}-unit canvas`);
+}
+
+/* The run's own name, in the voice the other lane labels use. Set beside the
+   steps rather than above them: the band between the device accent and the
+   canvas floor is the run's, and there is no room over it for a line of type. */
+const RATCHET_LABEL_X = NEAR_X + ratchetSpan + 12;
+const RATCHET_LABEL_Y = RATCHET_Y + RATCHET_HEIGHT - 4;
+
+const slab = (x: number, shear = 0) =>
+  slabPath({ x, y: SLAB_TOP, width: SLAB_WIDTH, height: SLAB_HEIGHT, shear });
+
+/* Three ticks, on every sealed slab, in every position. What the relay can
+   read does not shrink because the envelope moved. Offset by one unit, which
+   is what centres a 34-unit run of ticks on a 36-unit slab. */
+const ticks = (x: number) => metadataTicks({ x: x + 1, y: SLAB_TOP, count: 3 });
+
+const bars = (x: number) =>
+  contentBarRects({ x: x + 18, y: DEVICE_TOP + 22, width: DEVICE_WIDTH - 36, count: 3 });
+
+const key = (x: number) =>
+  notchedSlabPath({ x: x + 14, y: KEY.y, width: KEY.width, height: KEY.height, notch: KEY.notch });
+
+/*
+ * The one thing on the canvas that says "look here now".
+ *
+ * Exactly one is visible in any state, and that is a property of this list
+ * rather than of the CSS: no state appears twice in it. Each bar sits directly
+ * under what it marks — beneath the slab for the three states where the subject
+ * is the envelope, beneath the devices for the three where it is a device, and
+ * beneath the printed bytes for the one where it is the row itself.
+ *
+ * The full-width bar for `session-established` crosses both boundaries, which
+ * is the claim: the session is the thing that spans them.
+ */
+const SLAB_RULE_Y = SLAB_TOP + SLAB_HEIGHT + 10;
+const DEVICE_RULE_Y = DEVICE_TOP + DEVICE_HEIGHT + 8;
+const LANE_RULE_Y = 210;
+
+const ACCENTS = [
+  { state: 'devices-ready', x: NEAR_X, width: DEVICE_WIDTH, y: DEVICE_RULE_Y },
+  { state: 'peer-connected', x: FAR_X, width: DEVICE_WIDTH, y: DEVICE_RULE_Y },
+  /* Back on the near device, which is what is left. Same bar as `devices-ready`
+     in a different state, and deliberately so: this tab holds one device again. */
+  { state: 'peer-gone', x: NEAR_X, width: DEVICE_WIDTH, y: DEVICE_RULE_Y },
+  { state: 'session-established', x: NEAR_X, width: WIDTH - NEAR_X * 2, y: DEVICE_RULE_Y },
+  { state: 'encrypted', x: SEALED_X, width: SLAB_WIDTH, y: SLAB_RULE_Y },
+  { state: 'in-transit', x: TRANSIT_OUT_X, width: SLAB_WIDTH, y: SLAB_RULE_Y },
+  { state: 'stored-at-relay', x: LANE_LEFT, width: LANE_RIGHT - LANE_LEFT, y: LANE_RULE_Y },
+  { state: 'delivered', x: TRANSIT_IN_X, width: SLAB_WIDTH, y: SLAB_RULE_Y },
+  { state: 'opened', x: FAR_X, width: DEVICE_WIDTH, y: DEVICE_RULE_Y },
+];
+
+/* Once the devices exist they stay drawn, so the part lists are suffixes of
+   the state order rather than single names. */
+/* One long string rather than a concatenation, past the width the rest of this
+   file keeps: `tests/site-content.test.mjs` reads these three lists out of the
+   source and compares them to the state order, and a `+` between two halves is
+   a token in the middle of the list it is reading. */
+const AFTER_READY = 'devices-ready peer-connected peer-gone session-established encrypted in-transit stored-at-relay delivered opened';
+const AFTER_SESSION = 'session-established encrypted in-transit stored-at-relay delivered opened';
+const AT_RELAY = 'stored-at-relay delivered opened';
+
+/*
+ * The strip of real bytes in the relay lane.
+ *
+ * Three lines of six, which is what fits: the mono face at 11 units advances
+ * about 6.6 units a character, so a six-byte line is around 112 units of a
+ * 140-unit lane. `figure.ts` slices to the same shape, and the two numbers are
+ * repeated rather than shared because one is a layout fact about this canvas
+ * and the other is a slicing rule about a byte array — they agree today for a
+ * reason that would not survive either file being reused.
+ */
+const HEX_LINES = 3;
+const HEX_TOP = 164;
+const HEX_LEADING = 14;
+---
+
+<figure class="demo-figure" data-demo-figure>
+  <svg
+    viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+    data-figure-stage
+    data-stage-state="idle"
+    data-figure-direction="out"
+    aria-hidden="true"
+  >
+    <text x={NEAR_X} y={40} class="diagram-label" data-figure-near-label>this tab</text>
+    <text x={(LANE_LEFT + LANE_RIGHT) / 2} y={40} text-anchor="middle" class="diagram-label">
+      relay
+    </text>
+    <text x={WIDTH - NEAR_X} y={40} text-anchor="end" class="diagram-label" data-figure-far-label>
+      second device
+    </text>
+
+    {/* Which boundary seals and which one opens is a fact about the direction
+        of travel, not about the position. Sending, the near one seals;
+        receiving, it is the one the envelope is opened at. */}
+    <text x={SEAL_X} y={40} text-anchor="middle" class="diagram-boundary-label" data-figure-facing="out">seal</text>
+    <text x={SEAL_X} y={40} text-anchor="middle" class="diagram-boundary-label" data-figure-facing="in">open</text>
+    <text x={OPEN_X} y={40} text-anchor="middle" class="diagram-boundary-label" data-figure-facing="out">open</text>
+    <text x={OPEN_X} y={40} text-anchor="middle" class="diagram-boundary-label" data-figure-facing="in">seal</text>
+
+    <g class="demo-figure-mirror">
+      <g set:html={boundaryLine({ x: SEAL_X, top: BOUNDARY_TOP, bottom: BOUNDARY_BOTTOM })} />
+      <g set:html={boundaryLine({ x: OPEN_X, top: BOUNDARY_TOP, bottom: BOUNDARY_BOTTOM })} />
+
+      {
+        [NEAR_X, FAR_X].map((x) => (
+          <g
+            set:html={deviceOutline({
+              x,
+              y: DEVICE_TOP,
+              width: DEVICE_WIDTH,
+              height: DEVICE_HEIGHT,
+              bars: 0,
+            })}
+          />
+        ))
+      }
+
+      {/* Readable content, which the sending device has as soon as it is up and
+          the receiving device has only once it has decrypted something. Which
+          of the two is the near one is what the mirror decides. */}
+      <g data-figure-part={AFTER_READY}>
+        {
+          bars(NEAR_X).map((rect) => (
+            <rect
+              x={rect.x}
+              y={rect.y}
+              width={rect.width}
+              height={rect.height}
+              fill="var(--oe-diagram-content-bar)"
+            />
+          ))
+        }
+      </g>
+      <g data-figure-part="opened">
+        {
+          bars(FAR_X).map((rect) => (
+            <rect
+              x={rect.x}
+              y={rect.y}
+              width={rect.width}
+              height={rect.height}
+              fill="var(--oe-diagram-content-bar)"
+            />
+          ))
+        }
+      </g>
+
+      {/* The derived key, in both devices and nowhere else. */}
+      <g data-figure-part={AFTER_SESSION}>
+        <path d={key(NEAR_X)} fill={CIPHERTEXT_FILL} />
+        <path d={key(FAR_X)} fill={CIPHERTEXT_FILL} />
+      </g>
+
+      {/* The envelope, in each place it is ever in. Upright is at rest; sheared
+          is in transit, and both transit positions straddle a boundary. */}
+      <g data-figure-part="encrypted">
+        <path d={slab(SEALED_X)} fill={CIPHERTEXT_FILL} />
+        <g set:html={ticks(SEALED_X)} />
+      </g>
+      <g data-figure-part="in-transit">
+        <path d={slab(TRANSIT_OUT_X, SHEAR)} fill={CIPHERTEXT_FILL} />
+        <g set:html={ticks(TRANSIT_OUT_X)} />
+      </g>
+      <g data-figure-part={AT_RELAY}>
+        <path d={slab(RELAY_X)} fill={CIPHERTEXT_FILL} />
+        <g set:html={ticks(RELAY_X)} />
+      </g>
+      <g data-figure-part="delivered">
+        <path d={slab(TRANSIT_IN_X, SHEAR)} fill={CIPHERTEXT_FILL} />
+        <g set:html={ticks(TRANSIT_IN_X)} />
+      </g>
+
+      {
+        ACCENTS.map((accent) => (
+          <rect
+            x={accent.x}
+            y={accent.y}
+            width={accent.width}
+            height={3}
+            class="demo-figure-accent"
+            data-figure-part={accent.state}
+          />
+        ))
+      }
+    </g>
+
+    {/*
+      The session's own advance, one step per message it has carried.
+
+      Outside the mirrored group on purpose — see the geometry above. The whole
+      run is drawn from the moment a session exists: every step open, and the
+      taken ones filled over the top by the group below. Two rects per step
+      rather than one that changes, because a stylesheet that switched a fill
+      would be a second copy of the grammar living in the CSS.
+    */}
+    <g data-figure-part={AFTER_SESSION}>
+      {
+        ratchet.map((rect) => (
+          <rect
+            x={rect.x}
+            y={rect.y}
+            width={rect.width}
+            height={rect.height}
+            fill="none"
+            stroke={PLAINTEXT_STROKE}
+            stroke-width={STROKE_WIDTH}
+          />
+        ))
+      }
+      <text x={RATCHET_LABEL_X} y={RATCHET_LABEL_Y} class="diagram-label">ratchet</text>
+    </g>
+
+    {/* The steps this session has actually taken. Each is lit by
+        `data-figure-ratchet` on the canvas, which lists the steps rather than
+        counting them. */}
+    <g data-figure-part={AFTER_SESSION}>
+      {
+        ratchet.map((rect, index) => (
+          <rect
+            x={rect.x}
+            y={rect.y}
+            width={rect.width}
+            height={rect.height}
+            fill={RATCHET_FILLS[index]}
+            data-figure-step={index + 1}
+          />
+        ))
+      }
+    </g>
+
+    {/* The row's own bytes, written by the script from the envelope the SDK
+        produced. Empty in the shipped HTML, because nothing has been sent, and
+        outside the mirrored group because mirrored hex is unreadable — the lane
+        is centred on the canvas, so it needs no flip either way. */}
+    <text x={LANE_LEFT + 2} y={HEX_TOP} class="demo-figure-hex" data-figure-part={AT_RELAY}>
+      {
+        Array.from({ length: HEX_LINES }, (_, index) => (
+          <tspan x={LANE_LEFT + 2} dy={index === 0 ? 0 : HEX_LEADING} data-figure-hex-line />
+        ))
+      }
+    </text>
+  </svg>
+
+  {/*
+    The line that carries the figure's meaning. The SVG above is hidden from
+    assistive technology on purpose: a diagram whose whole content is nine
+    interchangeable states would announce itself nine times per run, and the
+    description that mattered would be the one this line already gives. It is a
+    live region, so the state arrives without moving focus.
+  */}
+  <figcaption class="demo-figure-caption" role="status" data-demo-figure-caption>
+    {CAPTIONS.idle}
+  </figcaption>
+</figure>

@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BatteryMark from '../components/BatteryMark.astro';
+import DemoFigure from '../components/demo/DemoFigure.astro';
 import LiveCarrierPanel from '../components/demo/LiveCarrierPanel.astro';
 import ScenarioList from '../components/demo/ScenarioList.astro';
-import TwoTabSection from '../components/demo/TwoTabSection.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
@@ -337,73 +337,97 @@ const trustLinks = [
         </p>
       </div>
 
-      {/* The signature diagram stood here for seven rounds and has been moved
-          off this page. It is still the best drawing on the site and it still
-          runs on /security and /product, where it is the only signature device
-          on the screen — which is the design contract's rule and part of why
-          it had to leave this one.
+      {/*
+        A drawing came back to this slot, and it is not the one that left it.
 
-          The deciding test the brief sets is whether a fresh reader reaches
-          the central boundary *faster* with the figure. An integration critic
-          measured the opposite. The figure's whole vocabulary — readable
-          device, seal, sealed envelope with metadata riding outside, relay,
-          open, readable device — is the paragraph above it, drawn; its one
-          genuine addition is that the boundary is crossed twice. The plate
-          100 px below names the eight fields the relay actually held, with
-          real values and a real byte count. Same boundary, with proof instead
-          of assertion. A reader did not arrive sooner for the figure; they
-          arrived sooner by scrolling past it, and on a phone that meant
-          scrolling past ~770 px — more than one entire 664 px viewport of
-          abstraction standing between them and the evidence.
+        The signature diagram stood here for seven rounds and was removed for
+        four reasons, all of which still hold. It restated the paragraph above
+        it in pictures and pushed ~770 px of abstraction between a phone reader
+        and the evidence. Its content bars are the only thing separating a
+        readable device from an empty box and they measure 1.93:1 light, 2.26:1
+        dark, against the 3:1 WCAG 1.4.11 asks of a meaning-bearing graphic.
+        The design contract caps a screen at one signature device, and at 937 px
+        the mark, a manifest plate and the diagram were on screen together. And
+        it draws the relay as the OpenE2EE mark, putting the vendor's logo on
+        the one node this project insists the reader hosts.
 
-          Three other things followed it out. Its content bars are the only
-          thing distinguishing a readable device from an empty box, and they
-          measure 1.93:1 light and 2.26:1 dark against the 3:1 that WCAG 1.4.11
-          asks of a meaning-bearing graphic — in dark the two devices read as
-          empty rectangles, which inverts the figure's own claim. The token is
-          owned by @open-e2ee/design, so this page could not fix it, only stop
-          depending on it. The contract's enforceable list also caps a screen
-          at one signature device, naming "the mark, a manifest plate, and the
-          signature diagram in one screen" as the failure; at a 937 px viewport
-          all three were on screen together. And the relay is drawn as the
-          OpenE2EE mark, so the one node the page insists you host looked like
-          the vendor's logo, 60 px under the same logo in the header.
+        The figure that stands here now is answerable to each of those.
 
-          Keeping it was the round-4 decision and it was provisional then — the
-          note said to revisit if no critic reported the boundary landing
-          faster with it. None ever did. */}
-      <div id="what-the-relay-stores" class="carrier-proof">
-        {/* The heading and the lead used to describe a recording, because a
-            recording was all this slot held. The panel underneath now runs the
-            SDK in the reader's own tab, and a caption that still said
-            "recorded" would be understating its own evidence — the opposite of
-            this page's usual failure, and no more accurate for it. Both
-            sentences are written for the live panel and stay true of the
-            recorded one, which is what a reader with no JavaScript sees.
+        It is not a restatement, because it is not static: every state it shows
+        was entered because the SDK beside it reported something, and the bytes
+        in its relay lane are the bytes of the envelope the panel just printed.
+        A reader watching it learns where their own sentence currently is, which
+        is not a fact the prose above could carry.
 
-            "Against the in-memory relay" survives the rewrite deliberately.
-            The first draft moved that admission down into the panel's own
-            caption, where invariant 5 wants it, and dropped it here — and
-            `tests/site-content.test.mjs` failed, correctly: the sentence is
-            what stops "the installed SDK encrypts it here" from reading as a
-            claim about production infrastructure. It is now in both places,
-            which is the right number for the one disclosure this band exists
-            to make. */}
-        <h3>The same message, in your browser</h3>
-        <p class="measure">
-          Not a mock-up: type a sentence and the installed SDK encrypts it here, in this tab,
-          against the in-memory relay, with the row your relay would hold printed from the envelope
-          itself.
-        </p>
-        <LiveCarrierPanel />
+        It is not another signature device. There is no mark in it; the relay is
+        a labelled lane, drawn as infrastructure rather than as a brand, which is
+        also what stops it repeating the logo problem.
+
+        It does not rest on the content bars for its meaning. The caption under
+        it is a live region that states every state in words, the accent bar
+        marks the active element in `--oe-accent` rather than in the low-contrast
+        diagram token, and the SVG is hidden from assistive technology because
+        the caption already carries what it would announce. The bars are still
+        the design package's token and still measure what they measured — that
+        is unchanged and unfixable from this repo — but nothing here is
+        undiscoverable without them.
+
+        And it does not stand between the reader and the evidence, because it no
+        longer stands above it. It is the second column. On a phone, where the
+        columns stack, it collapses to a strip rather than a plate.
+      */}
+      <div id="what-the-relay-stores" class="demo-stage">
+        <div class="demo-stage-panel">
+          {/* The lead used to describe a recording, because a recording was all
+              this slot held. The panel underneath now runs the SDK in the
+              reader's own tab.
+
+              "Against the in-memory relay" survives every rewrite deliberately.
+              One draft moved that admission down into the panel's own caption,
+              where invariant 5 wants it, and dropped it here — and
+              `tests/site-content.test.mjs` failed, correctly: the sentence is
+              what stops "the installed SDK encrypts it here" from reading as a
+              claim about production infrastructure. It is in both places, which
+              is the right number for the one disclosure this band exists to
+              make.
+
+              The h3 that stood above this sentence ("The same message, in your
+              browser") is gone. It titled a panel that is now the whole left
+              column of a titled band, and a heading whose subject is the band's
+              own subject is a line a reader reads twice and learns nothing
+              from. */}
+          <p class="measure">
+            Not a mock-up: type a sentence and the installed SDK encrypts it here, in this tab,
+            against the in-memory relay, with the row your relay would hold printed from the
+            envelope itself.
+          </p>
+          <LiveCarrierPanel />
+        </div>
+        {/* Sticky, so the figure is still beside the panel when the reader has
+            scrolled to the relay pane — the two are one exhibit and reading
+            either one alone is the failure this layout exists to prevent. */}
+        <div class="demo-stage-aside">
+          <DemoFigure />
+        </div>
       </div>
 
       {/* A reader who has just read the row the relay held is at the moment of
           highest intent on the page, and used to find the next button four
-          folds away in the footer. */}
+          folds away in the footer.
+
+          Outlined rather than filled, and that is a rule about the band rather
+          than a preference for this link. "Open the second device" is the one
+          free-standing filled button in this band, because it is the only
+          action that finishes the argument the band is making. The composer's
+          "Encrypt it" is filled too and is not competing with it: it sits
+          against its own text field inside the panel's border, which is a form
+          control rather than an offer. A third filled button out here, with
+          nothing attached to it, made the band a row of equal offers with no
+          answer to "which of these am I meant to press". This is the way out of
+          the band, and it is a weight quieter than the way through it. */}
       <div class="actions">
         <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
-          <span class="oe-button">Record this yourself</span>
+          <span class="oe-button oe-button-secondary">Record this yourself</span>
           <span class="cta-sublabel">ten minutes · two clients · no account</span>
         </a>
         {/* A text-link stood here reading "Now watch a byte change in transit,
@@ -477,7 +501,23 @@ const trustLinks = [
 
       <ScenarioList />
 
-      <TwoTabSection />
+      {/*
+        The two-tab section stood here and has moved into the panel above.
+
+        It was a second demo of the same SDK with a second composer, a second
+        transcript and a second pair of panes, 167 words of explanation in front
+        of it, one band below the panel it was arguing with. A reader who
+        wondered whether the two clients in that panel were really separate had
+        to scroll past four scenarios to find out, and then re-learn a second
+        interface to ask.
+
+        It is now what the panel does when a second tab arrives: same field,
+        same panes, same relay pane, with the second device's account named in
+        the far label instead of described in a paragraph. The explanation went
+        with it — a button reading "Open the second device" and a label saying
+        which tab holds which account is the whole of what those 167 words were
+        for.
+      */}
 
       {/*
         The same invitation the panel above makes, in the place it is worth
