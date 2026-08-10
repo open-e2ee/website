@@ -786,6 +786,36 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
   const tab = await openTab(cdp, held, { blocked });
   const { sessionId, requests, scripts, cspViolations, pageErrors, blockedRequests, quiet } = tab;
 
+  /* What the page reported about itself, which is the likeliest cause of any
+     wait here running out of time. */
+  const faults = () => {
+    const lines = [];
+    if (cspViolations.length) {
+      lines.push(
+        `  The page reported ${cspViolations.length} CSP violation(s), which is the likeliest cause:`,
+        ...cspViolations.map((v) => `    ${v}`),
+      );
+    }
+    if (pageErrors.length) {
+      lines.push(
+        `  The page threw ${pageErrors.length} uncaught error(s):`,
+        ...pageErrors.map((e) => `    ${e.split('\n')[0]}`),
+      );
+    }
+    return lines;
+  };
+
+  /*
+   * The faults, then what each half of the wait was holding when it expired.
+   *
+   * Every wait below is satisfied by either of two things happening — the demo
+   * working, or the demo saying why it did not — so a timeout means neither
+   * did, and a message naming only the conclusion cannot say which half was
+   * closer. `terms` answers that; this composes it with the page's own report
+   * so one failure carries both, and no leg has to remember to ask for both.
+   */
+  const why = (parts) => async () => [...faults(), ...(await terms(cdp, sessionId, parts)())];
+
   try {
     await tab.navigate(`${origin}/`, 'the homepage');
 
@@ -861,22 +891,10 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
       DECRYPT_TIMEOUT_MS,
       `the demo neither established a session nor reported a failure within ` +
         `${DECRYPT_TIMEOUT_MS} ms of the key exchange being pressed`,
-      () => {
-        const lines = [];
-        if (cspViolations.length) {
-          lines.push(
-            `  The page reported ${cspViolations.length} CSP violation(s), which is the likeliest cause:`,
-            ...cspViolations.map((v) => `    ${v}`),
-          );
-        }
-        if (pageErrors.length) {
-          lines.push(
-            `  The page threw ${pageErrors.length} uncaught error(s):`,
-            ...pageErrors.map((e) => `    ${e.split('\n')[0]}`),
-          );
-        }
-        return lines;
-      },
+      why({
+        "the send button's disabled": `document.querySelector(${JSON.stringify(SEND)}).disabled`,
+        'the status line': `document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? null`,
+      }),
     );
 
     /* What the exchange alone did, before a sentence is typed. The relay has
@@ -901,22 +919,12 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
       DECRYPT_TIMEOUT_MS,
       `the demo neither decrypted the typed sentence nor reported a failure within ` +
         `${DECRYPT_TIMEOUT_MS} ms`,
-      () => {
-        const lines = [];
-        if (cspViolations.length) {
-          lines.push(
-            `  The page reported ${cspViolations.length} CSP violation(s), which is the likeliest cause:`,
-            ...cspViolations.map((v) => `    ${v}`),
-          );
-        }
-        if (pageErrors.length) {
-          lines.push(
-            `  The page threw ${pageErrors.length} uncaught error(s):`,
-            ...pageErrors.map((e) => `    ${e.split('\n')[0]}`),
-          );
-        }
-        return lines;
-      },
+      why({
+        "the far column's text": `document.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? null`,
+        'the sentence it wanted': JSON.stringify(PROBE),
+        'the status line': `document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? null`,
+        "the drawing's state": `document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.stageState ?? null`,
+      }),
     );
 
     /* Read the panel before touching it again, so the assertions about the
@@ -937,6 +945,11 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
         DECRYPT_TIMEOUT_MS,
         `the demo returned the first sentence and then never returned the second within ` +
           `${DECRYPT_TIMEOUT_MS} ms — the repeat send is a warm session, not a cold one`,
+        why({
+          "the far column's text": `document.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? null`,
+          'the sentence it wanted': JSON.stringify(REPEAT_PROBE),
+          'the status line': `document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? null`,
+        }),
       );
     }
 
@@ -964,6 +977,15 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
       DECRYPT_TIMEOUT_MS,
       `the columns completed a round trip and the drawing above them never reached ` +
         `${JSON.stringify(FIGURE_END_STATE)} within ${DECRYPT_TIMEOUT_MS} ms`,
+      why({
+        "the drawing's state": `document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.stageState ?? null`,
+        'the state it wanted': JSON.stringify(FIGURE_END_STATE),
+        'the status line': `document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? null`,
+        /* The reel is what advances that state, so a drawing parked mid-run and
+           a drawing that was never given the last cue look identical from the
+           attribute alone. The caption is written by the same `show()`. */
+        'the caption': `document.querySelector(${JSON.stringify(FIGURE_CAPTION)})?.textContent ?? null`,
+      }),
     );
 
     const wentQuiet = await quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS);
