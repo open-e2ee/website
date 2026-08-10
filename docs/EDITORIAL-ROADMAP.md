@@ -89,7 +89,7 @@ be the argument that sends people to it.
 
 - **Target query:** "best e2ee library", "signal protocol vs mls", "e2ee sdk comparison"
 - **Evidence of demand:** currently requires reconstructing from ~15 repositories by hand. The dossier's own competitor table took live API calls across GitHub and npm to build.
-- **Risk:** we are a vendor publishing a comparison. Mitigate by publishing the methodology and the raw pull date, listing our own gaps (no audit yet, alpha, AGPL friction) in the same table, and updating on a schedule.
+- **Risk:** we are a vendor publishing a comparison. Mitigate by publishing the methodology and the raw pull date, listing our own gaps (no audit yet, pre-1.0, AGPL friction) in the same table, and updating on a schedule.
 - **Format:** maintained comparison page under `learn/`, dated, with a visible "last verified" line. Not a blog post — blog posts rot silently.
 
 ### R7 — Moderation and abuse reporting in an E2EE product

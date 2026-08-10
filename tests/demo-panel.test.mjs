@@ -119,9 +119,13 @@ test('holds back only fields the installed Envelope actually declares', () => {
 
 test('takes the SDK version it advertises from the installed package', () => {
   assert.match(source, /sdkManifest\.version/);
+  /* Written against `-alpha` when every version carried that suffix, this
+   * guard went inert the moment 0.1.0 shipped: a hand-typed `'0.1.0'` has
+   * nothing for it to match. It now catches a quoted version literal of any
+   * shape, which is the thing being banned. */
   assert.doesNotMatch(
     source,
-    /\d+\.\d+\.\d+-alpha/,
+    /['"`]\d+\.\d+\.\d+/,
     'the panel must print the version it imported, not a version someone typed',
   );
 });
