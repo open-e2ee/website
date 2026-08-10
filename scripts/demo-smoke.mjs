@@ -183,17 +183,19 @@ const TWO_TAB_DISCONNECT = '[data-two-tab-disconnect]';
 /*
  * The link that appears when the pairing press could not open a tab itself.
  *
- * It is also this harness's proof that it did not. The press opens the second
- * device in a new tab, gated on `navigator.userActivation` — a synthetic click
- * carries none, so no tab is opened here and this link is revealed instead. If
- * that gate ever came off, the press would open a third tab that auto-connected
- * as a second guest, registering the same account and device as the tab this
- * harness drives, and the two would disagree about whose mail is whose. The run
- * would go red somewhere downstream and the message would be about a missing
- * line rather than about a third participant.
+ * It is also half of this harness's proof that it did not. The press opens the
+ * second device in a new tab, gated on `navigator.userActivation`, and a click
+ * dispatched from `Runtime.evaluate` carries none — provided nothing trusted
+ * ran in the seconds before it, which is a precondition this file has to keep
+ * rather than assume (see `type`). A press that did open one leaves the run
+ * with a third tab that joins as a second guest on a name of its own, and
+ * presence then pairs two of the three; the run goes red somewhere downstream
+ * and says a line is missing rather than that a third participant is here.
  *
- * So the reveal is asserted where it happens. A hidden link after the press
- * means a window was opened, and this run is no longer describing two tabs.
+ * So the reveal is asserted where it happens, next to a count of the browser's
+ * pages across the press. The count is the direct evidence and this is the
+ * corroborating one: they fail together, and a page that stopped revealing the
+ * link at all is caught by this half alone.
  */
 const TWO_TAB_PAIR_LINK = '[data-two-tab-pair-link]';
 
@@ -238,6 +240,11 @@ const REPEAT_PROBE = `Second probe ${NONCE}: sent again, on a session already wa
    ever worked outward would pass a one-way test. */
 const TAB_PROBE = `First tab ${NONCE}: the relay is holding this one.`;
 const TAB_REPLY = `Second tab ${NONCE}: answered from the other window.`;
+/* Sent before anything is paired, so the pairing that follows is a handover
+   from a session that already ran rather than a first boot. That is the order
+   a reader arrives in — type, be convinced, then ask whether the two devices
+   were really separate — and it is the only order that reaches the handover. */
+const TAB_SOLO = `First tab ${NONCE}: typed alone, before any pairing.`;
 
 const DECRYPT_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 30000;
@@ -1119,6 +1126,25 @@ const TWO_TAB_SNAPSHOT = `(() => {
       .map((line) => line.textContent.trim())
       .filter(Boolean),
     status: document.querySelector(${JSON.stringify(TWO_TAB_STATUS)})?.textContent ?? '',
+    /* The other half of the stage, read in the same breath as the status line
+       so the two can be held against each other. They are one account of one
+       session and a run where they disagree is a run telling the reader two
+       different things at once. */
+    figureState:
+      document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.stageState ?? null,
+    figureCaption:
+      document.querySelector(${JSON.stringify(FIGURE_CAPTION)})?.textContent?.trim() ?? '',
+    /* Whether a reader who has just been told to open a second tab has
+       anything to press. Either route counts; none is the defect. */
+    pairingOffered: (() => {
+      const shown = (selector) => {
+        const node = document.querySelector(selector);
+        return Boolean(node) && !node.hidden && node.offsetParent !== null;
+      };
+      return (
+        shown(${JSON.stringify(TWO_TAB_CONNECT)}) || shown(${JSON.stringify(TWO_TAB_PAIR_LINK)})
+      );
+    })(),
     connected: Boolean(output) && !output.hidden,
     role: output?.dataset.twoTabRole ?? null,
     me: output?.dataset.twoTabMe ?? null,
@@ -1141,6 +1167,15 @@ const TWO_TAB_SETTLED = `(() => {
   const button = document.querySelector(${JSON.stringify(TWO_TAB_CONNECT)});
   const output = document.querySelector(${JSON.stringify(TWO_TAB_OUTPUT)});
   return Boolean(output) && (!output.hidden || (Boolean(button) && !button.disabled));
+})()`;
+
+/* The solo panel has finished its trip: the figure reached the last state and
+   the decrypted pane is holding the sentence that got there. */
+const soloRoundTripDone = `(() => {
+  const stage = document.querySelector(${JSON.stringify(FIGURE_STAGE)});
+  const out = document.querySelector(${JSON.stringify(DECRYPTED)});
+  return Boolean(stage) && stage.dataset.stageState === ${JSON.stringify(FIGURE_END_STATE)} &&
+    Boolean(out) && out.textContent.includes(${JSON.stringify(TAB_SOLO)});
 })()`;
 
 const sawLine = (text) =>
@@ -1219,20 +1254,56 @@ async function visitTwoTabs(cdp, origin, held) {
     return lines;
   };
 
-  const type = async (tab, text) => {
+  /*
+   * Type into the composer and press send.
+   *
+   * `Input.insertText` is a trusted input event, and a trusted event hands the
+   * page transient user activation for the next few seconds. After the two tabs
+   * are paired that is free; before them it is a trap. The pairing press below
+   * is a synthetic `.click()`, and a page still holding activation from a
+   * keystroke this harness delivered moments earlier is *right* to open the
+   * second device itself — leaving this run with three participants, the tab
+   * the page opened and the one opened below, and presence pairing the wrong
+   * two of them. It cost an afternoon to find, because the third tab is a guest
+   * like the second and every visible thing about it looks correct.
+   *
+   * So a send made before pairing writes the value rather than typing it. The
+   * composer registers no `input` listener — its only one is on `focus`, which
+   * the line above fires either way — so both paths reach the send handler
+   * having changed exactly the same state.
+   */
+  const type = async (tab, text, { activation = true } = {}) => {
     await evaluate(
       cdp,
       tab.sessionId,
       `document.querySelector(${JSON.stringify(TWO_TAB_INPUT)}).focus()`,
       'demo',
     );
-    await cdp.send('Input.insertText', { text }, tab.sessionId);
+    if (activation) {
+      await cdp.send('Input.insertText', { text }, tab.sessionId);
+    } else {
+      await evaluate(
+        cdp,
+        tab.sessionId,
+        `document.querySelector(${JSON.stringify(TWO_TAB_INPUT)}).value = ` +
+          `${JSON.stringify(text)}`,
+        'demo',
+      );
+    }
     await evaluate(
       cdp,
       tab.sessionId,
       `document.querySelector(${JSON.stringify(TWO_TAB_SEND)}).click()`,
       'demo',
     );
+  };
+
+  /* How many pages this browser is holding, counted rather than described: the
+     one thing that proves no tab opened itself is that the number did not
+     change. */
+  const pageCount = async () => {
+    const { targetInfos } = await cdp.send('Target.getTargets', {});
+    return targetInfos.filter((target) => target.type === 'page').length;
   };
 
   /* The controls the demo has to expose for any of this to be drivable, checked
@@ -1276,15 +1347,44 @@ async function visitTwoTabs(cdp, origin, held) {
     await first.quiet(IDLE_QUIET_MS, IDLE_MAX_MS);
     const interactedAt = Date.now();
 
+    /*
+     * One solo round trip first, so what follows is a handover.
+     *
+     * The boundary above is drawn before this rather than after it because
+     * typing is a touch: everything this tab fetches from here on was fetched
+     * because the reader did something, which is exactly what the pre-
+     * interaction budget is a claim about.
+     *
+     * This is here to reach a state a fresh pairing cannot. The panel carries
+     * one `announced` flag for "a session has been established", and it used
+     * to survive the handover, so a tab that had typed before pairing skipped
+     * `peer-connected` when the second tab arrived — leaving the caption
+     * saying two devices were up in this tab while the status line said the
+     * other tab was here. Pairing a tab that had never typed passed straight
+     * through that.
+     */
+    await type(first, TAB_SOLO, { activation: false });
+    await waitFor(
+      cdp,
+      first.sessionId,
+      soloRoundTripDone,
+      SCENARIO_TIMEOUT_MS,
+      `the first tab never completed a solo round trip before pairing, within ` +
+        `${SCENARIO_TIMEOUT_MS} ms`,
+      complaints(first),
+    );
+
     const connected = [];
 
     /*
      * The first tab presses, and becomes the host.
      *
      * The press is also what would open the second device in a real browser.
-     * Here it must not, and the assertion below is how this run knows it did
-     * not — see `TWO_TAB_PAIR_LINK`.
+     * Here it must not, and the two assertions below are how this run knows it
+     * did not: the browser is holding no page it was not holding before, and
+     * the page revealed the link instead — see `TWO_TAB_PAIR_LINK`.
      */
+    const pagesBeforePress = await pageCount();
     await evaluate(
       cdp,
       first.sessionId,
@@ -1306,14 +1406,28 @@ async function visitTwoTabs(cdp, origin, held) {
           `  Its own status line reads: ${JSON.stringify(host.status)}`,
       );
     }
+    const pagesAfterPress = await pageCount();
+    if (pagesAfterPress !== pagesBeforePress) {
+      throw new Red(
+        `the first tab's pairing press opened ${pagesAfterPress - pagesBeforePress} page(s): ` +
+          `this browser held ${pagesBeforePress} before it and ${pagesAfterPress} after.\n` +
+          `  This run is now describing three tabs rather than two. The third is a guest exactly\n` +
+          `  like the second, so nothing about it looks wrong — it simply joins, and presence\n` +
+          `  pairs two of the three while the fourth-wall assertions below go on passing.\n` +
+          `  A press opens a window only with user activation, and this harness must never carry\n` +
+          `  any: check what ran before the press for a trusted Input event (see \`type\`), and do\n` +
+          `  not relax this count — a run that tolerates a third participant is not checking the\n` +
+          `  thing it claims to.`,
+      );
+    }
     if (!host.pairLinkShown) {
       throw new Red(
         `the first tab's pairing press opened a window instead of revealing ` +
           `${TWO_TAB_PAIR_LINK}.\n` +
-          `  A synthetic click carries no user activation, so the page must not have opened one,\n` +
-          `  and this run is now describing three tabs rather than two: the third arrives on the\n` +
-          `  pairing fragment and registers the same account and device as the second, and the\n` +
-          `  two disagree about whose mail is whose. Restore the activation gate in\n` +
+          `  A click dispatched by this harness carries no user activation unless something\n` +
+          `  trusted ran just before it, so the page must not have opened a window here — and if\n` +
+          `  it did, this run is describing three tabs rather than two, with the third joining as\n` +
+          `  a second guest and presence pairing two of the three. Restore the activation gate in\n` +
           `  LiveCarrierPanel.astro rather than relaxing this check — a run that tolerates a\n` +
           `  third participant is not checking the thing it claims to.`,
       );
@@ -1351,6 +1465,56 @@ async function visitTwoTabs(cdp, origin, held) {
       );
     }
     connected.push(guest);
+
+    /*
+     * The handover, read on the tab that performed it and before anything else
+     * touches the stage.
+     *
+     * The first tab has now run a solo session and taken on a paired one. Both
+     * halves of its stage are describing that, and this is the only moment they
+     * can be compared: the next line types, and typing moves the figure on.
+     */
+    await waitFor(
+      cdp,
+      first.sessionId,
+      `(document.querySelector(${JSON.stringify(TWO_TAB_STATUS)})?.textContent ?? '')
+         .includes(${JSON.stringify(guest.me)})`,
+      SCENARIO_TIMEOUT_MS,
+      `the first tab never named the second one on its status line within ` +
+        `${SCENARIO_TIMEOUT_MS} ms, though the second reported itself connected`,
+      complaints(first),
+    );
+    /*
+     * Waited for rather than sampled.
+     *
+     * `figure.ts` holds each state for `MIN_DWELL_MS` before it renders the
+     * next, so the status line naming the second tab and the drawing agreeing
+     * with it are not the same instant — on a busy browser they were a second
+     * apart. The first shape of this check sampled instead: it polled until the
+     * state stopped changing and read whatever was there. That looks stricter
+     * and is weaker, because a dwell gap is indistinguishable from a settled
+     * figure, and it reported "still on devices-ready" on a run whose figure
+     * reached `peer-connected` a moment later.
+     *
+     * Waiting for the value is not waiting until the assertion cannot fail:
+     * the claim R3-3 makes is that the handover *reaches* this state, and a
+     * handover that suppresses it as old news never arrives here at all.
+     */
+    await waitFor(
+      cdp,
+      first.sessionId,
+      `document.querySelector(${JSON.stringify(FIGURE_STAGE)})?.dataset.stageState === ` +
+        `'peer-connected'`,
+      SCENARIO_TIMEOUT_MS,
+      `the first tab's status line named ${JSON.stringify(guest.me)}, but its figure never ` +
+        `reached "peer-connected" within ${SCENARIO_TIMEOUT_MS} ms.\n` +
+        `  The two halves of the stage are describing different sessions. This tab typed once\n` +
+        `  before pairing, and the flag that says "a session has been established" has to be\n` +
+        `  cleared by the handover — the paired session has established nothing yet — or the\n` +
+        `  arrival of the second tab is suppressed as old news.`,
+      complaints(first),
+    );
+    const handover = await read(first);
 
     await type(first, TAB_PROBE);
     await waitFor(
@@ -1397,6 +1561,10 @@ async function visitTwoTabs(cdp, origin, held) {
      * rather than about the page.
      */
     const stopped = [];
+    /* What the host is left holding once the guest has gone and before it
+       stops itself — the state a reader who reloaded their second tab is
+       actually sitting in front of. Filled by the first pass below. */
+    let bereft = null;
     for (const [tab, what] of [
       [second, 'the second tab'],
       [first, 'the first tab'],
@@ -1435,10 +1603,28 @@ async function visitTwoTabs(cdp, origin, held) {
         );
       }
       stopped.push(state);
+
+      if (tab === second) {
+        /* Waited on the status line rather than on the control, because the
+           control is the thing under test: a run that waited for it would
+           report a timeout where it should report what the page is showing. */
+        await waitFor(
+          cdp,
+          first.sessionId,
+          `!(document.querySelector(${JSON.stringify(TWO_TAB_STATUS)})?.textContent ?? '')
+             .includes(${JSON.stringify(guest.me)})`,
+          SCENARIO_TIMEOUT_MS,
+          `the first tab never noticed the second one leaving, within ${SCENARIO_TIMEOUT_MS} ms`,
+          complaints(first),
+        );
+        bereft = await read(first);
+      }
     }
 
     return {
       connected,
+      handover,
+      bereft,
       ended,
       stopped,
       requests: [...first.requests, ...second.requests],
@@ -1825,6 +2011,51 @@ function checkFigure(pass) {
  * Then each tab's own strip against its own pane, which is what makes the lane
  * evidence rather than decoration on the receiving side too.
  */
+/*
+ * The stage's two halves, told to agree at the moment they are most likely not
+ * to, and a departure told to leave a way back.
+ *
+ * Both of these are states rather than transitions, which is why they get their
+ * own function: they are read once, at a moment the rest of the run walks
+ * straight past, and neither is visible to a scanner reading the source. The
+ * figure caption and the status line are separate elements written by separate
+ * code paths, and a source scan can only prove that both paths exist.
+ */
+function checkPairingLifecycle(handover, bereft, guestName) {
+  if (handover.figureState !== 'peer-connected') {
+    throw new Red(
+      `the first tab's status line says ${JSON.stringify(guestName)} has arrived, but its ` +
+        `figure is still on ${JSON.stringify(handover.figureState)}.\n` +
+        `  Its caption reads:     ${JSON.stringify(handover.figureCaption)}\n` +
+        `  Its status line reads: ${JSON.stringify(handover.status)}\n` +
+        `  The two halves of the stage are describing different sessions. This tab typed once\n` +
+        `  before pairing, and the flag that says "a session has been established" has to be\n` +
+        `  cleared by the handover — the paired session has established nothing yet — or the\n` +
+        `  arrival of the second tab is suppressed as old news.`,
+    );
+  }
+  const expected = CAPTIONS['peer-connected'];
+  if (handover.figureCaption !== expected) {
+    throw new Red(
+      `the first tab's figure reached "peer-connected" with the wrong caption under it.\n` +
+        `  It reads:    ${JSON.stringify(handover.figureCaption)}\n` +
+        `  It should be ${JSON.stringify(expected)}`,
+    );
+  }
+
+  if (!bereft.pairingOffered) {
+    throw new Red(
+      `the second tab left, and the first tab offers nothing to open another one.\n` +
+        `  Its status line reads: ${JSON.stringify(bereft.status)}\n` +
+        `  That line tells the reader to open a second tab again, and neither the pairing\n` +
+        `  button nor the fallback link is on screen to do it with. A reload of the second tab\n` +
+        `  is an ordinary accident; it must not be the end of the demo. Restore the control on\n` +
+        `  departure rather than relaxing this — the instruction and the affordance are one\n` +
+        `  claim, and a run where only the sentence survives is the defect.`,
+    );
+  }
+}
+
 function checkTwoTabRelayView(first, second) {
   const cipherOf = (side, ended) => {
     const text = (ended.cipher ?? '').replace(/[^A-Za-z0-9+/=]/g, '');
@@ -2947,11 +3178,38 @@ function checkTwoTabs(pass, envelopeFields, expected) {
         `  find the lock already taken.`,
     );
   }
-  if (first.me === second.me || first.me !== second.peer || second.me !== first.peer) {
+  /*
+   * Neither tab may name a correspondent it has not met.
+   *
+   * Read at the moment the first tab finished connecting, which is before the
+   * second tab exists at all. A session mints its own account name, so the
+   * only thing that can tell this tab what the other is called is the other
+   * tab — and there isn't one yet. A page that has a name here has guessed it,
+   * which is the assumption that used to make a reloaded tab unrecoverable:
+   * the returning tab came back holding new keys under the name the first tab
+   * was still writing to, and the relay refused it, correctly.
+   */
+  if (first.peer !== null) {
     throw new Red(
-      `the two tabs disagree about who is who: the first is ${JSON.stringify(first.me)} ` +
-        `writing to ${JSON.stringify(first.peer)}, the second is ${JSON.stringify(second.me)} ` +
-        `writing to ${JSON.stringify(second.peer)}`,
+      `the first tab was already addressing ${JSON.stringify(first.peer)} before a second tab ` +
+        `existed.\n` +
+        `  Nothing had announced itself at that point, so this name was assumed rather than\n` +
+        `  learned. Assuming it is what stops a reloaded tab from ever rejoining: it comes back\n` +
+        `  with fresh keys, and a relay that already holds that name refuses them.`,
+    );
+  }
+
+  /* And once they have met, each is writing to the other — read at the end,
+     because that is the earliest point at which both have been told. */
+  if (
+    firstEnded.me === secondEnded.me ||
+    firstEnded.me !== secondEnded.peer ||
+    secondEnded.me !== firstEnded.peer
+  ) {
+    throw new Red(
+      `the two tabs disagree about who is who: the first is ${JSON.stringify(firstEnded.me)} ` +
+        `writing to ${JSON.stringify(firstEnded.peer)}, the second is ` +
+        `${JSON.stringify(secondEnded.me)} writing to ${JSON.stringify(secondEnded.peer)}`,
     );
   }
 
@@ -3052,6 +3310,7 @@ function checkTwoTabs(pass, envelopeFields, expected) {
   }
 
   checkTwoTabRelayView(firstEnded, secondEnded);
+  checkPairingLifecycle(pass.handover, pass.bereft, second.me);
 
   const found = leaks(pass.requests, findProbe);
   if (found.length) {
@@ -3061,15 +3320,27 @@ function checkTwoTabs(pass, envelopeFields, expected) {
     );
   }
 
-  /* The section is deliberately unmeasured: `scenario_opened` is fired by a
-     `<details>` toggle, and this is not a scenario. A beacon appearing here is
-     a new event nobody registered. */
+  /*
+   * The pairing is deliberately unmeasured, and the solo run before it is not.
+   *
+   * `scenario_opened` is fired by a `<details>` toggle and this is not a
+   * scenario, so nothing about opening a second tab, joining, sending between
+   * them or disconnecting may report anything. What this section does report is
+   * the one solo round trip it makes before it pairs — the same `demo_run` the
+   * homepage press already sends, from the same code — so the number to hold it
+   * to is exactly one, not zero. Zero would fail the moment the run learned to
+   * type, which is how this check read for a while; anything above one is the
+   * paired half of the section reporting on itself.
+   */
   const beacons = beaconsIn(pass.requests);
-  if (beacons.length) {
+  const bodies = beacons.map((beacon) => beacon.postData ?? '');
+  if (bodies.length !== 1 || !bodies[0].startsWith('demo_run ')) {
     throw new Red(
       `the two-tab section sent ${beacons.length} beacon(s) to ${BEACON_PATH} ` +
-        `(${beacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}), and no event ` +
-        `is registered for it`,
+        `(${bodies.map((body) => JSON.stringify(body)).join(', ') || 'none'}).\n` +
+        `  It should send exactly one, "demo_run", for the solo round trip it makes before it\n` +
+        `  pairs. Pairing two tabs, sending between them and disconnecting are all unmeasured,\n` +
+        `  so a second beacon is a new event nobody registered.`,
     );
   }
 
@@ -3762,8 +4033,14 @@ async function main() {
         `pane, and the\n` +
         `                  ciphertext carrying neither sentence in cleartext, percent-encoded or ` +
         `base64 form\n` +
-        `                  measured 0 beacon(s): the section is not a scenario and registers no ` +
-        `event\n` +
+        `                  the first tab had typed alone before any of it, and the handover moved ` +
+        `its figure on to\n` +
+        `                  "${twoTabs.handover.figureState}" rather than suppressing it as ` +
+        `already-said\n` +
+        `                  measured ${beaconsIn(twoTabs.requests).length} beacon(s): ` +
+        `${beaconsIn(twoTabs.requests)
+          .map((beacon) => JSON.stringify(beacon.postData))
+          .join(', ')} — the solo run only; pairing is not a scenario\n` +
         `                  then both tabs were disconnected, guest first, and each shut its ` +
         `client down without\n` +
         `                  complaint — the only stop() this site performs\n` +

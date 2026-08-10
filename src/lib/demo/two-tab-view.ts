@@ -17,10 +17,11 @@
  * what a relay can read. What is left here are the transcripts, and the rows go
  * out through `onEnvelope` to the printer that owns them.
  *
- * A third tab is a guest like the second, which means it registers the same
- * account and device the second one did on storage of its own, and the two
- * will disagree about whose mail is whose. The pairing control opens exactly
- * one, and the panel's prose asks for one more tab rather than more tabs.
+ * A third tab is a guest like the second, on an account name of its own, and
+ * that is the trouble rather than the relief: nothing collides and nothing
+ * complains, so presence simply pairs two of the three and the odd one out
+ * types into a conversation nobody is reading. The pairing control opens
+ * exactly one, and the panel's prose asks for one more tab rather than more.
  *
  * The type imports here are types only, so this module carries no SDK. The
  * six-line element helper is a copy of `render.ts`'s rather than an import of
@@ -84,7 +85,10 @@ export function mountTwoTab(session: TwoTabSession, options: TwoTabViewOptions):
 
   identity.dataset.twoTabRole = session.role;
   identity.dataset.twoTabMe = session.me;
-  identity.dataset.twoTabPeer = session.peer;
+  /* Written by the `met` event below rather than read once here. A session
+     starts without a peer — it cannot know one until the other tab says so —
+     and an attribute set from that would read `null` for the whole run. */
+  delete identity.dataset.twoTabPeer;
 
   setStatus(
     session.role === 'host'
@@ -103,6 +107,8 @@ export function mountTwoTab(session: TwoTabSession, options: TwoTabViewOptions):
   return session.on((event) => {
     if (event.type === 'sent') {
       line(sent, `${session.me} →`, event.text);
+    } else if (event.type === 'met') {
+      identity.dataset.twoTabPeer = event.peer;
     } else if (event.type === 'received') {
       /* `senderId` off the decrypted message rather than `session.peer`: the
          label should say who the SDK decided this came from, which is the

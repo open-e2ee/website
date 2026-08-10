@@ -647,6 +647,11 @@ const PAIR_FRAGMENT = 'demo-pair';
      * label names the account this tab is writing to, and says whether a tab
      * holding it has actually announced itself. It never names a peer that has
      * not.
+     *
+     * Before a second tab arrives there is no name to print at all, because a
+     * session no longer guesses one: identities are minted per session, so the
+     * only tab that knows the far account's name is the far tab. The label says
+     * the device is waiting rather than naming an account nobody holds.
      */
     const describe = () => {
       if (!paired) {
@@ -658,7 +663,7 @@ const PAIR_FRAGMENT = 'demo-pair';
       nearLabel.textContent = `${paired.me} · this tab`;
       farLabel.textContent = peerHere
         ? `${peerHere} · the other tab`
-        : `${paired.peer} · no tab has it yet`;
+        : 'the second device · no tab has it yet';
       labelFigure(peerHere ? 'the other tab' : 'no tab yet');
     };
 
@@ -690,17 +695,22 @@ const PAIR_FRAGMENT = 'demo-pair';
      * counts a click as permission to open a window for a short moment and the
      * SDK import is longer than that moment. The activation check in front of
      * it is what makes this deterministic rather than dependent on a pop-up
-     * blocker's mood: a synthetic click — the smoke harness's, or any script's
-     * — carries no activation, so no tab is opened and the link below the
-     * button is revealed instead. Both paths reach the same fragment.
+     * blocker's mood: a click carrying no activation opens no tab, and the link
+     * below the button is revealed instead. Both paths reach the same fragment.
+     *
+     * No `noopener` in the feature string, and that is the whole reason the
+     * branch below can be believed: `window.open` returns null when the caller
+     * asks for `noopener`, whether or not a tab opened. With it, the fallback
+     * link was revealed on every press — including the presses that had just
+     * opened the tab it offers to open — which is an invitation to a third
+     * participant that neither tab is expecting. The tab this opens is this
+     * site on this origin, and nothing on either side reads `window.opener`.
      */
     let linkOffered = false;
     const openSecondTab = () => {
       const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } })
         .userActivation;
-      const opened = activation?.isActive === true
-        ? window.open(pairUrl(), '_blank', 'noopener')
-        : null;
+      const opened = activation?.isActive === true ? window.open(pairUrl(), '_blank') : null;
       if (opened) return;
       linkOffered = true;
       pairLink.hidden = false;
@@ -760,6 +770,15 @@ const PAIR_FRAGMENT = 'demo-pair';
           peers.hidden = false;
           connect.hidden = true;
 
+          /* The solo run's progress, retired with the solo run's panes.
+             `established()` fires once per session and the flag it sets was
+             surviving the handover, so a reader who typed before pairing had
+             `peer-connected` suppressed when the second tab arrived — the
+             caption stayed on "two devices are up" while the status line said
+             the other tab was here. The paired session has established nothing
+             yet, so clearing it is also simply true. */
+          announced = false;
+
           unmount = view.mountTwoTab(started, {
             identity: peers,
             sent: sentLines,
@@ -810,6 +829,11 @@ const PAIR_FRAGMENT = 'demo-pair';
             me: started.me,
             role: started.role,
             onJoin: (peer) => {
+              /* The address to write to, learned rather than assumed. Sessions
+                 mint their own names now, so this is the first moment this tab
+                 has anywhere to send — and the moment a returning tab's new
+                 name replaces the one it had before it reloaded. */
+              started.meet(peer.me);
               peerHere = peer.me;
               describe();
               /* The offer of a second tab, withdrawn by the second tab
@@ -817,8 +841,10 @@ const PAIR_FRAGMENT = 'demo-pair';
                  above it has gone, because it is the only route left to the
                  fragment when a pop-up blocker ate the window; what makes it
                  wrong is a tab that already has its pair still advertising a
-                 place for a third. */
+                 place for a third. The button goes the same way and for the
+                 same reason — `onLeave` puts both back. */
               pairLink.hidden = true;
+              connect.hidden = true;
               setPairStatus(`${peer.me} is here, in another tab. Type in either one.`);
               /* The figure acknowledges the second window, once, and only
                  while it is still the newest thing that has happened. A tab
@@ -829,10 +855,33 @@ const PAIR_FRAGMENT = 'demo-pair';
             onLeave: () => {
               peerHere = null;
               describe();
-              /* The status line says to open a second tab again, so the route
-                 to it comes back — but only for a reader who was given it in
-                 the first place, rather than appearing now for one whose
-                 browser opens windows. */
+              /*
+               * The instruction on the status line, made pressable.
+               *
+               * Both routes to a second tab come back, and the button comes
+               * back unconditionally. It used to be hidden for good by the
+               * first successful pairing, with only the blocked-pop-up link
+               * restored — so a reader whose browser opens windows normally,
+               * which is most of them, was told to open a second tab again
+               * and given nothing to do it with. An accidental reload of the
+               * second tab is an ordinary thing to do, and it left the demo
+               * with no way forward on either side.
+               *
+               * Pressing it here opens a tab and does not re-join: `join()`
+               * hands back the settled promise it is already holding, because
+               * this tab's own device never went anywhere.
+               *
+               * "Disconnect this tab" stays where it is, deliberately. It is
+               * not an offer to disconnect from the tab that has gone — it
+               * says *this tab*, and what it does is unchanged: it stops this
+               * tab's paired session and hands the panel back to the one-tab
+               * demo. That is the only route back to solo mode, and it is the
+               * only `stop()` this page ever calls, so hiding it here would
+               * strand a reader whose second tab closed with a paired session
+               * they cannot end.
+               */
+              connect.hidden = false;
+              connect.disabled = false;
               pairLink.hidden = !linkOffered;
               setPairStatus('The other tab has gone. Open a second one again to carry on.');
             },
@@ -843,10 +892,23 @@ const PAIR_FRAGMENT = 'demo-pair';
           stage('devices-ready');
         })
         .catch((cause: unknown) => {
-          /* Same rule as a scenario: this promises live cryptography, so a tab
-             that could not boot one says why rather than showing a pane. */
+          /*
+           * Same rule as a scenario: this promises live cryptography, so a tab
+           * that could not boot one says so rather than showing a pane.
+           *
+           * In this page's own words, though. The SDK's sentence used to be
+           * interpolated straight onto the status line, and the SDK calls the
+           * far end by the name this band's whole vocabulary avoids — the one
+           * messaging.md §4 replaces with *relay*. No scanner can catch that:
+           * the string is assembled at run time out of somebody else's
+           * message, and the source it is assembled in is clean. The cause
+           * still goes to the console in full, where it is a diagnostic rather
+           * than the page's voice.
+           */
+          console.error('[open-e2ee demo] the two-tab session could not start', cause);
           setPairStatus(
-            `This tab could not connect: ${cause instanceof Error ? cause.message : String(cause)}`,
+            'This tab could not reach the relay, so it stayed on its own. ' +
+              'The console has the reason.',
           );
           peers.hidden = true;
           connect.hidden = false;
@@ -901,7 +963,8 @@ const PAIR_FRAGMENT = 'demo-pair';
              failure this control exists to expose, so it goes where the reader
              and the harness both read. */
           setPairStatus(
-            `This tab could not close cleanly: ${error instanceof Error ? error.message : String(error)}`,
+            `This tab could not close cleanly. The SDK reported: ` +
+              `“${error instanceof Error ? error.message : String(error)}”`,
           );
         });
     });
@@ -945,6 +1008,11 @@ const PAIR_FRAGMENT = 'demo-pair';
           const exchange = await ready.send(text);
           render(exchange);
           reportRun();
+          /* Emptied on the way out, the way the paired branch does it. It used
+             not to be, so "type another and press it again" appended the next
+             sentence to the one still sitting in the box — and the panel then
+             printed a round trip for the two of them run together. */
+          input.value = '';
           setStatus('Sent. Type another and press it again.');
         }
       } catch (cause: unknown) {
@@ -952,8 +1020,12 @@ const PAIR_FRAGMENT = 'demo-pair';
            paired send has no recording to fall back to — the other tab is the
            other half of it — so it says what went wrong and stays where it is. */
         if (paired) {
+          /* Quoted and attributed rather than spoken. It is the SDK's sentence,
+             in the SDK's vocabulary, and a reader has to be able to tell that
+             from the page's own lines around it. */
           setStatus(
-            `That send did not go through: ${cause instanceof Error ? cause.message : String(cause)}`,
+            `That send did not go through. The SDK reported: ` +
+              `“${cause instanceof Error ? cause.message : String(cause)}”`,
           );
         }
       } finally {
