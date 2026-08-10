@@ -892,7 +892,7 @@ test('reaches the security review pack from the homepage and the footer', async 
   /* Both build their links from a data array now, so the path is quoted
    * rather than written as an attribute. On the homepage it belongs in the
    * "Check the work" band with the rest of the evidence, not in a third row
-   * of hero links competing with the one action the hero is for.
+   * of hero links competing with the hero's primary action.
    *
    * The destination is /security. It was /evaluate, which asked the questions
    * /security answers and rendered the same pinned specifications from the
@@ -955,8 +955,8 @@ test('sends the folded demo route at a section the homepage still has', async ()
    * route either exists or 404s loudly. `/#when-something-goes-wrong` is a
    * route plus an anchor, and an anchor that has gone missing fails silently —
    * the homepage serves 200, the browser finds nothing to scroll to, and every
-   * reader who followed a /demo link lands on the hero two bands above the
-   * thing they asked for. Nothing else on the site would notice. */
+   * reader who followed a /demo link lands at the top of the page instead of
+   * the section they asked for. Nothing else on the site would notice. */
   assert.match(redirects, /^\/demo \/#when-something-goes-wrong 308$/m);
   assert.match(redirects, /^\/demo\/ \/#when-something-goes-wrong 308$/m);
 

@@ -89,7 +89,7 @@ const differentiators = [
    * that reading is more expensive than the cost itself.
    *
    * It is stated as a consequence of what the relay holds, because that is the
-   * part this page can prove: the recorded row two bands down is ciphertext,
+   * part this page can prove: the recorded row two bands up is ciphertext,
    * and everything in this cell follows from that and nothing else. No
    * regulation is named — docs/messaging.md bans "required for HIPAA / GDPR /
    * SOC 2" outright, and the honest form of this cost is the capability a team
@@ -122,7 +122,7 @@ const differentiators = [
  * The runtime question is the first one a visitor has, and one quickstart per
  * runtime makes "does it run where I run" a click instead of a search. It sits
  * under the differentiator that raises it rather than in the hero, where three
- * more links were competing with the one action the hero is for.
+ * more links were competing with the hero's primary action.
  */
 const runtimes = [
   { href: 'https://docs.open-e2ee.dev/start/expo', label: 'Expo' },
@@ -235,14 +235,22 @@ const trustLinks = [
           <BatteryMark /> Batteries included.
         </p>
         <div class="actions">
-          {/* No sublabel under this button. "ten minutes · two clients · no
-              account" is still under the two further down the page, where a
-              reader who has read the evidence is being asked to commit; here
-              it was a third line of small grey type between the offer and the
-              proof, and the proof is the better argument for spending ten
-              minutes than the words "ten minutes" are. */}
-          <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
-            <span class="oe-button">Build your first encrypted message</span>
+          {/* The primary action is the demo, not the quickstart: it scrolls to
+              `#demo`, where the arc the two demo bands make starts, directly
+              after the code sample below. "View the demo" over "View demo"
+              because every action label here is a clause with an article —
+              "View the SDK on GitHub" set the pattern.
+
+              No sublabel under this button. "ten minutes · two clients · no
+              account" is under the two quickstart buttons further down the
+              page, where a reader who has read the evidence is being asked to
+              commit; a scroll needs no time promise, and a third line of small
+              grey type here would stand between the offer and the proof. */}
+          <a class="cta-primary" href="#demo">
+            <span class="oe-button">View the demo</span>
+          </a>
+          <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/start/quickstart">
+            Get started
           </a>
           <a class="oe-button oe-button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
             <Icon name="github" />
@@ -275,8 +283,8 @@ const trustLinks = [
           test-pinned to the installed SDK. */}
       <PlatformStrip />
 
-      {/* The demo sits under the offer now, rather than beside the copy in a
-          second column, and it closes the hero.
+      {/* The code panel sits under the offer now, rather than beside the copy
+          in a second column, and it closes the hero.
 
           A column is the wrong thing to size a program to. The panel was the
           wide half of a 4.75/7.25 split — 645px — and the longest line of the
@@ -308,64 +316,13 @@ const trustLinks = [
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container">
-      <div class="band-head">
-        <h2>What you get, and what it costs you to find out</h2>
-        <p class="measure">
-          {/* The deck used to end "including the one that decides it against",
-              which names a disqualifier and then withholds it. A reader whose
-              product cannot live without server-side moderation had to read
-              all seven cards to find the one that tells them to leave, and the
-              whole point of putting it on the page is that they leave early
-              and cheaply. A tease is the wrong shape for a warning. */}
-          Seven things that decide whether protocol-level encryption is workable for your product.
-          Read <a href="#what-you-give-up">What you give up</a> first &mdash; it rules this out for
-          products with retention, moderation, or account-recovery duties, and it is cheaper to know
-          now.
-        </p>
-      </div>
-      <ul class="rows">
-        {differentiators.map((item) => (
-          <li id={item.id}>
-            <h3>{item.title}</h3>
-            <p>{item.body}</p>
-            {/* Only the licence cell carries one. A row of links here would
-                flatten the band into a nav list; one link, on the one cell
-                whose answer lives on another page, reads as a continuation. */}
-            {item.link && (
-              <p class="row-link">
-                <a href={item.link.href}>{item.link.label}</a>
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
-      <p class="platform-links">
-        <span>Start where you are:</span>
-        {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
-      </p>
-      {/* The three quickstarts used to sit here as equal peers, which is not
-          what the shipped package says: ADAPTERS.md marks the bare React
-          Native store experimental. A reader who learns that after following
-          the link learns it too late.
-
-          The browser clause tracks the shipped release, not a remembered one:
-          alpha.13 cleared the web store's `(experimental)` marker after its
-          graduation gates — multi-tab compare-and-set, interruption,
-          storage-pressure, soak — moved into per-change CI, so the sentence
-          that grouped it with the bare React Native store was true of
-          alpha.12 and false of the alpha.13 the install command above
-          resolves to. */}
-      <p class="muted measure">
-        The Expo, Node, and browser stores implement the storage interface in full. The bare
-        React Native store is experimental.{' '}
-        <a href="/product">What each store holds</a>.
-      </p>
-    </div>
-  </section>
-
-  <section class="band">
+  {/*
+    The demo opens the page's evidence, directly after the code sample the
+    hero closes on: the program a reader has just read is the program running
+    here. `id="demo"` is the hero primary action's scroll target — the arc the
+    two demo bands make starts at this heading.
+  */}
+  <section id="demo" class="band band-surface">
     <div class="container stack">
       <div class="band-head">
         <h2>One message, end to end</h2>
@@ -473,24 +430,27 @@ const trustLinks = [
   </section>
 
   {/*
-    The second half of the panel above, and deliberately the same band rather
-    than a new subject. The arc is one demo in two moves: a message goes end to
-    end, then the same SDK is asked to fail. Two headings that both said "here
-    is a demo" would read as two products.
+    The second move of the demo that starts at `#demo` above, and deliberately
+    a continuation rather than a new subject. The arc is one demo in two moves:
+    a message goes end to end, then the same SDK is asked to fail. Two headings
+    that both said "here is a demo" would read as two products, so the two
+    bands stay adjacent, in that order.
 
     `id` because `public/_redirects` sends `/demo` to this fragment, which is
     what makes a bookmarked `/demo` land on the thing it asked for rather than
-    at the top of a long page. The four scenario slugs stay `id`s of their own
-    inside the list, so `/#flip-a-byte` works — but `/demo#flip-a-byte` resolves
-    here instead, because a destination fragment replaces the reader's. That
-    trade is argued in `_redirects` beside the rule.
+    at the top of a long page — the folded /demo page was the scenarios, so the
+    scenarios are what that route still means, not the arc's `#demo` start. The
+    four scenario slugs stay `id`s of their own inside the list, so
+    `/#flip-a-byte` works — but `/demo#flip-a-byte` resolves here instead,
+    because a destination fragment replaces the reader's. That trade is argued
+    in `_redirects` beside the rule.
 
     No count in the heading. `/demo`'s h1 was "Four things that go wrong, and
     what the protocol does about each", which stopped being maintainable the
     moment a fifth scenario was worth adding, and named an inventory rather than
     what the reader gets from it.
   */}
-  <section id="when-something-goes-wrong" class="band band-surface">
+  <section id="when-something-goes-wrong" class="band">
     <div class="container stack">
       <div class="band-head">
         <h2>What it does when something goes wrong</h2>
@@ -532,6 +492,63 @@ const trustLinks = [
       <p class="muted measure">
         All of it runs here. The only thing this section sends is one beacon naming the scenario you
         opened — no message content, no sizes, no timings. Check the network tab.
+      </p>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container">
+      <div class="band-head">
+        <h2>What you get, and what it costs you to find out</h2>
+        <p class="measure">
+          {/* The deck used to end "including the one that decides it against",
+              which names a disqualifier and then withholds it. A reader whose
+              product cannot live without server-side moderation had to read
+              all seven cards to find the one that tells them to leave, and the
+              whole point of putting it on the page is that they leave early
+              and cheaply. A tease is the wrong shape for a warning. */}
+          Seven things that decide whether protocol-level encryption is workable for your product.
+          Read <a href="#what-you-give-up">What you give up</a> first &mdash; it rules this out for
+          products with retention, moderation, or account-recovery duties, and it is cheaper to know
+          now.
+        </p>
+      </div>
+      <ul class="rows">
+        {differentiators.map((item) => (
+          <li id={item.id}>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+            {/* Only the licence cell carries one. A row of links here would
+                flatten the band into a nav list; one link, on the one cell
+                whose answer lives on another page, reads as a continuation. */}
+            {item.link && (
+              <p class="row-link">
+                <a href={item.link.href}>{item.link.label}</a>
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p class="platform-links">
+        <span>Start where you are:</span>
+        {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
+      </p>
+      {/* The three quickstarts used to sit here as equal peers, which is not
+          what the shipped package says: ADAPTERS.md marks the bare React
+          Native store experimental. A reader who learns that after following
+          the link learns it too late.
+
+          The browser clause tracks the shipped release, not a remembered one:
+          alpha.13 cleared the web store's `(experimental)` marker after its
+          graduation gates — multi-tab compare-and-set, interruption,
+          storage-pressure, soak — moved into per-change CI, so the sentence
+          that grouped it with the bare React Native store was true of
+          alpha.12 and false of the alpha.13 the install command above
+          resolves to. */}
+      <p class="muted measure">
+        The Expo, Node, and browser stores implement the storage interface in full. The bare
+        React Native store is experimental.{' '}
+        <a href="/product">What each store holds</a>.
       </p>
     </div>
   </section>
