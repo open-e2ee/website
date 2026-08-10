@@ -14,15 +14,13 @@ import {
 
 interface Props {
   canonical: string;
-  /** Set on the dated page, which is pinned rather than current. */
-  versioned?: boolean;
 }
 
-const { canonical, versioned = false } = Astro.props;
+const { canonical } = Astro.props;
 ---
 
 <BaseLayout
-  title={versioned ? `Terms ${commercialTermsVersion}` : 'Terms'}
+  title="Terms"
   description="Website terms and versioned Startup commercial license terms for OpenE2EE."
   canonical={canonical}
 >
@@ -39,18 +37,10 @@ const { canonical, versioned = false } = Astro.props;
           <span>Effective {commercialTermsEffectiveDate}</span>
           <span>Version {commercialTermsVersion}</span>
         </p>
-        {versioned ? (
-          <p class="legal-pin">
-            This is the immutable copy of that version. It is the document an order recorded at
-            checkout is bound to, and it does not change. The terms offered to new orders are the{' '}
-            <a href="/legal/terms">current terms</a>.
-          </p>
-        ) : (
-          <p class="legal-pin">
-            Startup checkout records the version you accept. The immutable copy of this one is
-            published at <a href={commercialTermsPath}><code>{commercialTermsPath}</code></a>.
-          </p>
-        )}
+        <p class="legal-pin">
+          Startup checkout records the version you accept. The immutable copy of this one is
+          published at <a href={commercialTermsPath}><code>{commercialTermsPath}</code></a>.
+        </p>
       </div>
     </header>
 
