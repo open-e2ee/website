@@ -32,17 +32,14 @@ import { STEPS } from '../src/lib/demo/trace.ts';
 const OUTBOUND = 'Ship it Thursday. The staging key rotates at 09:00 UTC.';
 const REPLY = 'Acknowledged. I will hold the rotation until the deploy is green.';
 
-/** Field names the installed `Envelope` declares, read rather than typed. */
-const declaredEnvelopeFields = await (async () => {
+/** Field names an interface declares, read out of the installed package. */
+async function declaredFields(declarationPath, interfaceName) {
   const types = await readFile(
-    new URL(
-      '../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay/types.d.ts',
-      import.meta.url,
-    ),
+    new URL(`../node_modules/@open-e2ee/signal-protocol-sdk/${declarationPath}`, import.meta.url),
     'utf8',
   );
-  const block = types.match(/export interface Envelope \{[\s\S]*?\n\}/);
-  assert.ok(block, 'no Envelope interface in the installed type declarations');
+  const block = types.match(new RegExp(`export interface ${interfaceName} \\{[\\s\\S]*?\\n\\}`));
+  assert.ok(block, `no ${interfaceName} interface in the installed type declarations`);
   return new Set(
     block[0]
       .split('\n')
@@ -50,7 +47,16 @@ const declaredEnvelopeFields = await (async () => {
       .filter(Boolean)
       .map((match) => match[1]),
   );
-})();
+}
+
+const declaredEnvelopeFields = await declaredFields(
+  'dist/remote/relay/types.d.ts',
+  'Envelope',
+);
+const declaredSelectionFields = await declaredFields(
+  'dist/types/protocol-config.d.ts',
+  'ProtocolSelectionEvent',
+);
 
 /**
  * The real in-memory relay, made to behave like one that has to cross something.
@@ -161,6 +167,41 @@ test('exchangeKeys publishes both bundles and establishes a real session', async
       false,
       'a message was sent during key agreement',
     );
+  });
+});
+
+test('the key agreement step carries what the protocol chose, from the protocol', async () => {
+  await withRun(async (run) => {
+    await run.exchangeKeys();
+
+    const { selection } = run.trace.events.find(
+      (event) => event.step === 'session-established',
+    ).detail;
+
+    /* The point of the test. `onProtocolSelected` is a callback the SDK may
+       stop calling, and a callback that stops firing leaves this step looking
+       exactly like one that was never wired: present, measured, and silently
+       carrying nothing. Nothing else in the run would go red. */
+    assert.ok(selection, 'onProtocolSelected did not fire, so the step has nothing to print');
+
+    /* It is this agreement's event, not one left over from another. */
+    assert.equal(selection.remoteAddress, `bob:${run.client('b').deviceId}`);
+    assert.equal(
+      selection.usedPQXDH,
+      true,
+      'the demo agreed a key without post-quantum key exchange',
+    );
+    assert.equal(selection.usedClassicalFallback, false);
+    assert.equal(typeof selection.usedTripleRatchet, 'boolean');
+
+    /* Handed over whole, so every field is one the installed package declares
+       rather than one this file expects to be there. */
+    for (const field of Object.keys(selection)) {
+      assert.ok(
+        declaredSelectionFields.has(field),
+        `selection field ${field} is not declared by the installed package`,
+      );
+    }
   });
 });
 

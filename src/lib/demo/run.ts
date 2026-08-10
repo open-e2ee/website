@@ -38,14 +38,18 @@
  * `script-src 'self'`.
  */
 
-import { DEFAULT_DEVICE_ID, createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
+import {
+  DEFAULT_DEVICE_ID,
+  SignalProtocolClient,
+  createSignalProtocolClientConfig,
+} from '@open-e2ee/signal-protocol-sdk';
 import type {
   DecryptedEnvelope,
   Envelope,
   ProtocolAddress,
   SendResult,
-  SignalProtocolClient,
 } from '@open-e2ee/signal-protocol-sdk';
+import type { ProtocolSelectionEvent } from '@open-e2ee/signal-protocol-sdk/client/config';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import type { InMemorySignalProtocolRelayServer } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
@@ -140,6 +144,8 @@ interface Device {
   readonly userId: string;
   readonly client: SignalProtocolClient;
   readonly address: ProtocolAddress;
+  /** What the SDK last reported about a key agreement this device took part in. */
+  selection(): ProtocolSelectionEvent | null;
   /** Set while a send to this device is outstanding. See the send below. */
   onEnvelope: ((arrival: { envelope: Envelope; atMs: number }) => void) | null;
   onDecrypted: ((arrival: { message: DecryptedEnvelope; atMs: number }) => void) | null;
@@ -183,11 +189,51 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     const userId = names[actor];
     const mark = (stage: string) => `oe-demo:device:${generation}:${actor}:${stage}`;
 
+    /*
+     * What the SDK chose, from the SDK, rather than a claim this page makes.
+     *
+     * `onProtocolSelected` is the only place the choice is stated: it fires once
+     * key agreement completes and before anything is encrypted, and it carries
+     * whether PQXDH ran, whether the Triple Ratchet is on, and whether the
+     * classical fallback was taken and why. Nothing else on the client says. The
+     * nearest candidate, `getSessionHealth`, reports that a session exists and
+     * how many messages have crossed it, and knows nothing about either.
+     *
+     * So the "Exchange keys" step prints an event the protocol raised. The
+     * alternative — captioning it from what this file believes the defaults are
+     * — would keep reading correct through exactly the change worth showing.
+     *
+     * A box rather than a field because the callback is installed while the
+     * client is being built, so it has to have somewhere to write that already
+     * exists. It also fires for a key agreement this device *answered*, not only
+     * ones it started; both are this device's, so both land here.
+     */
+    let selection: ProtocolSelectionEvent | null = null;
+
     performance.mark(mark('start'));
     await relay.registerDevice(userId, { encryptedDeviceName: new ArrayBuffer(0) });
-    const client = await createSignalProtocolClient({
+    /*
+     * Composed and then constructed, rather than `createSignalProtocolClient`.
+     *
+     * `protocolStrategy` is the seam the callback lives on, and the composition
+     * shape deliberately omits it: it is documented as advanced, for diagnostics
+     * and telemetry, which is exactly what this is. `createSignalProtocolClient`
+     * is a two-line wrapper over these same two calls, so this is that path with
+     * one extra key and not a way around anything. Both functions are root
+     * exports and the SDK's own example for `onProtocolSelected` is written
+     * against `SignalProtocolClient.create`.
+     */
+    const config = createSignalProtocolClientConfig({
       identity: { userId },
       adapters: { storage: inMemoryStore(), relay },
+    });
+    const client = await SignalProtocolClient.create(userId, {
+      ...config,
+      protocolStrategy: {
+        onProtocolSelected: (event) => {
+          selection = event;
+        },
+      },
     });
     performance.mark(mark('end'));
     const bootMs = measure(`oe-demo:device:${generation}:${actor}`, mark('start'), mark('end'));
@@ -200,6 +246,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
          the relay gave this device, and a second copy here would be a number
          this file believed rather than the one the SDK is addressing. */
       address: { userId, deviceId: client.deviceId },
+      selection: () => selection,
       onEnvelope: null,
       onDecrypted: null,
       unsubscribeRelay: () => {},
@@ -345,6 +392,12 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       mark('end'),
     );
 
+    /* `establishSession` resolves to nothing, so what the agreement produced is
+       read from the event it raised on the way past. Nullable, and left
+       nullable: a surface that has no selection to show should show none. What
+       keeps that from quietly becoming the normal case is a test asserting this
+       step arrives with a real event on it — a callback that stops firing is
+       otherwise indistinguishable here from one that was never registered. */
     trace.append({
       step: 'session-established',
       actor: from.actor,
@@ -352,6 +405,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       to: to.actor,
       atMs: performance.now(),
       measures: { establishMs },
+      detail: { selection: from.selection() },
     });
   }
 
