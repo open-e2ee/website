@@ -22,17 +22,20 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # The node suite, as its own step. It already ran here before this line
-      # existed — `deploy:redirect:dry-run` starts with `npm test`, so every
-      # pull request was running all of it — but that made the site's whole
-      # test suite a side effect of a Wrangler dry run. Dropping the redirect
-      # check, or trimming that `&&`, would have taken the suite with it and
-      # left a green pipeline. It is the fastest check in the workflow, so
-      # running it first also fails the job before anything spends five minutes
-      # building.
-      - run: npm test
-
+      # The build first, then the node suite. The suite ran first for speed
+      # until 2026-08, but many of its assertions read dist/ behind an
+      # `if (!dist) return` guard, so test-before-build made every one of them
+      # a silent skip on each push — the suite passed without checking the
+      # rendered pages at all. With the build first the guards have a dist to
+      # read, and the suite fails in CI (process.env.CI) if dist/ is absent,
+      # so this ordering cannot silently regress.
+      #
+      # The suite is still its own step, not a side effect of the Wrangler dry
+      # run below — `deploy:redirect:dry-run` starts with `npm test`, and
+      # trimming that `&&` must not take the suite with it.
       - run: npm run build
+
+      - run: npm test
 
       # The homepage demo, driven in a real browser against the build above.
       # It is the only check that can see the two things the page promises a

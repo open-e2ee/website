@@ -279,17 +279,19 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
         {/* Inside the band head, where /compare had it, and not a direct child
             of `.stack`. `.stack > *` sets `max-width: 100%` at the same
             specificity as `.measure` and is written after it, so a bare
-            `.measure` paragraph parked directly in a stack is capped by nothing
-            — eight elements render that way, three on the home page, three
-            here, two on /security, and this is not the change that fixes them.
-            That eight is counted by computed max-width rather than by shape.
-            Counting by shape gives ten, and both of the two extra are
-            `callout measure` children of a stack — one here, one on /security.
-            The rule does reach them; `.callout` caps them anyway. An element
-            that is itself `container measure stack` is also capped correctly,
-            because the rule only reaches children, but that fact accounts for
-            none of the gap: all three of those on this site are band children,
-            never stack children. `.band-head` caps at 62ch and is unaffected. */}
+            `.measure` paragraph parked directly in a stack was capped by
+            nothing — eight elements rendered that way, three on the home page,
+            three here, two on /security, until `.stack > .measure` in
+            global.css restored the cap at child specificity. That eight was
+            counted by computed max-width rather than by shape. Counting by
+            shape gives ten, and both of the two extra are `callout measure`
+            children of a stack — one here, one on /security. `.callout`
+            capped them at the same 68ch all along, so the fix moved them by
+            nothing. An element that is itself `container measure stack` was
+            capped correctly throughout, because both rules only reach
+            children, but that fact accounts for none of the gap: all three of
+            those on this site are band children, never stack children.
+            `.band-head` caps at 62ch and is unaffected. */}
         <p class="muted measure">
           Read from the GitHub API, the npm registry API, and the published package tarballs on
           {' '}{MEASURED_ON}. Dates are the ones those APIs returned. The axes are the ones this

@@ -389,6 +389,20 @@ a:hover {
   max-width: 100%;
 }
 
+/*
+ * `.measure` is written before `.stack > *` and ties it on specificity, so a
+ * `.measure` child of a stack lost its cap to the `max-width: 100%` above and
+ * rendered at the full container width — measured, eight paragraphs across /,
+ * /product and /security. Restated at child specificity with the overflow
+ * guard folded in: the `100%` term keeps a wide child from pushing the page
+ * sideways, the token term restores the reading measure. `callout measure`
+ * stack children land exactly where they already were — the token is `68ch`
+ * resolved against the child's own font, which is what `.callout` sets.
+ */
+.stack > .measure {
+  max-width: min(100%, var(--oe-content-measure));
+}
+
 .band-head {
   display: flex;
   flex-direction: column;

@@ -55,10 +55,35 @@ test('publishes a legal index and canonical current, versioned, and privacy rout
   assert.match(legalIndex, /href="\/legal\/privacy"/);
   assert.match(currentTerms, /CommercialTerms/);
   assert.match(currentTerms, /canonical="\/legal\/terms"/);
-  assert.match(versionedTerms, /commercialTermsPath/);
-  assert.match(versionedTerms, /versioned/);
+  assert.match(versionedTerms, /canonical="\/legal\/terms\/2026-07-23"/);
   assert.match(privacy, /Privacy Notice/);
   assert.match(privacy, /canonical="\/legal\/privacy"/);
+});
+
+/*
+ * The dated page is the copy an order recorded at checkout stays bound to, so
+ * its wording may never move when the live document does. Until 2026-08-09 it
+ * rendered the shared CommercialTerms component, and the entity-name
+ * correction of 2026-08-03 silently rewrote the "immutable" page — the exact
+ * drift the URL exists to rule out. The text is now inlined in the dated page,
+ * and this guard asserts non-coupling: the frozen source never reads the live
+ * component or the live version constants, rather than asserting it equals
+ * them, which would re-couple it to every future edit.
+ */
+test('keeps the dated terms page frozen: it never reads the live document', async () => {
+  const versionedTerms = await read('../src/pages/legal/terms/2026-07-23.astro');
+
+  /* Matched as names, not as import statements, so a re-render through any
+   * future spelling — import, dynamic import, re-export — still reds. The
+   * component name may appear in this file's own comment explaining the
+   * freeze; imports resolve a path, so the path forms are what is banned. */
+  assert.doesNotMatch(versionedTerms, /components\/CommercialTerms/);
+  assert.doesNotMatch(versionedTerms, /lib\/legal(\.mjs)?/);
+
+  /* And it carries its version identity as literals, so the constants moving
+   * to a new version cannot move this page with them. */
+  assert.match(versionedTerms, /Version startup-2026-07-23/);
+  assert.match(versionedTerms, /Effective July 23, 2026/);
 });
 
 test('makes privacy and terms available from the site footer', async () => {
