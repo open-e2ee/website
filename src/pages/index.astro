@@ -424,8 +424,8 @@ const trustLinks = [
           Moving it is not dropping it: `messaging.md` §1.2 asks for the limit in
           the same breath as the capability, and the sharpest breath on this page
           is not a grey line under the lead but the Store picker itself, where
-          the two runtimes that are not ready are labelled "(experimental)" on
-          the options that offer them. That reads at the moment of choosing. The
+          the one runtime that is not ready is labelled "(experimental)" on
+          the option that offers it. That reads at the moment of choosing. The
           paragraph below carries the rest — the version, the format warning, the
           licence — for the reader who scrolls, which is every reader who is
           still deciding.
@@ -511,25 +511,26 @@ const trustLinks = [
             order the rest of the hero already follows: offer, proof, then the
             arguments and the limits.
 
-            "; Expo and Node are not" closes an inference five separate readers
-            made for themselves. One kind read "Browser and bare React Native
-            stores are experimental" as *browsers are experimental*, harsher
-            than the facts; the other kind reasoned by elimination and then
-            reported having constructed the answer rather than read it.
-            `ADAPTERS.md` marks the web and react-native stores
-            `(experimental)` and puts no marker on the Expo or Node ones. "Are
-            not" rather than "are complete" or "are production-ready": an
+            "; the Expo, Node, and browser stores are not" closes an inference
+            readers otherwise make for themselves: with only the experimental
+            side named, one kind of reader grades the absent runtimes harsher
+            than the facts and the other reconstructs the answer by
+            elimination instead of reading it. `ADAPTERS.md` marks the
+            react-native store `(experimental)` and puts no marker on the
+            Expo, Node, or web ones — the browser store cleared its marker in
+            alpha.13, after its graduation gates (multi-tab compare-and-set,
+            interruption, storage-pressure, soak) moved into per-change CI.
+            "Are not" rather than "are complete" or "are production-ready": an
             absent marker is evidence for the absence of a marker, not for a
             capability grade, and the alpha clause in front of it governs all
             four.
 
-            This was the only place the page graded the runtimes. The platform
-            strip now qualifies its own two experimental entries inline, because
-            a uniform row of marks two screens above this line was contradicting
-            it for anyone who scanned and left. That is the same fact in the
-            same notation, attached to the entry rather than restated as prose —
-            the wording here stays the canonical one, and this is still the only
-            place the page grades them in a sentence.
+            This is the only place the page grades the runtimes in a sentence.
+            The platform strip carries no maturity marks, and the Store
+            selector labels the experimental option at the moment a reader
+            picks one — the wording here stays the canonical one, and
+            `tests/site-content.test.mjs` holds it to the `(experimental)`
+            markers in the installed ADAPTERS.md.
 
             The licence sentence links because three fresh readers were told
             three times that they owe money and never once what it costs, and
@@ -537,9 +538,9 @@ const trustLinks = [
             in the button and concluded a hosted service was being hidden. It
             sells a commercial licence, and /pricing carries the numbers. */}
         <p class="maturity">
-          0.1.x alpha — public APIs and persisted formats may change before 1.0. Browser and bare
-          React Native stores are experimental; Expo and Node are not. Free under AGPL-3.0; <a
-            href="/pricing">commercial licence for closed source</a
+          0.1.x alpha — public APIs and persisted formats may change before 1.0. The bare React
+          Native store is experimental; the Expo, Node, and browser stores are not. Free under
+          AGPL-3.0; <a href="/pricing">commercial licence for closed source</a
           >.
         </p>
       </div>
@@ -584,18 +585,20 @@ const trustLinks = [
         {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
       </p>
       {/* The three quickstarts used to sit here as equal peers, which is not
-          what the shipped package says: ADAPTERS.md marks the browser and bare
-          React Native stores experimental. A reader who learns that after
-          following the link learns it too late.
+          what the shipped package says: ADAPTERS.md marks the bare React
+          Native store experimental. A reader who learns that after following
+          the link learns it too late.
 
-          The Node clause tracks the shipped release, not the pinned one:
-          alpha.9 completed `NodeSignalProtocolStore` — sender keys, device
-          records and message records — so the sentence that named it short of
-          groups and multi-device was true of the alpha.7 in node_modules and
-          false of the alpha.9 the install command above resolves to. */}
+          The browser clause tracks the shipped release, not a remembered one:
+          alpha.13 cleared the web store's `(experimental)` marker after its
+          graduation gates — multi-tab compare-and-set, interruption,
+          storage-pressure, soak — moved into per-change CI, so the sentence
+          that grouped it with the bare React Native store was true of
+          alpha.12 and false of the alpha.13 the install command above
+          resolves to. */}
       <p class="muted measure">
-        The Expo and Node stores implement the storage interface in full. The browser and bare
-        React Native stores are experimental.{' '}
+        The Expo, Node, and browser stores implement the storage interface in full. The bare
+        React Native store is experimental.{' '}
         <a href="/product">What each store holds</a>.
       </p>
     </div>

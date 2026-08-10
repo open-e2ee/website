@@ -358,13 +358,14 @@ test('does not expand measurement to the control this round added', async () => 
 });
 
 test('marks the experimental stores in the selector, and only those', async () => {
-  /* index.astro and /product both carry "Browser and bare React Native stores
-   * are experimental; Expo and Node are not", and two tests below hold them
-   * to it. A dropdown that offered all five as peers would be the one place
-   * on the page where that sentence is contradicted by the control it
-   * describes — and the control is where the reader actually commits. */
+  /* index.astro carries "The bare React Native store is experimental; the
+   * Expo, Node, and browser stores are not", /product carries the same grade,
+   * and two tests below hold them to it. A dropdown that offered all five as
+   * peers would be the one place on the page where that sentence is
+   * contradicted by the control it describes — and the control is where the
+   * reader actually commits. */
   const experimental = storageOptions.filter((option) => option.experimental).map((o) => o.id);
-  assert.deepEqual(experimental.sort(), ['react-native', 'web']);
+  assert.deepEqual(experimental.sort(), ['react-native']);
   assert.deepEqual(
     relayOptions.filter((option) => option.experimental),
     [],
@@ -1186,12 +1187,13 @@ test('does not let the experimental stores inherit the complete stores’ covera
    * sentence guarding the old shortfall became the false claim.
    *
    * The failure mode is unchanged, so the guard moves to the boundary that is
-   * still real: `ADAPTERS.md` marks the browser and bare React Native stores
-   * experimental, and nothing else. Both pages must keep saying so, and
-   * neither may describe all four stores as equals. */
-  assert.match(product, /Browser and bare React Native stores are experimental/);
-  assert.match(product, /both implement <code>ISignalProtocolLocalStore<\/code> in full/);
-  assert.match(index, /browser and bare\s+React Native stores are experimental/);
+   * still real: `ADAPTERS.md` marks the bare React Native store experimental,
+   * and nothing else — the browser store cleared its marker in alpha.13, when
+   * its graduation gates moved into per-change CI. Both pages must keep
+   * saying so, and neither may describe all four stores as equals. */
+  assert.match(product, /The bare React Native store is experimental/);
+  assert.match(product, /implement <code>ISignalProtocolLocalStore<\/code> in full/);
+  assert.match(index, /The bare\s+React\s+Native store is experimental/);
 
   for (const [name, source] of [
     ['product.astro', product],
@@ -3061,21 +3063,25 @@ test('names the other side of the experimental line', async () => {
   ]);
 
   /* Five fresh readers split two ways on the unqualified sentence. One kind
-   * read "Browser and bare React Native stores are experimental" as *browsers
-   * are experimental*, which is harsher than the facts. The other kind reached
-   * the right answer by elimination and then reported having constructed it
-   * rather than read it — on the one question an Expo developer opens the page
-   * with. ADAPTERS.md marks the web and react-native stores `(experimental)`
-   * and puts no marker on the Expo or Node ones.
+   * read the experimental side as a grade on the runtime itself, which is
+   * harsher than the facts. The other kind reached the right answer by
+   * elimination and then reported having constructed it rather than read it —
+   * on the one question an Expo developer opens the page with. ADAPTERS.md
+   * marks the react-native store `(experimental)` and puts no marker on the
+   * Expo, Node, or web ones; the browser store cleared its marker in
+   * alpha.13.
    *
    * "are not" rather than "are complete": an absent marker is evidence for the
    * absence of a marker, not for a capability grade, and the alpha clause in
    * front of it already governs all four. A test pins the weaker word so the
    * stronger one cannot drift in later. */
-  assert.match(index, /Browser and bare\s+React Native stores are experimental; Expo and Node are not\./);
+  assert.match(
+    index,
+    /The bare\s+React\s+Native store is experimental; the Expo, Node, and browser stores are not\./,
+  );
   assert.doesNotMatch(index, /stores are (complete|production-ready|stable|ready)/i);
   /* The sibling page still carries the fact it is tested for elsewhere. */
-  assert.match(product, /Browser and bare React Native stores are experimental/);
+  assert.match(product, /The bare React Native store is experimental/);
 });
 
 test('says what Pricing sells, on the page that shows the nav item', async () => {
@@ -3170,19 +3176,22 @@ test('grades exactly the runtimes the SDK marks experimental, and no others', as
    * had copied by hand.
    *
    * `store → the word the page uses`, written out because this is the only
-   * place the two vocabularies meet: `web` is the site's "Browser", and
+   * place the two vocabularies meet: `web` is the site's "browser" (lower-case,
+   * because the word now sits mid-sentence on the cleared side), and
    * `react-native` is the bare one, which is why Expo is separate rather than a
    * flavour of it. `mock` is a development adapter and is not a platform the
    * page grades at all. */
-  const pageWord = { expo: 'Expo', node: 'Node', web: 'Browser', 'react-native': 'React Native' };
+  const pageWord = { expo: 'Expo', node: 'Node', web: 'browser', 'react-native': 'React Native' };
   const graded = Object.keys(pageWord);
   for (const store of marked) {
     assert.ok(pageWord[store], `ADAPTERS.md marks ${store}, which the page has no word for`);
   }
 
   /* The one sentence that grades them, split at the semicolon into the side
-     that is experimental and the side that is not. */
-  const line = index.match(/([^.]*) stores are experimental; ([^.]*) are not\./);
+     that is experimental and the side that is not. The subject may be singular
+     or plural — one marked store reads "store is", two read "stores are" — and
+     the shape check tolerates both so a graduation does not break the anchor. */
+  const line = index.match(/([^.]*) stores? (?:is|are) experimental; ([^.]*) are not\./);
   assert.ok(line, 'the maturity line no longer states the experimental split in the expected shape');
   const [, experimental, complete] = line;
 

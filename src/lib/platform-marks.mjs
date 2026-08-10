@@ -44,8 +44,8 @@ export const platformMarks = {
        Native store, and the strip says "React".
 
        Recorded rather than silently reconciled, because the maturity line under
-       this strip still reads "bare React Native stores are experimental" — it is
-       pinned to the `(experimental)` markers in the installed ADAPTERS.md and
+       this strip still reads "The bare React Native store is experimental" — it
+       is pinned to the `(experimental)` markers in the installed ADAPTERS.md and
        cannot take the shorter word without saying something ADAPTERS.md does
        not. So the row and the sentence below it use two names for one store,
        which was raised and is the founder's call. */
