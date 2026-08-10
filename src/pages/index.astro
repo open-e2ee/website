@@ -9,7 +9,7 @@ import Icon from '../components/Icon.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
 import TypeScriptMark from '../components/TypeScriptMark.astro';
-import { MEASURED_ON, libsignalReadme } from '../lib/comparison.mjs';
+import { MEASURED_ON } from '../lib/comparison.mjs';
 import { startupTier } from '../data/pricing.mjs';
 import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 
@@ -187,8 +187,8 @@ const trustLinks = [
             while the page drops the exception.
 
             No runtime list and no adapter ownership in this paragraph. Both
-            are on the page — the runtime links, the maturity line, the
-            disclosure list — and the second line of the page is the position
+            are on the page — the runtime links, and the quickstart caveat
+            under the feature band — and the second line of the page is the position
             that decides whether a reader keeps reading, which is too expensive
             to spend on a compatibility matrix. The meta description carries the
             four names for a reader arriving from a search result.
@@ -268,14 +268,15 @@ const trustLinks = [
           under it instead of the copy column's 48rem reading measure. Seven
           entries want more room than a paragraph does.
 
-          No caveat paragraph under it. The experimental split is the maturity
-          line's job below, and the S3 qualification is carried by the heading
+          No caveat paragraph under it. The experimental split is stated in the
+          quickstart caveat under the feature band and on the Store selector's
+          own labels, and the S3 qualification is carried by the heading
           plus the entry's name — see `src/lib/platform-marks.mjs`. Both are
           test-pinned to the installed SDK. */}
       <PlatformStrip />
 
-      {/* The demo sits between the offer and the objections now, rather than
-          beside the copy in a second column.
+      {/* The demo sits under the offer now, rather than beside the copy in a
+          second column, and it closes the hero.
 
           A column is the wrong thing to size a program to. The panel was the
           wide half of a 4.75/7.25 split — 645px — and the longest line of the
@@ -286,262 +287,23 @@ const trustLinks = [
           52rem because 91 characters at 15px paint 754px, not the other way
           about; global.css states the arithmetic where the rule is.
 
-          It has to come before the objections rather than after them. What a
-          reader is deciding here is whether to spend ten minutes, and the
-          question they ask first is what the API looks like — the two-column
-          layout answered that for free by putting the panel level with the
-          headline, and a single column only keeps it if the panel comes
-          before two paragraphs of comparison. */}
+          What a reader is deciding here is whether to spend ten minutes, and
+          the question they ask first is what the API looks like — the
+          two-column layout answered that for free by putting the panel level
+          with the headline, and a single column only keeps it if the panel
+          follows the offer directly. */}
       <div class="hero-demo">
         <HeroSnippet />
-        {/* The caption said "lifted from the quickstart as recorded", which was
-            true of the excerpt and is not true of this. Five of the thirteen
-            non-blank lines differ, all for one reason: the recording drives an
-            `alice` and a `bob` in a single process to show a round trip, and
-            an application owns one client. Claiming "as recorded" over a
-            renamed program is the kind of small overclaim that costs the whole
-            page its credit when a reader opens /product and diffs it — which
-            is exactly what the link invites them to do. So the caption now
-            says what the reader is looking at, and the link still says where
-            the unedited thing is. */}
-        <p class="muted">
-          Send and receive, as an application writes it.{' '}
-          <a href="/product">See the whole recorded file.</a>
-        </p>
-        {/*
-          The disclosure was one clause at the end of the caption above, and it
-          named Bob's client and the device registration. Four fresh readers
-          sized up the excerpt; every one of them found something it did not
-          name. `inMemoryStore()` stands where a line item goes in the reader's
-          own estimate — a real store, per device, per platform, and the thing
-          whose "persisted formats may change before 1.0". `relay` is a server
-          somebody has to run. Those are the two line items that decide whether
-          this is a two-week or a two-month job, and they were the two the
-          disclosure left out, which is worse than disclosing nothing: a reader
-          who finds the omission themselves stops believing the parts you did
-          admit.
-
-          It is a list because a list can be checked against the code beside
-          it, and a trailing clause cannot. It sits here because this is where
-          the measured space was — two readers independently put a rectangle
-          around the same emptiness under the caption, one calling it 630×137
-          CSS px at 1280 and the other 569×238 at 1440, and both said the
-          question the excerpt raises is asked exactly where nothing answers
-          it. Every item is already on the page: two are in the code, one is in
-          the lead, one was already in the caption.
-        */}
-        <div class="excerpt-drops">
-          <p class="excerpt-drops-title">Not in this example, and yours to supply</p>
-          {/* The bullets name the shipped adapter as well as the obligation,
-              because naming only the obligation created a contradiction.
-
-              "The SDK ships adapters for both" used to be in the lead, four
-              blocks above "yours to supply" and 450 px to the left of it while
-              the hero still had two columns, and a fresh reader put the two
-              side by side and could not tell which was true: do I install an
-              adapter and configure it, or do I stand up a network service
-              before one real message moves? Their words — the difference
-              between an afternoon and a sprint, and the only question that
-              decides whether I try this today.
-
-              The lead no longer says it, which is what makes these bullets the
-              only statement of it. They were always the fuller one — the
-              obligation and the shipped export in the same line — so the
-              sentence went rather than the list.
-
-              Both sentences were true and the pair was not. The store and the
-              relay are yours to supply; the code for them ships. `ADAPTERS.md`
-              lists `expoStore`, `nodeStore`, `indexedDbStore` and
-              `reactNativeStore`, and `convexRelay` alongside `inMemoryRelay` — all
-              exports of the installed package the build audit checks names
-              against. So the answer is deploy, not write, and it took naming
-              them to say so.
-
-              The relay gets a definition because three fresh readers in one
-              wave made the same complaint independently: it is the
-              load-bearing noun of the whole pitch, it appears five times in
-              the first viewport, and the page never says what it is. Each
-              inferred "a server" and then could not size it. The description
-              is the SDK's own — public keys, device lists, encrypted envelope
-              delivery.
-
-              What it deliberately does not say is what the relay can see. One
-              reader proposed "it never sees message content or your keys",
-              which is the absolute `design/DESIGN.md:403` forbids. The
-              `.honesty` paragraph already carries the fixed formula and the
-              metadata admission, one block below. A second, looser statement
-              of the same boundary is how the loose one ends up quoted. */}
-          <ul>
-            <li>
-              a real store in place of <code>inMemoryStore()</code>, on each device — <code
-                >expoStore()</code
-              >, <code>nodeStore()</code> and <code>indexedDbStore()</code> ship
-            </li>
-            <li>
-              the relay <code>inMemoryRelay()</code> stands in for &mdash; it holds public keys and
-              device lists and delivers the encrypted envelopes. <code>convexRelay()</code> ships
-              one; you host it.
-            </li>
-            {/* These two used to read "registering both devices with it" and
-                "Bob's own client, which is Alice's four lines renamed". Both
-                were artefacts of quoting a recording that drives both sides of
-                a conversation inside one process: the registration calls are
-                `inMemoryRelay`'s own API, and the second client existed so the
-                recording could show a round trip without a network. Neither is
-                work the reader does, so listing them as work they owe was
-                inflating the estimate the list exists to make honest. What is
-                genuinely missing is the counterparty. */}
-            <li>
-              the other side &mdash; <code>"bob"</code> is another device running this same code, against
-              the same relay
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="hero-objections">
-        {/*
-          These paragraphs answer objections, and they follow both the offer and
-          the demo rather than standing between the reader and either.
-
-          A phone is why they came down here at all. 390×844 is the device
-          height, not the viewport: an iPhone serves about 664 CSS px on first
-          paint, and everything the reader is being asked to decide on has to
-          arrive inside that. Measured at 390 today: headline 105–216, lead
-          240–346, buttons 370–474, install command 506–585, and the code panel
-          opening on 597. Five blocks, and the fifth is the evidence — 67 px of
-          the program is above the fold rather than the 41 px it was, which is
-          the whole of what the lead's third line was costing.
-
-          It cost two lines to get there. The alpha and licence disclosure used
-          to be the third block and the promise under the button the fourth, and
-          together they pushed the button to 654 — ten pixels of clearance, with
-          the disclosure's rule landing on 661, so the last row of pixels a
-          reader saw was a full-width line that means "this section has ended".
-          The promise is now under the two buttons further down the page and the
-          disclosure is the last paragraph in this group.
-
-          Moving it is not dropping it: `messaging.md` §1.2 asks for the limit in
-          the same breath as the capability, and the sharpest breath on this page
-          is not a grey line under the lead but the Store picker itself, where
-          the two runtimes that are not ready are labelled "(experimental)" on
-          the options that offer them. That reads at the moment of choosing. The
-          paragraph below carries the rest — the version, the format warning, the
-          licence — for the reader who scrolls, which is every reader who is
-          still deciding.
-
-          These paragraphs still start at 1739 on that phone and 1230 at 1440,
-          behind the demo, and that ordering is deliberate. The lead names the
-          alternative above the fold — "Not a hosted chat service, and more than
-          TLS" — and what they add is the argument rather than the name. The
-          proof goes first and the argument waits behind it.
-
-          The libsignal sentence: three fresh readers answered every question
-          the first viewport is for except this one, each giving the same
-          reason — the page named no alternative, so "no native modules" was a
-          contrast with nothing on the other side of it. Its own README is the
-          strongest evidence available and it is one line long. The runtime
-          clause repeats verbatim in the comparison band below, which is why
-          the hero can afford to carry it and the fold can afford to lose it.
-        */}
-        {/* Twelve fresh readers have now written out the shortlist they hold
-            before the page speaks, and every one of them tops it with the same
-            option: ship it on TLS and encryption at rest, revisit E2EE later.
-            The lead names that option — "and more than TLS" — and three
-            readers in one wave independently returned the same verdict on it:
-            "four words, no threat named", "an assertion, not an argument",
-            "the entire argument against my number-one option". Naming an
-            alternative is not arguing against it.
-
-            The argument is in docs/positioning.md §5, where readable-data
-            exposure is ranked the strongest adoption trigger of the eight, and
-            its wording is deliberate: "end-to-end encryption can limit the
-            readable content that an attacker gets from a breached relay." It
-            says *can limit*, not prevents, and it is about a breached relay
-            rather than about compliance — the same section opens by stating
-            that almost no regulation requires E2EE at all. Reproduced close to
-            verbatim here for that reason, hedge included.
-
-            It sits above the libsignal sentence because the shortlists are
-            ordered and libsignal is never first. It cannot go in the lead: the
-            lead is two sentences and one of them already carries this
-            argument's headline, and at 390 the real fold is 664 px with the
-            code panel opening on 597. A third sentence up there buys the
-            argument by spending the evidence, which is the trade this hero
-            exists to refuse — and the 26 px the lead just gave back went to
-            the program, not to another clause. */}
-        <p class="stance">
-          Why not just TLS? TLS protects a message on the wire and at-rest encryption protects the
-          disk &mdash; in between, your server holds it readable. End-to-end encryption can limit
-          the readable content a breached relay gives up.
-        </p>
-        <p class="stance">
-          Why not libsignal? The reference implementation&rsquo;s own README says{' '}
-          <a href={libsignalReadme.href}>&ldquo;use outside of Signal is unsupported&rdquo;</a>, and
-          it does not run in Expo, React Native, or a browser.
-        </p>
-        {/* "we document exactly what" promised a document and pointed at
-            nothing, in the one paragraph where a sceptical reader most wants
-            to click through — a claim that cannot be checked at the moment it
-            is being weighed. `/security` is where pricing, learn and product
-            already send a reader for this same fact. */}
-        <p class="honesty">
-          The relay never needs message plaintext or device private keys. It still sees metadata —{' '}
-          <a href="/security">we document exactly what</a>, and what sealed sender does and
-          doesn&rsquo;t hide.
-        </p>
-        {/* The disqualifying facts, at the foot of the hero rather than
-            between the lead and the button.
-
-            They stood directly above the offer for eleven rounds, on the
-            argument that a reader who reaches the button has not necessarily
-            read down to a footnote. What that argument left out is the cost:
-            three lines of grey metadata, with a rule over them, between the
-            sentence that makes the offer and the button that takes it. The
-            rule read as a section ending — one mobile critic recorded it
-            landing on 661 px, the last row of pixels a phone paints — so the
-            page closed itself immediately before asking for the click.
-
-            They cannot leave the page, and they do not. docs/messaging.md §1.2
-            puts the limit in the same breath as the claim, and §4 fixes
-            "alpha" as the word; a test pins both, and pins them on the built
-            page rather than on this file so that a comment quoting them cannot
-            stand in for printing them. Moving them past the demo means the
-            reader meets them having seen what the API looks like, which is the
-            order the rest of the hero already follows: offer, proof, then the
-            arguments and the limits.
-
-            "; Expo and Node are not" closes an inference five separate readers
-            made for themselves. One kind read "Browser and bare React Native
-            stores are experimental" as *browsers are experimental*, harsher
-            than the facts; the other kind reasoned by elimination and then
-            reported having constructed the answer rather than read it.
-            `ADAPTERS.md` marks the web and react-native stores
-            `(experimental)` and puts no marker on the Expo or Node ones. "Are
-            not" rather than "are complete" or "are production-ready": an
-            absent marker is evidence for the absence of a marker, not for a
-            capability grade, and the alpha clause in front of it governs all
-            four.
-
-            This was the only place the page graded the runtimes. The platform
-            strip now qualifies its own two experimental entries inline, because
-            a uniform row of marks two screens above this line was contradicting
-            it for anyone who scanned and left. That is the same fact in the
-            same notation, attached to the entry rather than restated as prose —
-            the wording here stays the canonical one, and this is still the only
-            place the page grades them in a sentence.
-
-            The licence sentence links because three fresh readers were told
-            three times that they owe money and never once what it costs, and
-            because four others read "Pricing" in the nav against "no account"
-            in the button and concluded a hosted service was being hidden. It
-            sells a commercial licence, and /pricing carries the numbers. */}
-        <p class="maturity">
-          0.1.x alpha — public APIs and persisted formats may change before 1.0. Browser and bare
-          React Native stores are experimental; Expo and Node are not. Free under AGPL-3.0; <a
-            href="/pricing">commercial licence for closed source</a
-          >.
-        </p>
+        {/* The caption, the "Not in this example, and yours to supply"
+            disclosure list, and the objections group that followed — the two
+            "Why not" paragraphs, the relay-formula line, and the alpha and
+            licence line — were cut by founder decision on 2026-08-09 as
+            explanatory hedging the hero does not carry. The facts they stated
+            did not leave the site: /security carries the relay formula and the
+            metadata admission, /product and /security carry the alpha line,
+            the licence cell in the feature band names the AGPL/commercial
+            split, the quickstart caveat below the feature band grades the
+            stores, and the alternatives band carries the libsignal facts. */}
       </div>
     </div>
   </section>
@@ -842,7 +604,9 @@ const trustLinks = [
   {/* The libsignal sentence used to have a band of its own here, four folds
       below the question it answers, and as a standalone h2-weight blockquote it
       read as a disclosure about this SDK rather than a quotation about another
-      one. It now opens the hero, where the reader is actually asking. */}
+      one. It then moved to the hero, and the hero's objection paragraphs were
+      cut on 2026-08-09 — the alternatives band above is now the page's one
+      statement of the libsignal facts. */}
 
   <section class="band band-surface">
     <div class="container">
