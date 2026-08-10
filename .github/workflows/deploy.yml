@@ -30,11 +30,14 @@ jobs:
       - name: Install from the committed lockfile
         run: npm ci
 
-      - name: Test
-        run: npm test
-
+      # Build first: the dist-reading test guards fail on an unbuilt tree when
+      # CI is set, so the suite must always run against the artifact this job
+      # is about to ship.
       - name: Build
         run: npm run build
+
+      - name: Test
+        run: npm test
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
