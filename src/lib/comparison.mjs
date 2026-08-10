@@ -93,7 +93,7 @@ export const axes = [
   },
   {
     axis: 'Browser',
-    cells: ['Yes — browser store is experimental', 'No', 'Yes', 'Yes', 'Yes'],
+    cells: ['Yes', 'No', 'Yes', 'Yes', 'Yes'],
   },
   {
     axis: 'Maintained',

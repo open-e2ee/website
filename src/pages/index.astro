@@ -346,18 +346,20 @@ const trustLinks = [
         {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
       </p>
       {/* The three quickstarts used to sit here as equal peers, which is not
-          what the shipped package says: ADAPTERS.md marks the browser and bare
-          React Native stores experimental. A reader who learns that after
-          following the link learns it too late.
+          what the shipped package says: ADAPTERS.md marks the bare React
+          Native store experimental. A reader who learns that after following
+          the link learns it too late.
 
-          The Node clause tracks the shipped release, not the pinned one:
-          alpha.9 completed `NodeSignalProtocolStore` — sender keys, device
-          records and message records — so the sentence that named it short of
-          groups and multi-device was true of the alpha.7 in node_modules and
-          false of the alpha.9 the install command above resolves to. */}
+          The browser clause tracks the shipped release, not a remembered one:
+          alpha.13 cleared the web store's `(experimental)` marker after its
+          graduation gates — multi-tab compare-and-set, interruption,
+          storage-pressure, soak — moved into per-change CI, so the sentence
+          that grouped it with the bare React Native store was true of
+          alpha.12 and false of the alpha.13 the install command above
+          resolves to. */}
       <p class="muted measure">
-        The Expo and Node stores implement the storage interface in full. The browser and bare
-        React Native stores are experimental.{' '}
+        The Expo, Node, and browser stores implement the storage interface in full. The bare
+        React Native store is experimental.{' '}
         <a href="/product">What each store holds</a>.
       </p>
     </div>

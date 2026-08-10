@@ -43,12 +43,12 @@ export const platformMarks = {
        row. They differ here: `./local/store/react-native` is the bare React
        Native store, and the strip says "React".
 
-       Recorded rather than silently reconciled, because the maturity line under
-       this strip still reads "bare React Native stores are experimental" — it is
-       pinned to the `(experimental)` markers in the installed ADAPTERS.md and
-       cannot take the shorter word without saying something ADAPTERS.md does
-       not. So the row and the sentence below it use two names for one store,
-       which was raised and is the founder's call. */
+       Recorded rather than silently reconciled, because the quickstart caveat
+       further down the page still reads "The bare React Native store is
+       experimental" — it is pinned to the `(experimental)` markers in the
+       installed ADAPTERS.md and cannot take the shorter word without saying
+       something ADAPTERS.md does not. So the row and that sentence use two
+       names for one store, which was raised and is the founder's call. */
     label: "React",
     /* React, official mark: https://github.com/facebook/create-react-app/blob/282c03f9525fdf8061ffa1ec50dce89296d916bd/test/fixtures/relative-paths/src/logo.svg */
     fillRule: 'nonzero',

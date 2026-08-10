@@ -208,11 +208,12 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
         ))}
       </dl>
       <p class="muted measure">
-        Browser and bare React Native stores are experimental. The Expo and Node stores are the
-        complete ones — both implement <code>ISignalProtocolLocalStore</code> in full, so groups and
-        multi-device work on either. They differ in where the bytes land: the Expo store is{' '}
+        The bare React Native store is experimental. The Expo, Node, and browser stores
+        implement <code>ISignalProtocolLocalStore</code> in full, so groups and multi-device work
+        on any of them. They differ in where the bytes land: the Expo store is{' '}
         <code>expo-sqlite</code> with SQLCipher, the Node store is an encrypted filesystem under{' '}
-        <code>node:crypto</code> with 0600 permissions. You can also implement{' '}
+        <code>node:crypto</code> with 0600 permissions, and the browser store is IndexedDB scoped
+        to the page&rsquo;s origin. You can also implement{' '}
         <code>ISignalProtocolLocalStore</code> or <code>ISignalProtocolRelayServer</code> yourself —
         they are documented interfaces, not internals.
       </p>

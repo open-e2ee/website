@@ -369,14 +369,15 @@ test('does not expand measurement to the control this round added', async () => 
 });
 
 test('marks the experimental stores in the selector, and only those', async () => {
-  /* index.astro's quickstart caveat and /product both draw the experimental
-   * line — browser and bare React Native on one side, Expo and Node on the
-   * other — and two tests below hold them to it. A dropdown that offered all
-   * five as peers would be the one place on the page where that line is
+  /* index.astro's quickstart caveat carries "The bare React Native store is
+   * experimental" — singular since the browser store's alpha.13 graduation —
+   * /product carries the same grade, and two tests below hold them to it. A
+   * dropdown that offered all five as peers would be the one place on the
+   * page where that line is
    * contradicted by the control it describes — and the control is where the
    * reader actually commits. */
   const experimental = storageOptions.filter((option) => option.experimental).map((o) => o.id);
-  assert.deepEqual(experimental.sort(), ['react-native', 'web']);
+  assert.deepEqual(experimental.sort(), ['react-native']);
   assert.deepEqual(
     relayOptions.filter((option) => option.experimental),
     [],
@@ -1204,12 +1205,13 @@ test('does not let the experimental stores inherit the complete stores’ covera
    * sentence guarding the old shortfall became the false claim.
    *
    * The failure mode is unchanged, so the guard moves to the boundary that is
-   * still real: `ADAPTERS.md` marks the browser and bare React Native stores
-   * experimental, and nothing else. Both pages must keep saying so, and
-   * neither may describe all four stores as equals. */
-  assert.match(product, /Browser and bare React Native stores are experimental/);
-  assert.match(product, /both implement <code>ISignalProtocolLocalStore<\/code> in full/);
-  assert.match(index, /browser and bare\s+React Native stores are experimental/);
+   * still real: `ADAPTERS.md` marks the bare React Native store experimental,
+   * and nothing else — the browser store cleared its marker in alpha.13, when
+   * its graduation gates moved into per-change CI. Both pages must keep
+   * saying so, and neither may describe all four stores as equals. */
+  assert.match(product, /The bare React Native store is experimental/);
+  assert.match(product, /implement <code>ISignalProtocolLocalStore<\/code> in full/);
+  assert.match(index, /The bare\s+React\s+Native store is experimental/);
 
   for (const [name, source] of [
     ['product.astro', product],
@@ -3031,25 +3033,27 @@ test('names the other side of the experimental line', async () => {
   ]);
 
   /* Five fresh readers split two ways on the unqualified sentence. One kind
-   * read "Browser and bare React Native stores are experimental" as *browsers
-   * are experimental*, which is harsher than the facts. The other kind reached
-   * the right answer by elimination and then reported having constructed it
-   * rather than read it — on the one question an Expo developer opens the page
-   * with. ADAPTERS.md marks the web and react-native stores `(experimental)`
-   * and puts no marker on the Expo or Node ones.
+   * read the experimental side as a grade on the runtime itself, which is
+   * harsher than the facts. The other kind reached the right answer by
+   * elimination and then reported having constructed it rather than read it —
+   * on the one question an Expo developer opens the page with. ADAPTERS.md
+   * marks the react-native store `(experimental)` and puts no marker on the
+   * Expo, Node, or web ones; the browser store cleared its marker in
+   * alpha.13.
    *
    * The maturity line that graded all four in one sentence was cut from the
-   * hero by founder decision on 2026-08-09. The quickstart caveat under the
-   * feature band is the homepage's statement of the split now, and it names
-   * both sides: what the Expo and Node stores implement is a checkable fact
-   * about the installed package, which is stronger than a capability grade.
-   * The negative below keeps a grade word from drifting in anywhere on the
-   * page. */
-  assert.match(index, /The Expo and Node stores implement the storage interface in full\./);
-  assert.match(index, /The browser and bare\s+React Native stores are experimental\./);
+   * hero by founder decision on 2026-08-09, and the browser store graduated
+   * in alpha.13 in a parallel change. The quickstart caveat under the feature
+   * band is the homepage's statement of the split now, and it names both
+   * sides: what the Expo, Node, and browser stores implement is a checkable
+   * fact about the installed package, which is stronger than a capability
+   * grade. The negative below keeps a grade word from drifting in anywhere
+   * on the page. */
+  assert.match(index, /The Expo, Node, and browser stores implement the storage interface in full\./);
+  assert.match(index, /The bare\s+React Native store is experimental\./);
   assert.doesNotMatch(index, /stores are (complete|production-ready|stable|ready)/i);
   /* The sibling page still carries the fact it is tested for elsewhere. */
-  assert.match(product, /Browser and bare React Native stores are experimental/);
+  assert.match(product, /The bare React Native store is experimental/);
 });
 
 test('says what Pricing sells, on the page that shows the nav item', async () => {
@@ -3148,22 +3152,25 @@ test('grades exactly the runtimes the SDK marks experimental, and no others', as
    * string someone had copied by hand.
    *
    * `store → the word the page uses`, written out because this is the only
-   * place the two vocabularies meet: `web` is the site's "Browser", and
+   * place the two vocabularies meet: `web` is the site's "browser" (lower-case,
+   * because the word now sits mid-sentence on the cleared side), and
    * `react-native` is the bare one, which is why Expo is separate rather than a
    * flavour of it. `mock` is a development adapter and is not a platform the
    * page grades at all. */
-  const pageWord = { expo: 'Expo', node: 'Node', web: 'Browser', 'react-native': 'React Native' };
+  const pageWord = { expo: 'Expo', node: 'Node', web: 'browser', 'react-native': 'React Native' };
   const graded = Object.keys(pageWord);
   for (const store of marked) {
     assert.ok(pageWord[store], `ADAPTERS.md marks ${store}, which the page has no word for`);
   }
 
   /* The sentence pair that grades them: the side that implements the storage
-     interface in full, then the side that is experimental. Case-insensitive
-     because the caveat says "browser" mid-sentence where the strip says
-     "Browser". */
+     interface in full, then the side that is experimental. Each subject may
+     be singular or plural — one marked store reads "store is", two read
+     "stores are" — so a graduation does not break the anchor. Matching is
+     case-insensitive because the caveat says "browser" mid-sentence where
+     the strip says "Browser". */
   const line = index.match(
-    /The ([^.]*?) stores implement the storage interface in full\. The ([^.]*?) stores are experimental\./,
+    /The ([^.]*?) stores? implements? the storage interface in full\. The ([^.]*?) stores? (?:is|are) experimental\./,
   );
   assert.ok(line, 'the quickstart caveat no longer states the experimental split in the expected shape');
   const [, complete, experimental] = line;
