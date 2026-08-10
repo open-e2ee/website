@@ -5,7 +5,6 @@ import LiveCarrierPanel from '../components/demo/LiveCarrierPanel.astro';
 import ScenarioList from '../components/demo/ScenarioList.astro';
 import TwoTabSection from '../components/demo/TwoTabSection.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
-import Icon from '../components/Icon.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
 import TypeScriptMark from '../components/TypeScriptMark.astro';
@@ -235,11 +234,12 @@ const trustLinks = [
           <BatteryMark /> Batteries included.
         </p>
         <div class="actions">
-          {/* The primary action is the demo, not the quickstart: it scrolls to
-              `#demo`, where the arc the two demo bands make starts, directly
-              after the code sample below. "View the demo" over "View demo"
-              because every action label here is a clause with an article —
-              "View the SDK on GitHub" set the pattern.
+          {/* Two actions, founder-set labels. The primary is the demo, not the
+              quickstart: it scrolls to `#demo`, where the arc the two demo
+              bands make starts, directly after the code sample below. The
+              GitHub button is gone from the hero — the repo stays one click
+              away from the "Check the work" links, the header, and /product,
+              and a third button split the decision this row exists to force.
 
               No sublabel under this button. "ten minutes · two clients · no
               account" is under the two quickstart buttons further down the
@@ -247,24 +247,20 @@ const trustLinks = [
               commit; a scroll needs no time promise, and a third line of small
               grey type here would stand between the offer and the proof. */}
           <a class="cta-primary" href="#demo">
-            <span class="oe-button">View the demo</span>
+            <span class="oe-button">See Demo</span>
           </a>
           <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/start/quickstart">
-            Get started
-          </a>
-          <a class="oe-button oe-button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
-            <Icon name="github" />
-            View the SDK on GitHub
+            Quickstart Docs
           </a>
         </div>
         {/* Below the actions, never above them. The hero headline's floor is
             33px specifically because at 390px that is the difference between a
-            three-line and a four-line headline. At that width the primary
-            button's bottom measures 361px and the third action's 421px against
-            a real-device fold of 664 (headless Chrome, 2026-08-09), so the
-            whole block clears the fold — margin that anything inserted between
-            the lead and the actions spends. The primary action staying above
-            the fold is an acceptance gate rather than a preference.
+            three-line and a four-line headline. At that width the action row's
+            bottom measures 361px against a real-device fold of 664 (headless
+            Chrome, 2026-08-09), so the row clears the fold — margin that
+            anything inserted between the lead and the actions spends. The
+            primary action staying above the fold is an acceptance gate rather
+            than a preference.
 
             The runtime question is the first one a visitor has, and it was
             answered until now only by three links two screens down and a
