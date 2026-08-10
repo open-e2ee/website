@@ -89,12 +89,13 @@ const PACKAGE = capture.packageName;
  * forgot the `await` would hand the client a pending promise where a store
  * belongs.
  *
- * `experimental` is not decoration. index.astro's quickstart caveat carries
- * the sentence "The bare React Native store is experimental", /product
- * carries the same grade, two tests hold them to it, and a selector that
- * offered all five as peers would be the one place on the page where that
- * line is contradicted by the thing it describes. The flag puts the word in
- * the option's own label, where the choice is actually made.
+ * `experimental` is not decoration. When the installed SDK marks a store
+ * experimental in ADAPTERS.md, the flag puts the word in the option's own
+ * label, where the choice is actually made, and a test holds the selector to
+ * exactly the SDK's markers. Since alpha.14 no store carries the marker —
+ * the web store graduated in alpha.13 and the bare React Native store in
+ * alpha.14 — so every flag is false, and the machinery stays for the next
+ * store that ships experimental.
  */
 export const storageOptions = [
   {
@@ -143,7 +144,7 @@ export const storageOptions = [
        audit cannot catch, because the symbol would not be ours. The note says
        whose object it is instead of guessing at a package. */
     expr: 'await reactNativeStore({ storage })',
-    experimental: true,
+    experimental: false,
     comment: 'storage is your own ReactNativeKeyValueStorage implementation.',
   },
 ];

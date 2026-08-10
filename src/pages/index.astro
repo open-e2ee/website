@@ -277,7 +277,7 @@ const trustLinks = [
           under it instead of the copy column's 48rem reading measure. Seven
           entries want more room than a paragraph does.
 
-          No caveat paragraph under it. The experimental split is stated in the
+          No caveat paragraph under it. Store maturity is stated in the
           quickstart caveat under the feature band and on the Store selector's
           own labels, and the S3 qualification is carried by the heading
           plus the entry's name — see `src/lib/platform-marks.mjs`. Both are
@@ -534,21 +534,18 @@ const trustLinks = [
         <span>Start where you are:</span>
         {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
       </p>
-      {/* The three quickstarts used to sit here as equal peers, which is not
-          what the shipped package says: ADAPTERS.md marks the bare React
-          Native store experimental. A reader who learns that after following
-          the link learns it too late.
-
-          The browser clause tracks the shipped release, not a remembered one:
-          alpha.13 cleared the web store's `(experimental)` marker after its
-          graduation gates — multi-tab compare-and-set, interruption,
-          storage-pressure, soak — moved into per-change CI, so the sentence
-          that grouped it with the bare React Native store was true of
-          alpha.12 and false of the alpha.13 the install command above
-          resolves to. */}
+      {/* This sentence tracks the shipped release, not a remembered one:
+          alpha.13 cleared the web store's `(experimental)` marker, and
+          alpha.14 cleared the bare React Native store's when its graduation
+          gates — the exported backend-conformance kit, the Hermes
+          reference-backend gate, interruption, storage-pressure — moved into
+          per-change CI. Since alpha.14 the installed ADAPTERS.md marks no
+          store experimental, and the maturity test derives both sides of the
+          sentence from that file, so a store the SDK newly marks fails the
+          build instead of drifting. */}
       <p class="muted measure">
-        The Expo, Node, and browser stores implement the storage interface in full. The bare
-        React Native store is experimental.{' '}
+        The Expo, Node, browser, and bare React Native stores implement the storage interface
+        in full.{' '}
         <a href="/product">What each store holds</a>.
       </p>
     </div>
