@@ -757,6 +757,14 @@ const PAIR_FRAGMENT = 'demo-pair';
           decrypted.textContent = '';
           timing.textContent = '';
           claim.hidden = true;
+          /* The run goes with the panes. `onMet` clears it too, but that is the
+             far end of a window this tab spends showing a session that has
+             carried nothing under a step lit by the one before it — a second or
+             two normally, and until the reader finds the fallback link when the
+             pop-up was blocked. The counter behind it cannot move in here:
+             `send()` refuses before `meet()`, which is the same event that
+             resets it. */
+          figure?.ratchet(0);
 
           /* The composer's own line still offered to load the SDK when the
              reader started typing, to a tab that had just loaded it and in some
