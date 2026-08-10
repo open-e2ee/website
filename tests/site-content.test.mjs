@@ -133,13 +133,14 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
   assert.doesNotMatch(hero, /cta-sublabel/);
 });
 
-test('says the release is alpha on the pages that grade it', async () => {
-  /* messaging.md §4 fixes "alpha" as the word — not beta, not early access,
-   * not preview. The homepage carried the line at the foot of its hero until
-   * the founder cut the hero's disclosure paragraphs on 2026-08-09; the pages
-   * that grade the release — /product and /security — still carry it, and
-   * this holds them to the canonical wording. The homepage keeps only the
-   * negative: whatever it says, it must not trade "alpha" for a softer word. */
+test('states maturity as the version plus the before-1.0 caveat, with no stage adjective', async () => {
+  /* messaging.md §4 retired "alpha" with the 0.1.0 release: the maturity
+   * claim is the version number itself plus the before-1.0 caveat, and every
+   * stage adjective — alpha included, now that the stage it named has ended —
+   * is banned alongside the softer words it used to guard against. The pages
+   * that grade the release — /product and /security — carry the canonical
+   * line; the homepage carries none since the founder cut its hero
+   * disclosure paragraphs on 2026-08-09, but the negative still binds it. */
   const [index, product, security] = await Promise.all([
     flat('../src/pages/index.astro'),
     flat('../src/pages/product.astro'),
@@ -147,27 +148,27 @@ test('says the release is alpha on the pages that grade it', async () => {
   ]);
 
   for (const page of [product, security]) {
-    assert.match(page, /0\.1\.x alpha/);
-    assert.match(page, /public APIs and persisted formats may change before 1\.0/);
+    assert.match(page, /0\.1\.x — public APIs and persisted formats may change before 1\.0\./);
   }
+  /* The lookahead exempts version identifiers — "alpha.14" in a source
+   * comment names a release, not a stage. */
   for (const page of [index, product, security]) {
-    assert.doesNotMatch(page, /\b(?:beta|early access|preview)\b/i);
+    assert.doesNotMatch(page, /\b(?:alpha|beta|early access|preview)\b(?![.-]?\d)/i);
   }
 
   /* Asserted on the built pages too, because `flat()` keeps comments and a
-   * source pin can pass on a paragraph's own tombstone. The dist half moved
-   * with the copy: the built homepage must NOT carry the line the founder cut,
-   * and the built pages that grade the release must. */
+   * source pin can pass on a paragraph's own tombstone. The built homepage
+   * must NOT carry the maturity line the founder cut, and the built pages
+   * that grade the release must. */
   const [builtIndex, builtProduct, builtSecurity] = await Promise.all(
     ['index.html', 'product/index.html', 'security/index.html'].map((page) =>
       readFile(new URL(`../dist/${page}`, import.meta.url), 'utf8').catch(() => null),
     ),
   );
   if (!builtIndex || !builtProduct || !builtSecurity) return skipUnbuilt('dist/');
-  assert.doesNotMatch(builtIndex, /0\.1\.x alpha/);
+  assert.doesNotMatch(builtIndex, /0\.1\.x — public APIs/);
   for (const page of [builtProduct, builtSecurity]) {
-    assert.match(page, /0\.1\.x alpha/);
-    assert.match(page, /public APIs and persisted formats may change before 1\.0/);
+    assert.match(page, /0\.1\.x — public APIs and persisted formats may change before 1\.0\./);
   }
 });
 
@@ -2330,7 +2331,7 @@ test('quotes no number it did not measure', async () => {
    * caught it independently in the same wave, one calling it an unsourced
    * vendor line and one "a made-up number in a page that is otherwise
    * scrupulous about sourcing". There are no teams to have measured it on:
-   * this is a pre-launch alpha with no users, so the sentence was borrowing
+   * this is a pre-launch 0.1.x with no users, so the sentence was borrowing
    * the authority of a study that cannot exist.
    *
    * The guard is on the shape rather than the phrase, because the failure is
