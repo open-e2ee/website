@@ -1883,6 +1883,180 @@ a:hover {
   }
 }
 
+/* ------------------------------------------------------ the demo stage --- */
+
+/*
+ * The stage: two devices, the relay, and where the message currently is.
+ *
+ * `DemoStage.astro` emits two compositions, wide and stacked, and this owns the
+ * switch between them and the rules that say which parts of a composition are
+ * on screen. The drawing itself contains no CSS decision and this file contains
+ * no coordinate — every number the shapes use is in `stage-geometry.ts`, in
+ * viewBox units, which are not the units this file is written in.
+ */
+.demo-stage-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oe-space-3);
+}
+
+.demo-stage-figure-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/*
+ * One composition at a time, on the precedent the signature diagram set.
+ *
+ * Both selectors carry `.demo-stage-figure` for the reason recorded further
+ * down this sheet: `display: block` on the canvas is (0,1,0) here, a media
+ * query adds no specificity, and a bare class rule that ties on specificity
+ * loses to the later one. The signature diagram drew both compositions at every
+ * width once already for exactly this.
+ */
+.demo-stage-figure .demo-stage-figure-stacked {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  .demo-stage-figure .demo-stage-figure-wide {
+    display: none;
+  }
+
+  .demo-stage-figure .demo-stage-figure-stacked {
+    display: block;
+  }
+}
+
+/*
+ * One step is on screen; the parts belonging to it are the ones whose
+ * `data-stage-part` list names it.
+ *
+ * `display` rather than `opacity`, and that is a grammar rule rather than a
+ * preference: `design/DESIGN.md` allows solid fills only, and a part fading
+ * through 40% opacity is a half-encrypted envelope for as long as the fade
+ * lasts. Nothing in this drawing is ever partly drawn.
+ *
+ * The selector is `~=` because a part that persists across steps lists all of
+ * them, space separated — which is why there is no `.is-visible` class here for
+ * a script to keep in sync. The state lives on the figure rather than on either
+ * canvas, so a script setting it writes one node and both compositions follow.
+ */
+.demo-stage-figure [data-stage-part] {
+  display: none;
+}
+
+.demo-stage-figure[data-stage-state='devices-ready'] [data-stage-part~='devices-ready'],
+.demo-stage-figure[data-stage-state='bundles-published'] [data-stage-part~='bundles-published'],
+.demo-stage-figure[data-stage-state='session-established'] [data-stage-part~='session-established'],
+.demo-stage-figure[data-stage-state='encrypted'] [data-stage-part~='encrypted'],
+.demo-stage-figure[data-stage-state='in-transit'] [data-stage-part~='in-transit'],
+.demo-stage-figure[data-stage-state='stored-at-relay'] [data-stage-part~='stored-at-relay'],
+.demo-stage-figure[data-stage-state='delivered'] [data-stage-part~='delivered'],
+.demo-stage-figure[data-stage-state='opened'] [data-stage-part~='opened'] {
+  display: inline;
+}
+
+/*
+ * The ratchet runs, one per device, one step per message that device carried.
+ *
+ * Two attributes rather than one, because the two runs advance separately: A
+ * steps its sending chain and B steps its receiving chain, and a single count
+ * on the figure would have made them move together and claimed something about
+ * the protocol that is not true.
+ *
+ * Each attribute lists the steps that are lit rather than counting them, which
+ * is the `~=` idiom the parts use. A count would need a rule per (count, step)
+ * pair and would say nothing more.
+ *
+ * Only the filled steps are addressed. The open ones underneath carry no
+ * `data-stage-step` and are on screen for as long as the session is, which is
+ * what gives a reader the length of the run to measure the lit part against.
+ */
+.demo-stage-figure [data-stage-step] {
+  display: none;
+}
+
+.demo-stage-figure[data-stage-ratchet-a~='1'] [data-stage-side='a'][data-stage-step='1'],
+.demo-stage-figure[data-stage-ratchet-a~='2'] [data-stage-side='a'][data-stage-step='2'],
+.demo-stage-figure[data-stage-ratchet-a~='3'] [data-stage-side='a'][data-stage-step='3'],
+.demo-stage-figure[data-stage-ratchet-a~='4'] [data-stage-side='a'][data-stage-step='4'],
+.demo-stage-figure[data-stage-ratchet-b~='1'] [data-stage-side='b'][data-stage-step='1'],
+.demo-stage-figure[data-stage-ratchet-b~='2'] [data-stage-side='b'][data-stage-step='2'],
+.demo-stage-figure[data-stage-ratchet-b~='3'] [data-stage-side='b'][data-stage-step='3'],
+.demo-stage-figure[data-stage-ratchet-b~='4'] [data-stage-side='b'][data-stage-step='4'] {
+  display: inline;
+}
+
+/*
+ * The one element that says "here, now".
+ *
+ * `--oe-accent` and not a diagram token: this is the drawing's only
+ * meaning-bearing mark a reader has to find at a glance, and the diagram
+ * palette's content-bar grey measures under 3:1 in both themes.
+ *
+ * It grows from its leading edge rather than fading in, which is the one kind
+ * of motion the grammar leaves open — the bar is never partly transparent, only
+ * partly drawn along its own length, and its fill is constant throughout.
+ *
+ * The stacked composition's span rule is vertical, so the transform is a scale
+ * on both axes rather than on `x` alone. A rule that is one unit wide loses
+ * nothing by being scaled along its width as well.
+ *
+ * `transform-box: fill-box` makes the rect's own box the reference for the
+ * origin; without it the scale is measured against the viewBox origin and the
+ * bar sweeps in from the corner of the canvas instead of from itself.
+ *
+ * `allow-discrete` plus `@starting-style` is what lets an element arriving from
+ * `display: none` animate at all. A browser without either draws the bar at
+ * full size immediately, which is the same drawing a beat sooner; the site's
+ * global reduced-motion rule collapses the duration and produces exactly that.
+ */
+.demo-stage-figure-accent {
+  fill: var(--oe-accent);
+  transform: scale(1);
+  transform-box: fill-box;
+  transform-origin: left top;
+  transition:
+    transform var(--oe-duration-fast) ease-out,
+    display var(--oe-duration-fast) allow-discrete;
+}
+
+@starting-style {
+  .demo-stage-figure [data-stage-part].demo-stage-figure-accent {
+    transform: scale(0);
+  }
+}
+
+/*
+ * The two runs of type the script fills: the sentence in each device, and the
+ * envelope's own metadata beside the row the relay is holding.
+ *
+ * Sized in viewBox units, so they are set here in the same units the drawing
+ * uses rather than in px — the canvas is scaled on the way to the screen and a
+ * px value would not hold its proportion to the shapes around it.
+ *
+ * The sentence is set in the sans face rather than the mono one, and in the
+ * page's own foreground rather than the muted grey the labels use. It is the
+ * reader's own words inside a form whose whole job is to read as readable
+ * content: mono would make it look like a payload, and grey would make it look
+ * like an annotation. The metadata is mono, because field names are identifiers
+ * and are meant to look like them.
+ */
+.demo-stage-figure-content {
+  font-family: var(--oe-font-sans);
+  font-size: 13px;
+  fill: var(--oe-foreground);
+}
+
+.demo-stage-figure-fields {
+  font-family: var(--oe-font-mono);
+  font-size: 11px;
+  fill: var(--oe-muted);
+}
+
 /* ------------------------------------------------------------ diagrams --- */
 
 /*

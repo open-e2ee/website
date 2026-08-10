@@ -1294,9 +1294,10 @@ test('keeps the signature diagram off the page that carries the plate', async ()
 });
 
 test('keeps the relay formula out of the absolute, in the drawings too', async () => {
-  const [signature, plaintext] = await Promise.all([
+  const [signature, plaintext, stage] = await Promise.all([
     flat('../src/components/SignatureDiagram.astro'),
     flat('../src/components/diagrams/WhoHoldsPlaintext.astro'),
+    flat('../src/components/demo/DemoStage.astro'),
   ]);
 
   /* A diagram is the part of a page that gets screenshotted and quoted with
@@ -1312,7 +1313,7 @@ test('keeps the relay formula out of the absolute, in the drawings too', async (
    * substitute an identity before any trust is pinned, and a safety-number
    * comparison is what closes the gap. `never needs` is the defensible form and
    * the one the prose already uses. */
-  for (const diagram of [signature, plaintext]) {
+  for (const diagram of [signature, plaintext, stage]) {
     assert.match(diagram, /never needs plaintext/);
     assert.doesNotMatch(diagram, /cannot read/);
   }
@@ -1324,6 +1325,27 @@ test('keeps the relay formula out of the absolute, in the drawings too', async (
    * the desktop end up making different promises about the relay. */
   assert.match(signature, /relay: 'relay · never needs plaintext'/);
   assert.equal(signature.match(/\{LABELS\.relay\}/g)?.length, 2);
+
+  /* The stage draws the same two compositions and gets the same guarantee for
+   * free, because it has one markup path and maps it over both coordinate
+   * tables rather than laying the drawing out twice. So what is asserted here
+   * is that the single path is still single: one `COMPOSITIONS.map` and one use
+   * of the label. Two uses would mean someone had unrolled the map, which is
+   * the change that reopens the gap the signature diagram has to be watched for.
+   *
+   * A count and not a `doesNotMatch` on a second literal, because the failure
+   * this is aimed at is a copy of the correct string, not a wrong one. */
+  assert.match(stage, /relay: 'relay · never needs plaintext'/);
+  assert.equal(stage.match(/COMPOSITIONS\.map\(/g)?.length, 1);
+  assert.equal(stage.match(/\{LABELS\.relay\}/g)?.length, 1);
+
+  /* The carrier brackets are the mark. `design/scripts/test.mjs` asserts that
+   * `carrierBracketPaths` reproduces the logo path for path, so a bracket that
+   * turns up inside a drawing is the wordmark used as an illustration of a
+   * device or an envelope. The stage draws neither, and nothing about its
+   * shapes tempts a future edit toward one — but the same was true of every
+   * diagram before the one that did it. */
+  assert.doesNotMatch(stage, /carrierBracket/);
 });
 
 test('keeps the relay formula out of the absolute, in prose as well as in drawings', async () => {
@@ -3553,9 +3575,16 @@ test('keeps the demo figure, its captions and its visibility rules on one state 
    */
   const DRAWS_NOTHING = ['idle', 'sdk-loading'];
   const css = await read('../src/styles/global.css');
+  /* Keyed on `data-figure-part`, which is this figure's own attribute, and not
+   * on `data-stage-state` alone. The stage drawing reads the same state
+   * attribute — it is the same run driving both — and shows its parts through
+   * `data-stage-part`, so a selector filter that stopped at the state matched
+   * two rules and reported the figure as having two visibility rules when it
+   * has one. The stage's equivalent guarantee is a build-time check in
+   * `DemoStage.astro`: every step but `idle` is accented exactly once. */
   const shown = cssRules(css).filter(
     (rule) =>
-      rule.selector.includes('[data-stage-state=') && /display:\s*inline/.test(rule.body),
+      rule.selector.includes('[data-figure-part~=') && /display:\s*inline/.test(rule.body),
   );
   assert.equal(shown.length, 1, `expected one rule showing the figure's parts, found ${shown.length}`);
   const pairs = [
