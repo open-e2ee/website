@@ -922,6 +922,15 @@ const TOGGLES = [
         term.textContent = field;
         const definition = document.createElement('dd');
         definition.textContent = String(value);
+        /* A field the SDK puts on the envelope and leaves unset is a real row —
+           `Object.entries` only reaches keys the object actually has — and the
+           inspector shows it rather than hiding it, because "the relay can see
+           this field is here and empty" is a different fact from "there is no
+           such field". But an unmarked `undefined` in a value column reads as a
+           template that failed rather than as the value it is, so it is marked
+           and dimmed. The text stays the literal, which is what a developer
+           would find on the object. */
+        if (value === undefined || value === null) definition.dataset.unset = 'true';
         if (hides) {
           term.dataset.sealedHidden = 'true';
           definition.dataset.sealedHidden = 'true';

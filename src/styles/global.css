@@ -2337,6 +2337,20 @@ a:hover {
   text-decoration: line-through;
 }
 
+/*
+ * A field the envelope carries with nothing in it. Dimmed and italic so the
+ * literal reads as the value it is rather than as a value that failed to
+ * render; the name beside it stays at full weight, because which field is
+ * empty is the part worth reading.
+ *
+ * Independent of the sealed lens above: a struck field may also be unset, and
+ * the two marks stack without either needing to know about the other.
+ */
+.demo-console-row dd[data-unset='true'] {
+  color: var(--oe-muted);
+  font-style: italic;
+}
+
 .demo-console-row-note {
   margin: 0;
   font-family: var(--oe-metadata-font-family);
