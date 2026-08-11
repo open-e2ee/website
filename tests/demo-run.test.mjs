@@ -417,6 +417,9 @@ function sceneCuesFrom(events) {
       return {
         ...base,
         ...turned,
+        ...(typeof event.measures?.ciphertextBytes === 'number'
+          ? { bytes: event.measures.ciphertextBytes }
+          : {}),
         meta: {
           ...(typeof envelope.targetUserId === 'string' ? { to: envelope.targetUserId } : {}),
           ...(typeof envelope.senderUserId === 'string' ? { from: envelope.senderUserId } : {}),
@@ -510,9 +513,21 @@ test('the ratchet each wheel is captioned with is the one the SDK selected', asy
 const PRESENTATION_COUNT_FIELDS = new Set(['ratchet', 'bundles', 'keys']);
 
 /**
+ * The one field on a cue that carries a measurement rather than a count: how
+ * many bytes of ciphertext the relay stored for the row being shown. The scene
+ * draws a bar to that size, and a size cannot be drawn to scale without it.
+ *
+ * Allowed here, but not on the counts' terms. A count only has to be a number;
+ * this has to be *the* number, equal to the `ciphertextBytes` the recording
+ * measured for the same step, which the test below checks separately. That is
+ * the difference between a drawing that reports and one that decorates.
+ */
+const MEASURED_FIELD = 'bytes';
+
+/**
  * Fail loudly if anything but a string (or a plain nesting of strings) is
  * found at `path`, which is the shape everything on a cue must have except the
- * three fields above.
+ * fields named above.
  */
 function assertNoMeasurement(value, path) {
   if (value === undefined || typeof value === 'string') return;
@@ -535,26 +550,32 @@ function assertNoMeasurement(value, path) {
  * rather than against the hand-written reel in `demo-playback.test.mjs`.
  *
  * That was checkable as "the same cues at any speed" when the transport had a
- * speed; it no longer does. What the two-clock guarantee actually rests on is
- * narrower and stronger: no cue that reaches the drawing carries a measurement
- * at all, so there is nothing left for a future pacing knob to move even by
- * accident.
+ * speed; it no longer does. What the two-clock guarantee rests on is narrower
+ * and stronger: no duration reaches the drawing at all, so there is nothing on
+ * a cue for a future pacing knob to move even by accident.
  *
- * That claim is not "no cue carries a number" — `toCue()` puts real numbers on
- * a cue on purpose, to turn a ratchet's notches and to size a key list, and
- * those are presentation state rather than anything measured. The claim is
- * narrower: every number on a cue lives on one of three named fields
- * (`ratchet`, `bundles`, `keys`), and every other value, at any depth, is a
- * string. A byte count or a millisecond figure arriving on any other field —
- * `sentence`, `meta`, or a fifth field nobody named yet — is exactly the
- * regression this guards, and it is checked by enumerating every value on
- * every cue rather than by naming the fields a measurement might use, because
- * naming them is a list a new one can be added to without this test noticing.
+ * That claim is not "no cue carries a number". `toCue()` puts real numbers on
+ * a cue on purpose: counts, to turn a ratchet's notches and size a key list,
+ * and one measurement, the stored row's byte count, which the relay column
+ * draws to scale. The claim is that those four fields are all of them —
+ * `ratchet`, `bundles`, `keys`, `bytes` — and every other value, at any depth,
+ * is a string. A millisecond figure arriving on any other field — `sentence`,
+ * `meta`, or a fifth field nobody named yet — is exactly the regression this
+ * guards, and it is checked by enumerating every value on every cue rather
+ * than by naming the fields a measurement might use, because naming them is a
+ * list a new one can be added to without this test noticing.
+ *
+ * The measurement that is allowed through is pinned rather than waved past.
+ * Every stored row must arrive with the byte count the recording measured for
+ * it, and the drawing must receive exactly that number, so the bar cannot be
+ * sized from a constant, a running total, or anything else the page found
+ * convenient. Drawing a size nothing reported is the failure this half exists
+ * to catch.
  *
  * A cue built the way the console builds one (`sceneCuesFrom`, above), so the
  * payload under test is the payload that ships.
  */
-test('no cue that reaches the drawing carries a measurement', async () => {
+test('the only measurement a cue carries is the size the recording measured', async () => {
   await withRun(async (run) => {
     await run.send('a', OUTBOUND);
 
@@ -591,10 +612,29 @@ test('no cue that reaches the drawing carries a measurement', async () => {
     assert.equal(shown.length, reel.length, 'not every cue on the reel reached the drawing');
     for (const [index, cue] of shown.entries()) {
       for (const [key, value] of Object.entries(cue)) {
-        if (PRESENTATION_COUNT_FIELDS.has(key)) continue;
+        if (PRESENTATION_COUNT_FIELDS.has(key) || key === MEASURED_FIELD) continue;
         assertNoMeasurement(value, `${index}.${key}`);
       }
     }
+
+    /* The one measurement, held against the recording that made it. Compared as
+       whole lists so that a row losing its size, an extra row gaining one, and
+       the sizes arriving against the wrong rows all read as the failures they
+       are rather than as a passing subset. */
+    const measured = run.trace.events
+      .filter((event) => event.step === 'stored-at-relay')
+      .map((event) => event.measures?.ciphertextBytes);
+    const drawn = shown.filter((cue) => cue.step === 'stored-at-relay').map((cue) => cue.bytes);
+    assert.ok(
+      measured.every((bytes) => typeof bytes === 'number' && bytes > 0),
+      `the recording stored rows without measuring them: ${JSON.stringify(measured)}`,
+    );
+    assert.deepEqual(
+      drawn,
+      measured,
+      'the sizes the drawing was given are not the sizes the recording measured, so the relay ' +
+        'column would draw a bar to something no event reported',
+    );
   });
 });
 

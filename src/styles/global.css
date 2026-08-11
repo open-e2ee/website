@@ -1717,6 +1717,70 @@ a:hover {
 }
 
 /*
+ * How big the stored row is, to scale.
+ *
+ * The bar is measured against a fixed rule — `SIZE_RULE_BYTES` in
+ * `scene-view.ts`, not the largest row of this run — so that two runs of the
+ * same page can be held against each other. A bar scaled to whatever the run
+ * happened to see would put every run's largest row at full width and hide the
+ * difference this drawing exists to show.
+ *
+ * The figure beside it is the count itself. The bar makes a size comparable at
+ * a glance; only the figure makes it exact, and the relay reports bytes
+ * elsewhere in its own header, so the two must be readable together.
+ */
+.demo-relay-size {
+  display: flex;
+  align-items: center;
+  gap: var(--oe-space-2);
+  font-family: var(--oe-font-mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.demo-relay-size-label {
+  color: var(--oe-muted);
+}
+
+/* The track takes what the label and the figure leave. A zero minimum, for the
+   same reason the row's value track takes one: the column is narrow, and a
+   flex item that refuses to shrink below its content pushes the column wider
+   than the scene has room for. */
+.demo-relay-size-track {
+  flex: 1;
+  min-width: 0;
+  height: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--oe-border);
+  border-radius: var(--oe-radius-sm);
+  background: var(--oe-surface-sunken);
+}
+
+/* Width is set from the byte count and nothing else, so the sheet gives it
+   none: a bar with a length before a row has been measured would be a length
+   nothing reported. `clear()` puts it back to this between runs. */
+.demo-relay-size-bar {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--oe-diagram-ciphertext-fill);
+  transition: width var(--oe-duration-normal) ease;
+}
+
+/* A row past the rule is drawn at the full track, which would otherwise read as
+   a row exactly the size of the rule. Reachable: the composer sets no length
+   limit, so a long enough sentence encrypts past four kilobytes. The mark says
+   the bar is clamped; the figure beside it stays the authority on how far. */
+.demo-relay-size-bar[data-over='true'] {
+  background: var(--oe-accent);
+}
+
+.demo-relay-size-figure {
+  white-space: nowrap;
+  color: var(--oe-foreground);
+}
+
+/*
  * What the relay is holding, as bytes.
  *
  * `ciphertext.ts` cuts a strip of three lines of six bytes. The block still
