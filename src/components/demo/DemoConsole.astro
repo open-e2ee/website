@@ -741,9 +741,18 @@ const TOGGLES = [
      * A recorded event as something the drawing can be given.
      *
      * A projection and nothing else: it reads the event and returns a cue, and
-     * every number it touches becomes a string on the way. That ordering is what
-     * makes the transport unable to move a printed figure — by the time a cue is
-     * on the reel there is no number left in it to scale.
+     * the cue is where the paced half of the page gets everything it knows.
+     *
+     * This used to claim that every number it touches becomes a string on the
+     * way, and that there is therefore no number left on a cue to scale. Neither
+     * is true, and both were written before the scene had a ratchet to turn: the
+     * lines below put real numbers on `ratchet`, `bundles` and `keys` on purpose,
+     * to size a notch list and a key shelf. The honest invariant is narrower and
+     * is the one `demo-run.test.mjs` actually holds — every number on a cue lives
+     * on one of those three named fields, and every other value, at any depth, is
+     * a string. A measurement arriving on a fourth field is the regression, and
+     * telling it apart by size would not work: `bundles` counts real prekeys and
+     * runs into the hundreds, the same order as a ciphertext byte count.
      */
     function toCue(event: TraceEvent): SceneCue {
       const detail = (event.detail ?? {}) as Record<string, unknown>;
