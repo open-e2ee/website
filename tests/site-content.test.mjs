@@ -1298,10 +1298,10 @@ test('keeps the signature diagram off the page that carries the plate', async ()
 });
 
 test('keeps the relay formula out of the absolute, in the drawings too', async () => {
-  const [signature, plaintext, stage] = await Promise.all([
+  const [signature, plaintext, scene] = await Promise.all([
     flat('../src/components/SignatureDiagram.astro'),
     flat('../src/components/diagrams/WhoHoldsPlaintext.astro'),
-    flat('../src/components/demo/DemoStage.astro'),
+    flat('../src/components/demo/DemoScene.astro'),
   ]);
 
   /* A diagram is the part of a page that gets screenshotted and quoted with
@@ -1317,7 +1317,7 @@ test('keeps the relay formula out of the absolute, in the drawings too', async (
    * substitute an identity before any trust is pinned, and a safety-number
    * comparison is what closes the gap. `never needs` is the defensible form and
    * the one the prose already uses. */
-  for (const diagram of [signature, plaintext, stage]) {
+  for (const diagram of [signature, plaintext, scene]) {
     assert.match(diagram, /never needs plaintext/);
     assert.doesNotMatch(diagram, /cannot read/);
   }
@@ -1330,26 +1330,20 @@ test('keeps the relay formula out of the absolute, in the drawings too', async (
   assert.match(signature, /relay: 'relay · never needs plaintext'/);
   assert.equal(signature.match(/\{LABELS\.relay\}/g)?.length, 2);
 
-  /* The stage draws the same two compositions and gets the same guarantee for
-   * free, because it has one markup path and maps it over both coordinate
-   * tables rather than laying the drawing out twice. So what is asserted here
-   * is that the single path is still single: one `COMPOSITIONS.map` and one use
-   * of the label. Two uses would mean someone had unrolled the map, which is
-   * the change that reopens the gap the signature diagram has to be watched for.
-   *
-   * A count and not a `doesNotMatch` on a second literal, because the failure
-   * this is aimed at is a copy of the correct string, not a wrong one. */
-  assert.match(stage, /relay: 'relay · never needs plaintext'/);
-  assert.equal(stage.match(/COMPOSITIONS\.map\(/g)?.length, 1);
-  assert.equal(stage.match(/\{LABELS\.relay\}/g)?.length, 1);
+  /* The scene is HTML rather than an SVG with two coordinate tables, so it has
+   * one relay header and the guarantee is that there is still only one. The
+   * failure this is aimed at is a *copy* of the correct string — a responsive
+   * variant of the rack, or a second header for the narrow layout — which is
+   * how one composition ends up making a promise the other has stopped making.
+   * A count, not a `doesNotMatch` on a wrong literal, for that reason. */
+  assert.equal(scene.match(/never needs plaintext/g)?.length, 1);
 
   /* The carrier brackets are the mark. `design/scripts/test.mjs` asserts that
    * `carrierBracketPaths` reproduces the logo path for path, so a bracket that
    * turns up inside a drawing is the wordmark used as an illustration of a
-   * device or an envelope. The stage draws neither, and nothing about its
-   * shapes tempts a future edit toward one — but the same was true of every
-   * diagram before the one that did it. */
-  assert.doesNotMatch(stage, /carrierBracket/);
+   * device or an envelope. The scene draws both a device and an envelope, which
+   * makes it the likeliest place on the site for that to happen. */
+  assert.doesNotMatch(scene, /carrierBracket/);
 });
 
 test('keeps the relay formula out of the absolute, in prose as well as in drawings', async () => {
@@ -2673,11 +2667,26 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
     assert.doesNotMatch(dist, /Everything in between is\s+sealed/);
     assert.match(dist, /Everything in between is\s+ciphertext/);
     /* The feature band still names the real one, which is the whole reason
-     * the loose sense had to go. "sealed" may appear on this page only as
-     * part of "sealed sender". */
-    assert.match(dist, /sealed sender/);
-    for (const m of dist.matchAll(/sealed(?!\s+sender)/g)) {
-      assert.fail(`"sealed" used loosely at index ${m.index}: ${dist.slice(m.index - 60, m.index + 40)}`);
+     * the loose sense had to go. "sealed" may reach a reader on this page only
+     * as part of "sealed sender".
+     *
+     * Read against the text a reader sees rather than against the whole
+     * document. The rule is about a word landing on someone's eye — three
+     * readers stopped on it — and the demo's markup carries `data-sealed`,
+     * `demo-toggle-sealed-sender` and a `sealedSender` key in its script, none
+     * of which any reader will ever read. Scanning the raw HTML would put this
+     * guard in the position of forbidding attribute names, which would end
+     * either in a pile of exemptions or in someone renaming a data attribute
+     * to satisfy a copy rule. Tags, scripts and styles come out; what is left
+     * is the claim. */
+    const visible = dist
+      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ');
+    assert.match(visible, /sealed sender/);
+    for (const m of visible.matchAll(/sealed(?!\s+sender)/g)) {
+      assert.fail(
+        `"sealed" used loosely at index ${m.index}: ${visible.slice(m.index - 60, m.index + 40)}`,
+      );
     }
   }
 });
@@ -3580,12 +3589,10 @@ test('keeps the demo figure, its captions and its visibility rules on one state 
   const DRAWS_NOTHING = ['idle', 'sdk-loading'];
   const css = await read('../src/styles/global.css');
   /* Keyed on `data-figure-part`, which is this figure's own attribute, and not
-   * on `data-stage-state` alone. The stage drawing reads the same state
-   * attribute — it is the same run driving both — and shows its parts through
-   * `data-stage-part`, so a selector filter that stopped at the state matched
-   * two rules and reported the figure as having two visibility rules when it
-   * has one. The stage's equivalent guarantee is a build-time check in
-   * `DemoStage.astro`: every step but `idle` is accented exactly once. */
+   * on `data-stage-state` alone. The state attribute is the step name and
+   * nothing more, so any drawing driven by the same run carries it too; a
+   * selector filter that stopped at the state would match every such rule and
+   * report this figure as having several visibility rules when it has one. */
   const shown = cssRules(css).filter(
     (rule) =>
       rule.selector.includes('[data-figure-part~=') && /display:\s*inline/.test(rule.body),
@@ -3650,88 +3657,56 @@ test('keeps the demo figure, its captions and its visibility rules on one state 
   }
 });
 
-test('runs the stage geometry, so its build-time checks are not dark', async () => {
+test('the scene places the envelope at every step the run records', async () => {
   /*
-   * The point of this test is the import.
+   * The scene's one hand-written step table, held to the step order.
    *
-   * `stage-geometry.ts` carries about ten checks that throw while it is being
-   * loaded — the device ratio, the boundary gutters, nothing past the canvas,
-   * the stored envelope inside its slot. They only run when something imports
-   * the module, and until the layout lands the only importer is
-   * `DemoStage.astro`, which no page mounts yet. So every one of those checks
-   * was dark: proved to work, and not running.
+   * `ENVELOPE_AT` in `scene-view.ts` says where the envelope rests at each
+   * step, and what makes it safe is its *type*: a total `Record<Step, …>`. A
+   * step added to `trace.ts` and forgotten there does not compile, and an
+   * extra key that names no step does not compile either — both were checked
+   * against `astro check` rather than assumed. So the table itself is not what
+   * needs a runtime guard.
    *
-   * That is the shape of the failure worth naming. A check that cannot run
-   * reports exactly like a check that passes, and the gates were green because
-   * nothing asked. `astro check` did not cover it either — it type-checks
-   * unreferenced files but never executes their frontmatter, which is how a
-   * deliberate typo in one of the stage's step constants built cleanly.
+   * What needs one is the declaration. Widen it to `Partial<Record<Step, …>>`
+   * and every one of those errors goes away in silence: the missing step falls
+   * through to `null`, the envelope is hidden, and a reader gets an empty lane
+   * at the new step with the CSS valid, the markup valid, and nothing left in
+   * the type system with an opinion. That single word is the whole guarantee,
+   * so it is what is asserted, and the key comparison below is the backstop
+   * that still holds if it is ever weakened.
    *
-   * Importing here makes them run under `npm test` whether or not any page
-   * mounts the component, which is the property that should not depend on the
-   * layout. The assertions below are secondary; a throw during the import is
-   * this test's real failure mode.
+   * `null` is a permitted value and is not an omission: before anything has
+   * happened, and while a session is being agreed, there is no envelope, and a
+   * scene that drew one would be claiming a message the run has not sent.
    */
-  const geometry = await import('../src/lib/demo/stage-geometry.ts');
-  assert.deepEqual(
-    geometry.COMPOSITIONS.map((composition) => composition.id),
-    ['wide', 'stacked'],
-    'the stage no longer offers exactly the two compositions the stylesheet switches between',
+  const source = await read('../src/lib/demo/scene-view.ts');
+  assert.match(
+    source,
+    /export const ENVELOPE_AT: Record<Step,/,
+    'ENVELOPE_AT is no longer declared as a total Record<Step, …> — a partial map silently ' +
+      'hides the envelope at any step it omits, which is how the drawing goes blank with ' +
+      'every gate green',
   );
-});
 
-test('keeps the demo stage showing something at every step the run records', async () => {
-  /*
-   * The stage's visibility list, held to the step order the same way.
-   *
-   * `global.css` carries a hand-written pair per step —
-   * `[data-stage-state='x'] [data-stage-part~='x']` — and nothing derives it
-   * from anything. A step added to `STEPS` and forgotten here draws a reader an
-   * empty canvas at that step, which is the whole of the feature going blank
-   * while every gate stays green: the CSS is valid, the markup is valid, and
-   * `astro check` has no opinion about a string in one file and not another.
-   *
-   * This guard exists because the figure's equivalent was narrowed to
-   * `[data-figure-part~=` and took this list out of scope on its way past. It
-   * was never the figure guard's subject; it was in scope by accident, and an
-   * accident is not coverage. The build-time check in `DemoStage.astro` does
-   * not reach it either — that one reads the accent list, and the accent list
-   * and the visibility list are two different hand-written lists. A step can be
-   * in one and missing from the other.
-   *
-   * `idle` is the exception and it is deliberate rather than an omission:
-   * before anything has run there is nothing on the canvas that has happened,
-   * and a stage that drew something would be making a claim the run has not.
-   */
-  const trace = await read('../src/lib/demo/trace.ts');
-  const steps = [...trace.matchAll(/^ {2}'([a-z-]+)',$/gm)].map(([, step]) => step);
-  assert.ok(
-    steps.length >= 8,
-    `expected to be reading the STEPS array in trace.ts, found ${JSON.stringify(steps)}`,
-  );
-  assert.equal(steps[0], 'idle', 'the step order no longer starts at idle');
-
-  const css = await read('../src/styles/global.css');
-  const shown = cssRules(css).filter(
-    (rule) => rule.selector.includes('[data-stage-part~=') && /display:\s*inline/.test(rule.body),
-  );
-  assert.equal(
-    shown.length,
-    1,
-    `expected one rule showing the stage's parts, found ${shown.length}`,
-  );
-  const pairs = [
-    ...shown[0].selector.matchAll(
-      /\[data-stage-state='([a-z-]+)'\] \[data-stage-part~='([a-z-]+)'\]/g,
-    ),
-  ];
+  const [{ STEPS }, { ENVELOPE_AT }] = await Promise.all([
+    import('../src/lib/demo/trace.ts'),
+    import('../src/lib/demo/scene-view.ts'),
+  ]);
+  assert.ok(STEPS.length >= 8, `expected the STEPS array, found ${JSON.stringify(STEPS)}`);
+  assert.equal(STEPS[0], 'idle', 'the step order no longer starts at idle');
   assert.deepEqual(
-    pairs.map(([, state]) => state),
-    steps.filter((step) => step !== 'idle'),
-    'a step can be reached that shows none of the stage — the visibility rule and the step ' +
-      'order disagree',
+    Object.keys(ENVELOPE_AT).sort(),
+    [...STEPS].sort(),
+    'ENVELOPE_AT and STEPS disagree about what the steps are — the scene is placing the ' +
+      'envelope at a step the run never records, or has been left a key for one that is gone',
   );
-  for (const [, state, part] of pairs) {
-    assert.equal(part, state, `the stage rule for "${state}" shows the parts of "${part}"`);
+
+  /* And the places it names are places the scene has. A typo here does not
+     throw: `anchorFor` would be handed a string it does not know and the
+     envelope would land wherever the fallback put it. */
+  const PLACES = new Set(['sender', 'relay', 'receiver', null]);
+  for (const [step, place] of Object.entries(ENVELOPE_AT)) {
+    assert.ok(PLACES.has(place), `${step} puts the envelope at "${place}", which is not a place`);
   }
 });

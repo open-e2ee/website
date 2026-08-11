@@ -97,11 +97,18 @@ export interface SceneView {
 /**
  * Where the envelope rests at each stage of its journey.
  *
- * Keyed by step so that adding a step to the protocol forces a decision here
- * rather than silently leaving the envelope where it was. `null` means the
- * envelope is not on screen at that step.
+ * A total `Record` rather than a `Partial` one, and that is the whole guarantee:
+ * a step added to `trace.ts` and forgotten here does not compile. A partial map
+ * would fall through to `null`, hide the envelope, and draw a reader an empty
+ * lane at the new step while every gate stayed green — the CSS valid, the markup
+ * valid, and nothing in the type system with an opinion. `null` therefore means
+ * *deliberately not on screen*, written down, rather than *not thought about*.
+ *
+ * Exported so `site-content.test.mjs` can also hold its keys against `STEPS` at
+ * run time, which catches the same drift arriving from the other direction: a
+ * step removed from the protocol and left behind here.
  */
-const ENVELOPE_AT: Partial<Record<Step, 'sender' | 'relay' | 'receiver' | null>> = {
+export const ENVELOPE_AT: Record<Step, 'sender' | 'relay' | 'receiver' | null> = {
   idle: null,
   'devices-ready': null,
   'bundles-published': null,
@@ -271,7 +278,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       mailbox.dataset.holding = String(holding);
       mailboxBody.querySelector('.demo-relay-slot-empty')?.toggleAttribute('hidden', holding);
 
-      const place = ENVELOPE_AT[cue.step] ?? null;
+      const place = ENVELOPE_AT[cue.step];
       if (place === null) {
         envelope.hidden = true;
         return;
