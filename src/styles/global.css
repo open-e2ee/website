@@ -1490,17 +1490,120 @@ a:hover {
   display: none;
 }
 
-.demo-console-transport {
-  display: flex;
-  flex-direction: column;
-  gap: var(--oe-space-3);
+/*
+ * The stage: the scene, with the settings and the curtain drawn over it.
+ *
+ * Both sit against this box and not against the scene, so `DemoScene.astro`
+ * stays a drawing with no controls in it.
+ */
+.demo-console-stage {
+  position: relative;
 }
 
-.demo-console-controls {
+/*
+ * The curtain, and the one control on it.
+ *
+ * It covers the scene exactly, so the reader sees the button against the scene
+ * the button starts. The scene stays visible through it. A solid cover would
+ * hide the thing on offer.
+ *
+ * A browser without `backdrop-filter` still gets the tint, which separates the
+ * two layers on its own. The offer depends on no part of the blur.
+ */
+.demo-console-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--oe-radius-sm);
+  background: color-mix(in srgb, var(--oe-surface) 55%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+/*
+ * Below 60rem the scene stacks into one column and grows taller than the
+ * screen, so the centre of the curtain is off screen. The button starts at the
+ * top of the curtain and then sticks to the scroll. It stays on screen for as
+ * long as the covered scene does.
+ */
+@media (max-width: 60rem) {
+  .demo-console-curtain {
+    align-items: flex-start;
+  }
+
+  .demo-console-curtain > .oe-button {
+    position: sticky;
+    top: 45vh;
+    margin-top: var(--oe-space-6);
+  }
+}
+
+/*
+ * Settings: quiet in the corner until the reader opens it.
+ *
+ * A native `<details>`, so the browser owns the open state, the keyboard and
+ * the focus order. The panel sits in absolute position, so opening it never
+ * pushes the scene down the page. A reader who changes a switch during a run
+ * would otherwise watch the drawing jump.
+ */
+.demo-console-settings {
+  position: absolute;
+  /* Above the scene's top-right corner, not inside it. Inside the box it would
+     cover a device, and it is not part of the drawing. */
+  bottom: calc(100% + var(--oe-space-2));
+  right: 0;
+  z-index: 4;
+}
+
+.demo-console-settings-summary {
+  display: inline-flex;
   align-items: center;
   gap: var(--oe-space-2);
+  padding: var(--oe-space-1) var(--oe-space-2);
+  border: 1px solid var(--oe-border);
+  border-radius: var(--oe-radius-sm);
+  background: var(--oe-surface);
+  cursor: pointer;
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+  /* The mark inside the summary replaces the disclosure triangle. Both
+     together would give one control two affordances. */
+  list-style: none;
+}
+
+.demo-console-settings-summary::-webkit-details-marker {
+  display: none;
+}
+
+.demo-console-settings-summary:hover,
+.demo-console-settings[open] .demo-console-settings-summary {
+  color: var(--oe-foreground);
+  border-color: var(--oe-border-control);
+}
+
+.demo-console-settings-mark {
+  width: 14px;
+  height: 14px;
+}
+
+.demo-console-settings-panel {
+  position: absolute;
+  top: calc(100% + var(--oe-space-2));
+  right: 0;
+  width: min(26rem, 78vw);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--oe-space-3);
+  padding: var(--oe-space-4);
+  border: 1px solid var(--oe-border);
+  border-radius: var(--oe-radius-sm);
+  background: var(--oe-surface-raised);
+  box-shadow: var(--oe-shadow-md);
 }
 
 /*
@@ -1596,46 +1699,29 @@ a:hover {
 }
 
 /*
- * The inspector: the relay's stored row, full width under the scene.
+ * The relay's stored row, in the relay's own column.
  *
- * There was a three-column band here that restated the scene's own grid so each
- * device's numbers could sit under it. The numbers are in the scene now, under
- * the device that produced them, and what is left is a row of data rather than a
- * fact about a column — so it takes the whole width and is drawn in the relay's
- * own stroke, which is what marks it as the relay's row rather than a third
- * device's.
+ * The row is a fact about one column, so it belongs in that column. The log is
+ * the only thing under the scene.
+ *
+ * These rules live in this sheet and not in `DemoScene.astro` beside the
+ * markup, because the console's script creates the `dt` elements. A scoped rule
+ * would never reach them.
  */
-.demo-console-inspector {
-  display: flex;
-  flex-direction: column;
-  gap: var(--oe-space-3);
-  min-width: 0;
-  padding: var(--oe-space-4);
-  border: 1px solid var(--oe-diagram-carrier-stroke);
-  border-radius: var(--oe-radius-sm);
-  background: var(--oe-surface);
-}
-
-.demo-console-heading {
-  margin: 0;
-  font-family: var(--oe-metadata-font-family);
-  font-weight: var(--oe-metadata-weight);
-  font-size: var(--oe-metadata-size);
-  letter-spacing: var(--oe-metadata-tracking);
-  color: var(--oe-muted);
-}
-
 .demo-console-empty {
   margin: 0;
+  font-family: var(--oe-font-mono);
+  font-size: 0.7rem;
   color: var(--oe-muted);
+  opacity: 0.7;
 }
 
 /*
  * What the relay is holding, as bytes.
  *
- * It scrolls on both axes inside its own border: the lines are a fixed width
- * the script chose, and the height grows with the message. Containing both here
- * is what the column's zero minimum width above is for.
+ * `ciphertext.ts` cuts a strip of three lines of six bytes. The block still
+ * scrolls on both axes inside its own border, because the script fixes the line
+ * width. A build that widened the strip would otherwise widen the whole column.
  */
 .demo-console-hex {
   margin: 0;
@@ -1646,7 +1732,7 @@ a:hover {
   border-radius: var(--oe-radius-sm);
   background: var(--oe-surface-sunken);
   font-family: var(--oe-font-mono);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   line-height: 1.5;
   color: var(--oe-muted);
 }
@@ -1660,7 +1746,7 @@ a:hover {
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--oe-space-1) var(--oe-space-3);
   font-family: var(--oe-font-mono);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   line-height: 1.5;
 }
 

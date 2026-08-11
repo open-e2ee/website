@@ -33,25 +33,27 @@ import DemoScene from './DemoScene.astro';
  * layer is handed cues with every measurement stripped out, so the pacing cannot
  * move a figure — there is no figure in scope for it to move.
  *
- * The copy under the controls says so in the reader's own words, because a
- * reader who sees a round-trip figure appear before the envelope has visibly
- * arrived is owed an explanation and should not have to infer one.
+ * The line under the log states this for the reader. A round-trip figure can
+ * appear before the drawing shows the envelope arriving. The reader must not
+ * have to work out why.
  *
  * -------------------------------------------------------------- one button ---
  *
- * There were four controls: exchange keys, play, step, reset. Play and step
- * were a transport for a reel, and a transport is what you offer someone who is
- * being asked to operate a recording rather than watch a demo. The reel is not
- * the subject — the protocol is — and the pace is now chosen by
- * `playback.ts` and simply runs.
+ * Start is the only control in the open, and it sits over the scene it starts.
+ * Reset and the two switches are behind Settings, because they change the terms
+ * of a run instead of starting one. Before the first press, the reader has one
+ * thing to press.
  *
- * "Exchange keys" went the same way for a stronger reason: it made key
- * agreement look like something a person does. It is not. A device publishes
- * its bundle when it comes online, and the session is agreed by the first
- * message that needs one — which is exactly what `run.ts` does inside `send()`,
- * with or without the button. Start brings the devices up and puts their
- * bundles on the relay; the first sentence anyone types agrees the keys, in the
- * recording, where a reader can watch it happen.
+ * There is no play, step or scrub control. A transport makes the reader operate
+ * a recording, and the recording is not the subject. `playback.ts` chooses the
+ * pace and the replay runs to the end.
+ *
+ * There is no "exchange keys" control, because key agreement is not an action a
+ * person takes. A device publishes its bundle when it comes online, and the
+ * first message that needs a session agrees one. That is what `run.ts` does
+ * inside `send()`. Start brings the devices up and puts their bundles on the
+ * relay. The first sentence anyone types agrees the keys, in the recording,
+ * where the reader can watch it happen.
  *
  * --------------------------------------------------------------- the names ---
  *
@@ -67,15 +69,15 @@ const NAMES = { a: 'alice', b: 'bob' } as const;
 /*
  * The two switches.
  *
- * There were three. The one that went was "Post-quantum required", and it went
- * because it could not draw a difference: the SDK's setting is `required` or
- * `compatible`, and `compatible` still runs PQXDH against any peer that has
- * ML-KEM material — which both devices on this page do. The switch changed
- * whether a peer with *none* would be refused, and there is no such peer here.
- * A checkbox whose two positions produce the same session is a control that
- * teaches something false about what it controls.
+ * There is no "Post-quantum required" switch, because it would draw no
+ * difference here. The SDK's setting is `required` or `compatible`, and
+ * `compatible` still runs PQXDH against any peer that carries ML-KEM material.
+ * Both devices on this page carry it. The setting only decides whether the SDK
+ * refuses a peer that carries none, and this page has no such peer. A checkbox
+ * whose two positions produce the same session teaches something false about
+ * what it controls.
  *
- * So post-quantum protection is not a switch on this page, it is the run: the
+ * Post-quantum protection is not a switch on this page, it is the run: the
  * demo asks for `required`, the key agreement is PQXDH, and each wheel is
  * captioned with the ratchet the SDK reports it selected — "triple ratchet"
  * when the post-quantum ratchet is in it. That is the SDK's own report of what
@@ -115,107 +117,87 @@ const TOGGLES = [
   data-console-name-a={NAMES.a}
   data-console-name-b={NAMES.b}
 >
-  <DemoScene />
+  {/*
+    The stage holds the scene, the settings, and the curtain. The settings and
+    the curtain sit over the scene instead of around it, so all three share one
+    positioned box.
+  */}
+  <div class="demo-console-stage">
+    <DemoScene />
 
-  <div class="demo-console-transport">
     {/*
-      The transport is disabled in the shipped HTML and the script enables it.
+      The settings, in the corner above the scene. Everything that changes the
+      terms of a run is behind this control, so Start is the only control in the
+      open.
 
-      A control that does nothing is worse than a control that is not there yet:
-      the reader presses it, nothing happens, and they conclude the demo is
-      broken rather than that a chunk is still arriving. Every button here needs
-      a module that has not been fetched, so every one of them ships disabled and
-      is turned on by the script that can honour it. A reader without scripts
-      gets controls that are visibly unavailable rather than dishonestly live,
-      and the recorded capture below them rather than nothing to look at.
+      A native `<details>` instead of a scripted popover. It opens, closes and
+      answers the keyboard with no script at all. This page measures the script
+      it ships before the reader touches anything.
+
+      Everything inside ships disabled and the script enables it. A control that
+      does nothing is worse than a control that is absent. The reader presses it
+      and nothing happens. That reads as a broken demo, not as a chunk that is
+      still arriving.
     */}
-    <div class="demo-console-controls">
-      {/*
-        Start brings both devices online and publishes their public bundles —
-        the real `syncToServer` on each client, not a staged animation of one.
-        That is everything a device does before anyone has written anything, and
-        it is where the demo begins. The keys are agreed by the first message,
-        which is where they are really agreed.
-      */}
+    <details class="demo-console-settings">
+      <summary class="demo-console-settings-summary">
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="demo-console-settings-mark">
+          <path
+            d="M3 8h18M3 16h18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"></path>
+          <circle cx="9" cy="8" r="3" fill="currentColor"></circle>
+          <circle cx="16" cy="16" r="3" fill="currentColor"></circle>
+        </svg>
+        Settings
+      </summary>
+
+      <div class="demo-console-settings-panel">
+        <fieldset class="demo-console-toggles" data-console-toggles disabled>
+          <legend class="demo-console-toggles-legend">Protocol</legend>
+          {
+            TOGGLES.map((toggle) => (
+              <label class="demo-console-toggle" for={`demo-toggle-${toggle.id}`}>
+                <input
+                  type="checkbox"
+                  id={`demo-toggle-${toggle.id}`}
+                  data-console-toggle={toggle.key}
+                  checked={toggle.on}
+                />
+                <span class="demo-console-toggle-label">{toggle.label}</span>
+                <span class="demo-console-toggle-note">{toggle.note}</span>
+              </label>
+            ))
+          }
+        </fieldset>
+
+        <button type="button" class="oe-button oe-button-secondary" data-console-reset disabled>
+          Reset
+        </button>
+      </div>
+    </details>
+
+    {/*
+      The curtain covers the scene and carries the one control that starts it.
+      The reader looks at the scene while deciding to run it.
+
+      Start brings both devices online and publishes their public bundles. It
+      calls the real `syncToServer` on each client instead of animating one.
+      That is everything a device does before anyone writes a message. The first
+      message agrees the keys, which is where a real session agrees them.
+
+      The script lifts the curtain once the run is up, and Reset puts it back. A
+      reader with no scripts keeps a blurred scene under a button that is
+      visibly unavailable, with the recorded row below it.
+    */}
+    <div class="demo-console-curtain" data-console-curtain>
       <button type="button" class="oe-button" data-console-start disabled>Start demo</button>
-      <button type="button" class="oe-button oe-button-secondary" data-console-reset disabled>
-        Reset
-      </button>
     </div>
-
-    {/*
-      The switches sit with the transport rather than on the scene, because the
-      scene is the thing being described and these are the terms it is being
-      described under. Every one of them ships disabled for the same reason the
-      buttons do.
-    */}
-    <fieldset class="demo-console-toggles" data-console-toggles disabled>
-      <legend class="demo-console-toggles-legend">Protocol</legend>
-      {
-        TOGGLES.map((toggle) => (
-          <label class="demo-console-toggle" for={`demo-toggle-${toggle.id}`}>
-            <input
-              type="checkbox"
-              id={`demo-toggle-${toggle.id}`}
-              data-console-toggle={toggle.key}
-              checked={toggle.on}
-            />
-            <span class="demo-console-toggle-label">{toggle.label}</span>
-            <span class="demo-console-toggle-note">{toggle.note}</span>
-          </label>
-        ))
-      }
-    </fieldset>
-
-    <p class="demo-console-note measure">
-      The protocol runs at full speed and is recorded; what moves above is a replay of that
-      recording, slowed to a pace you can follow. Slowing it changes the replay, never the crypto —
-      and never a printed number. Braid changes what the <em>next</em> session negotiates, so it
-      settles before the keys are agreed rather than during. Neither switch turns the post-quantum
-      ratchet off, because the SDK publishes no way to: the ratchet under each device is captioned
-      with what the session actually selected, which the SDK reports when the keys are agreed.
-    </p>
-
-    <p class="demo-console-status" data-console-status role="status" aria-live="polite"></p>
   </div>
 
-  {/*
-    The inspector: one question, answered with the row itself.
-
-    Everything that was a *reading* has moved up into the scene, under the thing
-    it is a reading of — a device's four timings under that device, and what the
-    relay is holding under the relay. This band used to restate the scene's own
-    three columns underneath the scene, which drew one exhibit twice and left the
-    eye choosing between them.
-
-    What could not move is this: the bytes, and every field on the envelope, read
-    off the object the relay stored rather than from a description of it. It is
-    full width because it is a row of data rather than a fact about a column, and
-    it is under the scene because it is the evidence for the claim the scene
-    makes. The fields it holds back are named where they are held back, by the
-    script.
-  */}
-  <section class="demo-console-inspector" aria-labelledby="demo-console-inspector-heading">
-    <h3 class="demo-console-heading" id="demo-console-inspector-heading">
-      What the relay is holding
-    </h3>
-
-    <p class="demo-console-empty" data-console-relay-empty>Holding nothing.</p>
-    <pre class="demo-console-hex" data-console-hex hidden></pre>
-    <dl class="demo-console-row" data-console-row hidden></dl>
-    <p class="demo-console-row-note" data-console-row-note hidden></p>
-
-    {/*
-      The sentence that stops the timings above being read as latency. This
-      relay runs in the reader's tab, so there is no network in any number on
-      this page — saying so is the difference between a measurement and a claim
-      about production, and it is why nothing here simulates one.
-    */}
-    <p class="demo-console-note measure">
-      This relay is in this tab. Nothing above crosses a network, so every timing under a device is
-      that device's own work with transport cost removed — add your own round trip to each of them.
-    </p>
-  </section>
+  <p class="demo-console-status" data-console-status role="status" aria-live="polite"></p>
 
   {/*
     The log, last, because it is the transcript rather than the story: the
@@ -224,6 +206,17 @@ const TOGGLES = [
     exact call comes down here; nobody has to.
   */}
   <DemoLog />
+
+  {/*
+    Each sentence answers one misreading. The first: the drawing is a replay,
+    and the run behind every figure went at full speed. The second: the timings
+    under each device are not latency, because the relay runs in this tab. No
+    number here contains a network, and nothing on the page simulates one.
+  */}
+  <p class="demo-console-note measure">
+    Recorded at full speed, replayed at reading pace — every number comes from the run. The relay
+    is in this tab, so no timing includes a network.
+  </p>
 
   {/*
     The recorded capture: server-rendered, visible on arrival, hidden by the
@@ -304,6 +297,7 @@ const TOGGLES = [
     };
 
     const startButton = need<HTMLButtonElement>('[data-console-start]');
+    const curtain = need<HTMLElement>('[data-console-curtain]');
     const reset = need<HTMLButtonElement>('[data-console-reset]');
     const status = need<HTMLElement>('[data-console-status]');
     const hex = need<HTMLElement>('[data-console-hex]');
@@ -545,6 +539,10 @@ const TOGGLES = [
       const running = run !== null;
       startButton.disabled = busy || running;
       reset.disabled = busy || !running;
+      /* The curtain is up whenever no run is behind it. This state decides it,
+         not the press. A start that throws leaves the reader the button that
+         starts one, and Reset gives the button back. */
+      curtain.hidden = running;
       /* Braid chooses what the *next* session negotiates, so it goes unavailable
          once one exists. A switch that appeared to change a running session
          would be describing key agreement wrongly, and Reset is the honest way
@@ -967,14 +965,18 @@ const TOGGLES = [
       /* The note is a sibling of the list rather than its last child: a `<dl>`
          may hold terms, definitions and grouping `<div>`s, and a paragraph
          inside one is invalid however well it renders. */
+      /* Three clauses, one job each. The count shows the script derived the row
+         and did not list it. The second accounts for the ciphertext. The third
+         accounts for the id, which `HELD_BACK` withholds, so the reader learns
+         about every omission. */
       rowNote.textContent =
-        `${count(shown)} fields, read off the envelope itself — plus the ciphertext above, ` +
-        `${count(encoded.length)} base64 characters and ${count(bytes)} bytes of it, and the ` +
-        'relay-assigned id, which this in-memory relay numbers in a way yours would not.' +
+        `${count(shown)} fields, off the envelope itself · ciphertext above, ${count(bytes)} ` +
+        `bytes as ${count(encoded.length)} base64 characters · the id is held back, because this ` +
+        'in-memory relay numbers rows in a way yours would not.' +
         (toggles.sealedSender
-          ? ` The ${count(sealable)} struck fields are the ones sealed sender removes; this ` +
-            `envelope's own \`${NAMED_FIELDS.mode}\` is \`${String(envelope[NAMED_FIELDS.mode])}\`, so it is ` +
-            'not a sealed one — the demo has no certificate authority to mint against.'
+          ? ` Struck: the ${count(sealable)} fields sealed sender removes. This envelope's ` +
+            `${NAMED_FIELDS.mode} is ${String(envelope[NAMED_FIELDS.mode])}, so it is not a sealed ` +
+            'one — the demo has no authority to mint a certificate against.'
           : '');
       row.hidden = false;
       rowNote.hidden = false;
@@ -1012,8 +1014,8 @@ const TOGGLES = [
            both clients — the same call `send()` would make on its way past. */
         await run?.publishBundles();
         say(
-          'Both devices are online and their public bundles are on the relay. The private halves ' +
-            'never left. Type a message on either device — the first one agrees the keys.',
+          'Both devices are online, public bundles on the relay and the private halves still at ' +
+            'home. Type a message on either device — the first one agrees the keys.',
         );
       });
     });
@@ -1109,7 +1111,7 @@ const TOGGLES = [
         row.hidden = true;
         rowNote.hidden = true;
         relayEmpty.hidden = false;
-        say('Reset. Fresh devices, a fresh relay, and nothing recorded — braid is open again.');
+        say('Reset. Fresh devices, a fresh relay, nothing recorded — braid is open again.');
       });
     });
 

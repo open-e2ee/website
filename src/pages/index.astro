@@ -322,17 +322,20 @@ const trustLinks = [
     <div class="container stack">
       <div class="band-head">
         <h2>One message, end to end</h2>
-        {/* "ciphertext" and not "sealed", for the same reason the lead gives
-            at length: "sealed sender" is a real feature of this SDK, and the
-            recorded row four lines below this sentence prints `senderUserId`
-            in the clear because the quickstart does not switch it on. This is
-            the worse of the two places to be loose about the word — it is the
-            caption standing directly over the evidence that would contradict
-            it. The second clause was always honest; now the first one uses a
-            word the panel underneath can be checked against. */}
+        {/* "Ciphertext" and not "sealed". Sealed sender is a real feature of
+            this SDK, and the row the relay stores in the scene below prints
+            `senderUserId` in the clear. This caption stands directly over that
+            row, so the loose sense of the word would promise what the evidence
+            under it withholds.
+
+            `tests/site-content.test.mjs` pins "Not a mock-up", "type a
+            sentence" and "against the in-memory relay". The claim and its limit
+            belong in one sentence, and the `<noscript>` inside the console
+            answers the offer to type. */}
         <p class="measure">
           Plaintext and private keys exist only on the devices at each end. Everything in between is
-          ciphertext — and carries metadata your relay can still see.
+          ciphertext, and carries metadata your relay can still see. Not a mock-up — type a sentence
+          and the installed SDK encrypts it here, in this tab, against the in-memory relay.
         </p>
       </div>
 
@@ -364,58 +367,20 @@ const trustLinks = [
         announce.
       */}
       <div id="what-the-relay-stores" class="demo-band">
-        {/* "Against the in-memory relay" survives every rewrite deliberately.
-            One draft moved that admission down into the panel's own caption,
-            where invariant 5 wants it, and dropped it here — and
-            `tests/site-content.test.mjs` failed, correctly: the sentence is
-            what stops "the installed SDK encrypts it here" from reading as a
-            claim about production infrastructure. It is in both places, which
-            is the right number for the one disclosure this band exists to
-            make. */}
-        <p class="measure">
-          Not a mock-up: type a sentence and the installed SDK encrypts it here, in this tab,
-          against the in-memory relay, with the row your relay would hold printed from the
-          envelope itself.
-        </p>
         <DemoConsole />
       </div>
 
-      {/* A reader who has just read the row the relay held is at the moment of
-          highest intent on the page, and used to find the next button four
-          folds away in the footer.
+      {/* The demo's own log is the only thing under the demo. The next thing to
+          do is the band directly below, where the page makes the same SDK fail.
+          The hero, the header, the band under the scenarios and the footer all
+          carry the quickstart already. An offer repeated at every band boundary
+          stops reading as an offer, and a link that scrolls the reader forward
+          one band is furniture.
 
-          Outlined rather than filled, and that is a rule about the band rather
-          than a preference for this link. "Start demo" is the one free-standing
-          filled button in this band, because it is the only action that begins
-          the argument the band is making. Each device's "Send" is filled too and
-          is not competing with it: it sits against its own text field inside a
-          phone, which is a form control rather than an offer. A third filled
-          button out here, with nothing attached to it, made the band a row of
-          equal offers with no answer to "which of these am I meant to press".
-          This is the way out of the band, and it is a weight quieter than the
-          way through it. */}
-      <div class="actions">
-        <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
-          <span class="oe-button oe-button-secondary">Record this yourself</span>
-          <span class="cta-sublabel">ten minutes · two clients · no account</span>
-        </a>
-        {/* A text-link stood here reading "Now watch a byte change in transit,
-            and the protocol refuse it", pointing at `/demo#flip-a-byte`. The
-            scenarios it pointed at are now the next section down, and a link
-            that scrolls the reader one band forward is furniture: the heading
-            below makes the same offer in the same words, at the place the
-            reader arrives anyway.
-
-            The history is worth keeping because it records a condition that has
-            now been met twice. The link was once the *only* entry to the
-            scenarios, on the reasoning that one scenario did not earn a nav
-            slot — with the trigger for revisiting written into the same
-            sentence: it takes one when it is a page rather than a scenario. It
-            became a page, took the nav slot, and has now given both back, for
-            the reason the review found in every exemplar we checked. A reader
-            who has just watched one message work should be able to break the
-            next one without navigating. */}
-      </div>
+          "Start demo" is the one free-standing filled button in this band, and
+          it sits over the scene it starts. Each device's "Send" carries the same
+          fill and does not compete with it. It sits against its own text field
+          inside a phone, as a form control. */}
     </div>
   </section>
 

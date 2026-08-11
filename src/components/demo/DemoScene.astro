@@ -144,6 +144,23 @@ const STEP_LIST = STEPS.join(' ');
               </dd>
             </div>
           </dl>
+
+          {/*
+            The stored row, under the relay that stored it. The row is a fact
+            about this column, so it belongs in this column. The log is the only
+            thing left under the scene.
+
+            The console's script fills these elements, so they carry the
+            console's classes and `data-console-` names. It fills them from
+            `Object.entries` of the envelope the relay stored, never from a
+            list. `demo-panel.test.mjs` guards that.
+          */}
+          <div class="demo-relay-row">
+            <p class="demo-console-empty" data-console-relay-empty>nothing stored yet</p>
+            <pre class="demo-console-hex" data-console-hex hidden></pre>
+            <dl class="demo-console-row" data-console-row hidden></dl>
+            <p class="demo-console-row-note" data-console-row-note hidden></p>
+          </div>
         </section>
       ) : (
         <section
@@ -341,11 +358,11 @@ const STEP_LIST = STEPS.join(' ');
   .demo-scene {
     position: relative;
     display: grid;
-    /* The relay is the narrow middle column, and it is the middle column
-       because it is written between the two devices — not because a third
-       column happened to land there. Both phones get the same `1fr`, which is
-       what makes them the same width. */
-    grid-template-columns: 1fr minmax(0, 0.85fr) 1fr;
+    /* The relay is the middle column because the markup writes it between the
+       two devices, not because a third column landed there. All three get the
+       same `1fr`. The phones must match each other, and the relay holds the
+       stored row, which is the widest content in the scene. */
+    grid-template-columns: 1fr minmax(0, 1fr) 1fr;
     gap: var(--oe-space-6);
     align-items: start;
   }
@@ -700,6 +717,16 @@ const STEP_LIST = STEPS.join(' ');
 
   .demo-relay-slot[data-holding='true'] .demo-relay-slot-empty {
     display: none;
+  }
+
+  /* The stored row's own stack. `global.css` styles the parts inside it,
+     because the console's script creates the `dt` and `dd` pairs. A scoped rule
+     here would never reach them. */
+  .demo-relay-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-2);
+    min-width: 0;
   }
 
   /* ---------------------------------------------------------- the envelope --- */

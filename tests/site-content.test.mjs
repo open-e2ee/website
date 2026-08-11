@@ -116,17 +116,17 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
   assert.match(learn, /takes about ten minutes/i);
   assert.match(footer, /Ten-minute quickstart/);
 
-  /* The homepage makes the promise twice and not three times, and never in
-   * the hero. It is an argument for spending the ten minutes, so it belongs
-   * under the two buttons a reader reaches after the evidence — not under the
-   * first one, where it was a third line of small grey type standing between
-   * the offer and the proof. The count is asserted because the failure mode
-   * is additive: a sublabel is the obvious thing to paste onto a new CTA. */
+  /* The homepage makes the promise once, and never in the hero. The promise
+   * argues for spending the ten minutes, so it belongs under the button a
+   * reader reaches after the evidence. Under the first button it is a third
+   * line of small grey type between the offer and the proof. The test asserts
+   * the count because the failure is additive. A sublabel is the obvious thing
+   * to paste onto a new call to action. */
   const dist = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
   if (!dist) return skipUnbuilt('dist/index.html');
-  assert.equal((dist.match(/ten minutes · two clients · no account/g) ?? []).length, 2);
+  assert.equal((dist.match(/ten minutes · two clients · no account/g) ?? []).length, 1);
   const heroStart = dist.indexOf('<section class="hero">');
   assert.notEqual(heroStart, -1, 'the hero section is not on the built page');
   const hero = dist.slice(heroStart, dist.indexOf('</section>', heroStart));
