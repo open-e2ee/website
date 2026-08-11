@@ -182,6 +182,26 @@ const STEP_LIST = STEPS.join(' ');
       <span class="demo-envelope-meta-row">
         <span class="demo-envelope-meta-key">from</span>
         <span class="demo-envelope-meta-value" data-scene-envelope-from>—</span>
+        {/*
+          The sealed sender's redaction. A separate element rather than a
+          pseudo-element on the value, because the value is emptied when sealed
+          and an empty inline box has no area to draw a lock in — the field read
+          as merely blank, which says "we forgot to fill this in" rather than
+          "the relay is not allowed to know". Shown and hidden by the same
+          `data-sealed` switch the value uses, so there is one source of truth.
+        */}
+        <span class="demo-envelope-meta-redacted" aria-label="sender withheld">
+          <svg class="demo-envelope-meta-lock" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M7 10V7a5 5 0 0 1 10 0v3"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-linecap="round"
+            ></path>
+            <rect x="4.5" y="10" width="15" height="10.5" rx="2" fill="currentColor"></rect>
+          </svg>
+        </span>
       </span>
     </div>
     <div class="demo-envelope-payload" data-scene-envelope-payload>
@@ -281,30 +301,35 @@ const STEP_LIST = STEPS.join(' ');
     max-height: 12rem;
   }
 
-  .demo-phone-bubble {
+  /* Created by `scene-view.ts`, so scoped selectors never reach them — see the
+     note further down beside the key and ratchet shapes. */
+  .demo-phone-chat :global(.demo-phone-bubble) {
     max-width: 82%;
     padding: var(--oe-space-2) var(--oe-space-3);
-    border-radius: var(--oe-radius-lg);
+    border-radius: 14px;
     line-height: 1.35;
     overflow-wrap: anywhere;
+    font-size: 0.85rem;
   }
 
-  .demo-phone-bubble[data-mine='true'] {
+  .demo-phone-chat :global(.demo-phone-bubble[data-mine='true']) {
     align-self: flex-end;
+    border-bottom-right-radius: 4px;
     background: var(--oe-accent);
     color: var(--oe-accent-foreground);
   }
 
-  .demo-phone-bubble[data-mine='false'] {
+  .demo-phone-chat :global(.demo-phone-bubble[data-mine='false']) {
     align-self: flex-start;
-    background: var(--oe-surface-raised);
+    border-bottom-left-radius: 4px;
+    background: var(--oe-surface-sunken);
     border: 1px solid var(--oe-border);
   }
 
   /* A bubble that is still sealed at this end: the far device has not opened it
      yet, so showing its text here would be the demo lying about what is known
      where. */
-  .demo-phone-bubble[data-pending='true'] {
+  .demo-phone-chat :global(.demo-phone-bubble[data-pending='true']) {
     opacity: 0.55;
   }
 
@@ -361,8 +386,7 @@ const STEP_LIST = STEPS.join(' ');
   /* The counts carry the real magnitude, so they are the emphatic part of the
      row and the shapes beside them are not. */
   .demo-device-keys-count,
-  .demo-ratchet-count,
-  .demo-relay-slot-count {
+  .demo-ratchet-count {
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
@@ -376,9 +400,22 @@ const STEP_LIST = STEPS.join(' ');
     gap: var(--oe-space-1);
   }
 
+  /*
+   * Everything below here dresses an element `scene-view.ts` creates rather
+   * than one this file writes, so Astro's scoping attribute is never on it and
+   * a plain selector matches nothing. This is not cosmetic drift that shows up
+   * as slightly-wrong spacing: an unscoped run of these rules draws no keys, no
+   * ratchet teeth and no chat bubbles at all — the conversation rendered as
+   * five unstyled lines of text and the key shelves rendered as bare numbers.
+   *
+   * `:global()` is confined to the child. The parent stays scoped, so these
+   * cannot match a `.demo-key` anywhere but inside this component's markup.
+   */
+
   /* A private key: a filled notched form, and it never appears anywhere but
      inside a device. The notch is the design system's key shape. */
-  .demo-key {
+  .demo-device-keys-list :global(.demo-key),
+  .demo-relay-slot-body :global(.demo-key) {
     width: 22px;
     height: 14px;
     background: var(--oe-diagram-ciphertext-fill);
@@ -386,12 +423,17 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   /* A public half: the same shape, outlined, because it travels. */
-  .demo-key[data-public='true'] {
+  .demo-relay-slot-body :global(.demo-key[data-public='true']) {
     background: transparent;
     border: 2px solid var(--oe-diagram-carrier-stroke);
   }
 
-  .demo-ratchet-notch {
+  .demo-relay-slot-body :global(.demo-relay-slot-count) {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  .demo-ratchet-notches :global(.demo-ratchet-notch) {
     width: 12px;
     height: 14px;
     border: 2px solid var(--oe-diagram-carrier-stroke);
@@ -399,7 +441,7 @@ const STEP_LIST = STEPS.join(' ');
     transition: background-color var(--oe-duration-normal) ease;
   }
 
-  .demo-ratchet-notch[data-turned='true'] {
+  .demo-ratchet-notches :global(.demo-ratchet-notch[data-turned='true']) {
     background: var(--oe-diagram-ratchet-2);
   }
 
@@ -447,6 +489,15 @@ const STEP_LIST = STEPS.join(' ');
   .demo-relay-slot[data-holding='true'] {
     border-style: solid;
     border-color: var(--oe-diagram-carrier-stroke);
+  }
+
+  /* The mailbox is where the envelope comes to rest, and the envelope is drawn
+     over the rack rather than inside it, centred on this shelf. Cut to the
+     default shelf height it landed across the shelf above and the rack's own
+     edge, which reads as a message sitting on top of the relay rather than in
+     it. Tall enough here to hold the whole envelope with its label clear. */
+  .demo-relay-slot[data-scene-slot='mailbox'] {
+    min-height: 7rem;
   }
 
   .demo-relay-slot-label {
@@ -536,20 +587,28 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   /* Sealed sender: the addressing the relay may read loses the sender. The
-     value is replaced by the same lock the payload wears, so the reader sees
-     one idea applied in two places rather than two unrelated treatments. */
+     value gives way to the same lock the payload wears, so the reader sees one
+     idea applied in two places rather than two unrelated treatments. */
   .demo-envelope-meta-value[data-sealed='true'] {
-    color: transparent;
-    position: relative;
+    display: none;
   }
 
-  .demo-envelope-meta-value[data-sealed='true']::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: currentColor;
-    color: var(--oe-diagram-ciphertext-fill);
-    clip-path: polygon(20% 45%, 80% 45%, 80% 100%, 20% 100%);
+  .demo-envelope-meta-redacted {
+    display: none;
+    align-items: center;
+    padding: 0 5px;
+    border-radius: 2px;
+    background: var(--oe-diagram-ciphertext-fill);
+    color: var(--oe-surface);
+  }
+
+  .demo-envelope-meta-value[data-sealed='true'] + .demo-envelope-meta-redacted {
+    display: inline-flex;
+  }
+
+  .demo-envelope-meta-lock {
+    width: 9px;
+    height: 9px;
   }
 
   .demo-envelope-payload {

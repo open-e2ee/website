@@ -9,11 +9,10 @@
  * ------------------------------------------------------- what it may see ---
  *
  * A cue, and a cue is a step name and who it belongs to. Nothing else reaches
- * here: `trace.cues()` is a projection with every number stripped out, so a
- * speed control in this file cannot move a figure printed elsewhere on the
- * page, because there is no figure in scope for it to move. That is a fact
- * about the types rather than a rule to remember, and `trace.ts` explains why
- * it was made one.
+ * here: `trace.cues()` is a projection with every number stripped out, so
+ * there is no figure in scope for this module to move even by accident. That
+ * is a fact about the types rather than a rule to remember, and `trace.ts`
+ * explains why it was made one.
  *
  * The implementation reads exactly one property of a cue, `step`, and only to
  * look up a dwell. It is parametric in the rest so that nothing can be read out
@@ -27,6 +26,13 @@
  * be a presentation number wearing a measurement's clothes. So the numbers here
  * are declared to be choices, and the numbers on the page are declared to be
  * measurements, and neither is ever derived from the other.
+ *
+ * There is one dwell per step and nothing left in this file that can scale it —
+ * no speed control, no multiplier, no per-reader setting. A reader moves
+ * through the table below at the pace it sets and at no other pace, which makes
+ * the two-clock guarantee stronger than it was when a control still lived here:
+ * it is not just that this module cannot see a measurement, it is that nothing
+ * in the playback path can scale anything at all.
  *
  * ------------------------------------------------------- reduced motion ---
  *
@@ -56,24 +62,20 @@ export interface Cued {
 export type DwellTable = Readonly<Record<string, number>>;
 
 /**
- * The reading pace, per step, at speed 1.
+ * The reading pace, per step.
  *
- * Chosen, not measured — see the header. Each value is the step's caption in
- * `stage-view.ts` at roughly four words a second, rounded up, because the dwell
- * a step needs is set by how much there is to read at it and by nothing else.
+ * Chosen, not measured — see the header. Each value is the step's caption on
+ * the page at roughly four words a second, rounded up, because the dwell a
+ * step needs is set by how much there is to read at it and by nothing else.
  * That makes `stored-at-relay` the longest hold on the reel: it carries the most
  * words, and they are the ones the product is actually arguing.
  *
  * These were far shorter once, and every one of them was too short to read. The
  * mistake worth not repeating is that the shortfall was invisible from here —
  * the numbers looked like a considered ramp, and only lining them up against the
- * caption strings showed that five of the eight steps could not be finished even
- * at the slowest speed the control offered. **Re-derive from the captions
- * whenever the captions change**, rather than nudging a number that reads low.
- *
- * Speed 1 is meant to be the readable setting rather than a baseline to escape
- * from, so `MIN_SPEED` is for a reader who wants to dwell and `MAX_SPEED` is for
- * one who has seen it already. Neither exists to rescue this table.
+ * caption strings showed that five of the eight steps could not be finished in
+ * the time given. **Re-derive from the captions whenever the captions change**,
+ * rather than nudging a number that reads low.
  *
  * A step with no entry gets `DEFAULT_DWELL_MS`, so an added step paces sensibly
  * before anyone has decided what it is worth.
@@ -93,33 +95,32 @@ export const STEP_DWELL_MS: DwellTable = {
 /** What an unlisted step is held for. Long enough for a short sentence. */
 export const DEFAULT_DWELL_MS = 3000;
 
-/**
- * The slowest and fastest the transport may be driven.
- *
- * Bounded because the control is a slider and an unbounded one produces two
- * useless ends: a speed that never advances and a speed that is a single frame.
- */
-export const MIN_SPEED = 0.25;
-export const MAX_SPEED = 4;
-
 export type PlaybackState = 'idle' | 'playing' | 'paused' | 'done';
 
 /**
  * How the reel waits.
  *
- * Injected so a test can run a whole reel without waiting for it, and so the
- * speed-invariance test can inspect the delays rather than time them. Returns
- * the cancel for what it scheduled.
+ * Injected so a test can run a whole reel without waiting for it, and can
+ * inspect the delays it was given rather than time them. Returns the cancel
+ * for what it scheduled.
  */
 export type Schedule = (run: () => void, ms: number) => () => void;
 
 export interface PlaybackOptions<C extends Cued> {
   /** Put a cue on screen. The only thing playback does to the outside world. */
   show(cue: C): void;
+  /**
+   * The reel is about to be shown again from its first cue.
+   *
+   * Playback owns the cursor, so playback is the only thing that knows a replay
+   * has begun. Without the signal a second watch draws on top of the first: the
+   * cues are idempotent about state they set, but not about state they append,
+   * and the chats append. What shipped was three copies of the same sentence in
+   * one conversation after two replays.
+   */
+  rewind?(): void;
   /** Per-step dwell. Defaults to `STEP_DWELL_MS`. */
   dwellMs?: DwellTable;
-  /** Starting speed multiplier. */
-  speed?: number;
   /** How to wait. Defaults to `setTimeout`. */
   schedule?: Schedule;
 }
@@ -146,15 +147,6 @@ export interface Playback<C extends Cued> {
   step(): void;
   /** Drop the reel and go back to the beginning. Shows nothing. */
   reset(): void;
-  /**
-   * Change the speed multiplier, clamped to `MIN_SPEED`..`MAX_SPEED`.
-   *
-   * Takes effect on the next cue rather than on the one being shown. Recomputing
-   * the wait in flight would make the transport's behaviour depend on when in a
-   * dwell the reader moved the slider, which is not something anyone can aim at.
-   */
-  setSpeed(multiplier: number): void;
-  readonly speed: number;
   readonly state: PlaybackState;
   /** How many cues have been shown, and how many are on the reel. */
   readonly position: number;
@@ -174,15 +166,9 @@ export function createPlayback<C extends Cued>(options: PlaybackOptions<C>): Pla
 
   const reel: C[] = [];
   let cursor = 0;
-  let speed = clampSpeed(options.speed ?? 1);
   let state: PlaybackState = 'idle';
   let cancel: (() => void) | null = null;
   const listeners = new Set<(state: PlaybackState) => void>();
-
-  function clampSpeed(value: number): number {
-    if (!Number.isFinite(value)) return 1;
-    return Math.min(MAX_SPEED, Math.max(MIN_SPEED, value));
-  }
 
   function moveTo(next: PlaybackState): void {
     if (state === next) return;
@@ -217,7 +203,11 @@ export function createPlayback<C extends Cued>(options: PlaybackOptions<C>): Pla
    * reader back to the beginning of it.
    */
   function rewindIfSpent(): void {
-    if (cursor >= reel.length) cursor = 0;
+    if (cursor < reel.length) return;
+    cursor = 0;
+    /* Only when the cursor actually moved, and only when there is something to
+       replay: an empty reel has no first frame to go back to. */
+    if (reel.length > 0) options.rewind?.();
   }
 
   /** Show the cue under the cursor and move past it. */
@@ -243,7 +233,7 @@ export function createPlayback<C extends Cued>(options: PlaybackOptions<C>): Pla
       moveTo('done');
       return;
     }
-    const dwell = (dwellMs[cue.step] ?? DEFAULT_DWELL_MS) / speed;
+    const dwell = dwellMs[cue.step] ?? DEFAULT_DWELL_MS;
     cancel = schedule(() => {
       cancel = null;
       if (state === 'playing') tick();
@@ -286,14 +276,6 @@ export function createPlayback<C extends Cued>(options: PlaybackOptions<C>): Pla
       reel.length = 0;
       cursor = 0;
       moveTo('idle');
-    },
-
-    setSpeed(multiplier) {
-      speed = clampSpeed(multiplier);
-    },
-
-    get speed() {
-      return speed;
     },
 
     get state() {

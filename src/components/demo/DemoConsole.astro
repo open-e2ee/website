@@ -385,6 +385,30 @@ const TOGGLES = [
     const HELD_BACK = new Set(['ciphertext', 'id']);
 
     /*
+     * The envelope fields this file names, and the only ones it may.
+     *
+     * The relay's row is built from `Object.entries` of the live envelope and
+     * from nothing else — a hand-written list of what to show is the mechanism
+     * the drift `demo-panel.test.mjs` guards against actually needs. These are
+     * not that list. Two are the addressing drawn on the envelope graphic,
+     * which cannot be derived: something has to say which field is the
+     * recipient. One is quoted in the note under the row.
+     *
+     * They are gathered here rather than reached for inline so that the test
+     * can lift them out of this source and check each against the installed
+     * `Envelope`. Named inline, a rename in the SDK would leave the graphic
+     * addressed to an em dash and the note quoting `undefined`, on a panel
+     * whose whole job is not overstating the evidence — quietly, and in the
+     * direction that flatters us, which is how the same defect landed once
+     * already.
+     */
+    const NAMED_FIELDS = {
+      to: 'targetUserId',
+      from: 'senderUserId',
+      mode: 'messageType',
+    } as const;
+
+    /*
      * What sealed sender takes off the envelope.
      *
      * The demo does not run sealed sender — it needs a trust root and a sender
@@ -588,6 +612,13 @@ const TOGGLES = [
         if (!reel) {
           reel = parts.playback.createPlayback<SceneCue>({
             show: apply,
+            /* A second watch starts from an empty drawing. The reel's first cue
+               is `devices-ready`, so everything the scene shows is put back by
+               replaying it — except the conversation, which appends. */
+            rewind: () => {
+              scene?.clear();
+              awaitingDelivery = null;
+            },
             dwellMs: parts.playback.STEP_DWELL_MS,
           });
           /* The label follows the transport's own state rather than the press
@@ -734,8 +765,27 @@ const TOGGLES = [
           keys: { a: published.a, b: published.b },
         };
       }
-      if (event.step === 'encrypted' && from && typeof detail.text === 'string') {
-        return { ...base, ...turned, sentence: { side: from, text: detail.text } };
+      /* The addressing rides from the moment the envelope is sealed, not from
+         the moment the relay files it. An envelope drawn in flight with an
+         em dash where the recipient goes says the routing is decided somewhere
+         between the two, which is the opposite of what this demo is for. These
+         are the names this page gave the two devices; `stored-at-relay` below
+         replaces them with the fields read off the relay's own copy, which is
+         where the claim about what the relay can see has to come from. */
+      if (event.step === 'encrypted' || event.step === 'in-transit') {
+        const addressed = {
+          ...(to === null ? {} : { to: names[to] }),
+          ...(from === null ? {} : { from: names[from] }),
+        };
+        if (event.step === 'in-transit') return { ...base, ...turned, meta: addressed };
+        return {
+          ...base,
+          ...turned,
+          meta: addressed,
+          ...(typeof detail.text === 'string' && from
+            ? { sentence: { side: from, text: detail.text } }
+            : {}),
+        };
       }
       if (event.step === 'stored-at-relay') {
         const envelope = (detail.envelope ?? {}) as Record<string, unknown>;
@@ -746,8 +796,12 @@ const TOGGLES = [
           ...base,
           ...turned,
           meta: {
-            ...(typeof envelope.targetUserId === 'string' ? { to: envelope.targetUserId } : {}),
-            ...(typeof envelope.senderUserId === 'string' ? { from: envelope.senderUserId } : {}),
+            ...(typeof envelope[NAMED_FIELDS.to] === 'string'
+              ? { to: envelope[NAMED_FIELDS.to] as string }
+              : {}),
+            ...(typeof envelope[NAMED_FIELDS.from] === 'string'
+              ? { from: envelope[NAMED_FIELDS.from] as string }
+              : {}),
           },
         };
       }
@@ -834,7 +888,7 @@ const TOGGLES = [
         'relay-assigned id, which this in-memory relay numbers in a way yours would not.' +
         (toggles.sealedSender
           ? ` The ${count(sealable)} struck fields are the ones sealed sender removes; this ` +
-            `envelope's own \`messageType\` is \`${String(envelope.messageType)}\`, so it is ` +
+            `envelope's own \`${NAMED_FIELDS.mode}\` is \`${String(envelope[NAMED_FIELDS.mode])}\`, so it is ` +
             'not a sealed one — the demo has no certificate authority to mint against.'
           : '');
       row.hidden = false;

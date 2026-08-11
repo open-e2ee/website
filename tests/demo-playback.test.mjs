@@ -2,13 +2,11 @@
  * Playback is the reading clock, and the one thing it must never be able to do
  * is touch the measuring one.
  *
- * Two tests carry that. "changing the speed changes the waits and nothing else"
- * checks it at the level of behaviour: the same reel at quarter speed and at
- * quadruple speed shows the same cues in the same order, and only the delays
- * move. "reads nothing out of a cue except its step" checks it at the level of
- * the code, by handing playback cues that report every property anyone asks
- * for. Between them, "the speed control cannot alter a measurement" is
- * something the suite knows rather than something the header claims.
+ * One test carries that at the level of the code: "reads nothing out of a cue
+ * except its step" hands playback cues that report every property anyone asks
+ * for, so "playback cannot alter a measurement" is something the suite knows
+ * rather than something the header claims — there is no measurement in scope
+ * for it to reach.
  *
  * Everything here runs on an injected clock. Real timers would make a suite
  * that waits out its own animations, which is both slow and a source of flake,
@@ -18,13 +16,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import {
-  DEFAULT_DWELL_MS,
-  MAX_SPEED,
-  MIN_SPEED,
-  STEP_DWELL_MS,
-  createPlayback,
-} from '../src/lib/demo/playback.ts';
+import { DEFAULT_DWELL_MS, STEP_DWELL_MS, createPlayback } from '../src/lib/demo/playback.ts';
 
 /** One send's worth of cues, in the shape `trace.cues()` produces. */
 const REEL = [
@@ -71,13 +63,12 @@ function fakeClock() {
   };
 }
 
-/** Run the whole reel at a speed and report what was shown and what was waited. */
-function playAll(speed) {
+/** Run the whole reel and report what was shown and what was waited. */
+function playAll() {
   const clock = fakeClock();
   const shown = [];
   const playback = createPlayback({
     show: (cue) => shown.push(cue),
-    speed,
     schedule: clock.schedule,
   });
   playback.push(...REEL);
@@ -86,30 +77,15 @@ function playAll(speed) {
   return { shown, delays: clock.delays, playback };
 }
 
-test('changing the speed changes the waits and nothing else', () => {
-  const slow = playAll(MIN_SPEED);
-  const normal = playAll(1);
-  const fast = playAll(MAX_SPEED);
+test('each wait is the dwell the table gives that step, not anything else on the cue', () => {
+  const { delays } = playAll();
 
-  /* The reel is the reel. Speed is not allowed to skip a step, reorder one, or
-     merge two — which is what a transport that paced from the recording would
-     do the moment the recording came off an in-memory relay. */
-  for (const run of [slow, fast]) {
-    assert.deepEqual(run.shown, normal.shown);
-    assert.equal(run.delays.length, normal.delays.length);
-  }
-
-  /* And the waits move by exactly the multiplier. Checked as a ratio against
-     the speed-1 run rather than against numbers typed here, so the dwell table
-     can be retuned without this test needing to be told. */
-  normal.delays.forEach((base, index) => {
-    assert.equal(slow.delays[index], base / MIN_SPEED);
-    assert.equal(fast.delays[index], base / MAX_SPEED);
-  });
-
-  /* The dwell really did come from the table, not from anything in the cue. */
+  /* Checked against the table by step name rather than against numbers typed
+     here, so the dwell table can be retuned without this test needing to be
+     told. The cues on `REEL` carry `actor`, `from`, and `to` alongside `step`,
+     so this is also the check that none of those reached the wait. */
   assert.deepEqual(
-    normal.delays,
+    delays,
     REEL.map((cue) => STEP_DWELL_MS[cue.step] ?? DEFAULT_DWELL_MS),
   );
 });
@@ -149,7 +125,7 @@ test('reads nothing out of a cue except its step', () => {
 });
 
 test('holds the last cue for as long as any other', () => {
-  const { delays, shown } = playAll(1);
+  const { delays, shown } = playAll();
 
   assert.equal(shown.length, REEL.length);
   /* One wait per cue, the last one included. Waiting before showing rather than
@@ -262,17 +238,6 @@ test('the figure holds no clock of its own', async () => {
   }
 });
 
-test('clamps the speed rather than accepting a useless one', () => {
-  const playback = createPlayback({ show: () => {} });
-
-  playback.setSpeed(1000);
-  assert.equal(playback.speed, MAX_SPEED);
-  playback.setSpeed(0);
-  assert.equal(playback.speed, MIN_SPEED);
-  playback.setSpeed(Number.NaN);
-  assert.equal(playback.speed, 1, 'a speed that is not a number should fall back to real time');
-});
-
 /*
  * The transport is reached for after the protocol has finished, not during it.
  *
@@ -284,7 +249,7 @@ test('clamps the speed rather than accepting a useless one', () => {
  * actually arrives in, not about a reel caught mid-flight.
  */
 test('a reel that has played through plays again rather than sitting spent', () => {
-  const { playback, shown } = playAll(1);
+  const { playback, shown } = playAll();
   assert.equal(playback.state, 'done');
   assert.equal(shown.length, REEL.length, 'the reel should have run dry before this is a test of replay');
 
@@ -322,6 +287,56 @@ test('a reel that has played through steps from the top', () => {
 
   playback.step();
   assert.equal(shown.at(-1).step, REEL[1].step, 'a second step should advance rather than rewind again');
+});
+
+test('a replay says so before it shows its first frame again', () => {
+  const clock = fakeClock();
+  const shown = [];
+  /* What each rewind saw of the reel at the moment it fired. The scene clears
+     itself here, so a rewind announced after the first cue had already been
+     shown would wipe the frame it was announcing. */
+  const rewoundAfter = [];
+  const playback = createPlayback({
+    show: (cue) => shown.push(cue.step),
+    rewind: () => rewoundAfter.push(shown.length),
+    schedule: clock.schedule,
+  });
+
+  playback.push(...REEL);
+  playback.play();
+  clock.drain();
+  assert.equal(playback.state, 'done');
+  assert.deepEqual(rewoundAfter, [], 'the first watch is not a replay and must not announce one');
+  const afterFirstWatch = shown.length;
+
+  playback.play();
+  clock.drain();
+  assert.deepEqual(
+    rewoundAfter,
+    [afterFirstWatch],
+    'a second watch of a spent reel announced no rewind, so it drew on top of the first',
+  );
+
+  /* Only where the cursor actually moves. A push that resumes a dry reel and a
+     step that is not at the end both continue rather than start over. */
+  playback.push(REEL[0]);
+  clock.drain();
+  playback.step();
+  assert.equal(rewoundAfter.length, 2, 'a step from the end is a replay and had to announce one');
+  playback.step();
+  assert.equal(rewoundAfter.length, 2, 'a step that merely advanced announced a replay');
+});
+
+test('an empty reel has no first frame to go back to', () => {
+  let rewinds = 0;
+  const playback = createPlayback({
+    show: () => {},
+    rewind: () => (rewinds += 1),
+    schedule: fakeClock().schedule,
+  });
+  playback.play();
+  playback.step();
+  assert.equal(rewinds, 0, 'a reel with nothing on it announced a replay of nothing');
 });
 
 test('a cue arriving mid-run extends the reel instead of rewinding it', () => {

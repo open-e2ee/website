@@ -26,9 +26,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
-import { MAX_SPEED, MIN_SPEED, createPlayback } from '../src/lib/demo/playback.ts';
+import { createPlayback } from '../src/lib/demo/playback.ts';
 import { startDemoRun } from '../src/lib/demo/run.ts';
-import { FIELD_NAMES, envelopeFields } from '../src/lib/demo/stage-view.ts';
+import { SEALED_SENDER_HIDES } from '../src/lib/demo/scene-view.ts';
 import { STEPS } from '../src/lib/demo/trace.ts';
 
 const OUTBOUND = 'Ship it Thursday. The staging key rotates at 09:00 UTC.';
@@ -267,25 +267,29 @@ test('hands over the live envelope the relay held, not a description of it', asy
 });
 
 /*
- * The drawing prints four envelope fields by name, which is the one place in
- * the demo where a field name is written down rather than iterated. A name that
- * stops matching the envelope does not throw and does not blank the drawing
- * loudly — `envelopeFields()` reads `undefined` and prints an empty slot beside
- * a label that still looks right. That is the failure this exists to make loud,
- * and it can only be caught against a real envelope, because the SDK's own
- * declaration is a superset of what a send actually puts on the object.
+ * The inspector prints every field the envelope carries, by iterating it — so
+ * it cannot name a field that does not exist. The one place a field name is
+ * still written down by hand is the sealed-sender lens, `SEALED_SENDER_HIDES`,
+ * which is a *claim* about which fields a sealed send removes rather than a
+ * description of what is there. A name in it that stops matching the envelope
+ * does not throw and does not blank the inspector loudly — the lens marks
+ * nothing, the note underneath still says "0 struck fields", and a page that
+ * has stopped teaching its point looks entirely correct. That is the failure
+ * this exists to make loud, and it can only be caught against a real envelope,
+ * because the SDK's own declaration is a superset of what a send actually puts
+ * on the object.
  */
-test('prints only envelope fields a real send produced', async () => {
+test('sealed sender only claims to hide fields a real send produced', async () => {
   await withRun(async (run) => {
     const sent = await run.send('a', OUTBOUND);
     const keys = new Set(Object.keys(sent.envelope));
-    const missing = FIELD_NAMES.filter((field) => !keys.has(field));
+    const missing = SEALED_SENDER_HIDES.filter((field) => !keys.has(field));
     assert.deepEqual(
       missing,
       [],
-      `the drawing labels ${missing.join(', ')}, which a real envelope does not carry — the ` +
-        `drawing would print an empty value under a label that still reads correctly. The ` +
-        `envelope has: ${[...keys].join(', ')}`,
+      `sealed sender claims to hide ${missing.join(', ')}, which a real envelope does not carry ` +
+        `— the lens would mark nothing, the note would still say "0 struck fields", and the page ` +
+        `would look entirely correct while teaching nothing. The envelope has: ${[...keys].join(', ')}`,
     );
   });
 });
@@ -350,76 +354,168 @@ test('cues carry no measurement at all', async () => {
   });
 });
 
+/**
+ * The console's own projection from a `TraceEvent` to what `DemoScene.astro`
+ * is shown, replicated here rather than imported.
+ *
+ * The real one is `toCue()` inside `DemoConsole.astro`, and it is not reachable
+ * from a Node test: it is a function defined in an `.astro` component's script,
+ * which only ever runs in a browser, and it closes over running counters
+ * (`derived`, `published`) that are not exported either. This copy exists so
+ * that the structural check below runs against cues built the same way the
+ * console builds them — from a real recording, with the same running counts —
+ * rather than against a shape invented for the test. Keep it in step with
+ * `toCue()` if that function's shape changes; a drift here would let this test
+ * pass against a cue the console no longer produces.
+ */
+function sceneCuesFrom(events) {
+  const derived = { a: 0, b: 0 };
+  const published = { a: 0, b: 0 };
+  const device = (actor) => (actor === 'a' || actor === 'b' ? actor : null);
+
+  return events.map((event) => {
+    const detail = event.detail ?? {};
+    const from = device(event.from);
+    const to = device(event.to);
+    const base = {
+      step: event.step,
+      actor: event.actor,
+      ...(event.from === undefined ? {} : { from: event.from }),
+      ...(event.to === undefined ? {} : { to: event.to }),
+    };
+
+    if (event.step === 'encrypted' && from) derived[from] += 1;
+    if (event.step === 'opened' && to) derived[to] += 1;
+    const turned = { ratchet: { a: derived.a, b: derived.b } };
+
+    if (event.step === 'bundles-published') {
+      const publicKeys = detail.publicKeys;
+      const actor = device(event.actor);
+      if (actor && typeof publicKeys === 'number') published[actor] = publicKeys;
+      return {
+        ...base,
+        ...turned,
+        bundles: published.a + published.b,
+        keys: { a: published.a, b: published.b },
+      };
+    }
+    if (event.step === 'encrypted' && from && typeof detail.text === 'string') {
+      return { ...base, ...turned, sentence: { side: from, text: detail.text } };
+    }
+    if (event.step === 'stored-at-relay') {
+      const envelope = detail.envelope ?? {};
+      return {
+        ...base,
+        ...turned,
+        meta: {
+          ...(typeof envelope.targetUserId === 'string' ? { to: envelope.targetUserId } : {}),
+          ...(typeof envelope.senderUserId === 'string' ? { from: envelope.senderUserId } : {}),
+        },
+      };
+    }
+    if (event.step === 'opened' && to) {
+      const text = typeof detail.decrypted?.content === 'string' ? detail.decrypted.content : '';
+      return { ...base, ...turned, sentence: { side: to, text } };
+    }
+    return { ...base, ...turned };
+  });
+}
+
+/**
+ * The fields on a scene cue whose number is a count of things to draw rather
+ * than a measurement: how many notches a ratchet has turned, how many key
+ * bundles the relay is holding, how many key shapes a device has. Bounded by
+ * the real protocol state, but not by anything small — a published-key count
+ * can run into the hundreds, the same order of magnitude as a byte count — so
+ * telling a count from a measurement by its size would not hold. It has to be
+ * told by which field it travelled on, which is what this list is for.
+ */
+const PRESENTATION_COUNT_FIELDS = new Set(['ratchet', 'bundles', 'keys']);
+
+/**
+ * Fail loudly if anything but a string (or a plain nesting of strings) is
+ * found at `path`, which is the shape everything on a cue must have except the
+ * three fields above.
+ */
+function assertNoMeasurement(value, path) {
+  if (value === undefined || typeof value === 'string') return;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => assertNoMeasurement(item, `${path}[${index}]`));
+    return;
+  }
+  if (value !== null && typeof value === 'object') {
+    for (const [key, item] of Object.entries(value)) assertNoMeasurement(item, `${path}.${key}`);
+    return;
+  }
+  assert.fail(
+    `cue.${path} is ${JSON.stringify(value)} (a ${typeof value}), not a string — a measurement ` +
+      'reached the drawing, which a speed control could someday be asked to scale',
+  );
+}
+
 /*
  * The transport's whole promise, checked end to end against a real recording
  * rather than against the hand-written reel in `demo-playback.test.mjs`.
  *
- * That test proves the pace layer shows the same cues at any speed. This one
- * proves the thing a reader can actually see: the cues carry the drawing's
- * *printed figures* — the byte count and the timestamp under the relay — and
- * those were formatted into strings by `envelopeFields()` before anything
- * reached the reel. So a speed has no number in scope to scale, and the two
- * runs below are identical character for character rather than merely
- * equivalent.
+ * That was checkable as "the same cues at any speed" when the transport had a
+ * speed; it no longer does. What the two-clock guarantee actually rests on is
+ * narrower and stronger: no cue that reaches the drawing carries a measurement
+ * at all, so there is nothing left for a future pacing knob to move even by
+ * accident.
  *
- * A cue built the way the console builds one, so the payload under test is the
- * payload that ships.
+ * That claim is not "no cue carries a number" — `toCue()` puts real numbers on
+ * a cue on purpose, to turn a ratchet's notches and to size a key list, and
+ * those are presentation state rather than anything measured. The claim is
+ * narrower: every number on a cue lives on one of three named fields
+ * (`ratchet`, `bundles`, `keys`), and every other value, at any depth, is a
+ * string. A byte count or a millisecond figure arriving on any other field —
+ * `sentence`, `meta`, or a fifth field nobody named yet — is exactly the
+ * regression this guards, and it is checked by enumerating every value on
+ * every cue rather than by naming the fields a measurement might use, because
+ * naming them is a list a new one can be added to without this test noticing.
+ *
+ * A cue built the way the console builds one (`sceneCuesFrom`, above), so the
+ * payload under test is the payload that ships.
  */
-test('every printed figure is the same at a quarter speed and at four times', async () => {
+test('no cue that reaches the drawing carries a measurement', async () => {
   await withRun(async (run) => {
     await run.send('a', OUTBOUND);
 
-    const reel = run.trace.events.map((event) => {
-      const base = { step: event.step, actor: event.actor };
-      if (event.step !== 'stored-at-relay') return base;
-      return {
-        ...base,
-        fields: envelopeFields(event.detail.envelope, event.measures.ciphertextBytes),
-      };
-    });
+    const reel = sceneCuesFrom(run.trace.events);
     assert.ok(
-      reel.some((cue) => cue.fields),
-      'the recording produced no stored row, so this test compared two reels with no figures in them',
+      reel.some((cue) => cue.step === 'stored-at-relay'),
+      'the recording produced no stored row, so this test checked a reel with no relay cue in it',
     );
 
-    /** Play the whole reel at one speed, with the waits under the test's control. */
-    const playAt = (speed) => {
-      let pending = null;
-      const shown = [];
-      const playback = createPlayback({
-        show: (cue) => shown.push(cue),
-        speed,
-        schedule: (fire) => {
-          pending = fire;
-          return () => {
-            pending = null;
-          };
-        },
-      });
-      playback.push(...reel);
-      playback.play();
-      /* Bounded rather than a bare `while`: a reel that rescheduled itself
-         without advancing should fail this test, not hang the suite. */
-      for (let turn = 0; pending && turn < 100; turn += 1) {
-        const fire = pending;
-        pending = null;
-        fire();
-      }
-      return shown;
-    };
+    /* No fake clock is needed to time anything here, only to keep the reel
+       from waiting out its real dwells — so the schedule fires at once and
+       the loop below is bounded rather than a bare `while`, so a reel that
+       rescheduled itself without advancing fails this test instead of
+       hanging the suite. */
+    let pending = null;
+    const shown = [];
+    const playback = createPlayback({
+      show: (cue) => shown.push(cue),
+      schedule: (fire) => {
+        pending = fire;
+        return () => {
+          pending = null;
+        };
+      },
+    });
+    playback.push(...reel);
+    playback.play();
+    for (let turn = 0; pending && turn < 100; turn += 1) {
+      const fire = pending;
+      pending = null;
+      fire();
+    }
 
-    const slow = playAt(MIN_SPEED);
-    const fast = playAt(MAX_SPEED);
-
-    assert.equal(slow.length, reel.length, 'the slow run did not reach the end of the reel');
-    assert.deepEqual(fast, slow, 'the drawing printed different figures at a different speed');
-
-    /* And no number reached the reel to be scaled in the first place, which is
-       the reason the equality above holds rather than a coincidence of it. */
-    for (const cue of slow) {
-      for (const value of [...Object.values(cue), ...(cue.fields ?? [])]) {
-        if (Array.isArray(value)) continue;
-        assert.equal(typeof value, 'string', `a stage cue carried ${JSON.stringify(value)}`);
+    assert.equal(shown.length, reel.length, 'not every cue on the reel reached the drawing');
+    for (const [index, cue] of shown.entries()) {
+      for (const [key, value] of Object.entries(cue)) {
+        if (PRESENTATION_COUNT_FIELDS.has(key)) continue;
+        assertNoMeasurement(value, `${index}.${key}`);
       }
     }
   });

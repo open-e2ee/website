@@ -103,17 +103,45 @@ test('reads the installed SDK, or these tests check nothing', () => {
   assert.ok(envelopeFields.size >= 10, `Envelope declares ${envelopeFields?.size} fields`);
 });
 
-test('names no envelope field it intends to print', () => {
-  const named = [...writtenNames].filter(
-    (name) => envelopeFields.has(name) && !heldBack.has(name),
+/*
+ * The fields the panel says it names, read out of the panel for the same reason
+ * `heldBack` is. Three of them cannot be derived: something has to say which
+ * envelope field carries the recipient. The point of the declaration is that
+ * they are countable and checkable rather than scattered through the source,
+ * so the two tests below hold it to both halves of that bargain.
+ */
+const named = new Set(
+  [
+    ...(source.match(/NAMED_FIELDS = \{([^}]*)\}/s)?.[1] ?? '').matchAll(/'([^']+)'/g),
+  ].map((match) => match[1]),
+);
+
+test('names no envelope field outside the declaration that lists them', () => {
+  const stray = [...writtenNames].filter(
+    (name) => envelopeFields.has(name) && !heldBack.has(name) && !named.has(name),
   );
   assert.deepEqual(
-    named,
+    stray,
     [],
-    `the panel names ${named.join(', ')} in its own source. The metadata list has to come from ` +
-      `Object.entries of the live envelope; a field named here is a field that survives the SDK ` +
-      `removing it, and a field the SDK adds will never appear beside it.`,
+    `the panel names ${stray.join(', ')} in its own source without declaring it in NAMED_FIELDS. ` +
+      `The metadata list has to come from Object.entries of the live envelope; a field named here ` +
+      `is a field that survives the SDK removing it, and a field the SDK adds will never appear ` +
+      `beside it.`,
   );
+});
+
+test('every envelope field it names still exists in the installed SDK', () => {
+  assert.ok(named.size > 0, 'NAMED_FIELDS must be readable from the panel source');
+  for (const field of named) {
+    assert.ok(
+      envelopeFields.has(field),
+      `the panel reads "${field}" off the envelope, and ` +
+        `@open-e2ee/signal-protocol-sdk@${surface.version} does not declare it on Envelope. ` +
+        `Nothing throws: the addressing on the drawn envelope falls back to an em dash and the ` +
+        `note under the row quotes undefined, on the one panel whose job is not overstating the ` +
+        `evidence.`,
+    );
+  }
 });
 
 test('holds back only fields the installed Envelope actually declares', () => {
