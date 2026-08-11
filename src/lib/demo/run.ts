@@ -1,10 +1,10 @@
 /*
  * Two devices and a relay, in one page, recorded.
  *
- * The demo used to show one end of a conversation and borrow the other from a
- * second tab. It now shows both, side by side, which changes what the code
- * underneath has to be: not a session with a near end and a far end, but two
- * peers and a middle, instrumented the same way in both directions.
+ * Both ends of the conversation are on screen at once, side by side, and that
+ * is what decides the shape of the code underneath: not a session with a near
+ * end and a far end, but two peers and a middle, instrumented the same way in
+ * both directions.
  *
  * ------------------------------------------------ why not `driver.ts` ---
  *

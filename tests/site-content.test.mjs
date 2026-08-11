@@ -3284,6 +3284,49 @@ test('shows a generic bucket for S3 only while there is no AWS client to name', 
   assert.ok(manifest.exports['./remote/object-store/s3'], 's3 object store export is gone');
 });
 
+/*
+ * Every handwritten file of the demo, for the vocabulary rules below.
+ *
+ * The two roots are the whole demo. `index.astro` is deliberately not swept: it
+ * holds one paragraph of lead, and sweeping it would bring the demo's
+ * vocabulary rules to the whole marketing page, which is a different decision
+ * than these tests make.
+ */
+async function demoSources() {
+  const roots = ['../src/lib/demo/', '../src/components/demo/'];
+  const sources = [];
+  for (const root of roots) {
+    const dir = new URL(root, import.meta.url);
+    for (const name of await readdir(dir, { recursive: true })) {
+      if (/\.(?:ts|astro|mjs)$/.test(name)) sources.push([root + name, new URL(name, dir)]);
+    }
+  }
+
+  /* A glob that quietly matched nothing would pass every caller forever. The
+     floor is the tree's measured size — 22 files on 2026-08-10 — rather than a
+     loose lower bound. Adding a file keeps this passing; losing one is what it
+     is for. */
+  assert.ok(
+    sources.length >= 22,
+    `expected the whole demo source tree, found ${sources.length} files`,
+  );
+  return sources;
+}
+
+/** Every line of `sources` a pattern matches, labelled for the failure message. */
+async function linesMatching(sources, pattern, keep = () => true) {
+  const found = [];
+  for (const [label, url] of sources) {
+    const text = await readFile(url, 'utf8');
+    for (const hit of text.matchAll(pattern)) {
+      if (!keep(hit, text)) continue;
+      const line = text.slice(0, hit.index).split('\n').length;
+      found.push(`${label}:${line}: ${text.split('\n')[line - 1].trim()}`);
+    }
+  }
+  return found;
+}
+
 test("the demo's own source calls the relay a relay", async () => {
   /*
    * `docs/messaging.md` §4 fixes the vocabulary: the E2EE role is the **relay**,
@@ -3317,27 +3360,7 @@ test("the demo's own source calls the relay a relay", async () => {
    * changing the SDK's message, not this site's copy, and it belongs to the
    * vocabulary pass over the SDK's API surface and its rendered errors.
    */
-  const roots = ['../src/lib/demo/', '../src/components/demo/'];
-  const sources = [];
-  for (const root of roots) {
-    const dir = new URL(root, import.meta.url);
-    for (const name of await readdir(dir, { recursive: true })) {
-      if (/\.(?:ts|astro|mjs)$/.test(name)) sources.push([root + name, new URL(name, dir)]);
-    }
-  }
-  /* The two roots above are the whole demo. `index.astro` is deliberately not
-   * swept: it holds one paragraph of lead and would bring the demo's vocabulary
-   * rule to the whole marketing page, which is a different decision than this
-   * test makes. */
-
-  /* A glob that quietly matched nothing would pass this test forever. The floor
-     is the tree's measured size — 22 files on 2026-08-10 — rather than a loose
-     lower bound. Adding a file keeps this passing; losing one is what it is
-     for. */
-  assert.ok(
-    sources.length >= 22,
-    `expected the whole demo source tree, found ${sources.length} files`,
-  );
+  const sources = await demoSources();
 
   /*
    * Bare "server" only. A match touching an identifier character on either side
@@ -3346,20 +3369,70 @@ test("the demo's own source calls the relay a relay", async () => {
    * is Astro's meaning, not the E2EE role, and is left alone.
    */
   const BARE_SERVER = /(?<![\w$])servers?(?![\w$])/gi;
-  const found = [];
-  for (const [label, url] of sources) {
-    const text = await readFile(url, 'utf8');
-    for (const hit of text.matchAll(BARE_SERVER)) {
-      if (/^-rendered/i.test(text.slice(hit.index + hit[0].length))) continue;
-      const line = text.slice(0, hit.index).split('\n').length;
-      found.push(`${label}:${line}: ${text.split('\n')[line - 1].trim()}`);
-    }
-  }
+  const found = await linesMatching(
+    sources,
+    BARE_SERVER,
+    (hit, text) => !/^-rendered/i.test(text.slice(hit.index + hit[0].length)),
+  );
 
   assert.deepEqual(
     found,
     [],
     `the demo names the relay a "server" here — messaging.md §4 says relay:\n${found.join('\n')}`,
+  );
+});
+
+test("the demo's own source never makes a tab into a party", async () => {
+  /*
+   * The other half of the same vocabulary. A device is a device; the browser
+   * tab is where all of them happen to be running, and the two are not
+   * interchangeable words for the same thing. The demo said they were for a
+   * long time, because it was once built out of two real tabs talking over a
+   * `BroadcastChannel` and every name followed from that — "the other tab" was
+   * literally the second participant. That implementation is gone and the
+   * founder's brief was explicit about the wording that outlived it: say
+   * devices, device A, device B.
+   *
+   * The word itself stays legal, and that is the whole difficulty. "This relay
+   * runs in the reader's tab" is true, load-bearing, and printed on the page
+   * under the latency figures — it is what stops a reader reading sub-millisecond
+   * timings as a network measurement. A bare ban would delete the honest
+   * sentences along with the metaphor.
+   *
+   * So the rule is a whitelist of what may sit in front of a singular "tab":
+   * the article-and-possessive forms that describe *where the code is running*.
+   * Anything else — a plural, an ordinal, a side, a role — is the metaphor
+   * coming back, and a phrasing nobody anticipated fails closed rather than
+   * slipping through a blacklist of the ones we happened to think of.
+   */
+  const sources = await demoSources();
+
+  /* No identifier character either side, which is what keeps `tabindex`,
+     `data-tab`, `table` and `DwellTable` out of a rule about English. */
+  const BARE_TAB = /(?<![\w$-])(tabs?)(?![\w$-])/gi;
+
+  /* Where the code runs, never who is talking. `browser` is optional so that
+     "a browser tab" reads as one phrase rather than needing its own entry. */
+  const PLACE = /(?:\b(?:this|that|the|a|an|one|each|its|their|reader's|user's)\s+)(?:browser\s+)?$/i;
+
+  const found = await linesMatching(sources, BARE_TAB, (hit, text) => {
+    if (hit[1].toLowerCase() === 'tabs') return true;
+    /* "tab A" and "tab B" name participants from the other side of the word,
+       where nothing in front of it has to change. */
+    if (/^\s+[AB]\b/.test(text.slice(hit.index + hit[0].length))) return true;
+    /* Read the words in front of it, not the layout. A comment that wraps
+       between "the" and "tab" puts a newline and a ` * ` leader between them,
+       and the phrase is the same phrase either way. */
+    const before = text
+      .slice(Math.max(0, hit.index - 60), hit.index)
+      .replace(/\n\s*\*?[ \t]*/g, ' ');
+    return !PLACE.test(before);
+  });
+
+  assert.deepEqual(
+    found,
+    [],
+    `the demo makes a tab into a participant here — devices are devices:\n${found.join('\n')}`,
   );
 });
 
