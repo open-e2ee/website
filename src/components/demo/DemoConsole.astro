@@ -614,6 +614,21 @@ const TOGGLES = [
             braid: toggles.braid ? 'required' : 'disabled',
           },
         });
+        /*
+         * The recording starts before anything can subscribe to it.
+         *
+         * `startDemoRun` boots both devices and records `devices-ready` on its
+         * way, so by the time it resolves the first events are already in the
+         * trace and a bare `on()` would never see them. That is not a dropped
+         * frame: `devices-ready` is the step that brings the phones online and
+         * puts the first line in the log, so the demo came up with both devices
+         * reading "offline" through a whole successful key exchange.
+         *
+         * Replayed before subscribing rather than after, and with no `await`
+         * between the two, so no event can arrive in the gap and none is seen
+         * twice — `on()` delivers only what is appended after it.
+         */
+        for (const event of run.trace.events) record(event);
         run.trace.on(record);
         everStarted = true;
         say('');
