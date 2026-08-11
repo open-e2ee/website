@@ -277,7 +277,7 @@ const VIEWPORT = { width: 1280, height: 800 };
  * eight responses by this harness's own count. Three of the eight are the
  * demo's, at the sizes the build wrote to disk —
  *
- *   DemoConsole   8242 B  the controls, the transport and the inspector
+ *   DemoConsole   8196 B  the curtain, the settings and the stored row
  *   DemoLog       5175 B  the event log under the scene
  *   ScenarioList  3672 B  the four scenarios
  *
