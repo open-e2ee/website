@@ -2,9 +2,8 @@
  * What the scene does with a cue.
  *
  * `DemoScene.astro` owns every shape and every colour; this module owns where
- * things are and when they change. The split is the same one `stage-view.ts`
- * held: markup is built once at build time, and the browser only ever renames
- * a state or moves a node it was handed.
+ * things are and when they change: markup is built once at build time, and the
+ * browser only ever renames a state or moves a node it was handed.
  *
  * ---------------------------------------------------------------- travel ---
  *

@@ -14,8 +14,6 @@ import test from 'node:test';
 import tokens from '@open-e2ee/design/tokens' with { type: 'json' };
 import capture from '../src/data/carrier-capture.json' with { type: 'json' };
 import { checks, dependencies, reporting, specifications } from '../src/lib/assurance.mjs';
-import { RATCHET_STEPS } from '@open-e2ee/design/diagram';
-import { CAPTIONS, INCOMING_CAPTIONS } from '../src/lib/demo/figure.ts';
 import { codeSurfaces, codeThemes, shellSurface } from '../src/lib/code-theme.mjs';
 import { cssRules, ruleFor } from './css-rules.mjs';
 import {
@@ -3327,22 +3325,17 @@ test("the demo's own source calls the relay a relay", async () => {
       if (/\.(?:ts|astro|mjs)$/.test(name)) sources.push([root + name, new URL(name, dir)]);
     }
   }
-  /* `../src/pages/demo.astro` was pushed here explicitly until the route folded
-   * into the homepage. Nothing replaces it: everything that route held is now a
-   * component under the roots above, which they already sweep — the scenarios
-   * in `ScenarioList.astro`, the pairing and the transcript inside
-   * `LiveCarrierPanel.astro` since the stage absorbed `TwoTabSection.astro`.
-   * Pushing `index.astro` instead would have applied the demo's vocabulary rule
-   * to the whole marketing page, which is a different decision than this test
-   * makes. */
+  /* The two roots above are the whole demo. `index.astro` is deliberately not
+   * swept: it holds one paragraph of lead and would bring the demo's vocabulary
+   * rule to the whole marketing page, which is a different decision than this
+   * test makes. */
 
   /* A glob that quietly matched nothing would pass this test forever. The floor
-     is the tree's actual size rather than a loose lower bound: at 15 it had two
-     files of slack, which is exactly enough to delete both components the fold
-     moved here and still sweep green. Adding a file keeps this passing; losing
-     one is what it is for. */
+     is the tree's measured size — 22 files on 2026-08-10 — rather than a loose
+     lower bound. Adding a file keeps this passing; losing one is what it is
+     for. */
   assert.ok(
-    sources.length >= 17,
+    sources.length >= 22,
     `expected the whole demo source tree, found ${sources.length} files`,
   );
 
@@ -3477,184 +3470,15 @@ test('keeps the space on both sides of every inline code span', async () => {
   }
 
   /* A regex that stopped matching would pass on every file in the tree. The
-   * floor is the tree's measured count: 40 spans on 2026-08-10, down two from
-   * 42 on 2026-08-09, which was itself down six from the pre-cut tree — the
-   * spans that left with the hero's disclosure list. The two most recent went
-   * with `TwoTabSection.astro`, whose explanatory paragraph named
-   * `inMemoryStore()` and `inMemoryRelay()`; the section is now part of the
-   * demo panel and the panel's caption already names both.
+   * floor is the tree's measured count: 38 spans on 2026-08-10, the two most
+   * recent having left with `LiveCarrierPanel.astro`, whose caption named
+   * `inMemoryStore()` and `inMemoryRelay()` — the homepage's own caption above
+   * the demo names both.
    *
    * Re-measure and record the reason when this moves. The number is a tripwire
    * for a regex that has stopped matching, so it is only worth what its last
    * measurement was worth. */
-  assert.ok(spans >= 40, `expected to be scanning real code spans, counted ${spans}`);
-});
-
-test('keeps the demo figure, its captions and its visibility rules on one state list', async () => {
-  /*
-   * The figure is three files agreeing about nine names.
-   *
-   * `figure.ts` declares the states and the caption for each. `DemoFigure.astro`
-   * draws every state at build time and tags each shape with the states it
-   * belongs to. `global.css` decides which tagged shapes a state shows. Nothing
-   * at runtime checks that the three agree, and the failure is silent in the
-   * worst way: a state with no caption blanks the live region that is the whole
-   * of the figure for a screen reader, and a state with no CSS rule shows a
-   * reader an empty canvas under a caption describing what they should be
-   * seeing. Both render, neither throws, and `astro check` has nothing to say
-   * about a string that happens to be in one file and not another.
-   *
-   * `demo-smoke.mjs` proves the figure follows a real run, which is the other
-   * half. It can only prove it for the states that run reaches — this covers
-   * the list itself.
-   */
-  const source = await read('../src/lib/demo/figure.ts');
-  const states = [...source.matchAll(/^ {2}\| '([a-z-]+)';?$/gm)].map(([, state]) => state);
-  assert.ok(states.length >= 5, `expected to be reading the StageState union, found ${states}`);
-  assert.deepEqual(
-    states,
-    Object.keys(CAPTIONS),
-    'the states StageState declares and the states CAPTIONS answers for have drifted apart — ' +
-      'the missing side is a live region that goes blank when the figure reaches that state',
-  );
-
-  /* The caption is announced in full every time the state changes, so the brief
-     sets a ceiling on it. Twenty words is about five seconds of speech. Both
-     maps are held to it: a receiving tab hears the incoming one instead, and
-     it is the same live region and the same reader. */
-  for (const [name, map] of [
-    ['', CAPTIONS],
-    ['incoming ', INCOMING_CAPTIONS],
-  ]) {
-    for (const [state, caption] of Object.entries(map)) {
-      const words = caption.split(/\s+/).filter(Boolean);
-      assert.ok(
-        words.length <= 20,
-        `the ${name}"${state}" caption is ${words.length} words, over the 20-word budget: ${caption}`,
-      );
-    }
-  }
-
-  /*
-   * The incoming map overrides states rather than adding them.
-   *
-   * It is a `Partial`, so a typo in one of its keys is a caption that silently
-   * never applies — the receiving tab would keep hearing "opened on the second
-   * device" in the tab that is the second device. TypeScript cannot catch it
-   * either: every string in the union is a valid key whether or not the run
-   * reaches it.
-   */
-  for (const state of Object.keys(INCOMING_CAPTIONS)) {
-    assert.ok(
-      states.includes(state),
-      `INCOMING_CAPTIONS answers for "${state}", which is not a state the figure has`,
-    );
-    assert.notEqual(
-      INCOMING_CAPTIONS[state],
-      CAPTIONS[state],
-      `the incoming caption for "${state}" is the outgoing one, so the override says nothing`,
-    );
-  }
-
-  const astro = await read('../src/components/demo/DemoFigure.astro');
-
-  /* The part lists are suffixes of the state order — a shape that has appeared
-     stays drawn — and that is the claim the component's own comment makes.
-     Written out in full there rather than computed, so that the drawing reads
-     as markup; checked here so that the two spellings cannot part company. */
-  const suffix = (from) => states.slice(states.indexOf(from)).join(' ');
-  const listIn = (name) =>
-    (astro.match(new RegExp(`const ${name} =\\s*([\\s\\S]*?);`))?.[1] ?? '')
-      .replace(/['\s]+/g, ' ')
-      .trim();
-  for (const [name, from] of [
-    ['AFTER_READY', 'devices-ready'],
-    ['AFTER_SESSION', 'session-established'],
-    ['AT_RELAY', 'stored-at-relay'],
-  ]) {
-    assert.equal(
-      listIn(name),
-      suffix(from),
-      `${name} in DemoFigure.astro is no longer every state from "${from}" onward`,
-    );
-  }
-
-  /*
-   * Two states draw nothing, and that is deliberate rather than an omission:
-   * before the devices exist there is nothing on this canvas that has happened
-   * yet, and a figure that guessed would be drawing a claim the run has not
-   * made. Every other state must pair a `data-stage-state` with the matching
-   * `data-figure-part`, or it shows an empty canvas.
-   */
-  const DRAWS_NOTHING = ['idle', 'sdk-loading'];
-  const css = await read('../src/styles/global.css');
-  /* Keyed on `data-figure-part`, which is this figure's own attribute, and not
-   * on `data-stage-state` alone. The state attribute is the step name and
-   * nothing more, so any drawing driven by the same run carries it too; a
-   * selector filter that stopped at the state would match every such rule and
-   * report this figure as having several visibility rules when it has one. */
-  const shown = cssRules(css).filter(
-    (rule) =>
-      rule.selector.includes('[data-figure-part~=') && /display:\s*inline/.test(rule.body),
-  );
-  assert.equal(shown.length, 1, `expected one rule showing the figure's parts, found ${shown.length}`);
-  const pairs = [
-    ...shown[0].selector.matchAll(/\[data-stage-state='([a-z-]+)'\] \[data-figure-part~='([a-z-]+)'\]/g),
-  ];
-  assert.deepEqual(
-    pairs.map(([, state]) => state),
-    states.filter((state) => !DRAWS_NOTHING.includes(state)),
-    'a state can be reached that shows none of the figure — the visibility rule and the state ' +
-      'list disagree',
-  );
-  for (const [, state, part] of pairs) {
-    assert.equal(part, state, `the rule for "${state}" shows the parts of "${part}"`);
-  }
-
-  /*
-   * One accent, always. It is the only mark on the canvas a reader has to be
-   * able to find at a glance, and two of them at once is two answers to "where
-   * is this now". Nothing in the CSS enforces that — it holds because no state
-   * appears twice in the list that generates them, which is what this reads.
-   */
-  const accents = [...astro.matchAll(/\{ state: '([a-z-]+)',/g)].map(([, state]) => state);
-  assert.deepEqual(
-    accents,
-    states.filter((state) => !DRAWS_NOTHING.includes(state)),
-    'the accent list and the drawn states disagree — a repeated state lights two bars at once, ' +
-      'and a missing one leaves a state with nothing marked',
-  );
-  assert.match(
-    astro,
-    /class="demo-figure-accent"\s*\n\s*data-figure-part=\{accent\.state\}/,
-    'the accent bars are no longer tagged with their own single state, so more than one can be ' +
-      'visible at a time',
-  );
-
-  /*
-   * The ratchet run is a fourth party to the same agreement.
-   *
-   * `RATCHET_STEPS` in the diagram grammar decides how many steps the drawing
-   * emits, `figure.ts` clamps the counter to its own copy of that number, and
-   * `global.css` needs a rule per step to light one. A grammar that grew a
-   * fifth step would draw one nothing ever lights and clamp the counter one
-   * short of the drawing, in silence, in both directions at once.
-   */
-  assert.equal(
-    Number(source.match(/^const RATCHET_STEPS = (\d+);$/m)?.[1]),
-    RATCHET_STEPS,
-    'figure.ts clamps the ratchet counter to a different number of steps than the diagram ' +
-      'grammar draws',
-  );
-  const lit = [...css.matchAll(/\[data-figure-ratchet~='(\d+)'\] \[data-figure-step='(\d+)'\]/g)];
-  assert.deepEqual(
-    lit.map(([, count]) => Number(count)),
-    Array.from({ length: RATCHET_STEPS }, (_, index) => index + 1),
-    'the ratchet steps the stylesheet can light and the steps the drawing emits disagree',
-  );
-  for (const [, count, step] of lit) {
-    assert.equal(count, step, `the rule for ${count} lit steps lights step ${step}`);
-  }
+  assert.ok(spans >= 38, `expected to be scanning real code spans, counted ${spans}`);
 });
 
 test('the scene places the envelope at every step the run records', async () => {

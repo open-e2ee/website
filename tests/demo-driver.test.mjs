@@ -1,6 +1,6 @@
 /*
- * The driver is what the homepage panel, the failure scenarios, and the two-tab
- * relay all run. It composes the installed package's public API and nothing else — no
+ * The driver is what the homepage console and the failure scenarios both run.
+ * It composes the installed package's public API and nothing else — no
  * fork, no shim, no re-typed constant (invariant 1) — so these tests do a real
  * PQXDH handshake and a real Double Ratchet round trip against real
  * `inMemoryStore()` and `inMemoryRelay()` adapters. Nothing here is stubbed:
@@ -370,7 +370,8 @@ test('says so when the recipient has no device, instead of a TypeError', async (
  * driver can depend on that without anyone noticing, because every test passes
  * and every scenario works. It did. The envelope wait was closed the instant
  * `send()` resolved, which is correct only for a relay that has already
- * delivered by then, and the two-tab relay is the first one here that has not.
+ * delivered by then, and the late relay below is the first one here that has
+ * not.
  */
 
 test('completes a round trip when the relay delivers after the send resolves', async () => {

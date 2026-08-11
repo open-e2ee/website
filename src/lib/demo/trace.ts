@@ -51,8 +51,8 @@ export type Actor = 'a' | 'relay' | 'b';
  * The steps a run can pass through, in the order a complete run reaches them.
  *
  * The order of this union is the protocol's order and is load-bearing: it is
- * what the figure's suffix lists and the stage's CSS are checked against, the
- * same contract `figure.ts` has always held.
+ * what the scene's step table and the console's own step list are checked
+ * against.
  *
  * Two of these are intervals rather than instants, and they are honest ones.
  * `in-transit` is the gap between this device handing over an envelope and the

@@ -216,15 +216,16 @@ test('reset drops the reel and shows nothing', () => {
   assert.equal(shown.length, after);
 });
 
-test('the figure holds no clock of its own', async () => {
-  const source = await readFile(new URL('../src/lib/demo/figure.ts', import.meta.url), 'utf8');
+test('the scene holds no clock of its own', async () => {
+  const source = await readFile(new URL('../src/lib/demo/scene-view.ts', import.meta.url), 'utf8');
 
-  /* `figure.ts` says in its header that it has no clock, and that claim is the
-     whole reason this module exists. A timer growing back in there would not
-     break anything visible — it would quietly give the drawing a second opinion
-     about pacing, which is the defect this seam was drawn to prevent, and it
-     would read as correct in review. So the claim is checked rather than
-     trusted.
+  /* The scene animates — the envelope crosses the page — and it still owns no
+     clock: the flight time arrives as an argument and is written to a custom
+     property for CSS to spend. That is the whole seam. A timer growing back in
+     there would not break anything visible; it would quietly give the drawing a
+     second opinion about pacing, which is the defect this split was drawn to
+     prevent, and it would read as correct in review. So the claim is checked
+     rather than trusted.
 
      Read out of the source because there is nothing to call: a clock that is
      never armed by the paths a test drives is exactly the one that gets past a
@@ -233,7 +234,7 @@ test('the figure holds no clock of its own', async () => {
     assert.equal(
       source.includes(timer),
       false,
-      `figure.ts reaches for ${timer}, so the pacing has two owners again`,
+      `scene-view.ts reaches for ${timer}, so the pacing has two owners again`,
     );
   }
 });

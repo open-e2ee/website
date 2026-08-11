@@ -13,10 +13,9 @@
  * `Object.entries` of the envelope, and these tests fail if anyone replaces
  * that with a list, because a list is the mechanism the drift needs.
  *
- * The subject moved from `LiveCarrierPanel.astro` to `DemoConsole.astro` with
- * the three-column layout. The guards moved with it rather than staying pointed
- * at a file no page renders, which would have left every one of them green
- * against nothing.
+ * The subject is `DemoConsole.astro`, which is the panel the homepage renders.
+ * A guard here that pointed at a file no page renders would be green against
+ * nothing.
  */
 
 import assert from 'node:assert/strict';

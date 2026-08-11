@@ -1,11 +1,11 @@
 /*
  * The bytes behind `envelope.ciphertext`, and the short strip of them the
- * figure prints.
+ * relay column prints.
  *
- * Two things live here rather than in `figure.ts`, because both of them are
- * facts about the SDK's output rather than about the drawing, and because
- * `demo-smoke.mjs` has to reproduce the strip exactly to prove the figure is
- * printing the row the panel beside it is printing. One function, imported by
+ * They live in a module of their own rather than in the component that prints
+ * them, because both are facts about the SDK's output rather than about the
+ * drawing, and because `demo-smoke.mjs` has to reproduce the strip exactly to
+ * prove the relay is printing the row it is holding. One function, imported by
  * both, is the only version of that arithmetic that cannot drift.
  *
  * ---------------------------------------------------------------- peeling ---
@@ -44,9 +44,9 @@ export const HEX_OFFSET = 160;
 /*
  * The strip's length, and how it wraps.
  *
- * Eighteen bytes is what the relay lane holds at a legible size —
- * `DemoFigure.astro` ships three `tspan`s and explains the arithmetic. Anything
- * beyond that is dropped, because the extra lines have nowhere to go.
+ * Eighteen bytes is what the relay column holds at a legible size: three lines
+ * of six, printed into the column's own `<pre>`. Anything beyond that is
+ * dropped, because the extra lines have nowhere to go.
  */
 export const HEX_BYTES = 18;
 export const HEX_PER_LINE = 6;
