@@ -55,13 +55,28 @@ const NAMES = { a: 'alice', b: 'bob' } as const;
  * These change what the *next* session negotiates, so they are offered before
  * a key exchange and go unavailable once one exists — a switch that appears to
  * change a session already running would be a lie about how key agreement
- * works. Defaults are the founder's: post-quantum on, because it is the high
- * value and the thing worth showing by default; braid off, because it is the
- * newest and least settled of the three.
+ * works. The two policy defaults are the founder's: post-quantum on, because it
+ * is the high value and the thing worth showing by default; braid off, because
+ * it is the newest of the modes on offer.
  *
- * `illustrative` marks a switch the scene draws but the SDK does not report a
- * running value for. The label under the group names them, so nothing on the
- * page implies a reading it does not have.
+ * Each note says what the *off* position does, and that is not decoration. Two
+ * of these three read, at a glance, like a switch that turns the post-quantum
+ * protection off, and neither one does:
+ *
+ *   - `postQuantum: 'compatible'` still runs PQXDH against any peer holding
+ *     ML-KEM material, and both devices on this page hold it. What it changes
+ *     is whether a peer with *none* is refused. So on this page the flip is
+ *     visible in policy and not in the session, and the note says so rather
+ *     than letting the reader infer a downgrade that did not happen.
+ *   - `braid: 'disabled'` selects the direct ML-KEM SPQR mode instead of the
+ *     Braid profile. Both are the post-quantum ratchet. The SDK publishes no
+ *     way at all to run without it, which is why there is no third switch here
+ *     for the Triple Ratchet: the scene reports what the session selected
+ *     instead, from the SDK's own selection event.
+ *
+ * Sealed sender is the odd one and is marked so on the page: the demo has no
+ * trust root to mint a sender certificate against, so that switch is a lens
+ * over the relay's real row rather than a session setting.
  */
 const TOGGLES = [
   {
@@ -69,21 +84,21 @@ const TOGGLES = [
     key: 'sealedSender',
     label: 'Sealed sender',
     on: true,
-    note: 'hides who sent it from the relay',
+    note: 'a lens over the relay’s real row — off shows the fields it would strike',
   },
   {
     id: 'post-quantum',
     key: 'postQuantum',
-    label: 'Post-quantum',
+    label: 'Post-quantum required',
     on: true,
-    note: 'ML-KEM alongside the classical handshake',
+    note: 'off allows a classical fallback for a peer with no ML-KEM; both devices here have it',
   },
   {
     id: 'braid',
     key: 'braid',
     label: 'ML-KEM braid',
     on: false,
-    note: 'a second post-quantum ratchet, braided in',
+    note: 'off runs the direct ML-KEM ratchet instead — post-quantum either way',
   },
 ] as const;
 ---
@@ -153,7 +168,9 @@ const TOGGLES = [
       The protocol runs at full speed and is recorded; what moves above is a replay of that
       recording. The transport changes the replay, never the crypto — and never a printed number.
       The switches change what the <em>next</em> session negotiates, so they settle before a key
-      exchange rather than during one.
+      exchange rather than during one. None of them turns the post-quantum ratchet off, because the
+      SDK publishes no way to: the ratchet under each device is captioned with what the session
+      actually selected, which the SDK reports when the keys are agreed.
     </p>
 
     <p class="demo-console-status" data-console-status role="status" aria-live="polite"></p>
@@ -756,6 +773,31 @@ const TOGGLES = [
 
       if (event.step === 'devices-ready') {
         return { ...base, ...turned };
+      }
+      /*
+       * Which ratchet ran, from the SDK rather than from the switches.
+       *
+       * `run.ts` puts the `ProtocolSelectionEvent` on this step, and this is the
+       * one place the demo can honestly caption the wheel: the switches say what
+       * was asked for, and the selection says what was agreed. They can differ —
+       * `postQuantum: 'compatible'` against a peer with no ML-KEM is exactly the
+       * case where they do — and the caption has to follow the second.
+       *
+       * Nullable all the way down and left that way. A callback that stops
+       * firing leaves the wheel captioned plainly rather than captioned wrongly,
+       * which is the direction that does not flatter us. `demo-run.test.mjs`
+       * holds the event itself against a real key agreement so that the absent
+       * case cannot quietly become the normal one.
+       */
+      if (event.step === 'session-established') {
+        const selection = detail.selection as { usedTripleRatchet?: unknown } | null | undefined;
+        return {
+          ...base,
+          ...turned,
+          ...(typeof selection?.usedTripleRatchet === 'boolean'
+            ? { ratchetKind: selection.usedTripleRatchet ? ('triple' as const) : ('double' as const) }
+            : {}),
+        };
       }
       if (event.step === 'bundles-published') {
         return {

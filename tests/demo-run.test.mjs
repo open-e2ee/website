@@ -388,6 +388,16 @@ function sceneCuesFrom(events) {
     if (event.step === 'opened' && to) derived[to] += 1;
     const turned = { ratchet: { a: derived.a, b: derived.b } };
 
+    if (event.step === 'session-established') {
+      const selection = detail.selection;
+      return {
+        ...base,
+        ...turned,
+        ...(typeof selection?.usedTripleRatchet === 'boolean'
+          ? { ratchetKind: selection.usedTripleRatchet ? 'triple' : 'double' }
+          : {}),
+      };
+    }
     if (event.step === 'bundles-published') {
       const publicKeys = detail.publicKeys;
       const actor = device(event.actor);
@@ -420,6 +430,73 @@ function sceneCuesFrom(events) {
     return { ...base, ...turned };
   });
 }
+
+/*
+ * The caption under each ratchet is the SDK's answer, not the page's.
+ *
+ * The reader is offered switches for the post-quantum policy and for the Braid
+ * mode, and neither of them turns the post-quantum ratchet off — the SDK
+ * publishes no way to. So the honest way to show the Triple Ratchet is to print
+ * what the session selected, and the only place that is stated is the
+ * `ProtocolSelectionEvent`. This is the check that the caption comes from there:
+ * a cue captioned from the switches instead would read the same on this page
+ * and would be a claim rather than a reading.
+ *
+ * It deliberately does not assert *which* ratchet the live run selected.
+ * Pinning `triple` here would make this file a second copy of the SDK's
+ * default, and the day that default moved the demo would be captioned correctly
+ * and this test would be the thing that went red.
+ *
+ * Which leaves a trap worth naming, because the first version of this test fell
+ * into it: reading `usedTripleRatchet` off the recording and comparing the cue
+ * to it proves nothing at all, since both sides are the same field. It agrees
+ * with itself however the caption is derived. So the property is checked by
+ * putting the *other* answer on the same recording and requiring the caption to
+ * follow it — a caption pinned to a constant, or read from the switches, cannot
+ * survive that and a tautology cannot detect it.
+ */
+test('the ratchet each wheel is captioned with is the one the SDK selected', async () => {
+  await withRun(async (run) => {
+    await run.exchangeKeys();
+    const events = run.trace.events;
+
+    const { selection } = events.find((event) => event.step === 'session-established').detail;
+    assert.equal(
+      typeof selection?.usedTripleRatchet,
+      'boolean',
+      'the selection event said nothing about the ratchet, so there is no caption to check',
+    );
+
+    /* One caption per session, on the step that agreed the keys. A caption
+       re-stated on a later cue would be a second source for one fact, and the
+       two would part company the first time either was edited. */
+    assert.deepEqual(
+      sceneCuesFrom(events)
+        .filter((cue) => cue.ratchetKind)
+        .map((cue) => cue.step),
+      ['session-established'],
+      'the ratchet caption is set by something other than the step that agreed the keys',
+    );
+
+    /* And it follows the event. The recording is real; only the one boolean the
+       caption claims to read is moved. */
+    for (const usedTripleRatchet of [true, false]) {
+      const swapped = events.map((event) =>
+        event.step === 'session-established'
+          ? {
+              ...event,
+              detail: { ...event.detail, selection: { ...selection, usedTripleRatchet } },
+            }
+          : event,
+      );
+      assert.equal(
+        sceneCuesFrom(swapped).find((cue) => cue.step === 'session-established').ratchetKind,
+        usedTripleRatchet ? 'triple' : 'double',
+        `the selection said usedTripleRatchet=${usedTripleRatchet} and the caption did not follow`,
+      );
+    }
+  });
+});
 
 /**
  * The fields on a scene cue whose number is a count of things to draw rather

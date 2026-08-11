@@ -40,6 +40,17 @@ export interface SceneCue extends Cue {
   readonly meta?: { readonly to?: string; readonly from?: string };
   /** How many message keys each device has derived. Turns the notches. */
   readonly ratchet?: Readonly<Record<Side, number>>;
+  /**
+   * Which ratchet the session selected, as the SDK reported it.
+   *
+   * Not a count and not a policy this page holds: it comes from the
+   * `ProtocolSelectionEvent` raised when the keys were agreed, so the caption
+   * under the wheel says what really ran rather than what the switches asked
+   * for. Absent until a session exists, and the wheel is captioned plainly
+   * until then — there is nothing to report about a ratchet with no session
+   * behind it.
+   */
+  readonly ratchetKind?: 'double' | 'triple';
   /** How many public bundles the relay is holding. */
   readonly bundles?: number;
   /** How many private keys each device holds. */
@@ -54,9 +65,18 @@ export interface SceneNames {
 export interface SceneToggles {
   /** Hide the sender from the relay. Draws the `from` field sealed. */
   readonly sealedSender: boolean;
-  /** Post-quantum key agreement. High value, so it is on by default. */
+  /**
+   * Fail closed on post-quantum key agreement. On by default: it is the high
+   * value and the SDK's own default. Off is `compatible`, which still runs
+   * PQXDH against a peer that has ML-KEM material — it is not a way to turn the
+   * post-quantum handshake off, and `DemoConsole.astro` says so on the page.
+   */
   readonly postQuantum: boolean;
-  /** ML-KEM braid. Off by default — it is the newest and least settled. */
+  /**
+   * The ML-KEM Braid ratchet profile. Off selects the direct ML-KEM mode
+   * instead, which is still the post-quantum ratchet. Off by default, as the
+   * newest of the two modes.
+   */
   readonly braid: boolean;
 }
 
@@ -146,6 +166,8 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const notches = (side: Side) => need<HTMLElement>(root, `[data-scene-ratchet-notches="${side}"]`);
   const ratchetCount = (side: Side) =>
     need<HTMLElement>(root, `[data-scene-ratchet-count="${side}"]`);
+  const ratchetLabel = (side: Side) =>
+    need<HTMLElement>(root, `[data-scene-ratchet-label="${side}"]`);
   const deviceState = (side: Side) =>
     need<HTMLElement>(root, `[data-scene-device-state="${side}"]`);
 
@@ -231,6 +253,32 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     ratchetCount(side).textContent = `${taken} key${taken === 1 ? '' : 's'}`;
   }
 
+  /**
+   * What the wheel is called before a session has been agreed.
+   *
+   * Read off the markup at mount rather than written here. A copy in this file
+   * would go on saying whatever it said when it was copied, and `clear()` would
+   * put back a word the component had stopped using.
+   */
+  const RATCHET_UNNAMED = ratchetLabel('a').textContent ?? '';
+
+  /**
+   * Caption both wheels with the ratchet the session selected.
+   *
+   * Both, from one event, because there is one session and both devices are in
+   * it — the SDK raises the selection on the device that agreed the keys, and
+   * what it selected is as true of the far end as of the near one. Captioning
+   * only the initiator would draw two devices running different ratchets, which
+   * is not a state this protocol has.
+   *
+   * `null` puts the neutral caption back, for a scene with no session behind it.
+   */
+  function nameRatchet(kind: 'double' | 'triple' | null): void {
+    for (const side of ['a', 'b'] as const) {
+      ratchetLabel(side).textContent = kind === null ? RATCHET_UNNAMED : `${kind} ratchet`;
+    }
+  }
+
   /*
    * The empty caption is kept and hidden rather than replaced and rebuilt.
    * Writing it here would put the relay's own wording in a second file, where
@@ -264,6 +312,10 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
 
       if (cue.keys) for (const side of ['a', 'b'] as const) fillKeys(side, cue.keys[side]);
       if (cue.ratchet) for (const side of ['a', 'b'] as const) turnRatchet(side, cue.ratchet[side]);
+      /* Set at the step that agreed the keys and left alone after it: every
+         later cue in the same session is still that session, and a caption
+         cleared between steps would flicker the one fact this line carries. */
+      if (cue.ratchetKind) nameRatchet(cue.ratchetKind);
       if (cue.bundles !== undefined) holdBundles(cue.bundles);
 
       if (cue.step === 'devices-ready') {
@@ -317,6 +369,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       mailbox.dataset.holding = 'false';
       mailboxBody.querySelector('.demo-relay-slot-empty')?.removeAttribute('hidden');
       holdBundles(0);
+      nameRatchet(null);
       for (const side of ['a', 'b'] as const) {
         chat(side).replaceChildren();
         fillKeys(side, 0);

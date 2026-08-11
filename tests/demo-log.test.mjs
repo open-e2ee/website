@@ -82,6 +82,43 @@ test('summarise does not throw when a nullable detail is absent', () => {
   );
 });
 
+/*
+ * The handshake and the ongoing ratchet are two separate choices, and the
+ * selection event reports them separately. The summary used to name only the
+ * handshake, which left "PQXDH" standing in for a ratchet it says nothing
+ * about — and the ratchet is the half a reader is looking for after being told
+ * the protocol is quantum-safe.
+ */
+test('the key-agreement line names the ratchet as well as the handshake', () => {
+  const established = (selection) => ({
+    step: 'session-established',
+    actor: 'a',
+    from: 'a',
+    to: 'b',
+    atMs: 0,
+    measures: { establishMs: 4 },
+    detail: { selection },
+  });
+
+  const triple = summarise(
+    established({ usedPQXDH: true, usedClassicalFallback: false, usedTripleRatchet: true }),
+  );
+  assert.match(triple, /PQXDH/);
+  assert.match(triple, /triple ratchet/);
+
+  /* The other answer is printed as readily. A line that could only ever say
+     "triple" would be a claim wearing a reading's clothes. */
+  const double = summarise(
+    established({ usedPQXDH: true, usedClassicalFallback: false, usedTripleRatchet: false }),
+  );
+  assert.match(double, /double ratchet/);
+
+  /* Said nothing is not the same as said no: an event with no opinion about the
+     ratchet leaves the line quiet rather than captioning it "double". */
+  const quiet = summarise(established({ usedPQXDH: true, usedClassicalFallback: false }));
+  assert.doesNotMatch(quiet, /ratchet/);
+});
+
 test('code-snippets.ts has an entry for every step the trace can record', () => {
   for (const step of STEPS) {
     assert.ok(step in CODE_SNIPPETS, `no code snippet entry for step ${step}`);

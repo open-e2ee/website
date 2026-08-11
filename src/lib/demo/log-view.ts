@@ -56,7 +56,13 @@ export function summarise(event: TraceEvent): string {
          summary that assumed it existed would throw on the one run where the
          callback did not fire, which is exactly the run worth seeing. */
       const detail = event.detail as
-        | { selection?: { usedPQXDH?: boolean; usedClassicalFallback?: boolean } | null }
+        | {
+            selection?: {
+              usedPQXDH?: boolean;
+              usedClassicalFallback?: boolean;
+              usedTripleRatchet?: boolean;
+            } | null;
+          }
         | undefined;
       const selection = detail?.selection;
       const agreement = selection
@@ -66,7 +72,15 @@ export function summarise(event: TraceEvent): string {
             ? 'PQXDH'
             : 'key agreement'
         : 'key agreement';
-      return `Session established with ${event.to ?? 'the other device'} — ${agreement} (${ms(measures.establishMs ?? 0)}).`;
+      /* The handshake and the ongoing ratchet are two separate choices and the
+         event reports them separately, so the line names both rather than
+         letting "PQXDH" stand in for a ratchet it says nothing about. Omitted
+         when the event did not say, which is not the same as saying no. */
+      const ratchet =
+        typeof selection?.usedTripleRatchet === 'boolean'
+          ? `, ${selection.usedTripleRatchet ? 'triple' : 'double'} ratchet`
+          : '';
+      return `Session established with ${event.to ?? 'the other device'} — ${agreement}${ratchet} (${ms(measures.establishMs ?? 0)}).`;
     }
 
     case 'encrypted': {
