@@ -157,15 +157,24 @@
     list-style: none;
   }
 
-  .demo-log-row {
+  /*
+   * A row and everything in it is built by the script below, so Astro's scoping
+   * attribute is never on any of it and a plain selector matches none of it.
+   * That is not a near-miss on spacing: the four cells are a grid, and with the
+   * grid inert they ran together into one unbroken string — `0.0 msdevice
+   * Adevices-readyalice came up as device 1`, which is the log reading as
+   * corrupted output rather than as a log. `:global()` is confined to the
+   * children; the list that holds them stays scoped.
+   */
+  .demo-log-rows :global(.demo-log-row) {
     border-bottom: 1px solid var(--oe-border);
   }
 
-  .demo-log-row:last-child {
+  .demo-log-rows :global(.demo-log-row:last-child) {
     border-bottom: none;
   }
 
-  .demo-log-row button {
+  .demo-log-rows :global(.demo-log-row button) {
     display: grid;
     grid-template-columns: auto auto auto minmax(0, 1fr);
     align-items: baseline;
@@ -180,21 +189,21 @@
     cursor: pointer;
   }
 
-  .demo-log-row button:hover,
-  .demo-log-row button[aria-pressed='true'] {
+  .demo-log-rows :global(.demo-log-row button:hover),
+  .demo-log-rows :global(.demo-log-row button[aria-pressed='true']) {
     background: var(--oe-surface-raised);
   }
 
-  .demo-log-row-at,
-  .demo-log-row-actor,
-  .demo-log-row-step {
+  .demo-log-rows :global(.demo-log-row-at),
+  .demo-log-rows :global(.demo-log-row-actor),
+  .demo-log-rows :global(.demo-log-row-step) {
     font-family: var(--oe-font-mono);
     font-size: 0.75rem;
     color: var(--oe-muted);
     white-space: nowrap;
   }
 
-  .demo-log-row-summary {
+  .demo-log-rows :global(.demo-log-row-summary) {
     min-width: 0;
     overflow-wrap: anywhere;
   }
