@@ -135,12 +135,25 @@ export interface DemoRun {
   /** The client for an actor, for the SDK calls a surface makes by hand. */
   client(actor: DeviceActor): SignalProtocolClient;
   /**
+   * Put both accounts' public prekey bundles on the relay.
+   *
+   * What a real device does when it comes online, before anyone has written
+   * anything: the bundle has to be on the relay for the first message to be a
+   * PQXDH handshake rather than a failure. Offered on its own because the demo
+   * starts here — the reader watches the shelves fill and the private halves
+   * stay behind before any conversation exists to explain it with.
+   *
+   * Idempotent, and the same call `send()` makes on its way past, so a caller
+   * that skips it loses nothing but the order.
+   */
+  publishBundles(): Promise<void>;
+  /**
    * Publish both bundles and give A a session with B.
    *
-   * Separate from `send()` because the reader is offered it as its own step:
-   * the key agreement is a thing that happens once, before any message, and a
-   * demo that hides it inside the first send teaches that the first send is
-   * where it happens.
+   * The key agreement without a message wrapped around it. `send()` does this
+   * itself for a device with no session, which is where a reader normally meets
+   * it; this is the same call reachable on its own, so a test can hold the
+   * agreement against a real fetched bundle without a sentence in the way.
    */
   exchangeKeys(): Promise<void>;
   send(from: DeviceActor, text: string): Promise<DemoSend>;
@@ -658,6 +671,10 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
 
     client(actor) {
       return devices[actor].client;
+    },
+
+    async publishBundles() {
+      await publishBundles();
     },
 
     async exchangeKeys() {

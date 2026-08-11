@@ -1503,15 +1503,6 @@ a:hover {
   gap: var(--oe-space-2);
 }
 
-/* Play, Step, Reset: their own small row, so the group `aria-label="Replay"`
-   names in the markup reads as one group rather than folding into the wider
-   controls row beside it. */
-.demo-console-replay {
-  display: flex;
-  align-items: center;
-  gap: var(--oe-space-2);
-}
-
 /*
  * The protocol switches. A native `<fieldset>` for the grouping semantics it
  * gives for free, with the UA border, margin and padding reset rather than
@@ -1605,44 +1596,24 @@ a:hover {
 }
 
 /*
- * The same three-column grid `.demo-scene` uses above it — `DemoScene.astro`
- * owns the values, copied here rather than shared, because the two live in
- * different components and a token would be the wrong tool for a number that
- * exists to be identical in exactly one other place. Same template, same gap,
- * same collapse: a reading has to sit under the device it describes, not
- * under whichever third of the row this grid divided evenly on its own.
+ * The inspector: the relay's stored row, full width under the scene.
+ *
+ * There was a three-column band here that restated the scene's own grid so each
+ * device's numbers could sit under it. The numbers are in the scene now, under
+ * the device that produced them, and what is left is a row of data rather than a
+ * fact about a column — so it takes the whole width and is drawn in the relay's
+ * own stroke, which is what marks it as the relay's row rather than a third
+ * device's.
  */
-.demo-console-readings {
-  display: grid;
-  grid-template-columns: 1fr minmax(0, 0.85fr) 1fr;
-  gap: var(--oe-space-6);
-  /* Each reading is as tall as what it holds. Stretching them to the relay
-     column's height draws two mostly-empty boxes, and an empty box is a claim
-     that something is missing. */
-  align-items: start;
-}
-
-@media (max-width: 60rem) {
-  .demo-console-readings {
-    grid-template-columns: 1fr;
-  }
-}
-
-.demo-console-reading {
+.demo-console-inspector {
   display: flex;
   flex-direction: column;
   gap: var(--oe-space-3);
   min-width: 0;
   padding: var(--oe-space-4);
-  border: 1px solid var(--oe-border);
+  border: 1px solid var(--oe-diagram-carrier-stroke);
   border-radius: var(--oe-radius-sm);
   background: var(--oe-surface);
-}
-
-/* The same stroke the relay rack in the scene above is drawn with, so this
-   reading reads as the relay's own rather than a third device's. */
-.demo-console-reading-relay {
-  border-color: var(--oe-diagram-carrier-stroke);
 }
 
 .demo-console-heading {
@@ -1742,42 +1713,6 @@ a:hover {
 
 .demo-console-row-note {
   margin: 0;
-  font-family: var(--oe-metadata-font-family);
-  font-size: var(--oe-metadata-size);
-  letter-spacing: var(--oe-metadata-tracking);
-  line-height: 1.5;
-  color: var(--oe-muted);
-}
-
-/*
- * The measurement each column is responsible for.
- *
- * It sits directly under its heading. An earlier version pushed the device
- * figures to the foot of a stretched column so all three would share a
- * baseline; the relay column is the inspector as well as a reading, and at ten
- * times the height of the other two it left `alice` and `bob` as a heading over
- * eight hundred pixels of nothing, with the figure below the fold. A shared
- * baseline is worth less than a figure the reader can see. Each carries its own
- * span in words beside it: two adjacent durations that overlap without saying
- * so invite exactly one wrong subtraction.
- */
-.demo-console-metric {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--oe-space-1);
-}
-
-/* Tabular figures: the number is replaced in place as the run proceeds, and
-   proportional digits would shift the text beside it on every write. */
-.demo-console-metric-value {
-  font-family: var(--oe-font-mono);
-  font-size: 1.25rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--oe-foreground);
-}
-
-.demo-console-metric-label {
   font-family: var(--oe-metadata-font-family);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);

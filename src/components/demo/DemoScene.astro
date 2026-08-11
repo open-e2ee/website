@@ -2,29 +2,26 @@
 import { STEPS } from '../../lib/demo/trace';
 
 /*
- * The scene: two devices, the relay between them, and a message that travels.
+ * The scene: two devices with the relay between them, and a message that
+ * travels through it.
  *
- * This replaces a drawing that pre-rendered every step and used CSS to show one
- * of them. That arrangement could not animate — nothing moved, it cut between
- * stills — and the reader was asked to infer travel from a pair of dotted lines
- * labelled "seal" and "open". The lines were a legend for a motion the page
- * never performed, which is why the mailbox idea never arrived: a relay only
- * reads as a mailbox once something is *put into it* and later taken out.
- *
- * So this is DOM rather than SVG, and the difference is not a preference. A
- * device here holds a real conversation with real reflowing bubbles and a real
- * text input; an envelope is one element that moves between three anchors under
- * a transform. Both are things the browser already does well and that SVG makes
- * expensive. The old geometry module solved a problem this arrangement does not
- * have.
+ * This is DOM rather than SVG, and the difference is not a preference. A device
+ * here holds a real conversation with real reflowing bubbles and a real text
+ * input; an envelope is one element that moves between anchors under a
+ * transform. Both are things the browser already does well and that SVG makes
+ * expensive.
  *
  * ------------------------------------------------------------- one picture ---
  *
- * There used to be two pictures — an abstract stage, and a separate row of chat
- * columns beneath it — showing the same event twice. The eye never fused them,
- * so the demo read as a diagram with a transcript rather than as two people
- * messaging. The chat is now *inside* the device it belongs to. There is one
- * scene, and every column of it is a place a thing can be.
+ * There is one exhibit and every column of it is a place a thing can be: the
+ * conversation is inside the device it belongs to, and the numbers for a device
+ * are under that device rather than in a separate band that showed the same
+ * event a second time.
+ *
+ * The order of the three columns is the order the message travels in, and it is
+ * markup order rather than a grid trick. A reader following the page in source
+ * order, or hearing it read aloud, meets the sender, then the relay, then the
+ * receiver.
  *
  * ----------------------------------------------------------- the payload ---
  *
@@ -34,7 +31,7 @@ import { STEPS } from '../../lib/demo/trace';
  * of one object the reader watches change, and the same object shows its
  * plaintext at both ends of the journey. Sealed and open are the same envelope,
  * so the reader learns that a message is not replaced at the boundary, it is
- * *wrapped*, which is the fact the dotted lines were failing to convey.
+ * *wrapped*.
  *
  * The two states are drawn with the diagram tokens rather than with black and
  * white, because `--oe-diagram-ciphertext-fill` inverts between light and dark
@@ -42,13 +39,34 @@ import { STEPS } from '../../lib/demo/trace';
  * A hard-coded white padlock would vanish on one of the two. So the sealed
  * payload is the ciphertext fill with `--oe-surface` on top of it, and those
  * two invert together.
+ *
+ * The envelope ends its journey by shrinking into the receiving device's
+ * conversation as the plaintext bubble appears there. It used to come to rest
+ * beside the phone and stay, which drew a message that had arrived and also
+ * still existed in the air.
  */
 
-/* Which side is which. Written once so the markup below cannot disagree with
-   itself about which device is which, and so the two are provably symmetric. */
-const SIDES = [
-  { side: 'a', label: 'Device A' },
-  { side: 'b', label: 'Device B' },
+/* Which column is which, in travel order. Written once so the markup below
+   cannot disagree with itself, and so the relay is structurally in the middle
+   rather than placed there by a column count. */
+const COLUMNS = ['a', 'relay', 'b'] as const;
+
+const LABELS = { a: 'Device A', b: 'Device B' } as const;
+
+/*
+ * The readings under each device.
+ *
+ * Every one is a device-side operation the SDK actually measured, recorded
+ * against the device that did the work — `run.ts` puts each measurement on its
+ * own actor, and `DemoConsole.astro` routes by that actor rather than by which
+ * column it would look tidy under. There is no network in any of them and none
+ * is simulated: this relay runs in the reader's tab.
+ */
+const DEVICE_METRICS = [
+  { key: 'publish', label: 'publish' },
+  { key: 'establish', label: 'key agreement' },
+  { key: 'send', label: 'seal + send' },
+  { key: 'trip', label: 'round trip' },
 ] as const;
 
 /* The relay's slots, in the order a message meets them. The bundle shelf is
@@ -59,6 +77,33 @@ const SLOTS = [
   { slot: 'mailbox', label: 'mailbox', empty: 'nothing waiting' },
 ] as const;
 
+/*
+ * The ratchet wheel, drawn from its own definition rather than from typed
+ * coordinates.
+ *
+ * A sawtooth outline and a pawl above it, because that is what makes the
+ * drawing say *one way*. The wheel used to be a strip of four teeth that lit up
+ * and then cleared on the fifth message, and a drawing that empties is a
+ * drawing that can go back — the one thing a ratchet cannot do. This wheel is
+ * turned by `scene-view.ts` through a rotation that only ever increases, so
+ * there is no state it can return to.
+ */
+const TEETH = 4;
+const WHEEL = { cx: 12, cy: 12, outer: 9.6, inner: 6.1 };
+const at = (radius: number, degrees: number) => {
+  const radians = (degrees * Math.PI) / 180;
+  return `${(WHEEL.cx + radius * Math.cos(radians)).toFixed(2)},${(
+    WHEEL.cy +
+    radius * Math.sin(radians)
+  ).toFixed(2)}`;
+};
+/* Out at a tooth tip, in along the tooth's back, then straight out again: the
+   radial edge is the face the pawl catches. */
+const WHEEL_PATH = `M${at(WHEEL.outer, 0)} ${Array.from({ length: TEETH }, (_, index) => {
+  const angle = ((index + 1) * 360) / TEETH;
+  return `L${at(WHEEL.inner, angle)} L${at(WHEEL.outer, angle)}`;
+}).join(' ')} Z`;
+
 /* The protocol steps, handed to the script so it never types a step name that
    `trace.ts` does not define. */
 const STEP_LIST = STEPS.join(' ');
@@ -66,117 +111,160 @@ const STEP_LIST = STEPS.join(' ');
 
 <div class="demo-scene" data-demo-scene data-scene-state="idle" data-scene-steps={STEP_LIST}>
   {
-    SIDES.map(({ side, label }) => (
-      <section class="demo-scene-column" data-scene-device={side} aria-label={label}>
-        <div class="demo-phone">
-          <div class="demo-phone-notch" aria-hidden="true"></div>
-          <div class="demo-phone-screen">
-            <header class="demo-phone-header">
-              <span class="demo-phone-who" data-scene-name={side}>
-                {label}
-              </span>
-              <span class="demo-phone-state" data-scene-device-state={side}>offline</span>
+    COLUMNS.map((column) =>
+      column === 'relay' ? (
+        <section class="demo-scene-column demo-scene-relay" aria-label="Relay">
+          <div class="demo-relay-rack">
+            <header class="demo-relay-header">
+              <span class="demo-relay-title">relay</span>
+              <span class="demo-relay-sub">never needs plaintext</span>
             </header>
 
-            <ol class="demo-phone-chat" data-scene-chat={side} aria-live="polite"></ol>
+            {SLOTS.map(({ slot, label, empty }) => (
+              <div class="demo-relay-slot" data-scene-slot={slot}>
+                <span class="demo-relay-slot-label">{label}</span>
+                <div class="demo-relay-slot-body" data-scene-slot-body={slot}>
+                  <span class="demo-relay-slot-empty">{empty}</span>
+                </div>
+              </div>
+            ))}
+          </div>
 
-            <div class="demo-phone-compose">
-              <label class="oe-visually-hidden" for={`demo-scene-compose-${side}`}>
-                Message from {label}
-              </label>
-              <input
-                class="demo-phone-input"
-                id={`demo-scene-compose-${side}`}
-                type="text"
-                autocomplete="off"
-                placeholder="Type a message"
-                data-scene-input={side}
-                disabled
-              />
-              <button
-                type="button"
-                class="demo-phone-send"
-                data-scene-send={side}
-                disabled
-                aria-label={`Send from ${label}`}
-              >
-                Send
-              </button>
+          {/*
+            "Stored", not "holding", because the mailbox above it is drawn empty
+            the moment the far device collects — and the relay still has the row,
+            which is the point the whole column is making. One word per fact: the
+            mailbox says what is waiting, this says what the relay has kept.
+          */}
+          <dl class="demo-readings" aria-label="Relay readings">
+            <div class="demo-reading">
+              <dt class="demo-reading-label">stored</dt>
+              <dd class="demo-reading-value" data-console-metric="relay-holding">
+                —
+              </dd>
+            </div>
+          </dl>
+        </section>
+      ) : (
+        <section
+          class="demo-scene-column"
+          data-scene-device={column}
+          aria-label={LABELS[column]}
+        >
+          <div class="demo-phone">
+            <div class="demo-phone-notch" aria-hidden="true" />
+            <div class="demo-phone-screen">
+              <header class="demo-phone-header">
+                <span class="demo-phone-who" data-scene-name={column}>
+                  {LABELS[column]}
+                </span>
+                <span class="demo-phone-state" data-scene-device-state={column}>
+                  offline
+                </span>
+              </header>
+
+              <ol class="demo-phone-chat" data-scene-chat={column} aria-live="polite" />
+
+              <div class="demo-phone-compose">
+                <label class="oe-visually-hidden" for={`demo-scene-compose-${column}`}>
+                  Message from {LABELS[column]}
+                </label>
+                <input
+                  class="demo-phone-input"
+                  id={`demo-scene-compose-${column}`}
+                  type="text"
+                  autocomplete="off"
+                  placeholder="Type a message"
+                  data-scene-input={column}
+                  disabled
+                />
+                <button
+                  type="button"
+                  class="demo-phone-send"
+                  data-scene-send={column}
+                  disabled
+                  aria-label={`Send from ${LABELS[column]}`}
+                >
+                  Send
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* The device's own key material. Filled forms are private and never
-            leave; the outlined ones on the relay's shelf are the public halves
-            of these. Keeping both on screen is what makes that difference
-            visible rather than asserted.
+          {/* The device's own key material. Filled forms are private and never
+              leave; the outlined ones on the relay's shelf are the public halves
+              of these. Keeping both on screen is what makes that difference
+              visible rather than asserted.
 
-            The shapes are a motif and the number is the fact — a device holds
-            two hundred and four of these, and drawing one shape each would be
-            a wall rather than a diagram. See `KEY_MOTIF` in `scene-view.ts`. */}
-        <div class="demo-device-keys" data-scene-keys={side}>
-          <span class="demo-device-keys-label">private keys</span>
-          <ul class="demo-device-keys-list" data-scene-keys-list={side}></ul>
-          <span class="demo-device-keys-count" data-scene-keys-count={side}>0</span>
-        </div>
+              The shapes are a motif and the number is the fact — a device holds
+              two hundred and four of these, and drawing one shape each would be
+              a wall rather than a diagram. See `KEY_MOTIF` in `scene-view.ts`. */}
+          <div class="demo-device-keys" data-scene-keys={column}>
+            <span class="demo-device-keys-label">private keys</span>
+            <ul class="demo-device-keys-list" data-scene-keys-list={column} />
+            <span class="demo-device-keys-count" data-scene-keys-count={column}>
+              0
+            </span>
+          </div>
 
-        {/* The ratchet. One notch per message key derived, so it visibly turns
-            as the conversation goes on rather than being claimed in prose.
+          {/* The ratchet, and it turns one way.
 
-            Four teeth that cycle, not four that fill up: a bar which saturates
-            at four would stop moving on the fifth message and teach a reader
-            that the ratchet had finished, which is the opposite of what a
-            ratchet does. The running total beside it is the number that keeps
-            growing.
+              The wheel is rotated by a quarter turn per message key derived and
+              the rotation is never reduced, so there is no frame in which it
+              goes back and none in which it stops. The pawl above it is why:
+              a reader who has seen one knows immediately which direction this
+              can move in.
 
-            The caption is filled in by `scene-view.ts` once a session exists,
-            from the selection event the SDK raises at key agreement — "triple
-            ratchet" when the post-quantum ratchet is on for the session. It
-            ships as the bare word because that is all that is true before any
-            keys are agreed, and because a caption written here would go on
-            claiming a ratchet the session had not selected. */}
-        <div class="demo-ratchet" data-scene-ratchet={side}>
-          <span class="demo-ratchet-label" data-scene-ratchet-label={side}>ratchet</span>
-          <ol class="demo-ratchet-notches" data-scene-ratchet-notches={side}></ol>
-          <span class="demo-ratchet-count" data-scene-ratchet-count={side}>0 keys</span>
-        </div>
-      </section>
-    ))
+              `data-turns` is written by `scene-view.ts` and is deliberately
+              absent from the shipped markup. The wheel itself ships in the HTML,
+              so a scene whose script never mounted looks exactly like one that
+              mounted and had nothing to report — the attribute is what tells
+              them apart, and `demo-smoke.mjs` reads it for that reason.
+
+              The caption is filled in by `scene-view.ts` once a session exists,
+              from the selection event the SDK raises at key agreement — "triple
+              ratchet" when the post-quantum ratchet is on for the session. It
+              ships as the bare word because that is all that is true before any
+              keys are agreed. */}
+          <div class="demo-ratchet" data-scene-ratchet={column}>
+            <svg
+              class="demo-ratchet-wheel"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              data-scene-ratchet-wheel={column}
+            >
+              <g class="demo-ratchet-turn" data-scene-ratchet-turn={column}>
+                <path d={WHEEL_PATH} />
+              </g>
+              <path class="demo-ratchet-pawl" d="M12 2.4 L14.2 0 L9.8 0 Z" />
+            </svg>
+            <span class="demo-ratchet-label" data-scene-ratchet-label={column}>
+              ratchet
+            </span>
+            <span class="demo-ratchet-count" data-scene-ratchet-count={column}>
+              0 keys
+            </span>
+          </div>
+
+          <dl class="demo-readings" aria-label={`${LABELS[column]} readings`}>
+            {DEVICE_METRICS.map(({ key, label }) => (
+              <div class="demo-reading">
+                <dt class="demo-reading-label">{label}</dt>
+                <dd class="demo-reading-value" data-console-metric={`${column}-${key}`}>
+                  —
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ),
+    )
   }
-
-  <section class="demo-scene-column demo-scene-relay" aria-label="Relay">
-    <div class="demo-relay-rack">
-      <header class="demo-relay-header">
-        <span class="demo-relay-title">relay</span>
-        <span class="demo-relay-sub">never needs plaintext</span>
-      </header>
-
-      {
-        SLOTS.map(({ slot, label, empty }) => (
-          <div class="demo-relay-slot" data-scene-slot={slot}>
-            <span class="demo-relay-slot-label">{label}</span>
-            <div class="demo-relay-slot-body" data-scene-slot-body={slot}>
-              <span class="demo-relay-slot-empty">{empty}</span>
-            </div>
-          </div>
-        ))
-      }
-    </div>
-  </section>
-
-  {/*
-    The lanes. Two rails the envelope rides, drawn behind the columns so a
-    payload in flight passes over the gap rather than under a device. They are
-    inert scenery: the script measures anchors and moves the envelope itself,
-    because a lane that also owned the motion would be a second place the
-    geometry lives.
-  */}
-  <div class="demo-scene-lane" data-scene-lane="a" aria-hidden="true"></div>
-  <div class="demo-scene-lane" data-scene-lane="b" aria-hidden="true"></div>
 
   {/*
     The envelope. One element for the whole journey — sealed at the sending
-    device, carried to the relay, collected by the far one, and opened there.
+    device, carried to the relay, collected by the far one, opened there, and
+    then folded into that device's conversation as the plaintext bubble appears.
     Reusing a single node is the point: a reader who sees the same object arrive
     and open learns that the message was wrapped rather than swapped.
   */}
@@ -204,14 +292,32 @@ const STEP_LIST = STEPS.join(' ');
               fill="none"
               stroke="currentColor"
               stroke-width="3"
-              stroke-linecap="round"
-            ></path>
+              stroke-linecap="round"></path>
             <rect x="4.5" y="10" width="15" height="10.5" rx="2" fill="currentColor"></rect>
           </svg>
         </span>
       </span>
     </div>
     <div class="demo-envelope-payload" data-scene-envelope-payload>
+      {/*
+        The flap. It is what makes the shape read as an envelope rather than as
+        a labelled box, and it is drawn over the payload in `currentColor` so it
+        is legible against both payload states — the sealed fill and the open
+        one invert together with the theme, and the flap goes with them.
+      */}
+      <svg
+        class="demo-envelope-flap"
+        viewBox="0 0 100 26"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M0 0 L50 24 L100 0"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          vector-effect="non-scaling-stroke"></path>
+      </svg>
       <svg
         class="demo-envelope-lock"
         viewBox="0 0 24 24"
@@ -223,8 +329,7 @@ const STEP_LIST = STEPS.join(' ');
           fill="none"
           stroke="currentColor"
           stroke-width="2.4"
-          stroke-linecap="round"
-        ></path>
+          stroke-linecap="round"></path>
         <rect x="4.5" y="10" width="15" height="10.5" rx="2" fill="currentColor"></rect>
       </svg>
       <span class="demo-envelope-text" data-scene-envelope-text></span>
@@ -236,6 +341,10 @@ const STEP_LIST = STEPS.join(' ');
   .demo-scene {
     position: relative;
     display: grid;
+    /* The relay is the narrow middle column, and it is the middle column
+       because it is written between the two devices — not because a third
+       column happened to land there. Both phones get the same `1fr`, which is
+       what makes them the same width. */
     grid-template-columns: 1fr minmax(0, 0.85fr) 1fr;
     gap: var(--oe-space-6);
     align-items: start;
@@ -309,7 +418,7 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   /* Created by `scene-view.ts`, so scoped selectors never reach them — see the
-     note further down beside the key and ratchet shapes. */
+     note further down beside the key and wheel shapes. */
   .demo-phone-chat :global(.demo-phone-bubble) {
     max-width: 82%;
     padding: var(--oe-space-2) var(--oe-space-3);
@@ -396,10 +505,10 @@ const STEP_LIST = STEPS.join(' ');
   .demo-ratchet-count {
     font-variant-numeric: tabular-nums;
     font-weight: 600;
+    margin-left: auto;
   }
 
-  .demo-device-keys-list,
-  .demo-ratchet-notches {
+  .demo-device-keys-list {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -407,13 +516,87 @@ const STEP_LIST = STEPS.join(' ');
     gap: var(--oe-space-1);
   }
 
+  /* ------------------------------------------------------------- ratchet --- */
+
+  .demo-ratchet-wheel {
+    width: 26px;
+    height: 26px;
+    flex: none;
+    overflow: visible;
+    color: var(--oe-diagram-ratchet-2);
+  }
+
+  .demo-ratchet-turn path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linejoin: round;
+  }
+
+  /* Turned by `scene-view.ts` through a rotation that only ever grows, so the
+     transition is always in one direction. `view-box` puts the origin in the
+     SVG's own units, which is where the wheel's centre is written. */
+  .demo-ratchet-turn {
+    transform-box: view-box;
+    transform-origin: 12px 12px;
+    transition: transform var(--oe-duration-slow, 420ms) cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  /* Reset is the one moment the angle may decrease, and it must not be animated
+     — see `rewindRatchet` in `scene-view.ts`. */
+  .demo-ratchet-turn[data-rewind='true'] {
+    transition: none;
+  }
+
+  .demo-ratchet-pawl {
+    fill: currentColor;
+  }
+
+  /* --------------------------------------------------------- the readings --- */
+
+  /*
+   * The numbers for a column, under that column.
+   *
+   * They used to be a separate band below the whole scene, on a grid that
+   * repeated the scene's own — one exhibit drawn twice, and the eye never fused
+   * them. A reading is a fact about the thing above it, so it lives there.
+   */
+  .demo-readings {
+    margin: 0;
+    display: grid;
+    gap: 2px;
+    font-family: var(--oe-font-mono);
+    font-size: 0.72rem;
+  }
+
+  .demo-reading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--oe-space-2);
+  }
+
+  .demo-reading-label {
+    opacity: 0.7;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .demo-reading-value {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+  }
+
   /*
    * Everything below here dresses an element `scene-view.ts` creates rather
    * than one this file writes, so Astro's scoping attribute is never on it and
    * a plain selector matches nothing. This is not cosmetic drift that shows up
-   * as slightly-wrong spacing: an unscoped run of these rules draws no keys, no
-   * ratchet teeth and no chat bubbles at all — the conversation rendered as
-   * five unstyled lines of text and the key shelves rendered as bare numbers.
+   * as slightly-wrong spacing: an unscoped run of these rules draws no keys and
+   * no chat bubbles at all — the conversation rendered as five unstyled lines of
+   * text and the key shelves rendered as bare numbers.
    *
    * `:global()` is confined to the child. The parent stays scoped, so these
    * cannot match a `.demo-key` anywhere but inside this component's markup.
@@ -438,18 +621,6 @@ const STEP_LIST = STEPS.join(' ');
   .demo-relay-slot-body :global(.demo-relay-slot-count) {
     font-variant-numeric: tabular-nums;
     font-weight: 600;
-  }
-
-  .demo-ratchet-notches :global(.demo-ratchet-notch) {
-    width: 12px;
-    height: 14px;
-    border: 2px solid var(--oe-diagram-carrier-stroke);
-    background: transparent;
-    transition: background-color var(--oe-duration-normal) ease;
-  }
-
-  .demo-ratchet-notches :global(.demo-ratchet-notch[data-turned='true']) {
-    background: var(--oe-diagram-ratchet-2);
   }
 
   /* ------------------------------------------------------------- the relay --- */
@@ -531,16 +702,6 @@ const STEP_LIST = STEPS.join(' ');
     display: none;
   }
 
-  /* ------------------------------------------------------------- the lanes --- */
-
-  .demo-scene-lane {
-    position: absolute;
-    height: 0;
-    border-top: 2px dotted var(--oe-diagram-boundary);
-    opacity: 0.55;
-    pointer-events: none;
-  }
-
   /* ---------------------------------------------------------- the envelope --- */
 
   .demo-envelope {
@@ -554,9 +715,13 @@ const STEP_LIST = STEPS.join(' ');
     overflow: hidden;
     border: 2px solid var(--oe-diagram-carrier-stroke);
     background: var(--oe-surface-raised);
-    /* Position is set as a transform by the script from measured anchors, so
-       the transition below is the whole of the travel animation. */
-    transition: transform var(--oe-duration-normal) ease-in-out;
+    /* Position is set as a transform by the script from measured anchors, and
+       the scale is a variable the CSS below owns, so the two can be animated
+       together without either one having to know the other's value. */
+    transform: translate(0, 0) scale(var(--demo-envelope-scale, 1));
+    transition:
+      transform var(--oe-duration-normal) ease-in-out,
+      opacity var(--oe-duration-normal) ease-in-out;
     will-change: transform;
   }
 
@@ -564,6 +729,25 @@ const STEP_LIST = STEPS.join(' ');
     /* Flight is paced by the reading clock, not by a duration token: the script
        sets this per journey. */
     transition-duration: var(--demo-flight-ms, 700ms);
+  }
+
+  /*
+   * Arrival. The envelope shrinks into the receiving device's conversation as
+   * the plaintext bubble appears there, so the message becomes the message
+   * rather than a second copy of it parked beside the phone.
+   *
+   * The delay is the beat the reader gets to read the decrypted sentence before
+   * it folds away, and it lives here rather than in a timer for a reason
+   * `scene-view.ts` sets out: the scene owns no clock. It is a literal and not a
+   * duration token, which is what keeps it from collapsing under
+   * `prefers-reduced-motion` — a reader who asked for less motion did not ask to
+   * be shown the plaintext for no frames at all. The fold itself is a token and
+   * does collapse, which is the correct half to lose.
+   */
+  .demo-envelope[data-landing='true'] {
+    --demo-envelope-scale: 0.35;
+    opacity: 0;
+    transition-delay: 520ms;
   }
 
   /* The metadata band. Present in both states, because what the relay can read
@@ -619,11 +803,13 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   .demo-envelope-payload {
-    min-height: 3.1rem;
+    position: relative;
+    min-height: 3.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: var(--oe-space-2);
+    padding-top: calc(var(--oe-space-2) + 0.4rem);
     text-align: center;
     font-size: 0.78rem;
     line-height: 1.3;
@@ -633,8 +819,17 @@ const STEP_LIST = STEPS.join(' ');
       color var(--oe-duration-normal) ease;
   }
 
+  .demo-envelope-flap {
+    position: absolute;
+    inset: 0 0 auto 0;
+    width: 100%;
+    height: 1.15rem;
+    opacity: 0.85;
+  }
+
   /* Sealed: the payload is the ciphertext fill with the surface colour on top.
-     Both tokens invert with the theme, so the lock stays legible on either. */
+     Both tokens invert with the theme, so the lock and the flap stay legible on
+     either. */
   .demo-envelope[data-sealed='true'] .demo-envelope-payload {
     background: var(--oe-diagram-ciphertext-fill);
     color: var(--oe-surface);
@@ -666,10 +861,9 @@ const STEP_LIST = STEPS.join(' ');
       grid-template-columns: 1fr;
     }
 
-    /* The lanes and the flying envelope are a three-column idea. Stacked, they
-       would cross unrelated boxes, so the journey is told by the relay's slots
-       filling and emptying instead. */
-    .demo-scene-lane,
+    /* The flying envelope is a three-column idea. Stacked, it would cross
+       unrelated boxes, so the journey is told by the relay's slots filling and
+       emptying instead. */
     .demo-envelope {
       display: none;
     }

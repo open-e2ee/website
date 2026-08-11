@@ -4,7 +4,7 @@ import DemoLog from './DemoLog.astro';
 import DemoScene from './DemoScene.astro';
 
 /*
- * The demo: one scene, a transport, and the readings under it.
+ * The demo: one scene, one button, and the relay's own row under it.
  *
  * Two SDK clients run in this page. There is no second window and nothing to
  * pair — the reader gets both ends of the conversation at once, which is what
@@ -28,15 +28,30 @@ import DemoScene from './DemoScene.astro';
  * ------------------------------------------------------------- two clocks ---
  *
  * The protocol runs at full speed and is recorded; the drawing replays that
- * recording at the reader's pace. Play, pause, step, reset and speed act on the
- * replay and never on the crypto, and every number printed on this page comes
- * from the recording. `trace.ts` makes that structural rather than promised: the
- * pace layer is handed cues with every measurement stripped out, so slowing the
- * animation cannot move a figure — there is no figure in scope for it to move.
+ * recording at the reader's pace. Every number printed on this page comes from
+ * the recording. `trace.ts` makes that structural rather than promised: the pace
+ * layer is handed cues with every measurement stripped out, so the pacing cannot
+ * move a figure — there is no figure in scope for it to move.
  *
- * The copy under the transport says so in the reader's own words, because a
+ * The copy under the controls says so in the reader's own words, because a
  * reader who sees a round-trip figure appear before the envelope has visibly
  * arrived is owed an explanation and should not have to infer one.
+ *
+ * -------------------------------------------------------------- one button ---
+ *
+ * There were four controls: exchange keys, play, step, reset. Play and step
+ * were a transport for a reel, and a transport is what you offer someone who is
+ * being asked to operate a recording rather than watch a demo. The reel is not
+ * the subject — the protocol is — and the pace is now chosen by
+ * `playback.ts` and simply runs.
+ *
+ * "Exchange keys" went the same way for a stronger reason: it made key
+ * agreement look like something a person does. It is not. A device publishes
+ * its bundle when it comes online, and the session is agreed by the first
+ * message that needs one — which is exactly what `run.ts` does inside `send()`,
+ * with or without the button. Start brings the devices up and puts their
+ * bundles on the relay; the first sentence anyone types agrees the keys, in the
+ * recording, where a reader can watch it happen.
  *
  * --------------------------------------------------------------- the names ---
  *
@@ -50,29 +65,27 @@ import DemoScene from './DemoScene.astro';
 const NAMES = { a: 'alice', b: 'bob' } as const;
 
 /*
- * The protocol switches.
+ * The two switches.
  *
- * These change what the *next* session negotiates, so they are offered before
- * a key exchange and go unavailable once one exists — a switch that appears to
- * change a session already running would be a lie about how key agreement
- * works. The two policy defaults are the founder's: post-quantum on, because it
- * is the high value and the thing worth showing by default; braid off, because
- * it is the newest of the modes on offer.
+ * There were three. The one that went was "Post-quantum required", and it went
+ * because it could not draw a difference: the SDK's setting is `required` or
+ * `compatible`, and `compatible` still runs PQXDH against any peer that has
+ * ML-KEM material — which both devices on this page do. The switch changed
+ * whether a peer with *none* would be refused, and there is no such peer here.
+ * A checkbox whose two positions produce the same session is a control that
+ * teaches something false about what it controls.
  *
- * Each note says what the *off* position does, and that is not decoration. Two
- * of these three read, at a glance, like a switch that turns the post-quantum
- * protection off, and neither one does:
+ * So post-quantum protection is not a switch on this page, it is the run: the
+ * demo asks for `required`, the key agreement is PQXDH, and each wheel is
+ * captioned with the ratchet the SDK reports it selected — "triple ratchet"
+ * when the post-quantum ratchet is in it. That is the SDK's own report of what
+ * happened rather than a restatement of what was asked for, and the SDK
+ * publishes no way to run without it.
  *
- *   - `postQuantum: 'compatible'` still runs PQXDH against any peer holding
- *     ML-KEM material, and both devices on this page hold it. What it changes
- *     is whether a peer with *none* is refused. So on this page the flip is
- *     visible in policy and not in the session, and the note says so rather
- *     than letting the reader infer a downgrade that did not happen.
- *   - `braid: 'disabled'` selects the direct ML-KEM SPQR mode instead of the
- *     Braid profile. Both are the post-quantum ratchet. The SDK publishes no
- *     way at all to run without it, which is why there is no third switch here
- *     for the Triple Ratchet: the scene reports what the session selected
- *     instead, from the SDK's own selection event.
+ * Braid is a real difference and stays. It chooses how the post-quantum key
+ * material travels — in bounded chunks, one riding along with each message, or
+ * whole in a single message — and both are the post-quantum ratchet. Off by
+ * default, as the newer of the two modes.
  *
  * Sealed sender is the odd one and is marked so on the page: the demo has no
  * trust root to mint a sender certificate against, so that switch is a lens
@@ -87,18 +100,11 @@ const TOGGLES = [
     note: 'a lens over the relay’s real row — off shows the fields it would strike',
   },
   {
-    id: 'post-quantum',
-    key: 'postQuantum',
-    label: 'Post-quantum required',
-    on: true,
-    note: 'off allows a classical fallback for a peer with no ML-KEM; both devices here have it',
-  },
-  {
     id: 'braid',
     key: 'braid',
-    label: 'ML-KEM braid',
+    label: 'Braid',
     on: false,
-    note: 'off runs the direct ML-KEM ratchet instead — post-quantum either way',
+    note: 'carries the ML-KEM key in 32-byte chunks, one per message, instead of whole',
   },
 ] as const;
 ---
@@ -125,19 +131,16 @@ const TOGGLES = [
     */}
     <div class="demo-console-controls">
       {/*
-        Key exchange is a real call and gets its own control, because it is
-        genuinely a separate step from sending and a reader asked to watch key
-        agreement should not have to infer it from the first message. It is
-        `establishSession` on the client, with the bundle fetched from the
-        relay — not a staged animation of one.
+        Start brings both devices online and publishes their public bundles —
+        the real `syncToServer` on each client, not a staged animation of one.
+        That is everything a device does before anyone has written anything, and
+        it is where the demo begins. The keys are agreed by the first message,
+        which is where they are really agreed.
       */}
-      <button type="button" class="oe-button" data-console-exchange disabled>Exchange keys</button>
-
-      <div class="demo-console-replay" role="group" aria-label="Replay">
-        <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-play disabled>Play</button>
-        <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-step disabled>Step</button>
-        <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-reset disabled>Reset</button>
-      </div>
+      <button type="button" class="oe-button" data-console-start disabled>Start demo</button>
+      <button type="button" class="oe-button oe-button-secondary" data-console-reset disabled>
+        Reset
+      </button>
     </div>
 
     {/*
@@ -166,93 +169,53 @@ const TOGGLES = [
 
     <p class="demo-console-note measure">
       The protocol runs at full speed and is recorded; what moves above is a replay of that
-      recording. The transport changes the replay, never the crypto — and never a printed number.
-      The switches change what the <em>next</em> session negotiates, so they settle before a key
-      exchange rather than during one. None of them turns the post-quantum ratchet off, because the
-      SDK publishes no way to: the ratchet under each device is captioned with what the session
-      actually selected, which the SDK reports when the keys are agreed.
+      recording, slowed to a pace you can follow. Slowing it changes the replay, never the crypto —
+      and never a printed number. Braid changes what the <em>next</em> session negotiates, so it
+      settles before the keys are agreed rather than during. Neither switch turns the post-quantum
+      ratchet off, because the SDK publishes no way to: the ratchet under each device is captioned
+      with what the session actually selected, which the SDK reports when the keys are agreed.
     </p>
 
     <p class="demo-console-status" data-console-status role="status" aria-live="polite"></p>
   </div>
 
   {/*
-    The readings, on the same three-column grid as the scene above them, so the
-    number under a device is under *that* device and the relay's readings are
-    under the relay. The conversation used to live here as a third
-    representation of an event the scene was already showing twice; it is now
-    inside the phone it belongs to, and this row holds only what the scene
-    cannot: measurements, and the row the relay is actually storing.
+    The inspector: one question, answered with the row itself.
+
+    Everything that was a *reading* has moved up into the scene, under the thing
+    it is a reading of — a device's four timings under that device, and what the
+    relay is holding under the relay. This band used to restate the scene's own
+    three columns underneath the scene, which drew one exhibit twice and left the
+    eye choosing between them.
+
+    What could not move is this: the bytes, and every field on the envelope, read
+    off the object the relay stored rather than from a description of it. It is
+    full width because it is a row of data rather than a fact about a column, and
+    it is under the scene because it is the evidence for the claim the scene
+    makes. The fields it holds back are named where they are held back, by the
+    script.
   */}
-  <div class="demo-console-readings">
-    <section class="demo-console-reading" aria-labelledby="demo-console-a">
-      <h3 class="demo-console-heading" id="demo-console-a">{NAMES.a}</h3>
-      <p class="demo-console-metric">
-        <span class="demo-console-metric-value" data-console-metric-a>—</span>
-        <span class="demo-console-metric-label">
-          send · handing the plaintext to the SDK until the relay accepted the envelope
-        </span>
-      </p>
-    </section>
+  <section class="demo-console-inspector" aria-labelledby="demo-console-inspector-heading">
+    <h3 class="demo-console-heading" id="demo-console-inspector-heading">
+      What the relay is holding
+    </h3>
 
-    <section class="demo-console-reading demo-console-reading-relay" aria-labelledby="demo-console-relay">
-      <h3 class="demo-console-heading" id="demo-console-relay">relay</h3>
+    <p class="demo-console-empty" data-console-relay-empty>Holding nothing.</p>
+    <pre class="demo-console-hex" data-console-hex hidden></pre>
+    <dl class="demo-console-row" data-console-row hidden></dl>
+    <p class="demo-console-row-note" data-console-row-note hidden></p>
 
-      <p class="demo-console-metric">
-        <span class="demo-console-metric-value" data-console-metric-relay>—</span>
-        <span class="demo-console-metric-label">
-          what the relay is holding · it never needs the plaintext to hold it
-        </span>
-      </p>
-
-      {/*
-        The relay's own work, and the sentence that stops it being read as a
-        latency figure. This relay runs in the reader's tab, so there is no
-        network in any number on this page — saying so is the difference
-        between a measurement and a claim about production.
-      */}
-      <p class="demo-console-metric">
-        <span class="demo-console-metric-value" data-console-metric-publish>—</span>
-        <span class="demo-console-metric-label">
-          publish · both devices' public bundles onto the relay
-        </span>
-      </p>
-
-      <p class="demo-console-metric">
-        <span class="demo-console-metric-value" data-console-metric-establish>—</span>
-        <span class="demo-console-metric-label">
-          key agreement · fetching a bundle and deriving the first shared secret
-        </span>
-      </p>
-
-      <p class="demo-console-note">
-        This relay is in this tab. Nothing here crosses a network, so these are the SDK's own work
-        with transport cost removed — add your own round trip to every one of them.
-      </p>
-
-      {/*
-        An inspector. It answers one question — what is the relay actually
-        holding — with the row itself: the bytes, then every field on the
-        envelope, read off the object the relay stored rather than from a
-        description of it. The fields it holds back are named where they are
-        held back, by the script.
-      */}
-      <p class="demo-console-empty" data-console-relay-empty>Holding nothing.</p>
-      <pre class="demo-console-hex" data-console-hex hidden></pre>
-      <dl class="demo-console-row" data-console-row hidden></dl>
-      <p class="demo-console-row-note" data-console-row-note hidden></p>
-    </section>
-
-    <section class="demo-console-reading" aria-labelledby="demo-console-b">
-      <h3 class="demo-console-heading" id="demo-console-b">{NAMES.b}</h3>
-      <p class="demo-console-metric">
-        <span class="demo-console-metric-value" data-console-metric-b>—</span>
-        <span class="demo-console-metric-label">
-          round trip · the same start, until the far device had the plaintext back
-        </span>
-      </p>
-    </section>
-  </div>
+    {/*
+      The sentence that stops the timings above being read as latency. This
+      relay runs in the reader's tab, so there is no network in any number on
+      this page — saying so is the difference between a measurement and a claim
+      about production, and it is why nothing here simulates one.
+    */}
+    <p class="demo-console-note measure">
+      This relay is in this tab. Nothing above crosses a network, so every timing under a device is
+      that device's own work with transport cost removed — add your own round trip to each of them.
+    </p>
+  </section>
 
   {/*
     The log, last, because it is the transcript rather than the story: the
@@ -340,10 +303,8 @@ const TOGGLES = [
       return found;
     };
 
-    const play = need<HTMLButtonElement>('[data-console-play]');
-    const step = need<HTMLButtonElement>('[data-console-step]');
+    const startButton = need<HTMLButtonElement>('[data-console-start]');
     const reset = need<HTMLButtonElement>('[data-console-reset]');
-    const exchange = need<HTMLButtonElement>('[data-console-exchange]');
     const status = need<HTMLElement>('[data-console-status]');
     const hex = need<HTMLElement>('[data-console-hex]');
     const row = need<HTMLElement>('[data-console-row]');
@@ -353,13 +314,34 @@ const TOGGLES = [
     const toggleBox = need<HTMLFieldSetElement>('[data-console-toggles]');
     const sceneRoot = need<HTMLElement>('[data-demo-scene]');
     const logRoot = need<HTMLElement>('[data-demo-log]');
-    const metrics = {
-      a: need<HTMLElement>('[data-console-metric-a]'),
-      b: need<HTMLElement>('[data-console-metric-b]'),
-      relay: need<HTMLElement>('[data-console-metric-relay]'),
-      publish: need<HTMLElement>('[data-console-metric-publish]'),
-      establish: need<HTMLElement>('[data-console-metric-establish]'),
-    };
+    /*
+     * The readings, keyed the way the scene writes them: a device's four are
+     * `a-publish`, `a-establish`, `a-send`, `a-trip` and the same for `b`, and
+     * the relay has one.
+     *
+     * Looked up by key rather than held as five named handles, because the
+     * routing is now by *actor* and a named handle invites the mistake this
+     * replaces. Each of these four measures is recorded by `run.ts` against the
+     * device that did the work — `encryptMs` on the sender, `roundTripMs` on the
+     * receiver, `establishMs` on the device that agreed the keys, `publishMs` on
+     * the one that published — and the console used to print `encryptMs` under
+     * alice and `roundTripMs` under bob no matter which of them had acted. Every
+     * reply leg therefore printed bob's send time under alice's name. The
+     * numbers were real and every one of them was under the wrong device.
+     */
+    const readings = new Map<string, HTMLElement>(
+      [...root.querySelectorAll<HTMLElement>('[data-console-metric]')].map((element) => [
+        element.dataset.consoleMetric ?? '',
+        element,
+      ]),
+    );
+    const reading = (key: string): HTMLElement | undefined => readings.get(key);
+    /* Nine: four under each device and one under the relay. A selector that
+       matched none of them would otherwise print nothing, silently, and a demo
+       whose timings never appear looks exactly like one nobody pressed. */
+    if (readings.size !== 9) {
+      throw new Error(`demo console: expected 9 readings in the scene, found ${readings.size}`);
+    }
 
     /* The composer belongs to the device now, so there are two of them and
        either may start a conversation. Both are read out of the scene rather
@@ -464,11 +446,23 @@ const TOGGLES = [
     /** Whether a run has ever come up here. Reset drops the run; this survives. */
     let everStarted = false;
     let busy = false;
-    let exchanged = false;
+    /* Set from the recording rather than from the press that caused it. The
+       session is agreed inside the first send, so the only thing that knows one
+       exists is the step the SDK recorded when it did. */
+    let sessionExists = false;
+    /* What the relay is holding, counted as the reel stores each row rather than
+       as the trace reports it. The distinction matters now that the reading sits
+       in the relay's own column, an inch from the mailbox that draws the same
+       fact: the trace runs ahead of the drawing, so a reading taken from it says
+       "1 row" over a mailbox still drawing "nothing waiting". Two claims about
+       one relay, disagreeing, in one glance. */
     let bytesHeld = 0;
     let rowsHeld = 0;
-    let publishedMs = 0;
     const pending: Row[] = [];
+    /* The slowest publish seen, per device. Both devices publish, and each one's
+       own figure belongs under its own phone — a single shared maximum would put
+       one device's work under the other's name. */
+    const publishedMs: Record<Side, number> = { a: 0, b: 0 };
 
     /*
      * Public keys the relay is holding for each device, as the relay itself
@@ -500,7 +494,7 @@ const TOGGLES = [
     const derived: Record<Side, number> = { a: 0, b: 0 };
 
     /** The switches, as the scene and the next session read them. */
-    let toggles: SceneToggles = { sealedSender: true, postQuantum: true, braid: false };
+    let toggles: SceneToggles = { sealedSender: true, braid: false };
 
     /** The sender's bubble that has not yet been confirmed at the far device. */
     let awaitingDelivery: HTMLElement | null = null;
@@ -539,39 +533,31 @@ const TOGGLES = [
     const count = (value: number) => value.toLocaleString('en-US');
 
     /*
-     * Sending waits for a session; the transport waits for a run.
+     * What may be pressed.
      *
-     * Key exchange is its own action because it is its own step, so the send
-     * button stays unavailable until a session exists rather than quietly
-     * establishing one on the way past. That is the founder's ask and it is also
-     * the honest arrangement: a reader who never presses "Exchange keys" should
-     * not be shown a session appearing without one.
+     * The devices are the demo, so once they are up both composers are live and
+     * there is nothing else to operate. Key agreement is not a control here — a
+     * device publishes when it comes online and the session is agreed by the
+     * first message that needs one, which is what `run.ts` does inside `send()`
+     * whether or not anything asked it to.
      */
     const enable = () => {
       const running = run !== null;
-      /* Play and Step answer for the reel, not for the run. A live run with an
-         empty reel has nothing either of them can show, and a control that is
-         lit and does nothing is worse than one that is plainly unavailable —
-         the reader presses it, sees no frame, and concludes the page is broken
-         rather than that there is nothing recorded yet. */
-      const hasReel = (reel?.length ?? 0) > 0;
-      play.disabled = !running || !hasReel;
-      step.disabled = !running || !hasReel;
-      reset.disabled = !running;
-      exchange.disabled = busy || exchanged;
-      /* The two policy switches choose what the *next* session negotiates, so
-         they go unavailable once one exists. A switch that appeared to change a
-         running session would be describing key agreement wrongly, and Reset is
-         the honest way back to a different answer. The sealed-sender lens is
-         not a session setting and stays live throughout — see the note by
+      startButton.disabled = busy || running;
+      reset.disabled = busy || !running;
+      /* Braid chooses what the *next* session negotiates, so it goes unavailable
+         once one exists. A switch that appeared to change a running session
+         would be describing key agreement wrongly, and Reset is the honest way
+         back to a different answer. The sealed-sender lens is not a session
+         setting and stays live throughout — see the note by
          `SEALED_SENDER_HIDES`. */
       toggleBox.disabled = false;
       for (const [key, input] of toggleInputs) {
-        if (key !== 'sealedSender') input.disabled = busy || exchanged;
+        if (key !== 'sealedSender') input.disabled = busy || sessionExists;
       }
       for (const side of ['a', 'b'] as const) {
-        composers[side].input.disabled = busy;
-        composers[side].send.disabled = busy || !exchanged;
+        composers[side].input.disabled = busy || !running;
+        composers[side].send.disabled = busy || !running;
       }
     };
 
@@ -638,27 +624,25 @@ const TOGGLES = [
             },
             dwellMs: parts.playback.STEP_DWELL_MS,
           });
-          /* The label follows the transport's own state rather than the press
-             that was aimed at it, so a reel that runs dry and parks reads as
-             parked. */
-          reel.on((state) => {
-            play.textContent = state === 'playing' ? 'Pause' : 'Play';
-          });
         }
 
         /*
-         * The two policy switches are read here and nowhere later, which is why
-         * they lock once a session exists: this is the only moment they can
-         * take effect. `compatible` is not "post-quantum off" — it still uses
-         * PQXDH against a peer that has KEM material, and both peers here do.
-         * What it changes is whether a peer with none is refused, and the
-         * session's own selection event says which of those really happened.
+         * The protocol options, read here and nowhere later — this is the only
+         * moment they can take effect, which is why braid locks once a session
+         * exists.
+         *
+         * `postQuantum` is not a switch on this page and is asked for outright.
+         * `compatible` would not have been "post-quantum off": it still runs
+         * PQXDH against a peer that has KEM material, and both peers here do, so
+         * the two settings would have produced the same session and a control
+         * offering them would have taught a reader something false. See the
+         * `TOGGLES` note above.
          */
         run = await parts.run.startDemoRun({
           a: names.a,
           b: names.b,
           protocol: {
-            postQuantum: toggles.postQuantum ? 'required' : 'compatible',
+            postQuantum: 'required',
             braid: toggles.braid ? 'required' : 'disabled',
           },
         });
@@ -703,6 +687,7 @@ const TOGGLES = [
         const actor = event.actor;
         if ((actor === 'a' || actor === 'b') && typeof keys === 'number') published[actor] = keys;
       }
+      if (event.step === 'session-established') sessionExists = true;
       if (event.step === 'stored-at-relay') {
         const envelope = (event.detail as { envelope?: Record<string, unknown> })?.envelope;
         if (envelope) pending.push({ envelope, bytes: event.measures?.ciphertextBytes ?? 0 });
@@ -714,26 +699,52 @@ const TOGGLES = [
       reel?.play();
     }
 
+    /**
+     * Print each measurement under the device that produced it.
+     *
+     * Routed by `event.actor`, which is the device `run.ts` recorded the work
+     * against, and never by which column the figure would look tidy in. Every
+     * one of these four is a device-side operation: sealing, agreeing a key,
+     * publishing a bundle, and the wait for the far end to answer. None of them
+     * is a network time and none is simulated — the relay is in this tab, which
+     * the note under the inspector says in the reader's own words.
+     *
+     * A measure recorded against the relay has no device row to go in and is
+     * dropped here rather than assigned to a device; the relay's own reading is
+     * what it is holding, below.
+     */
     function printMetrics(event: TraceEvent) {
       const measures = event.measures;
       if (!measures) return;
-      if (typeof measures.encryptMs === 'number') metrics.a.textContent = ms(measures.encryptMs);
-      if (typeof measures.roundTripMs === 'number') metrics.b.textContent = ms(measures.roundTripMs);
-      /* Both devices publish, and the slower of the two is when the relay was
-         ready for either of them. A sum would count work that ran in parallel;
-         the last one to land is the fact a reader can use. */
-      if (typeof measures.publishMs === 'number') {
-        publishedMs = Math.max(publishedMs, measures.publishMs);
-        metrics.publish.textContent = ms(publishedMs);
+      const actor = event.actor === 'a' || event.actor === 'b' ? event.actor : null;
+
+      if (actor) {
+        const put = (key: string, value: number) => {
+          const element = reading(`${actor}-${key}`);
+          if (element) element.textContent = ms(value);
+        };
+        if (typeof measures.encryptMs === 'number') put('send', measures.encryptMs);
+        if (typeof measures.roundTripMs === 'number') put('trip', measures.roundTripMs);
+        if (typeof measures.establishMs === 'number') put('establish', measures.establishMs);
+        /* A device publishes once, but the reading is kept as a maximum so a
+           second publish on the same device cannot make the figure fall — the
+           bundles go up in parallel and the slower one is when that device was
+           actually ready. */
+        if (typeof measures.publishMs === 'number') {
+          publishedMs[actor] = Math.max(publishedMs[actor], measures.publishMs);
+          put('publish', publishedMs[actor]);
+        }
       }
-      if (typeof measures.establishMs === 'number') {
-        metrics.establish.textContent = ms(measures.establishMs);
-      }
-      if (typeof measures.ciphertextBytes === 'number') {
-        bytesHeld += measures.ciphertextBytes;
-        rowsHeld += 1;
-        const rows = `${count(rowsHeld)} row${rowsHeld === 1 ? '' : 's'}`;
-        metrics.relay.textContent = `${rows} · ${count(bytesHeld)} bytes`;
+
+    }
+
+    /** The relay's own reading, as of the row the reel has just stored. */
+    function printHolding(bytes: number) {
+      bytesHeld += bytes;
+      rowsHeld += 1;
+      const held = reading('relay-holding');
+      if (held) {
+        held.textContent = `${count(rowsHeld)} row${rowsHeld === 1 ? '' : 's'} · ${count(bytesHeld)} bytes`;
       }
     }
 
@@ -871,12 +882,20 @@ const TOGGLES = [
      * the time the step is held and a longer-held step gets a longer glide. It
      * is a presentation number derived from another presentation number, and it
      * touches no measurement — see the two-clock note at the top of this file.
+     *
+     * The share was two fifths and is now most of the step, which is the
+     * difference between an animation and a slideshow: at the old dwells the
+     * envelope was in motion for one and seven tenths of the twenty-eight and a
+     * half seconds the reel took — six per cent of it — and the rest was still
+     * frames. Shorter dwells and a larger share put the movement back where the
+     * eye is already looking.
      */
-    const FLIGHT_CAP_MS = 900;
+    const FLIGHT_CAP_MS = 700;
+    const FLIGHT_SHARE = 0.75;
     function flightFor(step: string): number {
       if (!loaded) return 0;
       const dwell = loaded.playback.STEP_DWELL_MS[step] ?? loaded.playback.DEFAULT_DWELL_MS;
-      return Math.min(FLIGHT_CAP_MS, dwell * 0.4);
+      return Math.min(FLIGHT_CAP_MS, dwell * FLIGHT_SHARE);
     }
 
     /** One step of the story, everywhere it is told. */
@@ -895,9 +914,15 @@ const TOGGLES = [
         awaitingDelivery.dataset.pending = 'false';
         awaitingDelivery = null;
       }
+      /* The relay's three claims about one row — the count, the bytes it is made
+         of, and the mailbox it is waiting in — all move on this beat, because
+         they are one fact told three ways. */
       if (cue.step === 'stored-at-relay') {
         const next = pending.shift();
-        if (next) showRow(next.envelope, next.bytes);
+        if (next) {
+          printHolding(next.bytes);
+          showRow(next.envelope, next.bytes);
+        }
       }
     }
 
@@ -978,14 +1003,17 @@ const TOGGLES = [
       }
     }
 
-    exchange.addEventListener('click', () => {
-      void guard('the key exchange', async () => {
+    startButton.addEventListener('click', () => {
+      void guard('the start', async () => {
         await start();
-        await run?.exchangeKeys();
-        exchanged = true;
+        /* Coming online is publishing: a device puts its public bundle on the
+           relay before anyone has written anything, and the keys are agreed by
+           the first message that needs them. This is the real `syncToServer` on
+           both clients — the same call `send()` would make on its way past. */
+        await run?.publishBundles();
         say(
-          'Session established. Both public bundles went through the relay; the private halves ' +
-            'never left their devices.',
+          'Both devices are online and their public bundles are on the relay. The private halves ' +
+            'never left. Type a message on either device — the first one agrees the keys.',
         );
       });
     });
@@ -1028,9 +1056,9 @@ const TOGGLES = [
      * The switches.
      *
      * `sealedSender` is a lens and takes effect at once, including on a row the
-     * relay is already showing. The other two are session policy and are locked
-     * by `enable()` once a session exists, so their handler only has to record
-     * the choice that the next `startDemoRun` will read.
+     * relay is already showing. `braid` is session policy and is locked by
+     * `enable()` once a session exists, so its handler only has to record the
+     * choice that the next `startDemoRun` will read.
      */
     for (const [key, input] of toggleInputs) {
       input.addEventListener('change', () => {
@@ -1042,17 +1070,6 @@ const TOGGLES = [
         if (key === 'sealedSender' && shownRow) showRow(shownRow.envelope, shownRow.bytes);
       });
     }
-
-    play.addEventListener('click', () => {
-      if (!reel) return;
-      if (reel.state === 'playing') reel.pause();
-      else reel.play();
-    });
-
-    step.addEventListener('click', () => {
-      reel?.pause();
-      reel?.step();
-    });
 
     reset.addEventListener('click', () => {
       void guard('the reset', async () => {
@@ -1071,10 +1088,11 @@ const TOGGLES = [
          */
         await run?.stop();
         run = null;
-        exchanged = false;
+        sessionExists = false;
         bytesHeld = 0;
         rowsHeld = 0;
-        publishedMs = 0;
+        publishedMs.a = 0;
+        publishedMs.b = 0;
         published.a = 0;
         published.b = 0;
         derived.a = 0;
@@ -1083,19 +1101,15 @@ const TOGGLES = [
         shownRow = null;
         pending.length = 0;
         for (const side of ['a', 'b'] as const) composers[side].input.value = '';
-        metrics.a.textContent = '—';
-        metrics.b.textContent = '—';
-        metrics.relay.textContent = '—';
-        metrics.publish.textContent = '—';
-        metrics.establish.textContent = '—';
+        /* Every reading, from the same map that fills them — a hand-written list
+           here would go on clearing whatever it was written for while a reading
+           added to the scene kept a stale number through a reset. */
+        for (const element of readings.values()) element.textContent = '—';
         hex.hidden = true;
         row.hidden = true;
         rowNote.hidden = true;
         relayEmpty.hidden = false;
-        say(
-          'Reset. Fresh devices, a fresh relay, and nothing recorded — the protocol switches are ' +
-            'open again.',
-        );
+        say('Reset. Fresh devices, a fresh relay, and nothing recorded — braid is open again.');
       });
     });
 
