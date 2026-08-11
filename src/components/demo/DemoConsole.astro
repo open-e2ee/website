@@ -395,8 +395,12 @@ const TOGGLES = [
      * shortened would teach nothing. The relay's own `messageType` says which
      * mode really ran: `unidentified_sender` is sealed, and the envelopes here
      * are not.
+     *
+     * The names live in `scene-view.ts` so that a Node test can hold them
+     * against a real envelope; they are read off the lazily-loaded module here
+     * rather than imported statically, which would pull the whole scene into
+     * the eager bundle for the sake of two strings.
      */
-    const SEALED_SENDER_HIDES = new Set(['senderUserId', 'senderDeviceId']);
 
     type Loaded = {
       run: typeof import('../../lib/demo/run');
@@ -787,11 +791,12 @@ const TOGGLES = [
       relayEmpty.hidden = true;
 
       row.replaceChildren();
+      const sealedFields = new Set<string>(loaded.scene.SEALED_SENDER_HIDES);
       let shown = 0;
       let sealable = 0;
       for (const [field, value] of Object.entries(envelope)) {
         if (HELD_BACK.has(field)) continue;
-        const hides = SEALED_SENDER_HIDES.has(field);
+        const hides = sealedFields.has(field);
         if (hides) sealable += 1;
         const term = document.createElement('dt');
         term.textContent = field;

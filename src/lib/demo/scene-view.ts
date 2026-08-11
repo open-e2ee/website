@@ -66,6 +66,26 @@ export const DEFAULT_TOGGLES: SceneToggles = {
   braid: false,
 };
 
+/**
+ * The envelope fields sealed sender takes off the relay's copy.
+ *
+ * The one place in the demo that writes an envelope field name down rather than
+ * iterating for it, and the only one that has to: the inspector's other rows are
+ * whatever the envelope carries, but this is a *claim* about which of them a
+ * sealed send would remove, and a claim has to name its subject.
+ *
+ * That makes it the demo's one silent-drift risk. A name here that no longer
+ * matches the envelope does not throw and does not blank anything — the lens
+ * simply marks nothing, the note underneath says "0 struck fields", and a page
+ * that has stopped teaching its point still looks entirely correct.
+ * `demo-run.test.mjs` holds these names against a real send for that reason.
+ *
+ * Exported from here rather than kept in the console so that a test can reach
+ * it: a constant inside an `.astro` component is unreachable from Node, and one
+ * that cannot be tested is one that drifts.
+ */
+export const SEALED_SENDER_HIDES: readonly string[] = ['senderUserId', 'senderDeviceId'];
+
 export interface SceneView {
   show(cue: SceneCue, flightMs: number): void;
   clear(): void;
@@ -115,7 +135,10 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const phone = (side: Side) => need<HTMLElement>(root, `[data-scene-device="${side}"] .demo-phone`);
   const chat = (side: Side) => need<HTMLElement>(root, `[data-scene-chat="${side}"]`);
   const keyList = (side: Side) => need<HTMLElement>(root, `[data-scene-keys-list="${side}"]`);
+  const keyCount = (side: Side) => need<HTMLElement>(root, `[data-scene-keys-count="${side}"]`);
   const notches = (side: Side) => need<HTMLElement>(root, `[data-scene-ratchet-notches="${side}"]`);
+  const ratchetCount = (side: Side) =>
+    need<HTMLElement>(root, `[data-scene-ratchet-count="${side}"]`);
   const deviceState = (side: Side) =>
     need<HTMLElement>(root, `[data-scene-device-state="${side}"]`);
 
@@ -150,44 +173,81 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     return phone(place === 'sender' ? from : to);
   }
 
+  /**
+   * How many key shapes stand for a store, however much is in it.
+   *
+   * A real device publishes two hundred and four public values here — an
+   * identity pair, a signed prekey, a last-resort KEM prekey and a hundred
+   * one-time prekeys of each kind. Drawing one shape each would be four hundred
+   * shapes across the scene, which is not a diagram. The shapes are a motif
+   * saying *key material lives here*, and the count beside them is the fact.
+   * They are deliberately never a tally, and the caption never invites reading
+   * them as one.
+   */
+  const KEY_MOTIF = 5;
+
   function fillKeys(side: Side, count: number): void {
     const list = keyList(side);
     list.replaceChildren();
-    for (let index = 0; index < count; index += 1) {
+    for (let index = 0; index < Math.min(count, KEY_MOTIF); index += 1) {
       const item = document.createElement('li');
       item.className = 'demo-key';
       list.append(item);
     }
+    keyCount(side).textContent = String(count);
   }
+
+  /** Teeth on the wheel. The design system's ratchet length. */
+  const TEETH = 4;
 
   function turnRatchet(side: Side, taken: number): void {
     const list = notches(side);
-    /* Four is the design system's ratchet length, and the notches are rebuilt
-       rather than toggled so a reset cannot leave a stale one lit. */
+    /*
+     * The teeth cycle rather than fill. `taken` grows for as long as the
+     * conversation does, and four teeth that simply lit up in order would be
+     * solid from the fourth message on — a wheel that had stopped, which is the
+     * one thing this drawing exists to deny. Cycling means the fifth message
+     * shows one tooth again, and the wheel is visibly still turning.
+     *
+     * Rebuilt rather than toggled so a reset cannot leave a stale tooth lit.
+     */
+    const lit = taken === 0 ? 0 : ((taken - 1) % TEETH) + 1;
     list.replaceChildren();
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < TEETH; index += 1) {
       const item = document.createElement('li');
       item.className = 'demo-ratchet-notch';
-      item.dataset.turned = String(index < taken);
+      item.dataset.turned = String(index < lit);
       list.append(item);
     }
+    /* The total is the number that only ever grows, and it is the one a reader
+       can check against how many messages they have sent. */
+    ratchetCount(side).textContent = `${taken} key${taken === 1 ? '' : 's'}`;
   }
 
+  /*
+   * The empty caption is kept and hidden rather than replaced and rebuilt.
+   * Writing it here would put the relay's own wording in a second file, where
+   * it would go on saying whatever it said when it was copied — the mailbox
+   * below already does it this way, and the two slots are the same shape.
+   */
+  const bundleEmpty = need<HTMLElement>(bundleBody, '.demo-relay-slot-empty');
+
   function holdBundles(count: number): void {
-    bundleBody.replaceChildren();
-    for (let index = 0; index < count; index += 1) {
+    bundleBody.replaceChildren(bundleEmpty);
+    for (let index = 0; index < Math.min(count, KEY_MOTIF); index += 1) {
       const item = document.createElement('span');
       item.className = 'demo-key';
       item.dataset.public = 'true';
       bundleBody.append(item);
     }
-    bundleSlot.dataset.holding = String(count > 0);
-    if (count === 0) {
-      const empty = document.createElement('span');
-      empty.className = 'demo-relay-slot-empty';
-      empty.textContent = 'no bundles published';
-      bundleBody.append(empty);
+    if (count > 0) {
+      const total = document.createElement('span');
+      total.className = 'demo-relay-slot-count';
+      total.textContent = String(count);
+      bundleBody.append(total);
     }
+    bundleSlot.dataset.holding = String(count > 0);
+    bundleEmpty.toggleAttribute('hidden', count > 0);
   }
 
   const view: SceneView = {

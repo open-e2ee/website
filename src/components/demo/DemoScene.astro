@@ -55,7 +55,7 @@ const SIDES = [
    filled once when devices come online; the mailbox holds envelopes until the
    far device collects them, which is the whole of what a relay is for. */
 const SLOTS = [
-  { slot: 'bundles', label: 'prekey bundles', empty: 'no bundles published' },
+  { slot: 'bundles', label: 'public prekeys', empty: 'nothing published' },
   { slot: 'mailbox', label: 'mailbox', empty: 'nothing waiting' },
 ] as const;
 
@@ -109,17 +109,29 @@ const STEP_LIST = STEPS.join(' ');
         {/* The device's own key material. Filled forms are private and never
             leave; the outlined ones on the relay's shelf are the public halves
             of these. Keeping both on screen is what makes that difference
-            visible rather than asserted. */}
+            visible rather than asserted.
+
+            The shapes are a motif and the number is the fact — a device holds
+            two hundred and four of these, and drawing one shape each would be
+            a wall rather than a diagram. See `KEY_MOTIF` in `scene-view.ts`. */}
         <div class="demo-device-keys" data-scene-keys={side}>
-          <span class="demo-device-keys-label">device store</span>
+          <span class="demo-device-keys-label">private keys</span>
           <ul class="demo-device-keys-list" data-scene-keys-list={side}></ul>
+          <span class="demo-device-keys-count" data-scene-keys-count={side}>0</span>
         </div>
 
         {/* The ratchet. One notch per message key derived, so it visibly turns
-            as the conversation goes on rather than being claimed in prose. */}
+            as the conversation goes on rather than being claimed in prose.
+
+            Four teeth that cycle, not four that fill up: a bar which saturates
+            at four would stop moving on the fifth message and teach a reader
+            that the ratchet had finished, which is the opposite of what a
+            ratchet does. The running total beside it is the number that keeps
+            growing. */}
         <div class="demo-ratchet" data-scene-ratchet={side}>
           <span class="demo-ratchet-label">ratchet</span>
           <ol class="demo-ratchet-notches" data-scene-ratchet-notches={side}></ol>
+          <span class="demo-ratchet-count" data-scene-ratchet-count={side}>0 keys</span>
         </div>
       </section>
     ))
@@ -344,6 +356,15 @@ const STEP_LIST = STEPS.join(' ');
   .demo-device-keys-label,
   .demo-ratchet-label {
     opacity: 0.7;
+  }
+
+  /* The counts carry the real magnitude, so they are the emphatic part of the
+     row and the shapes beside them are not. */
+  .demo-device-keys-count,
+  .demo-ratchet-count,
+  .demo-relay-slot-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
   }
 
   .demo-device-keys-list,
