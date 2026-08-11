@@ -1702,12 +1702,12 @@ function checkScene(pass) {
   /*
    * What the wheel is called, on both devices.
    *
-   * The word ships bare and the client module replaces it with the ratchet the
-   * session's own selection event reported, so a named wheel is proof the
-   * selection reached the drawing. Both are read because there is one session
-   * and both devices are in it: a page naming one wheel and not the other is
-   * drawing two devices on different ratchets, which is not a state the
-   * protocol has.
+   * The caption ships unnamed and the client module replaces it with the
+   * ratchet the session's own selection event reported, so a named wheel is
+   * proof the selection reached the drawing. This check reads both, because
+   * there is one session and both devices are in it: a page naming one wheel
+   * and not the other draws two devices on different ratchets, which is not a
+   * state the protocol has.
    */
   const NAMED = /^(?:double|triple) ratchet$/;
   for (const side of ['a', 'b']) {
@@ -1715,7 +1715,7 @@ function checkScene(pass) {
       throw new Red(
         `device ${side}'s wheel is captioned "${scene[side].label || '(nothing)'}" after a ` +
           'session was agreed — it should carry the ratchet the selection event reported, ' +
-          'and a bare label means the selection never reached the scene',
+          'and an unnamed caption means the selection never reached the scene',
       );
     }
   }
