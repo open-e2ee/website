@@ -14,8 +14,6 @@ import test from 'node:test';
 import tokens from '@open-e2ee/design/tokens' with { type: 'json' };
 import capture from '../src/data/carrier-capture.json' with { type: 'json' };
 import { checks, dependencies, reporting, specifications } from '../src/lib/assurance.mjs';
-import { RATCHET_STEPS } from '@open-e2ee/design/diagram';
-import { CAPTIONS, INCOMING_CAPTIONS } from '../src/lib/demo/figure.ts';
 import { codeSurfaces, codeThemes, shellSurface } from '../src/lib/code-theme.mjs';
 import { cssRules, ruleFor } from './css-rules.mjs';
 import {
@@ -506,7 +504,7 @@ test('binds the names the reader brings, or says whose they are', async () => {
 test('keeps the recorded carrier row on the page, wherever it sits', async () => {
   const [index, live] = await Promise.all([
     flat('../src/pages/index.astro'),
-    flat('../src/components/demo/LiveCarrierPanel.astro'),
+    flat('../src/components/demo/DemoConsole.astro'),
   ]);
 
   /* The panel left the hero for the band whose copy raises the question it
@@ -514,12 +512,13 @@ test('keeps the recorded carrier row on the page, wherever it sits', async () =>
    * is the only thing on the site that shows rather than states what the
    * relay holds. A homepage that only asserts it has given up the argument.
    *
-   * It moved once more when the live demo landed: the page now renders
-   * `LiveCarrierPanel`, which renders the recording and puts a live panel in
-   * front of it. That is why this checks two files. The recording is not
-   * decoration underneath the live one — it is what a reader with no
-   * JavaScript, an unsupported browser or a chunk that never arrived sees, so
-   * a refactor that "simplified" it away would take the fallback with it.
+   * It moved once more when the live demo landed, and again when the demo
+   * became three columns: the page renders `DemoConsole`, which renders the
+   * recording under the live console. That is why this checks two files. The
+   * recording is not decoration underneath the live one — it is what a reader
+   * with no JavaScript, an unsupported browser or a chunk that never arrived
+   * sees, so a refactor that "simplified" it away would take the fallback with
+   * it.
    *
    * The lead's own provenance line went at the same time, and correctly: the
    * sentence above the panel now describes a round trip in the reader's tab,
@@ -527,7 +526,7 @@ test('keeps the recorded carrier row on the page, wherever it sits', async () =>
    * where it came from, one line under the recording, which is the assertion
    * in "does not overstate the one artefact that exists to not be
    * overstated". */
-  assert.match(index, /<LiveCarrierPanel \/>/);
+  assert.match(index, /<DemoConsole \/>/);
   assert.match(live, /<CarrierPanel \/>/);
   assert.match(index, /Not a mock-up/);
 });
@@ -1261,11 +1260,14 @@ test('keeps the signature diagram off the page that carries the plate', async ()
    * device on the screen. This asserts the split, not the deletion: a future
    * round that fixes the ratio in the design package and wants it back has to
    * come here and say so. */
-  /* The plate reaches this page through `LiveCarrierPanel`, which renders it
-   * as the live demo's fallback. Both spellings are checked on the other two
-   * pages: either one of them puts a plate on a screen that already has a
-   * signature device. */
-  assert.match(index, /<LiveCarrierPanel \/>/);
+  /* The plate reaches this page through `DemoConsole`, which renders it as the
+   * live demo's fallback. Every spelling is checked on the other two pages: any
+   * one of them puts a plate on a screen that already has a signature device.
+   *
+   * The demo's own three-column figure is not a second signature device. It
+   * draws the relay as an outlined container rather than as the mark, which is
+   * the discrimination that keeps this page inside the one-device cap. */
+  assert.match(index, /<DemoConsole \/>/);
   assert.doesNotMatch(index, /<SignatureDiagram \/>/);
   assert.doesNotMatch(index, /import SignatureDiagram/);
 
@@ -1276,7 +1278,7 @@ test('keeps the signature diagram off the page that carries the plate', async ()
     assert.match(page, /<SignatureDiagram \/>/, `${name} lost the diagram`);
     assert.doesNotMatch(
       page,
-      /<(Live)?CarrierPanel \/>/,
+      /<(Live)?CarrierPanel \/>|<DemoConsole \/>/,
       `${name} now shares a screen with the plate`,
     );
   }
@@ -1288,9 +1290,10 @@ test('keeps the signature diagram off the page that carries the plate', async ()
 });
 
 test('keeps the relay formula out of the absolute, in the drawings too', async () => {
-  const [signature, plaintext] = await Promise.all([
+  const [signature, plaintext, scene] = await Promise.all([
     flat('../src/components/SignatureDiagram.astro'),
     flat('../src/components/diagrams/WhoHoldsPlaintext.astro'),
+    flat('../src/components/demo/DemoScene.astro'),
   ]);
 
   /* A diagram is the part of a page that gets screenshotted and quoted with
@@ -1306,7 +1309,7 @@ test('keeps the relay formula out of the absolute, in the drawings too', async (
    * substitute an identity before any trust is pinned, and a safety-number
    * comparison is what closes the gap. `never needs` is the defensible form and
    * the one the prose already uses. */
-  for (const diagram of [signature, plaintext]) {
+  for (const diagram of [signature, plaintext, scene]) {
     assert.match(diagram, /never needs plaintext/);
     assert.doesNotMatch(diagram, /cannot read/);
   }
@@ -1318,6 +1321,21 @@ test('keeps the relay formula out of the absolute, in the drawings too', async (
    * the desktop end up making different promises about the relay. */
   assert.match(signature, /relay: 'relay · never needs plaintext'/);
   assert.equal(signature.match(/\{LABELS\.relay\}/g)?.length, 2);
+
+  /* The scene is HTML rather than an SVG with two coordinate tables, so it has
+   * one relay header and the guarantee is that there is still only one. The
+   * failure this is aimed at is a *copy* of the correct string — a responsive
+   * variant of the rack, or a second header for the narrow layout — which is
+   * how one composition ends up making a promise the other has stopped making.
+   * A count, not a `doesNotMatch` on a wrong literal, for that reason. */
+  assert.equal(scene.match(/never needs plaintext/g)?.length, 1);
+
+  /* The carrier brackets are the mark. `design/scripts/test.mjs` asserts that
+   * `carrierBracketPaths` reproduces the logo path for path, so a bracket that
+   * turns up inside a drawing is the wordmark used as an illustration of a
+   * device or an envelope. The scene draws both a device and an envelope, which
+   * makes it the likeliest place on the site for that to happen. */
+  assert.doesNotMatch(scene, /carrierBracket/);
 });
 
 test('keeps the relay formula out of the absolute, in prose as well as in drawings', async () => {
@@ -2642,11 +2660,26 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
     assert.doesNotMatch(dist, /Everything in between is\s+sealed/);
     assert.match(dist, /Everything in between is\s+ciphertext/);
     /* The feature band still names the real one, which is the whole reason
-     * the loose sense had to go. "sealed" may appear on this page only as
-     * part of "sealed sender". */
-    assert.match(dist, /sealed sender/);
-    for (const m of dist.matchAll(/sealed(?!\s+sender)/g)) {
-      assert.fail(`"sealed" used loosely at index ${m.index}: ${dist.slice(m.index - 60, m.index + 40)}`);
+     * the loose sense had to go. "sealed" may reach a reader on this page only
+     * as part of "sealed sender".
+     *
+     * Read against the text a reader sees rather than against the whole
+     * document. The rule is about a word landing on someone's eye — three
+     * readers stopped on it — and the demo's markup carries `data-sealed`,
+     * `demo-toggle-sealed-sender` and a `sealedSender` key in its script, none
+     * of which any reader will ever read. Scanning the raw HTML would put this
+     * guard in the position of forbidding attribute names, which would end
+     * either in a pile of exemptions or in someone renaming a data attribute
+     * to satisfy a copy rule. Tags, scripts and styles come out; what is left
+     * is the claim. */
+    const visible = dist
+      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ');
+    assert.match(visible, /sealed sender/);
+    for (const m of visible.matchAll(/sealed(?!\s+sender)/g)) {
+      assert.fail(
+        `"sealed" used loosely at index ${m.index}: ${visible.slice(m.index - 60, m.index + 40)}`,
+      );
     }
   }
 });
@@ -3244,6 +3277,49 @@ test('shows a generic bucket for S3 only while there is no AWS client to name', 
   assert.ok(manifest.exports['./remote/object-store/s3'], 's3 object store export is gone');
 });
 
+/*
+ * Every handwritten file of the demo, for the vocabulary rules below.
+ *
+ * The two roots are the whole demo. `index.astro` is deliberately not swept: it
+ * holds one paragraph of lead, and sweeping it would bring the demo's
+ * vocabulary rules to the whole marketing page, which is a different decision
+ * than these tests make.
+ */
+async function demoSources() {
+  const roots = ['../src/lib/demo/', '../src/components/demo/'];
+  const sources = [];
+  for (const root of roots) {
+    const dir = new URL(root, import.meta.url);
+    for (const name of await readdir(dir, { recursive: true })) {
+      if (/\.(?:ts|astro|mjs)$/.test(name)) sources.push([root + name, new URL(name, dir)]);
+    }
+  }
+
+  /* A glob that quietly matched nothing would pass every caller forever. The
+     floor is the tree's measured size — 22 files on 2026-08-10 — rather than a
+     loose lower bound. Adding a file keeps this passing; losing one is what it
+     is for. */
+  assert.ok(
+    sources.length >= 22,
+    `expected the whole demo source tree, found ${sources.length} files`,
+  );
+  return sources;
+}
+
+/** Every line of `sources` a pattern matches, labelled for the failure message. */
+async function linesMatching(sources, pattern, keep = () => true) {
+  const found = [];
+  for (const [label, url] of sources) {
+    const text = await readFile(url, 'utf8');
+    for (const hit of text.matchAll(pattern)) {
+      if (!keep(hit, text)) continue;
+      const line = text.slice(0, hit.index).split('\n').length;
+      found.push(`${label}:${line}: ${text.split('\n')[line - 1].trim()}`);
+    }
+  }
+  return found;
+}
+
 test("the demo's own source calls the relay a relay", async () => {
   /*
    * `docs/messaging.md` §4 fixes the vocabulary: the E2EE role is the **relay**,
@@ -3277,32 +3353,7 @@ test("the demo's own source calls the relay a relay", async () => {
    * changing the SDK's message, not this site's copy, and it belongs to the
    * vocabulary pass over the SDK's API surface and its rendered errors.
    */
-  const roots = ['../src/lib/demo/', '../src/components/demo/'];
-  const sources = [];
-  for (const root of roots) {
-    const dir = new URL(root, import.meta.url);
-    for (const name of await readdir(dir, { recursive: true })) {
-      if (/\.(?:ts|astro|mjs)$/.test(name)) sources.push([root + name, new URL(name, dir)]);
-    }
-  }
-  /* `../src/pages/demo.astro` was pushed here explicitly until the route folded
-   * into the homepage. Nothing replaces it: everything that route held is now a
-   * component under the roots above, which they already sweep — the scenarios
-   * in `ScenarioList.astro`, the pairing and the transcript inside
-   * `LiveCarrierPanel.astro` since the stage absorbed `TwoTabSection.astro`.
-   * Pushing `index.astro` instead would have applied the demo's vocabulary rule
-   * to the whole marketing page, which is a different decision than this test
-   * makes. */
-
-  /* A glob that quietly matched nothing would pass this test forever. The floor
-     is the tree's actual size rather than a loose lower bound: at 15 it had two
-     files of slack, which is exactly enough to delete both components the fold
-     moved here and still sweep green. Adding a file keeps this passing; losing
-     one is what it is for. */
-  assert.ok(
-    sources.length >= 17,
-    `expected the whole demo source tree, found ${sources.length} files`,
-  );
+  const sources = await demoSources();
 
   /*
    * Bare "server" only. A match touching an identifier character on either side
@@ -3311,20 +3362,70 @@ test("the demo's own source calls the relay a relay", async () => {
    * is Astro's meaning, not the E2EE role, and is left alone.
    */
   const BARE_SERVER = /(?<![\w$])servers?(?![\w$])/gi;
-  const found = [];
-  for (const [label, url] of sources) {
-    const text = await readFile(url, 'utf8');
-    for (const hit of text.matchAll(BARE_SERVER)) {
-      if (/^-rendered/i.test(text.slice(hit.index + hit[0].length))) continue;
-      const line = text.slice(0, hit.index).split('\n').length;
-      found.push(`${label}:${line}: ${text.split('\n')[line - 1].trim()}`);
-    }
-  }
+  const found = await linesMatching(
+    sources,
+    BARE_SERVER,
+    (hit, text) => !/^-rendered/i.test(text.slice(hit.index + hit[0].length)),
+  );
 
   assert.deepEqual(
     found,
     [],
     `the demo names the relay a "server" here — messaging.md §4 says relay:\n${found.join('\n')}`,
+  );
+});
+
+test("the demo's own source never makes a tab into a party", async () => {
+  /*
+   * The other half of the same vocabulary. A device is a device; the browser
+   * tab is where all of them happen to be running, and the two are not
+   * interchangeable words for the same thing. The demo said they were for a
+   * long time, because it was once built out of two real tabs talking over a
+   * `BroadcastChannel` and every name followed from that — "the other tab" was
+   * literally the second participant. That implementation is gone and the
+   * founder's brief was explicit about the wording that outlived it: say
+   * devices, device A, device B.
+   *
+   * The word itself stays legal, and that is the whole difficulty. "This relay
+   * runs in the reader's tab" is true, load-bearing, and printed on the page
+   * under the latency figures — it is what stops a reader reading sub-millisecond
+   * timings as a network measurement. A bare ban would delete the honest
+   * sentences along with the metaphor.
+   *
+   * So the rule is a whitelist of what may sit in front of a singular "tab":
+   * the article-and-possessive forms that describe *where the code is running*.
+   * Anything else — a plural, an ordinal, a side, a role — is the metaphor
+   * coming back, and a phrasing nobody anticipated fails closed rather than
+   * slipping through a blacklist of the ones we happened to think of.
+   */
+  const sources = await demoSources();
+
+  /* No identifier character either side, which is what keeps `tabindex`,
+     `data-tab`, `table` and `DwellTable` out of a rule about English. */
+  const BARE_TAB = /(?<![\w$-])(tabs?)(?![\w$-])/gi;
+
+  /* Where the code runs, never who is talking. `browser` is optional so that
+     "a browser tab" reads as one phrase rather than needing its own entry. */
+  const PLACE = /(?:\b(?:this|that|the|a|an|one|each|its|their|reader's|user's)\s+)(?:browser\s+)?$/i;
+
+  const found = await linesMatching(sources, BARE_TAB, (hit, text) => {
+    if (hit[1].toLowerCase() === 'tabs') return true;
+    /* "tab A" and "tab B" name participants from the other side of the word,
+       where nothing in front of it has to change. */
+    if (/^\s+[AB]\b/.test(text.slice(hit.index + hit[0].length))) return true;
+    /* Read the words in front of it, not the layout. A comment that wraps
+       between "the" and "tab" puts a newline and a ` * ` leader between them,
+       and the phrase is the same phrase either way. */
+    const before = text
+      .slice(Math.max(0, hit.index - 60), hit.index)
+      .replace(/\n\s*\*?[ \t]*/g, ' ');
+    return !PLACE.test(before);
+  });
+
+  assert.deepEqual(
+    found,
+    [],
+    `the demo makes a tab into a participant here — devices are devices:\n${found.join('\n')}`,
   );
 });
 
@@ -3435,177 +3536,67 @@ test('keeps the space on both sides of every inline code span', async () => {
   }
 
   /* A regex that stopped matching would pass on every file in the tree. The
-   * floor is the tree's measured count: 40 spans on 2026-08-10, down two from
-   * 42 on 2026-08-09, which was itself down six from the pre-cut tree — the
-   * spans that left with the hero's disclosure list. The two most recent went
-   * with `TwoTabSection.astro`, whose explanatory paragraph named
-   * `inMemoryStore()` and `inMemoryRelay()`; the section is now part of the
-   * demo panel and the panel's caption already names both.
+   * floor is the tree's measured count: 38 spans on 2026-08-10, the two most
+   * recent having left with `LiveCarrierPanel.astro`, whose caption named
+   * `inMemoryStore()` and `inMemoryRelay()` — the homepage's own caption above
+   * the demo names both.
    *
    * Re-measure and record the reason when this moves. The number is a tripwire
    * for a regex that has stopped matching, so it is only worth what its last
    * measurement was worth. */
-  assert.ok(spans >= 40, `expected to be scanning real code spans, counted ${spans}`);
+  assert.ok(spans >= 38, `expected to be scanning real code spans, counted ${spans}`);
 });
 
-test('keeps the demo figure, its captions and its visibility rules on one state list', async () => {
+test('the scene places the envelope at every step the run records', async () => {
   /*
-   * The figure is three files agreeing about nine names.
+   * The scene's one hand-written step table, held to the step order.
    *
-   * `figure.ts` declares the states and the caption for each. `DemoFigure.astro`
-   * draws every state at build time and tags each shape with the states it
-   * belongs to. `global.css` decides which tagged shapes a state shows. Nothing
-   * at runtime checks that the three agree, and the failure is silent in the
-   * worst way: a state with no caption blanks the live region that is the whole
-   * of the figure for a screen reader, and a state with no CSS rule shows a
-   * reader an empty canvas under a caption describing what they should be
-   * seeing. Both render, neither throws, and `astro check` has nothing to say
-   * about a string that happens to be in one file and not another.
+   * `ENVELOPE_AT` in `scene-view.ts` says where the envelope rests at each
+   * step, and what makes it safe is its *type*: a total `Record<Step, …>`. A
+   * step added to `trace.ts` and forgotten there does not compile, and an
+   * extra key that names no step does not compile either — both were checked
+   * against `astro check` rather than assumed. So the table itself is not what
+   * needs a runtime guard.
    *
-   * `demo-smoke.mjs` proves the figure follows a real run, which is the other
-   * half. It can only prove it for the states that run reaches — this covers
-   * the list itself.
-   */
-  const source = await read('../src/lib/demo/figure.ts');
-  const states = [...source.matchAll(/^ {2}\| '([a-z-]+)';?$/gm)].map(([, state]) => state);
-  assert.ok(states.length >= 5, `expected to be reading the StageState union, found ${states}`);
-  assert.deepEqual(
-    states,
-    Object.keys(CAPTIONS),
-    'the states StageState declares and the states CAPTIONS answers for have drifted apart — ' +
-      'the missing side is a live region that goes blank when the figure reaches that state',
-  );
-
-  /* The caption is announced in full every time the state changes, so the brief
-     sets a ceiling on it. Twenty words is about five seconds of speech. Both
-     maps are held to it: a receiving tab hears the incoming one instead, and
-     it is the same live region and the same reader. */
-  for (const [name, map] of [
-    ['', CAPTIONS],
-    ['incoming ', INCOMING_CAPTIONS],
-  ]) {
-    for (const [state, caption] of Object.entries(map)) {
-      const words = caption.split(/\s+/).filter(Boolean);
-      assert.ok(
-        words.length <= 20,
-        `the ${name}"${state}" caption is ${words.length} words, over the 20-word budget: ${caption}`,
-      );
-    }
-  }
-
-  /*
-   * The incoming map overrides states rather than adding them.
+   * What needs one is the declaration. Widen it to `Partial<Record<Step, …>>`
+   * and every one of those errors goes away in silence: the missing step falls
+   * through to `null`, the envelope is hidden, and a reader gets an empty lane
+   * at the new step with the CSS valid, the markup valid, and nothing left in
+   * the type system with an opinion. That single word is the whole guarantee,
+   * so it is what is asserted, and the key comparison below is the backstop
+   * that still holds if it is ever weakened.
    *
-   * It is a `Partial`, so a typo in one of its keys is a caption that silently
-   * never applies — the receiving tab would keep hearing "opened on the second
-   * device" in the tab that is the second device. TypeScript cannot catch it
-   * either: every string in the union is a valid key whether or not the run
-   * reaches it.
+   * `null` is a permitted value and is not an omission: before anything has
+   * happened, and while a session is being agreed, there is no envelope, and a
+   * scene that drew one would be claiming a message the run has not sent.
    */
-  for (const state of Object.keys(INCOMING_CAPTIONS)) {
-    assert.ok(
-      states.includes(state),
-      `INCOMING_CAPTIONS answers for "${state}", which is not a state the figure has`,
-    );
-    assert.notEqual(
-      INCOMING_CAPTIONS[state],
-      CAPTIONS[state],
-      `the incoming caption for "${state}" is the outgoing one, so the override says nothing`,
-    );
-  }
-
-  const astro = await read('../src/components/demo/DemoFigure.astro');
-
-  /* The part lists are suffixes of the state order — a shape that has appeared
-     stays drawn — and that is the claim the component's own comment makes.
-     Written out in full there rather than computed, so that the drawing reads
-     as markup; checked here so that the two spellings cannot part company. */
-  const suffix = (from) => states.slice(states.indexOf(from)).join(' ');
-  const listIn = (name) =>
-    (astro.match(new RegExp(`const ${name} =\\s*([\\s\\S]*?);`))?.[1] ?? '')
-      .replace(/['\s]+/g, ' ')
-      .trim();
-  for (const [name, from] of [
-    ['AFTER_READY', 'devices-ready'],
-    ['AFTER_SESSION', 'session-established'],
-    ['AT_RELAY', 'stored-at-relay'],
-  ]) {
-    assert.equal(
-      listIn(name),
-      suffix(from),
-      `${name} in DemoFigure.astro is no longer every state from "${from}" onward`,
-    );
-  }
-
-  /*
-   * Two states draw nothing, and that is deliberate rather than an omission:
-   * before the devices exist there is nothing on this canvas that has happened
-   * yet, and a figure that guessed would be drawing a claim the run has not
-   * made. Every other state must pair a `data-stage-state` with the matching
-   * `data-figure-part`, or it shows an empty canvas.
-   */
-  const DRAWS_NOTHING = ['idle', 'sdk-loading'];
-  const css = await read('../src/styles/global.css');
-  const shown = cssRules(css).filter(
-    (rule) =>
-      rule.selector.includes('[data-stage-state=') && /display:\s*inline/.test(rule.body),
-  );
-  assert.equal(shown.length, 1, `expected one rule showing the figure's parts, found ${shown.length}`);
-  const pairs = [
-    ...shown[0].selector.matchAll(/\[data-stage-state='([a-z-]+)'\] \[data-figure-part~='([a-z-]+)'\]/g),
-  ];
-  assert.deepEqual(
-    pairs.map(([, state]) => state),
-    states.filter((state) => !DRAWS_NOTHING.includes(state)),
-    'a state can be reached that shows none of the figure — the visibility rule and the state ' +
-      'list disagree',
-  );
-  for (const [, state, part] of pairs) {
-    assert.equal(part, state, `the rule for "${state}" shows the parts of "${part}"`);
-  }
-
-  /*
-   * One accent, always. It is the only mark on the canvas a reader has to be
-   * able to find at a glance, and two of them at once is two answers to "where
-   * is this now". Nothing in the CSS enforces that — it holds because no state
-   * appears twice in the list that generates them, which is what this reads.
-   */
-  const accents = [...astro.matchAll(/\{ state: '([a-z-]+)',/g)].map(([, state]) => state);
-  assert.deepEqual(
-    accents,
-    states.filter((state) => !DRAWS_NOTHING.includes(state)),
-    'the accent list and the drawn states disagree — a repeated state lights two bars at once, ' +
-      'and a missing one leaves a state with nothing marked',
-  );
+  const source = await read('../src/lib/demo/scene-view.ts');
   assert.match(
-    astro,
-    /class="demo-figure-accent"\s*\n\s*data-figure-part=\{accent\.state\}/,
-    'the accent bars are no longer tagged with their own single state, so more than one can be ' +
-      'visible at a time',
+    source,
+    /export const ENVELOPE_AT: Record<Step,/,
+    'ENVELOPE_AT is no longer declared as a total Record<Step, …> — a partial map silently ' +
+      'hides the envelope at any step it omits, which is how the drawing goes blank with ' +
+      'every gate green',
   );
 
-  /*
-   * The ratchet run is a fourth party to the same agreement.
-   *
-   * `RATCHET_STEPS` in the diagram grammar decides how many steps the drawing
-   * emits, `figure.ts` clamps the counter to its own copy of that number, and
-   * `global.css` needs a rule per step to light one. A grammar that grew a
-   * fifth step would draw one nothing ever lights and clamp the counter one
-   * short of the drawing, in silence, in both directions at once.
-   */
-  assert.equal(
-    Number(source.match(/^const RATCHET_STEPS = (\d+);$/m)?.[1]),
-    RATCHET_STEPS,
-    'figure.ts clamps the ratchet counter to a different number of steps than the diagram ' +
-      'grammar draws',
-  );
-  const lit = [...css.matchAll(/\[data-figure-ratchet~='(\d+)'\] \[data-figure-step='(\d+)'\]/g)];
+  const [{ STEPS }, { ENVELOPE_AT }] = await Promise.all([
+    import('../src/lib/demo/trace.ts'),
+    import('../src/lib/demo/scene-view.ts'),
+  ]);
+  assert.ok(STEPS.length >= 8, `expected the STEPS array, found ${JSON.stringify(STEPS)}`);
+  assert.equal(STEPS[0], 'idle', 'the step order no longer starts at idle');
   assert.deepEqual(
-    lit.map(([, count]) => Number(count)),
-    Array.from({ length: RATCHET_STEPS }, (_, index) => index + 1),
-    'the ratchet steps the stylesheet can light and the steps the drawing emits disagree',
+    Object.keys(ENVELOPE_AT).sort(),
+    [...STEPS].sort(),
+    'ENVELOPE_AT and STEPS disagree about what the steps are — the scene is placing the ' +
+      'envelope at a step the run never records, or has been left a key for one that is gone',
   );
-  for (const [, count, step] of lit) {
-    assert.equal(count, step, `the rule for ${count} lit steps lights step ${step}`);
+
+  /* And the places it names are places the scene has. A typo here does not
+     throw: `anchorFor` would be handed a string it does not know and the
+     envelope would land wherever the fallback put it. */
+  const PLACES = new Set(['sender', 'relay', 'receiver', null]);
+  for (const [step, place] of Object.entries(ENVELOPE_AT)) {
+    assert.ok(PLACES.has(place), `${step} puts the envelope at "${place}", which is not a place`);
   }
 });

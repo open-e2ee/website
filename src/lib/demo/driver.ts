@@ -1,12 +1,10 @@
 /*
  * One conversation, driven by the shipped SDK, for every demo surface to reuse.
  *
- * The homepage panel, the /demo scenarios and the two-tab relay all need the
- * same three things — boot the two accounts, send a sentence, read what each
- * stage produced — and the site has already paid once for that being written
- * by hand:
- * the recorded carrier panel's metadata list was maintained separately from the
- * envelope and drifted from ten fields to six. So this module hands over the
+ * The homepage console and the /demo scenarios both need the same three things
+ * — boot the two accounts, send a sentence, read what each step produced — and
+ * the site has already paid once for that being written by hand: a metadata
+ * list maintained separately from the envelope drifted from ten fields to six. So this module hands over the
  * live `Envelope` object rather than a description of it (invariant 4), and the
  * cryptography is the shipped cryptography (invariant 1): real
  * `createSignalProtocolClient`, real PQXDH, real Double Ratchet. What is
