@@ -422,9 +422,26 @@ const TOGGLES = [
     let exchanged = false;
     let bytesHeld = 0;
     let rowsHeld = 0;
-    let bundlesHeld = 0;
     let publishedMs = 0;
     const pending: Row[] = [];
+
+    /*
+     * Public keys the relay is holding for each device, as the relay itself
+     * reports them.
+     *
+     * Not a count of publish events — that would say "two", which is the number
+     * of devices rather than the number of keys, and would go on saying two
+     * however much material each one actually put up. `run.ts` reads the relay
+     * back after each publish and reports what is on the shelf for that one
+     * device, so the shelf is drawn from the store rather than from the page's
+     * own bookkeeping.
+     *
+     * The same number fills each device's own key store. Every public key the
+     * relay holds for a device is one half of a pair whose other half never
+     * left that device, so the two drawings are the same count seen from the
+     * two ends — which is the point the picture is making.
+     */
+    const published: Record<Side, number> = { a: 0, b: 0 };
 
     /*
      * Message keys derived, per device. The ratchet's notches are this count and
@@ -611,7 +628,14 @@ const TOGGLES = [
          may mount after this one, so a reference taken at upgrade time could be
          a reference to nothing. */
       (logRoot as HTMLElement & { demoLog?: DemoLogHandle }).demoLog?.append(event);
-      if (event.step === 'bundles-published') bundlesHeld += 1;
+      if (event.step === 'bundles-published') {
+        /* Absent when the relay had nothing for this device — `run.ts` keeps an
+           unobserved reading out of the trace rather than reporting it as a
+           zero, so an absent one leaves the last known count standing. */
+        const keys = (event.detail as { publicKeys?: unknown } | undefined)?.publicKeys;
+        const actor = event.actor;
+        if ((actor === 'a' || actor === 'b') && typeof keys === 'number') published[actor] = keys;
+      }
       if (event.step === 'stored-at-relay') {
         const envelope = (event.detail as { envelope?: Record<string, unknown> })?.envelope;
         if (envelope) pending.push({ envelope, bytes: event.measures?.ciphertextBytes ?? 0 });
@@ -684,7 +708,12 @@ const TOGGLES = [
         return { ...base, ...turned };
       }
       if (event.step === 'bundles-published') {
-        return { ...base, ...turned, bundles: bundlesHeld };
+        return {
+          ...base,
+          ...turned,
+          bundles: published.a + published.b,
+          keys: { a: published.a, b: published.b },
+        };
       }
       if (event.step === 'encrypted' && from && typeof detail.text === 'string') {
         return { ...base, ...turned, sentence: { side: from, text: detail.text } };
@@ -911,8 +940,9 @@ const TOGGLES = [
         exchanged = false;
         bytesHeld = 0;
         rowsHeld = 0;
-        bundlesHeld = 0;
         publishedMs = 0;
+        published.a = 0;
+        published.b = 0;
         derived.a = 0;
         derived.b = 0;
         awaitingDelivery = null;
