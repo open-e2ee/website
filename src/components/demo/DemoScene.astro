@@ -157,6 +157,30 @@ const STEP_LIST = STEPS.join(' ');
           */}
           <div class="demo-relay-row">
             <p class="demo-console-empty" data-console-relay-empty>nothing stored yet</p>
+
+            {/*
+              How big the row is, drawn and named.
+
+              Size is the thing about a stored envelope that a figure states and
+              a reader still has to do arithmetic on, and it is also what the
+              protocol switches move most: the same sentence measures around
+              nine times larger on the wire with the braid switch off than with
+              it on. A bar is what makes that difference something the column
+              shows rather than something it reports.
+
+              `scene-view.ts` fills it, from the byte count on the cue, which
+              comes off the trace's own measure of the stored ciphertext. The
+              elements carry the scene's `data-scene-` names for that reason,
+              beside the console's row, which the console fills.
+            */}
+            <div class="demo-relay-size" data-scene-size hidden>
+              <span class="demo-relay-size-label">size</span>
+              <span class="demo-relay-size-track">
+                <span class="demo-relay-size-bar" data-scene-size-bar data-over="false" />
+              </span>
+              <span class="demo-relay-size-figure" data-scene-size-figure />
+            </div>
+
             <pre class="demo-console-hex" data-console-hex hidden></pre>
             <dl class="demo-console-row" data-console-row hidden></dl>
             <p class="demo-console-row-note" data-console-row-note hidden></p>

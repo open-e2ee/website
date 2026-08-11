@@ -752,16 +752,24 @@ const TOGGLES = [
      * A projection and nothing else: it reads the event and returns a cue, and
      * the cue is where the paced half of the page gets everything it knows.
      *
-     * This used to claim that every number it touches becomes a string on the
-     * way, and that there is therefore no number left on a cue to scale. Neither
-     * is true, and both were written before the scene had a ratchet to turn: the
-     * lines below put real numbers on `ratchet`, `bundles` and `keys` on purpose,
-     * to size a notch list and a key shelf. The honest invariant is narrower and
-     * is the one `demo-run.test.mjs` actually holds — every number on a cue lives
-     * on one of those three named fields, and every other value, at any depth, is
-     * a string. A measurement arriving on a fourth field is the regression, and
-     * telling it apart by size would not work: `bundles` counts real prekeys and
-     * runs into the hundreds, the same order as a ciphertext byte count.
+     * A cue carries numbers on purpose. Four fields hold them and no others do,
+     * which is the invariant `demo-run.test.mjs` holds: every number on a cue
+     * lives on `ratchet`, `bundles`, `keys` or `bytes`, and every other value,
+     * at any depth, is a string. A number arriving on a fifth field is the
+     * regression, and telling it apart by size would not work — `bundles` counts
+     * real prekeys and runs into the hundreds, the same order as a byte count.
+     *
+     * Three of the four are counts of things to draw: notches turned, bundles
+     * held, key shapes shelved. `bytes` is the exception and is a measurement,
+     * carried because the relay column draws the size of the row it is holding
+     * and there is no honest way to draw a size without the size. It is held to
+     * a stricter rule than the counts in return: it must be the byte count the
+     * recording itself measured for that row, which is what the test checks,
+     * because a drawn size that no event reported would be a decoration.
+     *
+     * The two-clock separation survives this. It was never about numbers as
+     * such — it is that nothing the drawing receives is a duration, so pacing
+     * has nothing on a cue it could move. A byte count is not a clock reading.
      */
     function toCue(event: TraceEvent): SceneCue {
       const detail = (event.detail ?? {}) as Record<string, unknown>;
@@ -851,10 +859,16 @@ const TOGGLES = [
         const envelope = (detail.envelope ?? {}) as Record<string, unknown>;
         /* The addressing on the drawn envelope is the addressing on the real
            one, read off the same object the relay stored, so the two cannot
-           disagree about who the relay can see. */
+           disagree about who the relay can see. The size travels with it, off
+           the same event's own measure of the ciphertext it stored, so the bar
+           the scene draws and the byte figure the relay prints below it are two
+           readings of one number rather than two numbers that agree. */
         return {
           ...base,
           ...turned,
+          ...(typeof event.measures?.ciphertextBytes === 'number'
+            ? { bytes: event.measures.ciphertextBytes }
+            : {}),
           meta: {
             ...(typeof envelope[NAMED_FIELDS.to] === 'string'
               ? { to: envelope[NAMED_FIELDS.to] as string }

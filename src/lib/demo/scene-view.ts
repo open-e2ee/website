@@ -52,6 +52,17 @@ export interface SceneCue extends Cue {
   readonly ratchetKind?: 'double' | 'triple';
   /** How many public bundles the relay is holding. */
   readonly bundles?: number;
+  /**
+   * How many bytes of ciphertext the relay stored, off the trace's own measure.
+   *
+   * Carried on the cue rather than read when the cue plays, for the reason the
+   * ratchet count above is: the protocol runs well ahead of the reader, and a
+   * drawing that reached for the current row would size this message's envelope
+   * to whichever one the relay had taken most recently. It arrives only on the
+   * step that stores a row, because that is the only step at which a byte count
+   * is a fact rather than a guess about one.
+   */
+  readonly bytes?: number;
   /** How many private keys each device holds. */
   readonly keys?: Readonly<Record<Side, number>>;
 }
@@ -115,6 +126,27 @@ export const DEFAULT_TOGGLES: SceneToggles = {
  */
 export const SEALED_SENDER_HIDES: readonly string[] = ['senderUserId', 'senderDeviceId'];
 
+/**
+ * The rule the stored row's size is drawn against, in bytes.
+ *
+ * Fixed, and that is the whole of why it exists. The comparison this drawing is
+ * for is between two runs — the same sentence sent with the braid switch off
+ * and with it on — and a rule that took its length from the largest row of the
+ * run it was drawing would give those two runs different rules. The wider bar
+ * would still be wider, but by the wrong amount: two runs whose envelopes stand
+ * at nine to one would be drawn at closer to five. A fixed rule means the same
+ * byte count is the same width in every run the page ever draws, which is the
+ * only way a reader can compare one against a run they have already seen.
+ *
+ * Four kilobytes because everything a run produces fits under it with room to
+ * spare: the largest envelope is the one that agrees the keys, at around three
+ * and a tenth, and the sentences after it are smaller in both settings. A row
+ * that ever passed the rule is drawn full and marked rather than quietly
+ * clipped — `drawSize` below, and the figure beside the bar is the true count
+ * either way.
+ */
+const SIZE_RULE_BYTES = 4096;
+
 export interface SceneView {
   show(cue: SceneCue, flightMs: number): void;
   clear(): void;
@@ -167,6 +199,9 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const mailboxBody = need<HTMLElement>(root, '[data-scene-slot-body="mailbox"]');
   const bundleSlot = need<HTMLElement>(root, '[data-scene-slot="bundles"]');
   const bundleBody = need<HTMLElement>(root, '[data-scene-slot-body="bundles"]');
+  const sizeRow = need<HTMLElement>(root, '[data-scene-size]');
+  const sizeBar = need<HTMLElement>(root, '[data-scene-size-bar]');
+  const sizeFigure = need<HTMLElement>(root, '[data-scene-size-figure]');
 
   const phone = (side: Side) => need<HTMLElement>(root, `[data-scene-device="${side}"] .demo-phone`);
   const chat = (side: Side) => need<HTMLElement>(root, `[data-scene-chat="${side}"]`);
@@ -364,6 +399,28 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     bundleEmpty.toggleAttribute('hidden', count > 0);
   }
 
+  /**
+   * Draw the size of the row the relay has just stored, and name it.
+   *
+   * The width is the measurement and nothing else — the bytes the trace counted
+   * on this envelope, against the fixed rule above. Nothing about which setting
+   * produced them reaches this function, and that is deliberate: the switch is
+   * an instruction, the byte count is what the wire carried, and only the
+   * second is a fact the relay could report. A drawing that read the switch
+   * would go on drawing a difference on the day the protocol stopped making
+   * one.
+   *
+   * Drawn *and* named. The bar is what makes two runs comparable at a glance
+   * and the figure is what makes the bar checkable, and a reader who wants to
+   * know what a length means should never have to measure it against anything.
+   */
+  function drawSize(bytes: number): void {
+    sizeBar.style.width = `${Math.min(100, (bytes / SIZE_RULE_BYTES) * 100)}%`;
+    sizeBar.dataset.over = String(bytes > SIZE_RULE_BYTES);
+    sizeFigure.textContent = `${bytes.toLocaleString('en-US')} bytes`;
+    sizeRow.hidden = false;
+  }
+
   const view: SceneView = {
     show(cue, flightMs) {
       root.dataset.sceneState = cue.step;
@@ -379,6 +436,10 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
          cleared between steps would flicker the one fact this line carries. */
       if (cue.ratchetKind) nameRatchet(cue.ratchetKind);
       if (cue.bundles !== undefined) holdBundles(cue.bundles);
+      /* The size arrives on the step that stores the row and stays after it,
+         for the reason the row below the column does: the far device collecting
+         empties the mailbox and the relay still has what it kept. */
+      if (cue.bytes !== undefined) drawSize(cue.bytes);
 
       if (cue.step === 'devices-ready') {
         for (const side of ['a', 'b'] as const) deviceState(side).textContent = 'online';
@@ -449,6 +510,13 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       mailbox.dataset.holding = 'false';
       mailboxBody.querySelector('.demo-relay-slot-empty')?.removeAttribute('hidden');
       holdBundles(0);
+      /* Back to the state the markup ships in, width and all: a bar left at its
+         last length under a hidden row would be the size of a message from a
+         run that has been thrown away. */
+      sizeRow.hidden = true;
+      sizeBar.style.removeProperty('width');
+      sizeBar.dataset.over = 'false';
+      sizeFigure.textContent = '';
       nameRatchet(null);
       for (const side of ['a', 'b'] as const) {
         chat(side).replaceChildren();
@@ -458,10 +526,17 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       }
     },
 
+    /*
+     * The braid setting is not written to the scene, and there is nothing left
+     * here that would read it if it were. What the switch does is change the
+     * size of every envelope the relay stores, and the column now draws that
+     * size from the count the trace took — so the setting reaches the drawing
+     * as its effect, measured, rather than as a state the drawing is told to
+     * assume. The attribute this used to stamp had no reader at all.
+     */
     setToggles(next) {
       toggles = next;
       root.dataset.sceneSealedSender = String(next.sealedSender);
-      root.dataset.sceneBraid = String(next.braid);
       metaFrom.dataset.sealed = String(next.sealedSender);
     },
 

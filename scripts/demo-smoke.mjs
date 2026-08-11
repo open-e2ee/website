@@ -121,8 +121,10 @@ const RECORDED = '[data-console-recorded]';
 /* The composer, and it belongs to a device rather than to the console: the
    reader types into the phone on the left, which is where a message comes from
    in the arrangement the page draws. */
-const INPUT = '[data-scene-input="a"]';
-const SEND = '[data-scene-send="a"]';
+const COMPOSE = (side) => `[data-scene-input="${side}"]`;
+const COMPOSE_SEND = (side) => `[data-scene-send="${side}"]`;
+const INPUT = COMPOSE('a');
+const SEND = COMPOSE_SEND('a');
 
 /* The near device's conversation, and the far one's. A round trip is proved by
    the sentence appearing in the device that did not type it — the claim the
@@ -185,6 +187,58 @@ const SCENE_RATCHET_LABEL = (side) => `[data-scene-ratchet-label="${side}"]`;
 const SCENE_END_STATE = 'opened';
 
 /*
+ * The braid switch, and the column whose drawing has to answer it.
+ *
+ * Braid is a session setting: with it off the ML-KEM key rides whole in every
+ * message, and with it on the same key is carried in 32-byte chunks, one per
+ * message. So the two settings put envelopes of very different sizes through
+ * the relay, and a column that draws what the relay is holding has to look
+ * different under the two. Addressed by the key the console maps the switch on
+ * rather than by its element id, which is assembled from that key.
+ *
+ * The setting is read by `startDemoRun`, so it must be chosen before a session
+ * exists — `enable()` takes the switch away once one does.
+ */
+const BRAID_TOGGLE = '[data-console-toggle="braid"]';
+
+/*
+ * The relay's column, whole, rather than any element inside it.
+ *
+ * The check below asks whether *something* in this column is drawn to the size
+ * of what the relay is holding, and deliberately does not say which element
+ * that is or how it is marked. Naming one would be this harness dictating a
+ * drawing rather than reading one, and the drawing is free to move as long as
+ * the column still answers the question.
+ */
+const RELAY_COLUMN = '.demo-scene-relay';
+
+/* What the relay says it is holding, in its own words. Reported beside the
+   geometry so a reader can see the sizes the two runs put through the column;
+   never asserted on, because a printed figure is exactly what a column can get
+   right while drawing nothing. */
+const RELAY_STORED = '[data-console-metric="relay-holding"]';
+
+/* And what it says about the one row it is showing, which is the row the
+   drawing beside it is drawing. Reported for the same reason and under the same
+   rule as the total above: context, never the claim. */
+const ROW_NOTE = '[data-console-row-note]';
+
+/*
+ * How much wider the drawing has to get, and how small an element may be and
+ * still count.
+ *
+ * The envelopes differ by roughly nine times between the two settings, so a
+ * width drawn to scale differs by roughly nine times too. Three is the floor
+ * that separates that from everything else in the column that moves a little
+ * when the text changes: a longer byte figure or an extra field name reflows a
+ * box by a few percent, never by three times. Sub-pixel boxes are dropped
+ * rather than divided — an element a fraction of a pixel wide in one run is
+ * noise, and it would otherwise manufacture an enormous ratio out of nothing.
+ */
+const BRAID_WIDTH_FACTOR = 3;
+const BRAID_MIN_WIDTH_PX = 2;
+
+/*
  * The scenario section's contract, on the same terms. A scenario is addressed
  * by its slug rather than by position: a second scenario landing on the page
  * must not silently move what this drives.
@@ -242,6 +296,12 @@ const PROBE = `Smoke probe ${NONCE}: the staging key rotates at 09:00 UTC.`;
    "one beacon per page, not per sentence" a measurement rather than an
    assertion: a page asked once cannot tell the two apart. */
 const REPEAT_PROBE = `Second probe ${NONCE}: sent again, on a session already warm.`;
+/* The far device answering, and the sentence that follows the answer. Between
+   them they take the conversation out of its handshake: everything before the
+   reply is a prekey message carrying the whole agreement, and the sentence
+   after it is the first one sized by the session alone. */
+const REPLY_PROBE = `Reply probe ${NONCE}: answered from the far device.`;
+const STEADY_PROBE = `Third probe ${NONCE}: sent after the answer, on an agreed session.`;
 
 const DECRYPT_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 30000;
@@ -593,6 +653,47 @@ const SNAPSHOT = `(() => {
 })()`;
 
 /*
+ * Every box the relay's column draws, measured where it is drawn.
+ *
+ * Rendered widths and not the values behind them. A width is what a reader sees
+ * and is the one reading that cannot be satisfied by printing a number: the
+ * column already prints the byte count three times over, and printing it a
+ * fourth would move none of these figures. `getBoundingClientRect` is taken
+ * rather than `scrollWidth` for the same reason — the width of the content a
+ * box could show is not the width of the box on the page.
+ *
+ * Each box carries the path that locates it in the column, so two runs of the
+ * page can be compared box for box without either run's markup being described
+ * here. The path is child positions from the column down, which survives an
+ * element being added to the column as long as both runs get it; the tag is
+ * carried with it so a pair that lines up by accident after a run drew a
+ * different number of children can be told apart.
+ */
+const RELAY_GEOMETRY = `(() => {
+  const column = document.querySelector(${JSON.stringify(RELAY_COLUMN)});
+  if (!column) return null;
+  const drawn = [];
+  const measure = (element, path) => {
+    drawn.push({
+      path,
+      tag: element.tagName.toLowerCase(),
+      classes: element.getAttribute('class') || '',
+      width: Math.round(element.getBoundingClientRect().width * 10) / 10,
+    });
+    const children = [...element.children];
+    for (let index = 0; index < children.length; index += 1) {
+      measure(children[index], path === '' ? String(index) : path + '.' + index);
+    }
+  };
+  measure(column, '');
+  return {
+    drawn,
+    stored: document.querySelector(${JSON.stringify(RELAY_STORED)})?.textContent?.trim() ?? '',
+    note: document.querySelector(${JSON.stringify(ROW_NOTE)})?.textContent?.trim() ?? '',
+  };
+})()`;
+
+/*
  * Everything the page printed about the scenario it just ran.
  *
  * Read through the same data attributes the page renders, in one round trip.
@@ -843,19 +944,24 @@ async function openTab(cdp, held, { blocked = [] } = {}) {
  * thing a reader does and two fewer round trips. `Input.insertText` rather than
  * assigning the value, so the page's own input handling runs.
  */
-async function type(cdp, sessionId, text) {
+async function type(cdp, sessionId, text, side = 'a') {
   await evaluate(
     cdp,
     sessionId,
     `(() => {
-       const input = document.querySelector(${JSON.stringify(INPUT)});
+       const input = document.querySelector(${JSON.stringify(COMPOSE(side))});
        input.focus();
        input.value = '';
      })()`,
     'demo',
   );
   await cdp.send('Input.insertText', { text }, sessionId);
-  await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(SEND)}).click()`, 'demo');
+  await evaluate(
+    cdp,
+    sessionId,
+    `document.querySelector(${JSON.stringify(COMPOSE_SEND(side))}).click()`,
+    'demo',
+  );
 }
 
 /**
@@ -928,8 +1034,13 @@ async function walk(cdp, sessionId, done, complaint, context = () => [], budgetM
 /**
  * Load the homepage in a fresh tab, exchange keys, type the probe, press send,
  * and report everything the browser did.
+ *
+ * `braid` chooses the setting the run is made under, and `null` — the default —
+ * leaves the page exactly as it ships. A pass that names the setting presses the
+ * switch itself and proves it took, so a run that says it was made with braid on
+ * was made with braid on.
  */
-async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
+async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = null } = {}) {
   const tab = await openTab(cdp, held, { blocked });
   const { sessionId, requests, scripts, cspViolations, pageErrors, blockedRequests, quiet } = tab;
 
@@ -998,6 +1109,59 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
 
     await quiet(IDLE_QUIET_MS, IDLE_MAX_MS);
     const interactedAt = Date.now();
+
+    /*
+     * The setting, before the run that reads it exists.
+     *
+     * Pressed rather than assigned: the console keeps its own copy of the
+     * switches and updates it from the change event, so a harness that wrote
+     * `checked` would tick a box the next `startDemoRun` never hears about and
+     * would then report a run under a setting that was never chosen.
+     *
+     * Waited for rather than pressed and hoped: the switches ship inside a
+     * disabled fieldset and the script enables them, so a press that arrived
+     * first would land on nothing at all. `:disabled` is asked rather than the
+     * `disabled` property, because the property answers for the element's own
+     * attribute and says nothing about the fieldset holding it.
+     */
+    if (braid !== null) {
+      const operable = `(() => {
+         const input = document.querySelector(${JSON.stringify(BRAID_TOGGLE)});
+         return Boolean(input) && !input.matches(':disabled');
+       })()`;
+      await waitFor(
+        cdp,
+        sessionId,
+        operable,
+        DECRYPT_TIMEOUT_MS,
+        `the braid switch never became operable within ${DECRYPT_TIMEOUT_MS} ms, so a run under ` +
+          `braid ${braid ? 'on' : 'off'} could not be asked for`,
+        why({
+          'the switch is on the page': present(BRAID_TOGGLE),
+          'it reports itself disabled': `document.querySelector(${JSON.stringify(BRAID_TOGGLE)})?.matches(':disabled') ?? null`,
+          'the status line': `document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? null`,
+        }),
+      );
+      const chose = await evaluate(
+        cdp,
+        sessionId,
+        `(() => {
+           const input = document.querySelector(${JSON.stringify(BRAID_TOGGLE)});
+           if (input.checked !== ${JSON.stringify(braid)}) input.click();
+           return { checked: input.checked, blocked: input.matches(':disabled') };
+         })()`,
+        'demo',
+      );
+      if (chose.checked !== braid) {
+        throw new Red(
+          `the braid switch would not go ${braid ? 'on' : 'off'}: it was pressed and it still ` +
+            `reads ${chose.checked ? 'on' : 'off'}` +
+            (chose.blocked ? ', and it is unavailable' : '') +
+            `\n  Nothing below would be about the setting it says it is about, so the run stops ` +
+            `here rather than reporting one setting's drawing under the other's name.`,
+        );
+      }
+    }
 
     /*
      * Press as a reader would, in the order the console requires.
@@ -1121,6 +1285,36 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
     }
 
     /*
+     * A reply, and then a third sentence on top of it.
+     *
+     * The first two sentences a device sends are both prekey messages: until
+     * the far device answers, every one of them carries the whole handshake
+     * again and the setting under test barely shows in the size. The reply is
+     * what agrees the session properly and starts the ratchet, so the sentence
+     * after it is the first one whose size is the session's own — which is the
+     * message the two settings differ over, and therefore the one the column
+     * has to be measured on.
+     */
+    if (braid !== null) {
+      await type(cdp, sessionId, REPLY_PROBE, 'b');
+      await walk(
+        cdp,
+        sessionId,
+        `(root.querySelector(${JSON.stringify(SENT)})?.textContent ?? '').includes(` +
+          `${JSON.stringify(REPLY_PROBE)})`,
+        `the far device never answered, so the session never left its handshake`,
+      );
+      await type(cdp, sessionId, STEADY_PROBE, 'a');
+      await walk(
+        cdp,
+        sessionId,
+        `(root.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? '').includes(` +
+          `${JSON.stringify(STEADY_PROBE)})`,
+        `the conversation was answered and the next sentence never arrived`,
+      );
+    }
+
+    /*
      * And to the end of the recording, so the state the checks read is the one
      * the run finishes in rather than wherever the last sentence happened to
      * leave it. Already there when the reel's last cue is the one that decrypted
@@ -1136,6 +1330,10 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
 
     const wentQuiet = await quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS);
     const dom = await evaluate(cdp, sessionId, SNAPSHOT);
+    /* Measured after the reel has arrived and the page has gone quiet, so the
+       column is drawing the state the run finished in rather than a frame of
+       the journey there. */
+    const geometry = await evaluate(cdp, sessionId, RELAY_GEOMETRY);
 
     await tab.fillPostData();
 
@@ -1149,6 +1347,8 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
       afterStart,
       afterFirst,
       dom,
+      geometry,
+      braid,
       repeated: repeat,
       requests,
       cspViolations,
@@ -1929,6 +2129,101 @@ function checkFallback(pass) {
       `a blocked chunk should be handled, not thrown:\n  ${pass.pageErrors.join('\n  ')}`,
     );
   }
+}
+
+/*
+ * The relay's column draws the size of what the relay is holding.
+ *
+ * Two runs of the same page, differing in one switch. Braid off sends the
+ * ML-KEM key whole in every message and braid on sends it in 32-byte chunks, so
+ * the envelope the relay stores is several times larger in the first run than
+ * in the second — and a column that draws that size has to be visibly different
+ * between them.
+ *
+ * Geometry, and only geometry. The column already prints the byte count in
+ * three places, and every one of those printed figures changes between these
+ * two runs whether or not anything is drawn: a check that read one of them
+ * would go green against the page as it stands and would go on being green if
+ * the drawing were deleted. What no printed figure can do is change a box's
+ * width, so the width is what is measured, at the size the reader's browser
+ * gave it.
+ *
+ * Which box is not this harness's business. Every box in the column is measured
+ * in both runs and paired by where it sits, and the pair that moved the most is
+ * the answer — so a drawing may be a bar, a strip, a stack of chunks or the row
+ * itself, may carry any markup, and may be moved within the column, and this
+ * check neither knows nor cares. What it requires is that the column contain
+ * one box that gets several times wider when the envelope does.
+ */
+function checkBraidDrawing(disabled, required) {
+  const measured = (pass, setting) => {
+    if (!pass.geometry) {
+      throw new Red(
+        `braid drawing — the run under braid ${setting} has no relay column on the page to ` +
+          `measure (${RELAY_COLUMN}), so whether it draws the size of an envelope cannot be asked`,
+      );
+    }
+    return pass.geometry;
+  };
+  const whole = measured(disabled, 'off');
+  const chunked = measured(required, 'on');
+
+  /* Paired by position in the column rather than by anything either run's
+     markup says about itself. A box drawn in only one of the two runs has no
+     pair and is passed over: the claim is about a box whose width answers the
+     setting, and a box that exists under one setting alone cannot be compared
+     to itself. */
+  const facing = new Map(chunked.drawn.map((box) => [box.path, box]));
+  const pairs = [];
+  for (const box of whole.drawn) {
+    const other = facing.get(box.path);
+    if (!other || other.tag !== box.tag) continue;
+    if (box.width < BRAID_MIN_WIDTH_PX || other.width < BRAID_MIN_WIDTH_PX) continue;
+    pairs.push({
+      path: box.path,
+      tag: box.tag,
+      classes: box.classes,
+      whole: box.width,
+      chunked: other.width,
+      ratio: box.width / other.width,
+    });
+  }
+  pairs.sort((first, second) => second.ratio - first.ratio);
+
+  const held =
+    `  the relay held, braid off: ${JSON.stringify(whole.stored)}\n` +
+    `    of which the drawn row:  ${JSON.stringify(whole.note)}\n` +
+    `  the relay held, braid on:  ${JSON.stringify(chunked.stored)}\n` +
+    `    of which the drawn row:  ${JSON.stringify(chunked.note)}`;
+
+  if (pairs.length === 0) {
+    throw new Red(
+      `braid drawing — nothing in the relay column could be measured across the two settings: ` +
+        `${whole.drawn.length} box(es) drawn under braid off and ${chunked.drawn.length} under ` +
+        `braid on, and no box sat in the same place in both with a width worth dividing.\n` +
+        held,
+    );
+  }
+
+  const widest = pairs[0];
+  const describe = (pair) =>
+    `    ${pair.ratio.toFixed(2)}×  ${pair.whole.toFixed(1)} px → ${pair.chunked.toFixed(1)} px  ` +
+    `<${pair.tag}${pair.classes ? ` class="${pair.classes}"` : ''}> at ${pair.path || 'the column'}`;
+
+  if (widest.ratio < BRAID_WIDTH_FACTOR) {
+    throw new Red(
+      `braid drawing — the relay column does not draw the size of what it is holding. The same ` +
+        `page ran under both braid settings, which put envelopes of very different sizes through ` +
+        `the relay, and the widest that any box in ${RELAY_COLUMN} changed between the two runs ` +
+        `was ${widest.ratio.toFixed(2)}×. A width drawn to the envelope's size changes by at ` +
+        `least ${BRAID_WIDTH_FACTOR}×.\n` +
+        held +
+        `\n  the boxes that moved most, of ${pairs.length} measured in both runs:\n` +
+        pairs.slice(0, 3).map(describe).join('\n'),
+    );
+  }
+
+  return { widest, whole, chunked, pairs };
 }
 
 /*
@@ -3419,6 +3714,22 @@ async function main() {
       reinstallExpectation(reinstall),
     );
 
+    /*
+     * The same page again under each braid setting, one sentence per run.
+     *
+     * Two runs rather than one reading of the run above: the setting is chosen
+     * before a session exists and is fixed for that session's life, so the only
+     * way to see what it changes is to run the page twice. One sentence each,
+     * so the two columns are drawing the same message of the conversation and
+     * not the first against the second.
+     *
+     * Last of everything, so a failure here is about the drawing. Every other
+     * claim this harness makes has already been made by the time these run.
+     */
+    const braidOff = await visit(cdp, origin, held, { braid: false });
+    const braidOn = await visit(cdp, origin, held, { braid: true });
+    const braid = checkBraidDrawing(braidOff, braidOn);
+
     /* Say which of the two things happened. Claiming a quiet window we never
        got would overstate the egress evidence on exactly the chatty pages
        where it is weakest. */
@@ -3444,6 +3755,11 @@ async function main() {
         `  the scene:      finished on "${live.dom.scene.state}", both wheels captioned ` +
         `"${live.dom.scene.a.label}", ${live.dom.scene.a.keys} and ${live.dom.scene.b.keys}, ` +
         `turned ${live.dom.scene.a.turns} and ${live.dom.scene.b.turns} time(s)\n` +
+        `  the braid:      the relay held ${JSON.stringify(braid.whole.stored)} with the switch ` +
+        `off and ${JSON.stringify(braid.chunked.stored)} with it on, and the column drew that ` +
+        `${braid.widest.ratio.toFixed(2)}× wider — ${braid.widest.whole.toFixed(1)} px against ` +
+        `${braid.widest.chunked.toFixed(1)} px on <${braid.widest.tag}> at ` +
+        `${braid.widest.path || 'the column'}\n` +
         `  before a touch: ${kb(live.bytesBefore)} of script over ${live.before.length} file(s), ` +
         `under the ${kb(PRE_INTERACTION_CEILING)} tripwire (uncompressed — this server does ` +
         `not gzip)\n` +
