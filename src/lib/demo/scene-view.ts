@@ -37,7 +37,7 @@ export interface SceneCue extends Cue {
   readonly sentence?: { readonly side: Side; readonly text: string };
   /** Addressing the relay can read. Absent values are drawn as sealed. */
   readonly meta?: { readonly to?: string; readonly from?: string };
-  /** How many message keys each device has derived. Turns the notches. */
+  /** How many message keys each device has derived. Turns the wheel. */
   readonly ratchet?: Readonly<Record<Side, number>>;
   /**
    * Which ratchet the session selected, as the SDK reported it.
@@ -61,27 +61,37 @@ export interface SceneNames {
   readonly b: string;
 }
 
+/*
+ * The two switches the reader may throw.
+ *
+ * Post-quantum protection is not among them, and its absence is a decision
+ * rather than an omission. The SDK's post-quantum setting is `required` or
+ * `compatible`, and `compatible` is not "off" — it still runs PQXDH against any
+ * peer carrying ML-KEM material, which both devices here do. A checkbox marked
+ * post-quantum would therefore have drawn a difference the run does not contain.
+ * The demo runs `required` and shows the protection where it is real: in the
+ * PQXDH key agreement, and in the wheel captioned with the ratchet the SDK
+ * reports it selected.
+ */
 export interface SceneToggles {
   /** Hide the sender from the relay. Draws the `from` field sealed. */
   readonly sealedSender: boolean;
   /**
-   * Fail closed on post-quantum key agreement. On by default: it is the high
-   * value and the SDK's own default. Off is `compatible`, which still runs
-   * PQXDH against a peer that has ML-KEM material — it is not a way to turn the
-   * post-quantum handshake off, and `DemoConsole.astro` says so on the page.
-   */
-  readonly postQuantum: boolean;
-  /**
-   * The ML-KEM Braid ratchet profile. Off selects the direct ML-KEM mode
-   * instead, which is still the post-quantum ratchet. Off by default, as the
-   * newest of the two modes.
+   * Braid: carry the post-quantum key material in bounded chunks rather than
+   * whole.
+   *
+   * What gets broken up is the ML-KEM material, not the reader's sentence. The
+   * braid mode moves an encapsulation key through Reed-Solomon chunks of
+   * thirty-two bytes, one riding along with each message, so a rekey completes
+   * across a conversation instead of demanding one large message from a link
+   * that may not carry it. Off sends the key whole in a single message, which is
+   * the direct mode — post-quantum either way.
    */
   readonly braid: boolean;
 }
 
 export const DEFAULT_TOGGLES: SceneToggles = {
   sealedSender: true,
-  postQuantum: true,
   braid: false,
 };
 
@@ -162,7 +172,8 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const chat = (side: Side) => need<HTMLElement>(root, `[data-scene-chat="${side}"]`);
   const keyList = (side: Side) => need<HTMLElement>(root, `[data-scene-keys-list="${side}"]`);
   const keyCount = (side: Side) => need<HTMLElement>(root, `[data-scene-keys-count="${side}"]`);
-  const notches = (side: Side) => need<HTMLElement>(root, `[data-scene-ratchet-notches="${side}"]`);
+  const wheel = (side: Side) => need<SVGElement>(root, `[data-scene-ratchet-wheel="${side}"]`);
+  const wheelTurn = (side: Side) => need<SVGElement>(root, `[data-scene-ratchet-turn="${side}"]`);
   const ratchetCount = (side: Side) =>
     need<HTMLElement>(root, `[data-scene-ratchet-count="${side}"]`);
   const ratchetLabel = (side: Side) =>
@@ -189,7 +200,13 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     const box = envelope.getBoundingClientRect();
     const x = target.left - scene.left + (target.width - box.width) / 2;
     const y = target.top - scene.top + (target.height - box.height) / 2;
-    envelope.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    /*
+     * Scale is a variable the stylesheet owns and position is a number this
+     * function measures, and they compose in one transform because the browser
+     * gives an element only one. Writing `translate()` alone here would drop the
+     * landing's scale every time the envelope moved.
+     */
+    envelope.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px) scale(var(--demo-envelope-scale, 1))`;
   }
 
   function anchorFor(place: 'sender' | 'relay' | 'receiver', cue: SceneCue): HTMLElement {
@@ -198,7 +215,26 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     const from: Side = cue.from === 'b' ? 'b' : 'a';
     const to: Side = from === 'a' ? 'b' : 'a';
     if (place === 'relay') return mailbox;
-    return phone(place === 'sender' ? from : to);
+    if (place === 'sender') return phone(from);
+    /* Opened is where the envelope stops being a separate object: it comes to
+       rest over the conversation it is about to become, so the shrink lands in
+       the right place rather than in the middle of the phone. */
+    return cue.step === 'opened' ? chat(to) : phone(to);
+  }
+
+  /**
+   * Arm or disarm the fold into the bubble.
+   *
+   * A state, not a timer. The opened envelope has to stay readable for a beat
+   * before it shrinks away, and the obvious way to buy that beat is a scheduled
+   * callback here — which would give the drawing a second opinion about pacing,
+   * the exact seam `playback.ts` owns and `demo-playback.test.mjs` checks this
+   * file for by reading it. So the wait is a `transition-delay` in
+   * `DemoScene.astro` and this only says which state the envelope is in. CSS
+   * spends the time; nothing in this module counts it.
+   */
+  function setLanding(on: boolean): void {
+    envelope.dataset.landing = String(on);
   }
 
   /**
@@ -227,29 +263,53 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
 
   /** Teeth on the wheel. The design system's ratchet length. */
   const TEETH = 4;
+  const DEGREES_PER_KEY = 360 / TEETH;
 
+  /**
+   * Turn the wheel one tooth per message key derived, and only ever forward.
+   *
+   * The rotation is `taken * 90°` without a modulo, so the angle is a running
+   * total rather than a position on a dial. That is the whole of what makes the
+   * drawing honest: there is no value of `taken` for which the wheel returns to
+   * a state it has already held, because the number it is derived from never
+   * decreases while a session lives.
+   *
+   * The wheel this replaced was four teeth that lit in order and cleared on the
+   * fifth message. It cycled, which meant it emptied — and a ratchet that can
+   * empty is a ratchet that can go back, which is the single property the
+   * double ratchet is built to deny. It also meant the fourth and the eighth
+   * message drew the same picture.
+   *
+   * `data-turns` is written here and nowhere in the shipped markup. The wheel
+   * renders identically before and after mount, so a demo whose script never
+   * ran would otherwise be indistinguishable from one that ran and reported
+   * nothing; the attribute's presence is what `demo-smoke.mjs` reads to tell
+   * those two apart.
+   */
   function turnRatchet(side: Side, taken: number): void {
-    const list = notches(side);
-    /*
-     * The teeth cycle rather than fill. `taken` grows for as long as the
-     * conversation does, and four teeth that simply lit up in order would be
-     * solid from the fourth message on — a wheel that had stopped, which is the
-     * one thing this drawing exists to deny. Cycling means the fifth message
-     * shows one tooth again, and the wheel is visibly still turning.
-     *
-     * Rebuilt rather than toggled so a reset cannot leave a stale tooth lit.
-     */
-    const lit = taken === 0 ? 0 : ((taken - 1) % TEETH) + 1;
-    list.replaceChildren();
-    for (let index = 0; index < TEETH; index += 1) {
-      const item = document.createElement('li');
-      item.className = 'demo-ratchet-notch';
-      item.dataset.turned = String(index < lit);
-      list.append(item);
-    }
+    wheelTurn(side).style.transform = `rotate(${taken * DEGREES_PER_KEY}deg)`;
+    wheel(side).dataset.turns = String(taken);
     /* The total is the number that only ever grows, and it is the one a reader
        can check against how many messages they have sent. */
     ratchetCount(side).textContent = `${taken} key${taken === 1 ? '' : 's'}`;
+  }
+
+  /**
+   * Put a wheel back to zero for a scene that is starting over.
+   *
+   * The only place the angle may decrease, and it must not be *animated* down:
+   * a reset that spun the wheel backwards would show, once, the exact motion the
+   * rest of this file exists to prove impossible. The transition is suppressed
+   * for the frame that carries the change, and the forced layout read between
+   * the two writes is what makes the browser treat them as separate frames
+   * rather than collapsing them into one.
+   */
+  function rewindRatchet(side: Side): void {
+    const turn = wheelTurn(side) as SVGElement & { dataset: DOMStringMap };
+    turn.dataset.rewind = 'true';
+    turnRatchet(side, 0);
+    void wheel(side).getBoundingClientRect();
+    delete turn.dataset.rewind;
   }
 
   /**
@@ -308,6 +368,9 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     show(cue, flightMs) {
       root.dataset.sceneState = cue.step;
       envelope.style.setProperty('--demo-flight-ms', `${Math.max(0, Math.round(flightMs))}ms`);
+      /* A cue that arrives while the last one is still folding away cancels the
+         fold: the envelope belongs to whichever message is current. */
+      setLanding(false);
 
       if (cue.keys) for (const side of ['a', 'b'] as const) fillKeys(side, cue.keys[side]);
       if (cue.ratchet) for (const side of ['a', 'b'] as const) turnRatchet(side, cue.ratchet[side]);
@@ -324,8 +387,14 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       /* The mailbox holds a row only while the relay actually has one: it is
          filled when the envelope is stored and emptied when the far device has
          collected it, which is what makes the relay read as a mailbox rather
-         than as a box the message passes through. */
-      const holding = cue.step === 'in-transit' || cue.step === 'stored-at-relay';
+         than as a box the message passes through.
+
+         Stored, and not a step earlier. An envelope in transit is one the relay
+         has not got yet, and a slot that lit as the envelope set off would be
+         claiming a row while the count printed under this column still read
+         nothing — the relay contradicting itself within an inch. It also draws
+         better this way: the slot lights as the envelope lands in it. */
+      const holding = cue.step === 'stored-at-relay';
       mailbox.dataset.holding = String(holding);
       mailboxBody.querySelector('.demo-relay-slot-empty')?.toggleAttribute('hidden', holding);
 
@@ -354,14 +423,26 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
         /* Read back so the placement is committed before flight is re-armed. */
         void envelope.offsetWidth;
         envelope.dataset.flying = 'true';
-        return;
+      } else {
+        envelope.dataset.flying = 'true';
+        moveTo(anchor);
       }
-      envelope.dataset.flying = 'true';
-      moveTo(anchor);
+
+      /*
+       * Arrival. The envelope shows its plaintext for a beat, then shrinks into
+       * the conversation as the bubble appears — the message becomes the
+       * message. It used to come to rest beside the receiving phone and stay
+       * there for the rest of the run, drawing a sentence that had been
+       * delivered and was also still in the air.
+       *
+       * Set at once and delayed in CSS, so the beat costs this module no clock.
+       */
+      if (cue.step === 'opened') setLanding(true);
     },
 
     clear() {
       root.dataset.sceneState = 'idle';
+      setLanding(false);
       envelope.hidden = true;
       envelope.dataset.flying = 'false';
       envelope.style.removeProperty('transform');
@@ -372,7 +453,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       for (const side of ['a', 'b'] as const) {
         chat(side).replaceChildren();
         fillKeys(side, 0);
-        turnRatchet(side, 0);
+        rewindRatchet(side);
         deviceState(side).textContent = 'offline';
       }
     },
@@ -380,7 +461,6 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     setToggles(next) {
       toggles = next;
       root.dataset.sceneSealedSender = String(next.sealedSender);
-      root.dataset.scenePostQuantum = String(next.postQuantum);
       root.dataset.sceneBraid = String(next.braid);
       metaFrom.dataset.sealed = String(next.sealedSender);
     },
@@ -399,6 +479,12 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   };
 
   view.setToggles(DEFAULT_TOGGLES);
+  /* Stamp both wheels at zero on mount. The shipped markup carries no
+     `data-turns`, so this is the moment a mounted scene becomes distinguishable
+     from one whose script never arrived — and it has to happen at mount rather
+     than at the first cue, or a scene that mounted and was never started reads
+     as a scene that failed to mount. */
+  for (const side of ['a', 'b'] as const) turnRatchet(side, 0);
   return view;
 }
 

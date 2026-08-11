@@ -92,34 +92,20 @@ const DIST = join(ROOT, 'dist');
  * to expose.
  */
 const CONSOLE = '[data-demo="console"]';
-const EXCHANGE = '[data-console-exchange]';
 
 /*
- * The transport's single-step control.
+ * The one control that starts anything. It brings both devices online and
+ * publishes their bundles; after it, the reel plays itself and the composers
+ * are the only other thing to press.
  *
- * The reel deliberately dwells for seconds on each step — it is a teaching
- * animation, and a reader is meant to be able to follow it — so the drawing is
- * still working through a run the protocol finished long before. This harness
- * has no opinion about the dwell and must not become a measurement of it: it
- * waits once to see the reel move on its own, then walks it to the end with the
- * control the page gives a reader for exactly that.
+ * So this harness waits on the *state the scene reaches* rather than driving it
+ * there, on a wall-clock budget generous enough that the dwell table can be
+ * retuned without touching this file. What it must never do is read the dwell
+ * and size a wait from it, which would let a pacing change pass by moving the
+ * goalposts with it.
  */
-const STEP = '[data-console-step]';
+const START = '[data-console-start]';
 
-/* Its sibling, read only when something has gone wrong: whether the reel is
-   playing, paused or spent is the difference between a recording that stopped
-   and one that was never made. */
-const PLAY = '[data-console-play]';
-
-/* How many presses one round trip into the page makes. Not a bound on the walk
-   — that is wall-clock, below — but a limit on how long a single evaluation
-   sits in the page, well inside the timeout the debugger applies to one. */
-const PRESSES_PER_ROUND = 24;
-
-/* How long a press is given to land before the next one. Not a guess at the
-   dwell, which is seconds and is being skipped on purpose: a press applies its
-   cue in a task of its own, and this is the yield that lets that task run. */
-const STEP_SETTLE_MS = 25;
 const STATUS = '[data-console-status]';
 
 /* The demo reporting that it could not run, which every wait here treats as an
@@ -162,19 +148,28 @@ const NAME_B = 'consoleNameB';
  * state the build shipped. There is no error, no gap and no empty box.
  *
  * What tells them apart is what only the script can put there, and that is what
- * the checks below read: the step the scene says it is on, the teeth on each
- * wheel, and the name the wheel takes from the session's own selection event.
+ * the checks below read: the step the scene says it is on, the turn count on
+ * each wheel, and the name the wheel takes from the session's own selection
+ * event.
  */
 const SCENE = '[data-demo-scene]';
 
-/* One tooth on a wheel. Built by the client module at mount, so a count of
-   these is a fact about a script that ran rather than about markup that
-   shipped; `data-turned` is which of them the current message has moved. */
-const SCENE_NOTCH = (side) => `[data-scene-ratchet-notches="${side}"] li`;
+/*
+ * A wheel, and how far it has been turned.
+ *
+ * `data-turns` is written by `scene-view.ts` at mount and never appears in the
+ * shipped HTML, which is what makes its presence a fact about a script that ran
+ * rather than about markup that shipped.
+ *
+ * It counts turns rather than describing the drawing, and it only ever grows.
+ * The ratchet is one-way, so the count and the message keys derived are the same
+ * number for the life of the page, and a reading of it is unambiguous about how
+ * far along a conversation is in a way that any cycling drawing would not be.
+ */
+const SCENE_WHEEL = (side) => `[data-scene-ratchet-wheel="${side}"]`;
 
 /* The running total of message keys the device has derived, in the device's own
-   words. It only ever grows, which is what makes it checkable across two sends
-   in a way the four cycling teeth are not. */
+   words — the same number the wheel is turned from, printed. */
 const SCENE_KEYS = (side) => `[data-scene-ratchet-count="${side}"]`;
 
 /* What the wheel is called. Bare before a session exists and named from the
@@ -251,6 +246,23 @@ const REPEAT_PROBE = `Second probe ${NONCE}: sent again, on a session already wa
 const DECRYPT_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 30000;
 
+/* The longest the reel gets to play itself out, and how often it is looked at
+   while it does.
+
+   The budget covers the whole recording — every dwell, the flight between the
+   cues, and the SDK work that produces them — on a machine under load, and it
+   is a round number well above any of that on purpose. Tightening it to the
+   dwell table would couple this file to a number that belongs upstairs and is
+   meant to be retuned; loosening it costs nothing, because a reel that arrives
+   ends the wait immediately and only a reel that stopped ever spends it.
+
+   The sample interval is a compromise between an accurate trail and the cost of
+   asking. A cue shorter than this can be missed from the trail, which is a
+   diagnostic and not an assertion; nothing here concludes anything from a state
+   being absent from it. */
+const REEL_BUDGET_MS = 90000;
+const REEL_SAMPLE_MS = 150;
+
 /* A fixed viewport, so what the page chooses to fetch before the reader touches
    anything is the same on every machine that runs this. */
 const VIEWPORT = { width: 1280, height: 800 };
@@ -261,18 +273,19 @@ const VIEWPORT = { width: 1280, height: 800 };
  * magnitude below any build that has the SDK on its initial path.
  *
  * The homepage is the page this measures, because it is the only page with demo
- * code on it. Measured on 2026-08-10, on the three-column console: 22.2 KB over
- * seven responses by this harness's own count. Two of the seven are the demo's,
- * at the sizes the build wrote to disk —
+ * code on it. Measured on 2026-08-11, on the one-scene console: 29.9 KB over
+ * eight responses by this harness's own count. Three of the eight are the
+ * demo's, at the sizes the build wrote to disk —
  *
- *   DemoConsole   6170 B  the drawing, the transport and the three columns
+ *   DemoConsole   8242 B  the controls, the transport and the inspector
+ *   DemoLog       5175 B  the event log under the scene
  *   ScenarioList  3672 B  the four scenarios
  *
  * — against the page furniture that has nothing to do with the demo:
  * `theme-init.js`, `measure.js`, the theme toggle, the hero's copy button, and
- * the preload helper Vite splits out for the dynamic imports, 8047 B between
- * them. The two instruments do not reconcile and are not meant to: the harness
- * counts what the browser fetched, the breakdown counts what the build emitted.
+ * the shared runtime the bundler splits out, 7399 B between them. The two
+ * instruments do not reconcile and are not meant to: the harness counts what the
+ * browser fetched, the breakdown counts what the build emitted.
  *
  * The ceiling is 32 KB and moved there from 20 KB when `/demo` folded into this
  * page, which is worth writing down because "the budget went up when a page got
@@ -292,7 +305,13 @@ const VIEWPORT = { width: 1280, height: 800 };
  * `PROGRAMS` map, which is two dynamic `import()` specifiers and a status line.
  * Its prose, its runner and its renderer are all behind the press — the LD6
  * move that put the renderers in `src/lib/demo/render.ts` is what makes that
- * true. The remaining 9.2 KB is a budget for roughly a dozen more scenarios.
+ * true.
+ *
+ * The headroom is 2.1 KB, which is about five more scenarios and is the tightest
+ * this has been. That is worth reading before the next thing lands on this page:
+ * the next component to ship a wiring script of its own will not fit, and the
+ * answer then is to find the bytes rather than to raise the ceiling. What the
+ * ceiling is calibrated against has never changed — see below.
  *
  * These are wire bytes without compression: `chrome-harness.mjs` serves the
  * build as it is on disk, while Cloudflare compresses. So this is not
@@ -305,7 +324,7 @@ const VIEWPORT = { width: 1280, height: 800 };
  * the whole response, headers included. Both see the same eight responses —
  * there is no fetch here that the static walk misses — so the gap is a flat
  * per-response cost, 686 bytes apiece from `chrome-harness.mjs`, and the
- * 17.5 KB on disk arrives as the 22.8 KB above. Anything that changes those
+ * 23.9 KB on disk arrives as the 29.9 KB above. Anything that changes those
  * headers moves this number without a byte of script changing, which is one
  * more reason it is a tripwire and not a budget. The ceiling is set against
  * the figure measured here.
@@ -539,15 +558,16 @@ const SNAPSHOT = `(() => {
        * protocol does not have — and a read that summed the two would pass on
        * exactly that.
        *
-       * The turned attribute is read off the rendered tooth rather than
-       * inferred from the key count beside it, so a wheel whose count advanced
-       * without its teeth following is visible here.
+       * The turn count is read off the wheel's own attribute rather than
+       * inferred from the key count printed beside it, so a wheel whose count
+       * advanced without the drawing following is visible here. A null means the
+       * attribute is absent, which is the shipped markup: no script has been
+       * near it.
        */
-      const wheel = (notches, keys, label) => {
-        const teeth = [...scene.querySelectorAll(notches)];
+      const wheel = (turns, keys, label) => {
+        const written = scene.querySelector(turns)?.dataset?.turns;
         return {
-          teeth: teeth.length,
-          turned: teeth.filter((tooth) => tooth.dataset.turned === 'true').length,
+          turns: written === undefined ? null : Number(written),
           keys: scene.querySelector(keys)?.textContent?.trim() ?? '',
           label: scene.querySelector(label)?.textContent?.trim() ?? '',
         };
@@ -558,12 +578,12 @@ const SNAPSHOT = `(() => {
            whether that state is even one the scene knows about. */
         steps: (scene.dataset.sceneSteps ?? '').split(/\\s+/).filter(Boolean),
         a: wheel(
-          ${JSON.stringify(SCENE_NOTCH('a'))},
+          ${JSON.stringify(SCENE_WHEEL('a'))},
           ${JSON.stringify(SCENE_KEYS('a'))},
           ${JSON.stringify(SCENE_RATCHET_LABEL('a'))},
         ),
         b: wheel(
-          ${JSON.stringify(SCENE_NOTCH('b'))},
+          ${JSON.stringify(SCENE_WHEEL('b'))},
           ${JSON.stringify(SCENE_KEYS('b'))},
           ${JSON.stringify(SCENE_RATCHET_LABEL('b'))},
         ),
@@ -839,79 +859,68 @@ async function type(cdp, sessionId, text) {
 }
 
 /**
- * Press the step control until a condition holds, or until the round is spent.
+ * Read where the reel is, and whether it has arrived.
  *
- * One press applies one recorded cue, but it applies it from a task of its
- * own, so the loop yields between presses rather than running straight through
- * a scene that has not moved yet. The states it passed through come back with
- * it, deduplicated, so a caller can say where a walk stopped.
+ * One round trip, so the state reported and the verdict on it describe the same
+ * moment. A reel that is between cues answers `false` and its current state,
+ * which is what the sampling above it accumulates into a trail.
  */
-async function stepTo(cdp, sessionId, done) {
+async function sample(cdp, sessionId, done) {
   return evaluate(
     cdp,
     sessionId,
-    `(async () => {
+    `(() => {
        const root = document.querySelector(${JSON.stringify(CONSOLE)});
-       const step = document.querySelector(${JSON.stringify(STEP)});
        const scene = document.querySelector(${JSON.stringify(SCENE)});
-       if (!step || !scene) return null;
-       const trail = [];
-       for (let press = 0; press <= ${PRESSES_PER_ROUND}; press += 1) {
-         const state = scene.dataset.sceneState ?? null;
-         if (trail[trail.length - 1] !== state) trail.push(state);
-         if (${done}) return { done: true, state, presses: press, trail };
-         if (press === ${PRESSES_PER_ROUND}) return { done: false, state, presses: press, trail };
-         step.click();
-         await new Promise((resume) => setTimeout(resume, ${STEP_SETTLE_MS}));
-       }
+       if (!root || !scene) return null;
+       return { done: Boolean(${done}), state: scene.dataset.sceneState ?? null };
      })()`,
     'demo',
   );
 }
 
 /**
- * Walk the reel to a step, with the control a reader would use.
+ * Wait for the reel to reach a step, at the pace the page plays it.
  *
- * Bounded by wall-clock rather than by presses, because a press is not the only
- * thing the walk is waiting on. Sending re-records: the scene clears, and the
- * cues the walk is stepping through do not exist until the SDK has built a
- * session and encrypted, which is real work and takes as long as it takes. A
- * press against a reel that has nothing in it yet is not a failure, it is early
- * — so the walk keeps pressing until the deadline, and only a deadline that
- * passes is a reel that stopped.
+ * The reel runs itself: one module owns the clock and walks the recording from
+ * the first cue to the last without anything pressing it. So this samples the
+ * scene rather than driving it, and the states it saw come back deduplicated,
+ * so a wait that expires can say where the reel stopped rather than only that
+ * it did not arrive.
  *
- * This is not a substitute for watching the reel move by itself. That property
- * has its own wait, before this is called, for the reason every deterministic
- * driver needs one: a reel that never advanced unaided would be walked to the
- * end here and look exactly like one that did.
+ * The budget is wall-clock and deliberately loose. It has to cover the dwell
+ * table plus the flight between cues plus the SDK's real work, and none of
+ * those is this file's business — a dwell retuned upstairs must not make this
+ * harness wrong. What it must never do is read the dwell table and size the
+ * wait from it: a wait derived from the thing it is waiting on passes whatever
+ * that thing does, including stopping.
  *
  * Ends on the demo saying why it did not run, as every wait here does. The
  * starved pass blocks the demo's chunks on purpose, so there is no recording to
- * walk and there is not supposed to be one; the page says so on its status line
+ * play and there is not supposed to be one; the page says so on its status line
  * and the caller — which is the only thing that knows which pass this is — is
  * left to decide whether that was the right outcome.
  */
-async function walk(cdp, sessionId, done, complaint, context = () => [], budgetMs = DECRYPT_TIMEOUT_MS) {
+async function walk(cdp, sessionId, done, complaint, context = () => [], budgetMs = REEL_BUDGET_MS) {
   const deadline = Date.now() + budgetMs;
   const reached = `(${done}) || ${EXCUSED}`;
   const trail = [];
-  let presses = 0;
   let last = null;
 
   for (;;) {
-    const round = await stepTo(cdp, sessionId, reached);
+    const round = await sample(cdp, sessionId, reached);
     if (round === null) throw new Red(`${complaint} — the scene is not on the page`);
-    for (const state of round.trail) if (trail[trail.length - 1] !== state) trail.push(state);
-    presses += round.presses;
+    if (trail[trail.length - 1] !== round.state) trail.push(round.state);
     last = round.state;
-    if (round.done) return { done: true, state: last, presses, trail };
+    if (round.done) return { done: true, state: last, trail };
     if (Date.now() >= deadline) break;
+    await new Promise((resume) => setTimeout(resume, REEL_SAMPLE_MS));
   }
 
   const extra = await context();
   throw new Red(
-    `${complaint} — ${presses} press(es) of the step control over ${budgetMs} ms left the scene ` +
-      `on "${last}"\n  it went: ${trail.join(' → ')}` +
+    `${complaint} — ${budgetMs} ms of watching the reel left the scene on "${last}"\n` +
+      `  it went: ${trail.join(' → ')}` +
       (extra.length ? `\n${extra.join('\n')}` : ''),
   );
 }
@@ -970,7 +979,7 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
       );
     }
     for (const [selector, what] of [
-      [EXCHANGE, 'a control that establishes the session'],
+      [START, 'a control that starts the demo'],
       [INPUT, 'a text input for the reader’s sentence'],
       [SEND, 'a control that sends it'],
       [DECRYPTED, 'a conversation on the far device'],
@@ -993,11 +1002,12 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
     /*
      * Press as a reader would, in the order the console requires.
      *
-     * Key exchange is its own control and the send control stays unavailable
-     * until a session exists, so a harness that went straight for send would
-     * press a disabled button and report the demo as broken. Pressing exchange
-     * first is not the harness being polite about the UI — it is the harness
-     * driving the two steps the page actually has.
+     * There is one control before the composer. Starting boots the two devices
+     * and publishes their public prekeys; the composers stay unavailable until
+     * that has happened, so a harness that went straight for send would press a
+     * disabled button and report the demo as broken. Pressing start first is
+     * not the harness being polite about the UI — it is the harness driving the
+     * step the page actually has.
      *
      * The chunk arrives on this press, which is why it happens after the byte
      * accounting boundary rather than during setup.
@@ -1007,16 +1017,11 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
      * them, and a demo that re-renders itself out from under the reader is not
      * an infrastructure fault.
      */
-    await evaluate(
-      cdp,
-      sessionId,
-      `document.querySelector(${JSON.stringify(EXCHANGE)}).click()`,
-      'demo',
-    );
+    await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(START)}).click()`, 'demo');
 
-    /* Either outcome ends the wait: a session, or a status line saying why
-       there is not one. Waiting on the button alone would not distinguish them
-       — `enable()` re-runs on both paths. */
+    /* Either outcome ends the wait: devices that can be typed at, or a status
+       line saying why there are none. Waiting on the button alone would not
+       distinguish them — `enable()` re-runs on both paths. */
     await waitFor(
       cdp,
       sessionId,
@@ -1027,32 +1032,33 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
          return !send.disabled || /did not finish/.test(status);
        })()`,
       DECRYPT_TIMEOUT_MS,
-      `the demo neither established a session nor reported a failure within ` +
-        `${DECRYPT_TIMEOUT_MS} ms of the key exchange being pressed`,
+      `the demo neither started nor reported a failure within ${DECRYPT_TIMEOUT_MS} ms of the ` +
+        `start control being pressed`,
       why({
         "the send button's disabled": `document.querySelector(${JSON.stringify(SEND)}).disabled`,
         'the status line': `document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? null`,
       }),
     );
 
-    /* What the exchange alone did, before a sentence is typed. The relay has
+    /* What starting alone did, before a sentence is typed. The relay has
        carried two public bundles by now and is still holding no row, which is a
        claim the page makes and this is where it is true. */
-    const afterExchange = await evaluate(cdp, sessionId, SNAPSHOT);
+    const afterStart = await evaluate(cdp, sessionId, SNAPSHOT);
 
     await type(cdp, sessionId, PROBE);
 
     /*
-     * The reel moves off the step the exchange left it on, unaided.
+     * The reel moves off the step starting left it on, unaided.
      *
      * This is the wait that proves the drawing runs by itself, and it is worth
-     * separating from the sentence arriving: the walk below would reach the end
-     * of a reel that had never started, and the two are indistinguishable once
-     * it has. A failure reported on the status line ends the wait too — this
+     * separating from the sentence arriving: the wait below would sit out a reel
+     * that had never started for its whole budget and report only that the
+     * sentence never came, which names the symptom and not the cause. A failure
+     * reported on the status line ends the wait too — this
      * pass is the same interaction in both passes, and only the blocklist
      * differs, so which outcome was supposed to happen is the caller's business.
      */
-    const parkedAt = afterExchange.scene?.state ?? null;
+    const parkedAt = afterStart.scene?.state ?? null;
     await waitFor(
       cdp,
       sessionId,
@@ -1073,11 +1079,12 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
       }),
     );
 
-    /* Then to the end of the recording, at the harness's pace rather than the
-       reader's. The far device's conversation is written when the reel reaches
-       the step that decrypted, so this is what makes the sentence readable.
+    /* Then to the end of the recording, at the reader's pace, because there is
+       no other pace on offer. The far device's conversation is written when the
+       reel reaches the step that decrypted, so this is what makes the sentence
+       readable.
 
-       Walked to the sentence rather than to the step: a second send replays the
+       Waited on the sentence rather than on the step: a second send replays the
        whole recording, so the first `opened` a walk meets is the one belonging
        to the message before it. The sentence is what the caller is waiting for
        and is unambiguous about which message it means. */
@@ -1093,7 +1100,7 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
         "the far device's conversation": `document.querySelector(${JSON.stringify(DECRYPTED)})?.textContent ?? null`,
         "the send control's disabled": `document.querySelector(${JSON.stringify(SEND)})?.disabled ?? null`,
         'the composer holds': `document.querySelector(${JSON.stringify(INPUT)})?.value ?? null`,
-        'the transport says': `document.querySelector(${JSON.stringify(PLAY)})?.textContent ?? null`,
+        'the reel is on': `document.querySelector(${JSON.stringify(SCENE)})?.dataset.sceneState ?? null`,
       }),
     );
 
@@ -1117,8 +1124,8 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
      * And to the end of the recording, so the state the checks read is the one
      * the run finishes in rather than wherever the last sentence happened to
      * leave it. Already there when the reel's last cue is the one that decrypted
-     * — the walk costs a press that changes nothing — and not when a scenario
-     * or a repeat put something after it.
+     * — the wait costs one sample and returns — and not when a scenario or a
+     * repeat put something after it.
      */
     await walk(
       cdp,
@@ -1139,7 +1146,7 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false } = {}) {
     return {
       names: dom.names,
       beforeInteraction,
-      afterExchange,
+      afterStart,
       afterFirst,
       dom,
       repeated: repeat,
@@ -1442,15 +1449,20 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
         `the shipped HTML is claiming a protocol step that has not happened`,
     );
   }
-  /* And no wheel had turned. The state attribute and the teeth are written by
-     different calls, so a build that shipped a turned tooth under an `idle`
-     scene would pass the check above and be drawing a key nobody derived. */
+  /* And no wheel had turned. The state attribute and the turn count are written
+     by different calls, so a build that shipped a turned wheel under an `idle`
+     scene would pass the check above and be drawing a key nobody derived.
+
+     Zero and absent both pass here. Absent is the shipped markup — the module
+     stamps the count when it mounts, and this is read early enough that it may
+     not have — and a wheel that is still absent after a round trip is caught
+     further down, where it means something. */
   for (const side of ['a', 'b']) {
-    if (before.scene?.[side]?.turned) {
+    if (before.scene?.[side]?.turns) {
       throw new Red(
-        `device ${side}'s wheel had ${before.scene[side].turned} tooth/teeth turned before ` +
-          'anything had been pressed — the shipped HTML is claiming a message key that has ' +
-          'not been derived',
+        `device ${side}'s wheel was ${before.scene[side].turns} turn(s) along before anything ` +
+          'had been pressed — the shipped HTML is claiming a message key that has not been ' +
+          'derived',
       );
     }
   }
@@ -1480,7 +1492,7 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
   /* The key exchange is a real step and it is not a send. Public bundles went
      through the relay, and the relay is still holding no message — which is the
      distinction the console gives its own control to make. */
-  if (pass.afterExchange.holdingRow) {
+  if (pass.afterStart.holdingRow) {
     throw new Red(
       'the key exchange alone put a stored row in the relay column — the exchange is being ' +
         'drawn as a message, or the send ran without being pressed',
@@ -1668,17 +1680,20 @@ function checkScene(pass) {
   }
 
   /*
-   * The teeth, which only a script that ran can have put there.
+   * A turn count at all, which only a script that ran can have written.
    *
    * This is the check that separates a mounted scene from the markup the build
-   * shipped: the notch lists leave the build empty and are filled at mount. A
-   * scene that never woke up reaches here with nothing in them.
+   * shipped: the wheel is drawn in the HTML but carries no count until the
+   * client module stamps one at mount. A scene that never woke up reaches here
+   * with the attribute still absent, which is why this reads absent rather than
+   * zero — zero is a mounted wheel that has not turned, and the check below is
+   * the one entitled to have an opinion about that.
    */
   for (const side of ['a', 'b']) {
-    if (scene[side].teeth === 0) {
+    if (scene[side].turns === null) {
       throw new Red(
-        `device ${side}'s wheel has no teeth in it after a round trip — the notch list is ` +
-          'built by the client module at mount, so an empty one is a scene whose script ' +
+        `device ${side}'s wheel carries no turn count after a round trip — the count is ` +
+          'written by the client module at mount, so an absent one is a scene whose script ' +
           'never ran, under a log that plainly did',
       );
     }
@@ -1789,13 +1804,8 @@ function checkSceneMoves(first, second) {
    * The wheel, counted where it is drawn.
    *
    * One key per message is the whole claim the wheel makes, and the only way to
-   * see it is two messages: a wheel frozen on one tooth and a wheel that turns
-   * every tooth at once both look correct in a single frame.
-   *
-   * The running total is what is compared rather than the teeth. Four teeth
-   * cycle by design — the fifth message shows one tooth again, so that a long
-   * conversation does not draw a wheel that has stopped — which makes the tooth
-   * count a poor monotonic signal and the total the honest one.
+   * see it is two messages: a wheel frozen on one position and a wheel that
+   * jumps a whole turn at once both look correct in a single frame.
    */
   const keys = (pass, side) => {
     const printed = pass.scene?.[side]?.keys ?? '';
@@ -1821,20 +1831,24 @@ function checkSceneMoves(first, second) {
   }
 
   /*
-   * And the teeth followed the total rather than being drawn beside it. The
-   * count is text the module writes and the teeth are elements it builds; a
-   * wheel that advanced one and not the other is the failure a reader would
-   * see and no total-only check would.
+   * And the drawing followed the total rather than being written beside it. The
+   * count is text the module prints and the turn is a transform it applies; a
+   * wheel that advanced one and not the other is the failure a reader would see
+   * and no total-only check would.
+   *
+   * One turn per key, and never a turn back: the ratchet is one-way, so the two
+   * numbers are the same number and the equality is the whole property. A wheel
+   * that wrapped, or that reset on a long conversation, would draw a key nobody
+   * derived and would fail here rather than being modelled around.
    */
   for (const side of ['a', 'b']) {
-    const wheel = second.scene?.[side];
+    const turns = second.scene?.[side]?.turns;
     const taken = keys(second, side);
-    const expected = taken === 0 ? 0 : ((taken - 1) % wheel.teeth) + 1;
-    if (wheel.turned !== expected) {
+    if (turns !== taken) {
       throw new Red(
-        `device ${side} says it has taken ${taken} key(s) and has ${wheel.turned} of ` +
-          `${wheel.teeth} teeth turned — ${taken} key(s) on a ${wheel.teeth}-tooth wheel is ` +
-          `${expected}`,
+        `device ${side} says it has taken ${taken} key(s) and its wheel is ` +
+          `${turns === null ? 'not turned at all' : `${turns} turn(s) along`} — the ratchet is ` +
+          'one-way, so the drawing and the count are the same number',
       );
     }
   }
@@ -3428,8 +3442,8 @@ async function main() {
         /* Read off the scene rather than restated from the constants the checks
            compared against, so a line that prints is a line something observed. */
         `  the scene:      finished on "${live.dom.scene.state}", both wheels captioned ` +
-        `"${live.dom.scene.a.label}", ${live.dom.scene.a.keys} and ${live.dom.scene.b.keys} ` +
-        `over ${live.dom.scene.a.teeth} notches\n` +
+        `"${live.dom.scene.a.label}", ${live.dom.scene.a.keys} and ${live.dom.scene.b.keys}, ` +
+        `turned ${live.dom.scene.a.turns} and ${live.dom.scene.b.turns} time(s)\n` +
         `  before a touch: ${kb(live.bytesBefore)} of script over ${live.before.length} file(s), ` +
         `under the ${kb(PRE_INTERACTION_CEILING)} tripwire (uncompressed — this server does ` +
         `not gzip)\n` +

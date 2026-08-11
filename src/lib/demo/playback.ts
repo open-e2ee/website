@@ -62,38 +62,47 @@ export interface Cued {
 export type DwellTable = Readonly<Record<string, number>>;
 
 /**
- * The reading pace, per step.
+ * The pace, per step.
  *
- * Chosen, not measured — see the header. Each value is the step's caption on
- * the page at roughly four words a second, rounded up, because the dwell a
- * step needs is set by how much there is to read at it and by nothing else.
- * That makes `stored-at-relay` the longest hold on the reel: it carries the most
- * words, and they are the ones the product is actually arguing.
+ * Chosen, not measured — see the header. A dwell is how long the scene holds a
+ * state before the next may replace it, and what sets it is how much *changes*
+ * at that step: a step that lights one shelf needs less time than one that
+ * agrees a session, turns two wheels and renames both of them.
  *
- * These were far shorter once, and every one of them was too short to read. The
- * mistake worth not repeating is that the shortfall was invisible from here —
- * the numbers looked like a considered ramp, and only lining them up against the
- * caption strings showed that five of the eight steps could not be finished in
- * the time given. **Re-derive from the captions whenever the captions change**,
- * rather than nudging a number that reads low.
+ * These were more than twice as long, because they were derived from per-step
+ * captions the scene carried at the time — each one sized to its own sentence at
+ * about four words a second. The captions are gone: the scene now shows the
+ * state itself, in devices and shelves and a wheel, and prose about a step is no
+ * longer on screen to be read. Dwell sized for absent text is dwell spent on
+ * still frames, and the whole reel spent twenty-eight and a half seconds to move
+ * something for one and seven tenths of them.
+ *
+ * So the rule that replaces the old one: **size a dwell to the change it holds,
+ * and let flight take the rest of it.** `DemoConsole.astro` derives each
+ * journey's flight time from the dwell of the step it belongs to, which keeps
+ * the envelope moving for most of the step rather than arriving early and
+ * waiting.
  *
  * A step with no entry gets `DEFAULT_DWELL_MS`, so an added step paces sensibly
  * before anyone has decided what it is worth.
  */
 export const STEP_DWELL_MS: DwellTable = {
   idle: 0,
-  'devices-ready': 3500,
-  'bundles-published': 3500,
-  'session-established': 5000,
-  encrypted: 2500,
-  'in-transit': 3250,
-  'stored-at-relay': 5750,
-  delivered: 2000,
-  opened: 3000,
+  'devices-ready': 1400,
+  'bundles-published': 1500,
+  'session-established': 1900,
+  encrypted: 1000,
+  'in-transit': 1200,
+  'stored-at-relay': 1500,
+  delivered: 900,
+  /* The longest of the message steps: the envelope opens, is readable, and then
+     folds into the conversation, and `scene-view.ts` holds it open for part of
+     that. A shorter dwell here cuts the fold off midway. */
+  opened: 1600,
 };
 
-/** What an unlisted step is held for. Long enough for a short sentence. */
-export const DEFAULT_DWELL_MS = 3000;
+/** What an unlisted step is held for. Long enough to see a state change. */
+export const DEFAULT_DWELL_MS = 1400;
 
 export type PlaybackState = 'idle' | 'playing' | 'paused' | 'done';
 
