@@ -1,9 +1,10 @@
 ---
 import CarrierPanel from '../CarrierPanel.astro';
-import DemoStage from './DemoStage.astro';
+import DemoLog from './DemoLog.astro';
+import DemoScene from './DemoScene.astro';
 
 /*
- * The demo: one drawing, a transport, and three columns under it.
+ * The demo: one scene, a transport, and the readings under it.
  *
  * Two SDK clients run in this page. There is no second window and nothing to
  * pair — the reader gets both ends of the conversation at once, which is what
@@ -49,19 +50,41 @@ import DemoStage from './DemoStage.astro';
 const NAMES = { a: 'alice', b: 'bob' } as const;
 
 /*
- * The speeds the transport offers.
+ * The protocol switches.
  *
- * `playback.ts` clamps to a quarter and four times, so these are the ends and
- * two steps between them rather than a range someone might widen here and have
- * silently clamped there. A number in this list that the pace layer would refuse
- * is a control that lies about what it does.
+ * These change what the *next* session negotiates, so they are offered before
+ * a key exchange and go unavailable once one exists — a switch that appears to
+ * change a session already running would be a lie about how key agreement
+ * works. Defaults are the founder's: post-quantum on, because it is the high
+ * value and the thing worth showing by default; braid off, because it is the
+ * newest and least settled of the three.
+ *
+ * `illustrative` marks a switch the scene draws but the SDK does not report a
+ * running value for. The label under the group names them, so nothing on the
+ * page implies a reading it does not have.
  */
-const SPEEDS = [
-  { value: 0.25, label: '¼×' },
-  { value: 0.5, label: '½×' },
-  { value: 1, label: '1×' },
-  { value: 2, label: '2×' },
-  { value: 4, label: '4×' },
+const TOGGLES = [
+  {
+    id: 'sealed-sender',
+    key: 'sealedSender',
+    label: 'Sealed sender',
+    on: true,
+    note: 'hides who sent it from the relay',
+  },
+  {
+    id: 'post-quantum',
+    key: 'postQuantum',
+    label: 'Post-quantum',
+    on: true,
+    note: 'ML-KEM alongside the classical handshake',
+  },
+  {
+    id: 'braid',
+    key: 'braid',
+    label: 'ML-KEM braid',
+    on: false,
+    note: 'a second post-quantum ratchet, braided in',
+  },
 ] as const;
 ---
 
@@ -71,7 +94,7 @@ const SPEEDS = [
   data-console-name-a={NAMES.a}
   data-console-name-b={NAMES.b}
 >
-  <DemoStage />
+  <DemoScene />
 
   <div class="demo-console-transport">
     {/*
@@ -85,64 +108,68 @@ const SPEEDS = [
       gets controls that are visibly unavailable rather than dishonestly live,
       and the recorded capture below them rather than nothing to look at.
     */}
-    <div class="demo-console-controls" role="group" aria-label="Replay">
-      <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-play disabled>Play</button>
-      <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-step disabled>Step</button>
-      <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-reset disabled>Reset</button>
-      <label class="demo-console-speed">
-        Speed
-        <select data-console-speed disabled>
-          {
-            SPEEDS.map((speed) => (
-              <option value={speed.value} selected={speed.value === 1}>
-                {speed.label}
-              </option>
-            ))
-          }
-        </select>
-      </label>
+    <div class="demo-console-controls">
+      {/*
+        Key exchange is a real call and gets its own control, because it is
+        genuinely a separate step from sending and a reader asked to watch key
+        agreement should not have to infer it from the first message. It is
+        `establishSession` on the client, with the bundle fetched from the
+        relay — not a staged animation of one.
+      */}
+      <button type="button" class="oe-button" data-console-exchange disabled>Exchange keys</button>
+
+      <div class="demo-console-replay" role="group" aria-label="Replay">
+        <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-play disabled>Play</button>
+        <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-step disabled>Step</button>
+        <button type="button" class="oe-button oe-button-secondary oe-button-small" data-console-reset disabled>Reset</button>
+      </div>
     </div>
 
+    {/*
+      The switches sit with the transport rather than on the scene, because the
+      scene is the thing being described and these are the terms it is being
+      described under. Every one of them ships disabled for the same reason the
+      buttons do.
+    */}
+    <fieldset class="demo-console-toggles" data-console-toggles disabled>
+      <legend class="demo-console-toggles-legend">Protocol</legend>
+      {
+        TOGGLES.map((toggle) => (
+          <label class="demo-console-toggle" for={`demo-toggle-${toggle.id}`}>
+            <input
+              type="checkbox"
+              id={`demo-toggle-${toggle.id}`}
+              data-console-toggle={toggle.key}
+              checked={toggle.on}
+            />
+            <span class="demo-console-toggle-label">{toggle.label}</span>
+            <span class="demo-console-toggle-note">{toggle.note}</span>
+          </label>
+        ))
+      }
+    </fieldset>
+
     <p class="demo-console-note measure">
-      The protocol runs at full speed and is recorded; what moves below is a replay of that
+      The protocol runs at full speed and is recorded; what moves above is a replay of that
       recording. The transport changes the replay, never the crypto — and never a printed number.
+      The switches change what the <em>next</em> session negotiates, so they settle before a key
+      exchange rather than during one.
     </p>
 
     <p class="demo-console-status" data-console-status role="status" aria-live="polite"></p>
   </div>
 
-  <div class="demo-console-columns">
-    {/* ------------------------------------------------------------ alice --- */}
-    <section class="demo-console-column" aria-labelledby="demo-console-a">
+  {/*
+    The readings, on the same three-column grid as the scene above them, so the
+    number under a device is under *that* device and the relay's readings are
+    under the relay. The conversation used to live here as a third
+    representation of an event the scene was already showing twice; it is now
+    inside the phone it belongs to, and this row holds only what the scene
+    cannot: measurements, and the row the relay is actually storing.
+  */}
+  <div class="demo-console-readings">
+    <section class="demo-console-reading" aria-labelledby="demo-console-a">
       <h3 class="demo-console-heading" id="demo-console-a">{NAMES.a}</h3>
-
-      <ol class="demo-console-conversation" data-console-conversation="a"></ol>
-
-      <div class="demo-console-compose">
-        {/*
-          Key exchange is a real call and gets its own control, because it is
-          genuinely a separate step from sending and a reader asked to watch key
-          agreement should not have to infer it from the first message. It is
-          `establishSession` on the client, with the bundle fetched from the
-          relay — not a staged animation of one.
-        */}
-        <button type="button" class="oe-button oe-button-secondary" data-console-exchange disabled>
-          Exchange keys
-        </button>
-        <label class="demo-console-field">
-          <span class="demo-console-field-label">Message</span>
-          <input
-            type="text"
-            data-console-message
-            value="the carrier reads the address, not the letter"
-            disabled
-          />
-        </label>
-        <button type="button" class="oe-button demo-console-send" data-console-send disabled>
-          Send
-        </button>
-      </div>
-
       <p class="demo-console-metric">
         <span class="demo-console-metric-value" data-console-metric-a>—</span>
         <span class="demo-console-metric-label">
@@ -151,21 +178,8 @@ const SPEEDS = [
       </p>
     </section>
 
-    {/* ------------------------------------------------------------ relay --- */}
-    <section class="demo-console-column demo-console-column-relay" aria-labelledby="demo-console-relay">
+    <section class="demo-console-reading demo-console-reading-relay" aria-labelledby="demo-console-relay">
       <h3 class="demo-console-heading" id="demo-console-relay">relay</h3>
-
-      {/*
-        An inspector rather than a conversation. It answers one question — what
-        is the relay actually holding — with the row itself: the bytes, then
-        every field on the envelope, read off the object the relay stored rather
-        than from a description of it. The two fields it holds back are named
-        where they are held back, by the script.
-      */}
-      <p class="demo-console-empty" data-console-relay-empty>Holding nothing.</p>
-      <pre class="demo-console-hex" data-console-hex hidden></pre>
-      <dl class="demo-console-row" data-console-row hidden></dl>
-      <p class="demo-console-row-note" data-console-row-note hidden></p>
 
       <p class="demo-console-metric">
         <span class="demo-console-metric-value" data-console-metric-relay>—</span>
@@ -173,14 +187,47 @@ const SPEEDS = [
           what the relay is holding · it never needs the plaintext to hold it
         </span>
       </p>
+
+      {/*
+        The relay's own work, and the sentence that stops it being read as a
+        latency figure. This relay runs in the reader's tab, so there is no
+        network in any number on this page — saying so is the difference
+        between a measurement and a claim about production.
+      */}
+      <p class="demo-console-metric">
+        <span class="demo-console-metric-value" data-console-metric-publish>—</span>
+        <span class="demo-console-metric-label">
+          publish · both devices' public bundles onto the relay
+        </span>
+      </p>
+
+      <p class="demo-console-metric">
+        <span class="demo-console-metric-value" data-console-metric-establish>—</span>
+        <span class="demo-console-metric-label">
+          key agreement · fetching a bundle and deriving the first shared secret
+        </span>
+      </p>
+
+      <p class="demo-console-note">
+        This relay is in this tab. Nothing here crosses a network, so these are the SDK's own work
+        with transport cost removed — add your own round trip to every one of them.
+      </p>
+
+      {/*
+        An inspector. It answers one question — what is the relay actually
+        holding — with the row itself: the bytes, then every field on the
+        envelope, read off the object the relay stored rather than from a
+        description of it. The fields it holds back are named where they are
+        held back, by the script.
+      */}
+      <p class="demo-console-empty" data-console-relay-empty>Holding nothing.</p>
+      <pre class="demo-console-hex" data-console-hex hidden></pre>
+      <dl class="demo-console-row" data-console-row hidden></dl>
+      <p class="demo-console-row-note" data-console-row-note hidden></p>
     </section>
 
-    {/* -------------------------------------------------------------- bob --- */}
-    <section class="demo-console-column" aria-labelledby="demo-console-b">
+    <section class="demo-console-reading" aria-labelledby="demo-console-b">
       <h3 class="demo-console-heading" id="demo-console-b">{NAMES.b}</h3>
-
-      <ol class="demo-console-conversation" data-console-conversation="b"></ol>
-
       <p class="demo-console-metric">
         <span class="demo-console-metric-value" data-console-metric-b>—</span>
         <span class="demo-console-metric-label">
@@ -189,6 +236,14 @@ const SPEEDS = [
       </p>
     </section>
   </div>
+
+  {/*
+    The log, last, because it is the transcript rather than the story: the
+    scene is paced for reading and this is the recording's own clock, printed
+    the moment each event exists. A reader who wants the exact order and the
+    exact call comes down here; nobody has to.
+  */}
+  <DemoLog />
 
   {/*
     The recorded capture: server-rendered, visible on arrival, hidden by the
@@ -232,16 +287,31 @@ const SPEEDS = [
    * being paced, and holding them back would make the transport look like it was
    * timing something.
    *
-   * Everything that tells the story — the drawing, the two conversations, the
-   * row in the relay's column — waits for the reel. A reader watching at a
-   * quarter speed should not be shown the sentence arriving at the far device
-   * before the envelope has visibly got there. `apply()` is the one place those
-   * three move, so they cannot fall out of step with each other.
+   * The log prints on that same measured clock, and deliberately: it is the
+   * transcript, not the story, and a reader consulting it wants the order the
+   * protocol really went in.
+   *
+   * Everything that tells the story — the scene, the bubbles inside the phones,
+   * the row under the relay — waits for the reel. A reader should not be shown
+   * the sentence arriving at the far device before the envelope has visibly got
+   * there. `apply()` is the one place those move, so they cannot fall out of
+   * step with each other.
    */
   import type { DemoRun, DeviceActor } from '../../lib/demo/run';
   import type { Playback } from '../../lib/demo/playback';
-  import type { StageCue, StageView } from '../../lib/demo/stage-view';
+  import type { SceneCue, SceneToggles, SceneView, Side } from '../../lib/demo/scene-view';
   import type { TraceEvent } from '../../lib/demo/trace';
+
+  /*
+   * The log is a separate island with its own inline module, so neither script
+   * can import the other's. `DemoLog.astro` hangs this on its own root element
+   * once it has mounted, and this is that shape restated where it is called —
+   * a structural type, so a change to the handle is a compile error here.
+   */
+  interface DemoLogHandle {
+    append(event: TraceEvent): void;
+    clear(): void;
+  }
 
   const mount = document.querySelector<HTMLElement>('[data-demo="console"]');
   if (mount) upgrade(mount);
@@ -256,25 +326,45 @@ const SPEEDS = [
     const play = need<HTMLButtonElement>('[data-console-play]');
     const step = need<HTMLButtonElement>('[data-console-step]');
     const reset = need<HTMLButtonElement>('[data-console-reset]');
-    const speed = need<HTMLSelectElement>('[data-console-speed]');
     const exchange = need<HTMLButtonElement>('[data-console-exchange]');
-    const message = need<HTMLInputElement>('[data-console-message]');
-    const send = need<HTMLButtonElement>('[data-console-send]');
     const status = need<HTMLElement>('[data-console-status]');
     const hex = need<HTMLElement>('[data-console-hex]');
     const row = need<HTMLElement>('[data-console-row]');
     const rowNote = need<HTMLElement>('[data-console-row-note]');
     const relayEmpty = need<HTMLElement>('[data-console-relay-empty]');
     const recorded = need<HTMLElement>('[data-console-recorded]');
-    const conversations: Record<DeviceActor, HTMLElement> = {
-      a: need<HTMLElement>('[data-console-conversation="a"]'),
-      b: need<HTMLElement>('[data-console-conversation="b"]'),
-    };
+    const toggleBox = need<HTMLFieldSetElement>('[data-console-toggles]');
+    const sceneRoot = need<HTMLElement>('[data-demo-scene]');
+    const logRoot = need<HTMLElement>('[data-demo-log]');
     const metrics = {
       a: need<HTMLElement>('[data-console-metric-a]'),
       b: need<HTMLElement>('[data-console-metric-b]'),
       relay: need<HTMLElement>('[data-console-metric-relay]'),
+      publish: need<HTMLElement>('[data-console-metric-publish]'),
+      establish: need<HTMLElement>('[data-console-metric-establish]'),
     };
+
+    /* The composer belongs to the device now, so there are two of them and
+       either may start a conversation. Both are read out of the scene rather
+       than duplicated here: the phone that shows the message is the phone that
+       accepted it, and one selector proves that rather than asserting it. */
+    const composers: Record<Side, { input: HTMLInputElement; send: HTMLButtonElement }> = {
+      a: {
+        input: need<HTMLInputElement>('[data-scene-input="a"]'),
+        send: need<HTMLButtonElement>('[data-scene-send="a"]'),
+      },
+      b: {
+        input: need<HTMLInputElement>('[data-scene-input="b"]'),
+        send: need<HTMLButtonElement>('[data-scene-send="b"]'),
+      },
+    };
+
+    const toggleInputs = new Map<string, HTMLInputElement>(
+      [...root.querySelectorAll<HTMLInputElement>('[data-console-toggle]')].map((input) => [
+        input.dataset.consoleToggle ?? '',
+        input,
+      ]),
+    );
 
     const names = { a: root.dataset.consoleNameA ?? 'a', b: root.dataset.consoleNameB ?? 'b' };
 
@@ -294,10 +384,24 @@ const SPEEDS = [
      */
     const HELD_BACK = new Set(['ciphertext', 'id']);
 
+    /*
+     * What sealed sender takes off the envelope.
+     *
+     * The demo does not run sealed sender — it needs a trust root and a sender
+     * certificate to mint against, and this page has neither — so the switch is
+     * a lens over the real row rather than a session setting, and it is drawn
+     * as one. The fields below are marked in place instead of hidden, because
+     * the useful thing to see is *which* fields go, and a row that silently
+     * shortened would teach nothing. The relay's own `messageType` says which
+     * mode really ran: `unidentified_sender` is sealed, and the envelopes here
+     * are not.
+     */
+    const SEALED_SENDER_HIDES = new Set(['senderUserId', 'senderDeviceId']);
+
     type Loaded = {
       run: typeof import('../../lib/demo/run');
       playback: typeof import('../../lib/demo/playback');
-      stage: typeof import('../../lib/demo/stage-view');
+      scene: typeof import('../../lib/demo/scene-view');
       ciphertext: typeof import('../../lib/demo/ciphertext');
     };
 
@@ -309,15 +413,38 @@ const SPEEDS = [
 
     let loaded: Loaded | null = null;
     let run: DemoRun | null = null;
-    let stage: StageView | null = null;
-    let reel: Playback<StageCue> | null = null;
+    let scene: SceneView | null = null;
+    let reel: Playback<SceneCue> | null = null;
     let starting: Promise<void> | null = null;
+    /** Whether a run has ever come up here. Reset drops the run; this survives. */
+    let everStarted = false;
     let busy = false;
     let exchanged = false;
-    let sent = 0;
     let bytesHeld = 0;
     let rowsHeld = 0;
+    let bundlesHeld = 0;
+    let publishedMs = 0;
     const pending: Row[] = [];
+
+    /*
+     * Message keys derived, per device. The ratchet's notches are this count and
+     * nothing else.
+     *
+     * Counted where the derivation happens rather than shared between the two:
+     * the sender derives one when it seals, the receiver derives one when it
+     * opens, and a single counter would draw both devices turning together,
+     * which is the one thing a ratchet does not do.
+     */
+    const derived: Record<Side, number> = { a: 0, b: 0 };
+
+    /** The switches, as the scene and the next session read them. */
+    let toggles: SceneToggles = { sealedSender: true, postQuantum: true, braid: false };
+
+    /** The sender's bubble that has not yet been confirmed at the far device. */
+    let awaitingDelivery: HTMLElement | null = null;
+
+    /** The row the inspector is currently showing, so the lens can redraw it. */
+    let shownRow: Row | null = null;
 
     const say = (text: string) => {
       status.textContent = text;
@@ -369,10 +496,21 @@ const SPEEDS = [
       play.disabled = !running || !hasReel;
       step.disabled = !running || !hasReel;
       reset.disabled = !running;
-      speed.disabled = !running;
       exchange.disabled = busy || exchanged;
-      message.disabled = busy;
-      send.disabled = busy || !exchanged;
+      /* The two policy switches choose what the *next* session negotiates, so
+         they go unavailable once one exists. A switch that appeared to change a
+         running session would be describing key agreement wrongly, and Reset is
+         the honest way back to a different answer. The sealed-sender lens is
+         not a session setting and stays live throughout — see the note by
+         `SEALED_SENDER_HIDES`. */
+      toggleBox.disabled = false;
+      for (const [key, input] of toggleInputs) {
+        if (key !== 'sealedSender') input.disabled = busy || exchanged;
+      }
+      for (const side of ['a', 'b'] as const) {
+        composers[side].input.disabled = busy;
+        composers[side].send.disabled = busy || !exchanged;
+      }
     };
 
     /**
@@ -384,13 +522,13 @@ const SPEEDS = [
      * of this is here instead of at the top of the file.
      */
     async function chunks(): Promise<Loaded> {
-      const [runModule, playback, stageModule, ciphertext] = await Promise.all([
+      const [runModule, playback, sceneModule, ciphertext] = await Promise.all([
         import('../../lib/demo/run'),
         import('../../lib/demo/playback'),
-        import('../../lib/demo/stage-view'),
+        import('../../lib/demo/scene-view'),
         import('../../lib/demo/ciphertext'),
       ]);
-      return { run: runModule, playback, stage: stageModule, ciphertext };
+      return { run: runModule, playback, scene: sceneModule, ciphertext };
     }
 
     /**
@@ -410,9 +548,11 @@ const SPEEDS = [
         const parts = await chunks();
         loaded = parts;
 
-        const figure = document.querySelector<HTMLElement>('[data-demo-stage-figure]');
-        if (!figure) throw new Error('demo console: the stage is missing from the page');
-        stage = parts.stage.mountStage(figure, names);
+        /* Mounted once for the life of the page. Reset drops the run and comes
+           back through here, and a second mount would leave the first view
+           holding elements the second one is also writing to. */
+        scene ??= parts.scene.mountScene(sceneRoot, names);
+        scene.setToggles(toggles);
 
         /*
          * The pace, with the per-step dwell `playback.ts` already publishes.
@@ -424,19 +564,37 @@ const SPEEDS = [
          * under `prefers-reduced-motion`, and a reader who asked for less motion
          * should lose the motion, not the information.
          */
-        reel = parts.playback.createPlayback<StageCue>({
-          show: apply,
-          dwellMs: parts.playback.STEP_DWELL_MS,
-        });
-        reel.setSpeed(Number(speed.value));
-        /* The label follows the transport's own state rather than the press that
-           was aimed at it, so a reel that runs dry and parks reads as parked. */
-        reel.on((state) => {
-          play.textContent = state === 'playing' ? 'Pause' : 'Play';
-        });
+        if (!reel) {
+          reel = parts.playback.createPlayback<SceneCue>({
+            show: apply,
+            dwellMs: parts.playback.STEP_DWELL_MS,
+          });
+          /* The label follows the transport's own state rather than the press
+             that was aimed at it, so a reel that runs dry and parks reads as
+             parked. */
+          reel.on((state) => {
+            play.textContent = state === 'playing' ? 'Pause' : 'Play';
+          });
+        }
 
-        run = await parts.run.startDemoRun({ a: names.a, b: names.b });
+        /*
+         * The two policy switches are read here and nowhere later, which is why
+         * they lock once a session exists: this is the only moment they can
+         * take effect. `compatible` is not "post-quantum off" — it still uses
+         * PQXDH against a peer that has KEM material, and both peers here do.
+         * What it changes is whether a peer with none is refused, and the
+         * session's own selection event says which of those really happened.
+         */
+        run = await parts.run.startDemoRun({
+          a: names.a,
+          b: names.b,
+          protocol: {
+            postQuantum: toggles.postQuantum ? 'required' : 'compatible',
+            braid: toggles.braid ? 'required' : 'disabled',
+          },
+        });
         run.trace.on(record);
+        everStarted = true;
         say('');
       })();
 
@@ -446,9 +604,14 @@ const SPEEDS = [
       return starting;
     }
 
-    /** Recorded: print what was measured, and queue the story for the reel. */
+    /** Recorded: print what was measured, log it, and queue the story for the reel. */
     function record(event: TraceEvent) {
       printMetrics(event);
+      /* Looked up per event rather than held: the log is a separate island and
+         may mount after this one, so a reference taken at upgrade time could be
+         a reference to nothing. */
+      (logRoot as HTMLElement & { demoLog?: DemoLogHandle }).demoLog?.append(event);
+      if (event.step === 'bundles-published') bundlesHeld += 1;
       if (event.step === 'stored-at-relay') {
         const envelope = (event.detail as { envelope?: Record<string, unknown> })?.envelope;
         if (envelope) pending.push({ envelope, bytes: event.measures?.ciphertextBytes ?? 0 });
@@ -465,6 +628,16 @@ const SPEEDS = [
       if (!measures) return;
       if (typeof measures.encryptMs === 'number') metrics.a.textContent = ms(measures.encryptMs);
       if (typeof measures.roundTripMs === 'number') metrics.b.textContent = ms(measures.roundTripMs);
+      /* Both devices publish, and the slower of the two is when the relay was
+         ready for either of them. A sum would count work that ran in parallel;
+         the last one to land is the fact a reader can use. */
+      if (typeof measures.publishMs === 'number') {
+        publishedMs = Math.max(publishedMs, measures.publishMs);
+        metrics.publish.textContent = ms(publishedMs);
+      }
+      if (typeof measures.establishMs === 'number') {
+        metrics.establish.textContent = ms(measures.establishMs);
+      }
       if (typeof measures.ciphertextBytes === 'number') {
         bytesHeld += measures.ciphertextBytes;
         rowsHeld += 1;
@@ -481,7 +654,7 @@ const SPEEDS = [
      * makes the transport unable to move a printed figure — by the time a cue is
      * on the reel there is no number left in it to scale.
      */
-    function toCue(event: TraceEvent): StageCue {
+    function toCue(event: TraceEvent): SceneCue {
       const detail = (event.detail ?? {}) as Record<string, unknown>;
       /* A trace event's `from` and `to` may name the relay, and a sentence
          belongs to a device. Asked rather than asserted: which actor a step
@@ -491,33 +664,84 @@ const SPEEDS = [
         actor === 'a' || actor === 'b' ? actor : null;
       const from = device(event.from);
       const to = device(event.to);
-      const base: StageCue = {
+      const base: SceneCue = {
         step: event.step,
         actor: event.actor,
         ...(event.from === undefined ? {} : { from: event.from }),
         ...(event.to === undefined ? {} : { to: event.to }),
       };
 
-      if (event.step === 'encrypted' && from && typeof detail.text === 'string') {
-        return { ...base, sentence: { side: from, text: detail.text } };
+      /* Counted at the step that derives the key, and snapshotted into the cue
+         rather than read from the counter when the cue plays. The protocol runs
+         well ahead of the reader, so a cue that read a live counter would draw
+         a ratchet that had already turned several more times than the step it
+         is showing. */
+      if (event.step === 'encrypted' && from) derived[from] += 1;
+      if (event.step === 'opened' && to) derived[to] += 1;
+      const turned = { ratchet: { a: derived.a, b: derived.b } };
+
+      if (event.step === 'devices-ready') {
+        return { ...base, ...turned };
       }
-      if (event.step === 'stored-at-relay' && loaded) {
+      if (event.step === 'bundles-published') {
+        return { ...base, ...turned, bundles: bundlesHeld };
+      }
+      if (event.step === 'encrypted' && from && typeof detail.text === 'string') {
+        return { ...base, ...turned, sentence: { side: from, text: detail.text } };
+      }
+      if (event.step === 'stored-at-relay') {
         const envelope = (detail.envelope ?? {}) as Record<string, unknown>;
-        const bytes = event.measures?.ciphertextBytes ?? 0;
-        return { ...base, fields: loaded.stage.envelopeFields(envelope, bytes) };
+        /* The addressing on the drawn envelope is the addressing on the real
+           one, read off the same object the relay stored, so the two cannot
+           disagree about who the relay can see. */
+        return {
+          ...base,
+          ...turned,
+          meta: {
+            ...(typeof envelope.targetUserId === 'string' ? { to: envelope.targetUserId } : {}),
+            ...(typeof envelope.senderUserId === 'string' ? { from: envelope.senderUserId } : {}),
+          },
+        };
       }
       if (event.step === 'opened' && to) {
         const opened = detail.decrypted as { content?: unknown } | undefined;
         const text = typeof opened?.content === 'string' ? opened.content : '';
-        return { ...base, sentence: { side: to, text }, ratchet: { a: sent, b: sent } };
+        return { ...base, ...turned, sentence: { side: to, text } };
       }
-      return base;
+      return { ...base, ...turned };
+    }
+
+    /**
+     * How long the envelope takes to cross, in milliseconds.
+     *
+     * A share of the step's own dwell, capped, so travel always finishes inside
+     * the time the step is held and a longer-held step gets a longer glide. It
+     * is a presentation number derived from another presentation number, and it
+     * touches no measurement — see the two-clock note at the top of this file.
+     */
+    const FLIGHT_CAP_MS = 900;
+    function flightFor(step: string): number {
+      if (!loaded) return 0;
+      const dwell = loaded.playback.STEP_DWELL_MS[step] ?? loaded.playback.DEFAULT_DWELL_MS;
+      return Math.min(FLIGHT_CAP_MS, dwell * 0.4);
     }
 
     /** One step of the story, everywhere it is told. */
-    function apply(cue: StageCue) {
-      stage?.show(cue);
-      if (cue.sentence) bubble(cue.sentence.side, cue.sentence.text);
+    function apply(cue: SceneCue) {
+      scene?.show(cue, flightFor(cue.step));
+      /* The bubble lands with the step that produced it: sealed at the sender
+         when it is encrypted, plain at the receiver when it is opened. */
+      if (cue.sentence) {
+        const mine = cue.step === 'encrypted';
+        const bubble = scene?.say(cue.sentence.side, cue.sentence.text, mine, mine) ?? null;
+        if (mine) awaitingDelivery = bubble;
+      }
+      /* The sender's own bubble stops being pending when the far device has it,
+         which is the only moment anything on this page knows that it does. */
+      if (cue.step === 'delivered' && awaitingDelivery) {
+        awaitingDelivery.dataset.pending = 'false';
+        awaitingDelivery = null;
+      }
       if (cue.step === 'stored-at-relay') {
         const next = pending.shift();
         if (next) showRow(next.envelope, next.bytes);
@@ -527,6 +751,7 @@ const SPEEDS = [
     /* The relay's column: the bytes, then every field that is not held back. */
     function showRow(envelope: Record<string, unknown>, bytes: number) {
       if (!loaded) return;
+      shownRow = { envelope, bytes };
       const encoded = String(envelope.ciphertext);
       hex.textContent = loaded.ciphertext.hexStrip(envelope.ciphertext).join('\n');
       hex.hidden = false;
@@ -534,31 +759,37 @@ const SPEEDS = [
 
       row.replaceChildren();
       let shown = 0;
+      let sealable = 0;
       for (const [field, value] of Object.entries(envelope)) {
         if (HELD_BACK.has(field)) continue;
+        const hides = SEALED_SENDER_HIDES.has(field);
+        if (hides) sealable += 1;
         const term = document.createElement('dt');
         term.textContent = field;
         const definition = document.createElement('dd');
         definition.textContent = String(value);
+        if (hides) {
+          term.dataset.sealedHidden = 'true';
+          definition.dataset.sealedHidden = 'true';
+        }
         row.append(term, definition);
         shown += 1;
       }
+      row.dataset.sealedLens = String(toggles.sealedSender);
       /* The note is a sibling of the list rather than its last child: a `<dl>`
          may hold terms, definitions and grouping `<div>`s, and a paragraph
          inside one is invalid however well it renders. */
       rowNote.textContent =
         `${count(shown)} fields, read off the envelope itself — plus the ciphertext above, ` +
         `${count(encoded.length)} base64 characters and ${count(bytes)} bytes of it, and the ` +
-        'relay-assigned id, which this in-memory relay numbers in a way yours would not.';
+        'relay-assigned id, which this in-memory relay numbers in a way yours would not.' +
+        (toggles.sealedSender
+          ? ` The ${count(sealable)} struck fields are the ones sealed sender removes; this ` +
+            `envelope's own \`messageType\` is \`${String(envelope.messageType)}\`, so it is ` +
+            'not a sealed one — the demo has no certificate authority to mint against.'
+          : '');
       row.hidden = false;
       rowNote.hidden = false;
-    }
-
-    function bubble(side: DeviceActor, text: string) {
-      const item = document.createElement('li');
-      item.className = 'demo-console-bubble';
-      item.textContent = text;
-      conversations[side].append(item);
     }
 
     /* One place that turns a thrown error into a sentence, so no path can fail
@@ -575,8 +806,11 @@ const SPEEDS = [
         /* If nothing was ever brought up, the demo could not run and the page
            owes the reader the recording again — the status line above says
            why. A failure after a run exists is one action's failure, not the
-           demo's, and the reader keeps what they have already watched. */
-        recorded.hidden = run !== null;
+           demo's, and the reader keeps what they have already watched.
+           Asked of `everStarted` rather than of `run`, because Reset drops the
+           run on purpose and a reader who has just reset has not lost the
+           demo. */
+        recorded.hidden = everStarted;
         enable();
       }
     }
@@ -593,21 +827,58 @@ const SPEEDS = [
       });
     });
 
-    send.addEventListener('click', () => {
-      const text = message.value.trim();
-      if (text === '') {
-        say('Type something to send.');
-        return;
-      }
-      void guard('the send', async () => {
-        await start();
-        sent += 1;
-        await run?.send('a', text);
-        /* After the send resolves, not when it was pressed: the round trip is
-           the thing being counted, and a press that threw is not one. */
-        reportRun();
+    /* Either device may send, so the handler is written once against a side.
+       The device that accepted the sentence is the device the SDK is asked to
+       send from, which is what makes the reply leg a real reply rather than a
+       second outbound message drawn backwards. */
+    for (const side of ['a', 'b'] as const) {
+      const { input, send } = composers[side];
+      send.addEventListener('click', () => {
+        const text = input.value.trim();
+        if (text === '') {
+          say('Type something to send.');
+          return;
+        }
+        void guard('the send', async () => {
+          await start();
+          await run?.send(side, text);
+          /* Cleared after the send resolves rather than on the press: a field
+             emptied by a send that threw takes the reader's sentence with it. */
+          input.value = '';
+          /* After the send resolves, not when it was pressed: the round trip is
+             the thing being counted, and a press that threw is not one. */
+          reportRun();
+        });
       });
-    });
+
+      /* The composer answers the return key, because a text field beside a
+         button is a form to everyone who has ever used one. */
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          send.click();
+        }
+      });
+    }
+
+    /*
+     * The switches.
+     *
+     * `sealedSender` is a lens and takes effect at once, including on a row the
+     * relay is already showing. The other two are session policy and are locked
+     * by `enable()` once a session exists, so their handler only has to record
+     * the choice that the next `startDemoRun` will read.
+     */
+    for (const [key, input] of toggleInputs) {
+      input.addEventListener('change', () => {
+        toggles = { ...toggles, [key]: input.checked };
+        scene?.setToggles(toggles);
+        /* Redrawn rather than toggled, because the note under the row names how
+           many fields the lens is marking and that sentence has to change with
+           it. One place builds the row; the lens does not get a second. */
+        if (key === 'sealedSender' && shownRow) showRow(shownRow.envelope, shownRow.bytes);
+      });
+    }
 
     play.addEventListener('click', () => {
       if (!reel) return;
@@ -620,39 +891,48 @@ const SPEEDS = [
       reel?.step();
     });
 
-    speed.addEventListener('change', () => {
-      reel?.setSpeed(Number(speed.value));
-    });
-
     reset.addEventListener('click', () => {
       void guard('the reset', async () => {
         reel?.reset();
-        stage?.clear();
-        await run?.reset();
+        scene?.clear();
+        (logRoot as HTMLElement & { demoLog?: DemoLogHandle }).demoLog?.clear();
+        /*
+         * Stopped and dropped rather than reset in place.
+         *
+         * `run.reset()` re-boots the devices against the options the run was
+         * created with, so a reader who came back here to change the protocol
+         * switches would get the old policy again and a page that had lied to
+         * them about what Reset is for. Dropping the run means the next press
+         * builds one from the switches as they now stand. The modules are
+         * already fetched, so this costs a boot and not a download.
+         */
+        await run?.stop();
+        run = null;
         exchanged = false;
-        sent = 0;
         bytesHeld = 0;
         rowsHeld = 0;
+        bundlesHeld = 0;
+        publishedMs = 0;
+        derived.a = 0;
+        derived.b = 0;
+        awaitingDelivery = null;
+        shownRow = null;
         pending.length = 0;
-        for (const side of ['a', 'b'] as const) conversations[side].replaceChildren();
+        for (const side of ['a', 'b'] as const) composers[side].input.value = '';
         metrics.a.textContent = '—';
         metrics.b.textContent = '—';
         metrics.relay.textContent = '—';
+        metrics.publish.textContent = '—';
+        metrics.establish.textContent = '—';
         hex.hidden = true;
         row.hidden = true;
         rowNote.hidden = true;
         relayEmpty.hidden = false;
-        say('Reset. Fresh devices, a fresh relay, and nothing recorded.');
+        say(
+          'Reset. Fresh devices, a fresh relay, and nothing recorded — the protocol switches are ' +
+            'open again.',
+        );
       });
-    });
-
-    /* The composer answers the return key, because a text field beside a button
-       is a form to everyone who has ever used one. */
-    message.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        send.click();
-      }
     });
 
     /* The console is interactive from here, so the recording stops being what

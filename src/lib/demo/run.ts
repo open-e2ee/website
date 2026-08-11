@@ -48,6 +48,7 @@ import type {
   Envelope,
   ProtocolAddress,
   SendResult,
+  SignalProtocolConfig,
 } from '@open-e2ee/signal-protocol-sdk';
 import type { ProtocolSelectionEvent } from '@open-e2ee/signal-protocol-sdk/client/config';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
@@ -72,6 +73,17 @@ export interface DemoRunOptions {
   a?: string;
   /** Account on the right. */
   b?: string;
+  /**
+   * The post-quantum and ML-KEM-braid policy both devices agree keys under.
+   *
+   * Both, not one each: the two ends of a demo conversation running different
+   * policies is not a scenario this run models, and the SDK requires the
+   * initiator and the responder to agree before it will call it a session.
+   * Omitted, this is the SDK's own default — strict post-quantum with the
+   * Braid — so a caller who never mentions policy sees exactly what shipped
+   * before this option existed.
+   */
+  protocol?: SignalProtocolConfig;
   /**
    * How to build the relay, instead of a bare `inMemoryRelay()`.
    *
@@ -163,6 +175,61 @@ function measure(name: string, from: string, to: string): number {
   return performance.measure(name, from, to).duration;
 }
 
+/**
+ * How many public keys the relay is holding for one device, right after a
+ * publish.
+ *
+ * Read through the account's key-rotation queries — `getIdentityKey`,
+ * `getEcSignedPreKeyMetadata`, `getKemLastResortPreKeyMetadata`, and
+ * `getPreKeyCount` for both key types — rather than `fetchPreKeyBundle()`,
+ * the call `ensureSession` uses to agree a real session. That call is
+ * documented to atomically consume one EC and one KEM one-time prekey on
+ * every fetch: real material the reader's own key agreement would otherwise
+ * spend. Calling it here to produce a number for the page would silently
+ * take one for a reading, which is not a reading at all. The four queries
+ * above exist for exactly this — inspecting what a device has published
+ * without taking any of it.
+ *
+ * An identity contributes two: the X25519 key X3DH/PQXDH uses and the
+ * Ed25519 key that signs prekeys. `registrationId` and `deviceId`, which a
+ * fetched bundle also carries, are identifiers rather than keys and are not
+ * counted, so a number captioned "public keys" only ever counts keys.
+ *
+ * `null` when the relay has nothing at all for this device — an absent
+ * reading, which `publishBundles` keeps out of the trace rather than
+ * reporting as a zero it never observed.
+ */
+async function countPublishedKeys(
+  relay: InMemorySignalProtocolRelayServer,
+  userId: string,
+  deviceId: number,
+): Promise<number | null> {
+  const [identity, ecSignedPreKey, kemLastResortPreKey, ecOneTimeCount, kemOneTimeCount] =
+    await Promise.all([
+      relay.getIdentityKey(userId),
+      relay.getEcSignedPreKeyMetadata(userId, deviceId),
+      relay.getKemLastResortPreKeyMetadata(userId, deviceId),
+      relay.getPreKeyCount(userId, deviceId, 'ec'),
+      relay.getPreKeyCount(userId, deviceId, 'kem'),
+    ]);
+  if (
+    !identity &&
+    !ecSignedPreKey &&
+    !kemLastResortPreKey &&
+    ecOneTimeCount === 0 &&
+    kemOneTimeCount === 0
+  ) {
+    return null;
+  }
+  return (
+    (identity ? 2 : 0) +
+    (ecSignedPreKey ? 1 : 0) +
+    (kemLastResortPreKey ? 1 : 0) +
+    ecOneTimeCount +
+    kemOneTimeCount
+  );
+}
+
 export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRun> {
   const names: Record<DeviceActor, string> = {
     a: options.a ?? 'alice',
@@ -170,6 +237,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
   };
   const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
   const makeRelay = options.relay ?? inMemoryRelay;
+  const protocol = options.protocol;
   const trace = createTrace();
 
   /* Mutable because `reset()` replaces them. What survives a reset is the trace
@@ -226,10 +294,29 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     const config = createSignalProtocolClientConfig({
       identity: { userId },
       adapters: { storage: inMemoryStore(), relay },
+      protocol,
     });
+    /*
+     * Spread rather than assigned, so a `protocolStrategy` this file sets
+     * later can never be the whole reason a policy field goes missing.
+     *
+     * It is not load-bearing today: `createSignalProtocolClientConfig` never
+     * populates `protocolStrategy` itself, so `config.protocolStrategy` is
+     * always empty here regardless of `protocol` above, and `{...undefined,
+     * onProtocolSelected}` is just `{onProtocolSelected}`. The real merge of
+     * policy and callback happens one call later, inside
+     * `SignalProtocolClient.create()`: it folds whatever `protocolStrategy`
+     * it is handed together with the `allowClassicalFallback`/`sckaMode`
+     * `resolveSignalProtocolStrategy()` derives from `protocol`, callback
+     * included, which is why `onProtocolSelected` keeps firing with a
+     * `protocol` policy set. The spread stays anyway, as the cheap guard
+     * against `config` starting to carry a `protocolStrategy` of its own on
+     * some future version of the package.
+     */
     const client = await SignalProtocolClient.create(userId, {
       ...config,
       protocolStrategy: {
+        ...config.protocolStrategy,
         onProtocolSelected: (event) => {
           selection = event;
         },
@@ -348,11 +435,20 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
           mark(actor, 'start'),
           mark(actor, 'end'),
         );
+        /* Outside the marks above on purpose: this reads the relay back, and
+           a reader watching `publishMs` should see how long the publish took,
+           not that plus a diagnostic query the publish itself never made. */
+        const publicKeys = await countPublishedKeys(
+          relay,
+          devices[actor].userId,
+          devices[actor].address.deviceId,
+        );
         trace.append({
           step: 'bundles-published',
           actor,
           atMs: performance.now(),
           measures: { publishMs },
+          ...(publicKeys === null ? {} : { detail: { publicKeys } }),
         });
       }),
     );

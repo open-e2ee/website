@@ -1,0 +1,599 @@
+---
+import { STEPS } from '../../lib/demo/trace';
+
+/*
+ * The scene: two devices, the relay between them, and a message that travels.
+ *
+ * This replaces a drawing that pre-rendered every step and used CSS to show one
+ * of them. That arrangement could not animate — nothing moved, it cut between
+ * stills — and the reader was asked to infer travel from a pair of dotted lines
+ * labelled "seal" and "open". The lines were a legend for a motion the page
+ * never performed, which is why the mailbox idea never arrived: a relay only
+ * reads as a mailbox once something is *put into it* and later taken out.
+ *
+ * So this is DOM rather than SVG, and the difference is not a preference. A
+ * device here holds a real conversation with real reflowing bubbles and a real
+ * text input; an envelope is one element that moves between three anchors under
+ * a transform. Both are things the browser already does well and that SVG makes
+ * expensive. The old geometry module solved a problem this arrangement does not
+ * have.
+ *
+ * ------------------------------------------------------------- one picture ---
+ *
+ * There used to be two pictures — an abstract stage, and a separate row of chat
+ * columns beneath it — showing the same event twice. The eye never fused them,
+ * so the demo read as a diagram with a transcript rather than as two people
+ * messaging. The chat is now *inside* the device it belongs to. There is one
+ * scene, and every column of it is a place a thing can be.
+ *
+ * ----------------------------------------------------------- the payload ---
+ *
+ * `design/DESIGN.md` keeps padlocks off diagrams, and this is the considered
+ * exception rather than a lapse. The rule exists to stop a padlock standing in
+ * for an explanation. Here the padlock is not the explanation — it is the state
+ * of one object the reader watches change, and the same object shows its
+ * plaintext at both ends of the journey. Sealed and open are the same envelope,
+ * so the reader learns that a message is not replaced at the boundary, it is
+ * *wrapped*, which is the fact the dotted lines were failing to convey.
+ *
+ * The two states are drawn with the diagram tokens rather than with black and
+ * white, because `--oe-diagram-ciphertext-fill` inverts between light and dark
+ * themes: it is near-black on the light theme and near-white on the dark one.
+ * A hard-coded white padlock would vanish on one of the two. So the sealed
+ * payload is the ciphertext fill with `--oe-surface` on top of it, and those
+ * two invert together.
+ */
+
+/* Which side is which. Written once so the markup below cannot disagree with
+   itself about which device is which, and so the two are provably symmetric. */
+const SIDES = [
+  { side: 'a', label: 'Device A' },
+  { side: 'b', label: 'Device B' },
+] as const;
+
+/* The relay's slots, in the order a message meets them. The bundle shelf is
+   filled once when devices come online; the mailbox holds envelopes until the
+   far device collects them, which is the whole of what a relay is for. */
+const SLOTS = [
+  { slot: 'bundles', label: 'prekey bundles', empty: 'no bundles published' },
+  { slot: 'mailbox', label: 'mailbox', empty: 'nothing waiting' },
+] as const;
+
+/* The protocol steps, handed to the script so it never types a step name that
+   `trace.ts` does not define. */
+const STEP_LIST = STEPS.join(' ');
+---
+
+<div class="demo-scene" data-demo-scene data-scene-state="idle" data-scene-steps={STEP_LIST}>
+  {
+    SIDES.map(({ side, label }) => (
+      <section class="demo-scene-column" data-scene-device={side} aria-label={label}>
+        <div class="demo-phone">
+          <div class="demo-phone-notch" aria-hidden="true"></div>
+          <div class="demo-phone-screen">
+            <header class="demo-phone-header">
+              <span class="demo-phone-who" data-scene-name={side}>
+                {label}
+              </span>
+              <span class="demo-phone-state" data-scene-device-state={side}>offline</span>
+            </header>
+
+            <ol class="demo-phone-chat" data-scene-chat={side} aria-live="polite"></ol>
+
+            <div class="demo-phone-compose">
+              <label class="oe-visually-hidden" for={`demo-scene-compose-${side}`}>
+                Message from {label}
+              </label>
+              <input
+                class="demo-phone-input"
+                id={`demo-scene-compose-${side}`}
+                type="text"
+                autocomplete="off"
+                placeholder="Type a message"
+                data-scene-input={side}
+                disabled
+              />
+              <button
+                type="button"
+                class="demo-phone-send"
+                data-scene-send={side}
+                disabled
+                aria-label={`Send from ${label}`}
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* The device's own key material. Filled forms are private and never
+            leave; the outlined ones on the relay's shelf are the public halves
+            of these. Keeping both on screen is what makes that difference
+            visible rather than asserted. */}
+        <div class="demo-device-keys" data-scene-keys={side}>
+          <span class="demo-device-keys-label">device store</span>
+          <ul class="demo-device-keys-list" data-scene-keys-list={side}></ul>
+        </div>
+
+        {/* The ratchet. One notch per message key derived, so it visibly turns
+            as the conversation goes on rather than being claimed in prose. */}
+        <div class="demo-ratchet" data-scene-ratchet={side}>
+          <span class="demo-ratchet-label">ratchet</span>
+          <ol class="demo-ratchet-notches" data-scene-ratchet-notches={side}></ol>
+        </div>
+      </section>
+    ))
+  }
+
+  <section class="demo-scene-column demo-scene-relay" aria-label="Relay">
+    <div class="demo-relay-rack">
+      <header class="demo-relay-header">
+        <span class="demo-relay-title">relay</span>
+        <span class="demo-relay-sub">never needs plaintext</span>
+      </header>
+
+      {
+        SLOTS.map(({ slot, label, empty }) => (
+          <div class="demo-relay-slot" data-scene-slot={slot}>
+            <span class="demo-relay-slot-label">{label}</span>
+            <div class="demo-relay-slot-body" data-scene-slot-body={slot}>
+              <span class="demo-relay-slot-empty">{empty}</span>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  {/*
+    The lanes. Two rails the envelope rides, drawn behind the columns so a
+    payload in flight passes over the gap rather than under a device. They are
+    inert scenery: the script measures anchors and moves the envelope itself,
+    because a lane that also owned the motion would be a second place the
+    geometry lives.
+  */}
+  <div class="demo-scene-lane" data-scene-lane="a" aria-hidden="true"></div>
+  <div class="demo-scene-lane" data-scene-lane="b" aria-hidden="true"></div>
+
+  {/*
+    The envelope. One element for the whole journey — sealed at the sending
+    device, carried to the relay, collected by the far one, and opened there.
+    Reusing a single node is the point: a reader who sees the same object arrive
+    and open learns that the message was wrapped rather than swapped.
+  */}
+  <div class="demo-envelope" data-scene-envelope hidden>
+    <div class="demo-envelope-meta" data-scene-envelope-meta>
+      <span class="demo-envelope-meta-row">
+        <span class="demo-envelope-meta-key">to</span>
+        <span class="demo-envelope-meta-value" data-scene-envelope-to>—</span>
+      </span>
+      <span class="demo-envelope-meta-row">
+        <span class="demo-envelope-meta-key">from</span>
+        <span class="demo-envelope-meta-value" data-scene-envelope-from>—</span>
+      </span>
+    </div>
+    <div class="demo-envelope-payload" data-scene-envelope-payload>
+      <svg
+        class="demo-envelope-lock"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        data-scene-envelope-lock
+      >
+        <path
+          d="M7 10V7a5 5 0 0 1 10 0v3"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+        ></path>
+        <rect x="4.5" y="10" width="15" height="10.5" rx="2" fill="currentColor"></rect>
+      </svg>
+      <span class="demo-envelope-text" data-scene-envelope-text></span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .demo-scene {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 0.85fr) 1fr;
+    gap: var(--oe-space-6);
+    align-items: start;
+  }
+
+  .demo-scene-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-3);
+    min-width: 0;
+  }
+
+  /* --------------------------------------------------------------- device --- */
+
+  .demo-phone {
+    background: var(--oe-device-surface);
+    border: 2px solid var(--oe-border);
+    border-radius: 26px;
+    padding: var(--oe-space-2);
+    padding-top: var(--oe-space-3);
+    position: relative;
+  }
+
+  .demo-phone-notch {
+    width: 34%;
+    height: 5px;
+    margin: 0 auto var(--oe-space-2);
+    border-radius: 999px;
+    background: var(--oe-border);
+  }
+
+  .demo-phone-screen {
+    background: var(--oe-surface);
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    min-height: 17rem;
+    overflow: hidden;
+  }
+
+  .demo-phone-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--oe-space-2);
+    padding: var(--oe-space-2) var(--oe-space-3);
+    border-bottom: 1px solid var(--oe-border);
+  }
+
+  .demo-phone-who {
+    font-weight: 600;
+  }
+
+  .demo-phone-state {
+    font-family: var(--oe-font-mono);
+    font-size: 0.75rem;
+    color: var(--oe-text-muted, inherit);
+    opacity: 0.7;
+  }
+
+  .demo-phone-chat {
+    list-style: none;
+    margin: 0;
+    padding: var(--oe-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-2);
+    flex: 1;
+    overflow-y: auto;
+    max-height: 12rem;
+  }
+
+  .demo-phone-bubble {
+    max-width: 82%;
+    padding: var(--oe-space-2) var(--oe-space-3);
+    border-radius: var(--oe-radius-lg);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .demo-phone-bubble[data-mine='true'] {
+    align-self: flex-end;
+    background: var(--oe-accent);
+    color: var(--oe-accent-foreground);
+  }
+
+  .demo-phone-bubble[data-mine='false'] {
+    align-self: flex-start;
+    background: var(--oe-surface-raised);
+    border: 1px solid var(--oe-border);
+  }
+
+  /* A bubble that is still sealed at this end: the far device has not opened it
+     yet, so showing its text here would be the demo lying about what is known
+     where. */
+  .demo-phone-bubble[data-pending='true'] {
+    opacity: 0.55;
+  }
+
+  .demo-phone-compose {
+    display: flex;
+    gap: var(--oe-space-2);
+    padding: var(--oe-space-2);
+    border-top: 1px solid var(--oe-border);
+  }
+
+  .demo-phone-input {
+    flex: 1;
+    min-width: 0;
+    padding: var(--oe-space-2);
+    border: 1px solid var(--oe-border-control);
+    border-radius: var(--oe-radius-sm);
+    background: var(--oe-surface-raised);
+    font: inherit;
+    color: inherit;
+  }
+
+  .demo-phone-send {
+    padding: var(--oe-space-2) var(--oe-space-3);
+    border: 0;
+    border-radius: var(--oe-radius-sm);
+    background: var(--oe-accent);
+    color: var(--oe-accent-foreground);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .demo-phone-input:disabled,
+  .demo-phone-send:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* ----------------------------------------------------------- key store --- */
+
+  .demo-device-keys,
+  .demo-ratchet {
+    display: flex;
+    align-items: center;
+    gap: var(--oe-space-2);
+    font-family: var(--oe-font-mono);
+    font-size: 0.75rem;
+  }
+
+  .demo-device-keys-label,
+  .demo-ratchet-label {
+    opacity: 0.7;
+  }
+
+  .demo-device-keys-list,
+  .demo-ratchet-notches {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: var(--oe-space-1);
+  }
+
+  /* A private key: a filled notched form, and it never appears anywhere but
+     inside a device. The notch is the design system's key shape. */
+  .demo-key {
+    width: 22px;
+    height: 14px;
+    background: var(--oe-diagram-ciphertext-fill);
+    clip-path: polygon(0 0, 78% 0, 100% 50%, 78% 100%, 0 100%);
+  }
+
+  /* A public half: the same shape, outlined, because it travels. */
+  .demo-key[data-public='true'] {
+    background: transparent;
+    border: 2px solid var(--oe-diagram-carrier-stroke);
+  }
+
+  .demo-ratchet-notch {
+    width: 12px;
+    height: 14px;
+    border: 2px solid var(--oe-diagram-carrier-stroke);
+    background: transparent;
+    transition: background-color var(--oe-duration-normal) ease;
+  }
+
+  .demo-ratchet-notch[data-turned='true'] {
+    background: var(--oe-diagram-ratchet-2);
+  }
+
+  /* ------------------------------------------------------------- the relay --- */
+
+  .demo-relay-rack {
+    border: 2px solid var(--oe-diagram-carrier-stroke);
+    border-radius: var(--oe-radius-sm);
+    padding: var(--oe-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-3);
+    background: var(--oe-surface);
+  }
+
+  .demo-relay-header {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .demo-relay-title {
+    font-family: var(--oe-font-mono);
+    font-weight: 600;
+  }
+
+  .demo-relay-sub {
+    font-size: 0.8rem;
+    opacity: 0.7;
+  }
+
+  /* A slot is a shelf, and an empty shelf is drawn lighter than the rack that
+     holds it. Drawn at the rack's weight it reads as a stored row, which had a
+     first-time reader seeing three held messages under a caption saying the
+     relay held nothing. */
+  .demo-relay-slot {
+    border: 1px dashed var(--oe-border);
+    border-radius: var(--oe-radius-sm);
+    padding: var(--oe-space-2);
+    min-height: 3.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-1);
+  }
+
+  .demo-relay-slot[data-holding='true'] {
+    border-style: solid;
+    border-color: var(--oe-diagram-carrier-stroke);
+  }
+
+  .demo-relay-slot-label {
+    font-family: var(--oe-font-mono);
+    font-size: 0.7rem;
+    opacity: 0.7;
+  }
+
+  .demo-relay-slot-body {
+    display: flex;
+    align-items: center;
+    gap: var(--oe-space-2);
+    flex-wrap: wrap;
+    min-height: 1.4rem;
+  }
+
+  .demo-relay-slot-empty {
+    font-family: var(--oe-font-mono);
+    font-size: 0.7rem;
+    opacity: 0.45;
+  }
+
+  .demo-relay-slot[data-holding='true'] .demo-relay-slot-empty {
+    display: none;
+  }
+
+  /* ------------------------------------------------------------- the lanes --- */
+
+  .demo-scene-lane {
+    position: absolute;
+    height: 0;
+    border-top: 2px dotted var(--oe-diagram-boundary);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  /* ---------------------------------------------------------- the envelope --- */
+
+  .demo-envelope {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 8.5rem;
+    z-index: 2;
+    pointer-events: none;
+    border-radius: var(--oe-radius-sm);
+    overflow: hidden;
+    border: 2px solid var(--oe-diagram-carrier-stroke);
+    background: var(--oe-surface-raised);
+    /* Position is set as a transform by the script from measured anchors, so
+       the transition below is the whole of the travel animation. */
+    transition: transform var(--oe-duration-normal) ease-in-out;
+    will-change: transform;
+  }
+
+  .demo-envelope[data-flying='true'] {
+    /* Flight is paced by the reading clock, not by a duration token: the script
+       sets this per journey. */
+    transition-duration: var(--demo-flight-ms, 700ms);
+  }
+
+  /* The metadata band. Present in both states, because what the relay can read
+     is exactly the point — the payload closes, the addressing does not. */
+  .demo-envelope-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 4px 6px;
+    background: var(--oe-surface);
+    border-bottom: 2px solid var(--oe-diagram-carrier-stroke);
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+  }
+
+  .demo-envelope-meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--oe-space-2);
+  }
+
+  .demo-envelope-meta-key {
+    opacity: 0.55;
+  }
+
+  .demo-envelope-meta-value {
+    font-weight: 600;
+  }
+
+  /* Sealed sender: the addressing the relay may read loses the sender. The
+     value is replaced by the same lock the payload wears, so the reader sees
+     one idea applied in two places rather than two unrelated treatments. */
+  .demo-envelope-meta-value[data-sealed='true'] {
+    color: transparent;
+    position: relative;
+  }
+
+  .demo-envelope-meta-value[data-sealed='true']::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    color: var(--oe-diagram-ciphertext-fill);
+    clip-path: polygon(20% 45%, 80% 45%, 80% 100%, 20% 100%);
+  }
+
+  .demo-envelope-payload {
+    min-height: 3.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--oe-space-2);
+    text-align: center;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    transition:
+      background-color var(--oe-duration-normal) ease,
+      color var(--oe-duration-normal) ease;
+  }
+
+  /* Sealed: the payload is the ciphertext fill with the surface colour on top.
+     Both tokens invert with the theme, so the lock stays legible on either. */
+  .demo-envelope[data-sealed='true'] .demo-envelope-payload {
+    background: var(--oe-diagram-ciphertext-fill);
+    color: var(--oe-surface);
+  }
+
+  .demo-envelope[data-sealed='false'] .demo-envelope-payload {
+    background: var(--oe-surface-raised);
+    color: inherit;
+  }
+
+  .demo-envelope-lock {
+    width: 26px;
+    height: 26px;
+    display: none;
+  }
+
+  .demo-envelope[data-sealed='true'] .demo-envelope-lock {
+    display: block;
+  }
+
+  .demo-envelope[data-sealed='true'] .demo-envelope-text {
+    display: none;
+  }
+
+  /* ------------------------------------------------------------ narrow ------ */
+
+  @media (max-width: 60rem) {
+    .demo-scene {
+      grid-template-columns: 1fr;
+    }
+
+    /* The lanes and the flying envelope are a three-column idea. Stacked, they
+       would cross unrelated boxes, so the journey is told by the relay's slots
+       filling and emptying instead. */
+    .demo-scene-lane,
+    .demo-envelope {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* The envelope still travels — that is the information — but it arrives
+       without the easing that makes it feel thrown. Dwell is unchanged, and
+       `playback.ts` explains why reduced motion must not become "faster". */
+    .demo-envelope {
+      transition-timing-function: linear;
+    }
+  }
+</style>

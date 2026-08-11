@@ -1,0 +1,433 @@
+---
+/*
+ * The event log: every step the recording holds, searchable, filterable by
+ * actor, and next to the call that caused it.
+ *
+ * It renders nothing of its own accord — `run.ts`'s `trace` is the recording,
+ * and this component only ever learns about a step when something outside it
+ * calls `append()` on the handle described below. That mirrors `DemoConsole`,
+ * which reads the same trace to draw the figure and the conversations; this
+ * is a fourth reader of the one recording, not a second source of truth about
+ * what happened.
+ *
+ * ------------------------------------------------------------- the handle ---
+ *
+ * `DemoConsole` and this component are separate Astro islands with separate
+ * inline modules, so neither can `import` the other's script. The bridge is
+ * the DOM they both already share: this component's script finds its own
+ * root by `[data-demo-log]` and, once mounted, hangs a small object on that
+ * same element — `root.demoLog` — for whoever else holds a reference to the
+ * element to call. See the mount script below for the exact shape.
+ */
+---
+
+<div class="demo-log" data-demo-log>
+  <div class="demo-log-controls">
+    <label class="demo-log-field">
+      <span class="demo-log-field-label">Search</span>
+      <input type="search" data-demo-log-search placeholder="Filter the log" disabled />
+    </label>
+    <label class="demo-log-field">
+      <span class="demo-log-field-label">Show</span>
+      <select data-demo-log-actor disabled>
+        <option value="all" selected>All</option>
+        <option value="a">Device A</option>
+        <option value="relay">Relay</option>
+        <option value="b">Device B</option>
+      </select>
+    </label>
+    <p class="demo-log-count" data-demo-log-count aria-live="polite"></p>
+  </div>
+
+  <div class="demo-log-body">
+    <div class="demo-log-scroll" data-demo-log-scroll>
+      <ol class="demo-log-rows" data-demo-log-rows></ol>
+      <p class="demo-log-empty" data-demo-log-empty>Nothing recorded yet.</p>
+    </div>
+
+    <div class="demo-log-code">
+      <p class="demo-log-code-placeholder" data-demo-log-code-placeholder>
+        Select a row to see the call that caused it.
+      </p>
+      <div class="demo-log-code-panel" data-demo-log-code-panel hidden>
+        <h4 class="demo-log-code-heading" data-demo-log-code-heading></h4>
+        <pre class="demo-log-code-block" data-demo-log-code-block hidden><code data-demo-log-code-text></code></pre>
+        <p class="demo-log-code-note" data-demo-log-code-note hidden></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .demo-log {
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-3);
+  }
+
+  /*
+   * `.demo-log-code-panel` sets its own `display: flex` below, which beats the
+   * user agent's `display: none` for `[hidden]` the moment an author rule
+   * exists for the element — `DemoConsole` carries the same override for the
+   * same reason. Scoped to this component and stated as `display` alone, so
+   * hiding an element never decides anything else about it.
+   */
+  .demo-log [hidden] {
+    display: none;
+  }
+
+  .demo-log-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--oe-space-3);
+  }
+
+  .demo-log-field {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--oe-space-2);
+    font-family: var(--oe-metadata-font-family);
+    font-weight: var(--oe-metadata-weight);
+    font-size: var(--oe-metadata-size);
+    letter-spacing: var(--oe-metadata-tracking);
+    color: var(--oe-muted);
+  }
+
+  .demo-log-field input,
+  .demo-log-field select {
+    min-height: var(--oe-control-height-sm);
+    padding: var(--oe-space-1) var(--oe-space-2);
+    border: 1px solid var(--oe-border-control);
+    border-radius: var(--oe-control-radius);
+    background: var(--oe-surface-raised);
+    color: var(--oe-foreground);
+    font: inherit;
+    letter-spacing: normal;
+  }
+
+  /* The same affordance the console's own controls give while a run is not
+     yet up: available in the markup, visibly not yet live. */
+  .demo-log-field input:disabled,
+  .demo-log-field select:disabled {
+    opacity: var(--oe-button-disabled-opacity);
+    cursor: not-allowed;
+  }
+
+  .demo-log-count {
+    margin: 0;
+    margin-inline-start: auto;
+    font-family: var(--oe-metadata-font-family);
+    font-size: var(--oe-metadata-size);
+    letter-spacing: var(--oe-metadata-tracking);
+    color: var(--oe-muted);
+  }
+
+  .demo-log-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--oe-space-4);
+  }
+
+  @media (min-width: 60rem) {
+    .demo-log-body {
+      /* A zero minimum on both tracks for the reason `demo-console-columns`
+         gives one to its own: the code block is a `<pre>` whose intrinsic
+         width is its longest line, and a bare `1fr` would let that line set
+         the column width and scroll the page sideways instead of itself. */
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      align-items: start;
+    }
+  }
+
+  /* The scrollable region the task asks for: a fixed ceiling so a long run
+     scrolls inside its own box rather than pushing the rest of the page down
+     one row at a time. */
+  .demo-log-scroll {
+    max-height: 20rem;
+    overflow-y: auto;
+    border: 1px solid var(--oe-border);
+    border-radius: var(--oe-radius-sm);
+    background: var(--oe-surface);
+  }
+
+  .demo-log-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .demo-log-row {
+    border-bottom: 1px solid var(--oe-border);
+  }
+
+  .demo-log-row:last-child {
+    border-bottom: none;
+  }
+
+  .demo-log-row button {
+    display: grid;
+    grid-template-columns: auto auto auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--oe-space-3);
+    width: 100%;
+    padding: var(--oe-space-2) var(--oe-space-3);
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .demo-log-row button:hover,
+  .demo-log-row button[aria-pressed='true'] {
+    background: var(--oe-surface-raised);
+  }
+
+  .demo-log-row-at,
+  .demo-log-row-actor,
+  .demo-log-row-step {
+    font-family: var(--oe-font-mono);
+    font-size: 0.75rem;
+    color: var(--oe-muted);
+    white-space: nowrap;
+  }
+
+  .demo-log-row-summary {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .demo-log-empty {
+    margin: 0;
+    padding: var(--oe-space-3);
+    color: var(--oe-muted);
+  }
+
+  .demo-log-code {
+    min-width: 0;
+    border: 1px solid var(--oe-border);
+    border-radius: var(--oe-radius-sm);
+    padding: var(--oe-space-3);
+    background: var(--oe-surface);
+  }
+
+  .demo-log-code-placeholder {
+    margin: 0;
+    color: var(--oe-muted);
+  }
+
+  .demo-log-code-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-2);
+  }
+
+  .demo-log-code-heading {
+    margin: 0;
+    font-family: var(--oe-metadata-font-family);
+    font-weight: var(--oe-metadata-weight);
+    font-size: var(--oe-metadata-size);
+    letter-spacing: var(--oe-metadata-tracking);
+    color: var(--oe-muted);
+  }
+
+  .demo-log-code-block {
+    margin: 0;
+    padding: var(--oe-space-2);
+    overflow-x: auto;
+    border: 1px solid var(--oe-border-control);
+    border-radius: var(--oe-radius-sm);
+    background: var(--oe-surface-sunken);
+    font-family: var(--oe-code-font-family);
+    font-size: var(--oe-code-inline-size);
+  }
+
+  .demo-log-code-note {
+    margin: 0;
+    color: var(--oe-muted);
+  }
+</style>
+
+<script>
+  /*
+   * The log's wiring: turns `append()` calls into rows, and rows into what
+   * the search box and the actor filter let through.
+   *
+   * Nothing here imports `run.ts` or anything that pulls the SDK behind it —
+   * this component never starts a run, it is only ever told about one, so
+   * there is no chunk here worth deferring behind a press the way
+   * `DemoConsole`'s script defers `run.ts`.
+   */
+  import { CODE_LANGUAGE, CODE_SNIPPETS } from '../../lib/demo/code-snippets';
+  import { formatEvent, matches } from '../../lib/demo/log-view';
+  import type { LogRow } from '../../lib/demo/log-view';
+  import type { Actor, Step, TraceEvent } from '../../lib/demo/trace';
+
+  /** What `root.demoLog` is, once this component has mounted. */
+  interface DemoLogHandle {
+    /** Record one step. Call this from `trace.on(...)`, in recording order. */
+    append(event: TraceEvent): void;
+    /** Forget every row shown so far, for a fresh run. */
+    clear(): void;
+  }
+
+  const root = document.querySelector<HTMLElement>('[data-demo-log]');
+  if (root) upgrade(root);
+
+  function upgrade(root: HTMLElement) {
+    const need = <E extends Element>(selector: string): E => {
+      const found = root.querySelector<E>(selector);
+      if (!found) throw new Error(`demo log: ${selector} is missing from the markup`);
+      return found;
+    };
+
+    const search = need<HTMLInputElement>('[data-demo-log-search]');
+    const actorFilter = need<HTMLSelectElement>('[data-demo-log-actor]');
+    const count = need<HTMLElement>('[data-demo-log-count]');
+    const rows = need<HTMLElement>('[data-demo-log-rows]');
+    const scroll = need<HTMLElement>('[data-demo-log-scroll]');
+    const empty = need<HTMLElement>('[data-demo-log-empty]');
+    const codePlaceholder = need<HTMLElement>('[data-demo-log-code-placeholder]');
+    const codePanel = need<HTMLElement>('[data-demo-log-code-panel]');
+    const codeHeading = need<HTMLElement>('[data-demo-log-code-heading]');
+    const codeBlock = need<HTMLElement>('[data-demo-log-code-block]');
+    const codeText = need<HTMLElement>('[data-demo-log-code-text]');
+    const codeNote = need<HTMLElement>('[data-demo-log-code-note]');
+
+    /* One row per event, kept alongside its element so a later filter pass
+       can re-decide who is visible without re-reading the DOM to find out
+       what each row says. */
+    const entries: Array<{ row: LogRow; li: HTMLLIElement }> = [];
+    let selected: HTMLLIElement | null = null;
+    /* Taken from the first event rather than at mount: the log can sit on the
+       page for a while before a run starts, and a clock started at mount
+       would print a growing number for a run that has not begun yet. */
+    let startedAtMs: number | null = null;
+
+    function actorLabel(actor: Actor): string {
+      switch (actor) {
+        case 'a':
+          return 'device A';
+        case 'b':
+          return 'device B';
+        case 'relay':
+          return 'relay';
+      }
+    }
+
+    function passesFilter(row: LogRow): boolean {
+      const wanted = actorFilter.value;
+      if (wanted !== 'all' && row.actor !== wanted) return false;
+      return matches(row, search.value);
+    }
+
+    /** Re-decide which rows are visible, and say how many are. */
+    function refresh() {
+      let visible = 0;
+      for (const entry of entries) {
+        const shown = passesFilter(entry.row);
+        entry.li.hidden = !shown;
+        if (shown) visible += 1;
+      }
+      count.textContent = entries.length === 0 ? '' : `${visible} of ${entries.length}`;
+
+      /* A blank box and a filter that hid everything look identical unless
+         the empty state says which one happened — a reader who typed a typo
+         should not conclude the demo stopped recording. */
+      const filtering = search.value.trim() !== '' || actorFilter.value !== 'all';
+      empty.hidden = visible > 0;
+      empty.textContent =
+        entries.length === 0
+          ? 'Nothing recorded yet.'
+          : filtering
+            ? 'No events match the current filter.'
+            : 'Nothing recorded yet.';
+    }
+
+    function showCode(step: Step) {
+      const snippet = CODE_SNIPPETS[step];
+      codePlaceholder.hidden = true;
+      codePanel.hidden = false;
+      codeHeading.textContent = step;
+      codeBlock.hidden = snippet.kind !== 'call';
+      codeNote.hidden = snippet.kind !== 'note';
+      if (snippet.kind === 'call') {
+        codeText.textContent = snippet.code;
+        codeText.className = `language-${CODE_LANGUAGE}`;
+      } else {
+        codeNote.textContent = snippet.text;
+      }
+    }
+
+    function selectRow(li: HTMLLIElement, button: HTMLButtonElement, step: Step) {
+      selected?.querySelector('button')?.setAttribute('aria-pressed', 'false');
+      button.setAttribute('aria-pressed', 'true');
+      selected = li;
+      showCode(step);
+    }
+
+    function append(event: TraceEvent) {
+      if (startedAtMs === null) startedAtMs = event.atMs;
+      const row = formatEvent(event, startedAtMs);
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.setAttribute('aria-pressed', 'false');
+
+      const at = document.createElement('span');
+      at.className = 'demo-log-row-at';
+      at.textContent = `${row.at} ms`;
+
+      const actor = document.createElement('span');
+      actor.className = 'demo-log-row-actor';
+      actor.textContent = actorLabel(row.actor);
+
+      const step = document.createElement('span');
+      step.className = 'demo-log-row-step';
+      step.textContent = row.step;
+
+      const summary = document.createElement('span');
+      summary.className = 'demo-log-row-summary';
+      summary.textContent = row.summary;
+
+      button.append(at, actor, step, summary);
+
+      const li = document.createElement('li');
+      li.className = 'demo-log-row';
+      li.append(button);
+      button.addEventListener('click', () => selectRow(li, button, row.step));
+
+      rows.append(li);
+      entries.push({ row, li });
+      refresh();
+
+      /* Newest-last with the scroll pinned to the bottom, so a reader
+         watching the log does not have to keep scrolling down to follow it —
+         unless they have scrolled up to read something older, which this
+         leaves alone. */
+      const atBottom = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 1;
+      if (atBottom) scroll.scrollTop = scroll.scrollHeight;
+    }
+
+    function clear() {
+      entries.length = 0;
+      rows.replaceChildren();
+      selected = null;
+      startedAtMs = null;
+      codePlaceholder.hidden = false;
+      codePanel.hidden = true;
+      refresh();
+    }
+
+    search.addEventListener('input', refresh);
+    actorFilter.addEventListener('change', refresh);
+
+    search.disabled = false;
+    actorFilter.disabled = false;
+    refresh();
+
+    (root as HTMLElement & { demoLog: DemoLogHandle }).demoLog = { append, clear };
+  }
+</script>
