@@ -238,11 +238,11 @@ const STEP_LIST = STEPS.join(' ');
               mounted and had nothing to report — the attribute is what tells
               them apart, and `demo-smoke.mjs` reads it for that reason.
 
-              The caption is filled in by `scene-view.ts` once a session exists,
-              from the selection event the SDK raises at key agreement — "triple
-              ratchet" when the post-quantum ratchet is on for the session. It
-              ships as the bare word because that is all that is true before any
-              keys are agreed. */}
+              `scene-view.ts` writes the caption once a session exists, from the
+              selection event the SDK raises at key agreement. It reads "triple
+              ratchet" when the session runs the post-quantum ratchet. Before
+              that event the page knows of no ratchet, so the shipped caption
+              says so rather than name one. */}
           <div class="demo-ratchet" data-scene-ratchet={column}>
             <svg
               class="demo-ratchet-wheel"
@@ -256,7 +256,7 @@ const STEP_LIST = STEPS.join(' ');
               <path class="demo-ratchet-pawl" d="M12 2.4 L14.2 0 L9.8 0 Z" />
             </svg>
             <span class="demo-ratchet-label" data-scene-ratchet-label={column}>
-              ratchet
+              not yet agreed
             </span>
             <span class="demo-ratchet-count" data-scene-ratchet-count={column}>
               0 keys
