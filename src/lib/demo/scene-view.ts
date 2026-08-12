@@ -246,6 +246,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const braidBar = need<HTMLElement>(root, '[data-scene-braid-bar]');
   const braidFigure = need<HTMLElement>(root, '[data-scene-braid-figure]');
   const braidMark = need<HTMLElement>(root, '[data-scene-braid-mark]');
+  const keyGlyphTemplate = need<HTMLTemplateElement>(root, '[data-scene-key-glyph]');
 
   const phone = (side: Side) => need<HTMLElement>(root, `[data-scene-device="${side}"] .demo-phone`);
   const chat = (side: Side) => need<HTMLElement>(root, `[data-scene-chat="${side}"]`);
@@ -329,12 +330,25 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
    */
   const KEY_MOTIF = 5;
 
+  /**
+   * One key, stamped from the drawing the component holds.
+   *
+   * Cloned rather than built here. This module owns where a key is and when it
+   * appears; `DemoScene.astro` owns what one looks like, and a path written in
+   * this file would be a second drawing free to drift from the first. The whole
+   * point the two forms make is that they are one shape, so there is one shape.
+   */
+  function keyGlyph(): Node {
+    return keyGlyphTemplate.content.cloneNode(true);
+  }
+
   function fillKeys(side: Side, count: number): void {
     const list = keyList(side);
     list.replaceChildren();
     for (let index = 0; index < Math.min(count, KEY_MOTIF); index += 1) {
       const item = document.createElement('li');
       item.className = 'demo-key';
+      item.append(keyGlyph());
       list.append(item);
     }
     keyCount(side).textContent = String(count);
@@ -431,6 +445,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       const item = document.createElement('span');
       item.className = 'demo-key';
       item.dataset.public = 'true';
+      item.append(keyGlyph());
       bundleBody.append(item);
     }
     if (count > 0) {

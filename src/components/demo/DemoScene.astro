@@ -110,6 +110,25 @@ const STEP_LIST = STEPS.join(' ');
 ---
 
 <div class="demo-scene" data-demo-scene data-scene-state="idle" data-scene-steps={STEP_LIST}>
+  {/*
+    The key, drawn once. `scene-view.ts` stamps this wherever a key belongs:
+    filled in a device's key row, outlined on the relay's shelf. One drawing and
+    not two, because the shape rhyme is the entire argument — the private key and
+    its published half are the same key, and the fill is the only thing that
+    changes between "only this device has it" and "this is meant to be handed
+    out". Two paths would let that difference become a second difference.
+
+    A round bow, a straight shaft and two square teeth, in the grammar's own
+    language: flat, orthogonal, no gradient and no opacity. The scene is CSS at
+    1:1, so a unit of this viewBox is a rendered pixel and the 2px the outlined
+    form is stroked at is the same 2px the rack and the phones are drawn at.
+  */}
+  <template data-scene-key-glyph>
+    <svg class="demo-key-glyph" viewBox="0 0 26 15" aria-hidden="true">
+      <path d="M10.58 5 H25 V13 H21 V9 H17 V13 H13 V9 H10.58 A5 5 0 1 1 10.58 5 Z" />
+    </svg>
+  </template>
+
   {
     COLUMNS.map((column) =>
       column === 'relay' ? (
@@ -669,20 +688,46 @@ const STEP_LIST = STEPS.join(' ');
    * cannot match a `.demo-key` anywhere but inside this component's markup.
    */
 
-  /* A private key: a filled notched form, and it never appears anywhere but
-     inside a device. The notch is the design system's key shape. */
+  /* A key is a box holding the one silhouette from the template above. The box
+     carries the class the script counts and the `data-public` flag; the shape
+     inside it is the same node in both places. `flex: none` because five of them
+     sit in a row that also holds a label and a count, and a key that shrank to
+     fit would be a different drawing at a different width. */
   .demo-device-keys-list :global(.demo-key),
   .demo-relay-slot-body :global(.demo-key) {
-    width: 22px;
-    height: 14px;
-    background: var(--oe-diagram-ciphertext-fill);
-    clip-path: polygon(0 0, 78% 0, 100% 50%, 78% 100%, 0 100%);
+    display: flex;
+    flex: none;
   }
 
-  /* A public half: the same shape, outlined, because it travels. */
-  .demo-relay-slot-body :global(.demo-key[data-public='true']) {
-    background: transparent;
-    border: 2px solid var(--oe-diagram-carrier-stroke);
+  /* Neither fill nor stroke here: the two rules below are the only things that
+     ink this shape, and which of them applies is the claim the drawing makes.
+     The default being overridden is SVG's own, which is a solid black fill —
+     and a filled key on the relay is the one thing this scene must never draw.
+     A key that matched neither rule draws nothing instead, which is a hole in a
+     row that still states its count.
+
+     `overflow: visible` because the stroked form's outer edge lands exactly on
+     the viewBox, and an svg clips to its box by default. */
+  .demo-device-keys-list :global(.demo-key-glyph),
+  .demo-relay-slot-body :global(.demo-key-glyph) {
+    width: 26px;
+    height: 15px;
+    overflow: visible;
+    fill: none;
+    stroke: none;
+  }
+
+  /* Filled is private, and this selector is why it stays that way: the rule that
+     fills a key is reachable only from inside a device's key row. */
+  .demo-device-keys-list :global(.demo-key-glyph) {
+    fill: var(--oe-diagram-ciphertext-fill);
+  }
+
+  /* Outlined is public: the same silhouette, open, because it travels and it is
+     readable. */
+  .demo-relay-slot-body :global(.demo-key[data-public='true'] .demo-key-glyph) {
+    stroke: var(--oe-diagram-carrier-stroke);
+    stroke-width: 2;
   }
 
   .demo-relay-slot-body :global(.demo-relay-slot-count) {
