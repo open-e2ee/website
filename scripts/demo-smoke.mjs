@@ -179,6 +179,46 @@ const SCENE_KEYS = (side) => `[data-scene-ratchet-count="${side}"]`;
    question the shipped markup cannot answer by itself. */
 const SCENE_RATCHET_LABEL = (side) => `[data-scene-ratchet-label="${side}"]`;
 
+/* How many keys the device says it holds, in the device's own column. Read
+   beside the relay's shelf for that device, which prints the public halves of
+   the same set: two drawings of one figure, and a shelf that agreed with the
+   wrong device would disagree here. */
+const SCENE_DEVICE_KEYS = (side) => `[data-scene-keys-count="${side}"]`;
+
+/*
+ * The relay's shelves, one slot per kind per device.
+ *
+ * The relay keeps public prekeys and undelivered rows for each account
+ * separately, and the drawing says so with a slot per account. Addressed by the
+ * pair the drawing itself is keyed on, so a slot that went missing, lost its
+ * side, or was labelled with the other device's name cannot be read as the one
+ * that was asked for — it is simply not found, which is the failure.
+ */
+const SCENE_SLOT = (kind, side) => `[data-scene-slot="${kind}"][data-scene-side="${side}"]`;
+const SCENE_SLOT_BODY = (kind, side) =>
+  `[data-scene-slot-body="${kind}"][data-scene-side="${side}"]`;
+
+/* The name the slot is labelled with, which `scene-view.ts` stamps at mount
+   from the same session the device columns take their names from. A label read
+   here and held against the device's own name is the whole of "this shelf
+   belongs to that account". */
+const SCENE_SLOT_NAME = '[data-scene-slot-name]';
+
+/* The two kinds of shelf, named once. Used to read every slot rather than the
+   one a check happens to care about: a reading that covered only the slot under
+   test could not say the other one was left alone. */
+const SLOT_KINDS = ['bundles', 'mailbox'];
+
+/* The line drawn from a device to the relay. Background, and deliberately so —
+   read for whether it is on the page and how wide, never for what it looks
+   like. */
+const SCENE_LINK = (side) => `[data-scene-link="${side}"]`;
+
+/* The envelope, wherever the reel has put it. Read as a rectangle so a check
+   can ask which slot it is resting on, which is a question no text on the page
+   answers. */
+const SCENE_ENVELOPE = '[data-scene-envelope]';
+
 /*
  * The state the scene must be in once a sentence has completed a round trip,
  * and the only one it can honestly be in: the receiving device decrypted, and
@@ -682,11 +722,80 @@ const SNAPSHOT = `(() => {
           label: scene.querySelector(label)?.textContent?.trim() ?? '',
         };
       };
+      /*
+       * Every shelf the relay keeps, read whole.
+       *
+       * The label is what the slot calls the account it belongs to, and the
+       * count is whatever number the slot is printing — taken as digits out of
+       * the slot's own text rather than off an element this file names, because
+       * how a slot draws its figure is the drawing's business and what it says
+       * is the check's. The empty caption carries no digits, so a slot showing
+       * nothing reads as null rather than as zero, and the two are different
+       * claims.
+       *
+       * A slot that is absent reads as null and every check below says so in
+       * those words. A slot whose side or label went wrong is absent by this
+       * reading, which is the point of addressing them by the pair.
+       */
+      const box = (element) => {
+        if (!element) return null;
+        const rect = element.getBoundingClientRect();
+        return {
+          left: Math.round(rect.left * 10) / 10,
+          top: Math.round(rect.top * 10) / 10,
+          width: Math.round(rect.width * 10) / 10,
+          height: Math.round(rect.height * 10) / 10,
+        };
+      };
+      const readSlot = (where, whereBody) => {
+        const slot = scene.querySelector(where);
+        const body = scene.querySelector(whereBody);
+        if (!slot || !body) return null;
+        const said = (body.textContent ?? '').replace(/\\s+/g, ' ').trim();
+        const digits = /\\d+/.exec(said);
+        return {
+          label: slot.querySelector(${JSON.stringify(SCENE_SLOT_NAME)})?.textContent?.trim() ?? '',
+          holding: slot.dataset.holding ?? null,
+          count: digits ? Number(digits[0]) : null,
+          said,
+          box: box(slot),
+        };
+      };
       return {
         state: scene.dataset.sceneState ?? null,
         /* The step list the scene ships, so a check for the end state can say
            whether that state is even one the scene knows about. */
         steps: (scene.dataset.sceneSteps ?? '').split(/\\s+/).filter(Boolean),
+        slots: {${SLOT_KINDS.map(
+          (kind) => `
+          ${kind}: {${['a', 'b'].map(
+            (side) => `
+            ${side}: readSlot(${JSON.stringify(SCENE_SLOT(kind, side))}, ${JSON.stringify(
+              SCENE_SLOT_BODY(kind, side),
+            )}),`,
+          ).join('')}
+          },`,
+        ).join('')}
+        },
+        /* The count the device itself prints, for the shelf above to be held
+           against. */
+        deviceKeys: {
+          a: scene.querySelector(${JSON.stringify(SCENE_DEVICE_KEYS('a'))})?.textContent?.trim() ?? '',
+          b: scene.querySelector(${JSON.stringify(SCENE_DEVICE_KEYS('b'))})?.textContent?.trim() ?? '',
+        },
+        /* The two network lines, as rectangles. A line is background and has no
+           text to read, so its width on the page is the only thing that can say
+           whether it is drawn — and its absence below the collapse is a claim
+           this file checks by measuring at two window sizes. */
+        links: {
+          a: box(scene.querySelector(${JSON.stringify(SCENE_LINK('a'))})),
+          b: box(scene.querySelector(${JSON.stringify(SCENE_LINK('b'))})),
+        },
+        envelope: (() => {
+          const element = scene.querySelector(${JSON.stringify(SCENE_ENVELOPE)});
+          if (!element || element.hidden) return null;
+          return box(element);
+        })(),
         a: wheel(
           ${JSON.stringify(SCENE_WHEEL('a'))},
           ${JSON.stringify(SCENE_KEYS('a'))},
@@ -700,6 +809,95 @@ const SNAPSHOT = `(() => {
       };
     })(),
   };
+})()`;
+
+/* The step at which the relay takes the row, and the name the envelope is
+   carrying while it does. The step is the scene's own word for it, taken from
+   the recording rather than from this file's idea of the story. */
+const STORED_STEP = 'stored-at-relay';
+const SCENE_ENVELOPE_TO = '[data-scene-envelope-to]';
+
+/*
+ * Watch for the moment the relay takes the row, and record it as it happens.
+ *
+ * The reel plays itself and this harness has no hold on its clock, so a
+ * measurement of a single step cannot be taken by asking for it later — by the
+ * time a poll comes back the reel has moved on, and a poll fast enough to catch
+ * the step is a poll that decides how long the step lasted. This installs a
+ * watcher instead: the drawing writes its step onto the scene, an observer
+ * fires on that write, and the reading is taken inside it.
+ *
+ * Two readings, because the step has two moments worth measuring. The first is
+ * taken as the step begins and says which mailbox the relay lit. The second is
+ * taken when the envelope stops moving and says where it came to rest, which is
+ * the only reading that can be held against a slot's rectangle — an envelope
+ * measured mid-flight is somewhere between two places and is not a claim about
+ * either.
+ *
+ * The rest is taken on `transitionend` where there is a transition, and on the
+ * reel leaving the step where there is not: a page under reduced motion runs no
+ * transition and fires no end event, and a check that quietly recorded nothing
+ * there would be a check that turns itself off on a preference. Which of the
+ * two happened is recorded with the reading, so a failure can say what it
+ * measured.
+ *
+ * Installed once. A second call would leave two observers writing over each
+ * other's readings, and the run that installs it types afterwards.
+ */
+const WATCH_STORED = `(() => {
+  const scene = document.querySelector(${JSON.stringify(SCENE)});
+  if (!scene) return false;
+  if (window.__oeStoredWatch) return true;
+  const envelope = scene.querySelector(${JSON.stringify(SCENE_ENVELOPE)});
+  if (!envelope) return false;
+  const seen = { at: null, rest: null };
+  window.__oeStoredWatch = seen;
+  const box = (element) => {
+    if (!element) return null;
+    const rect = element.getBoundingClientRect();
+    return {
+      left: Math.round(rect.left * 10) / 10,
+      top: Math.round(rect.top * 10) / 10,
+      width: Math.round(rect.width * 10) / 10,
+      height: Math.round(rect.height * 10) / 10,
+    };
+  };
+  const mailboxes = () => ({
+    a: (() => {
+      const slot = scene.querySelector(${JSON.stringify(SCENE_SLOT('mailbox', 'a'))});
+      return slot ? { holding: slot.dataset.holding ?? null, label: slot.querySelector(${JSON.stringify(SCENE_SLOT_NAME)})?.textContent?.trim() ?? '', box: box(slot) } : null;
+    })(),
+    b: (() => {
+      const slot = scene.querySelector(${JSON.stringify(SCENE_SLOT('mailbox', 'b'))});
+      return slot ? { holding: slot.dataset.holding ?? null, label: slot.querySelector(${JSON.stringify(SCENE_SLOT_NAME)})?.textContent?.trim() ?? '', box: box(slot) } : null;
+    })(),
+  });
+  const reading = (via) => ({
+    via,
+    step: scene.dataset.sceneState ?? null,
+    addressed: scene.querySelector(${JSON.stringify(SCENE_ENVELOPE_TO)})?.textContent?.trim() ?? '',
+    envelope: envelope.hidden ? null : box(envelope),
+    mailboxes: mailboxes(),
+  });
+  const settle = (via) => {
+    if (seen.rest || scene.dataset.sceneState !== ${JSON.stringify(STORED_STEP)}) return;
+    seen.rest = reading(via);
+  };
+  envelope.addEventListener('transitionend', (event) => {
+    if (event.propertyName === 'transform') settle('the envelope stopped moving');
+  });
+  new MutationObserver(() => {
+    const step = scene.dataset.sceneState ?? null;
+    if (step === ${JSON.stringify(STORED_STEP)}) {
+      if (!seen.at) seen.at = reading('the relay took the row');
+      return;
+    }
+    /* Leaving the step. The envelope has just been told where to go next and
+       has not gone anywhere yet, so it is still standing where it landed —
+       which is the resting place, read at the last instant it is true. */
+    if (seen.at && !seen.rest) seen.rest = reading('the reel moved on');
+  }).observe(scene, { attributes: true, attributeFilter: ['data-scene-state'] });
+  return true;
 })()`;
 
 /*
@@ -1294,6 +1492,15 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
        claim the page makes and this is where it is true. */
     const afterStart = await evaluate(cdp, sessionId, SNAPSHOT);
 
+    /* The watcher goes on before the sentence does, because what it is waiting
+       for happens in the middle of the reel and cannot be asked for afterwards. */
+    if ((await evaluate(cdp, sessionId, WATCH_STORED, 'demo')) !== true) {
+      throw new Red(
+        `the scene has no envelope to watch (${SCENE_ENVELOPE}), so where the relay puts a ` +
+          `stored row cannot be measured`,
+      );
+    }
+
     await type(cdp, sessionId, PROBE);
 
     /*
@@ -1356,6 +1563,10 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
     /* Read the panel before touching it again, so the assertions about the
        first sentence are about the moment the first sentence landed. */
     const afterFirst = await evaluate(cdp, sessionId, SNAPSHOT);
+
+    /* And what the watcher caught on the way here, which is the one reading in
+       this file that describes a step the run has already left. */
+    const stored = await evaluate(cdp, sessionId, 'window.__oeStoredWatch ?? null', 'demo');
 
     if (repeat) {
       await type(cdp, sessionId, REPEAT_PROBE);
@@ -1516,6 +1727,7 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
       beforeInteraction,
       afterStart,
       afterFirst,
+      stored,
       dom,
       geometry,
       braid,
@@ -1996,6 +2208,8 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
   }
 
   checkScene(pass);
+  checkRelayShelves(pass);
+  checkStoredMailbox(pass);
   if (pass.repeated) checkSceneMoves(pass.afterFirst, pass.dom);
 
   /* Invariant 7. Nothing SDK-shaped before the reader asked. */
@@ -2132,6 +2346,229 @@ function checkScene(pass) {
     throw new Red(
       `the bytes the relay column printed decode to the sentence itself (${leaked}) — the strip ` +
         `is not ciphertext`,
+    );
+  }
+}
+
+/*
+ * The relay keeps an account per device, and the drawing says whose is whose.
+ *
+ * A relay with one prekey pile and one mailbox draws a service that holds
+ * material without holding it for anyone, which is the opposite of what the
+ * page is teaching: the whole reason a relay can be untrusted is that what it
+ * keeps is addressed. So the rack has a slot per device per shelf, and this
+ * asks the drawing four questions about them.
+ *
+ * The labels are held against the names the console gave the two devices, which
+ * is the same pair the device columns are titled from. A slot labelled from the
+ * markup would pass a check against a fixed string and would go on passing
+ * after the names changed; a slot labelled with the *other* device's name is
+ * the failure this exists for, and it is only visible against the names.
+ *
+ * The counts are held against what each device says it holds. The public halves
+ * on the relay's shelf are the halves of the private keys in that device's
+ * column, so the two figures are one figure drawn twice — and the ways a
+ * per-device shelf goes wrong all show here: a shelf drawn from a pooled total
+ * reads too high, a pair of shelves fed the same figure agrees with one device
+ * and not the other, and a shelf that never got a count reads nothing.
+ *
+ * Read at the end of the reel, where the counts are settled and no row is
+ * outstanding. The mailboxes are checked here for being empty, which is the
+ * state a relay is in once the far device has collected: a mailbox still lit
+ * after the sentence was opened would be drawing a message that is both
+ * delivered and waiting.
+ */
+function checkRelayShelves(pass) {
+  const scene = pass.dom.scene;
+  const slots = scene?.slots;
+  if (!slots) {
+    throw new Red(
+      `the scene carries no relay shelves at all — nothing on the page matched ` +
+        `${SCENE_SLOT('bundles', 'a')}, so the relay is not drawing an account per device`,
+    );
+  }
+
+  for (const kind of SLOT_KINDS) {
+    for (const side of ['a', 'b']) {
+      const slot = slots[kind]?.[side];
+      if (!slot) {
+        throw new Red(
+          `the relay has no ${kind} slot for device ${side}: nothing matched ` +
+            `${SCENE_SLOT(kind, side)} together with its body. A shelf the reader can see and ` +
+            `this cannot find is a shelf drawn without saying whose it is.`,
+        );
+      }
+      const named = pass.names[side];
+      if (!named) {
+        throw new Red(
+          `the console never named device ${side}, so the label on its ${kind} slot ` +
+            `(${JSON.stringify(slot.label)}) has nothing to be held against`,
+        );
+      }
+      if (slot.label !== named) {
+        throw new Red(
+          `the relay's ${kind} slot for device ${side} is labelled ${JSON.stringify(slot.label)} ` +
+            `and that device is called ${JSON.stringify(named)}. The labels are stamped from the ` +
+            `session the run booted, so a slot wearing another name — or none — is a shelf ` +
+            `pointing at the wrong account.`,
+        );
+      }
+    }
+  }
+
+  const held = (side) => {
+    const printed = scene.deviceKeys?.[side] ?? '';
+    const digits = /^\d+$/.test(printed) ? Number(printed) : null;
+    if (digits === null) {
+      throw new Red(
+        `device ${side} prints ${JSON.stringify(printed || '(nothing)')} where its key count ` +
+          `goes, so the relay's shelf for it has no figure to be held against`,
+      );
+    }
+    return digits;
+  };
+
+  for (const side of ['a', 'b']) {
+    const slot = slots.bundles[side];
+    const own = held(side);
+    if (own <= 0) {
+      throw new Red(
+        `device ${side} finished a round trip holding ${own} keys — a device that published a ` +
+          `bundle holds the private halves of it`,
+      );
+    }
+    if (slot.count === null) {
+      throw new Red(
+        `the relay's prekey slot for ${pass.names[side]} prints no count after that device ` +
+          `published: it reads ${JSON.stringify(slot.said)}. The count is written from the ` +
+          `publish the recording carries, so a slot without one never received it.`,
+      );
+    }
+    if (slot.count !== own) {
+      throw new Red(
+        `the relay says it holds ${slot.count} prekeys for ${pass.names[side]} and that device ` +
+          `says it holds ${own} keys. These are the two halves of one set, drawn twice, so they ` +
+          `cannot differ — a shelf showing the pair's total, or the other device's figure, is ` +
+          `what this reads like.\n` +
+          `  ${pass.names.a}: shelf ${slots.bundles.a.count}, device ${scene.deviceKeys.a}\n` +
+          `  ${pass.names.b}: shelf ${slots.bundles.b.count}, device ${scene.deviceKeys.b}`,
+      );
+    }
+  }
+
+  for (const side of ['a', 'b']) {
+    const slot = slots.mailbox[side];
+    if (slot.holding === 'true') {
+      throw new Red(
+        `the far device opened the sentence and ${pass.names[side]}'s mailbox is still shown as ` +
+          `holding a row (${JSON.stringify(slot.said)}) — a message cannot be both delivered ` +
+          `and waiting`,
+      );
+    }
+  }
+}
+
+/*
+ * The stored row waits in the mailbox it is addressed to.
+ *
+ * The step the relay takes a row on is the middle of the reel and is gone by
+ * the time the run finishes, so this reads what the watcher recorded as it
+ * happened rather than asking the page afterwards.
+ *
+ * Which mailbox is right is decided by the envelope rather than by this file.
+ * The envelope prints who it is for, the slots print whose they are, and the
+ * claim is that those two agree — a harness that knew the probe was typed into
+ * the first device would pass a drawing that put every row in the same mailbox
+ * whichever way the message went.
+ *
+ * Both mailboxes are read. A relay that lit them both would satisfy any check
+ * written about the right one alone, and would be drawing one message waiting
+ * for two people.
+ *
+ * Then where the envelope came to rest, because the lighting and the drawing
+ * are separate: the slot's state is an attribute the drawing writes and the
+ * envelope's position is a transform it computes from measured rectangles, and
+ * either can be right while the other is wrong. The envelope's centre has to be
+ * inside the mailbox it is addressed to.
+ */
+function checkStoredMailbox(pass) {
+  const seen = pass.stored;
+  if (!seen?.at) {
+    throw new Red(
+      `the run put a sentence through the relay and the scene never showed "${STORED_STEP}" — ` +
+        `the watcher was installed before the sentence was typed and recorded nothing, so the ` +
+        `reel never drew the relay taking the row`,
+    );
+  }
+  const { at } = seen;
+  const addressed = at.addressed;
+  const mailbox = at.mailboxes;
+  if (!mailbox?.a || !mailbox?.b) {
+    throw new Red(
+      `the relay had no mailbox per device at "${STORED_STEP}": ` +
+        `${JSON.stringify(mailbox)}. A row is stored for someone, and a rack with one mailbox ` +
+        `cannot say who.`,
+    );
+  }
+  const owner = ['a', 'b'].find((side) => mailbox[side].label === addressed);
+  if (!addressed || !owner) {
+    throw new Red(
+      `the envelope the relay stored says it is addressed to ` +
+        `${JSON.stringify(addressed || '(nothing)')} and neither mailbox is labelled that: ` +
+        `${JSON.stringify(mailbox.a.label)} and ${JSON.stringify(mailbox.b.label)}. The address ` +
+        `and the labels are written from the same session, so they cannot name different devices.`,
+    );
+  }
+  const other = owner === 'a' ? 'b' : 'a';
+  if (mailbox[owner].holding !== 'true') {
+    throw new Red(
+      `the relay took a row addressed to ${addressed} and did not light that device's mailbox: ` +
+        `${addressed}'s reads ${JSON.stringify(mailbox[owner].holding)} and ` +
+        `${mailbox[other].label}'s reads ${JSON.stringify(mailbox[other].holding)}`,
+    );
+  }
+  if (mailbox[other].holding === 'true') {
+    throw new Red(
+      `the relay took one row addressed to ${addressed} and lit both mailboxes, so the drawing ` +
+        `shows one message waiting for two devices`,
+    );
+  }
+
+  const rest = seen.rest;
+  if (!rest?.envelope) {
+    throw new Red(
+      `the relay took the row and the envelope was never measured at rest on it. The reading is ` +
+        `taken when the envelope stops moving, or failing that when the reel leaves ` +
+        `"${STORED_STEP}", and neither happened — so where the page put the stored envelope is ` +
+        `unknown.\n  what was recorded: ${JSON.stringify(rest)}`,
+    );
+  }
+  const target = rest.mailboxes?.[owner]?.box;
+  if (!target) {
+    throw new Red(
+      `${addressed}'s mailbox could not be measured while the envelope rested on it, so the two ` +
+        `cannot be compared`,
+    );
+  }
+  const centre = {
+    x: rest.envelope.left + rest.envelope.width / 2,
+    y: rest.envelope.top + rest.envelope.height / 2,
+  };
+  const inside =
+    centre.x >= target.left &&
+    centre.x <= target.left + target.width &&
+    centre.y >= target.top &&
+    centre.y <= target.top + target.height;
+  if (!inside) {
+    throw new Red(
+      `the stored envelope came to rest away from the mailbox it is addressed to. It is for ` +
+        `${addressed}, and its centre is at (${centre.x.toFixed(1)}, ${centre.y.toFixed(1)}) ` +
+        `while that mailbox occupies ${target.left.toFixed(1)}–` +
+        `${(target.left + target.width).toFixed(1)} across and ${target.top.toFixed(1)}–` +
+        `${(target.top + target.height).toFixed(1)} down.\n` +
+        `  measured ${rest.via}\n` +
+        `  the other mailbox (${rest.mailboxes?.[other]?.label}) is at ` +
+        `${JSON.stringify(rest.mailboxes?.[other]?.box)}`,
     );
   }
 }
@@ -4019,6 +4456,11 @@ async function main() {
         `  the scene:      finished on "${live.dom.scene.state}", both wheels captioned ` +
         `"${live.dom.scene.a.label}", ${live.dom.scene.a.keys} and ${live.dom.scene.b.keys}, ` +
         `turned ${live.dom.scene.a.turns} and ${live.dom.scene.b.turns} time(s)\n` +
+        `  the relay:      ${live.names.a} ${live.dom.scene.slots.bundles.a.count} and ` +
+        `${live.names.b} ${live.dom.scene.slots.bundles.b.count} prekeys, each on that device's ` +
+        `own shelf,\n` +
+        `                  and the row it stored waited in ${live.stored.at.addressed}'s mailbox ` +
+        `alone (measured ${live.stored.rest.via})\n` +
         `  the braid:      the relay held ${JSON.stringify(braid.whole.stored)} with the switch ` +
         `off and ${JSON.stringify(braid.chunked.stored)} with it on, and the column drew that ` +
         `${braid.widest.ratio.toFixed(2)}× wider — ${braid.widest.whole.toFixed(1)} px against ` +
