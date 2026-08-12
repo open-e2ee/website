@@ -91,6 +91,25 @@ export interface SceneCue extends Cue {
   /** How many private keys each device holds. */
   readonly keys?: Readonly<Record<Side, number>>;
   /**
+   * How far one device has got through making its keys, as the SDK reported it.
+   *
+   * `count` of `total` keypairs, and both are figures the recording holds: the
+   * SDK reports a finished batch at a time, and `run.ts` counts the batches and
+   * knows the total once the device has stopped. Nothing between there and the
+   * bar works a number out — a counter that interpolated between two reports
+   * would be the page inventing the very thing this step exists to show.
+   *
+   * One side per cue, because the two devices generate independently and each
+   * has a bar of its own. The count is smaller than the count the same device
+   * later publishes: identity and signed prekeys are made without a report, and
+   * an unreported key is not counted here.
+   */
+  readonly keygen?: {
+    readonly side: Side;
+    readonly count: number;
+    readonly total: number;
+  };
+  /**
    * What the ML-KEM braid last reported while this step ran, and who reported it.
    *
    * Chunk counts, from `onBraidProgress` by way of the recording. Nothing here
@@ -256,6 +275,7 @@ function senderOf(cue: SceneCue): Side {
  */
 export const ENVELOPE_AT: Record<Step, 'sender' | 'relay' | 'receiver' | null> = {
   idle: null,
+  'generating-keys': null,
   'devices-ready': null,
   'bundles-published': null,
   'session-established': null,
@@ -314,6 +334,10 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     need<HTMLElement>(root, `[data-scene-ratchet-label="${side}"]`);
   const deviceState = (side: Side) =>
     need<HTMLElement>(root, `[data-scene-device-state="${side}"]`);
+  const keygenRow = (side: Side) => need<HTMLElement>(root, `[data-scene-keygen="${side}"]`);
+  const keygenBar = (side: Side) => need<HTMLElement>(root, `[data-scene-keygen-bar="${side}"]`);
+  const keygenFigure = (side: Side) =>
+    need<HTMLElement>(root, `[data-scene-keygen-figure="${side}"]`);
 
   let toggles = DEFAULT_TOGGLES;
 
@@ -519,11 +543,20 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
    * last held, which is right until a reset and wrong immediately after one; and
    * a shelf that took its figure from anything but that device's own publish
    * would be this file doing the relay's accounting.
+   *
+   * `launching` is the device this call is the publish *of*, and only its keys
+   * travel. Both shelves are redrawn on every call, so without it the shelf that
+   * published a step ago would send its keys across again on the other device's
+   * publish — the same material published twice, which is the one thing a shelf
+   * per account exists to say does not happen. The count travels with them: it is
+   * what the relay has once they land, and a figure that appeared as they set off
+   * would be the relay counting keys it had not been given yet.
    */
-  function holdBundles(counts: Readonly<Record<Side, number>>): void {
+  function holdBundles(counts: Readonly<Record<Side, number>>, launching?: Side): void {
     for (const side of SIDES) {
       const body = slotBody('bundles', side);
       const count = counts[side];
+      const arriving: HTMLElement[] = [];
       body.replaceChildren(bundleEmpty[side]);
       for (let index = 0; index < Math.min(count, KEY_MOTIF); index += 1) {
         const item = document.createElement('span');
@@ -531,15 +564,18 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
         item.dataset.public = 'true';
         item.append(keyGlyph());
         body.append(item);
+        arriving.push(item);
       }
       if (count > 0) {
         const total = document.createElement('span');
         total.className = 'demo-relay-slot-count';
         total.textContent = String(count);
         body.append(total);
+        arriving.push(total);
       }
       slot('bundles', side).dataset.holding = String(count > 0);
       bundleEmpty[side].toggleAttribute('hidden', count > 0);
+      if (side === launching) launchKeys(side, arriving);
     }
   }
 
@@ -581,6 +617,82 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     sizeBar.dataset.over = String(bytes > SIZE_RULE_BYTES);
     sizeFigure.textContent = `${bytes.toLocaleString('en-US')} bytes`;
     sizeRow.hidden = false;
+  }
+
+  /**
+   * Draw how far one device has got through making its keys.
+   *
+   * The fill is `count` of `total` and both are the recording's, so the only
+   * arithmetic here is the one that turns two counts into a length. It is the
+   * `drawSize` shape rather than the braid's: a total that the count really
+   * does settle on, so the bar fills exactly once and there is no over-run case
+   * to draw.
+   *
+   * The figure prints both counts for the reason the size and the braid do. A
+   * bar says how far along, and only a number says how far along *what* — and
+   * the number is the one the SDK reported, not one this file worked back out
+   * of a percentage.
+   *
+   * The row stays after generation finishes, like the size row. What it holds
+   * then is a fact about the run the reader is watching — this device made two
+   * hundred keypairs before it said a word — and clearing it at the next step
+   * would take that away at the moment it becomes possible to read.
+   */
+  function drawKeygen(report: NonNullable<SceneCue['keygen']>): void {
+    const { side, count, total } = report;
+    keygenBar(side).style.width = `${total > 0 ? Math.min(100, (count / total) * 100) : 0}%`;
+    keygenFigure(side).textContent = `${count} of ${total} keypairs`;
+    keygenRow(side).hidden = false;
+  }
+
+  /**
+   * Send this device's published keys across to its own shelf.
+   *
+   * The keys are appended where they belong and then *offset back* to where they
+   * came from, so what travels is the real element arriving at its real place —
+   * the measured-transform idiom the envelope uses, for the same reason: the
+   * columns move with the width of the page, and a journey written in fixed
+   * numbers would be a journey to the wrong place at every width but one.
+   *
+   * Every rectangle is read before any style is written. The two reads and the
+   * clutch of writes are one layout pass, and a loop that measured and wrote
+   * per key would be five.
+   *
+   * The offsets are all this function decides. How long a key takes, and which
+   * keys leave together, are the stylesheet's — `DemoScene.astro` carries the
+   * flight duration and the clumping, and `data-burst` is the index it clumps
+   * by. This module owns where a thing is and when it moves, which is the same
+   * line the key glyph itself is drawn on the other side of.
+   *
+   * A device whose key row is empty launches nothing: there is no drawn key for
+   * one to have left from, and a key sailing out of an empty row would be a
+   * journey the scene never showed the start of.
+   */
+  function launchKeys(side: Side, arriving: readonly HTMLElement[]): void {
+    const sources = [...keyList(side).children] as HTMLElement[];
+    if (sources.length === 0 || arriving.length === 0) return;
+
+    const from = sources.map((source) => source.getBoundingClientRect());
+    const to = arriving.map((item) => item.getBoundingClientRect());
+
+    arriving.forEach((item, index) => {
+      /* Clamped rather than wrapped: the shelf holds the same motif as the key
+         row, so the indexes line up, and a shelf that ever held more would have
+         its extra keys leave from the last drawn one rather than from the
+         start of the row again. */
+      const source = from[Math.min(index, from.length - 1)];
+      const box = to[index];
+      item.style.setProperty('--demo-key-from-x', `${Math.round(source.left - box.left)}px`);
+      item.style.setProperty('--demo-key-from-y', `${Math.round(source.top - box.top)}px`);
+      item.dataset.burst = String(index);
+      item.dataset.flying = 'false';
+    });
+
+    /* One read back for the whole clutch, which commits every offset above
+       before the flight is armed. Without it the two style changes coalesce
+       and the keys are simply already home. */
+    void root.offsetWidth;
+    for (const item of arriving) item.dataset.flying = 'true';
   }
 
   /**
@@ -632,7 +744,11 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const view: SceneView = {
     show(cue, flightMs) {
       root.dataset.sceneState = cue.step;
-      envelope.style.setProperty('--demo-flight-ms', `${Math.max(0, Math.round(flightMs))}ms`);
+      /* On the scene rather than on the envelope, because the envelope is no
+         longer the only thing that flies: the published keys cross the same gap
+         on the same step's clock, and one property both inherit is what keeps
+         the two journeys from being timed separately. */
+      root.style.setProperty('--demo-flight-ms', `${Math.max(0, Math.round(flightMs))}ms`);
       /* A cue that arrives while the last one is still folding away cancels the
          fold: the envelope belongs to whichever message is current. */
       setLanding(false);
@@ -643,7 +759,16 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
          later cue in the same session is still that session, and a caption
          cleared between steps would flicker the one fact this line carries. */
       if (cue.ratchetKind) nameRatchet(cue.ratchetKind);
-      if (cue.bundles !== undefined) holdBundles(cue.bundles);
+      if (cue.keygen) drawKeygen(cue.keygen);
+      /* The publishing device is the one whose keys travel, and the recording
+         named it: the actor of a publish step is the device that published.
+         Not `senderOf`, which answers a question about a message — on a step
+         with nothing travelling between devices it falls back to a side, and
+         the fallback would send device A's keys across on both publishes. */
+      if (cue.bundles !== undefined) {
+        const publisher = cue.actor === 'a' || cue.actor === 'b' ? cue.actor : undefined;
+        holdBundles(cue.bundles, cue.step === 'bundles-published' ? publisher : undefined);
+      }
       /* The size arrives on the step that stores the row and stays after it,
          for the reason the row below the column does: the far device collecting
          empties the mailbox and the relay still has what it kept. */
@@ -750,6 +875,12 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       nameRatchet(null);
       for (const side of ['a', 'b'] as const) {
         chat(side).replaceChildren();
+        /* Back to the state the markup ships in, for the reason the size bar is:
+           a bar left at its last length would say the fresh device had already
+           made the keys the run has yet to make. */
+        keygenRow(side).hidden = true;
+        keygenBar(side).style.removeProperty('width');
+        keygenFigure(side).textContent = '';
         fillKeys(side, 0);
         rewindRatchet(side);
         deviceState(side).textContent = 'offline';

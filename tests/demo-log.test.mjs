@@ -138,7 +138,8 @@ test('a step nothing in the app calls is marked as a note, not a fabricated call
 test('every step caused by an app call has a snippet naming a real SDK identifier', () => {
   /* Loose on purpose: this is not re-parsing TypeScript, just refusing a
      snippet that forgot to mention any call at all. */
-  for (const step of ['devices-ready', 'bundles-published', 'session-established', 'encrypted', 'opened']) {
+  for (const step of ['generating-keys', 'devices-ready', 'bundles-published',
+    'session-established', 'encrypted', 'opened']) {
     const snippet = CODE_SNIPPETS[step];
     assert.equal(snippet.kind, 'call', `${step} should show the call that causes it`);
     assert.match(snippet.code, /client/i, `${step}'s snippet does not mention the client at all`);

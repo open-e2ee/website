@@ -63,6 +63,16 @@ const LABELS = { a: 'Device A', b: 'Device B' } as const;
  * is simulated: this relay runs in the reader's tab.
  */
 const DEVICE_METRICS = [
+  /* First, because it happens first and because it is the largest number on the
+     panel by three orders of magnitude — the opening of the run is nearly all
+     key generation, and a reader who never saw that figure would take the
+     millisecond publish below it for the cost of getting a device ready.
+
+     Two rows and not one: the Kyber half is the post-quantum half, and a claim
+     about being quantum-safe is worth the line that prices it. It is a part of
+     the row above it, not an addition to it. */
+  { key: 'keygen', label: 'key generation' },
+  { key: 'kyber', label: 'kyber portion' },
   { key: 'publish', label: 'publish' },
   { key: 'establish', label: 'key agreement' },
   { key: 'send', label: 'seal + send' },
@@ -345,6 +355,33 @@ const STEP_LIST = STEPS.join(' ');
             <span class="demo-device-keys-count" data-scene-keys-count={column}>
               0
             </span>
+          </div>
+
+          {/* Key generation, while it is happening.
+
+              Making this device's keys is the longest thing the opening does —
+              two hundred keypairs, half a second of held main thread — and it
+              used to happen behind a curtain with a still frame in front of it.
+              The SDK reports a batch at a time through `onProgress`, the
+              recording keeps every report, and this is where they are drawn: a
+              fill that grows batch by batch and the count that says what the
+              fill is of.
+
+              Both figures are the SDK's own, by way of the recording. Nothing
+              here interpolates between two reports — a counter that ran on its
+              own between them would be this page inventing the one thing the
+              row exists to show, and it would keep counting on the day
+              generation stalled.
+
+              The count is smaller than the one the shelf shows after publishing:
+              identity and signed prekeys are made without a report, and this row
+              only ever counts what was reported. */}
+          <div class="demo-device-keygen" data-scene-keygen={column} hidden>
+            <span class="demo-device-keygen-label">generating</span>
+            <span class="demo-device-keygen-track">
+              <span class="demo-device-keygen-bar" data-scene-keygen-bar={column} />
+            </span>
+            <span class="demo-device-keygen-figure" data-scene-keygen-figure={column} />
           </div>
 
           {/* The ratchet, and it turns one way.
@@ -670,6 +707,58 @@ const STEP_LIST = STEPS.join(' ');
     gap: var(--oe-space-1);
   }
 
+  /* ------------------------------------------------------ key generation --- */
+
+  /* Built to the same three parts as the relay's size row — label, track,
+     figure — because it answers the same kind of question and a reader should
+     not have to learn a second way of reading a bar. */
+  .demo-device-keygen {
+    display: flex;
+    align-items: center;
+    gap: var(--oe-space-2);
+    font-family: var(--oe-font-mono);
+    font-size: 0.72rem;
+    line-height: 1.5;
+  }
+
+  .demo-device-keygen-label {
+    color: var(--oe-muted);
+  }
+
+  /* The track takes what the label and the figure leave, and shrinks to
+     nothing rather than pushing the column wider than the scene has room for. */
+  .demo-device-keygen-track {
+    flex: 1;
+    min-width: 0;
+    height: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--oe-border);
+    border-radius: var(--oe-radius-sm);
+    background: var(--oe-surface-sunken);
+  }
+
+  /* Length comes from the two counts on the cue and from nothing else, so the
+     sheet gives it none. It grows at a constant fill — the one length the
+     motion palette has, and the same one the size and braid bars use. */
+  .demo-device-keygen-bar {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--oe-diagram-ciphertext-fill);
+    transition: width var(--oe-duration-normal) ease;
+  }
+
+  /* The count is the fact and the bar is the glance, so the count is the
+     emphatic part — the same weighting the key and ratchet rows use. Tabular,
+     because it changes in place and digits that shift the line as they tick
+     read as the row moving rather than the number. */
+  .demo-device-keygen-figure {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    margin-left: auto;
+  }
+
   /* ------------------------------------------------------------- ratchet --- */
 
   .demo-ratchet-wheel {
@@ -799,8 +888,69 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   .demo-relay-slot-body :global(.demo-relay-slot-count) {
+    /* `inline-block` because this span travels with the keys below, and a
+       transform on a plain inline box is ignored — the count would be the one
+       thing on the shelf that was simply there before the keys arrived. */
+    display: inline-block;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
+  }
+
+  /*
+   * Publication, drawn as the crossing it is.
+   *
+   * The keys are on the shelf from the moment the script writes them, at the
+   * size and in the place they will keep; what these two rules animate is a
+   * displacement back to the device they came from, released. So the slot's
+   * count is true on the frame it is written, and a reader who arrives late,
+   * or whose motion is turned off, sees the finished shelf rather than a
+   * drawing waiting on an animation to become correct.
+   *
+   * The offset is two lengths the script measured from the live boxes, in the
+   * same frame, the way the envelope's flight is measured. Nothing here knows
+   * the layout, so nothing here goes stale when the layout changes.
+   */
+  .demo-relay-slot-body :global([data-flying='false']) {
+    transform: translate(var(--demo-key-from-x, 0px), var(--demo-key-from-y, 0px));
+  }
+
+  .demo-relay-slot-body :global([data-flying='true']) {
+    transform: translate(0, 0);
+    /* The step's own dwell, the property the envelope flies on: two things
+       crossing the same gap in the same scene cross it at one speed. */
+    transition: transform var(--demo-flight-ms, 700ms) ease-out;
+  }
+
+  /*
+   * The delays, and the shape of them.
+   *
+   * A publish is not a procession. The batch leaves in clumps — three almost
+   * together, a pause, two more, and the count last — because that is what
+   * being sent as a batch looks like, and because an even drip down a row of
+   * five reads as five separate publishes.
+   *
+   * Fractions of the flight rather than fixed milliseconds: the whole burst
+   * then keeps its shape at any dwell, and the last glyph is still landing
+   * inside the step that published it.
+   */
+  .demo-relay-slot-body :global([data-burst='1']) {
+    transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.06);
+  }
+
+  .demo-relay-slot-body :global([data-burst='2']) {
+    transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.1);
+  }
+
+  .demo-relay-slot-body :global([data-burst='3']) {
+    transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.44);
+  }
+
+  .demo-relay-slot-body :global([data-burst='4']) {
+    transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.5);
+  }
+
+  .demo-relay-slot-body :global([data-burst='5']) {
+    transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.72);
   }
 
   /* ------------------------------------------------------------- the relay --- */
@@ -1123,12 +1273,11 @@ const STEP_LIST = STEPS.join(' ');
 
   /* ---------------------------------------------------- reduced motion ------
    *
-   * There is no reduced-motion rule in this file, and its absence is the whole
-   * of the behaviour: `global.css` zeroes every transition duration on the page
-   * with `!important`, so under `prefers-reduced-motion` the envelope is placed
-   * at each anchor rather than gliding to it, the wheel jumps to its new angle,
-   * and the two bars jump to their new widths. Nothing here can opt out of that
-   * and nothing here tries to.
+   * Most of the behaviour here is `global.css`'s, not this file's: it zeroes
+   * every transition duration on the page with `!important`, so under
+   * `prefers-reduced-motion` the envelope is placed at each anchor rather than
+   * gliding to it, the wheel jumps to its new angle, and the three bars jump to
+   * their new widths. Nothing here can opt out of that and nothing here tries.
    *
    * What survives is the reel. Every step is still shown and still held for its
    * own dwell — `playback.ts` has no reduced-motion branch and says why — so
@@ -1137,5 +1286,24 @@ const STEP_LIST = STEPS.join(' ');
    * written as a literal: a delay is not a duration, the blanket rule does not
    * reach it, and the beat the reader gets to read the decrypted sentence is
    * information rather than motion.
+   *
+   * The one rule below exists because that asymmetry cuts the other way for the
+   * published keys. Their start state is a displacement, and a displacement is
+   * neither a duration nor a delay: zeroing the transition leaves the keys
+   * sitting off their slot, and the surviving delays then hold them there for
+   * half a second before they snap into place. That is a worse animation than
+   * the one being suppressed. So the displacement itself is dropped and the
+   * delays with it: the keys are on the shelf, at their count, on the frame the
+   * publish step arrives. Same steps, same dwell, no travel — which is what the
+   * blanket rule achieves everywhere else by doing nothing.
    */
+  @media (prefers-reduced-motion: reduce) {
+    .demo-relay-slot-body :global([data-flying='false']) {
+      transform: none;
+    }
+
+    .demo-relay-slot-body :global([data-burst]) {
+      transition-delay: 0s;
+    }
+  }
 </style>

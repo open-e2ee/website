@@ -88,6 +88,12 @@ export type DwellTable = Readonly<Record<string, number>>;
  */
 export const STEP_DWELL_MS: DwellTable = {
   idle: 0,
+  /* One batch of keys arriving on one device's bar. The SDK reports a batch at
+     a time, so there are four of these in an opening — two devices, two
+     batches each — and the step that used to be the reel's longest silence is
+     now its busiest run of frames. Short, because each holds one bar moving
+     and one number changing, and because four of them are spent in a row. */
+  'generating-keys': 700,
   /* One device coming online, and there are two of these. The pair used to be
      drawn on the first of them and the second held a frame identical to it, so
      the reel opened on two dwells of one still picture; each now stamps its own

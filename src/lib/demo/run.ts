@@ -50,7 +50,10 @@ import type {
   SendResult,
   SignalProtocolConfig,
 } from '@open-e2ee/signal-protocol-sdk';
-import type { ProtocolSelectionEvent } from '@open-e2ee/signal-protocol-sdk/client/config';
+import type {
+  ProgressCallback,
+  ProtocolSelectionEvent,
+} from '@open-e2ee/signal-protocol-sdk/client/config';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import type { InMemorySignalProtocolRelayServer } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
@@ -214,6 +217,127 @@ function braidOf(device: Device): { braid?: readonly BraidReport[] } {
 }
 
 /**
+ * Record what the SDK says while it is making a device's keys.
+ *
+ * Key generation is the longest thing the opening does — hundreds of X25519 and
+ * ML-KEM keypairs, half a second of it — and it happens inside
+ * `SignalProtocolClient.create()`, where this module has nothing to mark. The
+ * one window into it is `onProgress`, which the SDK calls at batch boundaries,
+ * and this turns those calls into recording.
+ *
+ * ------------------------------------------------------------ the counting ---
+ *
+ * A report counts only when it says a batch is finished — `current === total`,
+ * which is how `prekeys.ts` reports a batch it has just generated and stored.
+ * The half-reports (`{current: 0, total: 1}` opening the last-resort ML-KEM
+ * key) move nothing. So the running count only ever goes up, by whole batches,
+ * and no keypair is counted twice.
+ *
+ * That count is smaller than the number the relay later reports published: the
+ * identity keys and the signed prekey are made inside `generatePreKeyBundle()`
+ * with no report of any kind, and what is not reported is not counted. The
+ * figure this records is what the SDK said it generated, which is the only
+ * thing anything here can honestly say.
+ *
+ * --------------------------------------------------------------- the times ---
+ *
+ * `keygenMs` and `kyberMs` are sums of measured windows, not one span each.
+ * Every report is marked, and a window is the gap between a report and the one
+ * before it; a window counts toward `keygenMs` when it ends in a batch, and
+ * toward `kyberMs` when that batch was ML-KEM. The windows the SDK spends
+ * uploading and checking the relay's inventory end in no batch and are in
+ * neither figure.
+ *
+ * Sums rather than one bracket because the SDK interleaves: it generates the
+ * ML-KEM last-resort key, then uploads, then generates the EC batch, then the
+ * ML-KEM batch. A single pair of marks around all of that would be a duration
+ * called generation with two relay round trips inside it. These windows still
+ * hold the odd store or inventory query alongside the generation that dominates
+ * them — a window is bounded by reports, and reports are all there is.
+ *
+ * And they are wall-clock windows on a single-threaded page where the other
+ * device is generating its own keys at the same time — `start()` boots the pair
+ * together. So this is the span across which the device made its keys and not
+ * the processor time it had to itself, which is the same thing `bootMs` beside
+ * it has always been. The two devices' figures therefore differ from run to
+ * run, and neither is the cost of generating a bundle on an idle machine.
+ *
+ * The SDK's own `percent` is not used for anything. It runs 20, 50, 60, 75, 30,
+ * 65 through a normal boot, so it is a stage label wearing a fraction's
+ * clothes, and a bar drawn from it would run backwards twice.
+ *
+ * ------------------------------------------------------------ the appending ---
+ *
+ * Nothing is appended until `commit()`, after the call being watched has
+ * returned. A bar needs a denominator, and how many keypairs a device generates
+ * in total is not knowable until it has stopped generating them — so the
+ * reports are held, and each goes into the recording carrying the count at the
+ * moment it was made and the total the device reached. `atMs` is still the
+ * moment the SDK reported, taken then rather than at commit.
+ *
+ * A device that generated nothing appends nothing. Publishing an already-synced
+ * account is exactly that case, and a run of reports saying "0 of 0" would be
+ * the reel drawing a bar over work that did not happen.
+ */
+function recordGeneration(
+  trace: Trace,
+  actor: DeviceActor,
+  mark: (stage: string) => string,
+): { onProgress: ProgressCallback; commit: () => void } {
+  const reports: { atMs: number; keypairs: number }[] = [];
+  let keypairs = 0;
+  let previous: string | null = null;
+  let marks = 0;
+  let keygenMs = 0;
+  let kyberMs = 0;
+
+  return {
+    onProgress: (progress) => {
+      const here = mark(`progress:${marks}`);
+      performance.mark(here);
+      marks += 1;
+
+      const detail = progress.detail;
+      const done =
+        detail !== undefined && detail.total > 0 && detail.current === detail.total
+          ? detail.total
+          : 0;
+
+      if (done > 0) {
+        keypairs += done;
+        reports.push({ atMs: performance.now(), keypairs });
+        /* The first report of a run has no window before it. It opens the
+           generation rather than closing a batch in practice, and a duration
+           measured from a mark that does not exist would be a made-up one. */
+        if (previous !== null) {
+          const window = measure(mark(`window:${marks}`), previous, here);
+          keygenMs += window;
+          if (progress.stage === 'generating-kyber') kyberMs += window;
+        }
+      }
+      previous = here;
+    },
+
+    commit: () => {
+      const total = keypairs;
+      for (const [index, report] of reports.entries()) {
+        const last = index === reports.length - 1;
+        trace.append({
+          step: 'generating-keys',
+          actor,
+          atMs: report.atMs,
+          /* Only on the last, because these are the whole run's figures and a
+             copy on every report would be the same duration printed as though
+             it had been measured four times. */
+          ...(last ? { measures: { keygenMs, kyberMs } } : {}),
+          detail: { keypairs: report.keypairs, total },
+        });
+      }
+    },
+  };
+}
+
+/**
  * How many public keys the relay is holding for one device, right after a
  * publish.
  *
@@ -332,6 +456,11 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      */
     let braid: BraidReport[] = [];
 
+    /* `create()` generates and publishes this device's prekeys on its way up,
+       so the reports arrive during the call below and the recording of them is
+       committed after it returns. */
+    const generating = recordGeneration(trace, actor, mark);
+
     performance.mark(mark('start'));
     await relay.registerDevice(userId, { encryptedDeviceName: new ArrayBuffer(0) });
     /*
@@ -369,6 +498,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      */
     const client = await SignalProtocolClient.create(userId, {
       ...config,
+      onProgress: generating.onProgress,
       protocolStrategy: {
         ...config.protocolStrategy,
         onProtocolSelected: (event) => {
@@ -431,6 +561,10 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       device.onDecrypted?.({ message, atMs: performance.now() });
     });
     client.startRelaySubscription();
+
+    /* Before the device reports itself ready, because that is the order it
+       happened in: the keys were made on the way up. */
+    generating.commit();
 
     trace.append({
       step: 'devices-ready',
@@ -496,9 +630,17 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
 
     await Promise.all(
       (['a', 'b'] as const).map(async (actor) => {
+        /* A device that came up on a fresh relay published on the way up, so
+           this sync normally finds the account in order and generates nothing —
+           and records nothing, which is the point of watching it. The day it
+           does have to replenish, the reel shows that rather than a still
+           relay column with half a second missing from it. */
+        const generating = recordGeneration(trace, actor, (stage) => mark(actor, stage));
+
         performance.mark(mark(actor, 'start'));
-        await devices[actor].client.syncToServer();
+        await devices[actor].client.syncToServer(generating.onProgress);
         performance.mark(mark(actor, 'end'));
+        generating.commit();
         const publishMs = measure(
           `oe-demo:publish:${generation}:${actor}`,
           mark(actor, 'start'),

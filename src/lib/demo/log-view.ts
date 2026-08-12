@@ -42,6 +42,23 @@ export function summarise(event: TraceEvent): string {
     case 'idle':
       return 'Nothing recorded yet.';
 
+    /* One line per progress report the SDK raised, so the log reads as the
+       count climbing rather than as a single line stating the answer. The
+       durations arrive on the last of them and are printed where they arrive:
+       a device that is half way through has not measured anything yet, and a
+       line that printed `0.0 ms` for the ones before would be reporting a
+       measurement nobody took. */
+    case 'generating-keys': {
+      const detail = event.detail as { keypairs?: number; total?: number } | undefined;
+      const made = detail?.keypairs ?? 0;
+      const total = detail?.total ?? 0;
+      const timing =
+        typeof measures.keygenMs === 'number'
+          ? ` (${ms(measures.keygenMs)}, of which ${ms(measures.kyberMs ?? 0)} on Kyber)`
+          : '';
+      return `Generated ${made} of ${total} keypairs${timing}.`;
+    }
+
     case 'devices-ready': {
       const detail = event.detail as { userId?: string; deviceId?: number } | undefined;
       const who = detail?.userId ?? event.actor;

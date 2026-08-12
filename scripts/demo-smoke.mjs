@@ -186,6 +186,30 @@ const SCENE_RATCHET_LABEL = (side) => `[data-scene-ratchet-label="${side}"]`;
 const SCENE_DEVICE_KEYS = (side) => `[data-scene-keys-count="${side}"]`;
 
 /*
+ * Key generation, as the device draws it happening.
+ *
+ * The row ships hidden and is shown by `scene-view.ts` when the first progress
+ * event reaches the reel, so its being visible at all is a fact about a script
+ * that ran. The bar's length and the figure beside it are written from counts
+ * the SDK reported while it was generating — nothing on this row is
+ * interpolated, and nothing on it can be drawn by a page working from a
+ * timetable.
+ *
+ * Read as three separate things because they can disagree: the bar is an inline
+ * width the script sets, the figure is text it writes, and the rendered
+ * rectangle is what the reader actually sees. A bar told to be 100% inside a
+ * track of zero width is on the page and is not on the screen.
+ */
+const SCENE_KEYGEN = (side) => `[data-scene-keygen="${side}"]`;
+const SCENE_KEYGEN_BAR = (side) => `[data-scene-keygen-bar="${side}"]`;
+const SCENE_KEYGEN_FIGURE = (side) => `[data-scene-keygen-figure="${side}"]`;
+
+/* The figure's whole grammar, so a row that printed a number without saying
+   what it counts, or counted past its own total, is caught here rather than
+   read as prose. */
+const KEYGEN_FIGURE = /^(\d+) of (\d+) keypairs$/;
+
+/*
  * The relay's shelves, one slot per kind per device.
  *
  * The relay keeps public prekeys and undelivered rows for each account
@@ -783,6 +807,36 @@ const SNAPSHOT = `(() => {
           a: scene.querySelector(${JSON.stringify(SCENE_DEVICE_KEYS('a'))})?.textContent?.trim() ?? '',
           b: scene.querySelector(${JSON.stringify(SCENE_DEVICE_KEYS('b'))})?.textContent?.trim() ?? '',
         },
+        /* The generation row as it stands at the end, when nothing is moving.
+           The watcher below catches it growing; this catches what it grew to,
+           and it is the reading taken while no transition is running — which is
+           the only moment a drawn width can be held against the width it was
+           told to be. */
+        keygen: {${['a', 'b'].map(
+          (side) => `
+          ${side}: (() => {
+            const row = scene.querySelector(${JSON.stringify(SCENE_KEYGEN(side))});
+            const bar = scene.querySelector(${JSON.stringify(SCENE_KEYGEN_BAR(side))});
+            const track = bar?.parentElement ?? null;
+            if (!row || !bar || !track) return null;
+            return {
+              hidden: row.hidden,
+              told: bar.style.width || '',
+              figure: scene.querySelector(${JSON.stringify(
+                SCENE_KEYGEN_FIGURE(side),
+              )})?.textContent?.trim() ?? '',
+              bar: box(bar),
+              track: box(track),
+              /* The track's inside. Its rectangle is a border box and the bar
+                 fills the content box within it, so a full bar is two border
+                 widths short of the track it fills — held against the wrong one
+                 of the two, a correct drawing reads as a bar that never got
+                 there. */
+              inner: Math.round(track.clientWidth * 10) / 10,
+            };
+          })(),`,
+        ).join('')}
+        },
         /* The two network lines, as rectangles. A line is background and has no
            text to read, so its width on the page is the only thing that can say
            whether it is drawn — and its absence below the collapse is a claim
@@ -897,6 +951,70 @@ const WATCH_STORED = `(() => {
        which is the resting place, read at the last instant it is true. */
     if (seen.at && !seen.rest) seen.rest = reading('the reel moved on');
   }).observe(scene, { attributes: true, attributeFilter: ['data-scene-state'] });
+  return true;
+})()`;
+
+/* The step the devices make their keys on, in the scene's own word for it. */
+const KEYGEN_STEP = 'generating-keys';
+
+/*
+ * Watch the generation bar grow, and record every value it is drawn at.
+ *
+ * Generation is the opening of the reel and is over before a sentence is
+ * typed, so this watcher goes on before the start control is pressed — earlier
+ * than the stored-row watcher above, which only has to be in place before the
+ * sentence. What survives to the end of the run is the finished row, and a
+ * finished row is exactly what a page that drew one frame at 100% would also
+ * show. The intermediate readings are the difference, and they cannot be asked
+ * for afterwards.
+ *
+ * The whole subtree is observed rather than the scene's step attribute alone.
+ * Two generation cues in a row for the same device write the same step, and the
+ * thing that changed between them is the bar's width and the text beside it —
+ * which is the change worth recording, and the one an attribute filter on the
+ * step would be blind to.
+ *
+ * Readings are taken only while the reel says it is generating, and a reading
+ * identical to that side's last is dropped: the observer fires for every
+ * mutation anywhere in the scene, and a row that has not changed being recorded
+ * fifty times would bury the four values that matter.
+ */
+const WATCH_KEYGEN = `(() => {
+  const scene = document.querySelector(${JSON.stringify(SCENE)});
+  if (!scene) return false;
+  if (window.__oeKeygenWatch) return true;
+  const seen = [];
+  window.__oeKeygenWatch = seen;
+  const width = (element) => Math.round(element.getBoundingClientRect().width * 10) / 10;
+  const read = (side) => {
+    const row = scene.querySelector('[data-scene-keygen="' + side + '"]');
+    const bar = scene.querySelector('[data-scene-keygen-bar="' + side + '"]');
+    const track = bar ? bar.parentElement : null;
+    if (!row || !bar || !track || row.hidden) return null;
+    const figure = scene.querySelector('[data-scene-keygen-figure="' + side + '"]');
+    return {
+      side,
+      told: bar.style.width || '',
+      figure: (figure?.textContent ?? '').trim(),
+      bar: width(bar),
+      track: width(track),
+    };
+  };
+  new MutationObserver(() => {
+    if ((scene.dataset.sceneState ?? null) !== ${JSON.stringify(KEYGEN_STEP)}) return;
+    for (const side of ['a', 'b']) {
+      const now = read(side);
+      if (!now) continue;
+      const last = [...seen].reverse().find((entry) => entry.side === side);
+      if (last && last.told === now.told && last.figure === now.figure) continue;
+      seen.push(now);
+    }
+  }).observe(scene, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+  });
   return true;
 })()`;
 
@@ -1464,6 +1582,15 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
      * them, and a demo that re-renders itself out from under the reader is not
      * an infrastructure fault.
      */
+    /* Before the press, because generation is the first thing the reel draws
+       and there is no later moment at which it can be watched. */
+    if ((await evaluate(cdp, sessionId, WATCH_KEYGEN, 'demo')) !== true) {
+      throw new Red(
+        `the scene has no generation row to watch (${SCENE_KEYGEN('a')}), so the devices making ` +
+          `their keys cannot be measured`,
+      );
+    }
+
     await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(START)}).click()`, 'demo');
 
     /* Either outcome ends the wait: devices that can be typed at, or a status
@@ -1567,6 +1694,11 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
     /* And what the watcher caught on the way here, which is the one reading in
        this file that describes a step the run has already left. */
     const stored = await evaluate(cdp, sessionId, 'window.__oeStoredWatch ?? null', 'demo');
+
+    /* And what the other watcher caught before any of this: the two devices
+       making their keys, which happened while the start control was still the
+       only thing that had been pressed. */
+    const keygen = await evaluate(cdp, sessionId, 'window.__oeKeygenWatch ?? null', 'demo');
 
     if (repeat) {
       await type(cdp, sessionId, REPEAT_PROBE);
@@ -1728,6 +1860,7 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
       afterStart,
       afterFirst,
       stored,
+      keygen,
       dom,
       geometry,
       braid,
@@ -2208,6 +2341,7 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
   }
 
   checkScene(pass);
+  checkKeyGeneration(pass);
   checkRelayShelves(pass);
   checkStoredMailbox(pass);
   if (pass.repeated) checkSceneMoves(pass.afterFirst, pass.dom);
@@ -2466,6 +2600,158 @@ function checkRelayShelves(pass) {
       );
     }
   }
+}
+
+/*
+ * The devices are shown making their keys, and shown making them a batch at a
+ * time.
+ *
+ * The opening of the run is nearly all key generation — hundreds of keypairs
+ * per device, and by far the longest thing the SDK does here — and a scene that
+ * skipped it would jump from nothing to two ready devices with the expensive
+ * part hidden. So this checks the bar was drawn part-way as well as full: a
+ * page that only ever painted a finished bar would satisfy any check written
+ * about the end state, and would be showing an outcome rather than the work.
+ *
+ * Every figure is held against the row's own numbers rather than against a
+ * count typed here. How many keypairs a device makes is the SDK's business and
+ * changes with its configuration; that the bar's length is that device's count
+ * over that device's total is the claim the drawing makes, and it is checkable
+ * without knowing either number in advance.
+ *
+ * Then the finished row is measured on the page, once nothing is moving. The
+ * width the script set and the width the reader sees are two different facts —
+ * a bar told to fill a track that collapsed to nothing is at 100% and is
+ * invisible — and the second cannot be read while a transition is running.
+ */
+function checkKeyGeneration(pass) {
+  const seen = pass.keygen;
+  if (!Array.isArray(seen) || seen.length === 0) {
+    throw new Red(
+      `the run booted two devices and the scene never drew "${KEYGEN_STEP}" — the watcher was ` +
+        `installed before the start control was pressed and recorded nothing, so the reel is ` +
+        `not showing the keys being made.\n  what was recorded: ${JSON.stringify(seen)}`,
+    );
+  }
+
+  for (const side of ['a', 'b']) {
+    const drawn = seen.filter((entry) => entry.side === side);
+    if (drawn.length === 0) {
+      throw new Red(
+        `device ${side.toUpperCase()} never drew its key generation. Both devices make their own ` +
+          `keys, and a scene that showed one of them doing it draws the other as ready without ` +
+          `having done the work.\n  what was recorded: ${JSON.stringify(seen)}`,
+      );
+    }
+
+    const read = drawn.map((entry) => {
+      const parsed = KEYGEN_FIGURE.exec(entry.figure);
+      if (!parsed) {
+        throw new Red(
+          `device ${side.toUpperCase()}'s generation row printed ${JSON.stringify(entry.figure)}, ` +
+            `which does not say how many keypairs of how many were made`,
+        );
+      }
+      return { ...entry, count: Number(parsed[1]), total: Number(parsed[2]) };
+    });
+
+    for (const entry of read) {
+      if (entry.count > entry.total || entry.total === 0) {
+        throw new Red(
+          `device ${side.toUpperCase()}'s generation row printed ${JSON.stringify(entry.figure)}, ` +
+            `which is not a count of a total`,
+        );
+      }
+      /* The length is the count, and this is where that stops being a claim.
+         A bar driven by a clock rather than by the recording would keep this
+         row's text and lose exactly this. */
+      const told = Number.parseFloat(entry.told);
+      const want = (entry.count / entry.total) * 100;
+      if (!Number.isFinite(told) || Math.abs(told - want) > 0.5) {
+        throw new Red(
+          `device ${side.toUpperCase()}'s generation bar was drawn at ` +
+            `${JSON.stringify(entry.told)} while the figure beside it read ` +
+            `${JSON.stringify(entry.figure)}, which is ${want.toFixed(1)}%. The bar and the ` +
+            `number are two drawings of one pair of counts and cannot disagree.`,
+        );
+      }
+      if (entry.track <= 0) {
+        throw new Red(
+          `device ${side.toUpperCase()}'s generation bar was drawn inside a track of no width, so ` +
+            `the row is on the page and not on the screen`,
+        );
+      }
+    }
+
+    /* Part-way, and then finished. Either alone is satisfied by a page that
+       never animates: one frame at 50% is a stuck bar, and one frame at 100%
+       is a result. */
+    if (!read.some((entry) => entry.count < entry.total)) {
+      throw new Red(
+        `device ${side.toUpperCase()}'s generation bar was only ever drawn full: ` +
+          `${JSON.stringify(read.map((entry) => entry.figure))}. The reel is showing the outcome ` +
+          `of generation rather than generation happening.`,
+      );
+    }
+    if (!read.some((entry) => entry.count === entry.total)) {
+      throw new Red(
+        `device ${side.toUpperCase()}'s generation bar never reached its own total: ` +
+          `${JSON.stringify(read.map((entry) => entry.figure))}`,
+      );
+    }
+  }
+
+  /* And what it came to rest at, measured on the page after it went quiet. */
+  for (const side of ['a', 'b']) {
+    const row = pass.dom.scene?.keygen?.[side];
+    if (!row || row.hidden) {
+      throw new Red(
+        `device ${side.toUpperCase()}'s generation row was drawn during the run and is not on the ` +
+          `page at the end of it: ${JSON.stringify(row)}`,
+      );
+    }
+    const parsed = KEYGEN_FIGURE.exec(row.figure);
+    if (!parsed || parsed[1] !== parsed[2]) {
+      throw new Red(
+        `device ${side.toUpperCase()}'s generation row finished the run reading ` +
+          `${JSON.stringify(row.figure)}, so the last count the reel drew was not the total the ` +
+          `device generated`,
+      );
+    }
+    if (!row.bar || !row.inner || row.bar.width < row.inner - 0.5) {
+      throw new Red(
+        `device ${side.toUpperCase()}'s generation row says every keypair was made and its bar is ` +
+          `${row.bar?.width} wide inside a track ${row.inner} across. The bar is told its length ` +
+          `as a percentage, so a full count under a short bar means the length never reached the ` +
+          `page.`,
+      );
+    }
+  }
+}
+
+/*
+ * The lengths the generation rows were seen at, for the summary.
+ *
+ * The first part-way figure and the last are the two the check turns on: a page
+ * that only ever drew a finished bar cannot produce the first, and one that
+ * stopped short cannot produce the second. Printing them means the PASS line
+ * carries the observation rather than the assertion's own wording.
+ */
+function generationSaid(pass, names) {
+  return ['a', 'b']
+    .map((side) => {
+      const drawn = pass.keygen.filter((entry) => entry.side === side);
+      const figures = drawn.map((entry) => entry.figure);
+      const partway = figures.find((figure) => {
+        const parsed = KEYGEN_FIGURE.exec(figure);
+        return parsed && parsed[1] !== parsed[2];
+      });
+      return (
+        `${names[side]} drew "${partway}" then "${figures[figures.length - 1]}" ` +
+        `over ${drawn.length} length(s)`
+      );
+    })
+    .join(', ');
 }
 
 /*
@@ -4456,6 +4742,7 @@ async function main() {
         `  the scene:      finished on "${live.dom.scene.state}", both wheels captioned ` +
         `"${live.dom.scene.a.label}", ${live.dom.scene.a.keys} and ${live.dom.scene.b.keys}, ` +
         `turned ${live.dom.scene.a.turns} and ${live.dom.scene.b.turns} time(s)\n` +
+        `  generation:     ${generationSaid(live, live.names)} — each bar's length its own count\n` +
         `  the relay:      ${live.names.a} ${live.dom.scene.slots.bundles.a.count} and ` +
         `${live.names.b} ${live.dom.scene.slots.bundles.b.count} prekeys, each on that device's ` +
         `own shelf,\n` +

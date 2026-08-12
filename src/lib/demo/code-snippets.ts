@@ -1,7 +1,7 @@
 /*
  * What a reader would have to type to cause each step, read off `run.ts`.
  *
- * Three of the nine steps are not caused by an app call at all — the relay
+ * Three of the ten steps are not caused by an app call at all — the relay
  * accepting an envelope, the network carrying it, the relay handing it on —
  * and the honest thing to show under those is that they are not app calls,
  * not an invented snippet that looks like one. `idle` joins them: it is the
@@ -31,6 +31,19 @@ export const CODE_SNIPPETS: Record<Step, CodeSnippet> = {
   idle: {
     kind: 'note',
     text: 'Before anything runs: no client exists yet, so there is no call to show.',
+  },
+
+  /* The same call as `devices-ready` below, shown by the one argument that
+     makes the generation visible: the keys are made inside `create()`, and
+     `onProgress` is the only thing that says so while it is happening. */
+  'generating-keys': {
+    kind: 'call',
+    code: `const client = await SignalProtocolClient.create(userId, {
+  ...config,
+  onProgress: ({ stage, detail }) => {
+    // detail?.current of detail?.total, once a batch is generated
+  },
+});`,
   },
 
   /* `run.ts`'s `makeDevice()`: composed rather than `createSignalProtocolClient`,
