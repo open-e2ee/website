@@ -88,7 +88,11 @@ export type DwellTable = Readonly<Record<string, number>>;
  */
 export const STEP_DWELL_MS: DwellTable = {
   idle: 0,
-  'devices-ready': 1400,
+  /* One device coming online, and there are two of these. The pair used to be
+     drawn on the first of them and the second held a frame identical to it, so
+     the reel opened on two dwells of one still picture; each now stamps its own
+     device, and one word changing is the smallest change in the reel. */
+  'devices-ready': 1000,
   'bundles-published': 1500,
   'session-established': 1900,
   encrypted: 1000,

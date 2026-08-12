@@ -671,6 +671,82 @@ test('the only measurement a cue carries is the size the recording measured', as
   });
 });
 
+/**
+ * The cue fields the drawing reads, taken from the drawing's own source.
+ *
+ * The property below is about frames rather than about payloads: two cues that
+ * differ only in a field `scene-view.ts` never looks at are two identical
+ * frames, and a reader watching them sees the reel stop. So the set of fields
+ * that counts is the set the scene actually reads, and reading it out of the
+ * scene is what keeps this test from being a second opinion about that — a
+ * hand-written list here would go stale in the direction that passes, which is
+ * how the duplicated `devices-ready` frame survived in the first place.
+ *
+ * Comments are stripped first. A field named only in prose is a field the scene
+ * does not read, and counting it would let a frame pass on a difference nothing
+ * draws.
+ */
+async function fieldsTheSceneReads() {
+  const source = await readFile(new URL('../src/lib/demo/scene-view.ts', import.meta.url), 'utf8');
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  return new Set([...code.matchAll(/\bcue\.([A-Za-z]+)/g)].map(([, field]) => field));
+}
+
+/*
+ * Every frame in the reel says something the frame before it did not.
+ *
+ * A cue is a frame, and the reel is watched rather than read: a step whose
+ * drawing is identical to the one before it spends its whole dwell telling a
+ * reader that nothing is happening, which is indistinguishable from a page that
+ * has stopped. The reel shipped with two of them at the front — both devices
+ * were stamped online by whichever `devices-ready` cue arrived first, so the
+ * second one drew nothing and the demo opened on two dwells of one still
+ * picture.
+ *
+ * Checked over a real recording rather than a hand-built reel, because the
+ * duplication was a fact about which events the run records and what the
+ * drawing does with them, and neither is visible in a reel written here.
+ */
+test('no two frames in a row draw the same thing', async () => {
+  await withRun(async (run) => {
+    await run.send('a', OUTBOUND);
+
+    const read = await fieldsTheSceneReads();
+    /* A scan that found nothing would pass every pair by comparing empty
+       frames, so the fields the scene certainly reads are named here — not as
+       the list under test, but as proof the scan reached the source. */
+    for (const field of ['step', 'keys', 'bundles', 'ratchet']) {
+      assert.ok(
+        read.has(field),
+        `the scan of scene-view.ts did not find cue.${field}, so the frames compared below are ` +
+          'not the frames the scene draws',
+      );
+    }
+
+    const frame = (cue) =>
+      JSON.stringify(
+        Object.fromEntries(
+          Object.entries(cue)
+            .filter(([field]) => read.has(field))
+            .sort(([left], [right]) => left.localeCompare(right)),
+        ),
+      );
+
+    const shown = playThrough(sceneCuesFrom(run.trace.events));
+    assert.ok(shown.length > 1, 'the recording produced one frame, so nothing was compared');
+    for (let index = 1; index < shown.length; index += 1) {
+      assert.notEqual(
+        frame(shown[index]),
+        frame(shown[index - 1]),
+        `frames ${index - 1} and ${index} of the reel draw the same thing — "${
+          shown[index - 1].step
+        }" then "${shown[index].step}", both ${frame(shown[index])} — so the scene holds a still ` +
+          'picture for two dwells and the reader is given a step with nothing in it',
+      );
+    }
+  });
+});
+
 /*
  * The braid's counts, held against the braid.
  *

@@ -13,10 +13,23 @@
  * reflow — a keyframe would encode a distance that is only true at one size.
  *
  * Flight time comes from the caller, which gets it from the reading clock in
- * `playback.ts`. It is deliberately not a duration token: tokens collapse to
- * near-zero under `prefers-reduced-motion`, and an envelope that teleports
- * would drop the one fact this animation exists to carry. Reduced motion drops
- * the easing instead, which `DemoScene.astro` handles in CSS.
+ * `playback.ts` rather than from a duration token, so the glide is a share of
+ * the step it belongs to and pacing keeps one owner.
+ *
+ * ------------------------------------------------------- reduced motion ---
+ *
+ * Under `prefers-reduced-motion` the envelope does not travel: `global.css`
+ * zeroes every transition duration on the page with `!important`, and a
+ * per-journey value written into a custom property does not outrank that. The
+ * envelope is placed at each anchor instead of gliding to it.
+ *
+ * That is the rule and not a hole in it. A teaching sequence keeps every step
+ * and drops the transitions between them, so the reader who asked for less
+ * motion still gets the envelope at the sender, at the relay and at the
+ * receiver — one frame per step, each held for its own full dwell, because
+ * `playback.ts` has no reduced-motion branch at all. What is lost is the slide
+ * between the three positions, and the slide carries nothing the three frames
+ * do not already say.
  */
 
 import type { Actor, Cue, Step } from './trace';
@@ -524,8 +537,13 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       if (cue.braid) drawBraid(cue.braid);
       if (cue.braidKeyFrom) markBraidKey(cue.braidKeyFrom);
 
-      if (cue.step === 'devices-ready') {
-        for (const side of ['a', 'b'] as const) deviceState(side).textContent = 'online';
+      /* One device per cue, and the device the recording named. Each client
+         boots on its own and reports itself ready on its own, so there are two
+         of these cues; stamping both sides on each of them drew the pair coming
+         up together on the first and drew nothing at all on the second, which
+         spent a whole dwell on a frame the reader had already seen. */
+      if (cue.step === 'devices-ready' && (cue.actor === 'a' || cue.actor === 'b')) {
+        deviceState(cue.actor).textContent = 'online';
       }
 
       /* The mailbox holds a row only while the relay actually has one: it is

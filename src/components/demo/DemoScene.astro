@@ -606,7 +606,7 @@ const STEP_LIST = STEPS.join(' ');
   .demo-ratchet-turn {
     transform-box: view-box;
     transform-origin: 12px 12px;
-    transition: transform var(--oe-duration-slow, 420ms) cubic-bezier(0.22, 0.8, 0.24, 1);
+    transition: transform var(--oe-duration-slow) cubic-bezier(0.22, 0.8, 0.24, 1);
   }
 
   /* Reset is the one moment the angle may decrease, and it must not be animated
@@ -946,12 +946,21 @@ const STEP_LIST = STEPS.join(' ');
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    /* The envelope still travels — that is the information — but it arrives
-       without the easing that makes it feel thrown. Dwell is unchanged, and
-       `playback.ts` explains why reduced motion must not become "faster". */
-    .demo-envelope {
-      transition-timing-function: linear;
-    }
-  }
+  /* ---------------------------------------------------- reduced motion ------
+   *
+   * There is no reduced-motion rule in this file, and its absence is the whole
+   * of the behaviour: `global.css` zeroes every transition duration on the page
+   * with `!important`, so under `prefers-reduced-motion` the envelope is placed
+   * at each anchor rather than gliding to it, the wheel jumps to its new angle,
+   * and the two bars jump to their new widths. Nothing here can opt out of that
+   * and nothing here tries to.
+   *
+   * What survives is the reel. Every step is still shown and still held for its
+   * own dwell — `playback.ts` has no reduced-motion branch and says why — so
+   * the journey is told in the same frames, without the movement between them.
+   * The landing's `transition-delay` above survives too, which is why it is
+   * written as a literal: a delay is not a duration, the blanket rule does not
+   * reach it, and the beat the reader gets to read the decrypted sentence is
+   * information rather than motion.
+   */
 </style>
