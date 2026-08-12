@@ -255,6 +255,13 @@ function braidOf(device: Device): { braid?: readonly BraidReport[] } {
  * hold the odd store or inventory query alongside the generation that dominates
  * them — a window is bounded by reports, and reports are all there is.
  *
+ * And they are wall-clock windows on a single-threaded page where the other
+ * device is generating its own keys at the same time — `start()` boots the pair
+ * together. So this is the span across which the device made its keys and not
+ * the processor time it had to itself, which is the same thing `bootMs` beside
+ * it has always been. The two devices' figures therefore differ from run to
+ * run, and neither is the cost of generating a bundle on an idle machine.
+ *
  * The SDK's own `percent` is not used for anything. It runs 20, 50, 60, 75, 30,
  * 65 through a normal boot, so it is a stage label wearing a fraction's
  * clothes, and a bar drawn from it would run backwards twice.
