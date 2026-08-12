@@ -700,8 +700,8 @@ async function fieldsTheSceneReads() {
  * reader that nothing is happening, which is indistinguishable from a page that
  * has stopped. The reel shipped with two of them at the front — both devices
  * were stamped online by whichever `devices-ready` cue arrived first, so the
- * second one drew nothing and the demo opened on two and a half seconds of a
- * still picture.
+ * second one drew nothing and the demo opened on two dwells of one still
+ * picture.
  *
  * Checked over a real recording rather than a hand-built reel, because the
  * duplication was a fact about which events the run records and what the
@@ -716,8 +716,11 @@ test('no two frames in a row draw the same thing', async () => {
        frames, so the fields the scene certainly reads are named here — not as
        the list under test, but as proof the scan reached the source. */
     for (const field of ['step', 'keys', 'bundles', 'ratchet']) {
-      assert.ok(read.has(field), `the scan of scene-view.ts did not find cue.${field}, so the ` +
-        'frames compared below are not the frames the scene draws');
+      assert.ok(
+        read.has(field),
+        `the scan of scene-view.ts did not find cue.${field}, so the frames compared below are ` +
+          'not the frames the scene draws',
+      );
     }
 
     const frame = (cue) =>
