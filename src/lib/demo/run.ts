@@ -57,7 +57,7 @@ import type { InMemorySignalProtocolRelayServer } from '@open-e2ee/signal-protoc
 import { ciphertextBytes } from './ciphertext.ts';
 import { withDeadline } from './deadline.ts';
 import { createTrace } from './trace.ts';
-import type { Actor, Trace } from './trace.ts';
+import type { Actor, BraidReport, Trace } from './trace.ts';
 
 /**
  * The two ends. `relay` is an actor in the trace but never a correspondent.
@@ -171,6 +171,16 @@ interface Device {
   readonly address: ProtocolAddress;
   /** What the SDK last reported about a key agreement this device took part in. */
   selection(): ProtocolSelectionEvent | null;
+  /**
+   * Every braid report this device has raised since the last time one was
+   * taken, taken and cleared in one call.
+   *
+   * Drained rather than read, so each report lands on exactly one step. A read
+   * that left the buffer standing would put a send's reports on the send and
+   * then on everything after it, and the drawing would go on showing a count
+   * from a message that had already been delivered.
+   */
+  takeBraid(): readonly BraidReport[];
   /** Set while a send to this device is outstanding. See the send below. */
   onEnvelope: ((arrival: { envelope: Envelope; atMs: number }) => void) | null;
   onDecrypted: ((arrival: { message: DecryptedEnvelope; atMs: number }) => void) | null;
@@ -186,6 +196,21 @@ interface Device {
  */
 function measure(name: string, from: string, to: string): number {
   return performance.measure(name, from, to).duration;
+}
+
+/**
+ * Take a device's braid reports, in the shape a `TraceEvent` carries them.
+ *
+ * Absent rather than empty when there were none, so the fields an event has are
+ * the facts it holds — the rule `cues()` keeps for `from`/`to` in `trace.ts`. A
+ * direct-mode run raises no report and its recording then says nothing about a
+ * braid, rather than saying a braid carried zero chunks.
+ *
+ * This drains. Call it once per step, on the device whose work the step is.
+ */
+function braidOf(device: Device): { braid?: readonly BraidReport[] } {
+  const reports = device.takeBraid();
+  return reports.length === 0 ? {} : { braid: reports };
 }
 
 /**
@@ -291,6 +316,22 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      */
     let selection: ProtocolSelectionEvent | null = null;
 
+    /*
+     * What the braid reported, from the braid.
+     *
+     * `onBraidProgress` fires inside the send or the receive that moved a
+     * chunk, which is well before the call it fired from has returned and long
+     * before this module has a step to record. So the reports collect here and
+     * the step that caused them takes them on its way into the recording.
+     *
+     * A box for the same reason `selection` above is one: the callback is
+     * installed while the client is being built, so it needs somewhere to write
+     * that already exists. Direct-mode sessions raise nothing and this stays
+     * empty, which is what keeps a direct run's recording free of a braid it
+     * never ran.
+     */
+    let braid: BraidReport[] = [];
+
     performance.mark(mark('start'));
     await relay.registerDevice(userId, { encryptedDeviceName: new ArrayBuffer(0) });
     /*
@@ -333,6 +374,16 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
         onProtocolSelected: (event) => {
           selection = event;
         },
+        /* `epoch` is printed here rather than downstream: it is a `bigint`, and
+           this is the boundary between the SDK's shape and the recording's. */
+        onBraidProgress: (event) => {
+          braid.push({
+            chunksCarried: event.chunksCarried,
+            chunksRequired: event.chunksRequired,
+            epoch: String(event.epoch),
+            emittedEpochKey: event.emittedEpochKey,
+          });
+        },
       },
     });
     performance.mark(mark('end'));
@@ -347,6 +398,11 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
          this file believed rather than the one the SDK is addressing. */
       address: { userId, deviceId: client.deviceId },
       selection: () => selection,
+      takeBraid: () => {
+        const taken = braid;
+        braid = [];
+        return taken;
+      },
       onEnvelope: null,
       onDecrypted: null,
       unsubscribeRelay: () => {},
@@ -514,6 +570,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       to: to.actor,
       atMs: performance.now(),
       measures: { establishMs },
+      ...braidOf(from),
       detail: { selection: from.selection() },
     });
   }
@@ -561,6 +618,11 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     const encryptMs = measure(`oe-demo:encrypt:${generation}:${n}`, mark('start'), mark('accepted'));
 
     const encryptedAt = performance.now();
+    /* Each side's reports are taken on the step that is that side's own work:
+       the sender's here, the receiver's on `opened` below. In memory the relay
+       delivers inside the send, so both sides have reported by this line — a
+       single shared buffer would put the receiver's chunk counts on the sender's
+       step, and the drawing would credit a device for work the other one did. */
     trace.append({
       step: 'encrypted',
       actor: from.actor,
@@ -568,6 +630,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       to: to.actor,
       atMs: encryptedAt,
       measures: { encryptMs },
+      ...braidOf(from),
       detail: { text, result },
     });
     /* An interval, not an instant: something really is outstanding between the
@@ -634,6 +697,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       to: to.actor,
       atMs: decryptedAtMs,
       measures: { roundTripMs },
+      ...braidOf(to),
       detail: { decrypted },
     });
 

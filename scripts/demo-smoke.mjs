@@ -202,6 +202,27 @@ const SCENE_END_STATE = 'opened';
 const BRAID_TOGGLE = '[data-console-toggle="braid"]';
 
 /*
+ * The braid's own row, and the two things it prints.
+ *
+ * The figure is the chunk counts the braid reported, and the mark is the braid
+ * saying a device has produced its epoch key. Both are written from the report
+ * the SDK raises and from nothing else, so neither can be drawn by a page that
+ * is working from the sizes it measured — which is what makes them worth
+ * reading here rather than reading the column's geometry again.
+ *
+ * Both ship hidden and are shown by `scene-view.ts` when a report arrives, so
+ * their presence is a fact about a braid that ran.
+ */
+const SCENE_BRAID = '[data-scene-braid]';
+const SCENE_BRAID_FIGURE = '[data-scene-braid-figure]';
+const SCENE_BRAID_MARK = '[data-scene-braid-mark]';
+
+/* What a device is called, in the scene's own words. Read beside the mark so
+   the mark can be held against a name the page took from the session rather
+   than against a string this file also knows. */
+const SCENE_NAME = (side) => `[data-scene-name="${side}"]`;
+
+/*
  * The relay's column, whole, rather than any element inside it.
  *
  * The check below asks whether *something* in this column is drawn to the size
@@ -302,6 +323,35 @@ const REPEAT_PROBE = `Second probe ${NONCE}: sent again, on a session already wa
    after it is the first one sized by the session alone. */
 const REPLY_PROBE = `Reply probe ${NONCE}: answered from the far device.`;
 const STEADY_PROBE = `Third probe ${NONCE}: sent after the answer, on an agreed session.`;
+/* The sentence a whole epoch is driven with, numbered so a conversation of them
+   can be read back. Short, because the epoch pass sends it many times and the
+   sentence is not what that pass is about. */
+const EPOCH_PROBE = (turn) => `Epoch probe ${NONCE} #${turn}`;
+
+/*
+ * How many messages one braid epoch takes, measured through the SDK.
+ *
+ * The braid carries the ML-KEM key one chunk per message and needs the whole
+ * epoch's worth before either device can close it, so a conversation shorter
+ * than this can end without a single key having been produced. Driving this
+ * many is what makes the completion the pass reads certain to exist.
+ *
+ * The pass does not depend on the exact figure. It reads the braid's own report
+ * of a completion, so an epoch that grows or shrinks upstairs changes how much
+ * of this drive is spare and not whether the reading is true.
+ */
+const EPOCH_MESSAGES = 86;
+
+/*
+ * The longest the epoch pass gets to reach the mark.
+ *
+ * The drive runs at the devices' pace and the drawing runs at the reader's, so
+ * the mark appears when the reel reaches the message that produced the key —
+ * many dwells behind the send that produced it. Separate from `REEL_BUDGET_MS`
+ * and much larger for that reason, and sized as a bound on a machine under load
+ * rather than from the dwell table, for the reason `walk` gives.
+ */
+const EPOCH_BUDGET_MS = 240000;
 
 const DECRYPT_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 30000;
@@ -965,6 +1015,36 @@ async function type(cdp, sessionId, text, side = 'a') {
 }
 
 /**
+ * Send, and wait only for the composer to come back.
+ *
+ * The console takes both composers away for the length of a send and gives them
+ * back when it resolves, and a send resolves when the devices are done rather
+ * than when the reel has drawn what they did. So this waits at the pace the
+ * protocol works at, and it is what lets a whole epoch be driven without
+ * waiting out an epoch of dwell first.
+ *
+ * A failure the console reports ends the wait too, on the same grounds as every
+ * other wait here: a composer that never comes back and a page saying why it
+ * did not are different outcomes, and only the caller knows which one this pass
+ * was expecting.
+ */
+async function sendAndSettle(cdp, sessionId, text, side, describe) {
+  await type(cdp, sessionId, text, side);
+  await waitFor(
+    cdp,
+    sessionId,
+    `(() => {
+       const send = document.querySelector(${JSON.stringify(COMPOSE_SEND(side))});
+       const status = document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? '';
+       return (Boolean(send) && !send.disabled) || /did not finish/.test(status);
+     })()`,
+    DECRYPT_TIMEOUT_MS,
+    `${describe} — the composer never came back within ${DECRYPT_TIMEOUT_MS} ms of the send`,
+    () => [],
+  );
+}
+
+/**
  * Read where the reel is, and whether it has arrived.
  *
  * One round trip, so the state reported and the verdict on it describe the same
@@ -1039,8 +1119,13 @@ async function walk(cdp, sessionId, done, complaint, context = () => [], budgetM
  * leaves the page exactly as it ships. A pass that names the setting presses the
  * switch itself and proves it took, so a run that says it was made with braid on
  * was made with braid on.
+ *
+ * `epoch` adds a whole braid epoch to the conversation and reads the completion
+ * the braid reports for it. It is off by default, and the passes the drawing
+ * checks read leave it off: they are measured against each other, and a run that
+ * had sent ninety more messages would not be the same run.
  */
-async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = null } = {}) {
+async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = null, epoch = false } = {}) {
   const tab = await openTab(cdp, held, { blocked });
   const { sessionId, requests, scripts, cspViolations, pageErrors, blockedRequests, quiet } = tab;
 
@@ -1315,6 +1400,91 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
     }
 
     /*
+     * A whole epoch of the braid, and the completion it reports for it.
+     *
+     * The chunks the braid carries are added one per message, so the only way to
+     * reach a produced epoch key is to send the messages that carry them. The
+     * drive alternates for that reason: each side adds its chunk on the messages
+     * it sends, and a conversation that only ever went one way would carry half
+     * a braid however long it ran.
+     *
+     * Driven at the devices' pace and read at the reader's. Each send waits only
+     * for the composer, so the conversation is complete long before the drawing
+     * has caught up with it, and the single wait afterwards is what the pass
+     * spends its time in. The reel is behind by design and this is the shape
+     * that costs the least: waiting out the dwell after every message would take
+     * the pass from minutes to hours and would prove nothing further.
+     *
+     * `EPOCH_MESSAGES` more, rather than that many in total. The sentences above
+     * are already in the conversation, so counting from here is the bound that
+     * holds whatever preceded it.
+     */
+    let epochMark = null;
+    if (epoch) {
+      for (let turn = 0; turn < EPOCH_MESSAGES; turn += 1) {
+        await sendAndSettle(
+          cdp,
+          sessionId,
+          EPOCH_PROBE(turn),
+          turn % 2 === 0 ? 'b' : 'a',
+          `the conversation stopped ${turn} messages into an epoch of ${EPOCH_MESSAGES}`,
+        );
+      }
+
+      /*
+       * Then wait for the braid to say a device produced its key.
+       *
+       * Waited on the mark rather than on a step: the mark is written from the
+       * report the SDK raised and a step is written for every message, so a walk
+       * to a step would arrive whether a braid had reported anything or not.
+       */
+      await walk(
+        cdp,
+        sessionId,
+        `!document.querySelector(${JSON.stringify(SCENE_BRAID_MARK)})?.hidden`,
+        `${EPOCH_MESSAGES} alternating messages went through the braid and the scene never ` +
+          `reported an epoch key`,
+        why({
+          'the braid row is shown': `!document.querySelector(${JSON.stringify(SCENE_BRAID)})?.hidden`,
+          'the chunk figure': `document.querySelector(${JSON.stringify(SCENE_BRAID_FIGURE)})?.textContent ?? null`,
+          'the reel is on': `document.querySelector(${JSON.stringify(SCENE)})?.dataset.sceneState ?? null`,
+          'the status line': `document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? null`,
+        }),
+        EPOCH_BUDGET_MS,
+      );
+
+      /* Read in one round trip, so the mark, the figure beside it and the name
+         it is held against all describe the same moment. */
+      epochMark = await evaluate(
+        cdp,
+        sessionId,
+        `(() => {
+           const row = document.querySelector(${JSON.stringify(SCENE_BRAID)});
+           const mark = document.querySelector(${JSON.stringify(SCENE_BRAID_MARK)});
+           const figure = document.querySelector(${JSON.stringify(SCENE_BRAID_FIGURE)});
+           if (!row || !mark || !figure) return null;
+           const where = {
+             a: ${JSON.stringify(SCENE_NAME('a'))},
+             b: ${JSON.stringify(SCENE_NAME('b'))},
+           };
+           const side = mark.dataset.sceneBraidKey ?? null;
+           const named = where[side]
+             ? document.querySelector(where[side])?.textContent ?? null
+             : null;
+           return {
+             row: !row.hidden,
+             marked: !mark.hidden,
+             side,
+             named,
+             mark: mark.textContent ?? '',
+             figure: figure.textContent ?? '',
+           };
+         })()`,
+        'demo',
+      );
+    }
+
+    /*
      * And to the end of the recording, so the state the checks read is the one
      * the run finishes in rather than wherever the last sentence happened to
      * leave it. Already there when the reel's last cue is the one that decrypted
@@ -1349,6 +1519,7 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
       dom,
       geometry,
       braid,
+      epochMark,
       repeated: repeat,
       requests,
       cspViolations,
@@ -2224,6 +2395,82 @@ function checkBraidDrawing(disabled, required) {
   }
 
   return { widest, whole, chunked, pairs };
+}
+
+/*
+ * The braid tells the page when a device has produced its epoch key, and the
+ * page draws it.
+ *
+ * The column check above measures a drawing against the sizes the relay is
+ * holding, and every number in it can be had from bytes the page measured
+ * itself. A completion cannot. Nothing in an envelope's length says that enough
+ * chunks have arrived for a device to close its epoch — only the braid knows
+ * that, and it says so once, in a report the page subscribes to. So this reads
+ * the one thing on the page that no amount of measuring could have produced.
+ *
+ * Read after a whole epoch has been driven, because that is how long it takes
+ * for the claim to become available to make.
+ *
+ * Held against the scene's own name for the device rather than against a name
+ * this file knows. Both names come off the session the run booted, so a mark
+ * that agrees with the column beside it is a mark written for a device that
+ * exists; a fixed string typed into the markup would agree with neither.
+ */
+function checkBraidProgress(pass) {
+  const reading = pass.epochMark;
+  if (!reading) {
+    throw new Red(
+      `braid progress — ${EPOCH_MESSAGES} alternating messages went through a braided session ` +
+        `and the scene has no braid row on it at all (${SCENE_BRAID}), so the page shows nothing ` +
+        `about how much of the key has arrived`,
+    );
+  }
+  if (!reading.row || !reading.marked) {
+    throw new Red(
+      `braid progress — the braid reported an epoch key and the scene is not showing it: the ` +
+        `row is ${reading.row ? 'shown' : 'hidden'} and the mark is ` +
+        `${reading.marked ? 'shown' : 'hidden'}`,
+    );
+  }
+
+  /* The mark says which device produced the key, and it can only say it because
+     the report named one. A mark that stood for no device would be the page
+     announcing a completion it could not attribute. */
+  if (reading.side !== 'a' && reading.side !== 'b') {
+    throw new Red(
+      `braid progress — the scene marks an epoch key and does not say which device produced ` +
+        `it: it reads ${JSON.stringify(reading.mark)} and stands for ` +
+        `${JSON.stringify(reading.side)}`,
+    );
+  }
+  if (!reading.named || !reading.mark.includes(reading.named)) {
+    throw new Red(
+      `braid progress — the mark names a device the scene does not have. It reads ` +
+        `${JSON.stringify(reading.mark)}, it stands for device ${JSON.stringify(reading.side)}, ` +
+        `and that device's column calls it ${JSON.stringify(reading.named)}.`,
+    );
+  }
+
+  /* And the counts beside it, which come from the same report. Two numbers and
+     the word the drawing counts in — required as a shape rather than as a
+     figure, because the figures are the braid's to choose and change. */
+  const counted = /(\d+)\s+of\s+(\d+)\s+chunks/.exec(reading.figure);
+  if (!counted) {
+    throw new Red(
+      `braid progress — the braid row prints no chunk counts. It reads ` +
+        `${JSON.stringify(reading.figure)}, and the report it is drawn from carries how many ` +
+        `chunks a device is holding and how many it needs.`,
+    );
+  }
+
+  return {
+    side: reading.side,
+    named: reading.named,
+    mark: reading.mark,
+    figure: reading.figure,
+    carried: Number(counted[1]),
+    required: Number(counted[2]),
+  };
 }
 
 /*
@@ -3730,6 +3977,23 @@ async function main() {
     const braidOn = await visit(cdp, origin, held, { braid: true });
     const braid = checkBraidDrawing(braidOff, braidOn);
 
+    /*
+     * And a third run, long enough for the braid to finish a key.
+     *
+     * Its own run rather than more sentences on either of the two above. The
+     * check before it measures those two against each other, and a run carrying
+     * an extra epoch of conversation would be drawing a different message of a
+     * different length — so the pair it reads is left exactly as it was.
+     *
+     * This is the slowest pass here by a wide margin, and the cost is the point:
+     * a braid key is produced after a whole epoch of messages and there is no
+     * shorter way to reach one.
+     */
+    const epochStartedAt = Date.now();
+    const epoch = await visit(cdp, origin, held, { braid: true, epoch: true });
+    const progress = checkBraidProgress(epoch);
+    const epochSeconds = ((Date.now() - epochStartedAt) / 1000).toFixed(1);
+
     /* Say which of the two things happened. Claiming a quiet window we never
        got would overstate the egress evidence on exactly the chatty pages
        where it is weakest. */
@@ -3760,6 +4024,11 @@ async function main() {
         `${braid.widest.ratio.toFixed(2)}× wider — ${braid.widest.whole.toFixed(1)} px against ` +
         `${braid.widest.chunked.toFixed(1)} px on <${braid.widest.tag}> at ` +
         `${braid.widest.path || 'the column'}\n` +
+        `  the epoch:      ${EPOCH_MESSAGES} alternating messages through a braided session, and ` +
+        `the scene reported\n` +
+        `                  "${progress.mark}" beside "${progress.figure}" — a completion no ` +
+        `measurement of an envelope\n` +
+        `                  could produce (${epochSeconds} s)\n` +
         `  before a touch: ${kb(live.bytesBefore)} of script over ${live.before.length} file(s), ` +
         `under the ${kb(PRE_INTERACTION_CEILING)} tripwire (uncompressed — this server does ` +
         `not gzip)\n` +

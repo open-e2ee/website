@@ -752,20 +752,24 @@ const TOGGLES = [
      * A projection and nothing else: it reads the event and returns a cue, and
      * the cue is where the paced half of the page gets everything it knows.
      *
-     * A cue carries numbers on purpose. Four fields hold them and no others do,
+     * A cue carries numbers on purpose. Five fields hold them and no others do,
      * which is the invariant `demo-run.test.mjs` holds: every number on a cue
-     * lives on `ratchet`, `bundles`, `keys` or `bytes`, and every other value,
-     * at any depth, is a string. A number arriving on a fifth field is the
-     * regression, and telling it apart by size would not work — `bundles` counts
-     * real prekeys and runs into the hundreds, the same order as a byte count.
+     * lives on `ratchet`, `bundles`, `keys`, `bytes` or `braid`, and every other
+     * value, at any depth, is a string. A number arriving on a sixth field is
+     * the regression, and telling it apart by size would not work — `bundles`
+     * counts real prekeys and runs into the hundreds, the same order as a byte
+     * count.
      *
-     * Three of the four are counts of things to draw: notches turned, bundles
-     * held, key shapes shelved. `bytes` is the exception and is a measurement,
-     * carried because the relay column draws the size of the row it is holding
-     * and there is no honest way to draw a size without the size. It is held to
-     * a stricter rule than the counts in return: it must be the byte count the
-     * recording itself measured for that row, which is what the test checks,
-     * because a drawn size that no event reported would be a decoration.
+     * Four of the five are counts of things: notches turned, bundles held, key
+     * shapes shelved, chunks carried. `bytes` is the exception and is a
+     * measurement, carried because the relay column draws the size of the row it
+     * is holding and there is no honest way to draw a size without the size.
+     *
+     * Two are held to a stricter rule than the rest, and the tests pin both.
+     * `bytes` must be the byte count the recording measured for that row, and
+     * `braid` must be the counts the braid reported on that step. Neither is
+     * something this page could work out for itself, and a drawn size or a drawn
+     * chunk count that no event reported would be a decoration.
      *
      * The two-clock separation survives this. It was never about numbers as
      * such — it is that nothing the drawing receives is a duration, so pacing
@@ -781,11 +785,50 @@ const TOGGLES = [
         actor === 'a' || actor === 'b' ? actor : null;
       const from = device(event.from);
       const to = device(event.to);
+
+      /*
+       * Whatever the braid reported while this step ran, taken from the report.
+       *
+       * Assembled here and carried on `base`, so it reaches every step rather
+       * than a list of steps this file keeps: a report belongs to the send or
+       * the receive that raised it, and the recording already put it on that
+       * step. Naming the steps again here would be this file deciding from a
+       * step's name something the recording had recorded.
+       *
+       * Whose report it is comes from `event.actor` for the same reason. That is
+       * the device `run.ts` recorded the work against, and it is also the device
+       * it drained, so the counts and the name on them cannot come apart.
+       *
+       * The last report of the step, because the drawing shows where the key has
+       * got to and the last is the most recent thing said about it. The
+       * completion is looked for across all of them instead — it is an event
+       * rather than a level, and one dropped because a later report in the same
+       * step did not repeat it would be the run's completion lost.
+       */
+      const reports = event.braid ?? [];
+      const latest = reports[reports.length - 1];
+      const reporter = device(event.actor);
+      const braided =
+        latest && reporter
+          ? {
+              braid: {
+                side: reporter,
+                carried: latest.chunksCarried,
+                required: latest.chunksRequired,
+                epoch: latest.epoch,
+              },
+              ...(reports.some((report) => report.emittedEpochKey)
+                ? { braidKeyFrom: reporter }
+                : {}),
+            }
+          : {};
+
       const base: SceneCue = {
         step: event.step,
         actor: event.actor,
         ...(event.from === undefined ? {} : { from: event.from }),
         ...(event.to === undefined ? {} : { to: event.to }),
+        ...braided,
       };
 
       /* Counted at the step that derives the key, and snapshotted into the cue

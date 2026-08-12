@@ -65,6 +65,33 @@ export interface SceneCue extends Cue {
   readonly bytes?: number;
   /** How many private keys each device holds. */
   readonly keys?: Readonly<Record<Side, number>>;
+  /**
+   * What the ML-KEM braid last reported while this step ran, and who reported it.
+   *
+   * Chunk counts, from `onBraidProgress` by way of the recording. Nothing here
+   * or upstream works them out: the braid's state machine is the only thing that
+   * can see a chunk travel, and a page that counted messages instead would be
+   * drawing its own arithmetic under the braid's name.
+   *
+   * Whose counts they are travels with them, because the two devices report
+   * different ones. Each side counts what it has carried, and the two can be
+   * whole epochs apart, so a figure with no name on it would read as one number
+   * the conversation agrees on.
+   */
+  readonly braid?: {
+    readonly side: Side;
+    readonly carried: number;
+    readonly required: number;
+    readonly epoch: string;
+  };
+  /**
+   * The device whose send or receive produced the epoch secret, on the step that
+   * produced it.
+   *
+   * Absent on every other step. The drawing latches it rather than clearing it,
+   * because a key that has been produced stays produced.
+   */
+  readonly braidKeyFrom?: Side;
 }
 
 export interface SceneNames {
@@ -202,6 +229,10 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const sizeRow = need<HTMLElement>(root, '[data-scene-size]');
   const sizeBar = need<HTMLElement>(root, '[data-scene-size-bar]');
   const sizeFigure = need<HTMLElement>(root, '[data-scene-size-figure]');
+  const braidRow = need<HTMLElement>(root, '[data-scene-braid]');
+  const braidBar = need<HTMLElement>(root, '[data-scene-braid-bar]');
+  const braidFigure = need<HTMLElement>(root, '[data-scene-braid-figure]');
+  const braidMark = need<HTMLElement>(root, '[data-scene-braid-mark]');
 
   const phone = (side: Side) => need<HTMLElement>(root, `[data-scene-device="${side}"] .demo-phone`);
   const chat = (side: Side) => need<HTMLElement>(root, `[data-scene-chat="${side}"]`);
@@ -421,6 +452,52 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     sizeRow.hidden = false;
   }
 
+  /**
+   * Draw how far the braid's key has travelled, and print the counts.
+   *
+   * Both numbers are the braid's own. The only thing worked out here is the
+   * length of the bar, and it is deliberately a fill against the count as last
+   * reported rather than a share of a fixed whole: `chunksRequired` is not a
+   * total the carried count settles on — it grows as the epoch opens transfers,
+   * and a sender carries parity beyond it — so a carried count really can pass
+   * it. That case is drawn full and marked, the way an oversized row is above,
+   * and the figure stays the authority on how far past.
+   *
+   * The figure prints the two counts rather than a percentage of them, for the
+   * reason `drawSize` prints a byte count: a length is comparable at a glance
+   * and only a figure makes it checkable against what the braid reported.
+   *
+   * Named with the device that reported. Each side counts the chunks it has
+   * carried and the two can be whole epochs apart, so an unattributed figure
+   * would claim a number the conversation agreed on and neither side reported.
+   */
+  function drawBraid(report: NonNullable<SceneCue['braid']>): void {
+    const filled = report.required > 0 ? (report.carried / report.required) * 100 : 0;
+    braidBar.style.width = `${Math.min(100, filled)}%`;
+    braidBar.dataset.over = String(report.carried > report.required);
+    braidFigure.textContent = `${names[report.side]} ${report.carried} of ${report.required} chunks`;
+    braidRow.hidden = false;
+  }
+
+  /**
+   * Say whose send or receive produced the epoch secret.
+   *
+   * Latched, and left latched until the scene is cleared. The report carrying
+   * this is also the report on which the braid has already reset its counters,
+   * so the fill beside it drops to near nothing on the same cue — a mark that
+   * cleared with the counts would show for one step and take the run's one
+   * completion away with it.
+   *
+   * It names the device and stops there. Which epoch the secret closed is not
+   * something the report states: the epoch travelling with it is the one that
+   * has just begun, so the mark does not name one.
+   */
+  function markBraidKey(side: Side): void {
+    braidMark.textContent = `${names[side]} produced the epoch key`;
+    braidMark.dataset.sceneBraidKey = side;
+    braidMark.hidden = false;
+  }
+
   const view: SceneView = {
     show(cue, flightMs) {
       root.dataset.sceneState = cue.step;
@@ -440,6 +517,12 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
          for the reason the row below the column does: the far device collecting
          empties the mailbox and the relay still has what it kept. */
       if (cue.bytes !== undefined) drawSize(cue.bytes);
+      /* The braid arrives on the step whose send or receive raised the report
+         and stays after it, for the same reason the size does. The braid reports
+         on some steps and not on others, so a row emptied between cues would
+         spend most of the run showing nothing. */
+      if (cue.braid) drawBraid(cue.braid);
+      if (cue.braidKeyFrom) markBraidKey(cue.braidKeyFrom);
 
       if (cue.step === 'devices-ready') {
         for (const side of ['a', 'b'] as const) deviceState(side).textContent = 'online';
@@ -517,6 +600,16 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       sizeBar.style.removeProperty('width');
       sizeBar.dataset.over = 'false';
       sizeFigure.textContent = '';
+      /* The mark is latched for the life of a run and this is the one place it
+         comes off. A run that has been thrown away has produced no key, and a
+         mark left standing would credit the new run with the old one's. */
+      braidRow.hidden = true;
+      braidBar.style.removeProperty('width');
+      braidBar.dataset.over = 'false';
+      braidFigure.textContent = '';
+      braidMark.hidden = true;
+      braidMark.textContent = '';
+      delete braidMark.dataset.sceneBraidKey;
       nameRatchet(null);
       for (const side of ['a', 'b'] as const) {
         chat(side).replaceChildren();

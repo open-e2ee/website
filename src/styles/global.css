@@ -1781,6 +1781,81 @@ a:hover {
 }
 
 /*
+ * How much of the post-quantum key has travelled, and who has it.
+ *
+ * Built to the same three parts as the size row above, because it answers the
+ * same kind of question about the same column and a reader should not have to
+ * learn a second way of reading a bar. It carries a fourth part the size row has
+ * no use for: the moment a device reports it produced the epoch secret, which is
+ * the one event in a braid a reader is waiting for.
+ *
+ * The bar takes the ratchet family rather than the ciphertext fill the size row
+ * takes. The two bars sit one above the other and measure different things —
+ * one is a stored row's length, the other is a key agreement's progress — so
+ * they are drawn in the two colours the grammar already gives those ideas.
+ *
+ * The row wraps and the mark takes a line of its own, so a completion never
+ * squeezes the track it belongs to. The column is narrow and the mark is a
+ * sentence.
+ */
+.demo-relay-braid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--oe-space-2);
+  font-family: var(--oe-font-mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.demo-relay-braid-label {
+  color: var(--oe-muted);
+}
+
+.demo-relay-braid-track {
+  flex: 1;
+  min-width: 0;
+  height: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--oe-border);
+  border-radius: var(--oe-radius-sm);
+  background: var(--oe-surface-sunken);
+}
+
+/* Width comes from the counts the braid reported and from nothing else, so the
+   sheet gives it none: a fill before a chunk has travelled would be a length
+   nothing reported. `clear()` puts it back to this between runs. */
+.demo-relay-braid-bar {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--oe-diagram-ratchet-3);
+  transition: width var(--oe-duration-normal) ease;
+}
+
+/* A side that has carried more chunks than the transfers opened so far account
+   for. Ordinary rather than exceptional — a sender carries parity beyond what
+   its peer needs to reconstruct — so the bar is drawn full and marked, and the
+   figure beside it stays the authority on how far past. */
+.demo-relay-braid-bar[data-over='true'] {
+  background: var(--oe-accent);
+}
+
+.demo-relay-braid-figure {
+  white-space: nowrap;
+  color: var(--oe-foreground);
+}
+
+/* The completion, on its own line under the track it completed. Latched by
+   `scene-view.ts` for the life of the run: a key that has been produced stays
+   produced, and the counts above it reset on the very report that says so. */
+.demo-relay-braid-mark {
+  flex-basis: 100%;
+  color: var(--oe-diagram-ratchet-3);
+  font-weight: 600;
+}
+
+/*
  * What the relay is holding, as bytes.
  *
  * `ciphertext.ts` cuts a strip of three lines of six bytes. The block still

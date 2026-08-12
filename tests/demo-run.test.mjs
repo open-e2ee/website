@@ -377,11 +377,31 @@ function sceneCuesFrom(events) {
     const detail = event.detail ?? {};
     const from = device(event.from);
     const to = device(event.to);
+
+    const reports = event.braid ?? [];
+    const latest = reports[reports.length - 1];
+    const reporter = device(event.actor);
+    const braided =
+      latest && reporter
+        ? {
+            braid: {
+              side: reporter,
+              carried: latest.chunksCarried,
+              required: latest.chunksRequired,
+              epoch: latest.epoch,
+            },
+            ...(reports.some((report) => report.emittedEpochKey)
+              ? { braidKeyFrom: reporter }
+              : {}),
+          }
+        : {};
+
     const base = {
       step: event.step,
       actor: event.actor,
       ...(event.from === undefined ? {} : { from: event.from }),
       ...(event.to === undefined ? {} : { to: event.to }),
+      ...braided,
     };
 
     if (event.step === 'encrypted' && from) derived[from] += 1;
@@ -502,15 +522,20 @@ test('the ratchet each wheel is captioned with is the one the SDK selected', asy
 });
 
 /**
- * The fields on a scene cue whose number is a count of things to draw rather
- * than a measurement: how many notches a ratchet has turned, how many key
- * bundles the relay is holding, how many key shapes a device has. Bounded by
- * the real protocol state, but not by anything small — a published-key count
- * can run into the hundreds, the same order of magnitude as a byte count — so
- * telling a count from a measurement by its size would not hold. It has to be
- * told by which field it travelled on, which is what this list is for.
+ * The fields on a scene cue whose number is a count of things rather than a
+ * measurement: how many notches a ratchet has turned, how many key bundles the
+ * relay is holding, how many key shapes a device has, how many chunks of a
+ * post-quantum key have travelled. Bounded by the real protocol state, but not
+ * by anything small — a published-key count can run into the hundreds, the same
+ * order of magnitude as a byte count — so telling a count from a measurement by
+ * its size would not hold. It has to be told by which field it travelled on,
+ * which is what this list is for.
+ *
+ * `braid` is on the list and is also pinned against the recording separately,
+ * further down. Being a count buys it past the scan below; it does not buy it
+ * the right to be a count this page invented.
  */
-const PRESENTATION_COUNT_FIELDS = new Set(['ratchet', 'bundles', 'keys']);
+const PRESENTATION_COUNT_FIELDS = new Set(['ratchet', 'bundles', 'keys', 'braid']);
 
 /**
  * The one field on a cue that carries a measurement rather than a count: how
@@ -545,6 +570,37 @@ function assertNoMeasurement(value, path) {
   );
 }
 
+/**
+ * Play a reel through the real transport and collect what the drawing was shown.
+ *
+ * No fake clock is needed to time anything, only to keep the reel from waiting
+ * out its real dwells — so the schedule fires at once. The loop is bounded
+ * rather than a bare `while`, so a reel that reschedules itself without
+ * advancing fails a test instead of hanging the suite, and the bound comes from
+ * the reel so a longer recording does not quietly outgrow it.
+ */
+function playThrough(reel) {
+  let pending = null;
+  const shown = [];
+  const playback = createPlayback({
+    show: (cue) => shown.push(cue),
+    schedule: (fire) => {
+      pending = fire;
+      return () => {
+        pending = null;
+      };
+    },
+  });
+  playback.push(...reel);
+  playback.play();
+  for (let turn = 0; pending && turn < reel.length + 10; turn += 1) {
+    const fire = pending;
+    pending = null;
+    fire();
+  }
+  return shown;
+}
+
 /*
  * The transport's whole promise, checked end to end against a real recording
  * rather than against the hand-written reel in `demo-playback.test.mjs`.
@@ -555,15 +611,15 @@ function assertNoMeasurement(value, path) {
  * a cue for a future pacing knob to move even by accident.
  *
  * That claim is not "no cue carries a number". `toCue()` puts real numbers on
- * a cue on purpose: counts, to turn a ratchet's notches and size a key list,
- * and one measurement, the stored row's byte count, which the relay column
- * draws to scale. The claim is that those four fields are all of them —
- * `ratchet`, `bundles`, `keys`, `bytes` — and every other value, at any depth,
- * is a string. A millisecond figure arriving on any other field — `sentence`,
- * `meta`, or a fifth field nobody named yet — is exactly the regression this
- * guards, and it is checked by enumerating every value on every cue rather
- * than by naming the fields a measurement might use, because naming them is a
- * list a new one can be added to without this test noticing.
+ * a cue on purpose: counts, to turn a ratchet's notches, size a key list and
+ * fill a braid's key, and one measurement, the stored row's byte count, which
+ * the relay column draws to scale. The claim is that those five fields are all
+ * of them — `ratchet`, `bundles`, `keys`, `braid`, `bytes` — and every other
+ * value, at any depth, is a string. A millisecond figure arriving on any other
+ * field — `sentence`, `meta`, or a sixth field nobody named yet — is exactly
+ * the regression this guards, and it is checked by enumerating every value on
+ * every cue rather than by naming the fields a measurement might use, because
+ * naming them is a list a new one can be added to without this test noticing.
  *
  * The measurement that is allowed through is pinned rather than waved past.
  * Every stored row must arrive with the byte count the recording measured for
@@ -585,30 +641,7 @@ test('the only measurement a cue carries is the size the recording measured', as
       'the recording produced no stored row, so this test checked a reel with no relay cue in it',
     );
 
-    /* No fake clock is needed to time anything here, only to keep the reel
-       from waiting out its real dwells — so the schedule fires at once and
-       the loop below is bounded rather than a bare `while`, so a reel that
-       rescheduled itself without advancing fails this test instead of
-       hanging the suite. */
-    let pending = null;
-    const shown = [];
-    const playback = createPlayback({
-      show: (cue) => shown.push(cue),
-      schedule: (fire) => {
-        pending = fire;
-        return () => {
-          pending = null;
-        };
-      },
-    });
-    playback.push(...reel);
-    playback.play();
-    for (let turn = 0; pending && turn < 100; turn += 1) {
-      const fire = pending;
-      pending = null;
-      fire();
-    }
-
+    const shown = playThrough(reel);
     assert.equal(shown.length, reel.length, 'not every cue on the reel reached the drawing');
     for (const [index, cue] of shown.entries()) {
       for (const [key, value] of Object.entries(cue)) {
@@ -636,6 +669,155 @@ test('the only measurement a cue carries is the size the recording measured', as
         'column would draw a bar to something no event reported',
     );
   });
+});
+
+/*
+ * The braid's counts, held against the braid.
+ *
+ * The relay column draws how much of a post-quantum key has travelled, and
+ * marks the point a device says it produced the epoch secret. Neither is
+ * something this page can work out. A braid chunk is visible only inside the
+ * braid's own state machine, so `onBraidProgress` is the only source, and a
+ * page that counted messages, or scaled a byte count, or lit the mark on a step
+ * name would draw a plausible picture of a protocol it was not reading.
+ *
+ * So the counts are compared as whole lists in both directions. Every report the
+ * recording holds must reach the drawing, in order, with the counts unchanged
+ * and against the device that made it; and the drawing must receive nothing
+ * else. A subset comparison would pass a drawing that reported the first chunk
+ * and then stopped, which is the failure this is for.
+ *
+ * The completion is checked the same way and separately, because it is an event
+ * and not a level: a page could carry the counts faithfully and still light the
+ * mark from somewhere else entirely.
+ *
+ * Then the same page with the braid switched off. Direct mode sends the key
+ * whole and reports nothing, so a drawing that receives anything at all there is
+ * a drawing deriving chunks from something the braid did not say — which is
+ * exactly the defect the counts alone cannot catch, because a derived number can
+ * agree with a reported one for a while.
+ *
+ * What this cannot reach is the DOM. `mountScene` needs a browser and the suite
+ * has none, so what is pinned here is what the scene is handed. That the scene
+ * then draws it, and that the mark survives the epoch boundary on screen, is
+ * read out of the live page by `demo-smoke.mjs`.
+ */
+test('the chunks the drawing is given are the chunks the braid reported', async () => {
+  await withRun(
+    async (run) => {
+      /*
+       * Sent until the braid has both produced a key and moved on an epoch,
+       * rather than a fixed number of times.
+       *
+       * A whole epoch, because the counter reset is the case the drawing has to
+       * survive and it happens at the far end of one: the report announcing the
+       * secret that closes an epoch already carries the counts of the epoch that
+       * has begun. A run that stopped at the first completion would leave the
+       * hardest thing this drawing does untested.
+       *
+       * How many messages that takes is the braid's business — it follows from
+       * the chunk size, from the parity a sender carries beyond what its peer
+       * needs, and from which side is encapsulating — so the loop watches for the
+       * conditions instead of counting to a number copied out of the SDK. A
+       * number here would go red about a demo that was drawing correctly the day
+       * the braid was retuned. The bound is far above any epoch the braid runs
+       * and is there so a braid that never completes fails rather than hangs.
+       */
+      const MOST_MESSAGES = 300;
+      const reports = () => run.trace.events.flatMap((event) => event.braid ?? []);
+      const completed = () => reports().some((report) => report.emittedEpochKey);
+      const epochsSeen = () => new Set(reports().map((report) => report.epoch));
+      let sent = 0;
+      while (sent < MOST_MESSAGES && !(completed() && epochsSeen().size > 1)) {
+        sent += 1;
+        await run.send(sent % 2 === 1 ? 'a' : 'b', `${OUTBOUND} (${sent})`);
+      }
+      assert.ok(
+        completed(),
+        `${MOST_MESSAGES} messages under the braid and it never reported an epoch key, so there ` +
+          'is no completion for the drawing to be held against',
+      );
+      /* The counters really do fall back, which is what the drawing has to
+         survive. Asserted rather than assumed, so that a braid which stopped
+         resetting would take this claim out of the comments here and out of
+         `scene-view.ts` with it. */
+      assert.ok(
+        epochsSeen().size > 1,
+        `${sent} messages stayed inside one braid epoch (${[...epochsSeen()].join(', ')}), so ` +
+          'the drawing was never asked to survive a counter reset',
+      );
+
+      const shown = playThrough(sceneCuesFrom(run.trace.events));
+
+      /* The last report of a step, because that is the one the drawing is
+         given: the counts say where the key has got to, and the last is the
+         most recent thing said about it. */
+      const reported = run.trace.events
+        .filter((event) => event.braid?.length)
+        .map((event) => {
+          const latest = event.braid[event.braid.length - 1];
+          return {
+            step: event.step,
+            side: event.actor,
+            carried: latest.chunksCarried,
+            required: latest.chunksRequired,
+            epoch: latest.epoch,
+          };
+        });
+      const drawn = shown.filter((cue) => cue.braid).map((cue) => ({ step: cue.step, ...cue.braid }));
+
+      assert.ok(
+        reported.length > 0,
+        'the recording carries no braid report at all, so this test compared two empty lists',
+      );
+      assert.deepEqual(
+        drawn,
+        reported,
+        'the chunk counts the drawing was given are not the counts the braid reported, so the ' +
+          'relay column would draw a key filling to something no report stated',
+      );
+
+      /* The whole list of reports on a step, not its last one: a completion
+         dropped because a later report in the same step did not repeat it
+         would be the run's one completion lost. */
+      const announced = run.trace.events
+        .filter((event) => event.braid?.some((report) => report.emittedEpochKey))
+        .map((event) => ({ step: event.step, side: event.actor }));
+      const marked = shown
+        .filter((cue) => cue.braidKeyFrom)
+        .map((cue) => ({ step: cue.step, side: cue.braidKeyFrom }));
+      assert.deepEqual(
+        marked,
+        announced,
+        'the completions the drawing was given are not the ones the braid announced, so the mark ' +
+          'under the relay column comes from somewhere other than the report',
+      );
+    },
+    { protocol: { postQuantum: 'required', braid: 'required' } },
+  );
+
+  await withRun(
+    async (run) => {
+      for (let n = 1; n <= 4; n += 1) {
+        await run.send(n % 2 === 1 ? 'a' : 'b', `${OUTBOUND} (${n})`);
+      }
+      assert.deepEqual(
+        run.trace.events.filter((event) => event.braid).map((event) => event.step),
+        [],
+        'the direct mode carries the key whole and reports no chunk, and the recording has chunk ' +
+          'reports in it',
+      );
+      assert.deepEqual(
+        playThrough(sceneCuesFrom(run.trace.events)).filter(
+          (cue) => cue.braid || cue.braidKeyFrom,
+        ),
+        [],
+        'a run that reported no chunk still handed the drawing chunk counts, so the relay column ' +
+          'is deriving them from something other than the braid',
+      );
+    },
+    { protocol: { postQuantum: 'required', braid: 'disabled' } },
+  );
 });
 
 test('reset forgets the conversation and boots fresh devices', async () => {
