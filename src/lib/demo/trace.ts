@@ -98,6 +98,46 @@ export const STEPS: readonly Step[] = [
 export type Measures = Readonly<Record<string, number>>;
 
 /**
+ * What the ML-KEM braid reported about one send or one receive.
+ *
+ * The braid spreads a key agreement across many messages: each message carries
+ * one erasure-coded chunk, and an epoch closes once enough chunks have travelled
+ * both ways. Nothing outside the braid's own state machine can observe that, so
+ * `onBraidProgress` is the only source for these counts and this is a record of
+ * what it said rather than anything this page worked out.
+ *
+ * A separate field rather than a `Measures` entry, because a chunk count is
+ * neither a `performance` measure nor the length of an object — see the note on
+ * `Measures` above.
+ *
+ * `epoch` is the SDK's `bigint` printed. A recording is read by surfaces that
+ * serialize it, and a `bigint` does not survive that.
+ */
+export interface BraidReport {
+  /** Chunks this device emitted plus accepted in `epoch`. */
+  readonly chunksCarried: number;
+  /**
+   * Chunks the transfers open in `epoch` account for.
+   *
+   * Not a target `chunksCarried` settles on. Sending capacity carries parity
+   * beyond what a peer needs to reconstruct, and transfers open as the epoch
+   * advances rather than all at once, so the two counts converge only loosely.
+   */
+  readonly chunksRequired: number;
+  /** The braid epoch the two counts belong to. */
+  readonly epoch: string;
+  /**
+   * Whether the send or receive that raised this produced the epoch secret.
+   *
+   * When that secret also ends the epoch, the state machine has already reset
+   * its counters, so the counts above describe the epoch that has just begun
+   * rather than the one the secret closed. Anything drawing from them has to
+   * survive the two counts falling back to near nothing on this report.
+   */
+  readonly emittedEpochKey: boolean;
+}
+
+/**
  * One thing that really happened.
  *
  * `detail` holds live objects — the `Envelope` the relay stored, the text a
@@ -116,6 +156,21 @@ export interface TraceEvent {
   /** `performance.now()` when this became true. Real, and possibly unordered. */
   readonly atMs: number;
   readonly measures?: Measures;
+  /**
+   * Every braid report the device raised while this step ran, in the order it
+   * raised them.
+   *
+   * On the step rather than on a step of its own. A report is raised inside a
+   * send or a receive, so it belongs to the send or the receive that raised it;
+   * a step of its own would have to sit somewhere in `STEPS`, and there is no
+   * position in a protocol order that a report arriving mid-send and a report
+   * arriving mid-receive can both hold.
+   *
+   * A list, because one operation can raise more than one and a recording that
+   * kept the last of them would be a recording with a report missing from it.
+   * Absent in direct mode, which carries no chunks and raises nothing.
+   */
+  readonly braid?: readonly BraidReport[];
   readonly detail?: unknown;
 }
 

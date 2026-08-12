@@ -181,6 +181,32 @@ const STEP_LIST = STEPS.join(' ');
               <span class="demo-relay-size-figure" data-scene-size-figure />
             </div>
 
+            {/*
+              How much of the post-quantum key has travelled, and who has it.
+
+              The braid spreads one ML-KEM key agreement across many messages, a
+              chunk to a message, so the key is a thing under way for most of a
+              conversation rather than a thing that happens in one. This is where
+              that becomes visible: a fill that grows message by message, and a
+              mark at the point a device reports it produced the epoch secret.
+
+              Every number here is the braid's own, from `onBraidProgress` by way
+              of the recording. Nothing on this page counts chunks — the braid's
+              state machine is the only thing that can see one travel.
+
+              The row is absent under the direct setting rather than empty. That
+              mode sends the key whole in one message and raises no report, so
+              there is nothing to draw and no epoch under way to draw it for.
+            */}
+            <div class="demo-relay-braid" data-scene-braid hidden>
+              <span class="demo-relay-braid-label">key</span>
+              <span class="demo-relay-braid-track">
+                <span class="demo-relay-braid-bar" data-scene-braid-bar data-over="false" />
+              </span>
+              <span class="demo-relay-braid-figure" data-scene-braid-figure />
+              <span class="demo-relay-braid-mark" data-scene-braid-mark hidden />
+            </div>
+
             <pre class="demo-console-hex" data-console-hex hidden></pre>
             <dl class="demo-console-row" data-console-row hidden></dl>
             <p class="demo-console-row-note" data-console-row-note hidden></p>
