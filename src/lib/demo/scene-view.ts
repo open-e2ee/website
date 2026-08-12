@@ -524,8 +524,13 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       if (cue.braid) drawBraid(cue.braid);
       if (cue.braidKeyFrom) markBraidKey(cue.braidKeyFrom);
 
-      if (cue.step === 'devices-ready') {
-        for (const side of ['a', 'b'] as const) deviceState(side).textContent = 'online';
+      /* One device per cue, and the device the recording named. Each client
+         boots on its own and reports itself ready on its own, so there are two
+         of these cues; stamping both sides on each of them drew the pair coming
+         up together on the first and drew nothing at all on the second, which
+         spent a whole dwell on a frame the reader had already seen. */
+      if (cue.step === 'devices-ready' && (cue.actor === 'a' || cue.actor === 'b')) {
+        deviceState(cue.actor).textContent = 'online';
       }
 
       /* The mailbox holds a row only while the relay actually has one: it is

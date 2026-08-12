@@ -504,6 +504,32 @@ const TOGGLES = [
     };
 
     /*
+     * What the curtain says while it is still down.
+     *
+     * Two places, because they answer two different readers. The status line
+     * below the stage keeps the sentences, and it is not where anyone is
+     * looking on the first press: the reader pressed a button in the middle of
+     * a blurred stage, so the button is where the answer has to appear. Each
+     * stage writes both, synchronously at the boundary, so the first of them
+     * lands in the frame the press did rather than after the first chunk has
+     * arrived.
+     *
+     * Three stages, one per await the opening makes: fetching the code,
+     * booting the devices, publishing their keys. Named for what is happening
+     * rather than counted, because a progress figure would be this page's
+     * estimate of work it cannot see the inside of.
+     */
+    /* Read off the button rather than spelled again here. What the control is
+       called is the page's copy and it is written in the markup; a second
+       spelling in the script is a second answer, and the two part company the
+       first time either is edited. */
+    const START_LABEL = startButton.textContent ?? '';
+    const opening = (label: string, sentence: string) => {
+      startButton.textContent = label;
+      say(sentence);
+    };
+
+    /*
      * One event, the first time a sentence completes a round trip on this page,
      * carrying nothing about it — not the sentence, not its length, not the
      * byte counts or the milliseconds printed beside it. The beacon reads
@@ -587,12 +613,22 @@ const TOGGLES = [
      * "Exchange keys" and then "Send" before the chunk lands has asked for one
      * run, and two would boot two pairs of devices against two relays and record
      * both into one drawing.
+     *
+     * Everything the opening does happens in here, behind the curtain, and the
+     * reel is handed no cue until all of it has finished. Publishing used to be
+     * awaited by the press handler *after* this resolved, so the curtain lifted
+     * and the first dwell was armed while the opening was still running: the
+     * reel began on a recording that was still being made, and it shared the
+     * main thread with the work making it. Nothing on the reading clock may run
+     * beside protocol work, whatever that work costs on the day it is measured
+     * — the relay is in this page, and the same steps against a relay across a
+     * network are the case this ordering has to be right for.
      */
     function start(): Promise<void> {
       if (run) return Promise.resolve();
       if (starting) return starting;
 
-      say('Fetching the SDK…');
+      opening('Fetching the SDK…', 'Fetching the SDK…');
       const attempt = (async () => {
         const parts = await chunks();
         loaded = parts;
@@ -627,6 +663,7 @@ const TOGGLES = [
           });
         }
 
+        opening('Waking the devices…', 'Booting both devices and generating their prekeys…');
         /*
          * The protocol options, read here and nowhere later — this is the only
          * moment they can take effect, which is why braid locks once a session
@@ -639,7 +676,7 @@ const TOGGLES = [
          * offering them would have taught a reader something false. See the
          * `TOGGLES` note above.
          */
-        run = await parts.run.startDemoRun({
+        const started = await parts.run.startDemoRun({
           a: names.a,
           b: names.b,
           protocol: {
@@ -647,28 +684,53 @@ const TOGGLES = [
             braid: toggles.braid ? 'required' : 'disabled',
           },
         });
+
+        /* Coming online is publishing: a device puts its public bundle on the
+           relay before anyone has written anything, and the keys are agreed by
+           the first message that needs them. This is the real `syncToServer` on
+           both clients — the same call `send()` would make on its way past. The
+           keys it uploads were made further up: `SignalProtocolClient.create()`
+           generates the one-time prekeys while the device boots, which is why
+           the wait a reader sits through is the stage above this one and why
+           this one still gets a label of its own — it is a step of the protocol
+           and the recording keeps it as one. */
+        opening('Publishing the keys…', 'Putting both public bundles on the relay…');
+        await started.publishBundles();
+
+        /*
+         * The run is only now something the page has, which is what lifts the
+         * curtain: `enable()` reads exactly this. Held back until the opening
+         * has finished rather than set where it is created, so a publish that
+         * threw leaves the reader the button that starts one instead of a lifted
+         * curtain over a scene with nothing behind it.
+         */
+        run = started;
         /*
          * The recording starts before anything can subscribe to it.
          *
-         * `startDemoRun` boots both devices and records `devices-ready` on its
-         * way, so by the time it resolves the first events are already in the
-         * trace and a bare `on()` would never see them. That is not a dropped
-         * frame: `devices-ready` is the step that brings the phones online and
-         * puts the first line in the log, so the demo came up with both devices
+         * The opening above boots both devices and publishes both bundles, and
+         * each of those four steps is recorded as it happens, so by the time
+         * anything here can listen the first events are already in the trace and
+         * a bare `on()` would never see them. That is not four dropped frames:
+         * they are the steps that bring the phones online and put the first keys
+         * on the relay, and without them the demo came up with both devices
          * reading "offline" through a whole successful key exchange.
          *
          * Replayed before subscribing rather than after, and with no `await`
          * between the two, so no event can arrive in the gap and none is seen
          * twice — `on()` delivers only what is appended after it.
          */
-        for (const event of run.trace.events) record(event);
-        run.trace.on(record);
+        for (const event of started.trace.events) record(event);
+        started.trace.on(record);
         everStarted = true;
         say('');
       })();
 
       starting = attempt.finally(() => {
         starting = null;
+        /* The curtain comes back on Reset, and it must not come back carrying
+           the last thing the opening was doing. */
+        startButton.textContent = START_LABEL;
       });
       return starting;
     }
@@ -1068,11 +1130,6 @@ const TOGGLES = [
     startButton.addEventListener('click', () => {
       void guard('the start', async () => {
         await start();
-        /* Coming online is publishing: a device puts its public bundle on the
-           relay before anyone has written anything, and the keys are agreed by
-           the first message that needs them. This is the real `syncToServer` on
-           both clients — the same call `send()` would make on its way past. */
-        await run?.publishBundles();
         say(
           'Both devices are online, public bundles on the relay and the private halves still at ' +
             'home. Type a message on either device — the first one agrees the keys.',
