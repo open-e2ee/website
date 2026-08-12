@@ -425,7 +425,7 @@ function sceneCuesFrom(events) {
       return {
         ...base,
         ...turned,
-        bundles: published.a + published.b,
+        bundles: { a: published.a, b: published.b },
         keys: { a: published.a, b: published.b },
       };
     }
@@ -524,12 +524,12 @@ test('the ratchet each wheel is captioned with is the one the SDK selected', asy
 /**
  * The fields on a scene cue whose number is a count of things rather than a
  * measurement: how many notches a ratchet has turned, how many key bundles the
- * relay is holding, how many key shapes a device has, how many chunks of a
- * post-quantum key have travelled. Bounded by the real protocol state, but not
- * by anything small — a published-key count can run into the hundreds, the same
- * order of magnitude as a byte count — so telling a count from a measurement by
- * its size would not hold. It has to be told by which field it travelled on,
- * which is what this list is for.
+ * relay is holding for each device, how many key shapes a device has, how many
+ * chunks of a post-quantum key have travelled. Bounded by the real protocol
+ * state, but not by anything small — a published-key count can run into the
+ * hundreds, the same order of magnitude as a byte count — so telling a count
+ * from a measurement by its size would not hold. It has to be told by which
+ * field it travelled on, which is what this list is for.
  *
  * `braid` is on the list and is also pinned against the recording separately,
  * further down. Being a count buys it past the scan below; it does not buy it
@@ -667,6 +667,133 @@ test('the only measurement a cue carries is the size the recording measured', as
       measured,
       'the sizes the drawing was given are not the sizes the recording measured, so the relay ' +
         'column would draw a bar to something no event reported',
+    );
+  });
+});
+
+/*
+ * The relay is told what each device published, and never a pooled total.
+ *
+ * A relay stores a bundle per user. It has to: `fetchPreKeyBundle` is asked for
+ * one account's material, and the prekeys it hands out come off that account's
+ * shelf and no one else's. A drawing given one number for both devices cannot
+ * show that — it draws a pile, and a pile is the one thing the relay does not
+ * keep. It also cannot show the next thing the reel has to say, which is that
+ * sending to a peer spends the *peer's* keys and leaves the sender's alone.
+ *
+ * So the count arrives per device, and each side's figure is the figure that
+ * device's own publish reported. Checked over a real recording in the order the
+ * events arrive, because the interesting frame is the one between the two
+ * publishes: one device on its shelf and the other still empty is a state the
+ * pooled figure could not represent at all, and it is the frame that says the
+ * shelves are separate.
+ *
+ * The console's own source is read at the end. `sceneCuesFrom` below is a
+ * hand-maintained replica of `toCue()`, so every assertion above it is an
+ * assertion about the replica; a console left summing the two counts would go on
+ * shipping a pooled figure under a green replica. Reading the source for the sum
+ * is what closes that, and it is a grep rather than a call because a function
+ * inside an `.astro` component's script cannot be imported from Node.
+ */
+test('the relay is given a count per device rather than a pooled total', async () => {
+  await withRun(async (run) => {
+    await run.send('a', OUTBOUND);
+
+    const cues = sceneCuesFrom(run.trace.events);
+    const published = cues.filter((cue) => cue.step === 'bundles-published');
+    assert.equal(
+      published.length,
+      2,
+      'the recording did not publish twice, so there is no per-device count to check',
+    );
+
+    for (const cue of published) {
+      assert.equal(
+        typeof cue.bundles,
+        'object',
+        `the drawing was handed bundles as ${JSON.stringify(cue.bundles)} — one figure for two ` +
+          'shelves, which draws the relay as a pile rather than as a shelf per account',
+      );
+      assert.deepEqual(
+        Object.keys(cue.bundles ?? {}).sort(),
+        ['a', 'b'],
+        'the per-device count does not name both devices',
+      );
+    }
+
+    /* Each side's figure against the publish that reported it, in order. The
+       first cue must still show the second device at nothing: a shelf that
+       filled before its device published would be the pooled figure wearing two
+       names. */
+    const reported = run.trace.events
+      .filter((event) => event.step === 'bundles-published')
+      .map((event) => ({ side: event.actor, keys: event.detail?.publicKeys }));
+    assert.ok(
+      reported.every(({ keys }) => typeof keys === 'number' && keys > 0),
+      `a publish reported no key count: ${JSON.stringify(reported)}`,
+    );
+
+    const running = { a: 0, b: 0 };
+    for (const [index, cue] of published.entries()) {
+      running[reported[index].side] = reported[index].keys;
+      assert.deepEqual(
+        cue.bundles,
+        { ...running },
+        `after ${index + 1} of the two publishes the relay's shelves were drawn as ` +
+          `${JSON.stringify(cue.bundles)} rather than ${JSON.stringify(running)}`,
+      );
+    }
+
+    const consoleSource = await readFile(
+      new URL('../src/components/demo/DemoConsole.astro', import.meta.url),
+      'utf8',
+    );
+    assert.doesNotMatch(
+      consoleSource,
+      /published\.a\s*\+\s*published\.b/,
+      'the console still sums the two devices into one figure, so the replica above is checking ' +
+        'a cue the page no longer produces',
+    );
+  });
+});
+
+/*
+ * The envelope the relay stores is addressed, and the drawing is told to whom.
+ *
+ * A relay holds a mailbox per recipient, and which mailbox a row went into is
+ * not something the scene may work out from a step name — both devices send in
+ * this demo and either may be the one receiving. So the cue that stores a row
+ * has to name the device it is for, and it has to name the far one.
+ *
+ * Pinned here rather than left to the drawing, because the drawing's version of
+ * this is a `querySelector` that cannot fail loudly: a cue with no recipient on
+ * it falls through to whichever mailbox the fallback picks, and the scene draws
+ * a row waiting for the device that sent it while every gate stays green.
+ */
+test('the stored row names the device it is waiting for', async () => {
+  await withRun(async (run) => {
+    await run.send('a', OUTBOUND);
+    await run.send('b', REPLY);
+
+    const stored = sceneCuesFrom(run.trace.events).filter((cue) => cue.step === 'stored-at-relay');
+    assert.equal(stored.length, 2, 'the recording stored a row for only one direction');
+    for (const cue of stored) {
+      assert.ok(
+        cue.to === 'a' || cue.to === 'b',
+        `a stored row was drawn for "${cue.to}" — the relay's mailboxes belong to devices, and a ` +
+          'row with no device on it lands in whichever one the fallback picks',
+      );
+      assert.notEqual(
+        cue.to,
+        cue.from,
+        'a stored row names its sender as its recipient, so the mailbox that lights is the one ' +
+          'the message came from',
+      );
+    }
+    assert.deepEqual(
+      stored.map((cue) => cue.to),
+      ['b', 'a'],
+      'the two directions did not fill the two mailboxes',
     );
   });
 });
