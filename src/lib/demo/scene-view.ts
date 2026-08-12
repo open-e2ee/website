@@ -726,9 +726,14 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
    * rather than a displacement, a reader with motion turned off is shown the key
    * at the device on the frame the step arrives instead of stranded off a slot.
    *
-   * The single forced read between the two writes is what keeps them in separate
-   * frames. Without it the browser coalesces them and the key is simply already
-   * there, which is the same defect the published keys were built around.
+   * The forced read between the two writes is what makes the first of them the
+   * place the second sets off from. It is read off the key itself rather than
+   * off the scene, and the resting state it is read in carries no transition at
+   * all — see the stylesheet. Both halves are load-bearing: without the read the
+   * browser sees one change and the key is simply already at the device, and
+   * with a transition on the resting state the placement animates too and the
+   * flight sets off from wherever that had reached, which is nowhere in
+   * particular.
    */
   function spendKey(journey: { readonly from: Side; readonly to: Side } | null): void {
     if (journey === null) {
@@ -742,7 +747,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     const start = centreOn(spentKey, slot('bundles', journey.from));
     const end = centreOn(spentKey, phone(journey.to));
     spentKey.style.transform = `translate(${start.x}px, ${start.y}px)`;
-    void root.offsetWidth;
+    void spentKey.offsetWidth;
     spentKey.dataset.flying = 'true';
     spentKey.style.transform = `translate(${end.x}px, ${end.y}px)`;
   }

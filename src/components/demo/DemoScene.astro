@@ -1000,13 +1000,25 @@ const STEP_LIST = STEPS.join(' ');
     display: flex;
     pointer-events: none;
     transform: translate(0, 0);
-    transition: transform var(--oe-duration-normal) ease-out;
   }
 
+  /*
+   * The crossing, and the resting state above deliberately has no transition of
+   * its own — which is the published keys' arrangement rather than the
+   * envelope's, and the difference matters here.
+   *
+   * This key is placed and released inside one cue: the script writes the shelf
+   * it starts from, forces the placement out, then writes the device it ends at.
+   * A transition declared on the resting state makes the first of those two
+   * writes an animation as well, and the second retargets it from wherever that
+   * animation had got to — the key sets off from the middle of nowhere at the
+   * speed of the step. The envelope never meets this because it is placed on one
+   * cue and flown on the next.
+   */
   .demo-spent-key[data-flying='true'] {
     /* The step's own dwell, the property the envelope and the published keys
        both fly on: everything crossing this gap crosses it at one speed. */
-    transition-duration: var(--demo-flight-ms, 700ms);
+    transition: transform var(--demo-flight-ms, 700ms) ease-out;
   }
 
   /* The same silhouette the shelves draw, inked the same way: open, because it
