@@ -937,7 +937,11 @@ const TOGGLES = [
         return {
           ...base,
           ...turned,
-          bundles: published.a + published.b,
+          /* A count per device, because the relay draws a shelf per device.
+             The sum is not carried alongside them: a total the drawing does not
+             print is a third figure to keep true, and the one place a total
+             would go is a shelf that belongs to nobody. */
+          bundles: { a: published.a, b: published.b },
           keys: { a: published.a, b: published.b },
         };
       }

@@ -69,12 +69,32 @@ const DEVICE_METRICS = [
   { key: 'trip', label: 'round trip' },
 ] as const;
 
-/* The relay's slots, in the order a message meets them. The bundle shelf is
-   filled once when devices come online; the mailbox holds envelopes until the
-   far device collects them, which is the whole of what a relay is for. */
+/* The two devices, in column order, for the shelves the relay keeps one of per
+   device. Written once so a shelf cannot exist for a device the scene does not
+   draw. */
+const SIDES = ['a', 'b'] as const;
+
+/*
+ * The relay's shelves, in the order a message meets them, and one slot per
+ * device in each.
+ *
+ * A relay does not keep a pile of prekeys and a box of messages. It keeps a
+ * bundle per account — `fetchPreKeyBundle` is asked for one account's material
+ * and spends that account's one-time keys — and a mailbox per recipient, which
+ * is how a message addressed to one device is not offered to the other. The
+ * rack drew one of each, which made the relay a pool: a reader could not see
+ * that publishing fills your own shelf, and could not be shown what the next
+ * step of the story needs, which is that sending to a peer spends the *peer's*
+ * keys.
+ *
+ * The slot labels ship as the neutral column names and are replaced at mount
+ * with the names the session gave the two devices, by the same code that names
+ * the phones. A name typed here would be a second opinion about what a device
+ * is called.
+ */
 const SLOTS = [
   { slot: 'bundles', label: 'public prekeys', empty: 'nothing published' },
-  { slot: 'mailbox', label: 'mailbox', empty: 'nothing waiting' },
+  { slot: 'mailbox', label: 'mailboxes', empty: 'nothing waiting' },
 ] as const;
 
 /*
@@ -133,6 +153,27 @@ const STEP_LIST = STEPS.join(' ');
     COLUMNS.map((column) =>
       column === 'relay' ? (
         <section class="demo-scene-column demo-scene-relay" aria-label="Relay">
+          {/*
+            The network, drawn. One thin rule from each phone to the rack, and
+            nothing else: no head, no dash and no colour of its own. The
+            grammar's own arrows are 2 px of carrier stroke and deliberately
+            unremarkable, because the cargo is what carries the motion — and the
+            cargo here is the envelope that flies over these lines. A dash would
+            be worse than a plain rule rather than merely different: a dashed
+            rule in this system is the trust boundary, and the link between a
+            device and the relay is the one edge in the scene that is *not* one.
+
+            Each rule spans exactly the grid's gap, because the phone fills its
+            column and the rack fills this one, so the gap is the whole of the
+            distance between them at any width. That is also why they are drawn
+            from the relay outwards rather than as elements of the scene: a line
+            positioned against the scene would need to know where the columns
+            landed.
+          */}
+          {SIDES.map((side) => (
+            <span class="demo-relay-link" data-scene-link={side} aria-hidden="true" />
+          ))}
+
           <div class="demo-relay-rack">
             <header class="demo-relay-header">
               <span class="demo-relay-title">relay</span>
@@ -140,11 +181,22 @@ const STEP_LIST = STEPS.join(' ');
             </header>
 
             {SLOTS.map(({ slot, label, empty }) => (
-              <div class="demo-relay-slot" data-scene-slot={slot}>
-                <span class="demo-relay-slot-label">{label}</span>
-                <div class="demo-relay-slot-body" data-scene-slot-body={slot}>
-                  <span class="demo-relay-slot-empty">{empty}</span>
-                </div>
+              <div class="demo-relay-shelf">
+                <span class="demo-relay-shelf-label">{label}</span>
+                {SIDES.map((side) => (
+                  <div class="demo-relay-slot" data-scene-slot={slot} data-scene-side={side}>
+                    <span class="demo-relay-slot-label" data-scene-slot-name={side}>
+                      {LABELS[side]}
+                    </span>
+                    <div
+                      class="demo-relay-slot-body"
+                      data-scene-slot-body={slot}
+                      data-scene-side={side}
+                    >
+                      <span class="demo-relay-slot-empty">{empty}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
@@ -427,11 +479,25 @@ const STEP_LIST = STEPS.join(' ');
   .demo-scene {
     position: relative;
     display: grid;
-    /* The relay is the middle column because the markup writes it between the
-       two devices, not because a third column landed there. All three get the
-       same `1fr`. The phones must match each other, and the relay holds the
-       stored row, which is the widest content in the scene. */
-    grid-template-columns: 1fr minmax(0, 1fr) 1fr;
+    /*
+     * The relay is the middle column because the markup writes it between the
+     * two devices, not because a third column landed there.
+     *
+     * It is narrower than they are, and the fraction is the point. Drawn at the
+     * devices' width the relay was a third peer: a box the same size as the
+     * things either side of it, which is exactly what it is not — it is the
+     * infrastructure between two people, and it holds nothing either of them
+     * would recognise as theirs. Under two thirds of a device it reads as what
+     * it is without becoming an afterthought, and the shelves inside it still
+     * hold five key shapes and a count on one line at the widths the band is
+     * usually read at.
+     *
+     * A fraction rather than a fixed width, so the relation survives every
+     * width: the relay is always the same share narrower, and the stored row
+     * underneath it — the widest content in the column — narrows with it rather
+     * than at one breakpoint.
+     */
+    grid-template-columns: 1fr minmax(0, 0.62fr) 1fr;
     gap: var(--oe-space-6);
     align-items: start;
   }
@@ -737,6 +803,45 @@ const STEP_LIST = STEPS.join(' ');
 
   /* ------------------------------------------------------------- the relay --- */
 
+  /* The relay column is the positioning context for the two network rules
+     below, which are the only things in the scene drawn outside their own
+     column. */
+  .demo-scene-relay {
+    position: relative;
+  }
+
+  /*
+   * A network link: the gap between a phone and the rack, made visible.
+   *
+   * Two pixels of the same ink the rack and the phones are drawn in, which is
+   * what the grammar gives an arrow, and nothing else — the width is the grid's
+   * own gap, so the rule starts at the phone's edge and ends at the rack's at
+   * every width without either of them being measured. `right: 100%` puts the
+   * rule's far edge on this column's left edge and the width carries it back
+   * across the gap; `left: 100%` does the same on the other side.
+   *
+   * The offset is a small constant from the top of the column rather than a
+   * share of either box, because the rack and the phone are different heights
+   * and a share of one lands in empty space beside the other. Both boxes start
+   * at the top of their column — the grid aligns them there — so a rule a
+   * little way down meets a real edge on both sides whatever else changes.
+   */
+  .demo-relay-link {
+    position: absolute;
+    top: 2.4rem;
+    width: var(--oe-space-6);
+    height: 2px;
+    background: var(--oe-diagram-carrier-stroke);
+  }
+
+  .demo-relay-link[data-scene-link='a'] {
+    right: 100%;
+  }
+
+  .demo-relay-link[data-scene-link='b'] {
+    left: 100%;
+  }
+
   .demo-relay-rack {
     border: 2px solid var(--oe-diagram-carrier-stroke);
     border-radius: var(--oe-radius-sm);
@@ -759,6 +864,21 @@ const STEP_LIST = STEPS.join(' ');
 
   .demo-relay-sub {
     font-size: 0.8rem;
+    opacity: 0.7;
+  }
+
+  /* A shelf: what the relay keeps, and one slot on it per device. The shelf is
+     named once and its slots are named for their owners, so the rack says
+     "prekeys, alice's and bob's" rather than saying "prekeys" twice. */
+  .demo-relay-shelf {
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-1);
+  }
+
+  .demo-relay-shelf-label {
+    font-family: var(--oe-font-mono);
+    font-size: 0.7rem;
     opacity: 0.7;
   }
 
@@ -987,6 +1107,14 @@ const STEP_LIST = STEPS.join(' ');
        unrelated boxes, so the journey is told by the relay's slots filling and
        emptying instead. */
     .demo-envelope {
+      display: none;
+    }
+
+    /* And so is the network. Stacked, the gap the rules span is a vertical one
+       and they would run off the sides of the rack into the page's margin,
+       pointing at nothing. The same collapse, for the same reason: a drawing
+       that is only true in three columns is drawn only in three columns. */
+    .demo-relay-link {
       display: none;
     }
   }

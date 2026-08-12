@@ -63,8 +63,20 @@ export interface SceneCue extends Cue {
    * behind it.
    */
   readonly ratchetKind?: 'double' | 'triple';
-  /** How many public bundles the relay is holding. */
-  readonly bundles?: number;
+  /**
+   * How many public values the relay is holding for each device.
+   *
+   * Per device rather than pooled, because that is what a relay keeps: a bundle
+   * per account, spent by the peer who fetches it. One figure for both drew the
+   * relay as a pile, which is a shape the protocol does not have and which
+   * cannot show the two facts either side of it — that publishing fills your own
+   * shelf, and that sending to someone spends theirs.
+   *
+   * Both sides on every one of these, and neither derived: each figure is the
+   * count that device's own publish reported, and the frame between the two
+   * publishes really does draw one shelf filled and one still empty.
+   */
+  readonly bundles?: Readonly<Record<Side, number>>;
   /**
    * How many bytes of ciphertext the relay stored, off the trace's own measure.
    *
@@ -195,6 +207,33 @@ export interface SceneView {
   say(side: Side, text: string, mine: boolean, pending?: boolean): HTMLElement;
 }
 
+/** The two devices, so nothing below iterates a pair it wrote out by hand. */
+const SIDES = ['a', 'b'] as const;
+
+/** What the relay keeps a slot of, per device. */
+const SLOT_KINDS = ['bundles', 'mailbox'] as const;
+type SlotKind = (typeof SLOT_KINDS)[number];
+
+/**
+ * Who a cue's message is for.
+ *
+ * Asked of the cue rather than worked out from the step, because either device
+ * may start a conversation and the relay's mailboxes belong to recipients. The
+ * recorded `to` is the answer wherever the recording names a device; the fall
+ * back to the far side of `from` is for the steps that name the relay as the
+ * destination, where the recipient is still the device that is not sending.
+ */
+function recipientOf(cue: SceneCue): Side {
+  if (cue.to === 'a' || cue.to === 'b') return cue.to;
+  return cue.from === 'b' ? 'a' : 'b';
+}
+
+/** And who it is from, on the same terms. */
+function senderOf(cue: SceneCue): Side {
+  if (cue.from === 'a' || cue.from === 'b') return cue.from;
+  return recipientOf(cue) === 'a' ? 'b' : 'a';
+}
+
 /**
  * Where the envelope rests at each stage of its journey.
  *
@@ -208,6 +247,12 @@ export interface SceneView {
  * Exported so `site-content.test.mjs` can also hold its keys against `STEPS` at
  * run time, which catches the same drift arriving from the other direction: a
  * step removed from the protocol and left behind here.
+ *
+ * `relay` names the rack and not a slot on it, and the coarseness is deliberate.
+ * The relay keeps a mailbox per recipient, so *which* mailbox is a fact about
+ * the message rather than about the step, and `anchorFor` reads it off the cue.
+ * A pair of entries here would put a per-message fact in a per-step table, which
+ * is the shape the old drawing had: one mailbox, belonging to nobody.
  */
 export const ENVELOPE_AT: Record<Step, 'sender' | 'relay' | 'receiver' | null> = {
   idle: null,
@@ -235,10 +280,6 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const payloadText = need<HTMLElement>(root, '[data-scene-envelope-text]');
   const metaTo = need<HTMLElement>(root, '[data-scene-envelope-to]');
   const metaFrom = need<HTMLElement>(root, '[data-scene-envelope-from]');
-  const mailbox = need<HTMLElement>(root, '[data-scene-slot="mailbox"]');
-  const mailboxBody = need<HTMLElement>(root, '[data-scene-slot-body="mailbox"]');
-  const bundleSlot = need<HTMLElement>(root, '[data-scene-slot="bundles"]');
-  const bundleBody = need<HTMLElement>(root, '[data-scene-slot-body="bundles"]');
   const sizeRow = need<HTMLElement>(root, '[data-scene-size]');
   const sizeBar = need<HTMLElement>(root, '[data-scene-size-bar]');
   const sizeFigure = need<HTMLElement>(root, '[data-scene-size-figure]');
@@ -247,6 +288,19 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const braidFigure = need<HTMLElement>(root, '[data-scene-braid-figure]');
   const braidMark = need<HTMLElement>(root, '[data-scene-braid-mark]');
   const keyGlyphTemplate = need<HTMLTemplateElement>(root, '[data-scene-key-glyph]');
+
+  /*
+   * The relay's four slots, addressed by what they hold and whose it is.
+   *
+   * Both halves of the address are asked for. A selector naming only the shelf
+   * would now match two elements and return whichever came first in the markup,
+   * which is a drawing that puts every row in device A's mailbox and never
+   * fails.
+   */
+  const slot = (kind: SlotKind, side: Side) =>
+    need<HTMLElement>(root, `[data-scene-slot="${kind}"][data-scene-side="${side}"]`);
+  const slotBody = (kind: SlotKind, side: Side) =>
+    need<HTMLElement>(root, `[data-scene-slot-body="${kind}"][data-scene-side="${side}"]`);
 
   const phone = (side: Side) => need<HTMLElement>(root, `[data-scene-device="${side}"] .demo-phone`);
   const chat = (side: Side) => need<HTMLElement>(root, `[data-scene-chat="${side}"]`);
@@ -263,8 +317,17 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
 
   let toggles = DEFAULT_TOGGLES;
 
-  for (const side of ['a', 'b'] as const) {
+  /* Every place a device is named, named once from one source. The phone's
+     header and the two slots the relay keeps for that device all say the same
+     word because they are all written here — a slot labelled from the markup
+     would go on calling a device by its column name after the session had given
+     it another. Asked slot by slot rather than swept for, so a rack that lost a
+     label throws at mount instead of shipping an anonymous shelf. */
+  for (const side of SIDES) {
     need<HTMLElement>(root, `[data-scene-name="${side}"]`).textContent = names[side];
+    for (const kind of SLOT_KINDS) {
+      need<HTMLElement>(slot(kind, side), '[data-scene-slot-name]').textContent = names[side];
+    }
   }
 
   /**
@@ -292,9 +355,12 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   function anchorFor(place: 'sender' | 'relay' | 'receiver', cue: SceneCue): HTMLElement {
     /* Which device is the sender is a fact about the cue rather than a fixed
        side, because either device may start a conversation. */
-    const from: Side = cue.from === 'b' ? 'b' : 'a';
-    const to: Side = from === 'a' ? 'b' : 'a';
-    if (place === 'relay') return mailbox;
+    const from = senderOf(cue);
+    const to = recipientOf(cue);
+    /* At the relay the envelope rests in the mailbox it is addressed to, which
+       is the whole reason there are two of them: a row waiting over the
+       sender's own mailbox would draw the relay handing the message back. */
+    if (place === 'relay') return slot('mailbox', to);
     if (place === 'sender') return phone(from);
     /* Opened is where the envelope stops being a separate object: it comes to
        rest over the conversation it is about to become, so the shrink lands in
@@ -434,28 +500,65 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   /*
    * The empty caption is kept and hidden rather than replaced and rebuilt.
    * Writing it here would put the relay's own wording in a second file, where
-   * it would go on saying whatever it said when it was copied — the mailbox
-   * below already does it this way, and the two slots are the same shape.
+   * it would go on saying whatever it said when it was copied — the mailboxes
+   * below already do it this way, and all four slots are the same shape.
+   *
+   * Held per slot because `replaceChildren` below drops it, and a caption
+   * rescued from the wrong slot would be one element trying to be in two.
    */
-  const bundleEmpty = need<HTMLElement>(bundleBody, '.demo-relay-slot-empty');
+  const bundleEmpty: Record<Side, HTMLElement> = {
+    a: need<HTMLElement>(slotBody('bundles', 'a'), '.demo-relay-slot-empty'),
+    b: need<HTMLElement>(slotBody('bundles', 'b'), '.demo-relay-slot-empty'),
+  };
 
-  function holdBundles(count: number): void {
-    bundleBody.replaceChildren(bundleEmpty);
-    for (let index = 0; index < Math.min(count, KEY_MOTIF); index += 1) {
-      const item = document.createElement('span');
-      item.className = 'demo-key';
-      item.dataset.public = 'true';
-      item.append(keyGlyph());
-      bundleBody.append(item);
+  /**
+   * Put each device's published count on that device's own shelf.
+   *
+   * Both shelves on every call, from the pair the cue carries. Drawing only the
+   * side that has just published would leave the other shelf showing whatever it
+   * last held, which is right until a reset and wrong immediately after one; and
+   * a shelf that took its figure from anything but that device's own publish
+   * would be this file doing the relay's accounting.
+   */
+  function holdBundles(counts: Readonly<Record<Side, number>>): void {
+    for (const side of SIDES) {
+      const body = slotBody('bundles', side);
+      const count = counts[side];
+      body.replaceChildren(bundleEmpty[side]);
+      for (let index = 0; index < Math.min(count, KEY_MOTIF); index += 1) {
+        const item = document.createElement('span');
+        item.className = 'demo-key';
+        item.dataset.public = 'true';
+        item.append(keyGlyph());
+        body.append(item);
+      }
+      if (count > 0) {
+        const total = document.createElement('span');
+        total.className = 'demo-relay-slot-count';
+        total.textContent = String(count);
+        body.append(total);
+      }
+      slot('bundles', side).dataset.holding = String(count > 0);
+      bundleEmpty[side].toggleAttribute('hidden', count > 0);
     }
-    if (count > 0) {
-      const total = document.createElement('span');
-      total.className = 'demo-relay-slot-count';
-      total.textContent = String(count);
-      bundleBody.append(total);
+  }
+
+  /**
+   * Light the mailbox the relay is holding a row for, and only that one.
+   *
+   * `null` empties both, which is every step but the one that stores. The two
+   * are written together rather than the holding one alone, because a mailbox
+   * left lit from the previous message would draw a relay holding two rows
+   * through a run that only ever holds one.
+   */
+  function holdMailbox(waiting: Side | null): void {
+    for (const side of SIDES) {
+      const holding = waiting === side;
+      slot('mailbox', side).dataset.holding = String(holding);
+      slotBody('mailbox', side)
+        .querySelector('.demo-relay-slot-empty')
+        ?.toggleAttribute('hidden', holding);
     }
-    bundleSlot.dataset.holding = String(count > 0);
-    bundleEmpty.toggleAttribute('hidden', count > 0);
   }
 
   /**
@@ -570,10 +673,12 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
          has not got yet, and a slot that lit as the envelope set off would be
          claiming a row while the count printed under this column still read
          nothing — the relay contradicting itself within an inch. It also draws
-         better this way: the slot lights as the envelope lands in it. */
-      const holding = cue.step === 'stored-at-relay';
-      mailbox.dataset.holding = String(holding);
-      mailboxBody.querySelector('.demo-relay-slot-empty')?.toggleAttribute('hidden', holding);
+         better this way: the slot lights as the envelope lands in it.
+
+         Which mailbox is the one the cue is addressed to. The relay is holding
+         the row *for* the far device, so a row appearing over the sender's own
+         mailbox would draw the message going nowhere. */
+      holdMailbox(cue.step === 'stored-at-relay' ? recipientOf(cue) : null);
 
       const place = ENVELOPE_AT[cue.step];
       if (place === null) {
@@ -623,9 +728,8 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       envelope.hidden = true;
       envelope.dataset.flying = 'false';
       envelope.style.removeProperty('transform');
-      mailbox.dataset.holding = 'false';
-      mailboxBody.querySelector('.demo-relay-slot-empty')?.removeAttribute('hidden');
-      holdBundles(0);
+      holdMailbox(null);
+      holdBundles({ a: 0, b: 0 });
       /* Back to the state the markup ships in, width and all: a bar left at its
          last length under a hidden row would be the size of a message from a
          run that has been thrown away. */

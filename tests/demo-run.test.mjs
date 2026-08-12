@@ -425,7 +425,7 @@ function sceneCuesFrom(events) {
       return {
         ...base,
         ...turned,
-        bundles: published.a + published.b,
+        bundles: { a: published.a, b: published.b },
         keys: { a: published.a, b: published.b },
       };
     }
@@ -524,12 +524,12 @@ test('the ratchet each wheel is captioned with is the one the SDK selected', asy
 /**
  * The fields on a scene cue whose number is a count of things rather than a
  * measurement: how many notches a ratchet has turned, how many key bundles the
- * relay is holding, how many key shapes a device has, how many chunks of a
- * post-quantum key have travelled. Bounded by the real protocol state, but not
- * by anything small — a published-key count can run into the hundreds, the same
- * order of magnitude as a byte count — so telling a count from a measurement by
- * its size would not hold. It has to be told by which field it travelled on,
- * which is what this list is for.
+ * relay is holding for each device, how many key shapes a device has, how many
+ * chunks of a post-quantum key have travelled. Bounded by the real protocol
+ * state, but not by anything small — a published-key count can run into the
+ * hundreds, the same order of magnitude as a byte count — so telling a count
+ * from a measurement by its size would not hold. It has to be told by which
+ * field it travelled on, which is what this list is for.
  *
  * `braid` is on the list and is also pinned against the recording separately,
  * further down. Being a count buys it past the scan below; it does not buy it
