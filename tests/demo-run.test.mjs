@@ -138,6 +138,81 @@ test('boots two devices and records each one coming up', async () => {
   });
 });
 
+/*
+ * Key generation is the longest thing the opening does, and until it is
+ * recorded the page has nothing to draw over it but a curtain.
+ *
+ * What is asserted here is the shape a bar and a counter need — a per-device
+ * run of reports, each carrying how many keypairs the SDK had finished at that
+ * moment and how many it finished in the end — and not the figures themselves.
+ * The batch sizes are the SDK's to change, and a test that pinned 201 would
+ * fail the day it did, which is the day this drawing is still correct.
+ */
+test('records key generation as it happens, in counts a bar can be drawn from', async () => {
+  await withRun((run) => {
+    const generating = run.trace.events.filter((event) => event.step === 'generating-keys');
+    assert.ok(
+      generating.length > 0,
+      'the run generated hundreds of keypairs and recorded nothing about doing it, so the ' +
+        'reel has no generation step to show',
+    );
+
+    for (const actor of ['a', 'b']) {
+      const reports = generating.filter((event) => event.actor === actor);
+      assert.ok(reports.length > 0, `${actor} generated its keys without recording a report`);
+
+      const counts = reports.map((event) => event.detail.keypairs);
+      assert.deepEqual(
+        counts,
+        [...counts].sort((x, y) => x - y),
+        `${actor}'s recorded keypair counts go backwards: ${counts.join(' → ')}`,
+      );
+      assert.ok(counts[0] > 0, `${actor}'s first report counts no keypair at all`);
+
+      /* The denominator every one of them is drawn against. A report carrying
+         a total it can exceed would draw a bar past the end of its track. */
+      const totals = new Set(reports.map((event) => event.detail.total));
+      assert.equal(
+        totals.size,
+        1,
+        `${actor}'s reports disagree about how many keypairs the device generated: ` +
+          `${[...totals].join(', ')}`,
+      );
+      const [total] = totals;
+      assert.equal(
+        counts[counts.length - 1],
+        total,
+        `${actor}'s last report stops short of its own total, so the bar never fills`,
+      );
+
+      /* Bracketed by marks around generation itself, like every other duration
+         on this trace. */
+      const last = reports[reports.length - 1];
+      assert.ok(last.measures.keygenMs > 0, `${actor} recorded no time spent generating`);
+      assert.ok(last.measures.kyberMs > 0, `${actor} recorded no time spent on post-quantum keys`);
+    }
+
+    /* And it reaches the drawing carrying the figures that were recorded, which
+       is the half of this a page interpolating its own counter would fail. Held
+       as whole lists, like the stored sizes further down: a report losing its
+       count, an extra cue gaining one, and the counts arriving against the
+       wrong device all read as failures rather than as a passing subset. */
+    const cues = playThrough(sceneCuesFrom(run.trace.events)).filter(
+      (cue) => cue.step === 'generating-keys',
+    );
+    assert.deepEqual(
+      cues.map((cue) => ({ side: cue.keygen.side, count: cue.keygen.count, total: cue.keygen.total })),
+      generating.map((event) => ({
+        side: event.actor,
+        count: event.detail.keypairs,
+        total: event.detail.total,
+      })),
+      'the counts the drawing was given are not the counts the recording made, so the bar and ' +
+        'the counter would be drawing figures no report produced',
+    );
+  });
+});
+
 test('exchangeKeys publishes both bundles and establishes a real session', async () => {
   await withRun(async (run) => {
     const before = await run.client('a').hasSession({ userId: 'bob', deviceId: 1 });
@@ -408,6 +483,18 @@ function sceneCuesFrom(events) {
     if (event.step === 'opened' && to) derived[to] += 1;
     const turned = { ratchet: { a: derived.a, b: derived.b } };
 
+    if (event.step === 'generating-keys') {
+      const side = device(event.actor);
+      const keypairs = detail.keypairs;
+      const total = detail.total;
+      return {
+        ...base,
+        ...turned,
+        ...(side && typeof keypairs === 'number' && typeof total === 'number'
+          ? { keygen: { side, count: keypairs, total } }
+          : {}),
+      };
+    }
     if (event.step === 'session-established') {
       const selection = detail.selection;
       return {
@@ -531,11 +618,20 @@ test('the ratchet each wheel is captioned with is the one the SDK selected', asy
  * from a measurement by its size would not hold. It has to be told by which
  * field it travelled on, which is what this list is for.
  *
- * `braid` is on the list and is also pinned against the recording separately,
- * further down. Being a count buys it past the scan below; it does not buy it
- * the right to be a count this page invented.
+ * `braid` and `keygen` are on the list and are also pinned against the
+ * recording separately, further down and further up. Being a count buys them
+ * past the scan below; it does not buy them the right to be counts this page
+ * invented.
+ *
+ * `keygen` was added when key generation became a step of its own. It carries
+ * how many keypairs a device has made and how many it makes in all, which are
+ * counts of a thing the protocol produced in the same sense the shelf counts
+ * are — not durations, and not the byte count's kind of measurement either. The
+ * two durations that step does measure, `keygenMs` and `kyberMs`, stay on the
+ * recording and reach the reader through the readings panel, which is the path
+ * every other millisecond figure on this page takes.
  */
-const PRESENTATION_COUNT_FIELDS = new Set(['ratchet', 'bundles', 'keys', 'braid']);
+const PRESENTATION_COUNT_FIELDS = new Set(['ratchet', 'bundles', 'keys', 'braid', 'keygen']);
 
 /**
  * The one field on a cue that carries a measurement rather than a count: how
@@ -1030,10 +1126,20 @@ test('reset forgets the conversation and boots fresh devices', async () => {
 
     await run.reset();
 
+    /* Boot, and nothing that happened before it. The kinds are checked rather
+       than a literal list of events: each device now reports its key generation
+       on the way to being ready, and how many reports that takes is the SDK's
+       batch size, which this test is not about. What it is about — that no step
+       from the sent message survived — a list of kinds still fails on. */
     assert.deepEqual(
-      stepsOf(run),
-      ['devices-ready', 'devices-ready'],
+      [...new Set(stepsOf(run))],
+      ['generating-keys', 'devices-ready'],
       'the recording kept something from the run before the reset',
+    );
+    assert.equal(
+      stepsOf(run).filter((step) => step === 'devices-ready').length,
+      2,
+      'the reset did not boot both devices',
     );
     assert.notEqual(run.client('a'), firstClient, 'reset reused the old client');
     assert.equal(

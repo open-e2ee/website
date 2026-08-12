@@ -60,9 +60,15 @@ export type Actor = 'a' | 'relay' | 'b';
  * holding it and the far device reporting a decryption. Something really is
  * outstanding for the whole of each, which is why they are steps and not
  * animation frames.
+ *
+ * `generating-keys` is the one step a device records more than once. It is the
+ * SDK's own progress reports during `create()`, one event per report, because
+ * a single event at the end would carry a finished count and nothing to draw
+ * growing.
  */
 export type Step =
   | 'idle'
+  | 'generating-keys'
   | 'devices-ready'
   | 'bundles-published'
   | 'session-established'
@@ -75,6 +81,7 @@ export type Step =
 /** Every step, in protocol order. Derived from nothing — this is the source. */
 export const STEPS: readonly Step[] = [
   'idle',
+  'generating-keys',
   'devices-ready',
   'bundles-published',
   'session-established',

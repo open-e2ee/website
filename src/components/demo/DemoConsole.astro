@@ -312,13 +312,13 @@ const TOGGLES = [
     const sceneRoot = need<HTMLElement>('[data-demo-scene]');
     const logRoot = need<HTMLElement>('[data-demo-log]');
     /*
-     * The readings, keyed the way the scene writes them: a device's four are
-     * `a-publish`, `a-establish`, `a-send`, `a-trip` and the same for `b`, and
-     * the relay has one.
+     * The readings, keyed the way the scene writes them: a device's six are
+     * `a-keygen`, `a-kyber`, `a-publish`, `a-establish`, `a-send`, `a-trip` and
+     * the same for `b`, and the relay has one.
      *
-     * Looked up by key rather than held as five named handles, because the
-     * routing is now by *actor* and a named handle invites the mistake this
-     * replaces. Each of these four measures is recorded by `run.ts` against the
+     * Looked up by key rather than held as named handles, because the routing
+     * is now by *actor* and a named handle invites the mistake this replaces.
+     * Each of these measures is recorded by `run.ts` against the
      * device that did the work — `encryptMs` on the sender, `roundTripMs` on the
      * receiver, `establishMs` on the device that agreed the keys, `publishMs` on
      * the one that published — and the console used to print `encryptMs` under
@@ -333,11 +333,11 @@ const TOGGLES = [
       ]),
     );
     const reading = (key: string): HTMLElement | undefined => readings.get(key);
-    /* Nine: four under each device and one under the relay. A selector that
+    /* Thirteen: six under each device and one under the relay. A selector that
        matched none of them would otherwise print nothing, silently, and a demo
        whose timings never appear looks exactly like one nobody pressed. */
-    if (readings.size !== 9) {
-      throw new Error(`demo console: expected 9 readings in the scene, found ${readings.size}`);
+    if (readings.size !== 13) {
+      throw new Error(`demo console: expected 13 readings in the scene, found ${readings.size}`);
     }
 
     /* The composer belongs to the device now, so there are two of them and
@@ -460,6 +460,15 @@ const TOGGLES = [
        own figure belongs under its own phone — a single shared maximum would put
        one device's work under the other's name. */
     const publishedMs: Record<Side, number> = { a: 0, b: 0 };
+    /* Generation, per device, as a running total of the windows `run.ts`
+       measured. A sum rather than the last figure seen, because a device that
+       tops its keys up during a later sync generated keys twice, and the panel
+       is answering how long this device spent making keys — not how long the
+       most recent batch took. */
+    const generatedMs: Record<Side, { keygen: number; kyber: number }> = {
+      a: { keygen: 0, kyber: 0 },
+      b: { keygen: 0, kyber: 0 },
+    };
 
     /*
      * Public keys the relay is holding for each device, as the relay itself
@@ -767,10 +776,10 @@ const TOGGLES = [
      *
      * Routed by `event.actor`, which is the device `run.ts` recorded the work
      * against, and never by which column the figure would look tidy in. Every
-     * one of these four is a device-side operation: sealing, agreeing a key,
-     * publishing a bundle, and the wait for the far end to answer. None of them
-     * is a network time and none is simulated — the relay is in this tab, which
-     * the note under the inspector says in the reader's own words.
+     * one of these is a device-side operation: making keys, sealing, agreeing a
+     * key, publishing a bundle, and the wait for the far end to answer. None of
+     * them is a network time and none is simulated — the relay is in this tab,
+     * which the note under the inspector says in the reader's own words.
      *
      * A measure recorded against the relay has no device row to go in and is
      * dropped here rather than assigned to a device; the relay's own reading is
@@ -786,6 +795,14 @@ const TOGGLES = [
           const element = reading(`${actor}-${key}`);
           if (element) element.textContent = ms(value);
         };
+        if (typeof measures.keygenMs === 'number') {
+          generatedMs[actor].keygen += measures.keygenMs;
+          put('keygen', generatedMs[actor].keygen);
+        }
+        if (typeof measures.kyberMs === 'number') {
+          generatedMs[actor].kyber += measures.kyberMs;
+          put('kyber', generatedMs[actor].kyber);
+        }
         if (typeof measures.encryptMs === 'number') put('send', measures.encryptMs);
         if (typeof measures.roundTripMs === 'number') put('trip', measures.roundTripMs);
         if (typeof measures.establishMs === 'number') put('establish', measures.establishMs);
@@ -907,6 +924,23 @@ const TOGGLES = [
 
       if (event.step === 'devices-ready') {
         return { ...base, ...turned };
+      }
+      /* Both figures off the report, and the side off the actor the work was
+         recorded against. A cue that carried only the count would leave the bar
+         to divide by a total it had kept for itself, and the day a device
+         generated a different number of keys the bar would be drawn against the
+         other one's. */
+      if (event.step === 'generating-keys') {
+        const side = device(event.actor);
+        const keypairs = detail.keypairs;
+        const total = detail.total;
+        return {
+          ...base,
+          ...turned,
+          ...(side && typeof keypairs === 'number' && typeof total === 'number'
+            ? { keygen: { side, count: keypairs, total } }
+            : {}),
+        };
       }
       /*
        * Which ratchet ran, from the SDK rather than from the switches.
@@ -1216,6 +1250,10 @@ const TOGGLES = [
         rowsHeld = 0;
         publishedMs.a = 0;
         publishedMs.b = 0;
+        for (const side of ['a', 'b'] as const) {
+          generatedMs[side].keygen = 0;
+          generatedMs[side].kyber = 0;
+        }
         published.a = 0;
         published.b = 0;
         derived.a = 0;
