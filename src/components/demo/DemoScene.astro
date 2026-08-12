@@ -439,6 +439,26 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   {/*
+    The prekey the key agreement spends, on its way off the shelf.
+
+    Agreeing a session fetches the far device's bundle, and that fetch really
+    takes material: one EC and one KEM one-time prekey come off that account and
+    are gone. The shelf's count says so on the same frame, and this is the thing
+    that says *where it went* — a count that simply dropped would read as the
+    relay tidying up rather than as the initiating device taking what it needed.
+
+    Outlined, because it is a public half and every public half in this scene is
+    drawn open. It travels the same lane the envelope does, in the other
+    direction, which is the point of it: the reader has just watched the keys go
+    up and now watches one come back down to the device that asked for it.
+
+    Empty in the markup. `scene-view.ts` stamps the glyph from the template
+    above at mount, for the same reason the shelves do — one drawing of a key in
+    this component, never two.
+  */}
+  <div class="demo-spent-key" data-scene-spent-key hidden aria-hidden="true" />
+
+  {/*
     The envelope. One element for the whole journey — sealed at the sending
     device, carried to the relay, collected by the far one, opened there, and
     then folded into that device's conversation as the plaintext bubble appears.
@@ -953,6 +973,56 @@ const STEP_LIST = STEPS.join(' ');
     transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.72);
   }
 
+  /*
+   * The spent prekey, crossing the gap the other way.
+   *
+   * Positioned against the scene rather than living in a column, because it is
+   * the one key in the drawing that belongs to neither end while it is moving —
+   * it leaves the relay's shelf and arrives at a device. That is the envelope's
+   * situation exactly, so it is drawn the envelope's way: absolute in the
+   * scene's own coordinates, with the script writing a measured position into
+   * the transform and the stylesheet owning only how long the crossing takes.
+   *
+   * Deliberately *not* the shelf's displacement idiom above. Those keys start
+   * offset from where they already are and are released home, which is what a
+   * batch arriving looks like; this one has two real places and travels between
+   * them, and writing it as a displacement would have given it a resting
+   * transform that reduced motion then has to argue with. Its start state is a
+   * position, so the blanket duration-zeroing lands it on the device on the
+   * frame the step arrives and nothing here needs a reduced-motion rule — the
+   * same asymmetry the note at the foot of this file draws.
+   */
+  .demo-spent-key {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    display: flex;
+    pointer-events: none;
+    transform: translate(0, 0);
+    transition: transform var(--oe-duration-normal) ease-out;
+  }
+
+  .demo-spent-key[data-flying='true'] {
+    /* The step's own dwell, the property the envelope and the published keys
+       both fly on: everything crossing this gap crosses it at one speed. */
+    transition-duration: var(--demo-flight-ms, 700ms);
+  }
+
+  /* The same silhouette the shelves draw, inked the same way: open, because it
+     is a public half. Written here rather than reached by the shelf's own rule
+     because that rule is scoped to the slot body on purpose — a key outside the
+     rack is exactly what that scoping exists to keep from happening by
+     accident, so this one says so for itself. */
+  .demo-spent-key :global(.demo-key-glyph) {
+    width: 26px;
+    height: 15px;
+    overflow: visible;
+    fill: none;
+    stroke: var(--oe-diagram-carrier-stroke);
+    stroke-width: 2;
+  }
+
   /* ------------------------------------------------------------- the relay --- */
 
   /* The relay column is the positioning context for the two network rules
@@ -1259,6 +1329,14 @@ const STEP_LIST = STEPS.join(' ');
        unrelated boxes, so the journey is told by the relay's slots filling and
        emptying instead. */
     .demo-envelope {
+      display: none;
+    }
+
+    /* The spent prekey is the same three-column idea and goes for the same
+       reason: stacked, its journey from the rack to a phone crosses whatever
+       happens to be between them. The shelf's count still falls, so the frame
+       keeps the fact and loses only the crossing. */
+    .demo-spent-key {
       display: none;
     }
 

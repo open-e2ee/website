@@ -699,6 +699,31 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       mark('end'),
     );
 
+    /*
+     * What the peer's shelf holds now the bundle has been taken off it.
+     *
+     * `fetchPreKeyBundle` above consumed one EC and one KEM one-time prekey
+     * from `to`'s account — atomically, and for real, which is the whole reason
+     * `countPublishedKeys` exists in the form it does rather than calling
+     * `fetchPreKeyBundle` itself. This is the reading that says so.
+     *
+     * Read back off the relay rather than worked out from the published figure.
+     * A subtraction here would be this file asserting how much a fetch costs,
+     * and the cost is not fixed: an account out of one-time prekeys is served
+     * from its last-resort KEM key and loses less. The relay is the only thing
+     * that knows, and it is being asked.
+     *
+     * Outside the marks above, for the reason the publish reads its own count
+     * outside its: `establishMs` is how long agreeing a key took, and a
+     * diagnostic query the agreement never made does not belong inside it.
+     *
+     * Absent when the relay has nothing for that account, and kept out of the
+     * recording rather than reported as a zero — the same rule the publish
+     * follows, and what leaves the shelf standing at its last known figure
+     * instead of drawing an account that has been emptied.
+     */
+    const peerKeys = await countPublishedKeys(relay, to.userId, to.address.deviceId);
+
     /* `establishSession` resolves to nothing, so what the agreement produced is
        read from the event it raised on the way past. Nullable, and left
        nullable: a surface that has no selection to show should show none. What
@@ -713,7 +738,14 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       atMs: performance.now(),
       measures: { establishMs },
       ...braidOf(from),
-      detail: { selection: from.selection() },
+      detail: {
+        selection: from.selection(),
+        /* Named with the account it is a reading of. Which device was spoken to
+           is already on the event as `to`, and a surface could pair the two — but
+           a count and the account it belongs to arriving as one object is what
+           makes them impossible to file against the wrong shelf downstream. */
+        ...(peerKeys === null ? {} : { peer: { side: to.actor, publicKeys: peerKeys } }),
+      },
     });
   }
 

@@ -123,15 +123,24 @@ const RECORDED = '[data-console-recorded]';
    in the arrangement the page draws. */
 const COMPOSE = (side) => `[data-scene-input="${side}"]`;
 const COMPOSE_SEND = (side) => `[data-scene-send="${side}"]`;
-const INPUT = COMPOSE('a');
-const SEND = COMPOSE_SEND('a');
+
+/* Which device starts the conversation, and which one is spoken to. The first
+   sentence is what makes a session, and a session is made out of the *other*
+   device's published bundle — so this pair decides whose shelf is expected to
+   fall by the time the two are talking, and everything below that depends on
+   the direction is written from it rather than from a side letter typed twice. */
+const INITIATOR = 'a';
+const RESPONDER = 'b';
+
+const INPUT = COMPOSE(INITIATOR);
+const SEND = COMPOSE_SEND(INITIATOR);
 
 /* The near device's conversation, and the far one's. A round trip is proved by
    the sentence appearing in the device that did not type it — the claim the
    whole arrangement is built to make, and one that flattened page text cannot
    check, since the sentence is on the page from the moment it is typed. */
-const SENT = '[data-scene-chat="a"]';
-const DECRYPTED = '[data-scene-chat="b"]';
+const SENT = `[data-scene-chat="${INITIATOR}"]`;
+const DECRYPTED = `[data-scene-chat="${RESPONDER}"]`;
 
 /* The names the page is really running the SDK under. Read rather than assumed:
    the component renders them into the headings and into these attributes from
@@ -1019,6 +1028,75 @@ const WATCH_KEYGEN = `(() => {
 })()`;
 
 /*
+ * Watch the two prekey shelves, and keep every figure they are drawn at.
+ *
+ * The decrement this exists to catch is a fact about *two* frames — what the
+ * shelf said when the account published and what it says once the peer's key
+ * agreement has taken a bundle off it — and only one of those survives to the
+ * end of the run. A reading taken afterwards can report the second and has
+ * nothing to hold it against, so the shelves are recorded as they change.
+ *
+ * The step is recorded with each figure rather than the figures alone. A count
+ * that fell is only the right count if it fell on the step that spends one, and
+ * a shelf quietly losing keys on some other frame is a different defect wearing
+ * the same reading.
+ *
+ * Consecutive identical readings are dropped, for the reason the generation
+ * watcher drops them: the scene is mutated many times per cue and a list with
+ * one entry per mutation says nothing a list of changes does not.
+ *
+ * `MutationObserver` rather than a poll, and no clock of its own — the drawing
+ * announces its own step and the reading is taken on that announcement. A poll
+ * fast enough to catch a 1900 ms frame would be a poll deciding how long the
+ * frame lasted.
+ */
+/* The frame each shelf figure is read against: the one where an account's keys
+   arrive on the relay, and the one where a peer takes a bundle off them. Both
+   are the scene's own words, the same strings the recording steps carry. */
+const PUBLISH_STEP = 'bundles-published';
+const ESTABLISH_STEP = 'session-established';
+
+const WATCH_SHELVES = `(() => {
+  const scene = document.querySelector(${JSON.stringify(SCENE)});
+  if (!scene) return false;
+  if (window.__oeShelfWatch) return true;
+  const seen = [];
+  window.__oeShelfWatch = seen;
+  const read = (side) => {
+    const body = scene.querySelector(
+      '[data-scene-slot-body="bundles"][data-scene-side="' + side + '"]',
+    );
+    if (!body) return null;
+    const said = (body.textContent ?? '').replace(/\\s+/g, ' ').trim();
+    const digits = /\\d+/.exec(said);
+    return { said, count: digits ? Number(digits[0]) : null };
+  };
+  new MutationObserver(() => {
+    const step = scene.dataset.sceneState ?? null;
+    const a = read('a');
+    const b = read('b');
+    if (!a || !b) return;
+    const now = { step, a: a.count, b: b.count, saidA: a.said, saidB: b.said };
+    const last = seen[seen.length - 1];
+    if (
+      last &&
+      last.step === now.step &&
+      last.a === now.a &&
+      last.b === now.b
+    ) {
+      return;
+    }
+    seen.push(now);
+  }).observe(scene, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+  });
+  return true;
+})()`;
+
+/*
  * Every box the relay's column draws, measured where it is drawn.
  *
  * Rendered widths and not the values behind them. A width is what a reader sees
@@ -1591,6 +1669,16 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
       );
     }
 
+    /* Before the press for the same reason: the shelves fill on the publish
+       step, which the opening reaches on its own, and the figure they fill to
+       is what the spend later has to be lower than. */
+    if ((await evaluate(cdp, sessionId, WATCH_SHELVES, 'demo')) !== true) {
+      throw new Red(
+        `the scene has no prekey shelf to watch (${SCENE_SLOT_BODY('bundles', 'a')}), so what the ` +
+          `relay holds for each account cannot be followed as it changes`,
+      );
+    }
+
     await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(START)}).click()`, 'demo');
 
     /* Either outcome ends the wait: devices that can be typed at, or a status
@@ -1699,6 +1787,11 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
        making their keys, which happened while the start control was still the
        only thing that had been pressed. */
     const keygen = await evaluate(cdp, sessionId, 'window.__oeKeygenWatch ?? null', 'demo');
+
+    /* And the shelves, every figure they were drawn at from the publish to
+       here. Read at the same point as the generation rows: the first sentence
+       has landed, so the step that spends a bundle is behind us. */
+    const shelves = await evaluate(cdp, sessionId, 'window.__oeShelfWatch ?? null', 'demo');
 
     if (repeat) {
       await type(cdp, sessionId, REPEAT_PROBE);
@@ -1861,6 +1954,7 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
       afterFirst,
       stored,
       keygen,
+      shelves,
       dom,
       geometry,
       braid,
@@ -2342,7 +2436,8 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
 
   checkScene(pass);
   checkKeyGeneration(pass);
-  checkRelayShelves(pass);
+  const spend = checkPrekeySpend(pass);
+  checkRelayShelves(pass, spend);
   checkStoredMailbox(pass);
   if (pass.repeated) checkSceneMoves(pass.afterFirst, pass.dom);
 
@@ -2360,6 +2455,10 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
         'reader touched it, or the demo is not the code under test',
     );
   }
+
+  /* For the PASS line: the two figures one shelf was drawn at, which no reading
+     of the settled page can recover. */
+  return { spend };
 }
 
 /*
@@ -2485,6 +2584,136 @@ function checkScene(pass) {
 }
 
 /*
+ * Agreeing a key spends one of the peer's prekeys, and the shelf says so.
+ *
+ * This is the whole point of publishing a bundle a peer can collect without
+ * asking: the first sentence is encrypted against material the recipient left
+ * on the relay while it was offline, and that material is taken. A shelf that
+ * still reads its published figure after a session exists is drawing a relay
+ * that hands out copies — which is the one thing a prekey is not, since the
+ * whole forward-secrecy argument rests on the one-time keys being one-time.
+ *
+ * Held between two frames rather than at the end. A shelf frozen at its
+ * published count and a shelf that has decremented look identical in a reading
+ * taken once, and the difference is the entire claim: what makes 202 the right
+ * figure is that the same shelf said 204 before the peer collected.
+ *
+ * Both directions are checked, and the second is the one that catches a shelf
+ * redrawn from the wrong place. Only the device that was *spoken to* pays: the
+ * initiator collected a bundle and published nothing new, so a run where both
+ * shelves fall is a scene subtracting from a pooled figure, and one where the
+ * initiator's falls instead is a scene that has the two accounts crossed.
+ *
+ * Then the figure is read a second time out of the settled page, by a path that
+ * shares nothing with the watcher — the end-of-run DOM snapshot rather than the
+ * live observer. A decrement drawn for one frame and quietly restored afterwards
+ * would satisfy the frames above and leave the reader looking at the published
+ * count.
+ */
+function checkPrekeySpend(pass) {
+  const seen = pass.shelves;
+  if (!Array.isArray(seen) || seen.length === 0) {
+    throw new Red(
+      `the reel published two bundles and the scene never drew a prekey shelf — the watcher was ` +
+        `installed before the start control was pressed and recorded nothing.\n` +
+        `  what was recorded: ${JSON.stringify(seen)}`,
+    );
+  }
+
+  const establishedAt = seen.findIndex((entry) => entry.step === ESTABLISH_STEP);
+  if (establishedAt === -1) {
+    throw new Red(
+      `the two devices exchanged a sentence and the scene never drew "${ESTABLISH_STEP}", so ` +
+        `there is no frame on which a bundle is collected.\n` +
+        `  the steps the shelves were drawn on: ${[...new Set(seen.map((e) => e.step))].join(', ')}`,
+    );
+  }
+
+  const before = seen
+    .slice(0, establishedAt)
+    .filter((entry) => entry.step === PUBLISH_STEP)
+    .at(-1);
+  if (!before) {
+    throw new Red(
+      `the scene drew "${ESTABLISH_STEP}" without ever drawing "${PUBLISH_STEP}" first, so the ` +
+        `shelf figures at the key agreement have nothing to be held against — a session cannot ` +
+        `be made from a bundle that was never published.\n` +
+        `  what was recorded: ${JSON.stringify(seen)}`,
+    );
+  }
+
+  const established = seen.filter((entry) => entry.step === ESTABLISH_STEP);
+  const settled = established[0];
+  for (const entry of established) {
+    if (entry.a !== settled.a || entry.b !== settled.b) {
+      throw new Red(
+        `the shelves were drawn at two different pairs of figures on one "${ESTABLISH_STEP}" ` +
+          `frame — ${JSON.stringify([settled.a, settled.b])} and ` +
+          `${JSON.stringify([entry.a, entry.b])}. One frame is one state of the relay; a shelf ` +
+          `moving inside it is drawing a count from something other than the cue.`,
+      );
+    }
+  }
+
+  for (const [label, entry] of [
+    ['publish', before],
+    ['key agreement', settled],
+  ]) {
+    for (const side of [INITIATOR, RESPONDER]) {
+      if (typeof entry[side] !== 'number') {
+        throw new Red(
+          `on the ${label} frame the relay's prekey shelf for device ${side.toUpperCase()} printed ` +
+            `${JSON.stringify(side === INITIATOR ? entry.saidA : entry.saidB)}, which says no ` +
+            `number of keys`,
+        );
+      }
+    }
+  }
+
+  if (settled[RESPONDER] >= before[RESPONDER]) {
+    throw new Red(
+      `device ${RESPONDER.toUpperCase()} published ${before[RESPONDER]} prekeys and its shelf ` +
+        `still reads ${settled[RESPONDER]} once the other device has agreed a key with it. ` +
+        `Establishing a session collects a bundle and the relay does not hand out a second copy ` +
+        `of a one-time key, so the shelf has to have fallen — a shelf holding its published ` +
+        `figure is drawing prekeys as if they were reusable.\n` +
+        `  ${PUBLISH_STEP}:   a ${before[INITIATOR]}, b ${before[RESPONDER]}\n` +
+        `  ${ESTABLISH_STEP}: a ${settled[INITIATOR]}, b ${settled[RESPONDER]}`,
+    );
+  }
+
+  if (settled[RESPONDER] <= 0) {
+    throw new Red(
+      `device ${RESPONDER.toUpperCase()}'s shelf fell from ${before[RESPONDER]} to ` +
+        `${settled[RESPONDER]} on one key agreement — one session takes one bundle, so a shelf ` +
+        `emptied by it is being cleared rather than decremented`,
+    );
+  }
+
+  if (settled[INITIATOR] !== before[INITIATOR]) {
+    throw new Red(
+      `device ${INITIATOR.toUpperCase()} started the conversation and its own shelf moved from ` +
+        `${before[INITIATOR]} to ${settled[INITIATOR]}. The device that speaks first spends the ` +
+        `*other* account's bundle; nobody has collected its own, so a shelf falling on both sides ` +
+        `is one figure being subtracted from a pooled total rather than from an account.\n` +
+        `  ${PUBLISH_STEP}:   a ${before[INITIATOR]}, b ${before[RESPONDER]}\n` +
+        `  ${ESTABLISH_STEP}: a ${settled[INITIATOR]}, b ${settled[RESPONDER]}`,
+    );
+  }
+
+  const drawn = pass.dom.scene?.slots?.bundles?.[RESPONDER];
+  if (drawn && drawn.count !== settled[RESPONDER]) {
+    throw new Red(
+      `the shelf for ${pass.names[RESPONDER]} read ${settled[RESPONDER]} on the key agreement and ` +
+        `reads ${JSON.stringify(drawn.said)} at the end of the reel. The bundle stays collected, ` +
+        `so a count that came back is a decrement drawn for one frame and taken away again.`,
+    );
+  }
+
+  return { side: RESPONDER, before: before[RESPONDER], after: settled[RESPONDER] };
+}
+
+/*
  * The relay keeps an account per device, and the drawing says whose is whose.
  *
  * A relay with one prekey pile and one mailbox draws a service that holds
@@ -2499,12 +2728,16 @@ function checkScene(pass) {
  * after the names changed; a slot labelled with the *other* device's name is
  * the failure this exists for, and it is only visible against the names.
  *
- * The counts are held against what each device says it holds. The public halves
- * on the relay's shelf are the halves of the private keys in that device's
- * column, so the two figures are one figure drawn twice — and the ways a
- * per-device shelf goes wrong all show here: a shelf drawn from a pooled total
- * reads too high, a pair of shelves fed the same figure agrees with one device
- * and not the other, and a shelf that never got a count reads nothing.
+ * The counts are held against what each device says it holds, less whatever the
+ * relay handed out while the reel ran. The public halves on the shelf are the
+ * halves of the private keys in that device's column, and the only thing that
+ * separates the two figures is a peer collecting a bundle — which the reel draws
+ * and `checkPrekeySpend` has already read off it. So the three numbers close,
+ * and the ways a per-device shelf goes wrong all show here: a shelf drawn from a
+ * pooled total reads too high, a pair of shelves fed the same figure agrees with
+ * one device and not the other, a shelf that never got a count reads nothing,
+ * and a shelf that decremented by something other than what was collected reads
+ * as a figure arrived at by arithmetic rather than from the relay.
  *
  * Read at the end of the reel, where the counts are settled and no row is
  * outstanding. The mailboxes are checked here for being empty, which is the
@@ -2512,7 +2745,7 @@ function checkScene(pass) {
  * after the sentence was opened would be drawing a message that is both
  * delivered and waiting.
  */
-function checkRelayShelves(pass) {
+function checkRelayShelves(pass, spend) {
   const scene = pass.dom.scene;
   const slots = scene?.slots;
   if (!slots) {
@@ -2578,14 +2811,18 @@ function checkRelayShelves(pass) {
           `publish the recording carries, so a slot without one never received it.`,
       );
     }
-    if (slot.count !== own) {
+    const collected = side === spend.side ? spend.before - spend.after : 0;
+    if (slot.count !== own - collected) {
       throw new Red(
-        `the relay says it holds ${slot.count} prekeys for ${pass.names[side]} and that device ` +
-          `says it holds ${own} keys. These are the two halves of one set, drawn twice, so they ` +
-          `cannot differ — a shelf showing the pair's total, or the other device's figure, is ` +
-          `what this reads like.\n` +
+        `the relay says it holds ${slot.count} prekeys for ${pass.names[side]}, that device says ` +
+          `it holds ${own} keys, and the reel drew ${collected} of them collected by the peer. ` +
+          `A shelf is the public halves of the keys that device made, less what has been handed ` +
+          `out, so the three cannot disagree — a shelf showing the pair's total, or the other ` +
+          `device's figure, or one moved by an amount nobody collected, is what this reads like.\n` +
           `  ${pass.names.a}: shelf ${slots.bundles.a.count}, device ${scene.deviceKeys.a}\n` +
-          `  ${pass.names.b}: shelf ${slots.bundles.b.count}, device ${scene.deviceKeys.b}`,
+          `  ${pass.names.b}: shelf ${slots.bundles.b.count}, device ${scene.deviceKeys.b}\n` +
+          `  collected on ${ESTABLISH_STEP}: ${spend.before - spend.after} from device ` +
+          `${spend.side.toUpperCase()}`,
       );
     }
   }
@@ -4646,7 +4883,7 @@ async function main() {
     held.cdp = cdp;
 
     const live = await visit(cdp, origin, held, { repeat: true });
-    checkRoundTrip(live, origin, envelopeFields, expected);
+    const { spend } = checkRoundTrip(live, origin, envelopeFields, expected);
 
     /* Block every chunk the interaction asked for, so the dynamic import cannot
        resolve however Vite chose to split it. Taking only the first request
@@ -4746,6 +4983,8 @@ async function main() {
         `  the relay:      ${live.names.a} ${live.dom.scene.slots.bundles.a.count} and ` +
         `${live.names.b} ${live.dom.scene.slots.bundles.b.count} prekeys, each on that device's ` +
         `own shelf,\n` +
+        `                  ${live.names[spend.side]}'s falling ${spend.before} → ${spend.after} ` +
+        `on "${ESTABLISH_STEP}" as the other collected a bundle,\n` +
         `                  and the row it stored waited in ${live.stored.at.addressed}'s mailbox ` +
         `alone (measured ${live.stored.rest.via})\n` +
         `  the braid:      the relay held ${JSON.stringify(braid.whole.stored)} with the switch ` +

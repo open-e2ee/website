@@ -497,11 +497,17 @@ function sceneCuesFrom(events) {
     }
     if (event.step === 'session-established') {
       const selection = detail.selection;
+      const spent = detail.peer;
+      const side = spent?.side === 'a' || spent?.side === 'b' ? spent.side : null;
+      if (side && typeof spent?.publicKeys === 'number') published[side] = spent.publicKeys;
       return {
         ...base,
         ...turned,
         ...(typeof selection?.usedTripleRatchet === 'boolean'
           ? { ratchetKind: selection.usedTripleRatchet ? 'triple' : 'double' }
+          : {}),
+        ...(side && typeof spent?.publicKeys === 'number'
+          ? { bundles: { a: published.a, b: published.b } }
           : {}),
       };
     }
@@ -850,6 +856,119 @@ test('the relay is given a count per device rather than a pooled total', async (
       'the console still sums the two devices into one figure, so the replica above is checking ' +
         'a cue the page no longer produces',
     );
+  });
+});
+
+/*
+ * Agreeing a key spends the peer's shelf, and the shelf is redrawn from the
+ * relay rather than from arithmetic.
+ *
+ * `fetchPreKeyBundle` is documented to consume one EC and one KEM one-time
+ * prekey atomically on every call, and `ensureSession` makes exactly that call.
+ * So the frame that agrees a key is the frame in which the responder's shelf
+ * really does hold less than it published — and until this existed the relay
+ * column drew the published figure for the whole rest of the run, which is the
+ * relay claiming to hold material it had already handed out.
+ *
+ * The count is read back off the relay, and this test is what keeps it that
+ * way. Two consumed prekeys is not a fact about the protocol this page may
+ * assume: a device out of one-time keys is served from its last-resort KEM
+ * prekey and its shelf falls by less, which is a case the demo's own "run out
+ * of prekeys" scenario exists to show. So nothing here asserts a difference of
+ * two, and the swap at the end is what tells a re-read apart from a subtraction
+ * — both agree on a healthy account, and only one of them survives the recording
+ * saying something else.
+ *
+ * The initiator's shelf is checked as hard as the responder's. Spending the
+ * wrong account is the failure a reader would misread as the protocol taking
+ * the sender's keys to talk to someone else, and a drawing that decremented
+ * both would still pass a test that only watched one fall.
+ *
+ * The device's own key row is checked for *not* moving. The public halves on
+ * the relay's shelf and the private halves in the device's column stop being one
+ * figure drawn twice at this step: the relay has handed a bundle out and the
+ * responder, which has not yet seen a message, still holds every private key it
+ * made. A cue that carried `keys` here would draw the responder losing private
+ * keys to a fetch it did not take part in.
+ */
+test("agreeing a key redraws the peer's shelf from the relay's own count", async () => {
+  await withRun(async (run) => {
+    await run.send('a', OUTBOUND);
+
+    const events = run.trace.events;
+    const established = events.find((event) => event.step === 'session-established');
+    assert.ok(established, 'the recording has no key agreement in it, so nothing was spent');
+    assert.deepEqual(
+      { from: established.from, to: established.to },
+      { from: 'a', to: 'b' },
+      'the key agreement did not record who fetched whose bundle, so which shelf was spent is ' +
+        'not a fact the recording carries',
+    );
+
+    const spent = established.detail?.peer;
+    assert.equal(
+      spent?.side,
+      'b',
+      `the key agreement recorded the shelf it spent as ${JSON.stringify(spent?.side)} — the ` +
+        'bundle was fetched for device B, and a reading filed against the other device would ' +
+        "decrement the initiator's own shelf",
+    );
+    assert.equal(
+      typeof spent?.publicKeys,
+      'number',
+      'the key agreement carries no count of what the relay has left, so the shelf can only be ' +
+        'drawn by subtracting a number this page chose',
+    );
+
+    const publishedBy = (side) =>
+      events.find((event) => event.step === 'bundles-published' && event.actor === side)?.detail
+        ?.publicKeys;
+    const [wasA, wasB] = [publishedBy('a'), publishedBy('b')];
+    assert.ok(
+      typeof wasA === 'number' && typeof wasB === 'number',
+      `a publish reported no key count (a: ${wasA}, b: ${wasB}), so there is nothing for the ` +
+        'reading after the fetch to be lower than',
+    );
+    assert.ok(
+      spent.publicKeys < wasB,
+      `device B published ${wasB} public values and the relay still reported ${spent.publicKeys} ` +
+        'after handing that bundle out. Either the reading was taken before the fetch or it is ' +
+        'not a reading at all — the shelf would draw the relay holding keys it has given away.',
+    );
+
+    /* And the drawing is handed that reading, on that step, for that shelf. */
+    const cue = sceneCuesFrom(events).find((cue) => cue.step === 'session-established');
+    assert.deepEqual(
+      cue.bundles,
+      { a: wasA, b: spent.publicKeys },
+      "the shelves drawn as the keys were agreed are not the relay's own two figures",
+    );
+    assert.equal(
+      cue.keys,
+      undefined,
+      "the cue that spends the peer's shelf also moves the device key rows, which would draw a " +
+        'device losing private keys to a fetch it was not part of',
+    );
+
+    /*
+     * The reading is followed rather than reproduced. A page subtracting two
+     * agrees with the relay on every healthy account, so the only way to tell
+     * the two apart is to put a figure on the recording that no subtraction
+     * would produce and require the drawing to print it.
+     */
+    for (const publicKeys of [wasB - 41, 7]) {
+      const swapped = events.map((event) =>
+        event === established
+          ? { ...event, detail: { ...event.detail, peer: { side: 'b', publicKeys } } }
+          : event,
+      );
+      assert.deepEqual(
+        sceneCuesFrom(swapped).find((cue) => cue.step === 'session-established').bundles,
+        { a: wasA, b: publicKeys },
+        `the relay reported ${publicKeys} keys left and the shelf was drawn at something else, ` +
+          'so the figure is being worked out here rather than read',
+      );
+    }
   });
 });
 

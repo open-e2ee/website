@@ -308,6 +308,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const braidFigure = need<HTMLElement>(root, '[data-scene-braid-figure]');
   const braidMark = need<HTMLElement>(root, '[data-scene-braid-mark]');
   const keyGlyphTemplate = need<HTMLTemplateElement>(root, '[data-scene-key-glyph]');
+  const spentKey = need<HTMLElement>(root, '[data-scene-spent-key]');
 
   /*
    * The relay's four slots, addressed by what they hold and whose it is.
@@ -355,25 +356,33 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   }
 
   /**
-   * Put the envelope over an anchor, in the scene's own coordinates.
+   * Where an element has to be translated to sit centred over an anchor, in the
+   * scene's own coordinates.
    *
-   * Both rectangles are read in the same frame, so a page that has scrolled or
-   * a column that has reflowed since the last cue lands correctly rather than
+   * All three rectangles are read in the same frame, so a page that has scrolled
+   * or a column that has reflowed since the last cue lands correctly rather than
    * accumulating drift from a remembered position.
    */
-  function moveTo(anchor: HTMLElement): void {
+  function centreOn(element: HTMLElement, anchor: HTMLElement): { x: number; y: number } {
     const scene = root.getBoundingClientRect();
     const target = anchor.getBoundingClientRect();
-    const box = envelope.getBoundingClientRect();
-    const x = target.left - scene.left + (target.width - box.width) / 2;
-    const y = target.top - scene.top + (target.height - box.height) / 2;
+    const box = element.getBoundingClientRect();
+    return {
+      x: Math.round(target.left - scene.left + (target.width - box.width) / 2),
+      y: Math.round(target.top - scene.top + (target.height - box.height) / 2),
+    };
+  }
+
+  /** Put the envelope over an anchor. */
+  function moveTo(anchor: HTMLElement): void {
+    const { x, y } = centreOn(envelope, anchor);
     /*
      * Scale is a variable the stylesheet owns and position is a number this
      * function measures, and they compose in one transform because the browser
      * gives an element only one. Writing `translate()` alone here would drop the
      * landing's scale every time the envelope moved.
      */
-    envelope.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px) scale(var(--demo-envelope-scale, 1))`;
+    envelope.style.transform = `translate(${x}px, ${y}px) scale(var(--demo-envelope-scale, 1))`;
   }
 
   function anchorFor(place: 'sender' | 'relay' | 'receiver', cue: SceneCue): HTMLElement {
@@ -431,6 +440,13 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   function keyGlyph(): Node {
     return keyGlyphTemplate.content.cloneNode(true);
   }
+
+  /* The travelling prekey is stamped once, at mount, rather than built and
+     thrown away per crossing. It is one key and it makes one journey per
+     session, so there is nothing for a rebuild to keep in step — and a node that
+     exists from mount has a box to be measured against on the frame it is
+     wanted, which a node created inside the cue would not. */
+  spentKey.append(keyGlyph());
 
   function fillKeys(side: Side, count: number): void {
     const list = keyList(side);
@@ -696,6 +712,42 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   }
 
   /**
+   * Send the prekey the key agreement spent from the peer's shelf to the device
+   * that asked for it.
+   *
+   * `null` takes it off the scene, which is every step but the one that agrees a
+   * key. A key left standing would be a prekey that is both spent and still in
+   * the air, and it would sit over the columns for the whole of the message that
+   * follows.
+   *
+   * Placed at its source, released to its destination — the envelope's mechanism
+   * rather than the shelf's. Both places are real and measured in the same frame,
+   * so the crossing survives any width; and because the start state is a position
+   * rather than a displacement, a reader with motion turned off is shown the key
+   * at the device on the frame the step arrives instead of stranded off a slot.
+   *
+   * The single forced read between the two writes is what keeps them in separate
+   * frames. Without it the browser coalesces them and the key is simply already
+   * there, which is the same defect the published keys were built around.
+   */
+  function spendKey(journey: { readonly from: Side; readonly to: Side } | null): void {
+    if (journey === null) {
+      spentKey.hidden = true;
+      return;
+    }
+    /* Unhidden before either rectangle is taken: a `hidden` element has no box,
+       and a journey measured from one is a journey from the scene's corner. */
+    spentKey.dataset.flying = 'false';
+    spentKey.hidden = false;
+    const start = centreOn(spentKey, slot('bundles', journey.from));
+    const end = centreOn(spentKey, phone(journey.to));
+    spentKey.style.transform = `translate(${start.x}px, ${start.y}px)`;
+    void root.offsetWidth;
+    spentKey.dataset.flying = 'true';
+    spentKey.style.transform = `translate(${end.x}px, ${end.y}px)`;
+  }
+
+  /**
    * Draw how far the braid's key has travelled, and print the counts.
    *
    * Both numbers are the braid's own. The only thing worked out here is the
@@ -769,6 +821,31 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
         const publisher = cue.actor === 'a' || cue.actor === 'b' ? cue.actor : undefined;
         holdBundles(cue.bundles, cue.step === 'bundles-published' ? publisher : undefined);
       }
+      /*
+       * A key crosses back on the step that agrees a session, and only when that
+       * step brought shelf counts with it.
+       *
+       * The counts are the condition rather than the step's name alone, because
+       * they are what says the relay was re-read: `run.ts` keeps an unobserved
+       * reading out of the recording, and a key flying off a shelf whose figure
+       * had not moved would be a spend the drawing invented.
+       *
+       * Both devices come off the cue's own `from` and `to`, which this step
+       * always carries — it is recorded as the initiator agreeing a key *with*
+       * the responder. So neither `senderOf` nor `recipientOf` reaches its
+       * fallback here, which matters: on a step with nothing travelling between
+       * devices the fallback answers for both sides and would send a key off
+       * whichever shelf it happened to pick.
+       *
+       * Off the responder's shelf and to the initiator's phone, which is the
+       * direction the protocol went: the initiating device fetched the bundle,
+       * and the material it took was the other account's.
+       */
+      spendKey(
+        cue.step === 'session-established' && cue.bundles !== undefined
+          ? { from: recipientOf(cue), to: senderOf(cue) }
+          : null,
+      );
       /* The size arrives on the step that stores the row and stays after it,
          for the reason the row below the column does: the far device collecting
          empties the mailbox and the relay still has what it kept. */
@@ -855,6 +932,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       envelope.style.removeProperty('transform');
       holdMailbox(null);
       holdBundles({ a: 0, b: 0 });
+      spendKey(null);
       /* Back to the state the markup ships in, width and all: a bar left at its
          last length under a hidden row would be the size of a message from a
          run that has been thrown away. */

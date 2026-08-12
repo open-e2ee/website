@@ -957,13 +957,36 @@ const TOGGLES = [
        * holds the event itself against a real key agreement so that the absent
        * case cannot quietly become the normal one.
        */
+      /*
+       * The peer's shelf, as the relay reports it once the bundle has been
+       * taken off.
+       *
+       * Written into the same running count the publishes fill, so the shelf
+       * carries one figure per account for the whole run rather than a
+       * published one that a later step contradicts. It is the relay's own
+       * reading — `run.ts` queries the account after the fetch — and the shelf
+       * that falls is named on the reading rather than inferred from `to`.
+       *
+       * `keys` is deliberately not re-stated here. The device's column counts
+       * private halves and the responder has not touched a key: the relay
+       * handed out a bundle it was already holding, and the device it belongs
+       * to has not so much as seen a message yet. This is the one step at which
+       * the two figures are honestly different, which is the fact the frame
+       * exists to show.
+       */
       if (event.step === 'session-established') {
         const selection = detail.selection as { usedTripleRatchet?: unknown } | null | undefined;
+        const spent = detail.peer as { side?: unknown; publicKeys?: unknown } | undefined;
+        const side = spent?.side === 'a' || spent?.side === 'b' ? spent.side : null;
+        if (side && typeof spent?.publicKeys === 'number') published[side] = spent.publicKeys;
         return {
           ...base,
           ...turned,
           ...(typeof selection?.usedTripleRatchet === 'boolean'
             ? { ratchetKind: selection.usedTripleRatchet ? ('triple' as const) : ('double' as const) }
+            : {}),
+          ...(side && typeof spent?.publicKeys === 'number'
+            ? { bundles: { a: published.a, b: published.b } }
             : {}),
         };
       }
