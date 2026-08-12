@@ -3600,3 +3600,54 @@ test('the scene places the envelope at every step the run records', async () => 
     assert.ok(PLACES.has(place), `${step} puts the envelope at "${place}", which is not a place`);
   }
 });
+
+test('the spent key carries its transition on the flying state, never at rest', async () => {
+  /*
+   * The key that leaves the shelf when a session is agreed is placed and
+   * released inside one cue: the script writes the shelf it starts from, forces
+   * that placement out with a reflow, then writes the device it ends at. That
+   * only draws a crossing while the resting state has no transition of its own.
+   *
+   * Give `.demo-spent-key` a `transition: transform …` and the first of those
+   * two writes becomes an animation as well — from wherever the element last
+   * was, which at mount is the scene's top-left corner — and the second write
+   * retargets it from mid-flight. The key then sets off from the corner instead
+   * of from the shelf. Every gate stays green: the element is displayed, the
+   * counts are right, the arrival is right, and the only wrong thing is the
+   * half-second nobody asserts on.
+   *
+   * That is not hypothetical — it is what shipped in the first commit of this
+   * feature and it was found by sampling the live transform in a browser, not
+   * by any check here. The envelope never meets it because it is placed on one
+   * cue and flown on the next, so the arrangement this asserts is the published
+   * keys' rather than the envelope's.
+   *
+   * `cssRules` rather than `ruleFor`, because the selector legitimately carries
+   * two rules — the base one and the `display: none` that collapses it in the
+   * stacked layout — and `ruleFor` throws on a second. Every rule under the bare
+   * selector is checked, which is the point: a transition added inside the media
+   * block would be just as wrong.
+   */
+  const scene = await read('../src/components/demo/DemoScene.astro');
+  const rules = cssRules(scene);
+
+  const resting = rules.filter((rule) => rule.selector === '.demo-spent-key');
+  assert.ok(resting.length > 0, 'the scene no longer styles .demo-spent-key at all');
+  for (const rule of resting) {
+    assert.doesNotMatch(
+      rule.body,
+      /transition/,
+      'the spent key declares a transition on its resting state, so the placement write ' +
+        'animates too and the crossing starts from wherever the key last was',
+    );
+  }
+
+  const flying = rules.filter((rule) => rule.selector === ".demo-spent-key[data-flying='true']");
+  assert.equal(flying.length, 1, 'the flying state is no longer one rule');
+  assert.match(
+    flying[0].body,
+    /transition:\s*transform\s+var\(--demo-flight-ms/,
+    'the flying state no longer flies on --demo-flight-ms, so the key crosses the gap at a ' +
+      'speed unrelated to the step holding it',
+  );
+});
