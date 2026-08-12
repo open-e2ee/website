@@ -2730,6 +2730,31 @@ function checkKeyGeneration(pass) {
 }
 
 /*
+ * The lengths the generation rows were seen at, for the summary.
+ *
+ * The first part-way figure and the last are the two the check turns on: a page
+ * that only ever drew a finished bar cannot produce the first, and one that
+ * stopped short cannot produce the second. Printing them means the PASS line
+ * carries the observation rather than the assertion's own wording.
+ */
+function generationSaid(pass, names) {
+  return ['a', 'b']
+    .map((side) => {
+      const drawn = pass.keygen.filter((entry) => entry.side === side);
+      const figures = drawn.map((entry) => entry.figure);
+      const partway = figures.find((figure) => {
+        const parsed = KEYGEN_FIGURE.exec(figure);
+        return parsed && parsed[1] !== parsed[2];
+      });
+      return (
+        `${names[side]} drew "${partway}" then "${figures[figures.length - 1]}" ` +
+        `over ${drawn.length} length(s)`
+      );
+    })
+    .join(', ');
+}
+
+/*
  * The stored row waits in the mailbox it is addressed to.
  *
  * The step the relay takes a row on is the middle of the reel and is gone by
@@ -4717,6 +4742,7 @@ async function main() {
         `  the scene:      finished on "${live.dom.scene.state}", both wheels captioned ` +
         `"${live.dom.scene.a.label}", ${live.dom.scene.a.keys} and ${live.dom.scene.b.keys}, ` +
         `turned ${live.dom.scene.a.turns} and ${live.dom.scene.b.turns} time(s)\n` +
+        `  generation:     ${generationSaid(live, live.names)} — each bar's length its own count\n` +
         `  the relay:      ${live.names.a} ${live.dom.scene.slots.bundles.a.count} and ` +
         `${live.names.b} ${live.dom.scene.slots.bundles.b.count} prekeys, each on that device's ` +
         `own shelf,\n` +
