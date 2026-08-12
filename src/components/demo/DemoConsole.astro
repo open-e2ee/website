@@ -131,15 +131,17 @@ const TOGGLES = [
       open.
 
       A native `<details>` instead of a scripted popover. It opens, closes and
-      answers the keyboard with no script at all. This page measures the script
-      it ships before the reader touches anything.
+      answers the keyboard on its own. The script adds one behaviour the
+      element does not have: a press outside it closes it, because a panel
+      that floats over the scene reads as a popover and a popover that stays
+      up under an outside press reads as stuck.
 
       Everything inside ships disabled and the script enables it. A control that
       does nothing is worse than a control that is absent. The reader presses it
       and nothing happens. That reads as a broken demo, not as a chunk that is
       still arriving.
     */}
-    <details class="demo-console-settings">
+    <details class="demo-console-settings" data-console-settings>
       <summary class="demo-console-settings-summary">
         <svg viewBox="0 0 24 24" aria-hidden="true" class="demo-console-settings-mark">
           <path
@@ -306,6 +308,7 @@ const TOGGLES = [
     const relayEmpty = need<HTMLElement>('[data-console-relay-empty]');
     const recorded = need<HTMLElement>('[data-console-recorded]');
     const toggleBox = need<HTMLFieldSetElement>('[data-console-toggles]');
+    const settings = need<HTMLDetailsElement>('[data-console-settings]');
     const sceneRoot = need<HTMLElement>('[data-demo-scene]');
     const logRoot = need<HTMLElement>('[data-demo-log]');
     /*
@@ -1170,6 +1173,16 @@ const TOGGLES = [
         relayEmpty.hidden = false;
         say('Reset. Fresh devices, a fresh relay, nothing recorded — braid is open again.');
       });
+    });
+
+    /* The settings float over the scene, so a press outside them puts them
+       away. On `pointerdown`, before the press lands, so the press still does
+       whatever it was for; a press inside the panel — the summary included,
+       whose own toggle then runs — leaves it alone. */
+    document.addEventListener('pointerdown', (event) => {
+      if (settings.open && event.target instanceof Node && !settings.contains(event.target)) {
+        settings.open = false;
+      }
     });
 
     /* The console is interactive from here, so the recording stops being what

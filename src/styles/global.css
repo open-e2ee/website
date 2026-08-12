@@ -1451,11 +1451,17 @@ a:hover {
 
 /* The band the homepage gives the demo: its one paragraph of lead, then the
    console. Not `.stack`, whose `align-items: flex-start` would shrink the
-   console to its content width instead of letting it take the band. */
+   console to its content width instead of letting it take the band.
+
+   The band itself is a flex item of `.container.stack`, so the same
+   `flex-start` acts on it from above. Without the stretch, the band sits at
+   its content width, and that width changes the moment a run starts and the
+   scene fills — the whole console widens under the reader's press. */
 .demo-band {
   display: flex;
   flex-direction: column;
   gap: var(--oe-space-4);
+  align-self: stretch;
 }
 
 /*
