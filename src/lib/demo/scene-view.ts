@@ -36,6 +36,9 @@
  */
 
 import type { Actor, Cue, Step } from './trace';
+/* The freeze-and-release both morphs ride comes from the same module the
+   mobile figure's morphs do, so the idiom cannot fork between the scenes. */
+import { endsMorph, freezeAndRelease, releaseBox } from './box-morph';
 /* One tooth per key's click under the pawl: the angle comes from the same
    module that draws the teeth, so the two cannot disagree. */
 import { DEGREES_PER_KEY } from './drawing';
@@ -522,34 +525,31 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   let morphingBubble: HTMLElement | null = null;
 
   /**
-   * The freeze-and-release both morphs share, the mobile scene's idiom: pin
-   * the envelope's box on `from` — position as a transform, size inline —
-   * commit it, then arm the morph state and write `to`, so position, width
-   * and height cross in one transition and the tile *reshapes* between the
-   * two boxes instead of being a scaled copy of itself. Corners rather than
-   * centres, because the far end of a morph is another element's box, not an
-   * anchor to hover over: the envelope is absolutely positioned at the
-   * scene's origin, so translating by a rect's offset puts the tile's corner
-   * exactly on the rect's.
+   * A morph between the tile and a bubble's box, on the shared
+   * freeze-and-release (`box-morph.ts`). Corners rather than centres,
+   * because the far end of a morph is another element's box, not an anchor
+   * to hover over: the envelope is absolutely positioned at the scene's
+   * origin, so translating by a rect's offset puts the tile's corner
+   * exactly on the rect's. The arm step flips `data-flying` and stamps the
+   * kind, which is what keys the stylesheet's morph transition.
    */
   function morphBetween(kind: 'from-bubble' | 'to-bubble', from: DOMRect, to: DOMRect): void {
     const scene = root.getBoundingClientRect();
     const place = (box: DOMRect): string =>
       `translate(${Math.round(box.left - scene.left)}px, ${Math.round(box.top - scene.top)}px)` +
       ' scale(var(--demo-envelope-scale, 1))';
+    const frame = (box: DOMRect): { transform: string; width: number; height: number } => ({
+      transform: place(box),
+      width: Math.round(box.width),
+      height: Math.round(box.height),
+    });
     envelope.dataset.flying = 'false';
     /* A morph is a gesture at a device, not travel, so it carries no glow. */
     envelope.dataset.crossing = 'false';
-    envelope.style.transform = place(from);
-    envelope.style.width = `${Math.round(from.width)}px`;
-    envelope.style.height = `${Math.round(from.height)}px`;
-    /* Read back so the freeze is committed before the release. */
-    void envelope.offsetWidth;
-    envelope.dataset.flying = 'true';
-    envelope.dataset.morph = kind;
-    envelope.style.transform = place(to);
-    envelope.style.width = `${Math.round(to.width)}px`;
-    envelope.style.height = `${Math.round(to.height)}px`;
+    freezeAndRelease(envelope, frame(from), frame(to), () => {
+      envelope.dataset.flying = 'true';
+      envelope.dataset.morph = kind;
+    });
   }
 
   /**
@@ -592,8 +592,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     const kind = envelope.dataset.morph;
     if (kind === undefined && morphingBubble === null) return;
     delete envelope.dataset.morph;
-    envelope.style.removeProperty('width');
-    envelope.style.removeProperty('height');
+    releaseBox(envelope);
     if (kind === 'to-bubble') envelope.hidden = true;
     if (morphingBubble !== null) {
       delete morphingBubble.dataset.arriving;
@@ -663,12 +662,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
        a jump. */
     if (event.target !== envelope) return;
     if (envelope.dataset.morph !== undefined) {
-      if (
-        event.propertyName === 'transform' ||
-        event.propertyName === 'width' ||
-        event.propertyName === 'height'
-      )
-        settleMorph();
+      if (endsMorph(event)) settleMorph();
       return;
     }
     if (event.propertyName !== 'offset-distance' && event.propertyName !== 'transform') return;

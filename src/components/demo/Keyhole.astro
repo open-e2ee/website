@@ -1,0 +1,45 @@
+---
+/*
+ * The keyhole, drawn and turned in one place.
+ *
+ * Both envelopes wear a lock rail of these, and the mobile figure's used to
+ * promise it was "the wide envelope's verbatim" — a promise kept by hand.
+ * Now there is one stamp: the geometry comes from `drawing.ts`, the quarter
+ * turn lives in this file's own style, and the scenes only say where a
+ * keyhole goes and which data attribute their script finds it by (passed
+ * through as props onto the svg).
+ *
+ * `data-locked` is the state, the rotation is the animation: the key
+ * arrives, the hole turns, and the receiver's key turns it back. The
+ * barrel-and-ward group rotates around the glyph's centre; the svg itself
+ * never changes shape.
+ */
+import { KEYHOLE_BARREL, KEYHOLE_VIEWBOX, KEYHOLE_WARD_PATH } from '../../lib/demo/drawing';
+---
+
+<svg class="demo-keyhole" viewBox={KEYHOLE_VIEWBOX} data-locked="false" {...Astro.props}>
+  <g class="demo-keyhole-turn">
+    <circle cx={KEYHOLE_BARREL.cx} cy={KEYHOLE_BARREL.cy} r={KEYHOLE_BARREL.r}></circle>
+    <path d={KEYHOLE_WARD_PATH}></path>
+  </g>
+</svg>
+
+<style>
+  .demo-keyhole {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    max-width: none;
+  }
+
+  .demo-keyhole-turn {
+    fill: currentColor;
+    transform-box: view-box;
+    transform-origin: 12px 12px;
+    transition: transform var(--oe-duration-slow) cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  .demo-keyhole[data-locked='true'] .demo-keyhole-turn {
+    transform: rotate(90deg);
+  }
+</style>

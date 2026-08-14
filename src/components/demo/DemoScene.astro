@@ -3,9 +3,6 @@ import { STEPS } from '../../lib/demo/trace';
 import {
   KEY_GLYPH_PATH,
   KEY_GLYPH_VIEWBOX,
-  KEYHOLE_BARREL,
-  KEYHOLE_VIEWBOX,
-  KEYHOLE_WARD_PATH,
   WHEEL_HUB,
   WHEEL_PATH,
   WHEEL_PAWL_PATH,
@@ -13,6 +10,8 @@ import {
   WHEEL_SPOKE_PATH,
   WHEEL_VIEWBOX,
 } from '../../lib/demo/drawing';
+import Keyhole from './Keyhole.astro';
+import SealedLock from './SealedLock.astro';
 
 /*
  * The scene: two devices with the relay between them, and a message that
@@ -688,15 +687,7 @@ const STEP_LIST = STEPS.join(' ');
           `data-sealed` switch the value uses, so there is one source of truth.
         */}
         <span class="demo-envelope-meta-redacted" aria-label="sender withheld">
-          <svg class="demo-envelope-meta-lock" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M7 10V7a5 5 0 0 1 10 0v3"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-              stroke-linecap="round"></path>
-            <rect x="4.5" y="10" width="15" height="10.5" rx="2" fill="currentColor"></rect>
-          </svg>
+          <SealedLock />
         </span>
       </span>
     </div>
@@ -718,17 +709,7 @@ const STEP_LIST = STEPS.join(' ');
       {
         LOCKS.map(({ lock, label }) => (
           <span class="demo-envelope-lockset">
-            <svg
-              class="demo-keyhole"
-              viewBox={KEYHOLE_VIEWBOX}
-              data-scene-keyhole={lock}
-              data-locked="false"
-            >
-              <g class="demo-keyhole-turn">
-                <circle cx={KEYHOLE_BARREL.cx} cy={KEYHOLE_BARREL.cy} r={KEYHOLE_BARREL.r} />
-                <path d={KEYHOLE_WARD_PATH} />
-              </g>
-            </svg>
+            <Keyhole data-scene-keyhole={lock} />
             <span class="demo-envelope-lock-label">{label}</span>
           </span>
         ))
@@ -2430,11 +2411,6 @@ const STEP_LIST = STEPS.join(' ');
     display: inline-flex;
   }
 
-  .demo-envelope-meta-lock {
-    width: 9px;
-    height: 9px;
-  }
-
   /* The braid strip: how much of the post-quantum key material rides in this
      envelope. Hidden unless the run put a report on the cue, so the tile only
      grows the row when braiding is on. */
@@ -2454,9 +2430,8 @@ const STEP_LIST = STEPS.join(' ');
 
   /* The lock rail. Two keyholes on the ciphertext fill — one for each key
      agreement family the message key derives from — and the keyholes are what
-     the flying message keys aim at. The barrel-and-stem group rotates a
-     quarter turn around the glyph's centre when its lock engages, which is
-     the whole locking animation: the key arrives, the hole turns. */
+     the flying message keys aim at. The keyhole itself, its size and its
+     quarter turn included, is `Keyhole.astro`'s. */
   .demo-envelope-locks {
     display: flex;
     justify-content: space-evenly;
@@ -2470,22 +2445,6 @@ const STEP_LIST = STEPS.join(' ');
     flex-direction: column;
     align-items: center;
     gap: 1px;
-  }
-
-  .demo-keyhole {
-    width: 15px;
-    height: 15px;
-  }
-
-  .demo-keyhole-turn {
-    fill: currentColor;
-    transform-box: view-box;
-    transform-origin: 12px 12px;
-    transition: transform var(--oe-duration-slow) cubic-bezier(0.22, 0.8, 0.24, 1);
-  }
-
-  .demo-keyhole[data-locked='true'] .demo-keyhole-turn {
-    transform: rotate(90deg);
   }
 
   .demo-envelope-lock-label {

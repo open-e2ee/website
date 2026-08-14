@@ -40,9 +40,6 @@
 import {
   KEY_GLYPH_PATH,
   KEY_GLYPH_VIEWBOX,
-  KEYHOLE_BARREL,
-  KEYHOLE_VIEWBOX,
-  KEYHOLE_WARD_PATH,
   WHEEL_HUB,
   WHEEL_PATH,
   WHEEL_PAWL_PATH,
@@ -50,6 +47,8 @@ import {
   WHEEL_SPOKE_PATH,
   WHEEL_VIEWBOX,
 } from '../../lib/demo/drawing';
+import Keyhole from './Keyhole.astro';
+import SealedLock from './SealedLock.astro';
 
 interface Props {
   a: string;
@@ -311,15 +310,7 @@ const LOCKS = [
       <span class="demo-mobile-envelope-meta-row">
         <span class="demo-mobile-envelope-meta-key">from</span>
         <span class="demo-mobile-envelope-meta-redacted" aria-label="sender withheld">
-          <svg class="demo-mobile-envelope-meta-lock" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M7 10V7a5 5 0 0 1 10 0v3"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-              stroke-linecap="round"></path>
-            <rect x="4.5" y="10" width="15" height="10.5" rx="2" fill="currentColor"></rect>
-          </svg>
+          <SealedLock />
         </span>
       </span>
     </span>
@@ -327,17 +318,7 @@ const LOCKS = [
       {
         LOCKS.map(({ kind, label }) => (
           <span class="demo-mobile-envelope-lockset">
-            <svg
-              class="demo-keyhole"
-              data-mobile-keyhole={kind}
-              data-locked="false"
-              viewBox={KEYHOLE_VIEWBOX}
-            >
-              <g class="demo-keyhole-turn">
-                <circle cx={KEYHOLE_BARREL.cx} cy={KEYHOLE_BARREL.cy} r={KEYHOLE_BARREL.r} />
-                <path d={KEYHOLE_WARD_PATH} />
-              </g>
-            </svg>
+            <Keyhole data-mobile-keyhole={kind} />
             <span class="demo-mobile-envelope-lock-label">{label}</span>
           </span>
         ))
@@ -399,6 +380,9 @@ const LOCKS = [
 
 <script>
   import type { MobileFrame, MobileSide } from '../../lib/demo/mobile-reel';
+  /* The freeze-and-release the tile's swaps and morphs ride comes from the
+     same module the wide scene's morphs do, so the idiom cannot fork. */
+  import { endsMorph, freezeAndRelease, releaseBox } from '../../lib/demo/box-morph';
   import { DEGREES_PER_KEY } from '../../lib/demo/drawing';
   import { humanBytes } from '../../lib/demo/units';
 
@@ -757,15 +741,16 @@ const LOCKS = [
 
     /*
      * The tile's two faces differ in size as well as dress, so the swap is
-     * measured — FLIP on the envelope's own box: freeze the outgoing size,
-     * swap the faces, and let the box travel to the incoming one. The open
-     * tile visibly contracts into the chip the relay sees, and the chip grows
-     * back into the tile at the unseal; the centre-anchored placement holds
-     * it in place while it resizes, and `overflow: hidden` clips the face
-     * that is leaving. Inline, because width and height are auto in every
-     * resting state — `settleReface` hands the box back to the stylesheet,
-     * and the flight and placement writers call it first so a swap cut short
-     * can never leave a frozen size on a traveller.
+     * measured — the shared freeze-and-release (`box-morph.ts`) on size
+     * alone: freeze the outgoing box, swap the faces, and let the box
+     * travel to the incoming one. The open tile visibly contracts into the
+     * chip the relay sees, and the chip grows back into the tile at the
+     * unseal; the centre-anchored placement holds it in place while it
+     * resizes, and `overflow: hidden` clips the face that is leaving.
+     * Inline, because width and height are auto in every resting state —
+     * `settleReface` hands the box back to the stylesheet, and the flight
+     * and placement writers call it first so a swap cut short can never
+     * leave a frozen size on a traveller.
      */
     function reface(swap: () => void) {
       const before = envelope.getBoundingClientRect();
@@ -776,20 +761,19 @@ const LOCKS = [
         refaceSettled();
         return;
       }
-      envelope.style.width = `${before.width}px`;
-      envelope.style.height = `${before.height}px`;
       envelope.style.transitionProperty = 'width, height';
       envelope.style.transitionDuration = '0s';
-      void envelope.offsetWidth;
-      envelope.style.setProperty('transition-duration', 'var(--oe-duration-slow, 400ms)');
-      envelope.style.width = `${after.width}px`;
-      envelope.style.height = `${after.height}px`;
+      freezeAndRelease(
+        envelope,
+        { width: before.width, height: before.height },
+        { width: after.width, height: after.height },
+        () => envelope.style.setProperty('transition-duration', 'var(--oe-duration-slow, 400ms)'),
+      );
       refacing = true;
     }
 
     function settleReface() {
-      envelope.style.removeProperty('width');
-      envelope.style.removeProperty('height');
+      releaseBox(envelope);
       envelope.style.removeProperty('transition-property');
       envelope.style.transitionDuration = '0s';
     }
@@ -819,23 +803,21 @@ const LOCKS = [
 
     /*
      * The morph between the tile and a chat bubble, both directions — the
-     * FLIP idiom `reface` uses, with the position along for the ride: freeze
-     * the box and transform at `from`, force the read, and send all three to
-     * `to` on the slow token. `data-morph` marks the envelope mid-shape so
-     * the transition's end knows a morph from a face swap.
+     * shared freeze-and-release `reface` rides, with the position along for
+     * the ride: all three box properties cross to `to` on the slow token.
+     * `data-morph` marks the envelope mid-shape so the transition's end
+     * knows a morph from a face swap.
      */
     function morphBox(from: DOMRect, to: DOMRect) {
       const home = root.getBoundingClientRect();
       envelope.style.transitionProperty = 'transform, width, height';
       envelope.style.transitionDuration = '0s';
-      envelope.style.transform = centreAt(from, home);
-      envelope.style.width = `${from.width}px`;
-      envelope.style.height = `${from.height}px`;
-      void envelope.offsetWidth;
-      envelope.style.setProperty('transition-duration', 'var(--oe-duration-slow, 400ms)');
-      envelope.style.transform = centreAt(to, home);
-      envelope.style.width = `${to.width}px`;
-      envelope.style.height = `${to.height}px`;
+      freezeAndRelease(
+        envelope,
+        { transform: centreAt(from, home), width: from.width, height: from.height },
+        { transform: centreAt(to, home), width: to.width, height: to.height },
+        () => envelope.style.setProperty('transition-duration', 'var(--oe-duration-slow, 400ms)'),
+      );
     }
 
     /* The decrypted envelope becomes the message: the bubble is born
@@ -872,15 +854,12 @@ const LOCKS = [
     }
 
     envelope.addEventListener('transitionend', (event) => {
+      /* The tile's own landings only. `transitionend` bubbles, and the
+         keyholes on the face run transitions of their own — the defect the
+         wide scene paid for once already. */
+      if (event.target !== envelope) return;
       if (envelope.dataset.morph) {
-        /* Any of the morph's three properties ends it — a bubble the tile's
-           width would run no width transition at all. */
-        if (
-          event.propertyName === 'width' ||
-          event.propertyName === 'height' ||
-          event.propertyName === 'transform'
-        )
-          finishMorph();
+        if (endsMorph(event)) finishMorph();
         return;
       }
       if (!refacing) return;
@@ -2334,12 +2313,6 @@ const LOCKS = [
     color: var(--oe-surface);
   }
 
-  .demo-mobile-envelope-meta-lock {
-    width: 9px;
-    height: 9px;
-    flex: none;
-  }
-
   /* The lock rail, the wide tile's: a keyhole for each key agreement family
      with the family's name under it, so the rail and the wheel train below
      legend each other. Standing from the tile's first frame to its last —
@@ -2415,27 +2388,6 @@ const LOCKS = [
 
   .demo-mobile-envelope[data-sealed='true'] .demo-mobile-envelope-size {
     display: block;
-  }
-
-  /* The keyholes, the wide envelope's verbatim: `data-locked` is the state,
-     the quarter turn is the animation, and the barrel turns back when the
-     receiver's keys land. Inked in the tile's own text colour. */
-  .demo-keyhole {
-    width: 15px;
-    height: 15px;
-    flex: none;
-    max-width: none;
-  }
-
-  .demo-keyhole-turn {
-    fill: currentColor;
-    transform-box: view-box;
-    transform-origin: 12px 12px;
-    transition: transform var(--oe-duration-slow) cubic-bezier(0.22, 0.8, 0.24, 1);
-  }
-
-  .demo-keyhole[data-locked='true'] .demo-keyhole-turn {
-    transform: rotate(90deg);
   }
 
   /* The crossing wears the scene's grammar: accent border and glow while the

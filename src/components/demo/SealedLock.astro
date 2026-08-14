@@ -1,0 +1,31 @@
+---
+/*
+ * The sealed sender's lock, stamped once for both envelopes.
+ *
+ * The `from` the relay would read gives way to this glyph, so the reader
+ * sees one idea — "the relay is not allowed to know" — applied in the same
+ * dress wherever it appears. The wrapping scene owns when the redaction
+ * shows (the wide console's `data-sealed` lens, the mobile figure's
+ * standing default) and carries the accessible label; this file owns only
+ * what the lock looks like.
+ */
+import { SEALED_LOCK_BODY, SEALED_LOCK_SHACKLE_PATH, SEALED_LOCK_VIEWBOX } from '../../lib/demo/drawing';
+---
+
+<svg class="demo-sealed-lock" viewBox={SEALED_LOCK_VIEWBOX} aria-hidden="true">
+  <path
+    d={SEALED_LOCK_SHACKLE_PATH}
+    fill="none"
+    stroke="currentColor"
+    stroke-width="3"
+    stroke-linecap="round"></path>
+  <rect {...SEALED_LOCK_BODY} fill="currentColor"></rect>
+</svg>
+
+<style>
+  .demo-sealed-lock {
+    width: 9px;
+    height: 9px;
+    flex: none;
+  }
+</style>

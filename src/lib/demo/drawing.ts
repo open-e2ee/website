@@ -71,9 +71,20 @@ export const WHEEL_PAWL_PIN = { cx: 18.8, cy: 1, r: 1.1 } as const;
 /*
  * The keyhole: a round barrel over a flared ward, the shape a key glyph is
  * for. It never changes shape — `data-locked` is the state and the quarter
- * turn is the animation, both the stamping component's to own; this module
- * holds only what must not fork between the wide envelope and the mobile one.
+ * turn is the animation, and both live with the one stamp (`Keyhole.astro`)
+ * that draws these coordinates for both envelopes.
  */
 export const KEYHOLE_VIEWBOX = '0 0 24 24';
 export const KEYHOLE_BARREL = { cx: 12, cy: 9, r: 5.5 } as const;
 export const KEYHOLE_WARD_PATH = 'M10.4 12.5 L8 21 H16 L13.6 12.5 Z';
+
+/*
+ * The sealed sender's lock: the redaction both envelopes wear where the
+ * `from` the relay would read used to be. A stroked shackle over a filled
+ * body — the conventional padlock, because this one glyph stands for "not
+ * allowed to know" and convention is what makes it legible at 9px. Stamped
+ * once, by `SealedLock.astro`.
+ */
+export const SEALED_LOCK_VIEWBOX = '0 0 24 24';
+export const SEALED_LOCK_SHACKLE_PATH = 'M7 10V7a5 5 0 0 1 10 0v3';
+export const SEALED_LOCK_BODY = { x: 4.5, y: 10, width: 15, height: 10.5, rx: 2 } as const;
