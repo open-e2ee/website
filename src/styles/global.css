@@ -2400,6 +2400,22 @@ table.data td {
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);
   color: var(--oe-muted);
+  white-space: nowrap;
+}
+
+/*
+ * "Device Store" and "Relay Server" want 89.3px each, and beside a combobox
+ * holding its 14ch cap that is the width the row can spare from about 480px of
+ * viewport up. Below that the label is squeezed — 67.2px at 430, 51.1px at 390,
+ * 44.6px at 320 — so the qualifier is dropped and the label falls back to the
+ * word that carries the choice. "Store" and "Relay" are 37px and fit the
+ * narrowest cell whole, which is the point: a name that shortens beats one that
+ * wraps into a second line or is cut off mid-word.
+ */
+@media not all and (min-width: 30rem) {
+  .code-select-qualifier {
+    display: none;
+  }
 }
 
 /*
@@ -2498,7 +2514,22 @@ table.data td {
  */
 .terminal-line {
   display: flex;
-  align-items: baseline;
+  /*
+   * Centred, not `baseline`, which is the right rule for a row of text and the
+   * wrong one for this row: the copy button is 24px of drawing with no text in
+   * it, so the browser synthesises its baseline at its bottom margin edge and
+   * hangs the command off that. Every phone size the fit term below solves to
+   * leaves the row taller than its text, and under `baseline` all of that slack
+   * lands beneath the command — 0px above and 10.6px below at 320, 8px at 360,
+   * 6.1px at 390, 3.5px at 430, nothing at desktop where the text is the
+   * tallest item. The command rode furthest from the middle exactly where it is
+   * smallest.
+   *
+   * Centring costs nothing that baseline was buying: the `$` and the command
+   * are one font at one size on one line, so their baselines agree under either
+   * rule, and the button is the only item that moves.
+   */
+  align-items: center;
   gap: var(--oe-space-3);
   padding: var(--oe-space-4);
   /*

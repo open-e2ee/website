@@ -131,13 +131,22 @@ import {
       the accessibility tree it came out as "Store, combobox, quickstart.ts",
       which is not that sentence — a description slot filled with a bare
       filename is noise in the one place a screen reader user cannot skim past.
-      The selects are inside the panel and labelled "Store" and "Relay"; the
-      example itself is a labelled group. The relationship was already there. */}
+      The selects are inside the panel and labelled "Device Store" and "Relay
+      Server"; the example itself is a labelled group. The relationship was
+      already there.
+
+      Each name is longer than the key it sets on purpose: `storage` and `relay`
+      are what the code calls them, and the toolbar is read before the code is.
+      The qualifier is a span of its own because that is what a narrow phone
+      drops: `global.css` hides it where the full name would not fit beside the
+      combobox, and the label falls back to "Store" and "Relay" — the words a
+      reader can still act on — rather than wrapping into a second line or
+      pushing the combobox down to one. */}
   <div class="code-toolbar">
     <span class="code-filename">quickstart.ts</span>
     <span class="code-adapters">
       <label class="code-select">
-        <span class="code-select-label">Store</span>
+        <span class="code-select-label"><span class="code-select-qualifier">Device </span>Store</span>
         <select data-adapter="storage">
           {
             storageOptions.map((option) => (
@@ -150,7 +159,7 @@ import {
         </select>
       </label>
       <label class="code-select">
-        <span class="code-select-label">Relay</span>
+        <span class="code-select-label">Relay<span class="code-select-qualifier"> Server</span></span>
         <select data-adapter="relay">
           {
             relayOptions.map((option) => (

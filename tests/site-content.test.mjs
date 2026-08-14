@@ -799,13 +799,39 @@ test('shows the example on a phone rather than offering it', async () => {
   assert.match(narrow, /\.code-adapters \{[^}]*margin-inline-start:\s*0/);
 
   /* And the two comboboxes divide that row rather than keeping their natural
-     width, which is what stops them wrapping into two more rows: at 320 they
-     need 304px against 254px of room. `flex: 1 1 0` with `min-width: 0` is
-     both halves — the basis is what makes the split even, and without the
-     minimum a flex item will not shrink below its content at all. */
+     width, which is what stops them wrapping into two more rows. `flex: 1 1 0`
+     with `min-width: 0` is both halves — the basis is what makes the split
+     even, and without the minimum a flex item will not shrink below its
+     content at all. Each half is 123px at 320. */
   assert.match(narrow, /\.code-select \{[^}]*flex:\s*1 1 0/);
   assert.match(narrow, /\.code-select \{[^}]*min-width:\s*0/);
   assert.match(narrow, /\.code-select select \{[^}]*width:\s*100%/);
+
+  /* The label stays beside its combobox at every width; what gives way is the
+     name. Each one is a qualifier plus the word that carries the choice, and
+     below 30rem the qualifier is dropped, so "Device Store" reads "Store" and
+     "Relay Server" reads "Relay". The full names want 89.3px each, which the
+     cell can spare from 480px of viewport up; below that the label is squeezed
+     to 67.2px at 430 and 44.6px at 320, where the whole name would wrap or be
+     cut mid-word. `nowrap` is the guard on the wrapping half of that: without
+     it a squeezed label takes a second line instead of shortening. */
+  const labelRules = cssRules(css).filter((rule) => rule.selector === '.code-select-label');
+  assert.equal(labelRules.length, 1, `${labelRules.length} rules style the label`);
+  assert.match(labelRules[0].body, /white-space:\s*nowrap/);
+  const dropsQualifier = cssRules(css).some(
+    (rule) => rule.selector === '.code-select-qualifier' && /display:\s*none/.test(rule.body),
+  );
+  assert.ok(dropsQualifier, 'nothing drops the qualifier, so the full name has to fit at 320 or wrap');
+
+  /* To the end of the line: each label is written on one, and the nesting means
+     a non-greedy match for `</span>` would stop inside it. */
+  const labels = (await read('../src/components/HeroSnippet.astro')).match(
+    /<span class="code-select-label">.*/g,
+  );
+  assert.deepEqual(labels, [
+    '<span class="code-select-label"><span class="code-select-qualifier">Device </span>Store</span>',
+    '<span class="code-select-label">Relay<span class="code-select-qualifier"> Server</span></span>',
+  ]);
 });
 
 test('centres the hero at the phone’s width as well as the desktop’s', async () => {
@@ -2248,6 +2274,29 @@ test('sets the install command a step above the code it sits over', async () => 
     fitAt(358) < 15,
     'the command now fits *and* outranks the code at 390 — if that is real the trade above is ' +
       'obsolete and this whole block should be re-derived rather than adjusted',
+  );
+
+  /* The other half of solving the size: a row that is taller than its own text
+   * has to say where the slack goes. `align-items: baseline` put all of it
+   * under the command, because the copy button is 24px of drawing whose
+   * baseline the browser synthesises at its bottom edge — measured at 320, 0px
+   * above the command and 10.6px below it in a 24px content box, and the gap
+   * closes as the fit term grows: 8px at 360, 6.1px at 390, 3.5px at 430, none
+   * at desktop where the text is the tallest item. The smaller the command, the
+   * further it rode from the middle of the panel it is the only thing in.
+   *
+   * Asserted as "not baseline" as well as "centre", because this row keeps a
+   * flex rule either way and the failure is a value, not a missing property. */
+  const terminalRow = ruleIn(stripped, '\\.terminal-line');
+  assert.match(
+    terminalRow,
+    /align-items:\s*center/,
+    'the terminal row does not centre its items; at a phone’s font size the command sits at the top of the panel',
+  );
+  assert.doesNotMatch(
+    terminalRow,
+    /align-items:\s*baseline/,
+    'the copy button has no text, so its synthesised baseline hangs the command off the bottom of a 24px box',
   );
 
   /* And a count, because "no block resized either" and "every block agreed" are
