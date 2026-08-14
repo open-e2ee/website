@@ -882,7 +882,12 @@ const LOCKS = [
        stands through both faces, the wide tile's rule, so there is nothing
        to fold — the barrels' angle is the whole difference. */
     function setKeyholes(locked: boolean) {
-      for (const kind of KINDS) keyholes[kind].dataset.locked = String(locked);
+      for (const kind of KINDS) {
+        keyholes[kind].dataset.locked = String(locked);
+        /* Asserting the state interrupts any running turn, and a cancelled
+           transition fires no `transitionend` to put the worked light out. */
+        delete keyholes[kind].dataset.turning;
+      }
       envelope.dataset.sealed = String(locked);
     }
 
@@ -931,6 +936,7 @@ const LOCKS = [
       key.addEventListener('transitionend', (event) => {
         if (event.propertyName !== 'transform' || key.dataset.flying !== 'true') return;
         keyholes[kind].dataset.locked = key.dataset.landLocked ?? 'false';
+        keyholes[kind].dataset.turning = 'true';
         key.hidden = true;
         delete key.dataset.flying;
       });
@@ -948,6 +954,9 @@ const LOCKS = [
       const turn = keyholes[kind].querySelector<SVGGElement>('.demo-keyhole-turn');
       turn?.addEventListener('transitionend', (event) => {
         if (event.propertyName !== 'transform') return;
+        /* This barrel stopped: its worked light goes out with the motion,
+           whatever the pair's siblings are still doing below. */
+        delete keyholes[kind].dataset.turning;
         if (KINDS.some((k) => !messageKeys[k].hidden)) return;
         if (
           KINDS.some((k) =>
@@ -990,6 +999,7 @@ const LOCKS = [
         wireRoute(bundleGlyphs[spend.from], wheels[spend.to], spend.to),
       );
       void spentKey.offsetWidth;
+      spentKey.dataset.landSide = spend.to;
       spentKey.dataset.flying = 'true';
       /* Slower than the envelope's cap, the wide spend's proportion:
          this is the one flight that crosses the whole figure. */
@@ -997,9 +1007,23 @@ const LOCKS = [
       spentKey.style.setProperty('offset-distance', '100%');
     }
 
+    /* Landing is where the prekey does its work — the wide scene's absorb:
+       the key vanishes into the wheel it was flown to and the train lights
+       as deriving. A key that stood on the wheel for the rest of the dwell
+       read as delivered and then lost, not used. The side comes off the key
+       itself, the message keys' `landLocked` idiom, because the landing
+       outlives the call that launched it. */
+    spentKey.addEventListener('transitionend', (event) => {
+      if (event.propertyName !== 'offset-distance' || spentKey.dataset.flying !== 'true') return;
+      const side = spentKey.dataset.landSide;
+      parkSpentKey();
+      if (side === 'a' || side === 'b') trains[side].dataset.deriving = 'true';
+    });
+
     function parkSpentKey() {
       spentKey.hidden = true;
       delete spentKey.dataset.flying;
+      delete spentKey.dataset.landSide;
       spentKey.style.removeProperty('offset-path');
       spentKey.style.removeProperty('offset-distance');
     }

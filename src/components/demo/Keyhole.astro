@@ -42,4 +42,14 @@ import { KEYHOLE_BARREL, KEYHOLE_VIEWBOX, KEYHOLE_WARD_PATH } from '../../lib/de
   .demo-keyhole[data-locked='true'] .demo-keyhole-turn {
     transform: rotate(90deg);
   }
+
+  /* A keyhole being worked — a key landed and the barrel is turning,
+     either direction. Lit like the other working parts (the deriving
+     readout, the busy lights): the accent, with the glow that lifts it
+     off the rail's dark ground. The scenes set the state at the key's
+     landing and clear it when the turn's transition ends. */
+  .demo-keyhole[data-turning='true'] {
+    color: var(--oe-accent);
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--oe-accent) 55%, transparent));
+  }
 </style>

@@ -758,6 +758,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       if (event.propertyName !== 'transform' || key.dataset.flying !== 'true') return;
       const landLocked = key.dataset.landLocked ?? 'false';
       keyhole(kind).dataset.locked = landLocked;
+      keyhole(kind).dataset.turning = 'true';
       key.hidden = true;
       key.dataset.flying = 'false';
       key.style.removeProperty('transform');
@@ -1226,9 +1227,26 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   const prefersStill = (): boolean =>
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /** Set both keyholes at once. The pair lock and unlock together or not at all. */
+  /** Set both keyholes at once. The pair lock and unlock together or not at all.
+      Asserting the state also puts out the worked light: a cue that writes the
+      holes directly interrupted whatever turn was running, and a cancelled
+      transition fires no `transitionend` to put it out. */
   function setKeyholes(locked: boolean): void {
-    for (const kind of LOCK_KINDS) keyhole(kind).dataset.locked = String(locked);
+    for (const kind of LOCK_KINDS) {
+      keyhole(kind).dataset.locked = String(locked);
+      delete keyhole(kind).dataset.turning;
+    }
+  }
+
+  /* The worked light goes out when the barrel stops — the turn's own end,
+     not the landing's, so the accent spans exactly the quarter turn the
+     reader is watching. */
+  for (const kind of LOCK_KINDS) {
+    const turn = keyhole(kind).querySelector<SVGGElement>('.demo-keyhole-turn');
+    turn?.addEventListener('transitionend', (event) => {
+      if (event.propertyName !== 'transform') return;
+      delete keyhole(kind).dataset.turning;
+    });
   }
 
   /**
