@@ -149,7 +149,13 @@ export const MOBILE_DWELL_MS: Readonly<Record<MobileFrame['kind'], number>> = {
   cross: 2200,
   stored: 1800,
   deliver: 1400,
-  opened: 3600,
+  /* The one departure from the console's table: the opened frame pays the
+     packet's expansion and the tile's fold into the bubble inside its own
+     dwell — beats the wide scene spreads over neighbouring steps — so it
+     holds 200ms longer than the console's `opened` to fit them around the
+     key flights. Sized like the console sizes its dwells: the sum of the
+     frame's beats, not a round number. */
+  opened: 3800,
 };
 
 /**

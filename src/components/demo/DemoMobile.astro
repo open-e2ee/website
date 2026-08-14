@@ -398,6 +398,15 @@ const LOCKS = [
   const FLIGHT_SHARE = 0.75;
   const FLIGHT_CAP_MS = 1600;
 
+  /* The message keys' own cap — the wide scene's glide at this scene's
+     scale. The wide keys cross ~310px in their 1600ms cap; the wheel-to-
+     keyhole throw here is ~182px, so 950ms is the same apparent speed.
+     The cap also has to leave the opened frame its fixed beats — the
+     packet's expansion, the barrel turn, the face swap, the reveal hold
+     and the fold — which is what rules out carrying `FLIGHT_CAP_MS`
+     whole. */
+  const MESSAGE_KEY_CAP_MS = 950;
+
   /* How long the opened sentence stands on the tile before it folds into the
      chat — the reader's beat to see the decryption finish before the envelope
      becomes the message, the wide scene's reveal beat on this figure. */
@@ -884,7 +893,7 @@ const LOCKS = [
        stagger. */
     function flyMessageKeys(side: MobileSide, locked: boolean, dwell: number) {
       const home = root.getBoundingClientRect();
-      const flight = Math.min(700, dwell * 0.4);
+      const flight = Math.min(MESSAGE_KEY_CAP_MS, dwell * FLIGHT_SHARE);
       for (const kind of KINDS) {
         const key = messageKeys[kind];
         const departure = feeders[side][kind].getBoundingClientRect();
@@ -1893,16 +1902,17 @@ const LOCKS = [
   /* --------------------------------------------------------- the wires --- */
 
   /* The network's own row: the same two columns as the figure, one conduit
-     centred over each phone. The row's height is the visible run of wire;
-     the tubes themselves reach through the grid's row gaps on both sides, so
-     each conduit plugs flush into the rack above and its phone below rather
-     than floating between them. */
+     centred over each phone. The row itself is flat — the visible run of
+     wire is exactly the grid's two row gaps, which the tubes reach through
+     so each conduit plugs flush into the rack above and its phone below
+     rather than floating between them. Any taller and the network reads as
+     distance; the relay is near, the boundary is what matters. */
   .demo-mobile-wires {
     grid-column: 1 / -1;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--oe-space-3);
-    height: 1.4rem;
+    height: 0;
   }
 
   .demo-mobile-wire-cell {
