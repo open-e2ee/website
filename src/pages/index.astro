@@ -331,11 +331,18 @@ const trustLinks = [
             `tests/site-content.test.mjs` pins "Not a mock-up", "type a
             sentence" and "against the in-memory relay". The claim and its limit
             belong in one sentence, and the `<noscript>` inside the console
-            answers the offer to type. */}
+            answers the offer to type.
+
+            The offer itself is width-dependent: below 60rem the console gives
+            way to the autonomous mobile loop and there is nothing to type
+            into, so the sentence swaps its middle for what that reader
+            actually gets. An offer that cannot be taken is the "nothing to
+            press" defect this band has already paid for once. */}
         <p class="measure">
           Plaintext and private keys exist only on the devices at each end. Everything in between is
-          ciphertext, and carries metadata your relay can still see. Not a mock-up — type a sentence
-          and the installed SDK encrypts it here, in this tab, against the in-memory relay.
+          ciphertext, and carries metadata your relay can still see. Not a mock-up —{' '}
+          <span class="demo-offer-wide">type a sentence and the installed SDK encrypts it</span><span class="demo-offer-narrow">a scripted conversation runs on the installed SDK</span>{' '}
+          here, in this tab, against the in-memory relay.
         </p>
       </div>
 

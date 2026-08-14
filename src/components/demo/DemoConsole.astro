@@ -1,10 +1,11 @@
 ---
 import CarrierPanel from '../CarrierPanel.astro';
 import DemoLog from './DemoLog.astro';
+import DemoMobile from './DemoMobile.astro';
 import DemoScene from './DemoScene.astro';
 
 /*
- * The demo: one scene, one button, and the relay's own row under it.
+ * The demo: one scene, one button.
  *
  * Two SDK clients run in this page. There is no second window and nothing to
  * pair — the reader gets both ends of the conversation at once, which is what
@@ -44,15 +45,22 @@ import DemoScene from './DemoScene.astro';
  * of a run instead of starting one. Before the first press, the reader has one
  * thing to press.
  *
+ * Start raises the relay and nothing else. Each phone then carries one
+ * "Register with relay" button, because bringing a device up *is* an action a
+ * person takes — you install the app, and the device registers, makes its
+ * keys and publishes the public halves. Two buttons rather than one "wake
+ * both", so the reader watches a single device's bring-up end to end and then
+ * does it again, which is what makes the order legible: register, then keys,
+ * then publish.
+ *
  * There is no play, step or scrub control. A transport makes the reader operate
  * a recording, and the recording is not the subject. `playback.ts` chooses the
  * pace and the replay runs to the end.
  *
  * There is no "exchange keys" control, because key agreement is not an action a
- * person takes. A device publishes its bundle when it comes online, and the
- * first message that needs a session agrees one. That is what `run.ts` does
- * inside `send()`. Start brings the devices up and puts their bundles on the
- * relay. The first sentence anyone types agrees the keys, in the recording,
+ * person takes. A device publishes its bundle on activation, and the first
+ * message that needs a session agrees one. That is what `run.ts` does inside
+ * `send()`. The first sentence anyone types agrees the keys, in the recording,
  * where the reader can watch it happen.
  *
  * --------------------------------------------------------------- the names ---
@@ -64,7 +72,7 @@ import DemoScene from './DemoScene.astro';
  * writes an inline script and the site's CSP has no inline scripts in it — so
  * the DOM is the channel, and it is the same DOM the reader is looking at.
  */
-const NAMES = { a: 'alice', b: 'bob' } as const;
+const NAMES = { a: 'Alice', b: 'Bob' } as const;
 
 /*
  * The two switches.
@@ -91,7 +99,7 @@ const NAMES = { a: 'alice', b: 'bob' } as const;
  *
  * Sealed sender is the odd one and is marked so on the page: the demo has no
  * trust root to mint a sender certificate against, so that switch is a lens
- * over the relay's real row rather than a session setting.
+ * over the envelope's addressing rather than a session setting.
  */
 const TOGGLES = [
   {
@@ -99,14 +107,14 @@ const TOGGLES = [
     key: 'sealedSender',
     label: 'Sealed sender',
     on: true,
-    note: 'a lens over the relay’s real row — off shows the fields it would strike',
+    note: 'a lens over the envelope’s addressing — seals the sender the relay would see',
   },
   {
     id: 'braid',
     key: 'braid',
     label: 'Braid',
     on: false,
-    note: 'carries the ML-KEM key in 32-byte chunks, one per message, instead of whole',
+    note: 'carries the ML-KEM key in 32-byte chunks, one per message, instead of whole — watch the mailbox size',
   },
 ] as const;
 ---
@@ -185,10 +193,10 @@ const TOGGLES = [
       The curtain covers the scene and carries the one control that starts it.
       The reader looks at the scene while deciding to run it.
 
-      Start brings both devices online and publishes their public bundles. It
-      calls the real `syncToServer` on each client instead of animating one.
-      That is everything a device does before anyone writes a message. The first
-      message agrees the keys, which is where a real session agrees them.
+      Start fetches the code and raises the relay — nothing more. The devices
+      come up one at a time, on the Register button each phone carries, because
+      bringing a device up is the reader's own act and the thing this demo
+      wants watched.
 
       The script lifts the curtain once the run is up, and Reset puts it back. A
       reader with no scripts keeps a blurred scene under a button that is
@@ -198,6 +206,14 @@ const TOGGLES = [
       <button type="button" class="oe-button" data-console-start disabled>Start demo</button>
     </div>
   </div>
+
+  {/*
+    The narrow screen's demo. Below 60rem the stage, the log, the status line
+    and the note are all hidden — `global.css` owns the rule — and this figure
+    plays the same conversation as an autonomous loop. Its own CSS keeps it
+    `display: none` from 60rem up, so exactly one of the two is ever drawn.
+  */}
+  <DemoMobile a={NAMES.a} b={NAMES.b} />
 
   <p class="demo-console-status" data-console-status role="status" aria-live="polite"></p>
 
@@ -267,7 +283,7 @@ const TOGGLES = [
    * protocol really went in.
    *
    * Everything that tells the story — the scene, the bubbles inside the phones,
-   * the row under the relay — waits for the reel. A reader should not be shown
+   * the relay's mailboxes — waits for the reel. A reader should not be shown
    * the sentence arriving at the far device before the envelope has visibly got
    * there. `apply()` is the one place those move, so they cannot fall out of
    * step with each other.
@@ -302,28 +318,22 @@ const TOGGLES = [
     const curtain = need<HTMLElement>('[data-console-curtain]');
     const reset = need<HTMLButtonElement>('[data-console-reset]');
     const status = need<HTMLElement>('[data-console-status]');
-    const hex = need<HTMLElement>('[data-console-hex]');
-    const row = need<HTMLElement>('[data-console-row]');
-    const rowNote = need<HTMLElement>('[data-console-row-note]');
-    const relayEmpty = need<HTMLElement>('[data-console-relay-empty]');
     const recorded = need<HTMLElement>('[data-console-recorded]');
     const toggleBox = need<HTMLFieldSetElement>('[data-console-toggles]');
     const settings = need<HTMLDetailsElement>('[data-console-settings]');
     const sceneRoot = need<HTMLElement>('[data-demo-scene]');
     const logRoot = need<HTMLElement>('[data-demo-log]');
     /*
-     * The readings, keyed the way the scene writes them: a device's six are
-     * `a-keygen`, `a-kyber`, `a-publish`, `a-establish`, `a-send`, `a-trip` and
-     * the same for `b`, and the relay has one.
+     * The readings, keyed the way the scene writes them: a device's three are
+     * `a-keygen`, `a-kyber`, `a-establish` and the same for `b`. The relay has
+     * none — it runs in this tab, so nothing it could report is a cost a
+     * developer would pay.
      *
      * Looked up by key rather than held as named handles, because the routing
-     * is now by *actor* and a named handle invites the mistake this replaces.
-     * Each of these measures is recorded by `run.ts` against the
-     * device that did the work — `encryptMs` on the sender, `roundTripMs` on the
-     * receiver, `establishMs` on the device that agreed the keys, `publishMs` on
-     * the one that published — and the console used to print `encryptMs` under
-     * alice and `roundTripMs` under bob no matter which of them had acted. Every
-     * reply leg therefore printed bob's send time under alice's name. The
+     * is by *actor* and a named handle invites the mistake this replaces. Each
+     * of these measures is recorded by `run.ts` against the device that did the
+     * work, and the console used to print figures under whichever column
+     * looked tidy: every reply leg printed bob's work under alice's name. The
      * numbers were real and every one of them was under the wrong device.
      */
     const readings = new Map<string, HTMLElement>(
@@ -333,11 +343,11 @@ const TOGGLES = [
       ]),
     );
     const reading = (key: string): HTMLElement | undefined => readings.get(key);
-    /* Thirteen: six under each device and one under the relay. A selector that
-       matched none of them would otherwise print nothing, silently, and a demo
-       whose timings never appear looks exactly like one nobody pressed. */
-    if (readings.size !== 13) {
-      throw new Error(`demo console: expected 13 readings in the scene, found ${readings.size}`);
+    /* Ten: five under each device. A selector that matched none of them would
+       otherwise print nothing, silently, and a demo whose timings never appear
+       looks exactly like one nobody pressed. */
+    if (readings.size !== 10) {
+      throw new Error(`demo console: expected 10 readings in the scene, found ${readings.size}`);
     }
 
     /* The composer belongs to the device now, so there are two of them and
@@ -355,6 +365,16 @@ const TOGGLES = [
       },
     };
 
+    /* The activate buttons, one per phone, read from the scene like the
+       composers are. The scene owns their *visibility* — the `registered` cue
+       marks the phone activated and the overlay goes with it — and this script
+       owns only whether they may be pressed, so the two states cannot fight
+       over one attribute. */
+    const activators: Record<Side, HTMLButtonElement> = {
+      a: need<HTMLButtonElement>('[data-scene-activate="a"]'),
+      b: need<HTMLButtonElement>('[data-scene-activate="b"]'),
+    };
+
     const toggleInputs = new Map<string, HTMLInputElement>(
       [...root.querySelectorAll<HTMLInputElement>('[data-console-toggle]')].map((input) => [
         input.dataset.consoleToggle ?? '',
@@ -365,110 +385,82 @@ const TOGGLES = [
     const names = { a: root.dataset.consoleNameA ?? 'a', b: root.dataset.consoleNameB ?? 'b' };
 
     /*
-     * Exactly two fields are held back, and the reader is told about both.
-     *
-     *   ciphertext — printed above as the bytes themselves, not as a table row.
-     *   id         — the in-memory relay counts sends, so this reads `msg-1`. A
-     *                production relay assigns its own format, and printing this
-     *                one would teach a reader something false about their own
-     *                database.
-     *
-     * A list of what is deliberately not shown, and never a list of what is:
-     * every other field arrives by iterating the envelope, so a field the SDK
-     * adds appears without anyone editing this file, and one it removes vanishes
-     * rather than lingering as a stale row.
-     */
-    const HELD_BACK = new Set(['ciphertext', 'id']);
-
-    /*
      * The envelope fields this file names, and the only ones it may.
      *
-     * The relay's row is built from `Object.entries` of the live envelope and
-     * from nothing else — a hand-written list of what to show is the mechanism
-     * the drift `demo-panel.test.mjs` guards against actually needs. These are
-     * not that list. Two are the addressing drawn on the envelope graphic,
-     * which cannot be derived: something has to say which field is the
-     * recipient. One is quoted in the note under the row.
+     * The addressing drawn on the envelope graphic cannot be derived: something
+     * has to say which field is the recipient. Everything else about a stored
+     * row stays off the page — the mailbox drawing and its byte figure are the
+     * relay's whole account of itself.
      *
      * They are gathered here rather than reached for inline so that the test
      * can lift them out of this source and check each against the installed
      * `Envelope`. Named inline, a rename in the SDK would leave the graphic
-     * addressed to an em dash and the note quoting `undefined`, on a panel
-     * whose whole job is not overstating the evidence — quietly, and in the
-     * direction that flatters us, which is how the same defect landed once
-     * already.
+     * addressed to an em dash — quietly, and in the direction that flatters
+     * us, which is how the same defect landed once already.
+     *
+     * The demo does not run sealed sender — it needs a trust root and a sender
+     * certificate to mint against, and this page has neither — so that switch
+     * is a lens over this addressing rather than a session setting: on, the
+     * drawn envelope's `from` gives way to a lock while the relay's real copy
+     * keeps its sender fields. The relay's own `messageType` says which mode
+     * really ran, and `unidentified_sender` is not what these envelopes carry.
      */
     const NAMED_FIELDS = {
       to: 'targetUserId',
       from: 'senderUserId',
-      mode: 'messageType',
     } as const;
-
-    /*
-     * What sealed sender takes off the envelope.
-     *
-     * The demo does not run sealed sender — it needs a trust root and a sender
-     * certificate to mint against, and this page has neither — so the switch is
-     * a lens over the real row rather than a session setting, and it is drawn
-     * as one. The fields below are marked in place instead of hidden, because
-     * the useful thing to see is *which* fields go, and a row that silently
-     * shortened would teach nothing. The relay's own `messageType` says which
-     * mode really ran: `unidentified_sender` is sealed, and the envelopes here
-     * are not.
-     *
-     * The names live in `scene-view.ts` so that a Node test can hold them
-     * against a real envelope; they are read off the lazily-loaded module here
-     * rather than imported statically, which would pull the whole scene into
-     * the eager bundle for the sake of two strings.
-     */
 
     type Loaded = {
       run: typeof import('../../lib/demo/run');
       playback: typeof import('../../lib/demo/playback');
       scene: typeof import('../../lib/demo/scene-view');
-      ciphertext: typeof import('../../lib/demo/ciphertext');
     };
-
-    /** The row the relay took, waiting for the reel to reach the step that took it. */
-    interface Row {
-      readonly envelope: Record<string, unknown>;
-      readonly bytes: number;
-    }
 
     let loaded: Loaded | null = null;
     let run: DemoRun | null = null;
     let scene: SceneView | null = null;
     let reel: Playback<SceneCue> | null = null;
+    /* One transport per device for the registration story, so a reader who
+       presses the second Register button while the first story is playing
+       watches both run beside each other instead of queueing. The scene
+       scopes a lane cue's writes to its own device — `registrationLaneOf`
+       in `scene-view.ts` is the shared rule — and the composers below wait
+       for every transport, so conversation cues are never concurrent with
+       anything. */
+    let regLanes: Record<Side, Playback<SceneCue>> | null = null;
     let starting: Promise<void> | null = null;
     /** Whether a run has ever come up here. Reset drops the run; this survives. */
     let everStarted = false;
     let busy = false;
+    /* Whether any transport — the reel or a registration lane — is still
+       telling a story. The protocol runs well ahead of the reader, so `busy`
+       clears milliseconds after a press while the drawing has tens of
+       seconds of replay left — and a sentence accepted during that replay
+       would seal, travel and open in the recording while the scene was still
+       showing the last one, stacking a backlog the reader never asked to sit
+       through. The composers wait for all of them. */
+    let reelBusy = false;
     /* Set from the recording rather than from the press that caused it. The
        session is agreed inside the first send, so the only thing that knows one
        exists is the step the SDK recorded when it did. */
     let sessionExists = false;
-    /* What the relay is holding, counted as the reel stores each row rather than
-       as the trace reports it. The distinction matters now that the reading sits
-       in the relay's own column, an inch from the mailbox that draws the same
-       fact: the trace runs ahead of the drawing, so a reading taken from it says
-       "1 row" over a mailbox still drawing "nothing waiting". Two claims about
-       one relay, disagreeing, in one glance. */
-    let bytesHeld = 0;
-    let rowsHeld = 0;
-    const pending: Row[] = [];
-    /* The slowest publish seen, per device. Both devices publish, and each one's
-       own figure belongs under its own phone — a single shared maximum would put
-       one device's work under the other's name. */
-    const publishedMs: Record<Side, number> = { a: 0, b: 0 };
+    /* Which devices the reader has brought up. Set when an activation
+       resolves, not when it is pressed — a press that threw did not activate
+       anything — and cleared by Reset with the run it described. */
+    const activated: Record<Side, boolean> = { a: false, b: false };
     /* Generation, per device, as a running total of the windows `run.ts`
        measured. A sum rather than the last figure seen, because a device that
        tops its keys up during a later sync generated keys twice, and the panel
        is answering how long this device spent making keys — not how long the
-       most recent batch took. */
+       most recent batch took. The keypair count travels with the time for the
+       same reason: a figure that says how long is only a price once it says how
+       long *for what*, and "100 keys · 1,200 ms" is the line a developer can
+       take to their own budget. */
     const generatedMs: Record<Side, { keygen: number; kyber: number }> = {
       a: { keygen: 0, kyber: 0 },
       b: { keygen: 0, kyber: 0 },
     };
+    const generatedKeys: Record<Side, number> = { a: 0, b: 0 };
 
     /*
      * Public keys the relay is holding for each device, as the relay itself
@@ -481,12 +473,23 @@ const TOGGLES = [
      * device, so the shelf is drawn from the store rather than from the page's
      * own bookkeeping.
      *
-     * The same number fills each device's own key store. Every public key the
-     * relay holds for a device is one half of a pair whose other half never
-     * left that device, so the two drawings are the same count seen from the
-     * two ends — which is the point the picture is making.
+     * The same number starts each device's own key store, because at publish
+     * time the two ends really do agree: every public key the relay holds for
+     * a device is one half of a pair whose other half never left that device.
      */
     const published: Record<Side, number> = { a: 0, b: 0 };
+
+    /*
+     * Private keys held, per device, read from each device's own store.
+     *
+     * A separate count from `published` because the two part company: a bundle
+     * fetch consumes one-time public halves off the relay's shelf at once, and
+     * the private halves fall later — the SDK deletes them when the first
+     * successful decryption commits the session. `run.ts` reads the store
+     * after each publish and after each opening, so the device's column dips
+     * where and *when* the spend really lands rather than mirroring the shelf.
+     */
+    const held: Record<Side, number> = { a: 0, b: 0 };
 
     /*
      * Message keys derived, per device. The ratchet's notches are this count and
@@ -505,9 +508,6 @@ const TOGGLES = [
     /** The sender's bubble that has not yet been confirmed at the far device. */
     let awaitingDelivery: HTMLElement | null = null;
 
-    /** The row the inspector is currently showing, so the lens can redraw it. */
-    let shownRow: Row | null = null;
-
     const say = (text: string) => {
       status.textContent = text;
     };
@@ -523,10 +523,11 @@ const TOGGLES = [
      * lands in the frame the press did rather than after the first chunk has
      * arrived.
      *
-     * Three stages, one per await the opening makes: fetching the code,
-     * booting the devices, publishing their keys. Named for what is happening
-     * rather than counted, because a progress figure would be this page's
-     * estimate of work it cannot see the inside of.
+     * One stage, for the one await the opening makes: fetching the code. The
+     * devices are no longer part of the opening — each comes up on its own
+     * Register press, where the scene narrates the work itself. Named for
+     * what is happening rather than counted, because a progress figure would
+     * be this page's estimate of work it cannot see the inside of.
      */
     /* Read off the button rather than spelled again here. What the control is
        called is the page's copy and it is written in the markup; a second
@@ -585,34 +586,45 @@ const TOGGLES = [
          once one exists. A switch that appeared to change a running session
          would be describing key agreement wrongly, and Reset is the honest way
          back to a different answer. The sealed-sender lens is not a session
-         setting and stays live throughout — see the note by
-         `SEALED_SENDER_HIDES`. */
+         setting and stays live throughout — see the note by `NAMED_FIELDS`. */
       toggleBox.disabled = false;
       for (const [key, input] of toggleInputs) {
         if (key !== 'sealedSender') input.disabled = busy || sessionExists;
       }
+      /* Live once the run is up, until this side's device is. The scene hides
+         the overlay when the `registered` cue plays; between the activation
+         resolving and that cue, the button is disabled under the reader's
+         finger — pressed, taken, and about to be dismissed by the replay. */
       for (const side of ['a', 'b'] as const) {
-        composers[side].input.disabled = busy || !running;
-        composers[side].send.disabled = busy || !running;
+        activators[side].disabled = busy || !running || activated[side];
+      }
+      /* And not while the reel is mid-story: the scene must finish showing
+         the last sentence's journey before it accepts the next one. Reset
+         stays live through a replay — it is the way out of one. A composer
+         also waits for both devices: a sentence needs somewhere to go, and
+         `run.ts` would refuse a send to a device that does not exist. */
+      const conversable = running && activated.a && activated.b;
+      for (const side of ['a', 'b'] as const) {
+        composers[side].input.disabled = busy || reelBusy || !conversable;
+        composers[side].send.disabled = busy || reelBusy || !conversable;
       }
     };
 
     /**
-     * The four modules the console needs, fetched together on the first press.
+     * The three modules the console needs, fetched together on the first press.
      *
-     * One `Promise.all` rather than four awaited in turn: they are independent,
+     * One `Promise.all` rather than three awaited in turn: they are independent,
      * and a reader who pressed a button is waiting on the slowest of them rather
      * than on their sum. The SDK is behind `run`, which is the whole reason any
      * of this is here instead of at the top of the file.
      */
     async function chunks(): Promise<Loaded> {
-      const [runModule, playback, sceneModule, ciphertext] = await Promise.all([
+      const [runModule, playback, sceneModule] = await Promise.all([
         import('../../lib/demo/run'),
         import('../../lib/demo/playback'),
         import('../../lib/demo/scene-view'),
-        import('../../lib/demo/ciphertext'),
       ]);
-      return { run: runModule, playback, scene: sceneModule, ciphertext };
+      return { run: runModule, playback, scene: sceneModule };
     }
 
     /**
@@ -661,22 +673,61 @@ const TOGGLES = [
         if (!reel) {
           reel = parts.playback.createPlayback<SceneCue>({
             show: apply,
-            /* A second watch starts from an empty drawing. The reel's first cue
-               is `devices-ready`, so everything the scene shows is put back by
-               replaying it — except the conversation, which appends. */
+            /* A replay from the top starts from an empty drawing. No current
+               control reaches this — cues from a still-running protocol
+               resume a spent reel without rewinding — but a transport that
+               ever did replay must not draw on top of the first watch. The
+               registration cues live on the lanes, so a real replay feature
+               would have to replay those too. */
             rewind: () => {
               scene?.clear();
               awaitingDelivery = null;
             },
             dwellMs: parts.playback.STEP_DWELL_MS,
           });
+          regLanes = {
+            a: parts.playback.createPlayback<SceneCue>({
+              show: apply,
+              dwellMs: parts.playback.STEP_DWELL_MS,
+            }),
+            b: parts.playback.createPlayback<SceneCue>({
+              show: apply,
+              dwellMs: parts.playback.STEP_DWELL_MS,
+            }),
+          };
+          /* A transport is the only thing that knows the last cue's dwell
+             has been served with nothing behind it — `done` fires on the tick
+             after that dwell, and a push starts it again. Each transport
+             settles exactly what it was narrating: a lane rests its own
+             device's wire and shelf, so a registration that finishes first
+             goes dormant while the other story plays on, and the reel rests
+             the whole scene — by the time conversation cues exist, both
+             lanes are long dry; see `SceneView.settle`. The composers wait
+             on the aggregate: they go quiet while any transport is telling
+             a story and come back when none has anything left to show,
+             which is what keeps a reader from writing the next sentence
+             into the middle of the last one's replay. */
+          const transports: [Playback<SceneCue>, readonly Side[] | undefined][] = [
+            [reel, undefined],
+            [regLanes.a, ['a']],
+            [regLanes.b, ['b']],
+          ];
+          for (const [transport, sides] of transports) {
+            transport.on((state) => {
+              if (state === 'done') scene?.settle(sides);
+              reelBusy = transports.some(
+                ([t]) => t.state === 'playing' || t.state === 'paused',
+              );
+              enable();
+            });
+          }
         }
 
-        opening('Waking the devices…', 'Booting both devices and generating their prekeys…');
         /*
          * The protocol options, read here and nowhere later — this is the only
          * moment they can take effect, which is why braid locks once a session
-         * exists.
+         * exists. The devices they govern come up later, one Register press at
+         * a time, against the policy captured here.
          *
          * `postQuantum` is not a switch on this page and is asked for outright.
          * `compatible` would not have been "post-quantum off": it still runs
@@ -694,40 +745,21 @@ const TOGGLES = [
           },
         });
 
-        /* Coming online is publishing: a device puts its public bundle on the
-           relay before anyone has written anything, and the keys are agreed by
-           the first message that needs them. This is the real `syncToServer` on
-           both clients — the same call `send()` would make on its way past. The
-           keys it uploads were made further up: `SignalProtocolClient.create()`
-           generates the one-time prekeys while the device boots, which is why
-           the wait a reader sits through is the stage above this one and why
-           this one still gets a label of its own — it is a step of the protocol
-           and the recording keeps it as one. */
-        opening('Publishing the keys…', 'Putting both public bundles on the relay…');
-        await started.publishBundles();
-
         /*
          * The run is only now something the page has, which is what lifts the
          * curtain: `enable()` reads exactly this. Held back until the opening
-         * has finished rather than set where it is created, so a publish that
+         * has finished rather than set where it is created, so an opening that
          * threw leaves the reader the button that starts one instead of a lifted
          * curtain over a scene with nothing behind it.
          */
         run = started;
         /*
-         * The recording starts before anything can subscribe to it.
-         *
-         * The opening above boots both devices and publishes both bundles, and
-         * each of those four steps is recorded as it happens, so by the time
-         * anything here can listen the first events are already in the trace and
-         * a bare `on()` would never see them. That is not four dropped frames:
-         * they are the steps that bring the phones online and put the first keys
-         * on the relay, and without them the demo came up with both devices
-         * reading "offline" through a whole successful key exchange.
-         *
-         * Replayed before subscribing rather than after, and with no `await`
-         * between the two, so no event can arrive in the gap and none is seen
-         * twice — `on()` delivers only what is appended after it.
+         * Replay whatever the recording already holds, then subscribe, with no
+         * `await` between the two — so no event can arrive in the gap and none
+         * is seen twice. A run comes up as the relay alone and records nothing
+         * doing it, so the replay finds an empty trace; the ordering is the
+         * invariant, because an opening that records again would otherwise
+         * come up with its first steps silently missing from every surface.
          */
         for (const event of started.trace.events) record(event);
         started.trace.on(record);
@@ -755,20 +787,36 @@ const TOGGLES = [
         /* Absent when the relay had nothing for this device — `run.ts` keeps an
            unobserved reading out of the trace rather than reporting it as a
            zero, so an absent one leaves the last known count standing. */
-        const keys = (event.detail as { publicKeys?: unknown } | undefined)?.publicKeys;
+        const detail = event.detail as
+          | { publicKeys?: unknown; heldKeys?: unknown }
+          | undefined;
+        const keys = detail?.publicKeys;
         const actor = event.actor;
         if ((actor === 'a' || actor === 'b') && typeof keys === 'number') published[actor] = keys;
+        if ((actor === 'a' || actor === 'b') && typeof detail?.heldKeys === 'number')
+          held[actor] = detail.heldKeys;
+      }
+      if (event.step === 'opened') {
+        /* The opener's store, re-read after the decrypt. On a session-creating
+           message this is where the one-time private halves fall. */
+        const heldKeys = (event.detail as { heldKeys?: unknown } | undefined)?.heldKeys;
+        const actor = event.actor;
+        if ((actor === 'a' || actor === 'b') && typeof heldKeys === 'number')
+          held[actor] = heldKeys;
       }
       if (event.step === 'session-established') sessionExists = true;
-      if (event.step === 'stored-at-relay') {
-        const envelope = (event.detail as { envelope?: Record<string, unknown> })?.envelope;
-        if (envelope) pending.push({ envelope, bytes: event.measures?.ciphertextBytes ?? 0 });
-      }
-      reel?.push(toCue(event));
+      const cue = toCue(event);
+      /* A registration step plays on its own device's lane and everything
+         else on the shared reel, `registrationLaneOf`'s rule — the same
+         derivation `show` scopes its writes with, because a cue routed to a
+         lane but applied whole-scene would stomp the other lane's story. */
+      const lane = loaded ? loaded.scene.registrationLaneOf(cue) : null;
+      const transport = (lane ? regLanes?.[lane] : null) ?? reel;
+      transport?.push(cue);
       /* The first cue is what makes the transport worth offering, so the
          controls are re-read here rather than only on a press. */
       enable();
-      reel?.play();
+      transport?.play();
     }
 
     /**
@@ -776,56 +824,59 @@ const TOGGLES = [
      *
      * Routed by `event.actor`, which is the device `run.ts` recorded the work
      * against, and never by which column the figure would look tidy in. Every
-     * one of these is a device-side operation: making keys, sealing, agreeing a
-     * key, publishing a bundle, and the wait for the far end to answer. None of
-     * them is a network time and none is simulated — the relay is in this tab,
-     * which the note under the inspector says in the reader's own words.
-     *
-     * A measure recorded against the relay has no device row to go in and is
-     * dropped here rather than assigned to a device; the relay's own reading is
-     * what it is holding, below.
+     * row that prints is real cryptographic work on the device's own
+     * processor: making keys, the post-quantum share of that, agreeing the
+     * session, sealing a message and opening one — the last two bracketed at
+     * the device's edge by `run.ts`, so neither contains the relay. The
+     * publish and round-trip spans the recording also carries are deliberately
+     * not printed — each is a span through a relay that runs in this same tab,
+     * and a simulated network's timings price nothing a developer can use.
      */
     function printMetrics(event: TraceEvent) {
       const measures = event.measures;
       if (!measures) return;
       const actor = event.actor === 'a' || event.actor === 'b' ? event.actor : null;
+      if (!actor) return;
 
-      if (actor) {
-        const put = (key: string, value: number) => {
-          const element = reading(`${actor}-${key}`);
-          if (element) element.textContent = ms(value);
-        };
-        if (typeof measures.keygenMs === 'number') {
-          generatedMs[actor].keygen += measures.keygenMs;
-          put('keygen', generatedMs[actor].keygen);
-        }
-        if (typeof measures.kyberMs === 'number') {
-          generatedMs[actor].kyber += measures.kyberMs;
-          put('kyber', generatedMs[actor].kyber);
-        }
-        if (typeof measures.encryptMs === 'number') put('send', measures.encryptMs);
-        if (typeof measures.roundTripMs === 'number') put('trip', measures.roundTripMs);
-        if (typeof measures.establishMs === 'number') put('establish', measures.establishMs);
-        /* A device publishes once, but the reading is kept as a maximum so a
-           second publish on the same device cannot make the figure fall — the
-           bundles go up in parallel and the slower one is when that device was
-           actually ready. */
-        if (typeof measures.publishMs === 'number') {
-          publishedMs[actor] = Math.max(publishedMs[actor], measures.publishMs);
-          put('publish', publishedMs[actor]);
-        }
+      const put = (key: string, text: string) => {
+        const element = reading(`${actor}-${key}`);
+        if (element) element.textContent = text;
+      };
+      if (typeof measures.keygenMs === 'number') {
+        generatedMs[actor].keygen += measures.keygenMs;
+        /* The batch size arrives on the same event as the closing window —
+           `run.ts` puts the keypair total on the report that carries the
+           measure — so the count and the time it prices move together. */
+        const total = (event.detail as { total?: unknown } | undefined)?.total;
+        if (typeof total === 'number') generatedKeys[actor] += total;
+        put(
+          'keygen',
+          generatedKeys[actor] > 0
+            ? `${count(generatedKeys[actor])} keys in ${ms(generatedMs[actor].keygen)}`
+            : ms(generatedMs[actor].keygen),
+        );
       }
-
-    }
-
-    /** The relay's own reading, as of the row the reel has just stored. */
-    function printHolding(bytes: number) {
-      bytesHeld += bytes;
-      rowsHeld += 1;
-      const held = reading('relay-holding');
-      if (held) {
-        held.textContent = `${count(rowsHeld)} row${rowsHeld === 1 ? '' : 's'} · ${count(bytesHeld)} bytes`;
+      if (typeof measures.kyberMs === 'number') {
+        generatedMs[actor].kyber += measures.kyberMs;
+        put('kyber', ms(generatedMs[actor].kyber));
       }
+      if (typeof measures.establishMs === 'number') put('establish', ms(measures.establishMs));
+      /* Latest rather than a running sum: each message prices one seal or one
+         open, and the reading is "what does this cost", not "what has it
+         cost so far" — the keygen rows accumulate because their batches are
+         instalments of one job. */
+      if (typeof measures.encryptMs === 'number') put('encrypt', ms(measures.encryptMs));
+      if (typeof measures.decryptMs === 'number') put('decrypt', ms(measures.decryptMs));
+      /* A device's first opening is also its share of the key agreement — the
+         KEM decapsulation and DH ratchet run inside that first decrypt, and
+         the trace prices the one interval once, as `establishMs` on the
+         `opened` event (`run.ts` says why). The row is another matter: a
+         decryption reading "—" after an envelope was visibly opened reads as
+         a defect, not as bookkeeping. So the fused figure prints here too,
+         marked as the shared span it is, and the steady-state cost of the
+         next arrival overwrites it. */
+      if (event.step === 'opened' && typeof measures.establishMs === 'number')
+        put('decrypt', `${ms(measures.establishMs)} with key agreement`);
     }
 
     /**
@@ -836,22 +887,19 @@ const TOGGLES = [
      *
      * A cue carries numbers on purpose. Five fields hold them and no others do,
      * which is the invariant `demo-run.test.mjs` holds: every number on a cue
-     * lives on `ratchet`, `bundles`, `keys`, `bytes` or `braid`, and every other
-     * value, at any depth, is a string. A number arriving on a sixth field is
-     * the regression, and telling it apart by size would not work — `bundles`
-     * counts real prekeys and runs into the hundreds, the same order as a byte
-     * count.
+     * lives on `ratchet`, `bundles`, `keys`, `keygen` or `bytes`, and every
+     * other value, at any depth, is a string. A number arriving on a sixth
+     * field is the regression, and telling it apart by size would not work —
+     * `bundles` counts real prekeys and runs into the hundreds, the same order
+     * as a byte count.
      *
      * Four of the five are counts of things: notches turned, bundles held, key
-     * shapes shelved, chunks carried. `bytes` is the exception and is a
-     * measurement, carried because the relay column draws the size of the row it
-     * is holding and there is no honest way to draw a size without the size.
-     *
-     * Two are held to a stricter rule than the rest, and the tests pin both.
-     * `bytes` must be the byte count the recording measured for that row, and
-     * `braid` must be the counts the braid reported on that step. Neither is
-     * something this page could work out for itself, and a drawn size or a drawn
-     * chunk count that no event reported would be a decoration.
+     * shapes shelved, keypairs generated. `bytes` is the exception and is a
+     * measurement, carried because the mailbox prints the size of the row it is
+     * holding and there is no honest way to draw a size without the size. It is
+     * held to a stricter rule than the rest: it must be the byte count the
+     * recording measured for that row, because a drawn size no event reported
+     * would be a decoration.
      *
      * The two-clock separation survives this. It was never about numbers as
      * such — it is that nothing the drawing receives is a duration, so pacing
@@ -868,49 +916,11 @@ const TOGGLES = [
       const from = device(event.from);
       const to = device(event.to);
 
-      /*
-       * Whatever the braid reported while this step ran, taken from the report.
-       *
-       * Assembled here and carried on `base`, so it reaches every step rather
-       * than a list of steps this file keeps: a report belongs to the send or
-       * the receive that raised it, and the recording already put it on that
-       * step. Naming the steps again here would be this file deciding from a
-       * step's name something the recording had recorded.
-       *
-       * Whose report it is comes from `event.actor` for the same reason. That is
-       * the device `run.ts` recorded the work against, and it is also the device
-       * it drained, so the counts and the name on them cannot come apart.
-       *
-       * The last report of the step, because the drawing shows where the key has
-       * got to and the last is the most recent thing said about it. The
-       * completion is looked for across all of them instead — it is an event
-       * rather than a level, and one dropped because a later report in the same
-       * step did not repeat it would be the run's completion lost.
-       */
-      const reports = event.braid ?? [];
-      const latest = reports[reports.length - 1];
-      const reporter = device(event.actor);
-      const braided =
-        latest && reporter
-          ? {
-              braid: {
-                side: reporter,
-                carried: latest.chunksCarried,
-                required: latest.chunksRequired,
-                epoch: latest.epoch,
-              },
-              ...(reports.some((report) => report.emittedEpochKey)
-                ? { braidKeyFrom: reporter }
-                : {}),
-            }
-          : {};
-
       const base: SceneCue = {
         step: event.step,
         actor: event.actor,
         ...(event.from === undefined ? {} : { from: event.from }),
         ...(event.to === undefined ? {} : { to: event.to }),
-        ...braided,
       };
 
       /* Counted at the step that derives the key, and snapshotted into the cue
@@ -972,7 +982,9 @@ const TOGGLES = [
        * handed out a bundle it was already holding, and the device it belongs
        * to has not so much as seen a message yet. This is the one step at which
        * the two figures are honestly different, which is the fact the frame
-       * exists to show.
+       * exists to show. The spend reaches the device's column on `opened`,
+       * which carries the store's own count read after the decrypt that
+       * commits it.
        */
       if (event.step === 'session-established') {
         const selection = detail.selection as { usedTripleRatchet?: unknown } | null | undefined;
@@ -999,7 +1011,7 @@ const TOGGLES = [
              print is a third figure to keep true, and the one place a total
              would go is a shelf that belongs to nobody. */
           bundles: { a: published.a, b: published.b },
-          keys: { a: published.a, b: published.b },
+          keys: { a: held.a, b: held.b },
         };
       }
       /* The addressing rides from the moment the envelope is sealed, not from
@@ -1015,10 +1027,23 @@ const TOGGLES = [
           ...(from === null ? {} : { from: names[from] }),
         };
         if (event.step === 'in-transit') return { ...base, ...turned, meta: addressed };
+        /* The braid's progress rides the sealing step, pre-formatted: the last
+           report this send raised is the state the envelope leaves in. A
+           string and not a pair of counts — the five-field number invariant
+           above is why — and absent in direct mode, where no report is ever
+           raised and the tile never grows the strip. */
+        const report = event.braid?.at(-1);
+        /* The size travels from the sealing step, off the run's measure of the
+           bytes the relay had already been handed — so the mark can ride the
+           envelope for its whole journey rather than appear mid-way. */
         return {
           ...base,
           ...turned,
           meta: addressed,
+          ...(typeof event.measures?.ciphertextBytes === 'number'
+            ? { bytes: event.measures.ciphertextBytes }
+            : {}),
+          ...(report ? { chunk: `pq chunks ${report.chunksCarried} / ${report.chunksRequired}` } : {}),
           ...(typeof detail.text === 'string' && from
             ? { sentence: { side: from, text: detail.text } }
             : {}),
@@ -1029,9 +1054,9 @@ const TOGGLES = [
         /* The addressing on the drawn envelope is the addressing on the real
            one, read off the same object the relay stored, so the two cannot
            disagree about who the relay can see. The size travels with it, off
-           the same event's own measure of the ciphertext it stored, so the bar
-           the scene draws and the byte figure the relay prints below it are two
-           readings of one number rather than two numbers that agree. */
+           the same event's own measure of the ciphertext it stored, so the
+           figure the mailbox prints is the count the recording took rather
+           than a number that agrees with it. */
         return {
           ...base,
           ...turned,
@@ -1051,7 +1076,16 @@ const TOGGLES = [
       if (event.step === 'opened' && to) {
         const opened = detail.decrypted as { content?: unknown } | undefined;
         const text = typeof opened?.content === 'string' ? opened.content : '';
-        return { ...base, ...turned, sentence: { side: to, text } };
+        /* The stores' counts ride every opening. On a session-creating message
+           the opener's figure has just dipped — the SDK deleted the one-time
+           private halves when this decrypt committed the session — and on
+           every later one the restated number simply holds the bars still. */
+        return {
+          ...base,
+          ...turned,
+          sentence: { side: to, text },
+          keys: { a: held.a, b: held.b },
+        };
       }
       return { ...base, ...turned };
     }
@@ -1071,7 +1105,7 @@ const TOGGLES = [
      * frames. Shorter dwells and a larger share put the movement back where the
      * eye is already looking.
      */
-    const FLIGHT_CAP_MS = 700;
+    const FLIGHT_CAP_MS = 1600;
     const FLIGHT_SHARE = 0.75;
     function flightFor(step: string): number {
       if (!loaded) return 0;
@@ -1083,10 +1117,15 @@ const TOGGLES = [
     function apply(cue: SceneCue) {
       scene?.show(cue, flightFor(cue.step));
       /* The bubble lands with the step that produced it: sealed at the sender
-         when it is encrypted, plain at the receiver when it is opened. */
+         when it is encrypted, plain at the receiver when it is opened. The
+         receiver's copy arrives rather than appears — it stays invisible until
+         the envelope above it has decrypted and folded away, or the chat would
+         hold a plaintext the tile still shows sealed. */
       if (cue.sentence) {
         const mine = cue.step === 'encrypted';
-        const bubble = scene?.say(cue.sentence.side, cue.sentence.text, mine, mine) ?? null;
+        const bubble =
+          scene?.say(cue.sentence.side, cue.sentence.text, mine, mine, cue.step === 'opened') ??
+          null;
         if (mine) awaitingDelivery = bubble;
       }
       /* The sender's own bubble stops being pending when the far device has it,
@@ -1095,74 +1134,6 @@ const TOGGLES = [
         awaitingDelivery.dataset.pending = 'false';
         awaitingDelivery = null;
       }
-      /* The relay's three claims about one row — the count, the bytes it is made
-         of, and the mailbox it is waiting in — all move on this beat, because
-         they are one fact told three ways. */
-      if (cue.step === 'stored-at-relay') {
-        const next = pending.shift();
-        if (next) {
-          printHolding(next.bytes);
-          showRow(next.envelope, next.bytes);
-        }
-      }
-    }
-
-    /* The relay's column: the bytes, then every field that is not held back. */
-    function showRow(envelope: Record<string, unknown>, bytes: number) {
-      if (!loaded) return;
-      shownRow = { envelope, bytes };
-      const encoded = String(envelope.ciphertext);
-      hex.textContent = loaded.ciphertext.hexStrip(envelope.ciphertext).join('\n');
-      hex.hidden = false;
-      relayEmpty.hidden = true;
-
-      row.replaceChildren();
-      const sealedFields = new Set<string>(loaded.scene.SEALED_SENDER_HIDES);
-      let shown = 0;
-      let sealable = 0;
-      for (const [field, value] of Object.entries(envelope)) {
-        if (HELD_BACK.has(field)) continue;
-        const hides = sealedFields.has(field);
-        if (hides) sealable += 1;
-        const term = document.createElement('dt');
-        term.textContent = field;
-        const definition = document.createElement('dd');
-        definition.textContent = String(value);
-        /* A field the SDK puts on the envelope and leaves unset is a real row —
-           `Object.entries` only reaches keys the object actually has — and the
-           inspector shows it rather than hiding it, because "the relay can see
-           this field is here and empty" is a different fact from "there is no
-           such field". But an unmarked `undefined` in a value column reads as a
-           template that failed rather than as the value it is, so it is marked
-           and dimmed. The text stays the literal, which is what a developer
-           would find on the object. */
-        if (value === undefined || value === null) definition.dataset.unset = 'true';
-        if (hides) {
-          term.dataset.sealedHidden = 'true';
-          definition.dataset.sealedHidden = 'true';
-        }
-        row.append(term, definition);
-        shown += 1;
-      }
-      row.dataset.sealedLens = String(toggles.sealedSender);
-      /* The note is a sibling of the list rather than its last child: a `<dl>`
-         may hold terms, definitions and grouping `<div>`s, and a paragraph
-         inside one is invalid however well it renders. */
-      /* Three clauses, one job each. The count shows the script derived the row
-         and did not list it. The second accounts for the ciphertext. The third
-         accounts for the id, which `HELD_BACK` withholds, so the reader learns
-         about every omission. */
-      rowNote.textContent =
-        `${count(shown)} fields, off the envelope itself · ciphertext above, ${count(bytes)} ` +
-        `bytes as ${count(encoded.length)} base64 characters · the id is held back, because this ` +
-        'in-memory relay numbers rows in a way yours would not.' +
-        (toggles.sealedSender
-          ? ` Struck: the ${count(sealable)} fields sealed sender removes. This envelope's ` +
-            `${NAMED_FIELDS.mode} is ${String(envelope[NAMED_FIELDS.mode])}, so it is not a sealed ` +
-            'one — the demo has no authority to mint a certificate against.'
-          : '');
-      row.hidden = false;
-      rowNote.hidden = false;
     }
 
     /* One place that turns a thrown error into a sentence, so no path can fail
@@ -1192,11 +1163,35 @@ const TOGGLES = [
       void guard('the start', async () => {
         await start();
         say(
-          'Both devices are online, public bundles on the relay and the private halves still at ' +
-            'home. Type a message on either device — the first one agrees the keys.',
+          'The relay is up, holding nothing. Register each device with it — ' +
+            'the phones carry the buttons.',
         );
       });
     });
+
+    /* Bringing a device up is a press, one per phone, written once against a
+       side like the composers below. The scene tells the story — the wire
+       connects, the account builds, the keys arrive, the bundle publishes —
+       so the status line only has to say what to do next. */
+    for (const side of ['a', 'b'] as const) {
+      activators[side].addEventListener('click', () => {
+        const other = side === 'a' ? 'b' : 'a';
+        void guard('the activation', async () => {
+          await start();
+          await run?.activate(side);
+          /* On the resolution, not the press: an activation that threw did
+             not bring a device up, and the guard's sentence says why. */
+          activated[side] = true;
+          say(
+            activated[other]
+              ? 'Both devices are online, public bundles on the relay and the private halves ' +
+                  'still at home. Type a message on either device — the first one agrees the keys.'
+              : `${names[side]}'s device is registered and its public keys are on the relay. ` +
+                  `Register ${names[other]}'s device to give it someone to write to.`,
+          );
+        });
+      });
+    }
 
     /* Either device may send, so the handler is written once against a side.
        The device that accepted the sentence is the device the SDK is asked to
@@ -1244,56 +1239,47 @@ const TOGGLES = [
       input.addEventListener('change', () => {
         toggles = { ...toggles, [key]: input.checked };
         scene?.setToggles(toggles);
-        /* Redrawn rather than toggled, because the note under the row names how
-           many fields the lens is marking and that sentence has to change with
-           it. One place builds the row; the lens does not get a second. */
-        if (key === 'sealedSender' && shownRow) showRow(shownRow.envelope, shownRow.bytes);
       });
     }
 
     reset.addEventListener('click', () => {
       void guard('the reset', async () => {
         reel?.reset();
+        regLanes?.a.reset();
+        regLanes?.b.reset();
         scene?.clear();
         (logRoot as HTMLElement & { demoLog?: DemoLogHandle }).demoLog?.clear();
         /*
          * Stopped and dropped rather than reset in place.
          *
-         * `run.reset()` re-boots the devices against the options the run was
-         * created with, so a reader who came back here to change the protocol
-         * switches would get the old policy again and a page that had lied to
-         * them about what Reset is for. Dropping the run means the next press
-         * builds one from the switches as they now stand. The modules are
-         * already fetched, so this costs a boot and not a download.
+         * `run.reset()` keeps the options the run was created with, so a
+         * reader who came back here to change the protocol switches would
+         * activate their next devices under the old policy and a page that
+         * had lied to them about what Reset is for. Dropping the run means
+         * the next press builds one from the switches as they now stand. The
+         * modules are already fetched, so this costs nothing to download.
          */
         await run?.stop();
         run = null;
         sessionExists = false;
-        bytesHeld = 0;
-        rowsHeld = 0;
-        publishedMs.a = 0;
-        publishedMs.b = 0;
+        activated.a = false;
+        activated.b = false;
         for (const side of ['a', 'b'] as const) {
           generatedMs[side].keygen = 0;
           generatedMs[side].kyber = 0;
+          generatedKeys[side] = 0;
         }
         published.a = 0;
         published.b = 0;
         derived.a = 0;
         derived.b = 0;
         awaitingDelivery = null;
-        shownRow = null;
-        pending.length = 0;
         for (const side of ['a', 'b'] as const) composers[side].input.value = '';
         /* Every reading, from the same map that fills them — a hand-written list
            here would go on clearing whatever it was written for while a reading
            added to the scene kept a stale number through a reset. */
         for (const element of readings.values()) element.textContent = '—';
-        hex.hidden = true;
-        row.hidden = true;
-        rowNote.hidden = true;
-        relayEmpty.hidden = false;
-        say('Reset. Fresh devices, a fresh relay, nothing recorded — braid is open again.');
+        say('Reset. A fresh relay, no devices, nothing recorded — braid is open again.');
       });
     });
 
@@ -1306,6 +1292,23 @@ const TOGGLES = [
         settings.open = false;
       }
     });
+
+    /* An insecure origin — plain http anywhere but localhost — has no
+       `crypto.subtle`, and no code here can change that. The demo would come
+       up anyway: registration runs on pure-JS primitives, and the run only
+       reaches for WebCrypto at the first encrypt, three presses in, where the
+       failure reads as the message's fault. That is the wrong place to learn
+       the page cannot run, so the gate is here: the curtain stays down over
+       the recording, exactly as it does for the reader with no scripts, and
+       the button — where the reader is looking — carries the answer. */
+    if (!window.isSecureContext) {
+      startButton.textContent = 'Demo needs HTTPS';
+      say(
+        'This page is not a secure context, so the browser withholds WebCrypto and nothing ' +
+          'here can encrypt. Open the demo over HTTPS or on localhost to run it live.',
+      );
+      return;
+    }
 
     /* The console is interactive from here, so the recording stops being what
        the reader is looking at. This runs on script execution rather than on

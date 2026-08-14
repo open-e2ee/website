@@ -1,55 +1,25 @@
 /*
- * The bytes behind `envelope.ciphertext`, and the short strip of them the
- * relay column prints.
+ * The bytes behind `envelope.ciphertext`.
  *
- * They live in a module of their own rather than in the component that prints
- * them, because both are facts about the SDK's output rather than about the
- * drawing, and because `demo-smoke.mjs` has to reproduce the strip exactly to
- * prove the relay is printing the row it is holding. One function, imported by
- * both, is the only version of that arithmetic that cannot drift.
+ * A module of its own rather than a helper in the component that uses it,
+ * because what it states is a fact about the SDK's output rather than about
+ * any drawing: `run.ts` measures every stored row with it, and the byte count
+ * the relay prints is this function's answer.
  *
  * ---------------------------------------------------------------- peeling ---
  *
  * `envelope.ciphertext` is base64 of base64. The SDK serialises the encrypted
  * message to a base64 document and the relay row carries that document base64
  * encoded again, so a single `atob` returns 2,649 bytes of *base64 characters*
- * — and a hex strip taken from those is a hex dump of the letters `eyJ0...`,
- * which changes only when the outer envelope's length changes. That is what the
- * first cut of this figure printed.
+ * — and a byte count taken from those measures the encoding rather than the
+ * ciphertext. That is what the first cut of this figure printed.
  *
  * The peel is adaptive rather than a hard-coded two, so a build of the SDK that
  * stops double-encoding keeps working: a layer is peeled only while the bytes
  * that came out are themselves a well-formed base64 document. Real ciphertext is
  * ~2,000 bytes of AEAD output and the chance of every one of them landing in a
  * 65-character alphabet is nil, so the loop stops at the true bytes.
- *
- * --------------------------------------------------------------- the window ---
- *
- * The strip does not start at byte 0, and that is measured rather than chosen.
- * Two sends on one warm session share a prekey header: bytes 0-146 are byte for
- * byte identical between them, as are 148-152, 329-334, 368-391 and the whole
- * tail from 400 to the end. The block that genuinely differs per message is
- * 153-328. A strip taken from the head of the envelope is therefore constant
- * for the whole run — it looks like a still image of ciphertext, which is the
- * opposite of the claim the figure is making.
- *
- * `HEX_OFFSET` sits inside the measured block with room either side of it.
- * `demo-smoke.mjs` sends twice and fails the run if the two strips match, so
- * this stays true rather than staying written down.
  */
-
-/** Where the strip starts, in decoded bytes. Inside the per-message block. */
-export const HEX_OFFSET = 160;
-
-/*
- * The strip's length, and how it wraps.
- *
- * Eighteen bytes is what the relay column holds at a legible size: three lines
- * of six, printed into the column's own `<pre>`. Anything beyond that is
- * dropped, because the extra lines have nowhere to go.
- */
-export const HEX_BYTES = 18;
-export const HEX_PER_LINE = 6;
 
 /* One extra peel over the two the SDK does today, and no more: the guard below
    is a heuristic, and a document that keeps satisfying it forever would spin. */
@@ -57,10 +27,9 @@ const MAX_LAYERS = 3;
 
 const decode = (text: string): Uint8Array | null => {
   const clean = text.replace(/[^A-Za-z0-9+/]/g, '');
-  /* Whole quanta only. The panel prints an excerpt of the envelope rather than
-     all of it, and the harness decodes that excerpt: trimming to a multiple of
-     four is what makes a prefix of the document decode to a prefix of the
-     bytes, which is what lets the two agree about byte 160. */
+  /* Whole quanta only: trimming to a multiple of four makes a prefix of the
+     document decode to a prefix of the bytes, so a truncated envelope still
+     measures rather than failing the decode. */
   const whole = clean.slice(0, clean.length - (clean.length % 4));
   if (whole.length === 0) return null;
   try {
@@ -98,25 +67,4 @@ export function ciphertextBytes(value: unknown): Uint8Array | null {
     bytes = inner;
   }
   return bytes;
-}
-
-/** The strip the relay lane prints: `HEX_BYTES` bytes from `HEX_OFFSET`, wrapped. */
-export function hexStrip(value: unknown): string[] {
-  const bytes = ciphertextBytes(value);
-  if (!bytes) return [];
-
-  /* A short envelope still prints bytes rather than nothing: the window slides
-     back to the end of what there is. The demo's own envelopes are two
-     kilobytes and never take this path; a smaller one would otherwise show an
-     empty lane under a caption saying the lane holds the ciphertext. */
-  const from = Math.min(HEX_OFFSET, Math.max(0, bytes.length - HEX_BYTES));
-  const window = [...bytes.subarray(from, from + HEX_BYTES)].map((byte) =>
-    byte.toString(16).padStart(2, '0'),
-  );
-
-  const lines: string[] = [];
-  for (let at = 0; at < window.length; at += HEX_PER_LINE) {
-    lines.push(window.slice(at, at + HEX_PER_LINE).join(' '));
-  }
-  return lines;
 }

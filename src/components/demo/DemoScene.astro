@@ -1,5 +1,18 @@
 ---
 import { STEPS } from '../../lib/demo/trace';
+import {
+  KEY_GLYPH_PATH,
+  KEY_GLYPH_VIEWBOX,
+  KEYHOLE_BARREL,
+  KEYHOLE_VIEWBOX,
+  KEYHOLE_WARD_PATH,
+  WHEEL_HUB,
+  WHEEL_PATH,
+  WHEEL_PAWL_PATH,
+  WHEEL_PAWL_PIN,
+  WHEEL_SPOKE_PATH,
+  WHEEL_VIEWBOX,
+} from '../../lib/demo/drawing';
 
 /*
  * The scene: two devices with the relay between them, and a message that
@@ -62,22 +75,62 @@ const LABELS = { a: 'Device A', b: 'Device B' } as const;
  * column it would look tidy under. There is no network in any of them and none
  * is simulated: this relay runs in the reader's tab.
  */
-const DEVICE_METRICS = [
+const DEVICE_METRICS: readonly {
+  key: string;
+  label: string;
+  tip: string;
+  sub?: boolean;
+}[] = [
   /* First, because it happens first and because it is the largest number on the
      panel by three orders of magnitude — the opening of the run is nearly all
-     key generation, and a reader who never saw that figure would take the
-     millisecond publish below it for the cost of getting a device ready.
+     key generation.
 
-     Two rows and not one: the Kyber half is the post-quantum half, and a claim
+     Two rows and not one: the ML-KEM work is the post-quantum work, and a claim
      about being quantum-safe is worth the line that prices it. It is a part of
-     the row above it, not an addition to it. */
-  { key: 'keygen', label: 'key generation' },
-  { key: 'kyber', label: 'kyber portion' },
-  { key: 'publish', label: 'publish' },
-  { key: 'establish', label: 'key agreement' },
-  { key: 'send', label: 'seal + send' },
-  { key: 'trip', label: 'round trip' },
-] as const;
+     the row above it, not an addition to it — `sub` draws it indented under its
+     parent so the panel says so too — and it is captioned by what it protects
+     against rather than by the algorithm's name, which most readers would have
+     to look up.
+
+     Every row is real cryptographic work this device did on its own processor —
+     the cost a developer pays on their users' hardware. The publish and
+     round-trip figures the recording also carries are deliberately absent:
+     each is a span through a relay that runs in this same tab, and a simulated
+     network's timings price nothing a developer can use. Encryption and
+     decryption qualify only because `run.ts` brackets them at the device's own
+     edge — sealing ends where the envelope is handed to transport, opening
+     starts where it arrives — so neither span contains the relay. The tips say
+     the same brackets in prose, and the decryption tip carries the one-interval
+     rule: a device's first opening is also its share of the key agreement, so
+     that one span prints on both rows — marked on this one — until a later
+     arrival gives decryption a figure of its own. */
+  {
+    key: 'keygen',
+    label: 'key generation',
+    tip: 'One-time setup: this device mints its identity and the batches of single-use keys it will publish, before any message exists.',
+  },
+  {
+    key: 'kyber',
+    label: 'post-quantum share',
+    sub: true,
+    tip: 'The ML-KEM slice of the row above — what quantum resistance adds to the bill, already counted in key generation.',
+  },
+  {
+    key: 'establish',
+    label: 'key agreement',
+    tip: 'Agreeing the first shared secrets with the other device, classical and post-quantum together.',
+  },
+  {
+    key: 'encrypt',
+    label: 'encryption',
+    tip: 'Sealing one message on this device, measured up to the hand-off to the relay.',
+  },
+  {
+    key: 'decrypt',
+    label: 'decryption',
+    tip: 'Opening one arrived envelope, from arrival to plaintext. A first opening also performs this device’s share of the key agreement — one span, shared with that row until a later arrival prices decryption alone.',
+  },
+];
 
 /* The two devices, in column order, for the shelves the relay keeps one of per
    device. Written once so a shelf cannot exist for a device the scene does not
@@ -85,54 +138,92 @@ const DEVICE_METRICS = [
 const SIDES = ['a', 'b'] as const;
 
 /*
- * The relay's shelves, in the order a message meets them, and one slot per
- * device in each.
+ * What the relay keeps for one account, in the order a message meets it.
  *
- * A relay does not keep a pile of prekeys and a box of messages. It keeps a
- * bundle per account — `fetchPreKeyBundle` is asked for one account's material
- * and spends that account's one-time keys — and a mailbox per recipient, which
- * is how a message addressed to one device is not offered to the other. The
- * rack drew one of each, which made the relay a pool: a reader could not see
- * that publishing fills your own shelf, and could not be shown what the next
- * step of the story needs, which is that sending to a peer spends the *peer's*
- * keys.
+ * The rack is organised by account rather than by kind of thing: a section per
+ * device, holding that device's prekeys and that device's mailbox. That is what
+ * a relay's storage actually looks like — `fetchPreKeyBundle` is asked for one
+ * account's material and spends that account's one-time keys, and a mailbox
+ * belongs to the recipient it queues for. Organised the other way, by kind, the
+ * relay read as a pool with a pile of prekeys and a box of messages, and the
+ * two facts the drawing exists to show — publishing fills *your own* section,
+ * sending to a peer spends the *peer's* — had no shape to land on.
  *
- * The slot labels ship as the neutral column names and are replaced at mount
- * with the names the session gave the two devices, by the same code that names
- * the phones. A name typed here would be a second opinion about what a device
- * is called.
+ * The section headings ship as the neutral column names and are replaced at
+ * mount with the names the session gave the two devices, by the same code that
+ * names the phones. A name typed here would be a second opinion about what a
+ * device is called.
  */
 const SLOTS = [
   { slot: 'bundles', label: 'public prekeys', empty: 'nothing published' },
-  { slot: 'mailbox', label: 'mailboxes', empty: 'nothing waiting' },
+  { slot: 'mailbox', label: 'mailbox', empty: 'empty' },
 ] as const;
 
 /*
- * The ratchet wheel, drawn from its own definition rather than from typed
- * coordinates.
+ * The two keyholes on the message, and why there are two rather than three.
  *
- * A sawtooth outline and a pawl above it, because that is what makes the
- * drawing say *one way*. The wheel used to be a strip of four teeth that lit up
- * and then cleared on the fifth message, and a drawing that empties is a
- * drawing that can go back — the one thing a ratchet cannot do. This wheel is
- * turned by `scene-view.ts` through a rotation that only ever increases, so
- * there is no state it can return to.
+ * "Triple ratchet" counts ratchets — the symmetric chain, the DH ratchet and
+ * the ML-KEM one. What locks a message is downstream of that: the message key
+ * is derived from *two* families of agreement, the classical elliptic-curve
+ * one and the post-quantum one, so the honest drawing is a lock with two
+ * keyholes. Three would draw the machinery; two draws what holds the door.
+ *
+ * Captioned by what each protects against rather than by algorithm name, for
+ * the readings' reason: most readers would have to look "Kyber" up.
  */
-const TEETH = 4;
-const WHEEL = { cx: 12, cy: 12, outer: 9.6, inner: 6.1 };
-const at = (radius: number, degrees: number) => {
-  const radians = (degrees * Math.PI) / 180;
-  return `${(WHEEL.cx + radius * Math.cos(radians)).toFixed(2)},${(
-    WHEEL.cy +
-    radius * Math.sin(radians)
-  ).toFixed(2)}`;
-};
-/* Out at a tooth tip, in along the tooth's back, then straight out again: the
-   radial edge is the face the pawl catches. */
-const WHEEL_PATH = `M${at(WHEEL.outer, 0)} ${Array.from({ length: TEETH }, (_, index) => {
-  const angle = ((index + 1) * 360) / TEETH;
-  return `L${at(WHEEL.inner, angle)} L${at(WHEEL.outer, angle)}`;
-}).join(' ')} Z`;
+const LOCKS = [
+  { lock: 'ec', label: 'classical' },
+  { lock: 'pq', label: 'post-quantum' },
+] as const;
+
+/*
+ * The ratchet train: three wheels, because "triple ratchet" counts ratchets
+ * and the drawing should let a reader count them too. The chain wheel in the
+ * middle is the one that makes message keys — it turns once per key derived
+ * and carries the count. The two flanking wheels are the agreement families
+ * that feed it, captioned with the same two words the envelope's keyholes
+ * wear, so a key rising off the classical wheel and landing in the classical
+ * keyhole needs no label of its own: its provenance is the legend.
+ *
+ * The family captions are read from `LOCKS` rather than retyped — one source
+ * for the two words that tie a wheel to its keyhole.
+ *
+ * Each wheel carries a one-sentence tooltip, because the captions name the
+ * ratchets without saying what any of them does, and the place a reader
+ * wonders that is the wheel itself. One sentence and not a paragraph: the
+ * hover is a gloss on the drawing, and the drawing stays the argument.
+ */
+const GEARS = [
+  {
+    kind: 'ec',
+    caption: LOCKS[0].label,
+    tip: 'Fresh elliptic-curve agreements fold new secrets into the session as the devices trade messages.',
+  },
+  {
+    kind: 'chain',
+    caption: 'chain',
+    tip: 'Hashes the running secret forward one notch per message — each notch yields exactly one message key, and it never turns back.',
+  },
+  {
+    kind: 'pq',
+    caption: LOCKS[1].label,
+    tip: 'Layers ML-KEM agreements into the same session, so recorded ciphertext stays sealed against a future quantum computer.',
+  },
+] as const;
+
+/*
+ * The wheel's geometry lives in `drawing.ts`, shared with the mobile figure —
+ * one demo at two widths must turn one wheel. The teeth and the pawl are what
+ * make the drawing say *one way*; the spoke is what makes a turn visible
+ * after it has happened. The wheel is turned by `scene-view.ts` through a
+ * rotation that only ever increases, so there is no state it can return to.
+ *
+ * Filled and not outlined: at 24px an outlined sawtooth ring collapses into
+ * a star of strokes (the previous drawing, kept in the round-7 compare
+ * sheet), and the solid ring is the version that still reads as a toothed
+ * wheel at the size the module gives it. The fill is this component's
+ * claim, in the styles below — the geometry module owns only the shape.
+ */
 
 /* The protocol steps, handed to the script so it never types a step name that
    `trace.ts` does not define. */
@@ -156,8 +247,8 @@ const STEP_LIST = STEPS.join(' ');
     are drawn at.
   */}
   <template data-scene-key-glyph>
-    <svg class="demo-key-glyph" viewBox="0 0 26 15" aria-hidden="true">
-      <path d="M10 5.5 H25 V13 H22 V8.5 H18 V13 H15 V8.5 H10 L7.5 12 H3 L0.5 7 L3 2 H7.5 Z" />
+    <svg class="demo-key-glyph" viewBox={KEY_GLYPH_VIEWBOX} aria-hidden="true">
+      <path d={KEY_GLYPH_PATH} />
     </svg>
   </template>
 
@@ -175,31 +266,75 @@ const STEP_LIST = STEPS.join(' ');
             rule in this system is the trust boundary, and the link between a
             device and the relay is the one edge in the scene that is *not* one.
 
-            Each rule spans exactly the grid's gap, because the phone fills its
-            column and the rack fills this one, so the gap is the whole of the
-            distance between them at any width. That is also why they are drawn
-            from the relay outwards rather than as elements of the scene: a line
-            positioned against the scene would need to know where the columns
-            landed.
+            Each rule spans exactly the gap between a phone and the rack —
+            the stylesheet pins its two ends to the same fixed column widths
+            the grid lays the scene out with, so the rule meets both boxes at
+            every width. The one time a link is more than scenery is when it
+            carries something: `scene-view.ts` marks the link a cue moves
+            material over, and the stylesheet lights it for that dwell.
+
+            The rule is a *connection*, not the gap itself: the standing
+            channel a device holds open to the relay, which does not exist
+            until the device has registered. Ships collapsed —
+            `data-connected` is the state, written by the `registered` cue —
+            and grows across the gap from the device's edge when the relay
+            accepts the device.
           */}
           {SIDES.map((side) => (
-            <span class="demo-relay-link" data-scene-link={side} aria-hidden="true" />
+            <span
+              class="demo-relay-link"
+              data-scene-link={side}
+              data-connected="false"
+              aria-hidden="true"
+            />
+          ))}
+
+          {/* The wire's name. Each standing channel is a WebSocket the device
+              holds open to the relay, and the label says so in the scene's
+              annotation voice. It shares the wire's column arithmetic and its
+              lifecycle: no connection, no name. The two children are the wide
+              word and its short form — the stylesheet shows whichever the gap
+              has room for, so the markup carries both and the swap costs no
+              layout. After the wires in source order on purpose: the label's
+              state rules reach it with a sibling combinator. */}
+          {SIDES.map((side) => (
+            <span
+              class="demo-relay-link-label"
+              data-scene-link-label={side}
+              aria-hidden="true"
+            >
+              <span class="demo-link-word-full">websocket</span>
+              <span class="demo-link-word-short">ws</span>
+            </span>
           ))}
 
           <div class="demo-relay-rack">
+            {/* The faceplate. The vent slats are the server's answer to the
+                phones' notch: the one flourish that says what kind of object
+                this is, drawn in the same ink and the same flat idiom, and
+                meaning nothing beyond that. */}
             <header class="demo-relay-header">
-              <span class="demo-relay-title">relay</span>
-              <span class="demo-relay-sub">never needs plaintext</span>
+              <span class="demo-relay-title">relay server</span>
+              <span class="demo-relay-sub">delivers encrypted messages</span>
+              <span class="demo-relay-vents" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
             </header>
 
-            {SLOTS.map(({ slot, label, empty }) => (
-              <div class="demo-relay-shelf">
-                <span class="demo-relay-shelf-label">{label}</span>
-                {SIDES.map((side) => (
+            {/* An account exists only once its device has registered:
+                `data-registered` ships false and the `registered` cue flips
+                it, which is when the stylesheet draws the bays in — the
+                relay building this device's storage as it accepts it. */}
+            {SIDES.map((side) => (
+              <div class="demo-relay-account" data-scene-account={side} data-registered="false">
+                <span class="demo-relay-account-name" data-scene-slot-name={side}>
+                  {LABELS[side]}
+                </span>
+                {SLOTS.map(({ slot, label, empty }) => (
                   <div class="demo-relay-slot" data-scene-slot={slot} data-scene-side={side}>
-                    <span class="demo-relay-slot-label" data-scene-slot-name={side}>
-                      {LABELS[side]}
-                    </span>
+                    <span class="demo-relay-slot-label">{label}</span>
                     <div
                       class="demo-relay-slot-body"
                       data-scene-slot-body={slot}
@@ -212,88 +347,6 @@ const STEP_LIST = STEPS.join(' ');
               </div>
             ))}
           </div>
-
-          {/*
-            "Stored", not "holding", because the mailbox above it is drawn empty
-            the moment the far device collects — and the relay still has the row,
-            which is the point the whole column is making. One word per fact: the
-            mailbox says what is waiting, this says what the relay has kept.
-          */}
-          <dl class="demo-readings" aria-label="Relay readings">
-            <div class="demo-reading">
-              <dt class="demo-reading-label">stored</dt>
-              <dd class="demo-reading-value" data-console-metric="relay-holding">
-                —
-              </dd>
-            </div>
-          </dl>
-
-          {/*
-            The stored row, under the relay that stored it. The row is a fact
-            about this column, so it belongs in this column. The log is the only
-            thing left under the scene.
-
-            The console's script fills these elements, so they carry the
-            console's classes and `data-console-` names. It fills them from
-            `Object.entries` of the envelope the relay stored, never from a
-            list. `demo-panel.test.mjs` guards that.
-          */}
-          <div class="demo-relay-row">
-            <p class="demo-console-empty" data-console-relay-empty>nothing stored yet</p>
-
-            {/*
-              How big the row is, drawn and named.
-
-              Size is the thing about a stored envelope that a figure states and
-              a reader still has to do arithmetic on, and it is also what the
-              protocol switches move most: the same sentence measures around
-              nine times larger on the wire with the braid switch off than with
-              it on. A bar is what makes that difference something the column
-              shows rather than something it reports.
-
-              `scene-view.ts` fills it, from the byte count on the cue, which
-              comes off the trace's own measure of the stored ciphertext. The
-              elements carry the scene's `data-scene-` names for that reason,
-              beside the console's row, which the console fills.
-            */}
-            <div class="demo-relay-size" data-scene-size hidden>
-              <span class="demo-relay-size-label">size</span>
-              <span class="demo-relay-size-track">
-                <span class="demo-relay-size-bar" data-scene-size-bar data-over="false" />
-              </span>
-              <span class="demo-relay-size-figure" data-scene-size-figure />
-            </div>
-
-            {/*
-              How much of the post-quantum key has travelled, and who has it.
-
-              The braid spreads one ML-KEM key agreement across many messages, a
-              chunk to a message, so the key is a thing under way for most of a
-              conversation rather than a thing that happens in one. This is where
-              that becomes visible: a fill that grows message by message, and a
-              mark at the point a device reports it produced the epoch secret.
-
-              Every number here is the braid's own, from `onBraidProgress` by way
-              of the recording. Nothing on this page counts chunks — the braid's
-              state machine is the only thing that can see one travel.
-
-              The row is absent under the direct setting rather than empty. That
-              mode sends the key whole in one message and raises no report, so
-              there is nothing to draw and no epoch under way to draw it for.
-            */}
-            <div class="demo-relay-braid" data-scene-braid hidden>
-              <span class="demo-relay-braid-label">key</span>
-              <span class="demo-relay-braid-track">
-                <span class="demo-relay-braid-bar" data-scene-braid-bar data-over="false" />
-              </span>
-              <span class="demo-relay-braid-figure" data-scene-braid-figure />
-              <span class="demo-relay-braid-mark" data-scene-braid-mark hidden />
-            </div>
-
-            <pre class="demo-console-hex" data-console-hex hidden></pre>
-            <dl class="demo-console-row" data-console-row hidden></dl>
-            <p class="demo-console-row-note" data-console-row-note hidden></p>
-          </div>
         </section>
       ) : (
         <section
@@ -305,15 +358,46 @@ const STEP_LIST = STEPS.join(' ');
             <div class="demo-phone-notch" aria-hidden="true" />
             <div class="demo-phone-screen">
               <header class="demo-phone-header">
-                <span class="demo-phone-who" data-scene-name={column}>
-                  {LABELS[column]}
+                {/* "Alice's device": the name owns the header and the suffix
+                    says what kind of thing this column is, in the muted voice
+                    the presence caption uses. `data-scene-name` sits on the
+                    inner span so the session's own name replaces exactly the
+                    name, never the suffix. */}
+                <span class="demo-phone-who">
+                  <span data-scene-name={column}>{LABELS[column]}</span><span
+                    class="demo-phone-who-suffix">'s device</span>
                 </span>
-                <span class="demo-phone-state" data-scene-device-state={column}>
+                <span
+                  class="demo-phone-state"
+                  data-scene-device-state={column}
+                  data-online="false"
+                >
                   offline
                 </span>
               </header>
 
               <ol class="demo-phone-chat" data-scene-chat={column} aria-live="polite" />
+
+              {/* The reader's own act of bringing this device up. A device
+                  begins powered but off the network — no connection drawn, no
+                  account at the relay — and this is the press that registers
+                  it. `DemoConsole.astro` wires it; the `registered` cue stamps
+                  the phone activated and the control folds away, because a
+                  second press could only repeat a registration the relay has
+                  already accepted. Drawn over the empty chat rather than as a
+                  row of its own, so the phone keeps one height with the
+                  control there and gone. */}
+              <div class="demo-phone-activate">
+                <button
+                  type="button"
+                  class="demo-phone-activate-button"
+                  data-scene-activate={column}
+                  disabled
+                  aria-label={`Register ${LABELS[column]}'s device with the relay`}
+                >
+                  Register with relay
+                </button>
+              </div>
 
               <div class="demo-phone-compose">
                 <label class="oe-visually-hidden" for={`demo-scene-compose-${column}`}>
@@ -341,98 +425,166 @@ const STEP_LIST = STEPS.join(' ');
             </div>
           </div>
 
-          {/* The device's own key material. Filled forms are private and never
-              leave; the outlined ones on the relay's shelf are the public halves
-              of these. Keeping both on screen is what makes that difference
-              visible rather than asserted.
+          {/* The module under the phone: the device's cryptographic facts, in
+              the device's own casing. These three rows are what the phone's
+              screen never shows — the key store, the ratchet, the costs — so
+              they are drawn as a piece of the hardware rather than as loose
+              captions: one panel, the phone's surface and border, squared the
+              way the rack is, because this is the machine side of the device
+              the way the rack is the machine side of the network. */}
+          <div class="demo-device-module">
+            {/* The device's own key material. The filled form is private and never
+                leaves; the outlined ones on the relay's shelf are the public halves
+                of it. Keeping both on screen is what makes that difference visible
+                rather than asserted.
 
-              The shapes are a motif and the number is the fact — a device holds
-              two hundred and four of these, and drawing one shape each would be
-              a wall rather than a diagram. See `KEY_MOTIF` in `scene-view.ts`. */}
-          <div class="demo-device-keys" data-scene-keys={column}>
-            <span class="demo-device-keys-label">private keys</span>
-            <ul class="demo-device-keys-list" data-scene-keys-list={column} />
-            <span class="demo-device-keys-count" data-scene-keys-count={column}>
-              0
-            </span>
-          </div>
+                One key stands for the store and the bar carries the amount: the
+                glyph says *key material lives here*, the fill says how much of the
+                run's most it holds, and the count is the fact. Keys that travel in
+                this scene set off from this glyph.
 
-          {/* Key generation, while it is happening.
+                This row is also where generation is watched. While the device is
+                making its keys the bar fills batch by batch from the SDK's own
+                progress reports and the count reads `so far / total`; once the
+                store settles the count is the plain amount. One row, because it is
+                one store — a separate "generating" bar drew the same material
+                twice and left a reader asking which of the two bars was the keys. */}
+            <div class="demo-device-keys" data-scene-keys={column}>
+              <span class="demo-device-keys-label">private keys</span>
+              <span class="demo-device-keys-anchor" data-scene-keys-anchor={column} />
+              <span class="demo-device-keys-track">
+                <span class="demo-device-keys-bar" data-scene-keys-bar={column} />
+              </span>
+              <span class="demo-device-keys-count" data-scene-keys-count={column}>
+                0
+              </span>
+            </div>
 
-              Making this device's keys is the longest thing the opening does —
-              two hundred keypairs, half a second of held main thread — and it
-              used to happen behind a curtain with a still frame in front of it.
-              The SDK reports a batch at a time through `onProgress`, the
-              recording keeps every report, and this is where they are drawn: a
-              fill that grows batch by batch and the count that says what the
-              fill is of.
+            {/* The ratchet, and it turns one way.
 
-              Both figures are the SDK's own, by way of the recording. Nothing
-              here interpolates between two reports — a counter that ran on its
-              own between them would be this page inventing the one thing the
-              row exists to show, and it would keep counting on the day
-              generation stalled.
+                Three wheels, each rotated a tooth at a time and never
+                reduced, so there is no frame in which any goes back and none
+                in which one stops. The pawl above each is why: a reader who
+                has seen one knows immediately which direction this can move
+                in.
 
-              The count is smaller than the one the shelf shows after publishing:
-              identity and signed prekeys are made without a report, and this row
-              only ever counts what was reported. */}
-          <div class="demo-device-keygen" data-scene-keygen={column} hidden>
-            <span class="demo-device-keygen-label">generating</span>
-            <span class="demo-device-keygen-track">
-              <span class="demo-device-keygen-bar" data-scene-keygen-bar={column} />
-            </span>
-            <span class="demo-device-keygen-figure" data-scene-keygen-figure={column} />
-          </div>
+                The three step on the protocol's own schedules. The chain
+                wheel turns once per message key derived — its turn count is
+                the "derived" figure beside the caption. The family wheels
+                click only when the conversation changes direction: that is
+                when the DH ratchet folds in a fresh agreement, and the SDK
+                keeps the post-quantum epochs in step with those same DH
+                steps, so a run of same-direction messages turns the chain
+                wheel alone. The message keys still fly from both family
+                wheels on every send, because every message key answers to
+                both families.
 
-          {/* The ratchet, and it turns one way.
+                `data-turns` is written by `scene-view.ts` and is deliberately
+                absent from the shipped markup. The wheels ship in the HTML,
+                so a scene whose script never mounted looks exactly like one
+                that mounted and had nothing to report — the attribute is what
+                tells them apart, and `demo-smoke.mjs` reads it for that
+                reason.
 
-              The wheel is rotated by a quarter turn per message key derived and
-              the rotation is never reduced, so there is no frame in which it
-              goes back and none in which it stops. The pawl above it is why:
-              a reader who has seen one knows immediately which direction this
-              can move in.
-
-              `data-turns` is written by `scene-view.ts` and is deliberately
-              absent from the shipped markup. The wheel itself ships in the HTML,
-              so a scene whose script never mounted looks exactly like one that
-              mounted and had nothing to report — the attribute is what tells
-              them apart, and `demo-smoke.mjs` reads it for that reason.
-
-              `scene-view.ts` writes the caption once a session exists, from the
-              selection event the SDK raises at key agreement. It reads "triple
-              ratchet" when the session runs the post-quantum ratchet. Before
-              that event the page knows of no ratchet, so the shipped caption
-              says so rather than name one. */}
-          <div class="demo-ratchet" data-scene-ratchet={column}>
-            <svg
-              class="demo-ratchet-wheel"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              data-scene-ratchet-wheel={column}
-            >
-              <g class="demo-ratchet-turn" data-scene-ratchet-turn={column}>
-                <path d={WHEEL_PATH} />
-              </g>
-              <path class="demo-ratchet-pawl" d="M12 2.4 L14.2 0 L9.8 0 Z" />
-            </svg>
-            <span class="demo-ratchet-label" data-scene-ratchet-label={column}>
-              not yet agreed
-            </span>
-            <span class="demo-ratchet-count" data-scene-ratchet-count={column}>
-              0 keys
-            </span>
-          </div>
-
-          <dl class="demo-readings" aria-label={`${LABELS[column]} readings`}>
-            {DEVICE_METRICS.map(({ key, label }) => (
-              <div class="demo-reading">
-                <dt class="demo-reading-label">{label}</dt>
-                <dd class="demo-reading-value" data-console-metric={`${column}-${key}`}>
-                  —
-                </dd>
+                `scene-view.ts` writes the caption once a session exists, from
+                the selection event the SDK raises at key agreement. It reads
+                "triple ratchet" when the session runs the post-quantum
+                ratchet — three wheels engaged — and "double ratchet" puts the
+                post-quantum wheel visibly out of gear rather than removing
+                it: the difference between the two ratchets is exactly one
+                wheel, and the drawing shows which. Before that event the page
+                knows of no ratchet, so the shipped caption says so rather
+                than name one. */}
+            <div class="demo-ratchet" data-scene-ratchet={column}>
+              <div class="demo-ratchet-head">
+                <span class="demo-ratchet-label" data-scene-ratchet-label={column}>
+                  not yet agreed
+                </span>
+                <span class="demo-ratchet-count" data-scene-ratchet-count={column}>
+                  0 message keys derived
+                </span>
               </div>
-            ))}
-          </dl>
+              <div class="demo-ratchet-train" data-scene-ratchet-train={column}>
+                {
+                  GEARS.map(({ kind, caption, tip }) => (
+                    <figure
+                      class="demo-ratchet-gear"
+                      data-gear={kind}
+                      tabindex="0"
+                      aria-describedby={`demo-gear-tip-${column}-${kind}`}
+                    >
+                      <svg
+                        class="demo-ratchet-wheel"
+                        viewBox={WHEEL_VIEWBOX}
+                        aria-hidden="true"
+                        {...(kind === 'chain'
+                          ? { 'data-scene-ratchet-wheel': column }
+                          : { 'data-scene-ratchet-feeder': column, 'data-kind': kind })}
+                      >
+                        <g
+                          class="demo-ratchet-turn"
+                          {...(kind === 'chain' ? { 'data-scene-ratchet-turn': column } : {})}
+                        >
+                          <path class="demo-ratchet-rim" d={WHEEL_PATH} fill-rule="evenodd" />
+                          <path class="demo-ratchet-spoke" d={WHEEL_SPOKE_PATH} />
+                          <circle
+                            class="demo-ratchet-hub"
+                            cx={WHEEL_HUB.cx}
+                            cy={WHEEL_HUB.cy}
+                            r={WHEEL_HUB.r}
+                          />
+                        </g>
+                        {/* The pawl sits outside the turning group on purpose:
+                            the wheel rotates under a finger that does not,
+                            which is the mechanism the icon is named for. */}
+                        <path class="demo-ratchet-pawl" d={WHEEL_PAWL_PATH} />
+                        <circle
+                          class="demo-ratchet-pawl"
+                          cx={WHEEL_PAWL_PIN.cx}
+                          cy={WHEEL_PAWL_PIN.cy}
+                          r={WHEEL_PAWL_PIN.r}
+                        />
+                      </svg>
+                      <figcaption class="demo-ratchet-gear-name">{caption}</figcaption>
+                      <span class="demo-ratchet-tip" role="tooltip" id={`demo-gear-tip-${column}-${kind}`}>
+                        {tip}
+                      </span>
+                    </figure>
+                  ))
+                }
+              </div>
+            </div>
+
+            <dl class="demo-readings" aria-label={`${LABELS[column]} readings`}>
+              {DEVICE_METRICS.map(({ key, label, tip, sub }) => (
+                <div
+                  class={`demo-reading${sub ? ' demo-reading-sub' : ''}`}
+                  tabindex="0"
+                  aria-describedby={`demo-reading-tip-${column}-${key}`}
+                >
+                  <dt class="demo-reading-label">
+                    {/* The dim is on this span and not the dt, because the tip
+                        below shares the dt and an opacity on the term would
+                        wash the tip's own surface translucent. */}
+                    <span class="demo-reading-name">{label}</span>
+                    {/* The gears' tip, worn by a reading: same box, same
+                        reveal, anchored to the row. Inside the dt because a
+                        list's div admits only terms and definitions. */}
+                    <span
+                      class="demo-ratchet-tip"
+                      role="tooltip"
+                      id={`demo-reading-tip-${column}-${key}`}
+                    >
+                      {tip}
+                    </span>
+                  </dt>
+                  <dd class="demo-reading-value" data-console-metric={`${column}-${key}`}>
+                    —
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </section>
       ),
     )
@@ -459,11 +611,64 @@ const STEP_LIST = STEPS.join(' ');
   <div class="demo-spent-key" data-scene-spent-key hidden aria-hidden="true" />
 
   {/*
-    The envelope. One element for the whole journey — sealed at the sending
+    The publish burst, five keys deep.
+
+    Publishing sends a bundle of public halves up to the relay, and these are
+    what a reader watches make that trip: they set off from the device's one
+    key glyph and land on its shelf's one key glyph, in clumps, on the step's
+    own clock. Five of them because a burst needs members, not because five is
+    a count of anything — the shelf's bar and figure carry the amount.
+
+    Empty in the markup and stamped from the template at mount, like the spent
+    key above and for the same reason. A burst per device, not one shared set:
+    the two registrations play on independent lanes and may publish close
+    enough together that both bursts are in the air at once.
+  */}
+  {
+    SIDES.map((side) =>
+      [0, 1, 2, 3, 4].map(() => (
+        <div class="demo-flying-key" data-scene-flying-key={side} hidden aria-hidden="true" />
+      )),
+    )
+  }
+
+  {/*
+    The message keys, on their way from a ratchet to the message's two keyholes.
+
+    These are the keys that actually lock a message, and neither is half of a
+    keypair: the ratchet derives fresh symmetric material per message, the
+    sender's wheel turns and its keys lock the two keyholes, and the receiver's
+    wheel makes the matching keys to open them. Drawing the derivation as keys
+    leaving the wheel is what ties the wheel to the message — the wheel stopped
+    being an odometer and became the thing the locks answer to.
+
+    One traveller per keyhole, addressed by the same `lock` name, so each key
+    lands on its own hole and turns it. Filled, because a message key is a
+    secret and every secret in this scene is drawn solid. They never cross the
+    gap between columns: the sender's flight ends at the message while it is
+    still at the sender, and the receiver's starts only once it has arrived, so
+    no frame shows a secret in transit — the one thing the protocol never does.
+
+    Empty in the markup and stamped from the template at mount, like the spent
+    key above and for the same reason.
+  */}
+  {
+    LOCKS.map(({ lock }) => (
+      <div class="demo-message-key" data-scene-message-key={lock} hidden aria-hidden="true" />
+    ))
+  }
+
+  {/*
+    The message. One element for the whole journey — locked at the sending
     device, carried to the relay, collected by the far one, opened there, and
     then folded into that device's conversation as the plaintext bubble appears.
     Reusing a single node is the point: a reader who sees the same object arrive
     and open learns that the message was wrapped rather than swapped.
+
+    A plain tile rather than a drawn envelope. The flap and the padlock it used
+    to wear said "envelope" twice and said nothing about *how* it was locked;
+    the lock rail below says exactly that — two keyholes, one per family of
+    protection, turned by the keys the ratchet sends over.
   */}
   <div class="demo-envelope" data-scene-envelope hidden>
     <div class="demo-envelope-meta" data-scene-envelope-meta>
@@ -495,41 +700,50 @@ const STEP_LIST = STEPS.join(' ');
         </span>
       </span>
     </div>
+    {/*
+      The braid's chunk, when a braided session sent one. `scene-view.ts` fills
+      and shows this only when the cue carries the braid's own report, so a
+      direct-mode run never grows the row — the strip is the braid switch made
+      visible on the thing it changes, which is the message itself.
+    */}
+    <span class="demo-envelope-chunk" data-scene-envelope-chunk hidden></span>
+    {/*
+      The lock rail: the message's two keyholes, drawn in the surface colour on
+      the ciphertext fill so the pair inverts with the theme together. Each
+      keyhole turns a quarter when its key lands — `data-locked` is the state,
+      the rotation is the animation — and turns back when the receiver's key
+      opens it. The captions name what each lock protects against.
+    */}
+    <div class="demo-envelope-locks" aria-hidden="true">
+      {
+        LOCKS.map(({ lock, label }) => (
+          <span class="demo-envelope-lockset">
+            <svg
+              class="demo-keyhole"
+              viewBox={KEYHOLE_VIEWBOX}
+              data-scene-keyhole={lock}
+              data-locked="false"
+            >
+              <g class="demo-keyhole-turn">
+                <circle cx={KEYHOLE_BARREL.cx} cy={KEYHOLE_BARREL.cy} r={KEYHOLE_BARREL.r} />
+                <path d={KEYHOLE_WARD_PATH} />
+              </g>
+            </svg>
+            <span class="demo-envelope-lock-label">{label}</span>
+          </span>
+        ))
+      }
+    </div>
     <div class="demo-envelope-payload" data-scene-envelope-payload>
-      {/*
-        The flap. It is what makes the shape read as an envelope rather than as
-        a labelled box, and it is drawn over the payload in `currentColor` so it
-        is legible against both payload states — the sealed fill and the open
-        one invert together with the theme, and the flap goes with them.
-      */}
-      <svg
-        class="demo-envelope-flap"
-        viewBox="0 0 100 26"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M0 0 L50 24 L100 0"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          vector-effect="non-scaling-stroke"></path>
-      </svg>
-      <svg
-        class="demo-envelope-lock"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        data-scene-envelope-lock
-      >
-        <path
-          d="M7 10V7a5 5 0 0 1 10 0v3"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.4"
-          stroke-linecap="round"></path>
-        <rect x="4.5" y="10" width="15" height="10.5" rx="2" fill="currentColor"></rect>
-      </svg>
       <span class="demo-envelope-text" data-scene-envelope-text></span>
+      {/*
+        The sealed envelope's size, worn from the moment the seal lands to the
+        moment the tile folds away — the outside of the envelope, one of the
+        two facts the relay can read. On the tile rather than in the mailbox
+        bay because the tile rests drawn over the bay, where a figure behind
+        it peeked out as a stray fragment.
+      */}
+      <span class="demo-envelope-size" data-scene-envelope-size hidden></span>
     </div>
   </div>
 </div>
@@ -542,41 +756,90 @@ const STEP_LIST = STEPS.join(' ');
      * The relay is the middle column because the markup writes it between the
      * two devices, not because a third column landed there.
      *
-     * It is narrower than they are, and the fraction is the point. Drawn at the
-     * devices' width the relay was a third peer: a box the same size as the
-     * things either side of it, which is exactly what it is not — it is the
-     * infrastructure between two people, and it holds nothing either of them
-     * would recognise as theirs. Under two thirds of a device it reads as what
-     * it is without becoming an afterthought, and the shelves inside it still
-     * hold five key shapes and a count on one line at the widths the band is
-     * usually read at.
+     * It is narrower than they are, and the difference is the point. Drawn at
+     * the devices' width the relay was a third peer: a box the same size as
+     * the things either side of it, which is exactly what it is not — it is
+     * the infrastructure between two people, and it holds nothing either of
+     * them would recognise as theirs.
      *
-     * A fraction rather than a fixed width, so the relation survives every
-     * width: the relay is always the same share narrower, and the stored row
-     * underneath it — the widest content in the column — narrows with it rather
-     * than at one breakpoint.
+     * The columns are fixed widths and `space-between` pushes them to the
+     * band's edges, so all of the spare width becomes distance between a
+     * device and the relay. That distance is the drawing's subject: the
+     * network links span it, and a message visibly *travels* to reach the
+     * relay rather than hopping a curb. A phone is a phone-sized thing —
+     * past 300px a device column reads as a tablet and the chat bubbles
+     * stretch into prose — so the spare width goes to the gaps, which can
+     * take any amount of it.
+     *
+     * The two widths are custom properties because the network links below
+     * are pinned to the same numbers: a link runs from a device's inner edge
+     * to the rack's, and those edges sit where these values put them.
      */
-    grid-template-columns: 1fr minmax(0, 0.62fr) 1fr;
-    gap: var(--oe-space-6);
-    align-items: start;
+    --demo-device-width: 300px;
+    --demo-relay-width: 232px;
+    /* What a traveller glows: light. A glow is a light source, so it does not
+       flip with the theme — surface here and foreground under `.dark` are the
+       same warm white. Not the accent: the accent already inks every busy bay,
+       bar and glyph, and a scene where the stores, the wires *and* the flyers
+       all shout the same blue has no *watch this* left. */
+    --demo-traveller-halo: var(--oe-surface);
+    /* A dormant channel. Connected but idle, a wire rests in a pale wash of
+       the accent — the traffic ink at a whisper — so open-and-quiet and
+       carrying-something read as two states of one blue rather than two
+       different objects. Mixed over the canvas so it sits back in both
+       themes. */
+    --demo-wire-dormant: color-mix(in srgb, var(--oe-accent) 45%, var(--oe-canvas));
+    grid-template-columns:
+      var(--demo-device-width) var(--demo-relay-width) var(--demo-device-width);
+    justify-content: space-between;
+    column-gap: var(--oe-space-6);
+    /* Columns stretch — the default — so the rack can be made as tall as a
+       device with its module: the three machines stand on one baseline and
+       one topline, which is what makes them read as peers in one drawing
+       rather than three exhibits of different heights. */
+  }
+
+  /* The same warm white — `--oe-surface` goes near-black under `.dark`, and a
+     halo that followed it would read as a shadow. */
+  :global(:root.dark) .demo-scene {
+    --demo-traveller-halo: var(--oe-foreground);
   }
 
   .demo-scene-column {
     display: flex;
     flex-direction: column;
-    gap: var(--oe-space-3);
+    gap: var(--oe-space-2);
     min-width: 0;
   }
 
   /* --------------------------------------------------------------- device --- */
 
+  /*
+   * The phone ends where its content does. Below the compose bar there is
+   * nothing of the device to show, so the casing fades out instead of closing
+   * — a bottom bezel around no content read as a drawer the demo never opens.
+   * The mask starts at the screen's bottom edge and spends the casing's own
+   * bottom padding fading, so the input and the send button sit fully inked
+   * and the chassis dissolves just under them.
+   */
   .demo-phone {
     background: var(--oe-device-surface);
     border: 2px solid var(--oe-border);
-    border-radius: 26px;
+    border-radius: 26px 26px 0 0;
     padding: var(--oe-space-2);
     padding-top: var(--oe-space-3);
+    padding-bottom: 1.6rem;
     position: relative;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 calc(100% - 1.6rem),
+      transparent calc(100% - 0.25rem)
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      #000 calc(100% - 1.6rem),
+      transparent calc(100% - 0.25rem)
+    );
   }
 
   .demo-phone-notch {
@@ -587,13 +850,73 @@ const STEP_LIST = STEPS.join(' ');
     background: var(--oe-border);
   }
 
+  /* Square at the bottom for the fade's reason: rounded-off corners say "this
+     object is complete", and the bottom of this object is deliberately not.
+     Positioned so the activation overlay below insets against the screen and
+     not the whole casing. */
   .demo-phone-screen {
     background: var(--oe-surface);
-    border-radius: 18px;
+    border-radius: 18px 18px 0 0;
     display: flex;
     flex-direction: column;
-    min-height: 17rem;
     overflow: hidden;
+    position: relative;
+  }
+
+  /*
+   * The activation control, floated over the screen. An overlay rather than a
+   * row of the flex column so the phone keeps one height whether the control
+   * is there or gone — it covers the whole screen but takes no pointer except
+   * at the button itself, and everything under it is disabled until the
+   * device is up anyway. Hidden by the phone's own `data-activated`, which
+   * the `registered` cue writes: the state lives on the scene, the console
+   * only ever disables the button.
+   */
+  .demo-phone-activate {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .demo-phone[data-activated='true'] .demo-phone-activate {
+    display: none;
+  }
+
+  /* The Send button's ink: activation is the same kind of act — the reader
+     moving the protocol — so it wears the same accent. */
+  .demo-phone-activate-button {
+    pointer-events: auto;
+    padding: var(--oe-space-2) var(--oe-space-3);
+    border: 0;
+    border-radius: var(--oe-radius-sm);
+    background: var(--oe-accent);
+    color: var(--oe-accent-foreground);
+    font: inherit;
+    cursor: pointer;
+    transition:
+      box-shadow var(--oe-duration-normal) ease,
+      opacity var(--oe-duration-normal) ease;
+  }
+
+  /* The demo's calls to action — Start on the curtain, this button on the
+     phone — shout their availability: a tight bright ring and a wide bloom,
+     both accent, so the one press that moves the story forward is the
+     brightest thing standing still. Send below keeps the quiet single halo,
+     because by then the reader has learned the grammar. Disabled buttons
+     stay flat. */
+  .demo-phone-activate-button:not(:disabled) {
+    box-shadow:
+      0 0 6px color-mix(in srgb, var(--oe-accent) 85%, transparent),
+      0 0 20px color-mix(in srgb, var(--oe-accent) 60%, transparent);
+  }
+
+  .demo-phone-activate-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 
   .demo-phone-header {
@@ -609,13 +932,56 @@ const STEP_LIST = STEPS.join(' ');
     font-weight: 600;
   }
 
+  /* The presence caption's own muted voice, so the header reads as a bold
+     name with a quiet kind: Alice's device. */
+  .demo-phone-who-suffix {
+    font-weight: 400;
+    color: var(--oe-text-muted, inherit);
+    opacity: 0.7;
+  }
+
+  /* The suffix belongs to a *named* device. Until the session names the
+     phones (`mountScene` writes the names and stamps the scene), the headers
+     carry the neutral column labels, and "Device A's device" is not a
+     sentence the drawing should say. */
+  .demo-scene:not([data-named='true']) .demo-phone-who-suffix {
+    display: none;
+  }
+
   .demo-phone-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font-family: var(--oe-font-mono);
     font-size: 0.75rem;
     color: var(--oe-text-muted, inherit);
     opacity: 0.7;
   }
 
+  /* The indicator dot, red until the device reports itself ready. The two
+     colours are literals rather than tokens because the palette has no
+     semantic pair for up/down — both are mid-tone so they read on the light
+     and the dark surface alike. */
+  .demo-phone-state::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    flex: none;
+    border-radius: 50%;
+    background: #c0453c;
+  }
+
+  .demo-phone-state[data-online='true']::before {
+    background: #1d9e63;
+  }
+
+  /* The screen space for messages is fixed: a phone does not grow when a
+     conversation does, the conversation scrolls. A height rather than a
+     max-height, because a cap only stops the growing at the cap — below it
+     the device was still a box that changed size every time a bubble landed,
+     and the two phones sat at different heights whenever one side had said
+     more. `say()` in `scene-view.ts` keeps the newest bubble scrolled into
+     view. */
   .demo-phone-chat {
     list-style: none;
     margin: 0;
@@ -623,9 +989,10 @@ const STEP_LIST = STEPS.join(' ');
     display: flex;
     flex-direction: column;
     gap: var(--oe-space-2);
-    flex: 1;
+    height: 13rem;
     overflow-y: auto;
-    max-height: 12rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--oe-border) transparent;
   }
 
   /* Created by `scene-view.ts`, so scoped selectors never reach them — see the
@@ -660,6 +1027,38 @@ const STEP_LIST = STEPS.join(' ');
     opacity: 0.55;
   }
 
+  /*
+   * A bubble whose envelope is still on screen. The receiver's copy is put in
+   * the chat on the `opened` cue, but the plaintext may not sit there while
+   * the tile above is still being decrypted and folding — the chat would show
+   * the message before anything had opened it, the seal's rule told from the
+   * other end. So it holds its place in the flow invisibly until the fold is
+   * done. With motion on, the fold is the morph onto this bubble's own box
+   * and its landing makes the trade — `scene-view.ts` clears the state on
+   * `transitionend`. This delayed write is the reduced-motion path: the delay
+   * is the fold's own arithmetic in `.demo-envelope[data-landing]` below plus
+   * the fold's duration — the same total as the morph's own landing, so
+   * whichever fires first, the reveal lands on the same beat.
+   *
+   * An animation rather than a transition, because the element is born in this
+   * state and a transition needs a change to run from. Zero seconds long with
+   * `forwards`, it is a delayed write rather than a motion, so the blanket
+   * reduced-motion rule zeroes nothing that matters here — the wait is
+   * information, the landing delay's asymmetry.
+   */
+  .demo-phone-chat :global(.demo-phone-bubble[data-arriving='true']) {
+    visibility: hidden;
+    animation: demo-bubble-arrive 0s
+      calc(var(--demo-flight-ms, 700ms) * 1.35 + var(--oe-duration-slow, 400ms) * 2 + 520ms)
+      forwards;
+  }
+
+  @keyframes demo-bubble-arrive {
+    to {
+      visibility: visible;
+    }
+  }
+
   .demo-phone-compose {
     display: flex;
     gap: var(--oe-space-2);
@@ -686,6 +1085,17 @@ const STEP_LIST = STEPS.join(' ');
     color: var(--oe-accent-foreground);
     font: inherit;
     cursor: pointer;
+    transition:
+      box-shadow var(--oe-duration-normal) ease,
+      opacity var(--oe-duration-normal) ease;
+  }
+
+  /* A ready Send is the next act on offer — the quiet halo, not the calls
+     to action's double ring: two of these sit on screen at once for the
+     rest of the run, and at full shout they would drown the travellers the
+     scene is asking the reader to watch. */
+  .demo-phone-send:not(:disabled) {
+    box-shadow: 0 0 8px color-mix(in srgb, var(--oe-accent) 45%, transparent);
   }
 
   .demo-phone-input:disabled,
@@ -696,8 +1106,27 @@ const STEP_LIST = STEPS.join(' ');
 
   /* ----------------------------------------------------------- key store --- */
 
+  /* The rack's grammar on the device's side: casing colour, the 2px border,
+     the squared radius. Rows divided by the hairline the phone divides its
+     screen with, so the panel reads as one instrument with three gauges
+     rather than three captions that happen to be stacked. */
+  .demo-device-module {
+    background: var(--oe-device-surface);
+    border: 2px solid var(--oe-border);
+    border-radius: 12px;
+    padding: var(--oe-space-2) var(--oe-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-2);
+  }
+
+  .demo-device-module > * + * {
+    border-top: 1px solid var(--oe-border);
+    padding-top: var(--oe-space-2);
+  }
+
   .demo-device-keys,
-  .demo-ratchet {
+  .demo-ratchet-head {
     display: flex;
     align-items: center;
     gap: var(--oe-space-2);
@@ -705,9 +1134,19 @@ const STEP_LIST = STEPS.join(' ');
     font-size: 0.75rem;
   }
 
+  .demo-ratchet {
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-1);
+  }
+
   .demo-device-keys-label,
   .demo-ratchet-label {
     opacity: 0.7;
+    transition:
+      color var(--oe-duration-normal) ease,
+      opacity var(--oe-duration-normal) ease,
+      text-shadow var(--oe-duration-normal) ease;
   }
 
   /* The counts carry the real magnitude, so they are the emphatic part of the
@@ -717,37 +1156,21 @@ const STEP_LIST = STEPS.join(' ');
     font-variant-numeric: tabular-nums;
     font-weight: 600;
     margin-left: auto;
+    transition:
+      color var(--oe-duration-normal) ease,
+      text-shadow var(--oe-duration-normal) ease;
   }
 
-  .demo-device-keys-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .demo-device-keys-anchor {
     display: flex;
-    gap: var(--oe-space-1);
+    flex: none;
   }
 
-  /* ------------------------------------------------------ key generation --- */
-
-  /* Built to the same three parts as the relay's size row — label, track,
-     figure — because it answers the same kind of question and a reader should
-     not have to learn a second way of reading a bar. */
-  .demo-device-keygen {
-    display: flex;
-    align-items: center;
-    gap: var(--oe-space-2);
-    font-family: var(--oe-font-mono);
-    font-size: 0.72rem;
-    line-height: 1.5;
-  }
-
-  .demo-device-keygen-label {
-    color: var(--oe-muted);
-  }
-
-  /* The track takes what the label and the figure leave, and shrinks to
-     nothing rather than pushing the column wider than the scene has room for. */
-  .demo-device-keygen-track {
+  /* How much, against the most this run has held — and while the device is
+     still generating, how far through the batch it is. The width moves on the
+     flight's own clock so a store that fills as keys arrive, or dips as one is
+     spent, changes at the speed the scene's crossings move at. */
+  .demo-device-keys-track {
     flex: 1;
     min-width: 0;
     height: 0.5rem;
@@ -755,60 +1178,221 @@ const STEP_LIST = STEPS.join(' ');
     border: 1px solid var(--oe-border);
     border-radius: var(--oe-radius-sm);
     background: var(--oe-surface-sunken);
+    transition:
+      border-color var(--oe-duration-normal) ease,
+      box-shadow var(--oe-duration-normal) ease;
   }
 
-  /* Length comes from the two counts on the cue and from nothing else, so the
-     sheet gives it none. It grows at a constant fill — the one length the
-     motion palette has, and the same one the size and braid bars use. */
-  .demo-device-keygen-bar {
+  .demo-device-keys-bar {
     display: block;
     width: 0;
     height: 100%;
     background: var(--oe-diagram-ciphertext-fill);
-    transition: width var(--oe-duration-normal) ease;
+    transition:
+      width var(--demo-flight-ms, 700ms) cubic-bezier(0.2, 0.8, 0.3, 1),
+      background var(--oe-duration-normal) ease;
   }
 
-  /* The count is the fact and the bar is the glance, so the count is the
-     emphatic part — the same weighting the key and ratchet rows use. Tabular,
-     because it changes in place and digits that shift the line as they tick
-     read as the row moving rather than the number. */
-  .demo-device-keygen-figure {
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    margin-left: auto;
+  /* The store wears the traffic ink while its device is writing it: the same
+     accent everything working in this scene lights — track edged and glowing
+     like a busy bay, glyph, fill, label and count all in the ink, the label
+     at full strength because a dimmed accent reads as a different colour.
+     `scene-view.ts` sets and clears `data-busy` with the generating cues,
+     the bundle shelf's word for the same fact. */
+  .demo-device-keys[data-busy='true'] .demo-device-keys-track {
+    border-color: var(--oe-accent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  .demo-device-keys[data-busy='true'] .demo-device-keys-bar {
+    background: var(--oe-accent);
+  }
+
+  .demo-device-keys[data-busy='true'] .demo-device-keys-label {
+    color: var(--oe-accent);
+    opacity: 1;
+    text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  .demo-device-keys[data-busy='true'] .demo-device-keys-count {
+    color: var(--oe-accent);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  .demo-device-keys[data-busy='true'] :global(.demo-key-glyph) {
+    fill: var(--oe-accent);
+    filter: drop-shadow(0 0 5px var(--oe-accent));
   }
 
   /* ------------------------------------------------------------- ratchet --- */
 
-  .demo-ratchet-wheel {
-    width: 26px;
-    height: 26px;
-    flex: none;
-    overflow: visible;
-    color: var(--oe-diagram-ratchet-2);
+  /* The train: the two family wheels flanking the chain wheel they feed. Each
+     figure is a wheel over its name; the names are the scene's legend for key
+     material — the same two family words the envelope's keyholes wear. */
+  .demo-ratchet-train {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: var(--oe-space-2);
+    padding: 0 var(--oe-space-1);
   }
 
-  .demo-ratchet-turn path {
+  .demo-ratchet-gear {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    /* The anchor for this gear's tooltip. */
+    position: relative;
+  }
+
+  /* One sentence on what this ratchet does, shown on hover and on keyboard
+     focus — the figures are focusable for exactly this. Body face and not the
+     module's mono: the tip is a sentence of prose, not an instrument label.
+     `pointer-events: none` keeps the tip from holding itself open when the
+     cursor crosses it on the way elsewhere. */
+  .demo-ratchet-tip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 13rem;
+    padding: var(--oe-space-1) var(--oe-space-2);
+    background: var(--oe-surface);
+    border: 1px solid var(--oe-border);
+    border-radius: var(--oe-radius-sm);
+    font-family: var(--oe-font-sans);
+    font-size: 0.7rem;
+    line-height: 1.45;
+    text-align: left;
+    color: var(--oe-text);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--oe-duration-fast) ease-out;
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .demo-ratchet-gear:hover .demo-ratchet-tip,
+  .demo-ratchet-gear:focus-visible .demo-ratchet-tip {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* The flanking gears sit at the module's edges, where a centred tip would
+     run past the casing: theirs hang from the edge they sit on instead. */
+  .demo-ratchet-gear:first-child .demo-ratchet-tip {
+    left: 0;
+    transform: none;
+  }
+
+  .demo-ratchet-gear:last-child .demo-ratchet-tip {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  .demo-ratchet-gear-name {
+    font-family: var(--oe-font-mono);
+    font-size: 0.6rem;
+    opacity: 0.7;
+  }
+
+  .demo-ratchet-wheel {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    overflow: visible;
+    /* The keys' own ink: the wheels are working machinery in the same
+       drawing as the keys they turn out, not a lighter annotation of it. */
+    color: var(--oe-diagram-carrier-stroke);
+  }
+
+  /* The chain wheel is the working part — the one that makes message keys —
+     so it is the large one, the way the phones' screens outsize their
+     bezels. */
+  .demo-ratchet-gear[data-gear='chain'] .demo-ratchet-wheel {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* A double-ratchet session takes the post-quantum wheel out of gear rather
+     than off the drawing: what separates the two ratchets is exactly this
+     wheel, and a reader should see it standing idle, not wonder where it
+     went. */
+  .demo-ratchet-wheel[data-engaged='false'] {
+    opacity: 0.35;
+  }
+
+  /* Lit while its message keys are in the air — the train is the thing doing
+     the deriving, worn for exactly as long as they fly. The accent, because
+     that is what this page paints working machinery with: the serving wire,
+     its label and the holding mailbox all light the same blue, and a turning
+     ratchet is the same fact. Not `currentColor`: a glow is light, and the
+     wheels' ink is the carrier near-black, which would cast a shadow
+     instead — the accent is mid-tone on both themes, the wire's own
+     precedent. `scene-view.ts` sets and clears it with the flight. */
+  .demo-ratchet-train[data-deriving='true'] .demo-ratchet-wheel {
+    filter: drop-shadow(0 0 5px var(--oe-accent));
+  }
+
+  /* The ring and the hub are solid, the spoke is a stroke: a hand on a dial,
+     not a second rim. */
+  .demo-ratchet-rim,
+  .demo-ratchet-hub {
+    fill: currentColor;
+  }
+
+  .demo-ratchet-spoke {
     fill: none;
     stroke: currentColor;
-    stroke-width: 2;
-    stroke-linejoin: round;
+    stroke-width: 1.8;
   }
 
   /* Turned by `scene-view.ts` through a rotation that only ever grows, so the
      transition is always in one direction. `view-box` puts the origin in the
-     SVG's own units, which is where the wheel's centre is written. */
+     SVG's own units, which is where the wheel's centre is written. A literal
+     duration and not the slow token: the token's 280ms reads as a twitch on a
+     60° click, and this is the one motion in the scene meant to be watched
+     tooth by tooth. The global reduced-motion rule still zeroes it. */
   .demo-ratchet-turn {
     transform-box: view-box;
     transform-origin: 12px 12px;
-    transition: transform var(--oe-duration-slow) cubic-bezier(0.22, 0.8, 0.24, 1);
+    transition: transform 650ms cubic-bezier(0.22, 0.8, 0.24, 1);
   }
 
   /* Reset is the one moment the angle may decrease, and it must not be animated
      — see `rewindRatchet` in `scene-view.ts`. */
   .demo-ratchet-turn[data-rewind='true'] {
     transition: none;
+  }
+
+  /* The click, felt as well as seen: the wheel swells and settles over the
+     same 650ms its teeth advance, a pawl dropping into the next notch. The
+     animation is keyed to the turn's parity and the two keyframe blocks are
+     identical on purpose — the *name* changing is what makes a click that
+     interrupts the last one restart the swell, with no clock held in script.
+     On the wheel and not the turn group, so the scale never competes with
+     the rotation's transform. The global reduced-motion rule zeroes it. */
+  .demo-ratchet-wheel[data-pulse='0'] {
+    animation: demo-ratchet-click-even 650ms cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  .demo-ratchet-wheel[data-pulse='1'] {
+    animation: demo-ratchet-click-odd 650ms cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  @keyframes demo-ratchet-click-even {
+    35% {
+      transform: scale(1.2);
+    }
+  }
+
+  @keyframes demo-ratchet-click-odd {
+    35% {
+      transform: scale(1.2);
+    }
   }
 
   .demo-ratchet-pawl {
@@ -833,16 +1417,39 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   .demo-reading {
+    position: relative;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: var(--oe-space-2);
+    /* Each row wears the gears' tip, so each row advertises that it has one. */
+    cursor: help;
+  }
+
+  .demo-reading:hover .demo-ratchet-tip,
+  .demo-reading:focus-visible .demo-ratchet-tip {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* The post-quantum share is a slice of the row above it, not an addition —
+     the indent and the branch glyph draw the subtraction so the panel's rows
+     do not read as five costs that sum. */
+  .demo-reading-sub {
+    padding-left: 0.9rem;
+  }
+
+  .demo-reading-sub .demo-reading-name::before {
+    content: '└ ' / '';
   }
 
   .demo-reading-label {
-    opacity: 0.7;
     min-width: 0;
     overflow-wrap: anywhere;
+  }
+
+  .demo-reading-name {
+    opacity: 0.7;
   }
 
   .demo-reading-value {
@@ -866,11 +1473,11 @@ const STEP_LIST = STEPS.join(' ');
    */
 
   /* A key is a box holding the one silhouette from the template above. The box
-     carries the class the script counts and the `data-public` flag; the shape
-     inside it is the same node in both places. `flex: none` because five of them
-     sit in a row that also holds a label and a count, and a key that shrank to
-     fit would be a different drawing at a different width. */
-  .demo-device-keys-list :global(.demo-key),
+     carries the class and the `data-public` flag; the shape inside it is the
+     same node everywhere it appears. `flex: none` because it sits in rows that
+     also hold a bar and a count, and a key that shrank to fit would be a
+     different drawing at a different width. */
+  .demo-device-keys-anchor :global(.demo-key),
   .demo-relay-slot-body :global(.demo-key) {
     display: flex;
     flex: none;
@@ -885,7 +1492,7 @@ const STEP_LIST = STEPS.join(' ');
 
      `overflow: visible` because the stroked form's outer edge lands exactly on
      the viewBox, and an svg clips to its box by default. */
-  .demo-device-keys-list :global(.demo-key-glyph),
+  .demo-device-keys-anchor :global(.demo-key-glyph),
   .demo-relay-slot-body :global(.demo-key-glyph) {
     width: 26px;
     height: 15px;
@@ -896,8 +1503,11 @@ const STEP_LIST = STEPS.join(' ');
 
   /* Filled is private, and this selector is why it stays that way: the rule that
      fills a key is reachable only from inside a device's key row. */
-  .demo-device-keys-list :global(.demo-key-glyph) {
+  .demo-device-keys-anchor :global(.demo-key-glyph) {
     fill: var(--oe-diagram-ciphertext-fill);
+    transition:
+      fill var(--oe-duration-normal) ease,
+      filter var(--oe-duration-normal) ease;
   }
 
   /* Outlined is public: the same silhouette, open, because it travels and it is
@@ -905,72 +1515,168 @@ const STEP_LIST = STEPS.join(' ');
   .demo-relay-slot-body :global(.demo-key[data-public='true'] .demo-key-glyph) {
     stroke: var(--oe-diagram-carrier-stroke);
     stroke-width: 2;
+    transition:
+      stroke var(--oe-duration-normal) ease,
+      filter var(--oe-duration-normal) ease;
+  }
+
+  /* The shelf's own amount, drawn the way the device draws its store: one key
+     saying what lives here, a fill against the run's most, and the count that
+     makes the length checkable. */
+  .demo-relay-slot-body :global(.demo-relay-slot-track) {
+    flex: 1;
+    min-width: 0;
+    height: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--oe-border);
+    border-radius: var(--oe-radius-sm);
+    background: var(--oe-surface-sunken);
+    transition:
+      border-color var(--oe-duration-normal) ease,
+      box-shadow var(--oe-duration-normal) ease;
+  }
+
+  .demo-relay-slot-body :global(.demo-relay-slot-bar) {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--oe-diagram-carrier-stroke);
+    transition:
+      width var(--demo-flight-ms, 700ms) cubic-bezier(0.2, 0.8, 0.3, 1),
+      background var(--oe-duration-normal) ease;
   }
 
   .demo-relay-slot-body :global(.demo-relay-slot-count) {
-    /* `inline-block` because this span travels with the keys below, and a
-       transform on a plain inline box is ignored — the count would be the one
-       thing on the shelf that was simply there before the keys arrived. */
-    display: inline-block;
+    /* The device's count row sets the size for amounts in this scene, and the
+       shelf keeps to it: inherited size here was the body's 1rem, which made
+       the relay's number the loudest figure in the drawing — a shout from the
+       one machine with nothing of its own to boast about. */
+    font-family: var(--oe-font-mono);
+    font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
+    transition:
+      color var(--oe-duration-normal) ease,
+      text-shadow var(--oe-duration-normal) ease;
+  }
+
+  /* The busy shelf's meter takes the traffic ink with its bay: accent fill
+     in a glowing track, the count and the key in the same ink — the exact
+     treatment the device's store wears while generating, because both bars
+     are the same fact, an amount being written. */
+  .demo-relay-slot[data-busy='true'] :global(.demo-relay-slot-track) {
+    border-color: var(--oe-accent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  .demo-relay-slot[data-busy='true'] :global(.demo-relay-slot-bar) {
+    background: var(--oe-accent);
+  }
+
+  .demo-relay-slot[data-busy='true'] :global(.demo-relay-slot-count) {
+    color: var(--oe-accent);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  .demo-relay-slot[data-busy='true'] :global(.demo-key[data-public='true'] .demo-key-glyph) {
+    stroke: var(--oe-accent);
+    filter: drop-shadow(0 0 5px var(--oe-accent));
   }
 
   /*
    * Publication, drawn as the crossing it is.
    *
-   * The keys are on the shelf from the moment the script writes them, at the
-   * size and in the place they will keep; what these two rules animate is a
-   * displacement back to the device they came from, released. So the slot's
-   * count is true on the frame it is written, and a reader who arrives late,
-   * or whose motion is turned off, sees the finished shelf rather than a
-   * drawing waiting on an animation to become correct.
+   * Five outlined keys set off from the device's one key glyph and land on its
+   * shelf's, in clumps — three almost together, a pause, two more — because
+   * that is what being sent as a batch looks like, and an even drip reads as
+   * five separate publishes. They travel the network the scene draws: the
+   * script writes each flight an `offset-path` that rises to the link rule,
+   * runs along it through the gap, and drops to the shelf, with both ends and
+   * the wire measured from the live boxes in one frame. The stylesheet owns
+   * only how long the crossing takes — distance along the path is the one
+   * animated property. The shelf's bar grows on the same clock, so the amount
+   * arrives as the keys do.
    *
-   * The offset is two lengths the script measured from the live boxes, in the
-   * same frame, the way the envelope's flight is measured. Nothing here knows
-   * the layout, so nothing here goes stale when the layout changes.
+   * The glow is the eye's handle on them, and it is confined to flight: a
+   * resting key never glows, so the bloom marks exactly the material that is
+   * moving. It is a filter rather than an opacity — the shape stays fully
+   * drawn, the light around it is what says *watch this*.
    */
-  .demo-relay-slot-body :global([data-flying='false']) {
-    transform: translate(var(--demo-key-from-x, 0px), var(--demo-key-from-y, 0px));
-  }
-
-  .demo-relay-slot-body :global([data-flying='true']) {
-    transform: translate(0, 0);
-    /* The step's own dwell, the property the envelope flies on: two things
-       crossing the same gap in the same scene cross it at one speed. */
-    transition: transform var(--demo-flight-ms, 700ms) ease-out;
+  .demo-flying-key {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    display: flex;
+    pointer-events: none;
+    /* Zero rotation, because a key is a key at every point of the route — the
+       property's default turns the traveller to face along the path, which
+       lays it on its side for the vertical legs. */
+    offset-rotate: 0deg;
+    offset-distance: 0%;
   }
 
   /*
-   * The delays, and the shape of them.
-   *
-   * A publish is not a procession. The batch leaves in clumps — three almost
-   * together, a pause, two more, and the count last — because that is what
-   * being sent as a batch looks like, and because an even drip down a row of
-   * five reads as five separate publishes.
-   *
-   * Fractions of the flight rather than fixed milliseconds: the whole burst
-   * then keeps its shape at any dwell, and the last glyph is still landing
-   * inside the step that published it.
+   * `display: flex` on the three travellers above and below beats the `hidden`
+   * attribute's own `display: none`, so without this rule every parked
+   * traveller renders — six key outlines stacked at the scene's origin, read
+   * as one dark key that never leaves the corner of device A. The attribute is
+   * how `scene-view.ts` parks them, so the attribute has to win.
    */
-  .demo-relay-slot-body :global([data-burst='1']) {
+  .demo-flying-key[hidden],
+  .demo-spent-key[hidden],
+  .demo-message-key[hidden] {
+    display: none;
+  }
+
+  /* The shelves' key glyphs park the same way while a shelf is empty, and the
+     `display: flex` above outweighs the console's `[hidden]` rule for them
+     too: without this, every empty shelf shows one stray key beside a caption
+     saying nothing is published. */
+  .demo-relay-slot-body :global(.demo-key[hidden]) {
+    display: none;
+  }
+
+  .demo-flying-key :global(.demo-key-glyph) {
+    width: 26px;
+    height: 15px;
+    overflow: visible;
+    fill: none;
+    stroke: var(--oe-diagram-carrier-stroke);
+    stroke-width: 2;
+  }
+
+  .demo-flying-key[data-flying='true'] {
+    /* The step's own dwell, so everything crossing this gap crosses it in one
+       beat — a longer route just moves faster, the way the envelope's longer
+       journeys do. */
+    transition: offset-distance var(--demo-flight-ms, 700ms) ease-out;
+    /* The tight pair reads as a rim, the wide one as the glow — the halo
+       rims the key so the moving thing itself reads lit, not just a haze
+       around it. */
+    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
+      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+  }
+
+  /*
+   * The delays, and the shape of them. Fractions of the flight rather than
+   * fixed milliseconds: the burst keeps its shape at any dwell, and the last
+   * key is still landing inside the step that published it.
+   */
+  .demo-flying-key[data-burst='1'] {
     transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.06);
   }
 
-  .demo-relay-slot-body :global([data-burst='2']) {
+  .demo-flying-key[data-burst='2'] {
     transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.1);
   }
 
-  .demo-relay-slot-body :global([data-burst='3']) {
+  .demo-flying-key[data-burst='3'] {
     transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.44);
   }
 
-  .demo-relay-slot-body :global([data-burst='4']) {
+  .demo-flying-key[data-burst='4'] {
     transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.5);
-  }
-
-  .demo-relay-slot-body :global([data-burst='5']) {
-    transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.72);
   }
 
   /*
@@ -999,7 +1705,12 @@ const STEP_LIST = STEPS.join(' ');
     z-index: 2;
     display: flex;
     pointer-events: none;
-    transform: translate(0, 0);
+    /* The burst's route idiom, ridden the other way: down the rack to the
+       wire, along it through the gap, and into the ratchet wheel of the device
+       that asked — the wheel and not the phone, because the wheel is what the
+       fetched material becomes. */
+    offset-rotate: 0deg;
+    offset-distance: 0%;
   }
 
   /*
@@ -1016,9 +1727,22 @@ const STEP_LIST = STEPS.join(' ');
    * cue and flown on the next.
    */
   .demo-spent-key[data-flying='true'] {
-    /* The step's own dwell, the property the envelope and the published keys
-       both fly on: everything crossing this gap crosses it at one speed. */
-    transition: transform var(--demo-flight-ms, 700ms) ease-out;
+    /* Not the shared flight clock but 1.75 of it — the reel's slowest
+       crossing, on purpose. This is the one moment a prekey is *used*:
+       material made in the opening, paid out of a shelf to a device that has
+       never spoken to it, and at the envelope's pace it read as just another
+       delivery. The factor is sized against the step's dwell in
+       `playback.ts`: 2.8s of crossing inside a 3.2s hold, leaving the
+       landing its beat to be absorbed into the wheel. And not the
+       travellers' `ease-out`, whose fast phase is the start: on this route
+       the start is the rack and the wire — the very stretch being slowed —
+       and ease-out spent the added time hovering over the phone instead.
+       `ease-in-out` leaves the shelf gently and settles into the wheel. The
+       glow is the burst's, for the burst's reason: light marks exactly the
+       material that is moving. */
+    transition: offset-distance calc(var(--demo-flight-ms, 700ms) * 1.75) ease-in-out;
+    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
+      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
   }
 
   /* The same silhouette the shelves draw, inked the same way: open, because it
@@ -1035,26 +1759,78 @@ const STEP_LIST = STEPS.join(' ');
     stroke-width: 2;
   }
 
-  /* ------------------------------------------------------------- the relay --- */
-
-  /* The relay column is the positioning context for the two network rules
-     below, which are the only things in the scene drawn outside their own
-     column. */
-  .demo-scene-relay {
-    position: relative;
+  /*
+   * The message key: the spent key's mechanism — placed at its source, forced
+   * out, released to its destination inside one cue, so the resting state
+   * carries no transition — with the ratchet for a source and the envelope for
+   * a destination. Above the envelope, because it lands on it.
+   */
+  .demo-message-key {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 3;
+    display: flex;
+    pointer-events: none;
+    transform: translate(0, 0);
   }
+
+  .demo-message-key[data-flying='true'] {
+    transition: transform var(--demo-flight-ms, 700ms) ease-out;
+    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
+      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+  }
+
+  /* The post-quantum key sets off well behind the classical one, so the
+     pair reads as two events — the classical key lands and turns its hole
+     before the post-quantum key arrives at its own. A fraction of the
+     flight, the burst's rule, so the shape survives any dwell. */
+  .demo-message-key[data-scene-message-key='pq'][data-flying='true'] {
+    transition-delay: calc(var(--demo-flight-ms, 700ms) * 0.35);
+  }
+
+  /* On the sealing step both launches wait, because the frame before them is
+     the point of the step: the message has to finish fading in
+     (`demo-envelope-appear`'s duration, the first term) and then stand
+     plainly readable for a beat (the flight share) before the keys set off
+     to protect it — a key that moved mid-fade would be racing a sentence
+     the reader was still being shown. The tile seals only when the second
+     key lands, so the whole flight plays over an open envelope. The
+     unlocking step needs no such wait — there the tile arrives sealed,
+     which is a state the reader has already been shown. */
+  .demo-scene[data-scene-state='encrypted'] .demo-message-key[data-flying='true'] {
+    transition-delay: calc(var(--oe-duration-slow, 400ms) + var(--demo-flight-ms, 700ms) * 0.2);
+  }
+
+  .demo-scene[data-scene-state='encrypted'] .demo-message-key[data-scene-message-key='pq'][data-flying='true'] {
+    transition-delay: calc(var(--oe-duration-slow, 400ms) + var(--demo-flight-ms, 700ms) * 0.55);
+  }
+
+  /* Solid, because a message key is a secret, and the scene's rule is that a
+     secret is drawn filled and a public half is drawn open. */
+  .demo-message-key :global(.demo-key-glyph) {
+    width: 26px;
+    height: 15px;
+    overflow: visible;
+    fill: var(--oe-diagram-ciphertext-fill);
+    stroke: none;
+  }
+
+  /* ------------------------------------------------------------- the relay --- */
 
   /*
    * A network link: the gap between a phone and the rack, made visible.
    *
    * Two pixels of the same ink the rack and the phones are drawn in, which is
-   * what the grammar gives an arrow, and nothing else — the width is the grid's
-   * own gap, so the rule starts at the phone's edge and ends at the rack's at
-   * every width without either of them being measured. `right: 100%` puts the
-   * rule's far edge on this column's left edge and the width carries it back
-   * across the gap; `left: 100%` does the same on the other side.
+   * what the grammar gives an arrow, and nothing else. Both edges are pinned
+   * against the scene — the grid's fixed column widths say where a device's
+   * inner edge and the rack's outer edge are, so a rule stretched between the
+   * two spans exactly the gap at every width without either box being
+   * measured. Pinned to the scene rather than to the relay's column because a
+   * box can only carry a rule *sized* by its own width, and the gap is not
+   * part of any column's width — it is the space `space-between` deals out.
    *
-   * The offset is a small constant from the top of the column rather than a
+   * The offset is a small constant from the top of the scene rather than a
    * share of either box, because the rack and the phone are different heights
    * and a share of one lands in empty space beside the other. Both boxes start
    * at the top of their column — the grid aligns them there — so a rule a
@@ -1062,92 +1838,389 @@ const STEP_LIST = STEPS.join(' ');
    */
   .demo-relay-link {
     position: absolute;
-    top: 2.4rem;
-    width: var(--oe-space-6);
-    height: 2px;
-    background: var(--oe-diagram-carrier-stroke);
+    /* The 2px rule this used to be sat with its top at 2.4rem; the tube is
+       centred on the same line so the geometry the anchors measure holds. */
+    top: calc(2.4rem - 2.5px);
+    height: 7px;
+    /* The traffic pulse below sweeps in from beyond either end; clipped here
+       so its light never hangs past the wire onto the rack or the phone. */
+    overflow: hidden;
+    /* A socket, not a stroke: the channel is drawn as a hollow conduit — two
+       rails and the space material moves through — so the thing a WebSocket
+       is, a standing pipe, has a shape. Not the carrier ink: an idle
+       connection is standing infrastructure, not a drawn edge of a machine,
+       and the dormant wash keeps it in the same blue family the channel
+       lights up in when traffic moves. */
+    border: 1.5px solid var(--demo-wire-dormant);
+    /* Square ends: the conduit plugs flush into the phone and the rack
+       instead of tapering off in a rounded cap short of either. */
+    background: transparent;
+    transition:
+      border-color var(--oe-duration-normal) ease,
+      background-color var(--oe-duration-normal) ease,
+      box-shadow var(--oe-duration-normal) ease,
+      transform var(--demo-flight-ms, var(--oe-duration-normal)) ease;
   }
 
   .demo-relay-link[data-scene-link='a'] {
-    right: 100%;
+    left: var(--demo-device-width);
+    right: calc(50% + var(--demo-relay-width) / 2);
+    transform-origin: left center;
   }
 
   .demo-relay-link[data-scene-link='b'] {
-    left: 100%;
+    right: var(--demo-device-width);
+    left: calc(50% + var(--demo-relay-width) / 2);
+    transform-origin: right center;
   }
 
+  /*
+   * Before the device has registered there is no connection to draw: the rule
+   * rests collapsed at the device's own edge, and on the `registered` cue it
+   * grows across the gap toward the relay — the direction the connection is
+   * opened in, which is why each side's origin is its device's end. Scaled
+   * rather than widened so both ends stay pinned to the same column
+   * arithmetic in both states, and on the flight clock rather than a duration
+   * token because crossing the gap is that step's travel, the envelope's own
+   * rule. Not a dash in sight: a dashed rule in this system is the trust
+   * boundary, and this is a channel, not a boundary.
+   */
+  .demo-relay-link[data-connected='false'] {
+    transform: scaleX(0);
+  }
+
+  /*
+   * A link carrying traffic. `scene-view.ts` sets this on the one link a cue
+   * moves material over — a device pushing keys or a message up, or pulling a
+   * bundle or a message down — for that cue's whole dwell, so the wire is lit
+   * for exactly as long as the step it serves.
+   *
+   * The accent, because the accent is what this page paints *information in
+   * motion* with — it is the ink on the Send button and the sender's own
+   * bubbles — and it is blue on both themes. The glow is the travellers' own
+   * bloom, worn by the wire that carries them.
+   */
+  .demo-relay-link[data-active='true'] {
+    border-color: var(--oe-accent);
+    background: color-mix(in srgb, var(--oe-accent) 18%, transparent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  /*
+   * The traffic itself, drawn on the lit wire: a short run of the travellers'
+   * own light sweeping along the link in the direction the cue's material is
+   * going. The accent above says which wire is serving the step; the sweep is
+   * what says something is passing *through* it — a socket carrying data
+   * rather than a socket switched on. It runs on the flight clock, one sweep
+   * per crossing, and in the travellers' own halo ink so the wire's moving
+   * light and the flying material read as one thing. A gradient with no hard
+   * stops, deliberately: hard segments would read as dashes, and a dashed
+   * rule in this system is the trust boundary.
+   */
+  .demo-relay-link::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 25%;
+    background: linear-gradient(90deg, transparent, var(--demo-traveller-halo), transparent);
+    opacity: 0;
+  }
+
+  /*
+   * Gated on the preference rather than left to the global blanket: the
+   * blanket zeroes durations, and an infinite animation with a zeroed
+   * duration is an edge nothing defines. With the sweep not drawn, the
+   * non-moving fact — the wire's accent — still carries the state.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    .demo-relay-link[data-active='true']::after {
+      opacity: 1;
+      animation: demo-link-flow var(--demo-flight-ms, 700ms) linear infinite;
+    }
+  }
+
+  /* Which way the light runs is which way the material went: `scene-view.ts`
+     writes `data-flow` with the traffic — pushes toward the relay, pulls
+     toward the device — and the two sides mirror because their devices sit
+     on opposite ends of their rules. */
+  .demo-relay-link[data-scene-link='a'][data-flow='to-device']::after,
+  .demo-relay-link[data-scene-link='b'][data-flow='to-relay']::after {
+    animation-direction: reverse;
+  }
+
+  /* The pulse is a quarter of the wire, so 500% of its own width is 125% of
+     the wire's: off the left edge to off the right, one clean pass. */
+  @keyframes demo-link-flow {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(500%);
+    }
+  }
+
+  /*
+   * The wire's name, in the gear names' own small mono — the scene's
+   * annotation voice. It hangs just above its wire, centred over the same
+   * span the wire's ends are pinned to, and stays out of the travellers'
+   * lane below the wire.
+   */
+  .demo-relay-link-label {
+    position: absolute;
+    top: 1.1rem;
+    display: flex;
+    justify-content: center;
+    font-family: var(--oe-font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    /* The channel's own ink in both states: dormant wash at rest, accent
+       under traffic (below), so the name and the thing it names read as one
+       object. */
+    color: var(--demo-wire-dormant);
+    pointer-events: none;
+    transition:
+      opacity var(--oe-duration-normal) ease,
+      color var(--oe-duration-normal) ease,
+      text-shadow var(--oe-duration-normal) ease;
+  }
+
+  .demo-relay-link-label[data-scene-link-label='a'] {
+    left: var(--demo-device-width);
+    right: calc(50% + var(--demo-relay-width) / 2);
+  }
+
+  .demo-relay-link-label[data-scene-link-label='b'] {
+    right: var(--demo-device-width);
+    left: calc(50% + var(--demo-relay-width) / 2);
+  }
+
+  /* No connection, no name: the label fades in with the channel it names. */
+  .demo-relay-link[data-scene-link='a'][data-connected='false']
+    ~ .demo-relay-link-label[data-scene-link-label='a'],
+  .demo-relay-link[data-scene-link='b'][data-connected='false']
+    ~ .demo-relay-link-label[data-scene-link-label='b'] {
+    opacity: 0;
+  }
+
+  /* While its channel serves a step, the name wears the traffic ink and the
+     wire's own glow with it. */
+  .demo-relay-link[data-scene-link='a'][data-active='true']
+    ~ .demo-relay-link-label[data-scene-link-label='a'],
+  .demo-relay-link[data-scene-link='b'][data-active='true']
+    ~ .demo-relay-link-label[data-scene-link-label='b'] {
+    color: var(--oe-accent);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  /* The wide word when the gap has room, the protocol's short name when the
+     three columns close in on it. The threshold leaves the full word a
+     comfortable margin: at 68rem the gap beside a device is still roughly
+     twice the word's set width. */
+  .demo-link-word-short {
+    display: none;
+  }
+
+  @media (max-width: 68rem) {
+    .demo-link-word-full {
+      display: none;
+    }
+
+    .demo-link-word-short {
+      display: block;
+    }
+  }
+
+  /*
+   * The rack is drawn as the phones are drawn: the same casing colour, the
+   * same 2px border ink, a screen-coloured panel per unit inside. One
+   * hardware grammar for every machine in the scene — the devices are
+   * abstract phones, this is the same abstraction of a server. It used to
+   * carry a darker outline of its own, which made the one box that is mere
+   * infrastructure the heaviest thing in the drawing.
+   *
+   * Squarer than the phones on purpose. The corner radius is the one place
+   * the two shapes differ, and it is exactly the difference between the
+   * objects: a phone is a rounded slab in a hand, a rack is a box in a row
+   * of boxes.
+   */
   .demo-relay-rack {
-    border: 2px solid var(--oe-diagram-carrier-stroke);
-    border-radius: var(--oe-radius-sm);
-    padding: var(--oe-space-3);
+    border: 2px solid var(--oe-border);
+    border-radius: 12px;
+    padding: var(--oe-space-2);
     display: flex;
     flex-direction: column;
-    gap: var(--oe-space-3);
-    background: var(--oe-surface);
+    gap: var(--oe-space-2);
+    background: var(--oe-device-surface);
+    /* As tall as its column, which the grid stretches to the devices' height.
+       The spare height runs down through the accounts into the mailbox bays —
+       the one part of the rack whose size is capacity rather than caption. */
+    flex: 1;
   }
 
   .demo-relay-header {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    column-gap: var(--oe-space-2);
+    padding: var(--oe-space-1) var(--oe-space-1) 0;
   }
 
   .demo-relay-title {
+    grid-column: 1;
     font-family: var(--oe-font-mono);
     font-weight: 600;
   }
 
   .demo-relay-sub {
+    grid-column: 1;
     font-size: 0.8rem;
     opacity: 0.7;
   }
 
-  /* A shelf: what the relay keeps, and one slot on it per device. The shelf is
-     named once and its slots are named for their owners, so the rack says
-     "prekeys, alice's and bob's" rather than saying "prekeys" twice. */
-  .demo-relay-shelf {
+  /* The notch's ink and idiom, worn the server's way. */
+  .demo-relay-vents {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .demo-relay-vents span {
+    width: 1.4rem;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--oe-border);
+  }
+
+  /* An account: everything the relay keeps for one device, under that device's
+     name. The name is stated once and the slots inside say what kind of thing
+     they hold, so the rack reads "alice: prekeys, mailbox" — the shape of the
+     relay's own storage — rather than "prekeys: alice's and bob's".
+
+     Drawn as a rack unit: a screen-coloured panel in the casing, the exact
+     treatment a phone gives its screen, because an account is the part of the
+     server one device sees. */
+  .demo-relay-account {
     display: flex;
     flex-direction: column;
     gap: var(--oe-space-1);
+    padding: var(--oe-space-2);
+    border-radius: 8px;
+    background: var(--oe-surface);
+    transition: background-color var(--oe-duration-normal) ease;
+    /* The two units split the rack's stretched height between them. */
+    flex: 1;
   }
 
-  .demo-relay-shelf-label {
+  /*
+   * An account whose device has not registered. The relay keeps nothing for
+   * this name yet — no shelf, no mailbox, and no name either: the relay
+   * learns what a device is called from its registration, so the unit reads
+   * as unprovisioned space and the name appears with the account.
+   * Registration is what builds it — the `registered` cue flips the
+   * attribute, the panel comes forward, and the bays rise into place.
+   * Visibility rather than `display`, so the rack's height arithmetic holds
+   * through both states and the bays appear exactly where they will stand.
+   */
+  .demo-relay-account[data-registered='false'] {
+    background: var(--oe-surface-sunken);
+  }
+
+  .demo-relay-account[data-registered='false'] .demo-relay-account-name {
+    opacity: 0;
+  }
+
+  .demo-relay-account[data-registered='false'] .demo-relay-slot {
+    visibility: hidden;
+    transform: translateY(8px);
+  }
+
+  .demo-relay-account-name {
     font-family: var(--oe-font-mono);
-    font-size: 0.7rem;
-    color: var(--oe-text-muted, inherit);
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: opacity var(--oe-duration-normal) ease;
   }
 
-  /* A slot is a shelf, and an empty shelf is drawn lighter than the rack that
-     holds it. Drawn at the rack's weight it reads as a stored row, which had a
-     first-time reader seeing three held messages under a caption saying the
-     relay held nothing. */
+  /* A slot is a bay in the unit, and a bay at rest is recessed: the sunken
+     surface with no edge of its own, the way an unpopulated drive bay is a
+     hole rather than a thing. In use, it comes forward — the raised surface
+     with a real edge — so what changed is *presence*, not decoration. The old
+     drawing dashed the empty state, and a dashed rule in this system is the
+     trust boundary, which the inside of the relay's own storage is not. */
   .demo-relay-slot {
-    border: 1px dashed var(--oe-border);
+    border: 1px solid transparent;
     border-radius: var(--oe-radius-sm);
     padding: var(--oe-space-2);
     min-height: 3.4rem;
     display: flex;
     flex-direction: column;
     gap: var(--oe-space-1);
+    background: var(--oe-surface-sunken);
+    /* The rise the account's build above releases: `visibility` snaps as a
+       discrete property while the offset glides out, so the bays arrive
+       moving into place rather than blinking in. */
+    transition:
+      transform var(--oe-duration-normal) ease,
+      border-color var(--oe-duration-normal) ease,
+      box-shadow var(--oe-duration-normal) ease,
+      background-color var(--oe-duration-normal) ease;
   }
 
-  .demo-relay-slot[data-holding='true'] {
-    border-style: solid;
-    border-color: var(--oe-diagram-carrier-stroke);
+  /* A bay in use comes forward and wears the traffic ink: the raised
+     surface, the accent edge and glow the serving wire carries, and the
+     caption takes the ink too so the light names itself. Each bay has its
+     own word for "in use". For the mailbox it is `data-holding` — a row in
+     custody is the relay actively keeping something. For a bundle shelf it
+     is `data-busy` — the moment a publish fills it or a session-agreement
+     spends from it — because a shelf merely stocked is standing material,
+     and stays recessed like any bay at rest. */
+  .demo-relay-slot[data-scene-slot='mailbox'][data-holding='true'],
+  .demo-relay-slot[data-busy='true'] {
+    background: var(--oe-surface-raised);
+    border-color: var(--oe-accent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  .demo-relay-slot[data-scene-slot='mailbox'][data-holding='true'] .demo-relay-slot-label,
+  .demo-relay-slot[data-busy='true'] .demo-relay-slot-label {
+    color: var(--oe-accent);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
   }
 
   /* The mailbox is where the envelope comes to rest, and the envelope is drawn
-     over the rack rather than inside it, centred on this shelf. Cut to the
-     default shelf height it landed across the shelf above and the rack's own
-     edge, which reads as a message sitting on top of the relay rather than in
-     it. Tall enough here to hold the whole envelope with its label clear. */
+     over the rack rather than inside it, centred on this bay's *body* — the
+     part below the caption — so the resting message sits in the box without
+     covering the word that names it. Cut to the default shelf height it landed
+     across the shelf above and the rack's own edge, which reads as a message
+     sitting on top of the relay rather than in it. */
   .demo-relay-slot[data-scene-slot='mailbox'] {
     min-height: 7rem;
+    /* And it takes the unit's share of the rack's spare height — capacity is
+       the one thing a mailbox has more of than a caption needs. */
+    flex: 1;
+  }
+
+  /* The body takes the bay's height below the caption, because it is the
+     envelope's resting anchor (`anchorFor` in `scene-view.ts`): the envelope
+     centres on it, and a body that hugged its one caption line would sit
+     just under the label and hand the envelope right back to it. Its own
+     content centres both ways, so "empty" sits in the middle of the box it
+     describes. */
+  .demo-relay-slot[data-scene-slot='mailbox'] .demo-relay-slot-body {
+    flex: 1;
+    align-items: center;
+    justify-content: center;
   }
 
   .demo-relay-slot-label {
     font-family: var(--oe-font-mono);
     font-size: 0.7rem;
     color: var(--oe-text-muted, inherit);
+    transition:
+      color var(--oe-duration-normal) ease,
+      text-shadow var(--oe-duration-normal) ease;
   }
 
   .demo-relay-slot-body {
@@ -1168,15 +2241,6 @@ const STEP_LIST = STEPS.join(' ');
     display: none;
   }
 
-  /* The stored row's own stack. `global.css` styles the parts inside it,
-     because the console's script creates the `dt` and `dd` pairs. A scoped rule
-     here would never reach them. */
-  .demo-relay-row {
-    display: flex;
-    flex-direction: column;
-    gap: var(--oe-space-2);
-    min-width: 0;
-  }
 
   /* ---------------------------------------------------------- the envelope --- */
 
@@ -1189,15 +2253,25 @@ const STEP_LIST = STEPS.join(' ');
     pointer-events: none;
     border-radius: var(--oe-radius-sm);
     overflow: hidden;
-    border: 2px solid var(--oe-diagram-carrier-stroke);
+    /* A hairline, not the carrier's 2px: the tile's weight is its lock rail
+       and payload, and the frame is just the edge of the object. */
+    border: 1px solid var(--oe-diagram-carrier-stroke);
     background: var(--oe-surface-raised);
     /* Position is set as a transform by the script from measured anchors, and
        the scale is a variable the CSS below owns, so the two can be animated
        together without either one having to know the other's value. */
     transform: translate(0, 0) scale(var(--demo-envelope-scale, 1));
+    /* The two steps that cross the gap ride `offset-path`, the travellers'
+       mechanism: the message moves on the network's drawn edge, not on a
+       diagonal through the trust boundary. The tile stays upright through the
+       corners, and 0% is its resting state — the release is the only distance
+       write that moves it. */
+    offset-rotate: 0deg;
+    offset-distance: 0%;
     transition:
       transform var(--oe-duration-normal) ease-in-out,
-      opacity var(--oe-duration-normal) ease-in-out;
+      opacity var(--oe-duration-normal) ease-in-out,
+      offset-distance var(--oe-duration-normal) ease-in-out;
     will-change: transform;
   }
 
@@ -1207,34 +2281,117 @@ const STEP_LIST = STEPS.join(' ');
     transition-duration: var(--demo-flight-ms, 700ms);
   }
 
+  /* Resting carries no transition at all, the spent key's arrangement and for
+     its reason: a crossing is placed and released inside one cue, and a
+     transition on the resting state would animate the placement too, so the
+     release sets off from wherever that had reached — nowhere in particular.
+     Every deliberate move arms `data-flying` before it writes. */
+  .demo-envelope[data-flying='false'] {
+    transition: none;
+  }
+
   /*
-   * Arrival. The envelope shrinks into the receiving device's conversation as
-   * the plaintext bubble appears there, so the message becomes the message
-   * rather than a second copy of it parked beside the phone.
-   *
-   * The delay is the beat the reader gets to read the decrypted sentence before
-   * it folds away, and it lives here rather than in a timer for a reason
-   * `scene-view.ts` sets out: the scene owns no clock. It is a literal and not a
-   * duration token, which is what keeps it from collapsing under
-   * `prefers-reduced-motion` — a reader who asked for less motion did not ask to
-   * be shown the plaintext for no frames at all. The fold itself is a token and
-   * does collapse, which is the correct half to lose.
+   * The tile's underway ink, worn only while it is actually moving.
+   * `data-flying` cannot key this: it means "the next write may animate" and
+   * stays true while the tile rests between cues, so `scene-view.ts` writes
+   * `data-crossing` around the move itself — armed at the release, dropped on
+   * the landing's `transitionend`. The accent rather than the keys' white
+   * halo: a white border has nothing to contrast with — it melts into the
+   * pale canvas in light and the tile's own pale body in dark, where the
+   * keys' rim lights their dark glyphs — so the edge has to take a colour
+   * to read at all, and the accent is the ink this scene already uses for
+   * *serving the step*. Border and box-shadow rather than a drop-shadow
+   * filter, because the tile is a box and its edge is already the drawn
+   * shape. Snaps on and off like the glyph filters: the flight clock would
+   * otherwise stretch the glow's own fade across the whole journey.
+   */
+  .demo-envelope[data-crossing='true'] {
+    border-color: var(--oe-accent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  /* The sealing step opens on the plaintext arriving whole: the scene places
+     the tile fresh at its sender on every `encrypted` cue, the state selector
+     rematches per send, and this animation fades the message in on its own
+     clock — an animation rather than a transition so the flight clock the
+     tile wears for its journeys cannot stretch it. The keys' launch delay
+     below waits this fade out in full, so nothing moves toward a sentence
+     the reader has not finished being shown. */
+  .demo-scene[data-scene-state='encrypted'] .demo-envelope {
+    animation: demo-envelope-appear var(--oe-duration-slow, 400ms) ease-out;
+  }
+
+  @keyframes demo-envelope-appear {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /*
+   * The two box morphs, the mobile scene's idiom: the tile is not a scaled
+   * copy of itself at either end of its life. It sets off from the sender
+   * bubble's measured box and reshapes into its resting form, and at the far
+   * end it folds onto the receiver bubble's box and becomes it — position,
+   * width and height crossing in one transition, so the chat message and the
+   * envelope read as one object changing form. `scene-view.ts` freezes and
+   * releases the boxes; these rules own the pace. The slow token, never the
+   * flight clock: a morph is a gesture at a device, not a journey. The
+   * tile's own `overflow: hidden` clips the face while the box passes
+   * through bubble sizes.
+   */
+  .demo-envelope[data-flying='true'][data-morph] {
+    transition-property: transform, width, height;
+    transition-duration: var(--oe-duration-slow, 400ms);
+    transition-timing-function: ease-in-out;
+  }
+
+  /*
+   * The fold's wait, the same two waits in one calc the landing rule below
+   * spends: the flight share holds the tile while the unlock keys are still
+   * in the air — the post-quantum key launches at 0.35 of the flight and
+   * needs its landing and its turn before a fold makes sense — and the
+   * literal is the beat the reader then gets to read the decrypted sentence
+   * at the device before it moves into the conversation. It lives here
+   * rather than in a timer for a reason `scene-view.ts` sets out: the scene
+   * owns no clock.
+   */
+  .demo-envelope[data-flying='true'][data-morph='to-bubble'] {
+    transition-delay: calc(var(--demo-flight-ms, 700ms) * 1.35 + var(--oe-duration-slow, 400ms) + 520ms);
+  }
+
+  /*
+   * Arrival under `prefers-reduced-motion`, where no morph is armed. The
+   * envelope leaves as the plaintext bubble appears, on the morph's own
+   * arithmetic: a delay is not a duration, so the wait survives the blanket
+   * rule — the whole of it becomes reading time before the fold lands on a
+   * single frame, which is the right trade: a reader who asked for less
+   * motion did not ask to be shown the plaintext for no frames at all. The
+   * fold itself is a duration and does collapse, which is the correct half
+   * to lose. The receiver's bubble waits on the same arithmetic plus the
+   * fold's duration — `demo-bubble-arrive` above — so the plaintext moves
+   * into the chat as the tile leaves, not before.
    */
   .demo-envelope[data-landing='true'] {
     --demo-envelope-scale: 0.35;
     opacity: 0;
-    transition-delay: 520ms;
+    transition-delay: calc(var(--demo-flight-ms, 700ms) * 1.35 + var(--oe-duration-slow, 400ms) + 520ms);
+    /* The fold is a gesture, not a journey: on the flight clock it inherits
+       from `data-flying` it outlives the step's dwell and the next message
+       cuts it mid-fade. The slow token is the pace the keyholes turn at, and
+       it finishes inside the dwell with the delay above. */
+    transition-duration: var(--oe-duration-slow, 400ms);
   }
 
   /* The metadata band. Present in both states, because what the relay can read
-     is exactly the point — the payload closes, the addressing does not. */
+     is exactly the point — the payload closes, the addressing does not. One
+     line, both pairs sharing it: a tile's header row, not a form. */
   .demo-envelope-meta {
     display: flex;
-    flex-direction: column;
-    gap: 1px;
-    padding: 4px 6px;
+    justify-content: space-between;
+    gap: var(--oe-space-2);
+    padding: 3px 6px;
     background: var(--oe-surface);
-    border-bottom: 2px solid var(--oe-diagram-carrier-stroke);
+    border-bottom: 1px solid var(--oe-border);
     font-family: var(--oe-font-mono);
     font-size: 0.62rem;
   }
@@ -1278,14 +2435,72 @@ const STEP_LIST = STEPS.join(' ');
     height: 9px;
   }
 
+  /* The braid strip: how much of the post-quantum key material rides in this
+     envelope. Hidden unless the run put a report on the cue, so the tile only
+     grows the row when braiding is on. */
+  .demo-envelope-chunk {
+    display: block;
+    padding: 3px 6px;
+    background: var(--oe-surface);
+    border-bottom: 1px solid var(--oe-border);
+    font-family: var(--oe-font-mono);
+    font-size: 0.58rem;
+    opacity: 0.75;
+  }
+
+  .demo-envelope-chunk[hidden] {
+    display: none;
+  }
+
+  /* The lock rail. Two keyholes on the ciphertext fill — one for each key
+     agreement family the message key derives from — and the keyholes are what
+     the flying message keys aim at. The barrel-and-stem group rotates a
+     quarter turn around the glyph's centre when its lock engages, which is
+     the whole locking animation: the key arrives, the hole turns. */
+  .demo-envelope-locks {
+    display: flex;
+    justify-content: space-evenly;
+    padding: 4px 6px 3px;
+    background: var(--oe-diagram-ciphertext-fill);
+    color: var(--oe-surface);
+  }
+
+  .demo-envelope-lockset {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .demo-keyhole {
+    width: 15px;
+    height: 15px;
+  }
+
+  .demo-keyhole-turn {
+    fill: currentColor;
+    transform-box: view-box;
+    transform-origin: 12px 12px;
+    transition: transform var(--oe-duration-slow) cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  .demo-keyhole[data-locked='true'] .demo-keyhole-turn {
+    transform: rotate(90deg);
+  }
+
+  .demo-envelope-lock-label {
+    font-family: var(--oe-font-mono);
+    font-size: 0.5rem;
+    letter-spacing: 0.04em;
+  }
+
   .demo-envelope-payload {
     position: relative;
-    min-height: 3.4rem;
+    min-height: 2.8rem;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: var(--oe-space-2);
-    padding-top: calc(var(--oe-space-2) + 0.4rem);
     text-align: center;
     font-size: 0.78rem;
     line-height: 1.3;
@@ -1295,71 +2510,51 @@ const STEP_LIST = STEPS.join(' ');
       color var(--oe-duration-normal) ease;
   }
 
-  .demo-envelope-flap {
-    position: absolute;
-    inset: 0 0 auto 0;
-    width: 100%;
-    height: 1.15rem;
-    opacity: 0.85;
-  }
-
   /* Sealed: the payload is the ciphertext fill with the surface colour on top.
-     Both tokens invert with the theme, so the lock and the flap stay legible on
+     Both tokens invert with the theme, so the sealed face stays legible on
      either. */
   .demo-envelope[data-sealed='true'] .demo-envelope-payload {
     background: var(--oe-diagram-ciphertext-fill);
     color: var(--oe-surface);
   }
 
+  /* The open face keeps a lane under the text so a wrapped message never
+     runs into the franking mark in the corner. */
   .demo-envelope[data-sealed='false'] .demo-envelope-payload {
     background: var(--oe-surface-raised);
     color: inherit;
-  }
-
-  .demo-envelope-lock {
-    width: 26px;
-    height: 26px;
-    display: none;
-  }
-
-  .demo-envelope[data-sealed='true'] .demo-envelope-lock {
-    display: block;
+    padding-bottom: calc(var(--oe-space-2) + 0.9rem);
   }
 
   .demo-envelope[data-sealed='true'] .demo-envelope-text {
     display: none;
   }
 
-  /* ------------------------------------------------------------ narrow ------ */
-
-  @media (max-width: 60rem) {
-    .demo-scene {
-      grid-template-columns: 1fr;
-    }
-
-    /* The flying envelope is a three-column idea. Stacked, it would cross
-       unrelated boxes, so the journey is told by the relay's slots filling and
-       emptying instead. */
-    .demo-envelope {
-      display: none;
-    }
-
-    /* The spent prekey is the same three-column idea and goes for the same
-       reason: stacked, its journey from the rack to a phone crosses whatever
-       happens to be between them. The shelf's count still falls, so the frame
-       keeps the fact and loses only the crossing. */
-    .demo-spent-key {
-      display: none;
-    }
-
-    /* And so is the network. Stacked, the gap the rules span is a vertical one
-       and they would run off the sides of the rack into the page's margin,
-       pointing at nothing. The same collapse, for the same reason: a drawing
-       that is only true in three columns is drawn only in three columns. */
-    .demo-relay-link {
-      display: none;
-    }
+  /* What the sealed message weighs on the wire, in units a person uses — a
+     franking mark in the payload's corner, worn for the whole journey once
+     the seal lands. It inherits the payload's ink, so it flips with the face:
+     surface-on-ciphertext while sealed, ordinary ink once opened. It is the
+     braid toggle's visible effect: the braided assembly is the bigger
+     figure. */
+  .demo-envelope-size {
+    position: absolute;
+    right: 6px;
+    bottom: 4px;
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    opacity: 0.85;
   }
+
+  .demo-envelope-size[hidden] {
+    display: none;
+  }
+
+  /* There is no narrow form of this scene. Below 60rem `global.css` hides the
+     whole stage and `DemoMobile.astro` plays the conversation instead — a
+     three-column drawing amputated into one column taught less than it
+     showed, so it is not drawn at all. */
 
   /* ---------------------------------------------------- reduced motion ------
    *
@@ -1372,28 +2567,25 @@ const STEP_LIST = STEPS.join(' ');
    * What survives is the reel. Every step is still shown and still held for its
    * own dwell — `playback.ts` has no reduced-motion branch and says why — so
    * the journey is told in the same frames, without the movement between them.
-   * The landing's `transition-delay` above survives too, which is why it is
-   * written as a literal: a delay is not a duration, the blanket rule does not
-   * reach it, and the beat the reader gets to read the decrypted sentence is
-   * information rather than motion.
+   * The landing's `transition-delay` above survives too: a delay is not a
+   * duration, the blanket rule does not reach it, and the wait the reader gets
+   * to read the decrypted sentence is information rather than motion.
    *
-   * The one rule below exists because that asymmetry cuts the other way for the
-   * published keys. Their start state is a displacement, and a displacement is
-   * neither a duration nor a delay: zeroing the transition leaves the keys
-   * sitting off their slot, and the surviving delays then hold them there for
-   * half a second before they snap into place. That is a worse animation than
-   * the one being suppressed. So the displacement itself is dropped and the
-   * delays with it: the keys are on the shelf, at their count, on the frame the
-   * publish step arrives. Same steps, same dwell, no travel — which is what the
-   * blanket rule achieves everywhere else by doing nothing.
+   * The one rule below exists because that asymmetry cuts the other way for
+   * the publish burst and the message key. These travellers exist only to be
+   * watched crossing: with the durations zeroed they would flash at their
+   * destinations for a frame, which is a worse animation than the one being
+   * suppressed. The bars, counts and the envelope's own seal carry the whole
+   * of the fact, so the travellers are simply not drawn. The spent key needs
+   * nothing: its start state is a position, so the blanket rule lands it on
+   * the wheel on the frame the step arrives — and the near-zero snap still
+   * counts as a transition, so the landing's absorption follows a frame later
+   * and the key vanishes into the wheel it has just lit.
    */
   @media (prefers-reduced-motion: reduce) {
-    .demo-relay-slot-body :global([data-flying='false']) {
-      transform: none;
-    }
-
-    .demo-relay-slot-body :global([data-burst]) {
-      transition-delay: 0s;
+    .demo-flying-key,
+    .demo-message-key {
+      display: none;
     }
   }
 </style>

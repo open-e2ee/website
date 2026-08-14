@@ -1,0 +1,2590 @@
+---
+/*
+ * The demo a phone gets: the same conversation, with everything else removed.
+ *
+ * Under 60rem the console's drawing does not survive — three columns of
+ * travellers, readings and controls have no honest single-column form, and the
+ * old fallback that amputated the travellers taught less than it showed. So
+ * the narrow screen gets its own composition, built around the one claim:
+ * sentences on the phones, only ciphertext on the relay. The relay rack sits
+ * on top, holding one mailbox over each device it belongs to; the two phones
+ * sit side by side beneath — even a narrow screen has width for a pair of
+ * devices — and an envelope crosses the boundary wearing its real byte count,
+ * with one caption line narrating.
+ *
+ * The objects are the wide scene's objects, smaller, and so is the machinery:
+ * the same key glyph — filled on a device, outlined once published — the same
+ * three-wheel ratchet train clicking a tooth per message key, the same
+ * mailbox bays drawn in by registration, the same burst of outlined keys
+ * flying up at publish. The geometry comes from `drawing.ts`, the module the
+ * wide scene stamps its own icons from, so the two figures cannot drift. What
+ * this figure drops is the console's apparatus — controls, logs, readings —
+ * never the protocol.
+ *
+ * The run behind it is real. On first visibility the script pulls the SDK,
+ * runs `MOBILE_SCRIPT` through `startDemoRun` at full speed — real PQXDH, real
+ * Double Ratchet, real envelopes — and then loops the recording's frames at
+ * reading pace (`mobile-reel.ts` owns the projection). The whole protocol
+ * story plays: registration, key generation, the prekey uploads, the ratchet
+ * the SDK selected, and every crossing — only the console's timings and
+ * controls are gone. Every byte count on screen came off a real envelope and
+ * every key count off the SDK's own reports; the honesty note is the reset
+ * frame's own caption.
+ *
+ * Two chat panes rather than one shared thread, because a shared thread
+ * presumes delivery — the exact thing the middle of the drawing exists to put
+ * in question. A sentence appears on the second phone only when its decrypt
+ * really committed, and between the two it exists only as the slab in the
+ * recipient's mailbox.
+ */
+import {
+  KEY_GLYPH_PATH,
+  KEY_GLYPH_VIEWBOX,
+  KEYHOLE_BARREL,
+  KEYHOLE_VIEWBOX,
+  KEYHOLE_WARD_PATH,
+  WHEEL_HUB,
+  WHEEL_PATH,
+  WHEEL_PAWL_PATH,
+  WHEEL_PAWL_PIN,
+  WHEEL_SPOKE_PATH,
+  WHEEL_VIEWBOX,
+} from '../../lib/demo/drawing';
+
+interface Props {
+  a: string;
+  b: string;
+}
+const { a, b } = Astro.props;
+
+const PANES = [
+  { side: 'a', name: a },
+  { side: 'b', name: b },
+] as const;
+
+/* The wide scene's ratchet train, in its words: the two agreement families
+   flanking the chain wheel they feed. The tooltips stay behind — hover is
+   not a phone's gesture, and the captions still let a reader count to
+   three. */
+const GEARS = [
+  { kind: 'ec', caption: 'classical' },
+  { kind: 'chain', caption: 'chain' },
+  { kind: 'pq', caption: 'post-quantum' },
+] as const;
+
+/* The wide module's readings, cut to the three headline device costs. The
+   other two rows stay behind: the post-quantum share is a slice of key
+   generation, and the key agreement's span is also a first opening's — both
+   are the console's deeper reading, and a half-width pane holds three rows
+   a phone owner pays, not five. The first label drops the wide module's
+   "key": the noun triple has to share a row with its figure, and the key
+   store above already names what the device generates. */
+const METRICS = [
+  { key: 'keygen', label: 'generation' },
+  { key: 'encrypt', label: 'encryption' },
+  { key: 'decrypt', label: 'decryption' },
+] as const;
+
+/* The envelope's lock rail, the wide tile's band verbatim: one keyhole per
+   agreement family, captioned with the family's name — the same two words
+   the gear train wears, so the rail and the train legend each other. */
+const LOCKS = [
+  { kind: 'ec', label: 'classical' },
+  { kind: 'pq', label: 'post-quantum' },
+] as const;
+---
+
+<figure class="demo-mobile" data-demo-mobile data-mobile-name-a={a} data-mobile-name-b={b}>
+  {/*
+    The trust boundary, on top where a relay sits: above the devices, holding
+    one mailbox over each phone it serves. An account exists only once its
+    device has registered — `data-registered` ships false, the register frame
+    flips it, and the stylesheet draws the bay in, the wide rack's own
+    draw-in. A mailbox holds exactly what the relay is holding right now: the
+    published bundle — an outlined key wearing its real count, the one thing
+    on the rack the relay can read — and one opaque slab per undelivered
+    message, carried out by the envelope when its owner's device fetches it.
+    A bay glows while it holds a row, and says `empty` when it holds none.
+    Nothing legible.
+  */}
+  <div class="demo-mobile-relay" data-mobile-relay>
+    {/* `{' '}` because Astro collapses the newlines between inline elements:
+        without it the header's text content runs the words together for
+        anything that reads text rather than layout. The flex row ignores the
+        whitespace-only nodes, so the visible spacing stays the gap's. */}
+    <p class="demo-mobile-relay-head">
+      <span class="demo-mobile-relay-title">relay server</span>{' '}
+      <span class="demo-mobile-relay-dot" aria-hidden="true">·</span>{' '}
+      <span class="demo-mobile-relay-sub">delivers encrypted messages</span>
+      <span class="demo-mobile-relay-vents" aria-hidden="true"><span></span><span></span><span></span></span>
+    </p>
+    <div class="demo-mobile-accounts">
+      {
+        PANES.map(({ side, name }) => (
+          <div class="demo-mobile-account" data-mobile-account={side} data-registered="false">
+            <p class="demo-mobile-account-head">
+              <span class="demo-mobile-account-name">{name}<span
+                  class="demo-mobile-suffix">'s mailbox</span></span>
+              <span class="demo-mobile-bundle" data-mobile-bundle={side} hidden>
+                <svg class="demo-key-glyph" viewBox={KEY_GLYPH_VIEWBOX} aria-hidden="true">
+                  <path d={KEY_GLYPH_PATH} />
+                </svg>
+                <span class="demo-mobile-bundle-count" data-mobile-bundle-count={side}>0</span>
+              </span>
+            </p>
+            <div class="demo-mobile-slabs" data-mobile-slabs={side}>
+              <span class="demo-mobile-slabs-empty">empty</span>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+
+  {/*
+    The network, drawn — the wide scene's conduits turned upright. One hollow
+    tube from each phone up to the rack, a socket rather than a stroke, and
+    no dash in sight: a dashed rule in this system is the trust boundary, and
+    a device's channel to the relay is the one edge that is not one. Ships
+    collapsed at the device's edge — `data-connected` is the state, the
+    register frame writes it — and grows up the gap when the relay accepts
+    the device. The label is the wide wire's short name outright: the wide
+    scene already swaps "websocket" for "ws" when its columns close in, and
+    this figure exists only below that width.
+  */}
+  <div class="demo-mobile-wires" aria-hidden="true">
+    {
+      PANES.map(({ side }) => (
+        <span class="demo-mobile-wire-cell">
+          <span class="demo-mobile-link" data-mobile-link={side} data-connected="false" />
+          <span class="demo-mobile-link-label">ws</span>
+        </span>
+      ))
+    }
+  </div>
+
+  {
+    PANES.map(({ side, name }) => (
+      <div class="demo-mobile-phone" data-mobile-pane={side}>
+        <span class="demo-mobile-notch" aria-hidden="true" />
+        <div class="demo-mobile-screen">
+          <p class="demo-mobile-head">
+            <span class="demo-mobile-name">{name}<span
+                class="demo-mobile-suffix">'s device</span></span>
+            {/* The wide header's presence caption: the word for the reader,
+                the dot for the glance — one fact written twice, so the script
+                flips both in the same statement or the dot lies. */}
+            <span class="demo-mobile-state" data-mobile-state={side} data-online="false">
+              offline
+            </span>
+          </p>
+          <div class="demo-mobile-bubbles" data-mobile-bubbles={side} />
+          {/* Where the envelope rests while this device seals or opens it: a
+              point in the screen's lower reach, clear of the head and most of
+              the thread, with room under the open face's bottom edge. The
+              placement writer and both flight legs measure this one anchor,
+              so the tile lifts off from exactly where it rested. */}
+          <span class="demo-mobile-envelope-rest" data-mobile-envelope-rest={side} aria-hidden="true" />
+        </div>
+        {/* The module under the screen: the device's cryptographic facts, in
+            the device's own casing — the wide scene's device module, worn at
+            the bottom of this phone. Three divided rows on the hardware: the
+            key store, the ratchet under its count, then the readings. */}
+        <div class="demo-mobile-module">
+          {/* The device's key store, the wide row whole: one filled glyph
+              saying key material lives here — and never leaves — the bar
+              carrying how much against the run's most, and the count the SDK
+              reported. Lit in the accent while the device is generating, the
+              wide row's `data-busy`. */}
+          <p class="demo-mobile-keys" data-mobile-keys={side}>
+            <span class="demo-mobile-keys-label">private keys</span>
+            <span class="demo-mobile-keys-anchor" data-mobile-keys-anchor={side}>
+              <svg class="demo-key-glyph" viewBox={KEY_GLYPH_VIEWBOX} aria-hidden="true">
+                <path d={KEY_GLYPH_PATH} />
+              </svg>
+            </span>
+            <span class="demo-mobile-keys-count" data-mobile-keys-count={side}>0</span>
+            <span class="demo-mobile-keys-track">
+              <span class="demo-mobile-keys-bar" data-mobile-keys-bar={side}></span>
+            </span>
+          </p>
+          <div class="demo-mobile-ratchet">
+            {/* The ratchet head is the derivation count alone, centred over
+                the train it totals. The selection label stays on the wide
+                console — the reel runs one protocol, so a label here would
+                name the only choice on offer. */}
+            <p class="demo-mobile-ratchet-head">
+              <span class="demo-mobile-ratchet-count" data-mobile-ratchet-count={side}>
+                0 message keys derived
+              </span>
+            </p>
+            {/* The ratchet, and it turns one way — the wide train, stamped
+                from the same geometry. The chain wheel clicks a tooth on this
+                device's own protocol moments: its encrypt, its decrypt. A
+                double-ratchet session takes the post-quantum wheel out of
+                gear rather than off the drawing. */}
+            <div class="demo-mobile-train" data-mobile-train={side}>
+              {GEARS.map(({ kind, caption }) => (
+                <figure class="demo-mobile-gear" data-gear={kind}>
+                  <svg
+                    class="demo-ratchet-wheel"
+                    viewBox={WHEEL_VIEWBOX}
+                    aria-hidden="true"
+                    {...(kind === 'chain'
+                      ? { 'data-mobile-wheel': side }
+                      : { 'data-mobile-feeder': side, 'data-kind': kind })}
+                  >
+                    <g
+                      class="demo-ratchet-turn"
+                      {...(kind === 'chain'
+                        ? { 'data-mobile-turn': side }
+                        : { 'data-mobile-feeder-turn': side, 'data-kind': kind })}
+                    >
+                      <path class="demo-ratchet-rim" d={WHEEL_PATH} fill-rule="evenodd" />
+                      <path class="demo-ratchet-spoke" d={WHEEL_SPOKE_PATH} />
+                      <circle
+                        class="demo-ratchet-hub"
+                        cx={WHEEL_HUB.cx}
+                        cy={WHEEL_HUB.cy}
+                        r={WHEEL_HUB.r}
+                      />
+                    </g>
+                    {/* The pawl sits outside the turning group on purpose: the
+                        wheel rotates under a finger that does not. */}
+                    <path class="demo-ratchet-pawl" d={WHEEL_PAWL_PATH} />
+                    <circle
+                      class="demo-ratchet-pawl"
+                      cx={WHEEL_PAWL_PIN.cx}
+                      cy={WHEEL_PAWL_PIN.cy}
+                      r={WHEEL_PAWL_PIN.r}
+                    />
+                  </svg>
+                  <figcaption class="demo-mobile-gear-name">{caption}</figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+          {/* The wide module's readings, under the train: what this device's
+              own processor paid, off the recording's measures. Every value
+              starts as the em dash and fills when its frame plays — a first
+              opening keeps decryption's dash, because its one interval is
+              the key agreement's span and this panel has no row to share
+              that on. */}
+          <dl class="demo-mobile-readings">
+            {METRICS.map(({ key, label }) => (
+              <div class="demo-mobile-reading">
+                <dt class="demo-mobile-reading-name">{label}</dt>
+                <dd class="demo-mobile-reading-value" data-mobile-metric={`${side}-${key}`}>
+                  —
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </div>
+    ))
+  }
+
+  {/* The traveller — the wide scene's tile, whole: the metadata band the
+      relay may read, the lock rail, and the payload that closes under it.
+      The envelope is sealed on the sender's own screen, so both faces play
+      here — open, the sentence on the device's surface; sealed, the
+      ciphertext fill wearing the size in its corner — and the addressing
+      band stays through both, because what the relay can and cannot read is
+      exactly the point. Crossings ride `offset-path` along the drawn
+      network, the wide travellers' idiom; rests are measured transform.
+      Hidden between messages and never drawn under
+      `prefers-reduced-motion`. */}
+  <div class="demo-mobile-envelope" data-mobile-envelope data-sealed="false" hidden>
+    <span class="demo-mobile-envelope-meta">
+      <span class="demo-mobile-envelope-meta-row">
+        <span class="demo-mobile-envelope-meta-key">to</span>
+        <span class="demo-mobile-envelope-meta-value" data-mobile-envelope-to>—</span>
+      </span>
+      {/*
+        The sealed sender's redaction, the wide envelope's: the `from` the
+        relay would read gives way to the lock. The wide console marks this
+        dress as a lens — the run's envelopes are identified, and the switch
+        there can lift it; this figure has no switches, so it wears the
+        console's default and the wide page holds the disclosure.
+      */}
+      <span class="demo-mobile-envelope-meta-row">
+        <span class="demo-mobile-envelope-meta-key">from</span>
+        <span class="demo-mobile-envelope-meta-redacted" aria-label="sender withheld">
+          <svg class="demo-mobile-envelope-meta-lock" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M7 10V7a5 5 0 0 1 10 0v3"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-linecap="round"></path>
+            <rect x="4.5" y="10" width="15" height="10.5" rx="2" fill="currentColor"></rect>
+          </svg>
+        </span>
+      </span>
+    </span>
+    <span class="demo-mobile-envelope-locks" aria-hidden="true">
+      {
+        LOCKS.map(({ kind, label }) => (
+          <span class="demo-mobile-envelope-lockset">
+            <svg
+              class="demo-keyhole"
+              data-mobile-keyhole={kind}
+              data-locked="false"
+              viewBox={KEYHOLE_VIEWBOX}
+            >
+              <g class="demo-keyhole-turn">
+                <circle cx={KEYHOLE_BARREL.cx} cy={KEYHOLE_BARREL.cy} r={KEYHOLE_BARREL.r} />
+                <path d={KEYHOLE_WARD_PATH} />
+              </g>
+            </svg>
+            <span class="demo-mobile-envelope-lock-label">{label}</span>
+          </span>
+        ))
+      }
+    </span>
+    <span class="demo-mobile-envelope-payload">
+      <span class="demo-mobile-envelope-text" data-mobile-envelope-text></span>
+      <span class="demo-mobile-envelope-size" data-mobile-envelope-size></span>
+    </span>
+  </div>
+
+  {/* The publish burst: three outlined keys that fly device → mailbox, the
+      wide scene's flyers on this figure's measured-transform idiom. Parked
+      hidden between publishes. */}
+  {
+    [0, 1, 2].map((burst) => (
+      <span class="demo-mobile-flying-key" data-mobile-flying-key={burst} hidden aria-hidden="true">
+        <svg class="demo-key-glyph" viewBox={KEY_GLYPH_VIEWBOX} aria-hidden="true">
+          <path d={KEY_GLYPH_PATH} />
+        </svg>
+      </span>
+    ))
+  }
+
+  {/* The message keys: one per agreement family, filled because a message key
+      is a secret — it exists on a device and dies at the keyhole. Each flies
+      its feeder wheel → its keyhole, locking at the sender and unlocking at
+      the receiver. */}
+  {
+    LOCKS.map(({ kind }) => (
+      <span
+        class="demo-mobile-message-key"
+        data-mobile-message-key={kind}
+        hidden
+        aria-hidden="true"
+      >
+        <svg class="demo-key-glyph" viewBox={KEY_GLYPH_VIEWBOX} aria-hidden="true">
+          <path d={KEY_GLYPH_PATH} />
+        </svg>
+      </span>
+    ))
+  }
+
+  {/* The spent prekey: outlined, because what the agreement consumes is a
+      published public half — it flies the responder's bundle chip → the
+      initiator's chain wheel, once per session. */}
+  <span class="demo-mobile-spent-key" data-mobile-spent-key hidden aria-hidden="true">
+    <svg class="demo-key-glyph" viewBox={KEY_GLYPH_VIEWBOX} aria-hidden="true">
+      <path d={KEY_GLYPH_PATH} />
+    </svg>
+  </span>
+
+  {/* True before any script runs, which is what a server-rendered caption has
+      to be: the no-JS reader keeps this line and the recorded capture below. */}
+  <figcaption class="demo-mobile-caption" data-mobile-caption aria-live="polite">
+    The same conversation on two phones — the relay between them sees only ciphertext.
+  </figcaption>
+</figure>
+
+<script>
+  import type { MobileFrame, MobileSide } from '../../lib/demo/mobile-reel';
+  import { DEGREES_PER_KEY } from '../../lib/demo/drawing';
+  import { humanBytes } from '../../lib/demo/units';
+
+  /* The two agreement families, in the train's order — the keyholes, feeder
+     wheels and message keys are all indexed by this pair. */
+  const KINDS = ['ec', 'pq'] as const;
+  type LockKind = (typeof KINDS)[number];
+
+  /* How much of a crossing frame's dwell the envelope spends moving — the
+     console's own flight clock, share and cap alike (`FLIGHT_SHARE`,
+     `FLIGHT_CAP_MS` in `DemoConsole.astro`): the message frames carry the
+     console's dwells, so a crossing here moves at the wide scene's pace. */
+  const FLIGHT_SHARE = 0.75;
+  const FLIGHT_CAP_MS = 1600;
+
+  /* How long the opened sentence stands on the tile before it folds into the
+     chat — the reader's beat to see the decryption finish before the envelope
+     becomes the message, the wide scene's reveal beat on this figure. */
+  const REVEAL_HOLD_MS = 600;
+
+  function upgrade(root: HTMLElement) {
+    const need = <E extends HTMLElement | SVGElement = HTMLElement>(selector: string): E => {
+      const found = root.querySelector<E>(selector);
+      if (!found) throw new Error(`demo mobile is missing ${selector}`);
+      return found;
+    };
+    const caption = need('[data-mobile-caption]');
+    const envelope = need<HTMLDivElement>('[data-mobile-envelope]');
+    const perSide = <E extends HTMLElement | SVGElement = HTMLElement>(
+      attribute: string,
+    ): Record<MobileSide, E> => ({
+      a: need<E>(`[${attribute}="a"]`),
+      b: need<E>(`[${attribute}="b"]`),
+    });
+    const envelopeRests = perSide('data-mobile-envelope-rest');
+    const bubbles = perSide('data-mobile-bubbles');
+    const accounts = perSide('data-mobile-account');
+    const slabs = perSide('data-mobile-slabs');
+    const bundles = perSide('data-mobile-bundle');
+    const bundleCounts = perSide('data-mobile-bundle-count');
+    const states = perSide('data-mobile-state');
+    const ratchetCounts = perSide('data-mobile-ratchet-count');
+    /* The readings under each train, keyed the way the scene keys the wide
+       ones: `<side>-<metric>`. */
+    const readings: Record<MobileSide, Record<'keygen' | 'encrypt' | 'decrypt', HTMLElement>> = {
+      a: {
+        keygen: need('[data-mobile-metric="a-keygen"]'),
+        encrypt: need('[data-mobile-metric="a-encrypt"]'),
+        decrypt: need('[data-mobile-metric="a-decrypt"]'),
+      },
+      b: {
+        keygen: need('[data-mobile-metric="b-keygen"]'),
+        encrypt: need('[data-mobile-metric="b-encrypt"]'),
+        decrypt: need('[data-mobile-metric="b-decrypt"]'),
+      },
+    };
+    const ms = (value: number) => `${value.toFixed(1)} ms`;
+    const keysRows = perSide('data-mobile-keys');
+    const keyAnchors = perSide('data-mobile-keys-anchor');
+    const keyBars = perSide('data-mobile-keys-bar');
+    const keyCounts = perSide('data-mobile-keys-count');
+    const trains = perSide('data-mobile-train');
+    const wheels = perSide<SVGElement>('data-mobile-wheel');
+    const wheelTurns = perSide<SVGElement>('data-mobile-turn');
+    const perKind = <E extends HTMLElement | SVGElement = HTMLElement>(
+      selector: (kind: LockKind) => string,
+    ): Record<LockKind, E> => ({
+      ec: need<E>(selector('ec')),
+      pq: need<E>(selector('pq')),
+    });
+    const feeders: Record<MobileSide, Record<LockKind, SVGElement>> = {
+      a: perKind<SVGElement>((kind) => `[data-mobile-feeder="a"][data-kind="${kind}"]`),
+      b: perKind<SVGElement>((kind) => `[data-mobile-feeder="b"][data-kind="${kind}"]`),
+    };
+    const feederTurns: Record<MobileSide, Record<LockKind, SVGElement>> = {
+      a: perKind<SVGElement>((kind) => `[data-mobile-feeder-turn="a"][data-kind="${kind}"]`),
+      b: perKind<SVGElement>((kind) => `[data-mobile-feeder-turn="b"][data-kind="${kind}"]`),
+    };
+    const keyholes = perKind<SVGElement>((kind) => `[data-mobile-keyhole="${kind}"]`);
+    const messageKeys = perKind((kind) => `[data-mobile-message-key="${kind}"]`);
+    const spentKey = need('[data-mobile-spent-key]');
+    const envelopeText = need('[data-mobile-envelope-text]');
+    const envelopeSize = need('[data-mobile-envelope-size]');
+    const envelopeTo = need('[data-mobile-envelope-to]');
+    const links = perSide('data-mobile-link');
+    /* The chip's own key glyph, because it is the journeys' endpoint: the
+       chip's centre sits between the glyph and its count, and a burst aimed
+       there lands beside the key it is stocking rather than on it. */
+    const bundleGlyphs: Record<MobileSide, SVGElement> = {
+      a: need<SVGElement>('[data-mobile-bundle="a"] .demo-key-glyph'),
+      b: need<SVGElement>('[data-mobile-bundle="b"] .demo-key-glyph'),
+    };
+    const flyers = [...root.querySelectorAll<HTMLElement>('[data-mobile-flying-key]')];
+    const names = {
+      a: root.dataset.mobileNameA ?? 'Alice',
+      b: root.dataset.mobileNameB ?? 'Bob',
+    };
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    let frames: readonly MobileFrame[] | null = null;
+    let dwells: Readonly<Record<MobileFrame['kind'], number>> | null = null;
+    let index = 0;
+    let timer: number | null = null;
+    let booting = false;
+    /* The chain wheels' running totals — the number the rotation is derived
+       from, and it never decreases while the loop's session lives. */
+    const turnCount: Record<MobileSide, number> = { a: 0, b: 0 };
+    /* Who last sealed and whose messages were last opened — `scene-view.ts`'s
+       `stepped`: the family wheels advance only when the direction of the
+       conversation changed, because that is when their ratchets really step. */
+    let lastSealedBy: MobileSide | null = null;
+    let lastOpenedFrom: MobileSide | null = null;
+    /* The wide bar's scale: the most each store has held this run. There is
+       no fixed capacity to draw against — a store holds what the protocol put
+       there — so the scale is the run's own high-water mark, reset with it. */
+    const mostKeys: Record<MobileSide, number> = { a: 0, b: 0 };
+    /* The sentences the choreography owes the screens: the sender's bubble
+       rests dim until its seal commits, and the receiver's is born when the
+       unseal settles — so each is held here between its frame and the
+       transition that pays it out, and `show` flushes any the transitions
+       lost (a hidden tab clamps them). */
+    let sealingBubble: HTMLElement | null = null;
+    let openedSentence: { side: MobileSide; text: string } | null = null;
+    /* The choreography's one-shot continuations. `refaceDone` is what the
+       settling face swap owes next — the collapse owes the flight, the
+       expansion owes the unlock keys; `pendingSeal` is the launch the
+       bubble-to-envelope morph owes; `revealTimer` is the reader's beat
+       between the unseal settling and the tile folding into the bubble;
+       `morphingBubble` is the born-invisible bubble that fold is aimed at.
+       All flushed by `show` — a clamped tab can lose any transition. */
+    let refaceDone: (() => void) | null = null;
+    let pendingSeal: { side: MobileSide; dwell: number } | null = null;
+    let revealTimer: number | null = null;
+    let morphingBubble: HTMLElement | null = null;
+    /* An armed FLIP not yet settled. Width and height finish together and
+       queue two `transitionend` events; the settle must spend on the first
+       and ignore the second, or the second's zeroed duration cancels the
+       flight the first one just released. */
+    let refacing = false;
+
+    /*
+     * Visibility is the only control. The observer fires for the viewport and
+     * for `display: none` alike, so widening the window past 60rem — where the
+     * CSS removes this figure — pauses the loop through the same path as
+     * scrolling away from it. The first intersection is also the boot: the SDK
+     * chunk is not fetched for a reader who never reaches the demo band.
+     */
+    const watcher = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void start();
+        else pause();
+      },
+      { threshold: 0.25 },
+    );
+    watcher.observe(root);
+
+    async function start() {
+      if (frames) {
+        resume();
+        return;
+      }
+      if (booting) return;
+      booting = true;
+
+      /* The wide console's gate, for the same reason: an insecure origin has
+         no `crypto.subtle`, the run would fail at its first encrypt, and the
+         caption is where this reader is looking. */
+      if (!window.isSecureContext) {
+        caption.textContent =
+          'This page is not a secure context, so the browser withholds WebCrypto. Open it over HTTPS to watch the conversation run.';
+        return;
+      }
+
+      caption.textContent = 'Fetching the SDK…';
+      try {
+        const [reel, runModule] = await Promise.all([
+          import('../../lib/demo/mobile-reel'),
+          import('../../lib/demo/run'),
+        ]);
+        caption.textContent = 'Running the conversation at full speed…';
+        const run = await runModule.startDemoRun({
+          a: names.a,
+          b: names.b,
+          /* The console's defaults. There are no switches here to disagree
+             with, and a loop that ran a different protocol than the wide
+             page would be two demos wearing one name. */
+          protocol: { postQuantum: 'required', braid: 'disabled' },
+        });
+        await run.activate('a');
+        await run.activate('b');
+        for (const line of reel.MOBILE_SCRIPT) await run.send(line.from, line.text);
+        /* The recording is all this loop keeps. The run — relay, devices,
+           stores — is torn down before the first frame plays; copied first,
+           because `stop()` owns the trace's future and this list is ours. */
+        const events = [...run.trace.events];
+        await run.stop();
+        frames = reel.buildMobileReel(events, names);
+        dwells = reel.MOBILE_DWELL_MS;
+        step();
+      } catch (error) {
+        caption.textContent = `The demo could not start: ${
+          error instanceof Error ? error.message : String(error)
+        }`;
+      }
+    }
+
+    /* `index` always names the next frame to show, so pausing between frames
+       and resuming shows the one that was due rather than replaying the one
+       already on screen — a replayed `sent` frame would grow a second bubble. */
+    function step() {
+      if (!frames || !dwells || frames.length === 0) return;
+      const frame = frames[index]!;
+      index = (index + 1) % frames.length;
+      show(frame);
+      timer = window.setTimeout(step, dwells[frame.kind]);
+    }
+
+    function pause() {
+      if (timer !== null) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+    }
+
+    function resume() {
+      if (timer === null) step();
+    }
+
+    function sizeLabel(bytes: number | undefined): string {
+      return bytes === undefined ? 'sealed' : humanBytes(bytes);
+    }
+
+    /* A sentence lands on a screen. `pending` is the sender's dim copy — the
+       message as typed, not yet committed to the wire; the seal's landing
+       solidifies it. The scroll keeps the newest bubble in view: the screen
+       has the wide phone's fixed height, so the conversation scrolls where a
+       phone's does. */
+    function speak(side: MobileSide, voice: 'self' | 'peer', text: string, pending = false) {
+      const bubble = document.createElement('p');
+      bubble.className = 'demo-mobile-bubble';
+      bubble.dataset.voice = voice;
+      if (pending) bubble.dataset.pending = 'true';
+      bubble.textContent = text;
+      bubbles[side].append(bubble);
+      bubbles[side].scrollTop = bubbles[side].scrollHeight;
+      return bubble;
+    }
+
+    /* The store's bar and count together — the wide `fillKeys`: the width is
+       the count against the run's most, and the only arithmetic is the one
+       that turns two counts into a length. */
+    function fillKeys(side: MobileSide, count: number) {
+      mostKeys[side] = Math.max(mostKeys[side], count);
+      const scale = mostKeys[side];
+      keyBars[side].style.width = scale > 0 ? `${(count / scale) * 100}%` : '0%';
+      keyCounts[side].textContent = String(count);
+    }
+
+    /* Where a box's centre sits in the figure's own coordinates — every
+       traveller here is placed against `root`, so a rect measured mid-scroll
+       still lands where the eye sees the box. */
+    const centreAt = (box: DOMRect, home: DOMRect) =>
+      `translate(${box.left + box.width / 2 - home.left}px, ${
+        box.top + box.height / 2 - home.top
+      }px) translate(-50%, -50%)`;
+
+    /* A box's centre point in the same coordinates, for the routes: the
+       travellers are absolute at the figure's origin and `offset-anchor`
+       defaults to the element's centre, so a path point puts the middle of
+       the traveller on the wire. */
+    const centreOf = (box: Element, home: DOMRect) => {
+      const rect = box.getBoundingClientRect();
+      return {
+        x: Math.round(rect.left + rect.width / 2 - home.left),
+        y: Math.round(rect.top + rect.height / 2 - home.top),
+      };
+    };
+
+    /*
+     * The route between a device and the rack, the wide scene's `wirePath`
+     * turned upright: across to the drawn conduit, along it, and across to
+     * the destination — three right-angled legs rather than a diagonal,
+     * because the wire is the one edge in the figure that is not a trust
+     * boundary and material moves on it, not across the gap. Every endpoint
+     * is a live rect measured in the figure's frame, so the route survives
+     * any width.
+     */
+    function wireRoute(from: Element, to: Element, side: MobileSide): string {
+      const home = root.getBoundingClientRect();
+      const a = centreOf(from, home);
+      const b = centreOf(to, home);
+      /* Only the wire's x is taken, and a collapsed unregistered wire keeps
+         its column's x — `scaleY(0)` folds height, not the centre line. */
+      const w = centreOf(links[side], home).x;
+      return `path("M ${a.x} ${a.y} L ${w} ${a.y} L ${w} ${b.y} L ${b.x} ${b.y}")`;
+    }
+
+    /* Light the one wire a frame moves material over, and put the other out —
+       `scene-view.ts`'s `setLinkTraffic`: the wire carries traffic for exactly
+       the frame it serves, and the next frame's write ends it. `flow` drives
+       the direction the stylesheet's sweep runs in. */
+    function setLinkTraffic(side: MobileSide | null, flow?: 'to-relay' | 'to-device') {
+      for (const s of ['a', 'b'] as const) {
+        links[s].dataset.active = String(s === side);
+        if (s === side && flow !== undefined) links[s].dataset.flow = flow;
+        else delete links[s].dataset.flow;
+      }
+    }
+
+    /*
+     * The crossing, on the network's own drawn edge: the route is written
+     * while the envelope rests at its start, the forced read commits that
+     * placement, and the release is a single write of the distance — the
+     * wide `rideWire`. Under reduced motion the traveller is simply not
+     * drawn: it exists only to be watched moving, and the slab and bubble
+     * carry the whole fact.
+     */
+    function fly(fromBox: HTMLElement, toBox: HTMLElement, side: MobileSide, dwell: number) {
+      if (reducedMotion.matches) return;
+      settleReface();
+      envelope.hidden = false;
+      envelope.dataset.crossing = 'true';
+      envelope.style.transitionDuration = '0s';
+      envelope.style.removeProperty('offset-distance');
+      /* Zeroed for the ride — `offset` composes on top of `transform`, so a
+         resting translate left in place would carry the whole path with it. */
+      envelope.style.transform = 'none';
+      envelope.style.setProperty('offset-path', wireRoute(fromBox, toBox, side));
+      void envelope.offsetWidth;
+      envelope.style.transitionDuration = `${Math.min(FLIGHT_CAP_MS, dwell * FLIGHT_SHARE)}ms`;
+      envelope.style.setProperty('offset-distance', '100%');
+    }
+
+    function land() {
+      envelope.hidden = true;
+      envelope.dataset.crossing = 'false';
+      envelope.style.removeProperty('offset-path');
+      envelope.style.removeProperty('offset-distance');
+    }
+
+    /* The envelope at rest on a device — where the sealing and the opening
+       happen — placed by the same measured transform the message keys aim
+       at, quiet because no boundary is being served. The offset properties
+       come off first: a route left over from the delivery would compose with
+       the placement and carry it down the wire again. */
+    function placeEnvelope(at: HTMLElement) {
+      const home = root.getBoundingClientRect();
+      settleReface();
+      envelope.hidden = false;
+      envelope.dataset.crossing = 'false';
+      envelope.style.transitionDuration = '0s';
+      envelope.style.removeProperty('offset-path');
+      envelope.style.removeProperty('offset-distance');
+      envelope.style.transform = centreAt(at.getBoundingClientRect(), home);
+    }
+
+    /*
+     * The tile's two faces differ in size as well as dress, so the swap is
+     * measured — FLIP on the envelope's own box: freeze the outgoing size,
+     * swap the faces, and let the box travel to the incoming one. The open
+     * tile visibly contracts into the chip the relay sees, and the chip grows
+     * back into the tile at the unseal; the centre-anchored placement holds
+     * it in place while it resizes, and `overflow: hidden` clips the face
+     * that is leaving. Inline, because width and height are auto in every
+     * resting state — `settleReface` hands the box back to the stylesheet,
+     * and the flight and placement writers call it first so a swap cut short
+     * can never leave a frozen size on a traveller.
+     */
+    function reface(swap: () => void) {
+      const before = envelope.getBoundingClientRect();
+      swap();
+      if (reducedMotion.matches || envelope.hidden) return;
+      const after = envelope.getBoundingClientRect();
+      if (Math.abs(before.width - after.width) < 1 && Math.abs(before.height - after.height) < 1) {
+        refaceSettled();
+        return;
+      }
+      envelope.style.width = `${before.width}px`;
+      envelope.style.height = `${before.height}px`;
+      envelope.style.transitionProperty = 'width, height';
+      envelope.style.transitionDuration = '0s';
+      void envelope.offsetWidth;
+      envelope.style.setProperty('transition-duration', 'var(--oe-duration-slow, 400ms)');
+      envelope.style.width = `${after.width}px`;
+      envelope.style.height = `${after.height}px`;
+      refacing = true;
+    }
+
+    function settleReface() {
+      envelope.style.removeProperty('width');
+      envelope.style.removeProperty('height');
+      envelope.style.removeProperty('transition-property');
+      envelope.style.transitionDuration = '0s';
+    }
+
+    /* The swap settles: the box goes back to the stylesheet's sizing, and
+       whatever the swap owed comes due. A collapse or expansion pays its
+       continuation; the open face of an unseal starts the reveal's beat —
+       the sentence stands readable on the tile, and only then does the tile
+       fold into the bubble it becomes. Shared between the transition's end
+       and `reface`'s no-delta path, because the unified tile's payload holds
+       one min-height: a sentence short enough to fit it swaps faces without
+       changing the box, and neither debt may wait on a transition that never
+       ran. */
+    function refaceSettled() {
+      refacing = false;
+      settleReface();
+      const done = refaceDone;
+      refaceDone = null;
+      if (done) {
+        done();
+        return;
+      }
+      if (envelope.dataset.sealed === 'false' && envelope.dataset.crossing !== 'true' && openedSentence) {
+        revealTimer = window.setTimeout(morphToBubble, REVEAL_HOLD_MS);
+      }
+    }
+
+    /*
+     * The morph between the tile and a chat bubble, both directions — the
+     * FLIP idiom `reface` uses, with the position along for the ride: freeze
+     * the box and transform at `from`, force the read, and send all three to
+     * `to` on the slow token. `data-morph` marks the envelope mid-shape so
+     * the transition's end knows a morph from a face swap.
+     */
+    function morphBox(from: DOMRect, to: DOMRect) {
+      const home = root.getBoundingClientRect();
+      envelope.style.transitionProperty = 'transform, width, height';
+      envelope.style.transitionDuration = '0s';
+      envelope.style.transform = centreAt(from, home);
+      envelope.style.width = `${from.width}px`;
+      envelope.style.height = `${from.height}px`;
+      void envelope.offsetWidth;
+      envelope.style.setProperty('transition-duration', 'var(--oe-duration-slow, 400ms)');
+      envelope.style.transform = centreAt(to, home);
+      envelope.style.width = `${to.width}px`;
+      envelope.style.height = `${to.height}px`;
+    }
+
+    /* The decrypted envelope becomes the message: the bubble is born
+       invisible to hold its place in the flow, the tile shrinks onto its
+       box, and the finish trades one for the other. */
+    function morphToBubble() {
+      revealTimer = null;
+      if (!openedSentence) return;
+      const bubble = speak(openedSentence.side, 'peer', openedSentence.text);
+      openedSentence = null;
+      bubble.dataset.morphing = 'true';
+      morphingBubble = bubble;
+      const from = envelope.getBoundingClientRect();
+      envelope.dataset.morph = 'to-bubble';
+      morphBox(from, bubble.getBoundingClientRect());
+    }
+
+    function finishMorph() {
+      const was = envelope.dataset.morph;
+      delete envelope.dataset.morph;
+      settleReface();
+      if (morphingBubble) {
+        delete morphingBubble.dataset.morphing;
+        morphingBubble = null;
+      }
+      if (was === 'to-bubble') {
+        envelope.hidden = true;
+        return;
+      }
+      /* The tile is whole, so the sealing it stood in for can start. */
+      const seal = pendingSeal;
+      pendingSeal = null;
+      if (seal) flyMessageKeys(seal.side, true, seal.dwell);
+    }
+
+    envelope.addEventListener('transitionend', (event) => {
+      if (envelope.dataset.morph) {
+        /* Any of the morph's three properties ends it — a bubble the tile's
+           width would run no width transition at all. */
+        if (
+          event.propertyName === 'width' ||
+          event.propertyName === 'height' ||
+          event.propertyName === 'transform'
+        )
+          finishMorph();
+        return;
+      }
+      if (!refacing) return;
+      if (event.propertyName !== 'width' && event.propertyName !== 'height') return;
+      refaceSettled();
+    });
+
+    /* Both locks and the seal at once — the reduced-motion arm and the
+       belt-and-braces a resumed loop needs: a crossing frame can assert the
+       sealed state without replaying the flight that produced it. The rail
+       stands through both faces, the wide tile's rule, so there is nothing
+       to fold — the barrels' angle is the whole difference. */
+    function setKeyholes(locked: boolean) {
+      for (const kind of KINDS) keyholes[kind].dataset.locked = String(locked);
+      envelope.dataset.sealed = String(locked);
+    }
+
+    /* The sealing and the opening: one message key per family flies its
+       feeder wheel → its keyhole, and the landing — not the launch — turns
+       the lock, so the state changes when the eye sees the key arrive. The
+       post-quantum key trails by a fraction of the flight, the wide scene's
+       stagger. */
+    function flyMessageKeys(side: MobileSide, locked: boolean, dwell: number) {
+      const home = root.getBoundingClientRect();
+      const flight = Math.min(700, dwell * 0.4);
+      for (const kind of KINDS) {
+        const key = messageKeys[kind];
+        const departure = feeders[side][kind].getBoundingClientRect();
+        const arrival = keyholes[kind].getBoundingClientRect();
+        key.hidden = false;
+        delete key.dataset.flying;
+        key.dataset.landLocked = String(locked);
+        key.style.transitionDuration = '0s';
+        key.style.transitionDelay = '0s';
+        key.style.transform = centreAt(departure, home);
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            key.dataset.flying = 'true';
+            key.style.transitionDuration = `${flight}ms`;
+            key.style.transitionDelay = kind === 'pq' ? `${Math.round(flight * 0.35)}ms` : '0s';
+            key.style.transform = centreAt(arrival, home);
+          }),
+        );
+      }
+    }
+
+    function parkMessageKeys() {
+      for (const kind of KINDS) {
+        messageKeys[kind].hidden = true;
+        delete messageKeys[kind].dataset.flying;
+      }
+    }
+
+    /* A key lands: its keyhole takes the turn it carried, and the key dies —
+       a message key never exists off a device. The faces do not swap here:
+       the landing starts the barrel turning, and the swap belongs to the
+       turn's completion, so the locking is watched whole. */
+    for (const kind of KINDS) {
+      const key = messageKeys[kind];
+      key.addEventListener('transitionend', (event) => {
+        if (event.propertyName !== 'transform' || key.dataset.flying !== 'true') return;
+        keyholes[kind].dataset.locked = key.dataset.landLocked ?? 'false';
+        key.hidden = true;
+        delete key.dataset.flying;
+      });
+    }
+
+    /* The last barrel settles, and the tile changes state — both directions.
+       Sealed: the payload contracts into the size chip that travels, and the
+       sender's dim bubble commits. Opened: the chip grows back into the open
+       tile, whose settle above births the bubble. The `getAnimations` guard
+       is what makes "last": the keys land staggered, so the first barrel
+       finishes while the second still turns. A seal asserted without motion
+       (`setKeyholes` on a resumed loop) never comes this way — the belt and
+       braces stay the frame's own. */
+    for (const kind of KINDS) {
+      const turn = keyholes[kind].querySelector<SVGGElement>('.demo-keyhole-turn');
+      turn?.addEventListener('transitionend', (event) => {
+        if (event.propertyName !== 'transform') return;
+        if (KINDS.some((k) => !messageKeys[k].hidden)) return;
+        if (
+          KINDS.some((k) =>
+            (keyholes[k].querySelector('.demo-keyhole-turn')?.getAnimations().length ?? 0) > 0,
+          )
+        )
+          return;
+        const locked = KINDS.every((k) => keyholes[k].dataset.locked === 'true');
+        const open = KINDS.every((k) => keyholes[k].dataset.locked === 'false');
+        if (locked && envelope.dataset.sealed === 'false') {
+          reface(() => {
+            envelope.dataset.sealed = 'true';
+          });
+          if (sealingBubble) {
+            delete sealingBubble.dataset.pending;
+            sealingBubble = null;
+          }
+        } else if (open && envelope.dataset.sealed === 'true') {
+          reface(() => {
+            envelope.dataset.sealed = 'false';
+          });
+        }
+      });
+    }
+
+    /* The spent prekey: the agreement consumes one of the responder's
+       published keys, so an outlined key leaves the shelf's own glyph for the
+       initiator's chain wheel — publish's stock, being drawn down — routed
+       along the initiator's wire, because the fetch came over it. The chip
+       glows busy while its shelf is served, the wide shelf's own light. */
+    function spendPrekey(spend: { from: MobileSide; to: MobileSide }, dwell: number) {
+      bundles[spend.from].dataset.busy = 'true';
+      if (reducedMotion.matches) return;
+      spentKey.hidden = false;
+      spentKey.style.transitionDuration = '0s';
+      spentKey.style.removeProperty('offset-distance');
+      spentKey.style.transform = 'none';
+      spentKey.style.setProperty(
+        'offset-path',
+        wireRoute(bundleGlyphs[spend.from], wheels[spend.to], spend.to),
+      );
+      void spentKey.offsetWidth;
+      spentKey.dataset.flying = 'true';
+      /* Slower than the envelope's cap, the wide spend's proportion:
+         this is the one flight that crosses the whole figure. */
+      spentKey.style.transitionDuration = `${Math.min(FLIGHT_CAP_MS * 1.5, dwell * FLIGHT_SHARE)}ms`;
+      spentKey.style.setProperty('offset-distance', '100%');
+    }
+
+    function parkSpentKey() {
+      spentKey.hidden = true;
+      delete spentKey.dataset.flying;
+      spentKey.style.removeProperty('offset-path');
+      spentKey.style.removeProperty('offset-distance');
+    }
+
+    /* A bay is lit exactly while it holds a row — the wide mailbox's rule —
+       and the `empty` placeholder shows only in a bare bay. */
+    function updateHolding(side: MobileSide) {
+      slabs[side].dataset.holding = String(
+        slabs[side].querySelector('.demo-mobile-slab') !== null,
+      );
+    }
+
+    /* The publish burst: the outlined public halves leave the device's key
+       row for the shelf's own glyph, up the device's wire, staggered so
+       three keys read as a stream. One route serves the whole burst — the
+       endpoints do not move between launches. Under reduced motion they are
+       not drawn — the chip and its count carry the whole fact. */
+    function flyKeys(side: MobileSide, dwell: number) {
+      if (reducedMotion.matches) return;
+      const route = wireRoute(keyAnchors[side], bundleGlyphs[side], side);
+      const flight = Math.min(FLIGHT_CAP_MS, dwell * FLIGHT_SHARE);
+      for (const key of flyers) {
+        key.hidden = false;
+        delete key.dataset.flying;
+        key.style.transitionDuration = '0s';
+        key.style.transitionDelay = '0s';
+        key.style.removeProperty('offset-distance');
+        key.style.transform = 'none';
+        key.style.setProperty('offset-path', route);
+      }
+      void root.offsetWidth;
+      flyers.forEach((key, position) => {
+        key.dataset.flying = 'true';
+        key.style.transitionDuration = `${flight}ms`;
+        /* Fractions of the flight rather than fixed milliseconds, the
+           wide burst's rule: the stagger keeps its shape at any dwell. */
+        key.style.transitionDelay = `${Math.round(position * 0.12 * flight)}ms`;
+        key.style.setProperty('offset-distance', '100%');
+      });
+    }
+
+    function parkKeys() {
+      for (const key of flyers) {
+        key.hidden = true;
+        delete key.dataset.flying;
+        key.style.removeProperty('offset-path');
+        key.style.removeProperty('offset-distance');
+      }
+    }
+
+    /* One tooth per real protocol moment, and only ever forward —
+       `scene-view.ts`'s `turnRatchet`: the angle is a running total, never a
+       position on a dial, and the parity-keyed pulse is the click. The
+       deriving glow rides the frame and is cleared with the next one. */
+    function turnChain(side: MobileSide) {
+      const taken = (turnCount[side] += 1);
+      wheels[side].dataset.pulse = String(taken % 2);
+      wheels[side].dataset.turns = String(taken);
+      wheelTurns[side].style.transform = `rotate(${taken * DEGREES_PER_KEY}deg)`;
+      trains[side].dataset.deriving = 'true';
+      /* The head's figure is the same total the rotation is derived from —
+         the wide head's sentence, singular case included. */
+      ratchetCounts[side].textContent =
+        taken === 1 ? '1 message key derived' : `${taken} message keys derived`;
+    }
+
+    /* A family wheel's click — `clickFeeder`'s rule: it advances only when
+       its ratchet really stepped, and a disengaged wheel never turns. The
+       running total lives on the wheel itself, where the chain keeps its. */
+    function clickFeeder(side: MobileSide, kind: LockKind) {
+      const wheel = feeders[side][kind];
+      if (wheel.dataset.engaged === 'false') return;
+      const taken = Number(wheel.dataset.turns ?? '0') + 1;
+      wheel.dataset.turns = String(taken);
+      wheel.dataset.pulse = String(taken % 2);
+      feederTurns[side][kind].style.transform = `rotate(${taken * DEGREES_PER_KEY}deg)`;
+    }
+
+    /* The one moment the angle may decrease, and it must not be animated —
+       `rewindRatchet`'s recipe: suppress the transition for the frame that
+       carries the change, with a forced layout read between the writes so
+       the browser treats them as separate frames. */
+    function rewindTrain(side: MobileSide) {
+      turnCount[side] = 0;
+      ratchetCounts[side].textContent = '0 message keys derived';
+      const stations: [SVGElement, SVGElement][] = [
+        [wheels[side], wheelTurns[side]],
+        [feeders[side].ec, feederTurns[side].ec],
+        [feeders[side].pq, feederTurns[side].pq],
+      ];
+      for (const [wheel, turn] of stations) {
+        turn.dataset.rewind = 'true';
+        turn.style.removeProperty('transform');
+        delete wheel.dataset.pulse;
+        delete wheel.dataset.turns;
+        void wheel.getBoundingClientRect();
+        delete turn.dataset.rewind;
+      }
+    }
+
+    function show(frame: MobileFrame) {
+      caption.textContent = frame.caption;
+      /* No sentence outlives its frame unspoken or dim: the payouts above
+         ride transitions, and a clamped tab can lose one. Idempotent when
+         the transitions did their work. */
+      if (revealTimer !== null) {
+        window.clearTimeout(revealTimer);
+        revealTimer = null;
+      }
+      refaceDone = null;
+      pendingSeal = null;
+      /* A FLIP cut short settles under its next owner — the flight and
+         placement writers clear the frozen box — so only the flag drops
+         here; zeroing the duration now would cancel a flight in the air. */
+      refacing = false;
+      if (openedSentence) {
+        speak(openedSentence.side, 'peer', openedSentence.text);
+        openedSentence = null;
+      }
+      if (morphingBubble) {
+        /* A fold cut short: its bubble takes over whole, and the tile it was
+           replacing leaves — the message was already spoken into it. */
+        delete morphingBubble.dataset.morphing;
+        morphingBubble = null;
+        envelope.hidden = true;
+      }
+      delete envelope.dataset.morph;
+      if (sealingBubble) {
+        delete sealingBubble.dataset.pending;
+        sealingBubble = null;
+      }
+      /* Transient lights last exactly one frame: the busy store, the busy
+         shelf, the deriving train, the publish burst and the spent key are
+         cleared before the next frame draws, the way `scene-view.ts` clears
+         them with their cues. */
+      for (const side of ['a', 'b'] as const) {
+        delete keysRows[side].dataset.busy;
+        delete trains[side].dataset.deriving;
+        delete bundles[side].dataset.busy;
+      }
+      parkKeys();
+      parkSpentKey();
+      /* The wires rest with the other transient lights: a frame that moves
+         material over one relights it below, for exactly its dwell. */
+      setLinkTraffic(null);
+      switch (frame.kind) {
+        case 'reset':
+          for (const side of ['a', 'b'] as const) {
+            bubbles[side].replaceChildren();
+            for (const slab of slabs[side].querySelectorAll('.demo-mobile-slab')) slab.remove();
+            updateHolding(side);
+            bundles[side].hidden = true;
+            states[side].textContent = 'offline';
+            states[side].dataset.online = 'false';
+            for (const metric of ['keygen', 'encrypt', 'decrypt'] as const)
+              readings[side][metric].textContent = '—';
+            accounts[side].dataset.registered = 'false';
+            links[side].dataset.connected = 'false';
+            mostKeys[side] = 0;
+            fillKeys(side, 0);
+            delete feeders[side].pq.dataset.engaged;
+            rewindTrain(side);
+          }
+          lastSealedBy = null;
+          lastOpenedFrom = null;
+          parkMessageKeys();
+          setKeyholes(false);
+          envelopeText.textContent = '';
+          envelopeSize.textContent = '';
+          envelopeTo.textContent = '—';
+          delete envelope.dataset.packet;
+          land();
+          break;
+        case 'register':
+          /* The word and the dot are one fact written twice — the text for
+             the reader, the attribute for the stylesheet's colour — so they
+             change in the same statement or the dot lies. */
+          states[frame.side].textContent = 'online';
+          states[frame.side].dataset.online = 'true';
+          accounts[frame.side].dataset.registered = 'true';
+          /* The connection is what registration opens: the conduit grows up
+             the gap from the device's edge as the relay accepts it. */
+          links[frame.side].dataset.connected = 'true';
+          break;
+        case 'keygen':
+          keysRows[frame.side].dataset.busy = 'true';
+          if (frame.keys !== undefined) fillKeys(frame.side, frame.keys);
+          /* The cost alone — the wide reading's sentence names the batch
+             too, but here the key-store row above already counts it, and
+             the long form overruns a half-width pane. */
+          if (frame.ms !== undefined)
+            readings[frame.side].keygen.textContent = ms(frame.ms);
+          break;
+        case 'publish':
+          bundles[frame.side].hidden = false;
+          /* Lit while its shelf is being stocked — the wide shelf's busy
+             light, on for exactly the publish frame. */
+          bundles[frame.side].dataset.busy = 'true';
+          if (frame.keys !== undefined)
+            bundleCounts[frame.side].textContent = String(frame.keys);
+          setLinkTraffic(frame.side, 'to-relay');
+          flyKeys(frame.side, dwells?.publish ?? 0);
+          break;
+        case 'session':
+          for (const side of ['a', 'b'] as const) {
+            /* The wide scene's gearing, verbatim: a double-ratchet session
+               takes the post-quantum wheel out of gear rather than off the
+               drawing — the difference between the two ratchets is exactly
+               one wheel, and the drawing shows which. */
+            if (frame.ratchet === 'double') feeders[side].pq.dataset.engaged = 'false';
+            else delete feeders[side].pq.dataset.engaged;
+          }
+          if (frame.spend) {
+            /* The initiator's wire carries the pull: the prekey comes down to
+               the device that asked for it. */
+            setLinkTraffic(frame.spend.to, 'to-device');
+            spendPrekey(frame.spend, dwells?.session ?? 0);
+          }
+          break;
+        case 'sent': {
+          /* The bubble first, dim: the message as typed, on its own screen —
+             then the envelope tells what sending it takes. The seal's landing
+             solidifies it; under reduced motion there is no seal to wait on,
+             so it lands committed. */
+          const bubble = speak(frame.side, 'self', frame.text, !reducedMotion.matches);
+          sealingBubble = reducedMotion.matches ? null : bubble;
+          turnChain(frame.side);
+          /* Latest, not a running sum — the console's rule: each message
+             prices one seal, and the reading answers "what does this cost". */
+          if (frame.encryptMs !== undefined)
+            readings[frame.side].encrypt.textContent = ms(frame.encryptMs);
+          /* The family wheels advance only when the conversation changed
+             direction — the wide `stepped`. This script alternates, so every
+             send steps both families; the guard is the honesty, not an
+             optimisation. */
+          if (lastSealedBy !== frame.side) {
+            clickFeeder(frame.side, 'ec');
+            clickFeeder(frame.side, 'pq');
+          }
+          lastSealedBy = frame.side;
+          /* The sealing, on the sender's own screen: the typed message
+             becomes the envelope — the tile sets off from the bubble's own
+             box and grows into its resting form — then the message keys fly
+             and the landings lock it, and it wears the sealed size until it
+             is opened. The keys wait for the morph's finish: a key aimed
+             mid-morph lands on a keyhole that has not stopped moving. Under
+             reduced motion the envelope is simply not drawn, this figure's
+             standing rule. */
+          if (!reducedMotion.matches) {
+            /* The open face shows the sentence itself — the wide envelope's
+               plaintext, on this tile — until the landings seal it. The
+               addressing rides from this moment: `to` is the peer the relay
+               will file it under, and `from` is the standing lock. */
+            envelopeText.textContent = frame.text;
+            envelopeSize.textContent = sizeLabel(frame.bytes);
+            envelopeTo.textContent = names[frame.side === 'a' ? 'b' : 'a'];
+            setKeyholes(false);
+            delete envelope.dataset.packet;
+            placeEnvelope(envelopeRests[frame.side]);
+            const rest = envelope.getBoundingClientRect();
+            envelope.dataset.morph = 'from-bubble';
+            pendingSeal = { side: frame.side, dwell: dwells?.sent ?? 0 };
+            morphBox(bubble.getBoundingClientRect(), rest);
+          }
+          break;
+        }
+        case 'cross':
+          envelopeSize.textContent = sizeLabel(frame.bytes);
+          envelopeTo.textContent = names[frame.to];
+          /* Asserted rather than animated: a loop resumed mid-message must
+             still cross sealed. */
+          setKeyholes(true);
+          setLinkTraffic(frame.from, 'to-relay');
+          /* The sealed tile contracts into the packet the wire carries —
+             the addressing and the rail fold away, the byte count is the
+             whole face — and only then rides, into the addressee's bay (the
+             wide rack's rule: a message waiting over the sender's own
+             mailbox would draw the relay handing it back). A loop resumed
+             on this frame crosses as the packet without the contraction it
+             missed. */
+          if (!reducedMotion.matches && !envelope.hidden && envelope.dataset.packet !== 'true') {
+            refaceDone = () =>
+              fly(envelopeRests[frame.from], slabs[frame.to], frame.from, dwells?.cross ?? 0);
+            reface(() => {
+              envelope.dataset.packet = 'true';
+            });
+          } else {
+            envelope.dataset.packet = 'true';
+            fly(envelopeRests[frame.from], slabs[frame.to], frame.from, dwells?.cross ?? 0);
+          }
+          break;
+        case 'stored': {
+          land();
+          const slab = document.createElement('span');
+          slab.className = 'demo-mobile-slab';
+          slab.textContent = sizeLabel(frame.bytes);
+          slabs[frame.to].append(slab);
+          updateHolding(frame.to);
+          break;
+        }
+        case 'deliver': {
+          envelopeSize.textContent = sizeLabel(frame.bytes);
+          envelopeTo.textContent = names[frame.to];
+          setKeyholes(true);
+          /* Asserted like the seal: what leaves the mailbox is the packet
+             the wire brought it. */
+          envelope.dataset.packet = 'true';
+          setLinkTraffic(frame.to, 'to-device');
+          fly(slabs[frame.to], envelopeRests[frame.to], frame.to, dwells?.deliver ?? 0);
+          /* The relay hands rows over in the order it took them — and hands
+             them *over*: the oldest slab leaves with its owner, because the
+             envelope in flight IS the row, moving. A bare bay says so. */
+          slabs[frame.to].querySelector('.demo-mobile-slab')?.remove();
+          updateHolding(frame.to);
+          break;
+        }
+        case 'opened': {
+          turnChain(frame.side);
+          if (frame.decryptMs !== undefined)
+            readings[frame.side].decrypt.textContent = ms(frame.decryptMs);
+          const sender: MobileSide = frame.side === 'a' ? 'b' : 'a';
+          if (lastOpenedFrom !== sender) {
+            clickFeeder(frame.side, 'ec');
+            clickFeeder(frame.side, 'pq');
+          }
+          lastOpenedFrom = sender;
+          /* The opening: the envelope is still on the device from the fetch;
+             the packet grows back into the whole tile, the receiver's own
+             keys fly to it and take the locks back off. The bubble is what
+             the opening produces, so the sentence waits for the unseal — the
+             barrels turn back, the payload opens on the words, the sentence
+             stands for the reveal's beat, and the tile folds into the bubble
+             it becomes. The keys wait for the expansion's settle: a keyhole
+             measured mid-growth aims a key at a place the rail has already
+             left. Under reduced motion none of that is drawn, and the bubble
+             is the whole frame. */
+          if (reducedMotion.matches) {
+            speak(frame.side, 'peer', frame.text);
+          } else {
+            openedSentence = { side: frame.side, text: frame.text };
+            envelopeText.textContent = frame.text;
+            envelope.dataset.crossing = 'false';
+            /* The delivery's route hands the position back to a measured
+               rest before anything is aimed or morphs — a box riding an
+               offset path cannot fold into a bubble. */
+            placeEnvelope(envelopeRests[frame.side]);
+            if (envelope.dataset.packet === 'true') {
+              refaceDone = () => flyMessageKeys(frame.side, false, dwells?.opened ?? 0);
+              reface(() => {
+                delete envelope.dataset.packet;
+              });
+            } else {
+              flyMessageKeys(frame.side, false, dwells?.opened ?? 0);
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-demo-mobile]')) {
+    upgrade(root);
+  }
+</script>
+
+<style>
+  /* The wide console owns everything from 60rem up; this figure exists only
+     below it. One breakpoint, shared with the console's own hiding rule. */
+  .demo-mobile {
+    display: none;
+  }
+
+  /* Two phones share the bottom row — a screen narrow enough for this figure
+     still has width for a pair of devices — and the rack and the caption span
+     both columns, the rack above the devices its mailboxes serve. Capped and
+     centred so a mid-width window gets two phones, not two slabs of empty
+     screen.
+
+     `minmax(0, 1fr)` and not bare `1fr`, because a bare `1fr` track is
+     `minmax(auto, 1fr)`: the columns would follow their contents' min-content
+     sizes, and this figure's contents change every frame — state lines, slabs
+     and captions arriving would visibly re-split the row mid-loop. The
+     zero-floored tracks halve the row whatever the frame holds, so nothing in
+     the drawing changes width as the loop runs. */
+  @media (max-width: 60rem) {
+    .demo-mobile {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--oe-space-3);
+      margin: 0 auto;
+      /* Explicit, because the centring margins opt this figure out of the
+         console column's stretch: without a stated width it shrink-wraps,
+         and a shrink-wrapped width follows the contents' text metrics —
+         the row would re-split when the mono font lands. */
+      width: 100%;
+      max-width: 30rem;
+    }
+  }
+
+  /* What a traveller glows: light — the wide scene's halo, not the accent,
+     for its reason: the accent already inks every busy store and wheel, and
+     a scene where the machinery *and* the flyers all shout the same blue has
+     no *watch this* left. Surface here and foreground under `.dark` are the
+     same warm white; a glow is a light source, so it does not flip with the
+     theme. */
+  .demo-mobile {
+    --demo-traveller-halo: var(--oe-surface);
+    /* The wires' resting ink, the wide scene's token: not the carrier stroke,
+       because standing infrastructure is not a drawn edge of a machine, and
+       the dormant wash keeps the conduit in the blue family it lights up in. */
+    --demo-wire-dormant: color-mix(in srgb, var(--oe-accent) 45%, var(--oe-canvas));
+  }
+
+  :global(:root.dark) .demo-mobile {
+    --demo-traveller-halo: var(--oe-foreground);
+  }
+
+  .demo-mobile-relay,
+  .demo-mobile-caption {
+    grid-column: 1 / -1;
+  }
+
+  /* The wide scene's phone, smaller: cased screen behind a notch. Unlike the
+     wide phone this one is complete — nothing is cut off at the bottom — so
+     all four corners close. */
+  .demo-mobile-phone {
+    min-width: 0;
+    background: var(--oe-device-surface);
+    border: 2px solid var(--oe-border);
+    border-radius: 20px;
+    padding: var(--oe-space-2);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .demo-mobile-notch {
+    width: 34%;
+    height: 4px;
+    margin: 0 auto var(--oe-space-2);
+    border-radius: 999px;
+    background: var(--oe-border);
+  }
+
+  .demo-mobile-screen {
+    min-width: 0;
+    background: var(--oe-surface);
+    border-radius: 12px;
+    padding: var(--oe-space-2);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    /* The frame the envelope's rest anchor is measured against. */
+    position: relative;
+  }
+
+  /* A dimensionless point, not a box: `centreAt` puts the envelope's centre
+     on this spot, so the offset is half the open face's height plus the gap
+     wanted under its bottom edge. */
+  .demo-mobile-envelope-rest {
+    position: absolute;
+    left: 50%;
+    bottom: 4rem;
+    width: 0;
+    height: 0;
+  }
+
+  .demo-mobile-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 var(--oe-space-2);
+    margin: 0 0 var(--oe-space-2);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  /* The wide header's presence caption, at this figure's mono size: the
+     protocol story lives in the caption line and the machinery — this corner
+     answers only "is this device on the network". */
+  .demo-mobile-state {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    /* Reserve the wider word ("offline", 7ch) plus the dot and gap, so the
+       flip to "online" never reflows the head; margin keeps the corner on
+       the right edge when a long name folds it to its own line. */
+    min-width: calc(7ch + 12px);
+    margin-left: auto;
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+    font-weight: 400;
+    color: var(--oe-text-muted);
+  }
+
+  /* The indicator dot, red until the device registers — the wide scene's
+     literals: the palette has no semantic pair for up/down, and both
+     mid-tones read on the light and the dark surface alike. */
+  .demo-mobile-state::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    flex: none;
+    border-radius: 50%;
+    background: #c0453c;
+  }
+
+  .demo-mobile-state[data-online='true']::before {
+    background: #1d9e63;
+  }
+
+  /* "Alice's device", "Alice's mailbox": the name owns the header and the
+     suffix says what kind of thing the column is — the wide header's own
+     muted voice, one class for both rows. */
+  .demo-mobile-suffix {
+    font-weight: 400;
+    color: var(--oe-text-muted, inherit);
+    opacity: 0.7;
+  }
+
+  /* Under ~26rem a screen head cannot hold name, suffix, and presence word
+     on one line — "Alice's device" plus "offline" needs ~143px and a 390px
+     phone gives the head 137px — and the fold lands on one side only, which
+     reads as a defect. The suffix is the yielding part: the casing already
+     draws the device, and presence keeps its word ("one fact written
+     twice"). The mailbox rows keep theirs — a mailbox has no casing to say
+     what it is, and those rows fit. */
+  @media (max-width: 26rem) {
+    .demo-mobile-head .demo-mobile-suffix {
+      display: none;
+    }
+  }
+
+  /* A height, not a maximum: a phone does not grow when a conversation does —
+     the wide phone's rule. The fixed screen also holds the figure still: a
+     screen that grew with its bubbles would move the rack mid-loop and every
+     measured crossing with it. What overflows scrolls, and `speak` keeps the
+     newest bubble in view, the way a phone's own thread behaves. */
+  .demo-mobile-bubbles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-2);
+    height: 13.5rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--oe-border) transparent;
+  }
+
+  .demo-mobile-bubbles :global(.demo-mobile-bubble) {
+    max-width: 88%;
+    margin: 0;
+    padding: var(--oe-space-1) var(--oe-space-2);
+    border-radius: 12px;
+    line-height: 1.35;
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+  }
+
+  .demo-mobile-bubbles :global(.demo-mobile-bubble[data-voice='self']) {
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+    background: var(--oe-accent);
+    color: var(--oe-accent-foreground);
+  }
+
+  .demo-mobile-bubbles :global(.demo-mobile-bubble[data-voice='peer']) {
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    background: var(--oe-surface-sunken);
+    border: 1px solid var(--oe-border);
+  }
+
+  /* The sender's copy as typed, not yet committed to the wire — the wide
+     thread's pending dim, worn until the seal lands and the message really
+     left. */
+  .demo-mobile-bubbles :global(.demo-mobile-bubble[data-pending='true']) {
+    opacity: 0.55;
+  }
+
+  /* ------------------------------------------------ the device module --- */
+
+  /* The wide scene's instrument panel under the screen: same casing, same
+     dividers, at this figure's mono size. The screen above is the product;
+     this box is the hardware readout. */
+  .demo-mobile-module {
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-2);
+    margin-top: var(--oe-space-2);
+    padding: var(--oe-space-2);
+    border: 2px solid var(--oe-border);
+    border-radius: 12px;
+    background: var(--oe-device-surface);
+  }
+
+  /* The wide module's divider between instruments, so the key store and the
+     ratchet read as two gauges on one panel. */
+  .demo-mobile-module > * + * {
+    border-top: 1px solid var(--oe-border);
+    padding-top: var(--oe-space-2);
+  }
+
+  /* ---------------------------------------------------- the key store --- */
+
+  /* The wide key row: name, glyph, count. The module owns the casing and
+     the divider now. */
+  .demo-mobile-keys {
+    display: flex;
+    align-items: center;
+    /* The wide row's parts on a half-width pane: glyph, name, and count on
+       one line, and the bar wrapped whole onto its own — inline it would be
+       a sliver a few pixels wide. */
+    flex-wrap: wrap;
+    gap: var(--oe-space-1);
+    margin: 0;
+  }
+
+  .demo-mobile-keys-anchor {
+    display: flex;
+    flex: none;
+  }
+
+  /* Same exemption as the wheel's: a key is a fixed-size icon, and two of
+     its perches — the bundle chip, the flyer — size themselves from their
+     contents, which the global svg cap would turn circular. */
+  .demo-key-glyph {
+    max-width: none;
+  }
+
+  /* Filled is private, the one claim this glyph makes on a device — the same
+     path the relay's chip draws open. The transition is the busy light's
+     on-ramp, the wide row's own. */
+  .demo-mobile-keys-anchor .demo-key-glyph {
+    width: 26px;
+    height: 15px;
+    overflow: visible;
+    fill: var(--oe-diagram-ciphertext-fill);
+    transition:
+      fill var(--oe-duration-normal) ease,
+      filter var(--oe-duration-normal) ease;
+  }
+
+  .demo-mobile-keys-label {
+    flex: none;
+    white-space: nowrap;
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+    color: var(--oe-text-muted);
+    transition:
+      color var(--oe-duration-normal) ease,
+      text-shadow var(--oe-duration-normal) ease;
+  }
+
+  /* How much, against the most this store has held this run — the wide bar,
+     at this figure's scale. The width moves on the message keys' own clock,
+     so the store fills at the speed the scene's material travels. */
+  .demo-mobile-keys-track {
+    /* A full-line basis: the track takes the wrapped second line whole. */
+    flex: 1 1 100%;
+    min-width: 0;
+    height: 0.4rem;
+    overflow: hidden;
+    border: 1px solid var(--oe-border);
+    border-radius: var(--oe-radius-sm);
+    background: var(--oe-surface-sunken);
+    transition:
+      border-color var(--oe-duration-normal) ease,
+      box-shadow var(--oe-duration-normal) ease;
+  }
+
+  .demo-mobile-keys-bar {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--oe-diagram-ciphertext-fill);
+    transition:
+      width 700ms cubic-bezier(0.2, 0.8, 0.3, 1),
+      background var(--oe-duration-normal) ease;
+  }
+
+  .demo-mobile-keys-count {
+    margin-left: auto;
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+    font-variant-numeric: tabular-nums;
+    transition:
+      color var(--oe-duration-normal) ease,
+      text-shadow var(--oe-duration-normal) ease;
+  }
+
+  /* The store wears the traffic ink while its device is writing it — the
+     wide row's `data-busy`, set with the keygen frame and cleared with the
+     next. */
+  .demo-mobile-keys[data-busy='true'] .demo-mobile-keys-label {
+    color: var(--oe-accent);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  .demo-mobile-keys[data-busy='true'] .demo-mobile-keys-count {
+    color: var(--oe-accent);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  .demo-mobile-keys[data-busy='true'] .demo-key-glyph {
+    fill: var(--oe-accent);
+    filter: drop-shadow(0 0 5px var(--oe-accent));
+  }
+
+  /* The bar joins the row's busy light: track edged and glowing like a busy
+     bay, fill in the traffic ink — the wide store's own dress while its
+     device is writing it. */
+  .demo-mobile-keys[data-busy='true'] .demo-mobile-keys-track {
+    border-color: var(--oe-accent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  .demo-mobile-keys[data-busy='true'] .demo-mobile-keys-bar {
+    background: var(--oe-accent);
+  }
+
+  /* ------------------------------------------------------- the ratchet --- */
+
+  /* The head is the derivation count alone, centred over the train whose
+     turns it totals. */
+  .demo-mobile-ratchet-head {
+    margin: 0;
+    text-align: center;
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+  }
+
+  .demo-mobile-ratchet-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  /* The train: the two family wheels flanking the chain wheel they feed.
+     Bottom-aligned, so the three captions share one baseline under wheels of
+     two sizes. */
+  .demo-mobile-train {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    /* The tight gap and the caption size below are one budget: three whole
+       family names have to share a half-width pane. */
+    gap: var(--oe-space-1);
+    margin-top: var(--oe-space-1);
+  }
+
+  .demo-mobile-gear {
+    margin: 0;
+    /* Equal thirds, zero-floored: a caption as wide as "post-quantum" would
+       otherwise widen its gear's slot and skew the wheel spacing — the
+       wheels sit evenly because every slot is the same width, and the train
+       still can never resize the pane. */
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  /* One line, whole words: a caption is a label, and a label that folds at
+     its hyphen reads as two labels. The slots are equal thirds, so
+     "post-quantum" is wider than its slot — it paints past the slot's edges
+     instead of truncating, which costs no layout width and so can never
+     widen the slot it overflows. */
+  .demo-mobile-gear-name {
+    font-family: var(--oe-font-mono);
+    font-size: 0.45rem;
+    opacity: 0.7;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* The wheel rules below are the wide scene's, verbatim — same sizes, same
+     ink, same 650ms click — because a reader who has watched one demo has
+     already learned this machine. */
+  .demo-ratchet-wheel {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    overflow: visible;
+    color: var(--oe-diagram-carrier-stroke);
+    /* The global reset caps every svg at its container's width, and this
+       figure — squeezable by design, so the row cannot resize the pane —
+       can be narrower than the wheel it holds. A wheel is a fixed-size
+       icon, not fluid content: let it keep its stated size. */
+    max-width: none;
+  }
+
+  .demo-mobile-gear[data-gear='chain'] .demo-ratchet-wheel {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* A double-ratchet session takes the post-quantum wheel out of gear rather
+     than off the drawing: what separates the two ratchets is exactly this
+     wheel, and a reader should see it standing idle. */
+  .demo-ratchet-wheel[data-engaged='false'] {
+    opacity: 0.35;
+  }
+
+  /* Lit while this device's ratchet is stepping — the accent, what this page
+     paints working machinery with. */
+  .demo-mobile-train[data-deriving='true'] .demo-ratchet-wheel {
+    filter: drop-shadow(0 0 5px var(--oe-accent));
+  }
+
+  /* ------------------------------------------------------ the readings --- */
+
+  /* The wide `.demo-readings` rows at this module's scale: dim name on the
+     left, measured figure holding the right edge. */
+  .demo-mobile-readings {
+    margin: 0;
+    display: grid;
+    gap: 2px;
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+  }
+
+  .demo-mobile-reading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--oe-space-1);
+  }
+
+  .demo-mobile-reading-name {
+    color: var(--oe-text-muted);
+  }
+
+  .demo-mobile-reading-value {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .demo-ratchet-rim,
+  .demo-ratchet-hub {
+    fill: currentColor;
+  }
+
+  .demo-ratchet-spoke {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+  }
+
+  /* Turned through a rotation that only ever grows, so the transition is
+     always in one direction. A literal duration, the wide wheel's own: this
+     is the one motion in the figure meant to be watched tooth by tooth. The
+     global reduced-motion rule still zeroes it. */
+  .demo-ratchet-turn {
+    transform-box: view-box;
+    transform-origin: 12px 12px;
+    transition: transform 650ms cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  /* Reset is the one moment the angle may decrease, and it must not be
+     animated — see `rewindTrain` in the script. */
+  .demo-ratchet-turn[data-rewind='true'] {
+    transition: none;
+  }
+
+  /* The click, felt as well as seen: the wheel swells and settles over the
+     same 650ms its teeth advance. Keyed to the turn's parity, and the two
+     keyframe blocks are identical on purpose — the *name* changing is what
+     restarts the swell, with no clock held in script. */
+  .demo-ratchet-wheel[data-pulse='0'] {
+    animation: demo-mobile-ratchet-click-even 650ms cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  .demo-ratchet-wheel[data-pulse='1'] {
+    animation: demo-mobile-ratchet-click-odd 650ms cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  @keyframes demo-mobile-ratchet-click-even {
+    35% {
+      transform: scale(1.2);
+    }
+  }
+
+  @keyframes demo-mobile-ratchet-click-odd {
+    35% {
+      transform: scale(1.2);
+    }
+  }
+
+  .demo-ratchet-pawl {
+    fill: currentColor;
+  }
+
+  /* --------------------------------------------------------- the wires --- */
+
+  /* The network's own row: the same two columns as the figure, one conduit
+     centred over each phone. The row's height is the visible run of wire;
+     the tubes themselves reach through the grid's row gaps on both sides, so
+     each conduit plugs flush into the rack above and its phone below rather
+     than floating between them. */
+  .demo-mobile-wires {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--oe-space-3);
+    height: 1.4rem;
+  }
+
+  .demo-mobile-wire-cell {
+    position: relative;
+    min-width: 0;
+  }
+
+  /* The wide conduit turned upright — a socket, not a stroke: two rails and
+     the space material moves through. Square ends, no dash: a dashed rule in
+     this system is the trust boundary, and this is a channel, not a
+     boundary. The traffic pulse below sweeps in from beyond either end;
+     clipped here so its light never hangs onto the rack or the phone. */
+  .demo-mobile-link {
+    position: absolute;
+    left: calc(50% - 3.5px);
+    top: calc(-1 * var(--oe-space-3));
+    bottom: calc(-1 * var(--oe-space-3));
+    width: 7px;
+    overflow: hidden;
+    border: 1.5px solid var(--demo-wire-dormant);
+    background: transparent;
+    /* The device's end, because the device is what opens the connection:
+       the grow below sets off from the phone's edge. */
+    transform-origin: center bottom;
+    transition:
+      border-color var(--oe-duration-normal) ease,
+      background-color var(--oe-duration-normal) ease,
+      box-shadow var(--oe-duration-normal) ease,
+      /* The wide wire's flight clock default: crossing the gap is the
+         register step's travel, not a UI duration. */
+      transform 700ms ease;
+  }
+
+  /* Before the device has registered there is no connection to draw: the
+     conduit rests collapsed at the phone's edge and grows up the gap on the
+     register frame. Scaled rather than resized so both ends stay pinned. */
+  .demo-mobile-link[data-connected='false'] {
+    transform: scaleY(0);
+  }
+
+  /* A wire carrying traffic — the accent, what this page paints information
+     in motion with, worn for exactly the frame it serves. */
+  .demo-mobile-link[data-active='true'] {
+    border-color: var(--oe-accent);
+    background: color-mix(in srgb, var(--oe-accent) 18%, transparent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  /* The traffic itself: a short run of the travellers' own light sweeping
+     along the tube in the direction the frame's material is going. A
+     gradient with no hard stops, deliberately — hard segments would read as
+     dashes. */
+  .demo-mobile-link::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 25%;
+    background: linear-gradient(180deg, transparent, var(--demo-traveller-halo), transparent);
+    opacity: 0;
+  }
+
+  /* Gated on the preference rather than left to the global blanket: the
+     blanket zeroes durations, and an infinite animation with a zeroed
+     duration is an edge nothing defines. With the sweep not drawn, the
+     wire's accent still carries the state. */
+  @media (prefers-reduced-motion: no-preference) {
+    .demo-mobile-link[data-active='true']::after {
+      opacity: 1;
+      animation: demo-mobile-link-flow 700ms linear infinite;
+    }
+  }
+
+  /* The base sweep runs down the tube — toward the device, which sits under
+     the rack — so a push toward the relay reverses it. */
+  .demo-mobile-link[data-flow='to-relay']::after {
+    animation-direction: reverse;
+  }
+
+  /* The pulse is a quarter of the tube, so 500% of its own height is 125% of
+     the tube's: off the top edge to off the bottom, one clean pass. */
+  @keyframes demo-mobile-link-flow {
+    from {
+      transform: translateY(-100%);
+    }
+
+    to {
+      transform: translateY(500%);
+    }
+  }
+
+  /* The wire's name in the scene's annotation voice, beside the tube where
+     a vertical wire has its margin. It shares the channel's ink and its
+     lifecycle: no connection, no name. */
+  .demo-mobile-link-label {
+    position: absolute;
+    top: 50%;
+    left: calc(50% + 8px);
+    transform: translateY(-50%);
+    font-family: var(--oe-font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    color: var(--demo-wire-dormant);
+    pointer-events: none;
+    transition:
+      opacity var(--oe-duration-normal) ease,
+      color var(--oe-duration-normal) ease,
+      text-shadow var(--oe-duration-normal) ease;
+  }
+
+  .demo-mobile-link[data-connected='false'] + .demo-mobile-link-label {
+    opacity: 0;
+  }
+
+  /* While its channel serves a step, the name wears the traffic ink and the
+     wire's own glow with it. */
+  .demo-mobile-link[data-active='true'] + .demo-mobile-link-label {
+    color: var(--oe-accent);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  /* --------------------------------------------------------- the relay --- */
+
+  /* The wide scene's rack, shortened: same casing as the phones, one inline
+     header line, and a mailbox bay over each device. */
+  .demo-mobile-relay {
+    border: 2px solid var(--oe-border);
+    border-radius: 12px;
+    background: var(--oe-device-surface);
+    padding: var(--oe-space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--oe-space-2);
+  }
+
+  .demo-mobile-relay-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--oe-space-1);
+    margin: 0;
+    padding: 0 var(--oe-space-1);
+  }
+
+  .demo-mobile-relay-title {
+    font-family: var(--oe-font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .demo-mobile-relay-dot,
+  .demo-mobile-relay-sub {
+    font-size: 0.72rem;
+    opacity: 0.7;
+  }
+
+  .demo-mobile-relay-sub {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .demo-mobile-relay-vents {
+    margin-left: auto;
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .demo-mobile-relay-vents span {
+    width: 1.4rem;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--oe-border);
+  }
+
+  /* One mailbox per account, each over the phone it belongs to: the accounts
+     row shares the figure's own two columns and gap, so each bay sits on its
+     device's column — and the same zero-floored tracks, so a bay's contents
+     never re-split the row. */
+  .demo-mobile-accounts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--oe-space-3);
+  }
+
+  /* The wide account's own panel: a screen-coloured box on the rack's casing
+     with a drawn edge, so each mailbox is a bordered unit of the rack rather
+     than loose rows on it. */
+  .demo-mobile-account {
+    min-width: 0;
+    background: var(--oe-surface);
+    border: 1px solid var(--oe-border);
+    border-radius: 8px;
+    padding: var(--oe-space-1);
+    transition:
+      opacity var(--oe-duration-normal) ease,
+      transform var(--oe-duration-normal) ease,
+      border-color var(--oe-duration-normal) ease,
+      box-shadow var(--oe-duration-normal) ease,
+      visibility var(--oe-duration-normal);
+  }
+
+  /* Holding lights the whole mailbox — the accent edge and glow on the
+     panel's own border, so the owner's name sits inside the lit outline
+     rather than above a lit bay. */
+  .demo-mobile-account:has(.demo-mobile-slabs[data-holding='true']) {
+    border-color: var(--oe-accent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  /* An account exists only once its device has registered — the wide rack's
+     draw-in, now worn by the whole panel: it rises into place with its name
+     and bay together. Visibility with opacity rather than `display`, so the
+     rack's height holds through both states, the frozen-layout rule. */
+  .demo-mobile-account[data-registered='false'] {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+  }
+
+  .demo-mobile-account-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0 var(--oe-space-2);
+    margin: 0 0 var(--oe-space-1);
+    padding: 0 var(--oe-space-1);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  /* The published bundle: the wide shelf's outlined key wearing its real
+     count — public material, the same silhouette a device draws filled,
+     open because it travels and it is readable. The one thing on the rack
+     the relay can read. */
+  .demo-mobile-bundle {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .demo-mobile-bundle[hidden] {
+    display: none;
+  }
+
+  .demo-mobile-bundle .demo-key-glyph {
+    width: 26px;
+    height: 15px;
+    overflow: visible;
+    fill: none;
+    stroke: var(--oe-diagram-carrier-stroke);
+    stroke-width: 2;
+    transition:
+      stroke var(--oe-duration-normal) ease,
+      filter var(--oe-duration-normal) ease;
+  }
+
+  .demo-mobile-bundle-count {
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+    font-weight: 400;
+    color: var(--oe-text-muted);
+    font-variant-numeric: tabular-nums;
+    transition:
+      color var(--oe-duration-normal) ease,
+      text-shadow var(--oe-duration-normal) ease;
+  }
+
+  /* Lit while the shelf is being served — stocked at publish, drawn from at
+     the agreement — the wide shelf's busy light in this figure's idiom. */
+  .demo-mobile-bundle[data-busy='true'] .demo-key-glyph {
+    stroke: var(--oe-accent);
+    filter: drop-shadow(0 0 5px var(--oe-accent));
+  }
+
+  .demo-mobile-bundle[data-busy='true'] .demo-mobile-bundle-count {
+    color: var(--oe-accent);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  /* One row tall whether it holds zero slabs or two, for the screens' reason.
+     The transparent border is the glow's seat: lit and unlit bays keep one
+     box size. */
+  .demo-mobile-slabs {
+    display: flex;
+    align-items: center;
+    /* Centred, not stacked from the left: the bay holds one row at a time,
+       and a lone slab parked in a corner reads as a queue with a gap. */
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--oe-space-1);
+    min-height: 1.9rem;
+    padding: var(--oe-space-1);
+    border: 1px solid transparent;
+    border-radius: var(--oe-radius-sm);
+    background: var(--oe-surface-sunken);
+    transition:
+      background var(--oe-duration-normal) ease,
+      border-color var(--oe-duration-normal) ease,
+      box-shadow var(--oe-duration-normal) ease;
+  }
+
+  /* Holding a row for its owner: the bay brightens, and the accent edge is
+     the panel's above — the whole mailbox is the lit unit. */
+  .demo-mobile-slabs[data-holding='true'] {
+    background: var(--oe-surface-raised);
+  }
+
+  /* A bare bay says so — the wide slot's own word — and stops saying it the
+     moment a row arrives. */
+  .demo-mobile-slabs-empty {
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+    opacity: 0.45;
+  }
+
+  .demo-mobile-slabs[data-holding='true'] .demo-mobile-slabs-empty {
+    display: none;
+  }
+
+  .demo-mobile-slabs :global(.demo-mobile-slab) {
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--oe-radius-sm);
+    background: var(--oe-diagram-ciphertext-fill);
+    color: var(--oe-surface);
+    font-family: var(--oe-font-mono);
+    font-size: 0.68rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The wide scene's tile at this figure's own width: meta band, lock rail,
+     payload, one anatomy across both demos — a reader who has watched either
+     has already read the other's envelope. A column with `overflow: hidden`
+     clipping the bands to the tile's corners. Its crossings ride
+     `offset-path`, so the offset transition sits beside the transform one
+     and the rotate is pinned: the tile stays upright through the route's
+     corners. Capped at under half the figure so the tile stays a tile on a
+     pane, not a banner across both. */
+  .demo-mobile-envelope {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 8.5rem;
+    max-width: 46%;
+    padding: 0;
+    overflow: hidden;
+    border-radius: var(--oe-radius-sm);
+    /* A hairline, not the carrier's 2px: the tile's weight is its lock rail
+       and payload, and the frame is just the edge of the object. */
+    border: 1px solid var(--oe-diagram-carrier-stroke);
+    background: var(--oe-surface-raised);
+    pointer-events: none;
+    offset-rotate: 0deg;
+    transition-property: transform, offset-distance;
+    transition-timing-function: ease-in-out;
+    will-change: transform;
+  }
+
+  .demo-mobile-envelope[hidden] {
+    display: none;
+  }
+
+  /* The metadata band, the wide tile's: present on both faces, because what
+     the relay can read is exactly the point — the payload closes, the
+     addressing does not. */
+  .demo-mobile-envelope-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--oe-space-2);
+    padding: 3px 6px;
+    background: var(--oe-surface);
+    border-bottom: 1px solid var(--oe-border);
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+  }
+
+  .demo-mobile-envelope-meta-row {
+    display: flex;
+    align-items: center;
+    gap: var(--oe-space-1);
+  }
+
+  .demo-mobile-envelope-meta-key {
+    opacity: 0.55;
+  }
+
+  .demo-mobile-envelope-meta-value {
+    font-weight: 600;
+  }
+
+  /* The sender's value gives way to the same lock the payload wears — the
+     wide tile's sealed-sender dress, standing here because this figure has
+     no switches: the console's default lens, and the console holds the
+     disclosure. */
+  .demo-mobile-envelope-meta-redacted {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 5px;
+    border-radius: 2px;
+    background: var(--oe-diagram-ciphertext-fill);
+    color: var(--oe-surface);
+  }
+
+  .demo-mobile-envelope-meta-lock {
+    width: 9px;
+    height: 9px;
+    flex: none;
+  }
+
+  /* The lock rail, the wide tile's: a keyhole for each key agreement family
+     with the family's name under it, so the rail and the wheel train below
+     legend each other. Standing from the tile's first frame to its last —
+     the flying keys aim at keyholes already drawn. */
+  .demo-mobile-envelope-locks {
+    display: flex;
+    justify-content: space-evenly;
+    padding: 4px 6px 3px;
+    background: var(--oe-diagram-ciphertext-fill);
+    color: var(--oe-surface);
+  }
+
+  .demo-mobile-envelope-lockset {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .demo-mobile-envelope-lock-label {
+    font-family: var(--oe-font-mono);
+    font-size: 0.5rem;
+    letter-spacing: 0.04em;
+  }
+
+  /* The payload, the wide tile's two faces: the sentence on the device's own
+     raised surface while open, the ciphertext fill with the surface colour
+     on top once sealed — what the relay sees. Both tokens invert with the
+     theme, so the sealed face stays legible on either. */
+  .demo-mobile-envelope-payload {
+    position: relative;
+    min-height: 2.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--oe-space-2);
+    text-align: center;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    transition:
+      background-color var(--oe-duration-normal) ease,
+      color var(--oe-duration-normal) ease;
+  }
+
+  .demo-mobile-envelope[data-sealed='true'] .demo-mobile-envelope-payload {
+    background: var(--oe-diagram-ciphertext-fill);
+    color: var(--oe-surface);
+  }
+
+  .demo-mobile-envelope[data-sealed='false'] .demo-mobile-envelope-payload {
+    background: var(--oe-surface-raised);
+    color: inherit;
+  }
+
+  .demo-mobile-envelope[data-sealed='true'] .demo-mobile-envelope-text {
+    display: none;
+  }
+
+  /* What the sealed message weighs on the wire — the wide tile's franking
+     mark in the payload's corner, worn while the payload is closed. */
+  .demo-mobile-envelope-size {
+    display: none;
+    position: absolute;
+    right: 6px;
+    bottom: 4px;
+    font-family: var(--oe-font-mono);
+    font-size: 0.62rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+
+  .demo-mobile-envelope[data-sealed='true'] .demo-mobile-envelope-size {
+    display: block;
+  }
+
+  /* The keyholes, the wide envelope's verbatim: `data-locked` is the state,
+     the quarter turn is the animation, and the barrel turns back when the
+     receiver's keys land. Inked in the tile's own text colour. */
+  .demo-keyhole {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    max-width: none;
+  }
+
+  .demo-keyhole-turn {
+    fill: currentColor;
+    transform-box: view-box;
+    transform-origin: 12px 12px;
+    transition: transform var(--oe-duration-slow) cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  .demo-keyhole[data-locked='true'] .demo-keyhole-turn {
+    transform: rotate(90deg);
+  }
+
+  /* The crossing wears the scene's grammar: accent border and glow while the
+     boundary is being served, dark and quiet the rest of the time. */
+  .demo-mobile-envelope[data-crossing='true'] {
+    border-color: var(--oe-accent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
+  }
+
+  /* The transit form: between the seal and the opening the tile travels as
+     the packet the wire actually carries — the addressing and the rail fold
+     away, and the byte count on the ciphertext fill is the whole face. The
+     contraction and the growth are `reface`'s measured swap; these rules
+     only say what the packet is. */
+  .demo-mobile-envelope[data-packet='true'] {
+    width: auto;
+    max-width: none;
+  }
+
+  .demo-mobile-envelope[data-packet='true'] .demo-mobile-envelope-meta,
+  .demo-mobile-envelope[data-packet='true'] .demo-mobile-envelope-locks {
+    display: none;
+  }
+
+  .demo-mobile-envelope[data-packet='true'] .demo-mobile-envelope-payload {
+    min-height: 0;
+    padding: 4px 8px;
+  }
+
+  /* The franking is the packet's face rather than its corner mark. */
+  .demo-mobile-envelope[data-packet='true'] .demo-mobile-envelope-size {
+    position: static;
+  }
+
+  /* A bubble the tile is still folding into: it holds its place in the flow
+     invisibly — the fold is aimed at a box that must already exist — and the
+     morph's finish trades the tile for it. */
+  .demo-mobile-bubbles :global(.demo-mobile-bubble[data-morphing='true']) {
+    visibility: hidden;
+  }
+
+  /* The publish burst's keys: absolute in the figure's coordinates like the
+     envelope, outlined because what flies is public. They ride the wire —
+     `offset-path` — and stay upright through its corners. */
+  .demo-mobile-flying-key {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    display: flex;
+    pointer-events: none;
+    offset-rotate: 0deg;
+    transition-property: transform, offset-distance;
+    transition-timing-function: ease-out;
+    will-change: transform;
+  }
+
+  .demo-mobile-flying-key[hidden] {
+    display: none;
+  }
+
+  .demo-mobile-flying-key .demo-key-glyph {
+    width: 26px;
+    height: 15px;
+    overflow: visible;
+    fill: none;
+    stroke: var(--oe-diagram-carrier-stroke);
+    stroke-width: 2;
+  }
+
+  /* The wide flyers' glow, confined to flight: the tight pair reads as a
+     rim, the wide one as the halo, so the moving thing itself reads lit. */
+  .demo-mobile-flying-key[data-flying='true'] {
+    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
+      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+  }
+
+  /* The message keys: the same measured-transform travellers, filled because
+     a message key is a secret. Above the envelope, because a key lands *on*
+     the tile it is locking. */
+  .demo-mobile-message-key {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 3;
+    display: flex;
+    pointer-events: none;
+    transition-property: transform;
+    transition-timing-function: ease-out;
+    will-change: transform;
+  }
+
+  .demo-mobile-message-key[hidden] {
+    display: none;
+  }
+
+  .demo-mobile-message-key .demo-key-glyph {
+    width: 26px;
+    height: 15px;
+    overflow: visible;
+    fill: var(--oe-diagram-ciphertext-fill);
+    stroke: none;
+  }
+
+  .demo-mobile-message-key[data-flying='true'] {
+    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
+      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+  }
+
+  /* The spent prekey: outlined like the burst it came up in, on the slower
+     ease of the one flight that crosses the whole figure — down the
+     initiator's wire, upright through the corners. */
+  .demo-mobile-spent-key {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    display: flex;
+    pointer-events: none;
+    offset-rotate: 0deg;
+    transition-property: transform, offset-distance;
+    transition-timing-function: ease-in-out;
+    will-change: transform;
+  }
+
+  .demo-mobile-spent-key[hidden] {
+    display: none;
+  }
+
+  .demo-mobile-spent-key .demo-key-glyph {
+    width: 26px;
+    height: 15px;
+    overflow: visible;
+    fill: none;
+    stroke: var(--oe-diagram-carrier-stroke);
+    stroke-width: 2;
+  }
+
+  .demo-mobile-spent-key[data-flying='true'] {
+    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
+      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+  }
+
+  .demo-mobile-caption {
+    margin: 0;
+    min-height: 2.6em;
+    text-align: center;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    color: var(--oe-text-muted);
+  }
+</style>

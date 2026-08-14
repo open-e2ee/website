@@ -1509,16 +1509,20 @@ a:hover {
 /*
  * The curtain, and the one control on it.
  *
- * It covers the scene exactly, so the reader sees the button against the scene
- * the button starts. The scene stays visible through it. A solid cover would
- * hide the thing on offer.
+ * It covers the scene and a few pixels past it, so the reader sees the button
+ * against the scene the button starts. The scene stays visible through it. A
+ * solid cover would hide the thing on offer.
+ *
+ * The overhang is what keeps the relay's border inside the blur: the rack runs
+ * to the stage's edge, and a curtain cut at exactly `inset: 0` left the
+ * outermost pixel or two of it sharp.
  *
  * A browser without `backdrop-filter` still gets the tint, which separates the
  * two layers on its own. The offer depends on no part of the blur.
  */
 .demo-console-curtain {
   position: absolute;
-  inset: 0;
+  inset: -6px;
   z-index: 3;
   display: flex;
   align-items: center;
@@ -1529,20 +1533,66 @@ a:hover {
 }
 
 /*
- * Below 60rem the scene stacks into one column and grows taller than the
- * screen, so the centre of the curtain is off screen. The button starts at the
- * top of the curtain and then sticks to the scroll. It stays on screen for as
- * long as the covered scene does.
+ * A ready Start button glows like the Register buttons it hands over to —
+ * the demo's calls to action shout their availability with a tight bright
+ * ring and a wide bloom, both accent, and the curtain's blur is part of why:
+ * a quiet halo dies under it. Scoped to the curtain so `.oe-button`
+ * elsewhere keeps the shipped look; the transition restates the design set
+ * plus `box-shadow`, so the halo eases with enablement instead of snapping.
+ */
+.demo-console-curtain > .oe-button {
+  transition:
+    background var(--oe-duration-fast) ease-out,
+    border-color var(--oe-duration-fast) ease-out,
+    color var(--oe-duration-fast) ease-out,
+    box-shadow var(--oe-duration-normal) ease;
+}
+
+.demo-console-curtain > .oe-button:not(:disabled) {
+  box-shadow:
+    0 0 6px color-mix(in srgb, var(--oe-accent) 85%, transparent),
+    0 0 20px color-mix(in srgb, var(--oe-accent) 60%, transparent);
+}
+
+/*
+ * Below 60rem the console does not survive: the three-column scene, the log,
+ * the readings and the controls have no honest single-column form. The whole
+ * apparatus goes, and `DemoMobile.astro` — mounted inside the console's root —
+ * plays the conversation as an autonomous loop instead. The recorded capture
+ * is deliberately not in this list: it is the no-script and no-WebCrypto
+ * state at every width, and the scripts that hide it do so through `hidden`,
+ * which works regardless of this rule.
  */
 @media (max-width: 60rem) {
-  .demo-console-curtain {
-    align-items: flex-start;
+  /* Two classes deep, because each of these also has a base rule later in
+     this file that sets its own `display` — an equal-specificity rule here
+     would lose to source order. The log is not in this list: its selectors
+     are Astro-scoped, out of this file's reach, so it hides itself. */
+  .demo-console .demo-console-stage,
+  .demo-console .demo-console-status,
+  .demo-console > .demo-console-note {
+    display: none;
+  }
+}
+
+/*
+ * The band intro's offer, in two width-dependent halves: "type a sentence"
+ * is only true where the console's composer exists, and below 60rem the
+ * mobile loop replaces it with a conversation nobody types. Same breakpoint
+ * as the console swap above, or the offer and the exhibit would disagree in
+ * the gap between two rules.
+ */
+.demo-offer-narrow {
+  display: none;
+}
+
+@media (max-width: 60rem) {
+  .demo-offer-wide {
+    display: none;
   }
 
-  .demo-console-curtain > .oe-button {
-    position: sticky;
-    top: 45vh;
-    margin-top: var(--oe-space-6);
+  .demo-offer-narrow {
+    display: inline;
   }
 }
 
@@ -1697,253 +1747,6 @@ a:hover {
 .demo-console-status {
   margin: 0;
   min-height: calc(var(--oe-metadata-size) * 1.5);
-  font-family: var(--oe-metadata-font-family);
-  font-size: var(--oe-metadata-size);
-  letter-spacing: var(--oe-metadata-tracking);
-  line-height: 1.5;
-  color: var(--oe-muted);
-}
-
-/*
- * The relay's stored row, in the relay's own column.
- *
- * The row is a fact about one column, so it belongs in that column. The log is
- * the only thing under the scene.
- *
- * These rules live in this sheet and not in `DemoScene.astro` beside the
- * markup, because the console's script creates the `dt` elements. A scoped rule
- * would never reach them.
- */
-.demo-console-empty {
-  margin: 0;
-  font-family: var(--oe-font-mono);
-  font-size: 0.7rem;
-  color: var(--oe-muted);
-  opacity: 0.7;
-}
-
-/*
- * How big the stored row is, to scale.
- *
- * The bar is measured against a fixed rule — `SIZE_RULE_BYTES` in
- * `scene-view.ts`, not the largest row of this run — so that two runs of the
- * same page can be held against each other. A bar scaled to whatever the run
- * happened to see would put every run's largest row at full width and hide the
- * difference this drawing exists to show.
- *
- * The figure beside it is the count itself. The bar makes a size comparable at
- * a glance; only the figure makes it exact, and the relay reports bytes
- * elsewhere in its own header, so the two must be readable together.
- */
-.demo-relay-size {
-  display: flex;
-  align-items: center;
-  gap: var(--oe-space-2);
-  font-family: var(--oe-font-mono);
-  font-size: 0.72rem;
-  line-height: 1.5;
-}
-
-.demo-relay-size-label {
-  color: var(--oe-muted);
-}
-
-/* The track takes what the label and the figure leave. A zero minimum, for the
-   same reason the row's value track takes one: the column is narrow, and a
-   flex item that refuses to shrink below its content pushes the column wider
-   than the scene has room for. */
-.demo-relay-size-track {
-  flex: 1;
-  min-width: 0;
-  height: 0.5rem;
-  overflow: hidden;
-  border: 1px solid var(--oe-border);
-  border-radius: var(--oe-radius-sm);
-  background: var(--oe-surface-sunken);
-}
-
-/* Width is set from the byte count and nothing else, so the sheet gives it
-   none: a bar with a length before a row has been measured would be a length
-   nothing reported. `clear()` puts it back to this between runs. */
-.demo-relay-size-bar {
-  display: block;
-  width: 0;
-  height: 100%;
-  background: var(--oe-diagram-ciphertext-fill);
-  transition: width var(--oe-duration-normal) ease;
-}
-
-/* A row past the rule is drawn at the full track, which would otherwise read as
-   a row exactly the size of the rule. Reachable: the composer sets no length
-   limit, so a long enough sentence encrypts past four kilobytes. The mark says
-   the bar is clamped; the figure beside it stays the authority on how far. */
-.demo-relay-size-bar[data-over='true'] {
-  background: var(--oe-accent);
-}
-
-.demo-relay-size-figure {
-  white-space: nowrap;
-  color: var(--oe-foreground);
-}
-
-/*
- * How much of the post-quantum key has travelled, and who has it.
- *
- * Built to the same three parts as the size row above, because it answers the
- * same kind of question about the same column and a reader should not have to
- * learn a second way of reading a bar. It carries a fourth part the size row has
- * no use for: the moment a device reports it produced the epoch secret, which is
- * the one event in a braid a reader is waiting for.
- *
- * The bar takes the ratchet family rather than the ciphertext fill the size row
- * takes. The two bars sit one above the other and measure different things —
- * one is a stored row's length, the other is a key agreement's progress — so
- * they are drawn in the two colours the grammar already gives those ideas.
- *
- * The row wraps and the mark takes a line of its own, so a completion never
- * squeezes the track it belongs to. The column is narrow and the mark is a
- * sentence.
- */
-.demo-relay-braid {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--oe-space-2);
-  font-family: var(--oe-font-mono);
-  font-size: 0.72rem;
-  line-height: 1.5;
-}
-
-.demo-relay-braid-label {
-  color: var(--oe-muted);
-}
-
-.demo-relay-braid-track {
-  flex: 1;
-  min-width: 0;
-  height: 0.5rem;
-  overflow: hidden;
-  border: 1px solid var(--oe-border);
-  border-radius: var(--oe-radius-sm);
-  background: var(--oe-surface-sunken);
-}
-
-/* Width comes from the counts the braid reported and from nothing else, so the
-   sheet gives it none: a fill before a chunk has travelled would be a length
-   nothing reported. `clear()` puts it back to this between runs. */
-.demo-relay-braid-bar {
-  display: block;
-  width: 0;
-  height: 100%;
-  background: var(--oe-diagram-ratchet-3);
-  transition: width var(--oe-duration-normal) ease;
-}
-
-/* A side that has carried more chunks than the transfers opened so far account
-   for. Ordinary rather than exceptional — a sender carries parity beyond what
-   its peer needs to reconstruct — so the bar is drawn full and marked, and the
-   figure beside it stays the authority on how far past. */
-.demo-relay-braid-bar[data-over='true'] {
-  background: var(--oe-accent);
-}
-
-.demo-relay-braid-figure {
-  white-space: nowrap;
-  color: var(--oe-foreground);
-}
-
-/* The completion, on its own line under the track it completed. Latched by
-   `scene-view.ts` for the life of the run: a key that has been produced stays
-   produced, and the counts above it reset on the very report that says so. */
-.demo-relay-braid-mark {
-  flex-basis: 100%;
-  color: var(--oe-diagram-ratchet-3);
-  font-weight: 600;
-}
-
-/*
- * What the relay is holding, as bytes.
- *
- * `ciphertext.ts` cuts a strip of three lines of six bytes. The block still
- * scrolls on both axes inside its own border, because the script fixes the line
- * width. A build that widened the strip would otherwise widen the whole column.
- */
-.demo-console-hex {
-  margin: 0;
-  padding: var(--oe-space-2);
-  max-height: 9rem;
-  overflow: auto;
-  border: 1px solid var(--oe-border);
-  border-radius: var(--oe-radius-sm);
-  background: var(--oe-surface-sunken);
-  font-family: var(--oe-font-mono);
-  font-size: 0.72rem;
-  line-height: 1.5;
-  color: var(--oe-muted);
-}
-
-/* Field name against value, read off the envelope. The value track takes a zero
-   minimum for the same reason the column does: a base64 value has no wrapping
-   opportunity in it, and `anywhere` is what gives it one. */
-.demo-console-row {
-  margin: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--oe-space-1) var(--oe-space-3);
-  font-family: var(--oe-font-mono);
-  font-size: 0.72rem;
-  line-height: 1.5;
-}
-
-.demo-console-row dt {
-  color: var(--oe-muted);
-}
-
-.demo-console-row dd {
-  margin: 0;
-  color: var(--oe-foreground);
-  overflow-wrap: anywhere;
-}
-
-/*
- * The sealed-sender lens. `data-sealed-hidden` marks every field the seal
- * would remove, whether or not the seal is currently on — the script sets it
- * from the field's identity, not from the toggle. The toggle lives on
- * `data-sealed-lens` on the list itself, so it takes both attributes together
- * to mark a pair: the toggle on, and this the pair it would apply to.
- *
- * Struck through rather than removed, because the point of the lens is
- * showing which fields sealed sender takes away — a field that vanished
- * would answer a different question than the one this inspector exists to
- * show. Only the value is struck: the name is what tells a reader which
- * field this is, so it stays fully legible while the value beside it reads
- * as taken.
- */
-.demo-console-row[data-sealed-lens='true'] dt[data-sealed-hidden='true'] {
-  opacity: var(--oe-button-disabled-opacity);
-}
-
-.demo-console-row[data-sealed-lens='true'] dd[data-sealed-hidden='true'] {
-  opacity: var(--oe-button-disabled-opacity);
-  text-decoration: line-through;
-}
-
-/*
- * A field the envelope carries with nothing in it. Dimmed and italic so the
- * literal reads as the value it is rather than as a value that failed to
- * render; the name beside it stays at full weight, because which field is
- * empty is the part worth reading.
- *
- * Independent of the sealed lens above: a struck field may also be unset, and
- * the two marks stack without either needing to know about the other.
- */
-.demo-console-row dd[data-unset='true'] {
-  color: var(--oe-muted);
-  font-style: italic;
-}
-
-.demo-console-row-note {
-  margin: 0;
   font-family: var(--oe-metadata-font-family);
   font-size: var(--oe-metadata-size);
   letter-spacing: var(--oe-metadata-tracking);

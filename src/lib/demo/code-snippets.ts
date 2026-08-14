@@ -1,7 +1,7 @@
 /*
  * What a reader would have to type to cause each step, read off `run.ts`.
  *
- * Three of the ten steps are not caused by an app call at all — the relay
+ * Three of the eleven steps are not caused by an app call at all — the relay
  * accepting an envelope, the network carrying it, the relay handing it on —
  * and the honest thing to show under those is that they are not app calls,
  * not an invented snippet that looks like one. `idle` joins them: it is the
@@ -31,6 +31,14 @@ export const CODE_SNIPPETS: Record<Step, CodeSnippet> = {
   idle: {
     kind: 'note',
     text: 'Before anything runs: no client exists yet, so there is no call to show.',
+  },
+
+  /* `run.ts`'s `makeDevice()`: the first thing a device sends over its
+     connection, before it has made a single key. The device name is encrypted
+     because even it is not the relay's business. */
+  registered: {
+    kind: 'call',
+    code: 'await relay.registerDevice(userId, { encryptedDeviceName });',
   },
 
   /* The same call as `devices-ready` below, shown by the one argument that
