@@ -573,47 +573,49 @@ a:hover {
   text-underline-offset: 0.35em;
 }
 
+/*
+ * Every drawing in the actions row, larger than the token's default. `.oe-icon`
+ * is 1em so that an icon takes the size of the text beside it, which is right
+ * where an icon sits in a sentence and wrong here: none of these has text
+ * beside it, and at the header's 15px they were the smallest things in the row
+ * they are the actions of. A ladder of five was rendered against the nav
+ * labels: 1.25em still read as small, the founder took the top rung at 1.75em,
+ * and then went one past the ladder entirely. 2em is 30px, which is 75% of the
+ * 40px control box and the tallest thing in the row.
+ *
+ * My own pick off that ladder was 1.5em, on the grounds that 1.75 made the mark
+ * heavier than the "Console" link beside it. That is recorded here as a
+ * judgement that was overruled rather than deleted, because it was a judgement
+ * about balance and the founder's is about emphasis: these are the controls
+ * that lead to the source and to the reader's own eyes, the page's whole
+ * argument is that the source is the product, and a mark that outweighs its
+ * neighbour is the point rather than the cost. Weight was never the constraint
+ * — no measurement said 1.75 was wrong, and none says 2 is; the header row is
+ * 64px and the row's own height never moved as the mark climbed, so the ceiling
+ * here is taste, and the taste that owns it is not mine.
+ *
+ * It was the mark alone until the icon controls lost their painted boxes. A
+ * box is a size even when it is faint, so a 15px sun inside a 40px square did
+ * not read as small; with the square unpainted the drawing is the whole
+ * control, and one 30px mark beside two 15px ones reads as one action and two
+ * afterthoughts. The three are one row of actions and are now one size.
+ *
+ * The override is on the row and not on `.oe-icon`, so it is these instances
+ * that change and not every icon on the site — the token is the design system's
+ * lever for exactly this, and reaching past it to the icon's own width would
+ * take the others with it.
+ */
 .header-actions {
   display: flex;
   align-items: center;
   gap: var(--oe-space-4);
   font-size: 0.9375rem;
-}
-
-/*
- * The GitHub mark, larger than the token's default. `.oe-icon` is 1em so that an
- * icon takes the size of the text beside it, which is right where an icon sits
- * in a sentence and wrong here: this one has no text beside it, and at the
- * header's 15px it was the smallest thing in a row it is one of two actions in.
- * A ladder of five was rendered against the nav labels and the theme toggle's
- * 40px button: 1.25em still read as the small thing next to that button, the
- * founder took the top rung at 1.75em, and then went one past the ladder
- * entirely. 2em is 30px, which is 75% of the 40px button and the tallest thing
- * in the row.
- *
- * My own pick off that ladder was 1.5em, on the grounds that 1.75 made the mark
- * heavier than the "Console" link beside it. That is recorded here as a
- * judgement that was overruled rather than deleted, because it was a judgement
- * about balance and the founder's is about emphasis: this is the one control in
- * the header that leads to the source, the page's whole argument is that the
- * source is the product, and a mark that outweighs its neighbour is the point
- * rather than the cost. Weight was never the constraint — no measurement said
- * 1.75 was wrong, and none says 2 is; the header row is 64px and the row's own
- * height never moved as the mark climbed, so the ceiling here is taste, and the
- * taste that owns it is not mine.
- *
- * The override is on the link and not on `.oe-icon`, so it is this instance that
- * changes and not every icon on the site — the token is the design system's
- * lever for exactly this, and reaching past it to the icon's own width would
- * take the other five with it.
- */
-.site-header .oe-icon-link {
   --oe-icon-size: 2em;
 }
 
 /*
  * Which of the toggle's three icons is showing. The control itself is
- * `oe-theme-toggle` in components.css; this is the part only a page with a
+ * `oe-icon-button` in components.css; this is the part only a page with a
  * pre-paint theme script can do.
  *
  * One of three icons, chosen by the preference `theme-init.js` publishes on
@@ -641,31 +643,14 @@ a:hover {
 }
 
 /*
- * The trigger, shaped like the control beside it: `.oe-theme-toggle`'s square,
- * its border and its hover, restated here because the toggle's is a component
- * class in the design package and this is a `<summary>`. Two icon controls
- * standing together have to be one pair — the trigger used to be a text pill
- * and read as a different kind of thing the moment its word became a drawing.
+ * The trigger takes `.oe-icon-button` in the markup, so its size, its colour
+ * and its hover are the same rules the theme switch beside it runs. What is
+ * left here is the two things a `<summary>` needs and a `<button>` does not:
+ * the disclosure triangle, which two engines draw differently and neither
+ * draws usefully next to an icon.
  */
 .mobile-nav summary {
   list-style: none;
-  cursor: pointer;
-  min-width: var(--oe-control-height-sm);
-  min-height: var(--oe-control-height-sm);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--oe-border);
-  border-radius: var(--oe-control-radius);
-  color: var(--oe-muted);
-  transition:
-    color var(--oe-duration-fast) ease-out,
-    border-color var(--oe-duration-fast) ease-out;
-}
-
-.mobile-nav summary:hover {
-  border-color: var(--oe-border-control);
-  color: var(--oe-foreground);
 }
 
 .mobile-nav summary::-webkit-details-marker {
