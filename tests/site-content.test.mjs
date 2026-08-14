@@ -628,6 +628,13 @@ test('keeps the prompt glyph out of what the reader pastes', async () => {
 
   /* The command itself is the real string, not a retyped copy of it. */
   assert.match(snippet, /<span class="terminal-command">\{installCommand\}<\/span>/);
+
+  /* And its length comes from that same string. The row solves for a font size
+     that fits the panel, and the solution needs the character count — so a
+     count typed as a number here, or a constant in the stylesheet, would keep
+     the old length through a package rename and either wrap the line again or
+     leave it smaller than it has to be, with nothing failing. */
+  assert.match(snippet, /--terminal-command-chars: \$\{installCommand\.length\}/);
 });
 
 test('announces the copy result somewhere a screen reader will hear it', async () => {
@@ -679,7 +686,13 @@ test('never makes a control its own announcer', async () => {
   const toggle = await flat('../src/components/ThemeToggle.astro');
   assert.match(toggle, /<span class="oe-visually-hidden" role="status" data-theme-status><\/span>/);
   assert.match(toggle, /status\.textContent = `Colour theme set to \$\{next\}\.`/);
-  const render = toggle.slice(toggle.indexOf('function render'), toggle.indexOf('render(getStoredTheme'));
+  /* Comments stripped before the check. The rule is about what `render` does,
+     and the word appears in prose for an unrelated reason — the phone's status
+     bar, which this function also keeps in step. A guard that reads comments
+     fails on a note about a different subject and says nothing true. */
+  const render = toggle
+    .slice(toggle.indexOf('function render'), toggle.indexOf('render(getStoredTheme'))
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
   assert.doesNotMatch(render, /status/, 'restoring a stored preference must not announce a change');
 });
 
@@ -729,6 +742,21 @@ test('shows the example on a phone rather than offering it', async () => {
   assert.match(css, /@media not all and \(min-width: 48rem\) \{\s*\.hero-snippet\.code-block pre \{/);
   assert.doesNotMatch(css, /47\.99rem/);
 
+  /* That block's own body, for the phone layout asserted below. Brace-walked
+     from the condition rather than matched with `[^}]*`, which would stop at
+     the first nested rule's closing brace. */
+  const narrow = (() => {
+    const start = css.indexOf('{', css.indexOf('@media not all and (min-width: 48rem)')) + 1;
+    let depth = 1;
+    let index = start;
+    while (index < css.length && depth > 0) {
+      if (css[index] === '{') depth += 1;
+      if (css[index] === '}') depth -= 1;
+      index += 1;
+    }
+    return css.slice(start, index - 1);
+  })();
+
   /* The adapter selects are operable on a phone too, and that is the second
    * half of the same decision: a panel a reader can see but not drive is the
    * page's central claim shown as a picture. They were `display: none` below
@@ -736,26 +764,48 @@ test('shows the example on a phone rather than offering it', async () => {
    * 320 with them back — and the founder's call is that the demonstration is
    * worth the chrome.
    *
-   * `ruleFor` rather than a `doesNotMatch` on the whole file, because the
-   * failure to catch is a second rule turning them off again, and this throws
-   * on two. Writing it exposed a blind spot in the helper: its regex could not
-   * see the first rule inside a media block, so an override written at the top
-   * of one counted as zero. `./css-rules.mjs` is a brace walker now, and the
-   * mutation that proves this assertion — the rule put back where it was —
-   * fails here either way, because the ordering assertion above sees it too. */
-  const adapters = ruleFor(css, '.code-adapters');
-  assert.doesNotMatch(adapters, /display:\s*none/, 'the adapter selects are hidden on a phone again');
-  assert.match(adapters, /display:\s*flex/);
+   * Every rule carrying the selector, because the failure to catch is a second
+   * one turning them off again — inside a query or not. Writing this exposed a
+   * blind spot in the helper: its regex could not see the first rule inside a
+   * media block, so an override written at the top of one counted as zero.
+   * `./css-rules.mjs` is a brace walker now, and the mutation that proves this
+   * assertion — the rule put back where it was — fails here either way, because
+   * the ordering assertion above sees it too. */
+  const adapterRules = cssRules(css).filter((rule) => rule.selector === '.code-adapters');
+  assert.ok(adapterRules.length >= 1, 'the select group has no rule at all');
+  for (const rule of adapterRules) {
+    assert.doesNotMatch(rule.body, /display:\s*none/, 'the adapter selects are hidden on a phone again');
+  }
+  assert.match(adapterRules[0].body, /display:\s*flex/);
 
-  /* And the copy button takes its position from the select group, as it does
-   * at every other width. The `margin-inline-start: auto` that stood in for the
-   * group's own auto margin has to go with the rule that made it necessary, or
-   * two auto margins compete for the same free space. */
-  assert.equal(
-    cssRules(css).filter((rule) => rule.selector === '.code-toolbar .code-copy').length,
-    0,
-    'the copy button is being pushed by a margin the select group already owns',
+  /* Below the breakpoint the group takes its own row and the copy button rises
+   * beside the filename, which is the arrangement that makes this two rows
+   * instead of three. The auto margin moves with it: at wide widths the group
+   * carries it and pushes the button to the far edge, and down here the group
+   * is not beside the button any more, so the button carries it itself. Two
+   * auto margins at the same width would compete for the same free space, so
+   * each of these appears exactly once and in the right place. */
+  const copyMargins = cssRules(css).filter(
+    (rule) => rule.selector === '.code-copy' && /margin-inline-start:\s*auto/.test(rule.body),
   );
+  assert.equal(
+    copyMargins.length,
+    1,
+    `${copyMargins.length} rules push the copy button; the group owns that at every other width`,
+  );
+  assert.match(narrow, /\.code-copy \{[^}]*margin-inline-start:\s*auto/);
+  assert.match(narrow, /\.code-adapters \{[^}]*order:\s*1/);
+  assert.match(narrow, /\.code-adapters \{[^}]*flex-basis:\s*100%/);
+  assert.match(narrow, /\.code-adapters \{[^}]*margin-inline-start:\s*0/);
+
+  /* And the two comboboxes divide that row rather than keeping their natural
+     width, which is what stops them wrapping into two more rows: at 320 they
+     need 304px against 254px of room. `flex: 1 1 0` with `min-width: 0` is
+     both halves — the basis is what makes the split even, and without the
+     minimum a flex item will not shrink below its content at all. */
+  assert.match(narrow, /\.code-select \{[^}]*flex:\s*1 1 0/);
+  assert.match(narrow, /\.code-select \{[^}]*min-width:\s*0/);
+  assert.match(narrow, /\.code-select select \{[^}]*width:\s*100%/);
 });
 
 test('centres the hero at the phone’s width as well as the desktop’s', async () => {
@@ -1179,6 +1229,62 @@ test('renders a phone at the phone’s own width, so overflow is visible', async
   assert.doesNotMatch(viewport, /user-scalable\s*=\s*no|maximum-scale/);
 });
 
+test('paints the phone’s status bar the colour of the page under it', async () => {
+  const [layout, init, tokens] = await Promise.all([
+    flat('../src/layouts/BaseLayout.astro'),
+    read('../public/theme-init.js'),
+    read('../node_modules/@open-e2ee/design/packages/design/dist/css/tokens.css'),
+  ]);
+
+  /* The canvas as the installed package defines it, light then dark. Both are
+     `--oe-canvas`; the second one is the redefinition inside the dark block. */
+  const canvases = [...tokens.matchAll(/--oe-canvas:\s*(#[0-9a-f]{6})/gi)].map((m) =>
+    m[1].toLowerCase(),
+  );
+  assert.equal(canvases.length, 2, 'tokens.css no longer defines --oe-canvas twice');
+  const [light, dark] = canvases;
+
+  /* Two files restate those hexes and neither can read the token: the metas
+     are markup, and `theme-init.js` runs before the stylesheet resolves. So
+     the copies are held to the source here. The dark one was `#090806` — the
+     light theme's *foreground*, near enough to black to look deliberate and
+     5% off the surface it was meant to match. */
+  assert.match(
+    layout,
+    new RegExp(`content="${light}" media="\\(prefers-color-scheme: light\\)"`),
+    'the light theme-color meta is not the light canvas',
+  );
+  assert.match(
+    layout,
+    new RegExp(`content="${dark}" media="\\(prefers-color-scheme: dark\\)"`),
+    'the dark theme-color meta is not the dark canvas',
+  );
+  assert.match(init, new RegExp(`light: '${light}'`));
+  assert.match(init, new RegExp(`dark: '${dark}'`));
+
+  /* The metas answer the *system* preference and this site has its own switch,
+     so a reader who chooses dark under a light system would get a cream strip
+     above a dark header — which on an iPhone reads as a gap at the top of the
+     page rather than as a colour. Both writers exist to close that: the
+     resolver rewrites the tags before first paint, and the switch rewrites
+     them again on every press. Either one alone leaves a case wrong. */
+  assert.match(init, /meta\[name="theme-color"\]/);
+  const toggle = await read('../src/components/ThemeToggle.astro');
+  assert.match(toggle, /meta\[name="theme-color"\]/);
+  /* And the switch reads the live token rather than restating the hexes a
+     third time — by the time it runs, the stylesheet has resolved. */
+  assert.match(toggle, /getPropertyValue\('--oe-canvas'\)/);
+  assert.doesNotMatch(toggle, /#[0-9a-f]{6}/i);
+
+  /* The resolver rewrites tags the parser must already have seen. A blocking
+     script in the head runs where it stands, so above the metas its
+     `querySelectorAll` would return nothing — and nothing would fail. */
+  assert.ok(
+    layout.indexOf('src="/theme-init.js"') > layout.lastIndexOf('name="theme-color"'),
+    'theme-init.js runs before the theme-color metas it rewrites exist',
+  );
+});
+
 test('offers the journal by feed as well as by page', async () => {
   const [layout, blogIndex, feed] = await Promise.all([
     flat('../src/layouts/BaseLayout.astro'),
@@ -1576,11 +1682,26 @@ test('enlarges the hero code without enlarging code that has no room', async () 
    * relationship: 2/1.8 is a constant 1.111x at every width, so the command
    * stays a step above the code instead of the gap between them opening and
    * closing across the range. A flat size on either side is what this list is
-   * really guarding against. */
+   * really guarding against.
+   *
+   * `100cqi` is excluded from that census and counted on its own below. It is
+   * not a rate competing for the same width — it *is* the width, the whole of
+   * the container, read so the terminal row can subtract its chrome and solve
+   * for a size that fits. Leaving it in the list would mean re-deriving the
+   * 1.89 ceiling every time the row's fit term is touched, which is a false
+   * coupling: nothing about the code panel's arithmetic changes. */
   assert.deepEqual(
-    [...css.matchAll(/([\d.]+)cqi/g)].map((m) => Number(m[1])),
+    [...css.replace(/100cqi/g, '').matchAll(/([\d.]+)cqi/g)].map((m) => Number(m[1])),
     [1.8, 2],
     'a cqi length moved or a third appeared; re-derive against the 1.89 ceiling before changing this',
+  );
+
+  /* And the two that were excluded are the two the exclusion was written for:
+   * the terminal row's fit term, and its restatement inside the phone query. */
+  assert.equal(
+    [...css.matchAll(/100cqi/g)].length,
+    2,
+    'a `100cqi` appeared outside the terminal row’s fit term, or one of the two is gone',
   );
 
   /* The gutter term of that constraint, pinned here so the two cannot drift.
@@ -1950,9 +2071,14 @@ test('dresses the install command as a terminal, in both modes', async () => {
 test('sets the install command a step above the code it sits over', async () => {
   const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
 
+  /* The clamp is the *preference* term now, not the whole declaration: the
+     command's size is `min(preference, fit)`, where the second term solves the
+     row against the panel it has to fit inside. The sweep below is about the
+     first term, which is what carries the hierarchy — so it is read through the
+     wrapper rather than around it, and the fit term is asserted separately. */
   const sizeOf = (selector) => {
     const body = css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1];
-    const clamp = body?.match(/font-size:\s*clamp\(([\d.]+)rem,\s*([\d.]+)cqi,\s*([\d.]+)rem\)/);
+    const clamp = body?.match(/font-size:\s*(?:min\(\s*)?clamp\(([\d.]+)rem,\s*([\d.]+)cqi,\s*([\d.]+)rem\)/);
     return clamp && { floor: +clamp[1] * 16, rate: +clamp[2], ceiling: +clamp[3] * 16 };
   };
 
@@ -1973,10 +2099,17 @@ test('sets the install command a step above the code it sits over', async () => 
    * first note here claimed a constant 1.111x on exactly that reasoning and the
    * real range is 1.056 to 1.111.
    *
-   * So the property asserted is the one that actually matters and is true: at
-   * every width the panel can be, the command is larger. Evaluating both clamps
-   * across the range costs nothing and cannot be fooled by a plausible-looking
-   * pair of declarations. */
+   * So the property asserted is the one that actually matters: wherever these
+   * two clamps are what run, the command is larger. Evaluating both across the
+   * range costs nothing and cannot be fooled by a plausible-looking pair of
+   * declarations.
+   *
+   * "Wherever they run" is doing work in that sentence. Below 48rem the code
+   * takes a chosen size and the command takes whichever is smaller of its
+   * preference and the width it has to fit — and there the command is the
+   * smaller of the two, because at a phone's width it cannot be both one line
+   * and the larger type. The block at the end of this test is where that is
+   * measured and argued. */
   const evaluate = ({ floor, rate, ceiling }, width) =>
     Math.min(ceiling, Math.max(floor, (rate * width) / 100));
 
@@ -2041,16 +2174,32 @@ test('sets the install command a step above the code it sits over', async () => 
     return { condition: match[1].trim(), body: stripped.slice(start, index - 1) };
   });
 
+  const ruleIn = (body, selector) => body.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1];
   const sizeIn = (body, selector) => {
-    const rule = body.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1];
-    const rem = rule?.match(/font-size:\s*([\d.]+)rem\s*;/);
+    const rule = ruleIn(body, selector);
+    const rem = rule?.match(/font-size:\s*(?:min\(\s*)?([\d.]+)rem\s*[;,]/);
     return rem ? +rem[1] * 16 : null;
   };
+
+  /* The fit term, which is the same shape of override bug as the one above and
+     was found the same way. `min(preference, fit)` written as a bare preference
+     drops the fit silently: the row goes back to 403px of command in 270px of
+     panel and wraps, and no declaration in the block looks wrong. So every
+     place that sets this size has to carry both halves. */
+  const fit = /calc\(\(100cqi - var\(--terminal-chrome\)\) \/ \(var\(--terminal-command-chars\) \* 0\.6 \+ 0\.6\)\)/;
+  assert.match(ruleIn(stripped, '\\.terminal-line'), fit);
 
   let paired = 0;
   for (const { condition, body } of blocks) {
     const codeHere = sizeIn(body, '\\.hero-snippet\\.code-block pre');
     const commandHere = sizeIn(body, '\\.terminal-line');
+    if (commandHere !== null) {
+      assert.match(
+        ruleIn(body, '\\.terminal-line'),
+        fit,
+        `@media ${condition} sets the command's size without the term that fits it to the panel`,
+      );
+    }
     if (codeHere === null && commandHere === null) continue;
     assert.ok(
       codeHere !== null && commandHere !== null,
@@ -2064,6 +2213,42 @@ test('sets the install command a step above the code it sits over', async () => 
     );
     paired += 1;
   }
+
+  /* And the rendered size, which below the breakpoint is the fit term rather
+   * than the preference the loop above compared.
+   *
+   * This is where the rule this test is named for stops being satisfiable, and
+   * saying so is the point of the block. The command is 42 characters of a
+   * 0.6em face: one line at 15px needs 378px of text, and a 390px phone offers
+   * a 358px panel. "Fits on one line" and "larger than the code under it" are
+   * mutually exclusive below about a 500px viewport, at any padding — so the
+   * founder's call is that the command fits, and the step it holds above the
+   * code is the one it holds everywhere the two can both be had.
+   *
+   * What is asserted is the arithmetic, against a browser measurement. Chrome
+   * is read from the installed tokens rather than restated, so a spacing step
+   * that moves fails here instead of quietly re-wrapping the row. */
+  const tokens = await read('../node_modules/@open-e2ee/design/packages/design/dist/css/tokens.css');
+  const step = (name) => {
+    const rem = tokens.match(new RegExp(`--oe-space-${name}:\\s*([\\d.]+)rem`))?.[1];
+    assert.ok(rem, `--oe-space-${name} is gone from the installed tokens`);
+    return +rem * 16;
+  };
+  const chrome = 2 + step(3) * 3 + step(4) + 24;
+  const chars = 'npm install @open-e2ee/signal-protocol-sdk'.length;
+  const fitAt = (container) => (container - chrome) / (chars * 0.6 + 0.6);
+
+  assert.equal(chrome, 78, `the terminal row spends ${chrome}px on chrome; the fit below was solved at 78`);
+  assert.ok(
+    Math.abs(fitAt(358) - 10.85) < 0.05,
+    `the model says ${fitAt(358).toFixed(2)}px at a 390px phone and Chrome measured 10.85px — ` +
+      'one of the two moved, so the row may be wrapping again',
+  );
+  assert.ok(
+    fitAt(358) < 15,
+    'the command now fits *and* outranks the code at 390 — if that is real the trade above is ' +
+      'obsolete and this whole block should be re-derived rather than adjusted',
+  );
 
   /* And a count, because "no block resized either" and "every block agreed" are
    * otherwise the same passing run, and the first of those means this loop has
@@ -3263,23 +3448,72 @@ test('shows a generic bucket for S3 only while there is no AWS client to name', 
   assert.doesNotMatch(marks, /label: '(Amazon[^']*|AWS[^']*)'/);
 
   /* The bare word only stays honest because of the heading over it. "S3" in a
-     row headed "Works with" is the API; the same word under "Integrations",
+     row headed "Built for" is the API; the same word under "Integrations",
      "Powered by", or "Partners" — or under no heading at all — is a vendor
      claim. So the heading is held to an allowlist of compatibility framings
      rather than to one string: rewording within the list is free, and adding to
      the list is the moment to re-decide whether the bare name still reads as a
-     protocol. */
+     protocol.
+
+     "Built for" is on the list because it is a claim about this SDK and not
+     about the other party: it says what the adapters were written against,
+     where "Works with" said something about the two of them together. */
   const strip = await read('../src/components/PlatformStrip.astro');
   const heading = strip.match(/class="platform-label">([^<]*)</)?.[1];
   assert.ok(heading, 'the strip no longer has a heading over the marks');
   assert.match(
     heading,
-    /^(Works|Compatible) with$/,
+    /^(Works with|Compatible with|Built for)$/,
     `"${heading}" over an entry named "S3" reads as an integration the SDK does not have`,
   );
 
   /* And that the export the entry stands for is really there. */
   assert.ok(manifest.exports['./remote/object-store/s3'], 's3 object store export is gone');
+});
+
+test('takes the platform row down to two rows on a phone by sizing it, not by hiding it', async () => {
+  const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
+  const strip = ruleFor(css, '.platform-strip');
+
+  /* Seven entries at the desktop's mark and name sizes need 413px for the four
+     runtimes alone, against 358px of page at 390 — a wrap inside the first
+     cluster and a third row under it. The four values below are what make the
+     same seven fit two rows down to 320, measured at 320, 360, 390 and 430.
+
+     Asserted as a range each rather than as a number, because the numbers are
+     a ladder someone will re-walk. What must not come back is a fixed size:
+     that is the shape the defect had. */
+  for (const property of [
+    '--platform-mark-size',
+    '--platform-name-size',
+    '--platform-gap',
+    '--platform-entry-gap',
+  ]) {
+    assert.match(
+      strip,
+      new RegExp(`${property}:\\s*clamp\\([^;]*vw[^;]*\\)`),
+      `${property} no longer scales with the viewport, so the row is one size at every width again`,
+    );
+  }
+
+  /* And the three places that spend them. A declaration that goes back to a
+     literal is the whole failure: nothing breaks, the row just wraps again on
+     the devices the clamps were added for. */
+  assert.match(ruleFor(css, '.platform-marks svg'), /width: var\(--platform-mark-size\)/);
+  assert.match(ruleFor(css, '.platform-marks svg'), /height: var\(--platform-mark-size\)/);
+  const entry = ruleFor(css, '.platform-cluster > ul > li');
+  assert.match(entry, /font-size: var\(--platform-name-size\)/);
+  assert.match(entry, /gap: var\(--platform-entry-gap\)/);
+  assert.match(
+    ruleFor(css, '.platform-marks, .platform-cluster > ul'),
+    /gap: var\(--oe-space-2\) var\(--platform-gap\)/,
+  );
+
+  /* The names stay. Dropping them is the other way to make the row fit and it
+     turns a compatibility list into a partner wall — the labels are what carry
+     the precision the marks cannot, and the test above this one holds the
+     heading over them to the same standard. */
+  assert.doesNotMatch(css, /\.platform-cluster > ul > li span \{[^}]*display:\s*none/);
 });
 
 /*

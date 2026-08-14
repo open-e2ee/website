@@ -1014,11 +1014,17 @@ a:hover {
  * The platform strip under the hero's actions.
  *
  * Sized and coloured to sit below the offer rather than beside it. The marks
- * are 34px, the names 16px, the heading 13px. The legibility floor is 18 —
- * below it the Convex arcs close up into a disc — so the size is set by weight
- * rather than legibility, and the ceiling is the row above: the marks are the
- * second-loudest thing above the fold and the primary button has to stay the
- * first.
+ * are 34px at the widths this argument was made at, the names 16px, the heading
+ * 13px; a phone takes the same pair down together, and the clamps that do it
+ * are on `.platform-strip`. The legibility floor is 18 — below it the Convex
+ * arcs close up into a disc — so the size is set by weight rather than
+ * legibility, and the ceiling is the row above: the marks are the second-
+ * loudest thing above the fold and the primary button has to stay the first.
+ *
+ * The floor is about the mark being read as a mark, and it binds where the
+ * marks are the loudest thing on the row. On a phone they are not: the button
+ * is full width above them and the mark's job there is to be recognised beside
+ * a name that is already spelling it out. That is what buys the 20px small end.
  *
  * They were 40 and 18, which put the marks within 4px of the 44px button and
  * left colour as the only thing separating them — one muted hue at 7.08 against
@@ -1049,18 +1055,34 @@ a:hover {
  * the seven entries on one row: they measure 683px with their gaps, which does
  * not fit the copy column and fits here with 449px to spare.
  *
- * Measured at these names and sizes: one row at 760 and up, two from 500 to
- * 700, three at 420 and below — it no longer reaches four at any width the page
- * is read at. Those numbers move whenever a mark size or a name does, and both
- * moved at once here: 1000 / 660 / 500 / 358 at 40px marks with "React Native"
- * and "Cloudflare R2", then 900 / 500 / 390 / 358 at 34px with the same names,
- * now 760 / 500 / 420 with the short ones. That is why they are a record of the
- * current state rather than a contract —
- * `flex-wrap` is what actually holds it, because the wrap points are set by the
- * content and hand-picked queries would need re-picking the next time an
- * adapter ships.
+ * Measured at these names and sizes: one row at 720 and up, two below it, and
+ * it does not reach three at any width the page is read at. Those numbers move
+ * whenever a mark size or a name does, and both moved more than once here:
+ * 1000 / 660 / 500 / 358 at 40px marks with "React Native" and "Cloudflare R2",
+ * then 900 / 500 / 390 / 358 at 34px with the same names, then 760 / 500 / 420
+ * with the short ones. That is why they are a record of the current state
+ * rather than a contract — `flex-wrap` is what actually holds it, because the
+ * wrap points are set by the content and hand-picked queries would need
+ * re-picking the next time an adapter ships.
+ *
+ * What stops the third row is the three sizes below rather than a query. The
+ * row was seven entries at one fixed size, so a phone got the desktop's marks
+ * and the desktop's names and paid for them in rows: at 390 the four runtimes
+ * alone measured 413px against 358px of page, which is a wrap inside the first
+ * cluster and a third row under it. Scaling the mark, the name and the two gaps
+ * with the viewport is what makes the same seven entries fit two rows down to
+ * 320 — measured 306px and 273px of runtimes at 390 and 320 — and the clusters
+ * still decide where the break lands.
+ *
+ * The floors are the small ends of the design's own ranges rather than a
+ * fraction of the maxima: 20px is a mark that still reads as a logo, and 12px
+ * is `--oe-metadata-size`, the smallest type this site sets anywhere.
  */
 .platform-strip {
+  --platform-mark-size: clamp(20px, 5.6vw, 34px);
+  --platform-name-size: clamp(0.75rem, 3.4vw, 1rem);
+  --platform-gap: clamp(0.5rem, 2.6vw, 1rem);
+  --platform-entry-gap: clamp(0.25rem, 1.6vw, 0.5rem);
   display: flex;
   flex-direction: column;
   gap: var(--oe-space-2);
@@ -1096,7 +1118,7 @@ a:hover {
 .platform-cluster > ul {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--oe-space-2) var(--oe-space-4);
+  gap: var(--oe-space-2) var(--platform-gap);
   align-items: center;
   margin: 0;
   padding: 0;
@@ -1113,10 +1135,10 @@ a:hover {
 
 .platform-cluster > ul > li {
   display: inline-flex;
-  gap: var(--oe-space-2);
+  gap: var(--platform-entry-gap);
   align-items: center;
   color: var(--oe-muted);
-  font-size: 1rem;
+  font-size: var(--platform-name-size);
   /* The name never wraps away from its own mark. Every entry is one word now —
      "React Native" and "Cloudflare R2" were the two that were not — so this
      guards the remaining break the text could take on its own, which is
@@ -1127,8 +1149,8 @@ a:hover {
 
 .platform-marks svg {
   flex: none;
-  width: 34px;
-  height: 34px;
+  width: var(--platform-mark-size);
+  height: var(--platform-mark-size);
   fill: currentColor;
 }
 
@@ -2525,18 +2547,39 @@ table.data td {
    * ceiling to 20px was the alternative and it is the wrong trade: it buys an
    * invariant nobody looks at by putting the command level with the sentence
    * that explains what it installs. The floor is 14px, one step over the code's
-   * 13px, and it only ever applies under 48rem — where the command wraps rather
-   * than fits, so no arithmetic depends on it.
+   * 13px, and above the phone widths it is what runs.
    *
-   * Width is not a constraint here and it is worth writing down why, because it
-   * is the constraint on the panel below. Measured: the command advances 25.2px
-   * per px of font size (42 characters of a 0.6em monospace), and the row also
-   * carries the `$`, two 12px gaps, 28px of padding and a 24px button. That
-   * solves to a fit ceiling of about 39px at this width and about 25px at
-   * 48rem, both far above the 19px cap. The code panel is the one fighting for
-   * its width; this row has room it is not using.
+   * Width is a constraint on a phone, and the second term is where it is paid.
+   * The command advances 0.6px per px of font size per character — a monospace
+   * face, so the string's width is arithmetic rather than a measurement — and
+   * the row also carries the `$` at one more character, two gaps, the two
+   * paddings, the border and the button. Solve that for the font size that
+   * exactly fills the panel and the row fits at any width instead of wrapping:
+   * about 39px at desktop, where the 19px cap is what binds, and 10.9px at 390,
+   * where it is.
+   *
+   * It shrinks rather than wraps because the two are not the same offer. A
+   * wrapped command is two lines that have to be read as one and a string no
+   * reader can select in one gesture; a smaller one is still the single line
+   * the copy button beside it hands over. This row is the page's one
+   * instruction, and one line is part of what it says.
+   *
+   * The character count comes from the component rather than from a constant
+   * here, because the string is the installed package's name and this file
+   * would not hear about a rename. 0.6 is JetBrains Mono's advance ratio —
+   * measured in Chrome at 273.5px of command against a 10.8527px size, which is
+   * 25.20px per px over 42 characters, or 0.6000 each.
+   *
+   * If that ratio were ever wrong the row scrolls rather than wraps, because
+   * `.terminal-command` keeps `overflow-x: auto` and `white-space: nowrap` at
+   * every width now. A solved size that is slightly too large costs the tail of
+   * a string the button copies anyway; a wrap costs the line its meaning.
    */
-  font-size: clamp(0.875rem, 2cqi, 1.1875rem);
+  --terminal-chrome: calc(2px + var(--oe-space-3) * 3 + var(--oe-space-4) + 1.5rem);
+  font-size: min(
+    clamp(0.875rem, 2cqi, 1.1875rem),
+    calc((100cqi - var(--terminal-chrome)) / (var(--terminal-command-chars) * 0.6 + 0.6))
+  );
   line-height: var(--oe-code-line-height);
   min-width: 0;
 }
@@ -2936,21 +2979,16 @@ table.data td {
  * The wrap sits on `.line`, which is where the `pre` now lives. The hanging
  * indent it used to need is already there as the gutter's padding.
  *
- * The command wraps rather than scrolls, and gains from it: a scroll container
- * needs to be reachable from a keyboard, and the one that is not there needs
- * nothing. It is one line of 42 characters, so wrapping costs it a second row
- * and no meaning.
+ * The install command used to wrap here too, and does not any more: it solves
+ * for a font size that fits instead. The argument for wrapping was that a
+ * scroll container has to be reachable from a keyboard and one that is not
+ * there needs nothing — which is still true, and the row still has no scroll
+ * container down here, because now it does not overflow.
  */
 @media (max-width: 48rem) {
   .code-block:not(.hero-snippet) .astro-code .line {
     white-space: pre-wrap;
     overflow-wrap: break-word;
-  }
-
-  .terminal-command {
-    overflow-x: visible;
-    white-space: normal;
-    overflow-wrap: anywhere;
   }
 }
 
@@ -3061,16 +3099,21 @@ table.data td {
    * directly.
    *
    * 16px against the code's 15px, keeping the same order and roughly the same
-   * step as above the breakpoint. It costs nothing, which is the reason this
-   * number and not a smaller one: the row already wraps down here — the
-   * `max-width: 48rem` block above turns `white-space` back to `normal` so the
-   * command breaks instead of scrolling — and 42 characters of a 0.6em face is
-   * 403px at 16px against 240px of room at 360 and 270px at 390. Two lines
-   * either way, at 14px or at 16px, measured at both widths. The larger type is
-   * free.
+   * step as above the breakpoint.
+   *
+   * It is a ceiling rather than a size, and the same fit term stands under it.
+   * That is the whole of the pairing rule this note was written about: the
+   * declaration above is `min(preference, fit)`, and an override that names
+   * only the preference silently drops the fit — the command would go back to
+   * 403px of text in 270px of panel at 390, which is where it was wrapping.
+   * 16px is what a phone would take if the width let it; the width does not,
+   * so what runs down here is about 10.9px at 390 and about 12.4px at 430.
    */
   .terminal-line {
-    font-size: 1rem;
+    font-size: min(
+      1rem,
+      calc((100cqi - var(--terminal-chrome)) / (var(--terminal-command-chars) * 0.6 + 0.6))
+    );
   }
 
   /*
@@ -3088,25 +3131,53 @@ table.data td {
    * phone was the one device that got the sentence without the demonstration.
    * Chrome is what that costs.
    *
-   * Three tighter layouts were measured before settling for the natural wrap,
-   * and none of them beat it: giving the select group its own full-width row
-   * (`flex-basis: 100%`) turns 390 from two rows into three, adding
-   * `space-between` to that row does the same, and dropping the group's auto
-   * margin so everything flows in order is identical to doing nothing. The
-   * binding constraint is arithmetic rather than layout — at 320 the toolbar
-   * has 254px of usable width and the four items need more than that in any
-   * arrangement — so the flex wrap is already the best answer available
-   * without shortening the labels, and the labels are what say which of the
-   * two keys of `adapters: { storage, relay }` each control edits.
+   * The layout is authored down here rather than left to the natural wrap.
+   * Four items and one `flex-wrap` put the filename, the group and the button
+   * on three separate rows at 390 — 96.7px, 304px and 24px against 324px of
+   * usable width, so the group cannot join either neighbour — and the third
+   * row was one 24px button alone under a row half empty.
    *
-   * The rule is gone rather than neutralised, and the copy button's
-   * `margin-inline-start: auto` went with it: that margin only existed because
-   * the auto margin pushing the button to the far edge lives on the select
-   * group, which was not here to carry it. With the group back, the button
-   * takes its place from the group again and a second auto margin would fight
-   * it. This comment is what is left, so the next reader who measures 152px of
-   * toolbar at 320 finds the decision instead of re-making it.
+   * Two rows, and which two is the point. The filename and the button belong
+   * together: one names the file and the other copies it, and the button has
+   * no meaning next to a control it does not act on. The two selects belong
+   * together underneath, as one row of controls.
+   *
+   * An earlier round measured `flex-basis: 100%` on the group and recorded
+   * that it made 390 worse. It did, on its own — a full-width group still
+   * leaves the button below it. `order` is the half that was missing: the
+   * group is ordered after both, so the button rises into the first row
+   * instead of falling under the group, and the auto margin moves onto the
+   * button because the element that was carrying it is no longer beside it.
+   *
+   * The selects share the row rather than sitting at their natural width,
+   * which is what keeps them on one line. At 320 they need 304px against 254px
+   * of room and would wrap into two more rows; `flex: 1 1 0` splits what is
+   * there evenly and each combobox gives up the same characters. Measured
+   * rows: two at 320, 360, 390 and 430.
    */
+  .code-adapters {
+    order: 1;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    margin-inline-start: 0;
+  }
+
+  .code-copy {
+    margin-inline-start: auto;
+  }
+
+  .code-select {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .code-select select {
+    /* The 14ch cap is a maximum and this is the width under it: without a
+       width the combobox keeps its content size and `flex` on the parent has
+       nothing to divide. */
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 /* --------------------------------------------------------------- price --- */

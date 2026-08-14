@@ -62,11 +62,25 @@ const imageUrl = new URL(image, Astro.site);
         Nothing caps `maximum-scale` or sets `user-scalable=no`; pinch zoom is
         untouched. */}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="/theme-init.js" is:inline></script>
     <link rel="preload" href={publicSansLatin} as="font" type="font/woff2" crossorigin />
     <meta name="description" content={description} />
+    {/* The colour a phone paints its status bar with, and it has to be the
+        canvas the header is actually sitting on. These two are the no-script
+        fallback and they answer the system preference; `theme-init.js` rewrites
+        both to the resolved canvas before first paint, because the site's own
+        switch can put a dark page under a light system — which painted a cream
+        strip above a dark header on an iPhone, read as a gap in the page.
+
+        The dark value was `#090806` here, which is the light theme's
+        foreground rather than the dark theme's canvas. It was close enough to
+        black to look intentional and 5% off the surface it was meant to
+        match. A test holds both to `--oe-canvas` in the installed tokens. */}
     <meta name="theme-color" content="#faf7f3" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#090806" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#0f0e0b" media="(prefers-color-scheme: dark)" />
+    {/* After the tags it rewrites, and still before first paint: a blocking
+        script in the head runs where it stands, so from above them it would
+        query a head the parser has not reached yet. */}
+    <script src="/theme-init.js" is:inline></script>
     <meta property="og:type" content={ogType} />
     <meta property="og:title" content={siteTitle} />
     <meta property="og:description" content={description} />

@@ -56,7 +56,17 @@ import {
   Three independent paths to the same guarantee, because a prompt glyph in a
   pasted command is the classic way a copy affordance wastes someone's minute.
 */}
-<div class="terminal">
+{/*
+  The one number `global.css` cannot work out for itself.
+
+  The row fits its width by solving for a font size, and the solution needs the
+  length of the string. That string is the installed package's name, so a
+  rename moves it — and a constant in the stylesheet would keep the old length
+  and either wrap the line again or leave it smaller than it has to be, with
+  nothing failing. Passing it from the same module the command comes from is
+  what makes the two impossible to separate.
+*/}
+<div class="terminal" style={`--terminal-command-chars: ${installCommand.length}`}>
   <p class="terminal-line">
     <span class="terminal-prompt" aria-hidden="true">$</span>
     <span class="terminal-command">{installCommand}</span>
