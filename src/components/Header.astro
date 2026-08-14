@@ -39,8 +39,13 @@ const links = [
 /*
  * The repository is the seventh nav item everywhere else on the internet and
  * the mark is how it is recognised, so it leaves the word list and joins the
- * actions as an icon. In the menu, where there is room for words and no room
- * for a row of icons, it stays a link that says GitHub.
+ * actions as an icon — at every width. It used to be a desktop-only icon with
+ * a word inside the narrow screen's menu, on the argument that a narrow header
+ * has no room for a row of icons. The menu's own trigger is an icon now, so
+ * the row exists either way, and the source is the page's whole argument: it
+ * should not be the one action a phone has to open a panel to find. The word
+ * leaves the menu with it, because two links to one place in one header is a
+ * reader wondering what the difference is.
  */
 const repository = 'https://github.com/open-e2ee/signal-protocol-js';
 
@@ -60,16 +65,28 @@ const current = (href: string) =>
       {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
     </nav>
     <div class="header-actions">
-      <a class="oe-icon-link desktop-only" href={repository} aria-label="The SDK on GitHub">
+      <a class="oe-icon-link" href={repository} aria-label="The SDK on GitHub">
         <Icon name="github" />
       </a>
       <ThemeToggle />
       <a class="text-link desktop-only" href={consoleUrl}>Console</a>
+      {/*
+        The menu's trigger, drawn rather than spelled: at this width it stands
+        in a row of icon controls — the mark and the theme toggle — and the one
+        word among them was the odd thing in it. The bars are the universal
+        drawing for this panel, and the same set's cross replaces them while it
+        is open, so the control always shows what pressing it does next. The
+        name stays real text for anything that reads names rather than shapes,
+        the way the theme toggle carries its own.
+      */}
       <details class="mobile-nav">
-        <summary>Menu</summary>
+        <summary>
+          <Icon name="menu" class="mobile-nav-icon mobile-nav-icon-open" />
+          <Icon name="close" class="mobile-nav-icon mobile-nav-icon-close" />
+          <span class="oe-visually-hidden">Menu</span>
+        </summary>
         <nav aria-label="Site">
           {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
-          <a href={repository}>GitHub</a>
           <a href={consoleUrl}>Console</a>
           <a href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message</a>
         </nav>

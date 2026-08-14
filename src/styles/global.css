@@ -640,21 +640,49 @@ a:hover {
   display: none;
 }
 
+/*
+ * The trigger, shaped like the control beside it: `.oe-theme-toggle`'s square,
+ * its border and its hover, restated here because the toggle's is a component
+ * class in the design package and this is a `<summary>`. Two icon controls
+ * standing together have to be one pair — the trigger used to be a text pill
+ * and read as a different kind of thing the moment its word became a drawing.
+ */
 .mobile-nav summary {
   list-style: none;
   cursor: pointer;
+  min-width: var(--oe-control-height-sm);
   min-height: var(--oe-control-height-sm);
   display: inline-flex;
   align-items: center;
-  padding-inline: var(--oe-space-3);
-  border: 1px solid var(--oe-border-control);
+  justify-content: center;
+  border: 1px solid var(--oe-border);
   border-radius: var(--oe-control-radius);
-  font-size: 0.875rem;
-  font-weight: 500;
+  color: var(--oe-muted);
+  transition:
+    color var(--oe-duration-fast) ease-out,
+    border-color var(--oe-duration-fast) ease-out;
+}
+
+.mobile-nav summary:hover {
+  border-color: var(--oe-border-control);
+  color: var(--oe-foreground);
 }
 
 .mobile-nav summary::-webkit-details-marker {
   display: none;
+}
+
+/* Bars closed, cross open: one control, and it always draws what the next
+   press does. Both icons ship, and this chooses — an icon swapped in script
+   would be an empty control until the module ran, and `<details>` needs no
+   script at all. */
+.mobile-nav .mobile-nav-icon-close,
+.mobile-nav[open] .mobile-nav-icon-open {
+  display: none;
+}
+
+.mobile-nav[open] .mobile-nav-icon-close {
+  display: block;
 }
 
 .mobile-nav nav {

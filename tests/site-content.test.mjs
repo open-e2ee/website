@@ -829,6 +829,11 @@ test('names every icon-only control it puts in the header', async () => {
    * name is a button that only sighted mouse users can identify. */
   assert.match(header, /aria-label="The SDK on GitHub"/);
   assert.match(toggle, /Colour theme: <span data-theme-label>/);
+  /* The menu's trigger became a drawing too. Its name is a real element and
+   * not an `aria-label`, the way the toggle carries its own: the word is the
+   * summary's own content, so a reader who turns styles off gets the control
+   * back rather than an empty box. */
+  assert.match(header, /<span class="oe-visually-hidden">Menu<\/span>/);
   /* Decorative inside a named control: the name must not be read twice. */
   assert.match(icon, /aria-hidden="true"/);
   assert.match(icon, /focusable="false"/);
