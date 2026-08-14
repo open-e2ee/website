@@ -1511,7 +1511,9 @@ a:hover {
  *
  * It covers the scene and a few pixels past it, so the reader sees the button
  * against the scene the button starts. The scene stays visible through it. A
- * solid cover would hide the thing on offer.
+ * solid cover would hide the thing on offer. Both figures hang it: the wide
+ * stage over its scene, `DemoMobile.astro` over its whole figure — one dress
+ * for the same offer at every width.
  *
  * The overhang is what keeps the relay's border inside the blur: the rack runs
  * to the stage's edge, and a curtain cut at exactly `inset: 0` left the

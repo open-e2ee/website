@@ -21,10 +21,11 @@
  * this figure drops is the console's apparatus — controls, logs, readings —
  * never the protocol.
  *
- * The run behind it is real. On first visibility the script pulls the SDK,
- * runs `MOBILE_SCRIPT` through `startDemoRun` at full speed — real PQXDH, real
- * Double Ratchet, real envelopes — and then loops the recording's frames at
- * reading pace (`mobile-reel.ts` owns the projection). The whole protocol
+ * The run behind it is real. The wide stage's curtain covers this figure too,
+ * and on its Start press the script pulls the SDK, runs `MOBILE_SCRIPT`
+ * through `startDemoRun` at full speed — real PQXDH, real Double Ratchet,
+ * real envelopes — and then loops the recording's frames at reading pace
+ * (`mobile-reel.ts` owns the projection). The whole protocol
  * story plays: registration, key generation, the prekey uploads, the ratchet
  * the SDK selected, and every crossing — only the console's timings and
  * controls are gone. Every byte count on screen came off a real envelope and
@@ -371,6 +372,19 @@ const LOCKS = [
     </svg>
   </span>
 
+  {/*
+    The wide stage's curtain, worn by this figure too: it covers the drawing
+    and carries the one control that starts it, so the reader decides while
+    looking at the thing on offer — `global.css`'s curtain rules dress both.
+    There are no Register presses to hand over to here, so Start runs the
+    whole conversation and the script lifts the curtain when the reel's
+    first frame plays. A reader with no scripts keeps the blurred figure
+    under a button that is visibly unavailable, with the recorded row below.
+  */}
+  <div class="demo-console-curtain" data-mobile-curtain>
+    <button type="button" class="oe-button" data-mobile-start disabled>Start demo</button>
+  </div>
+
   {/* True before any script runs, which is what a server-rendered caption has
       to be: the no-JS reader keeps this line and the recorded capture below. */}
   <figcaption class="demo-mobile-caption" data-mobile-caption aria-live="polite">
@@ -419,6 +433,8 @@ const LOCKS = [
       return found;
     };
     const caption = need('[data-mobile-caption]');
+    const curtain = need<HTMLElement>('[data-mobile-curtain]');
+    const startButton = need<HTMLButtonElement>('[data-mobile-start]');
     const envelope = need<HTMLDivElement>('[data-mobile-envelope]');
     const perSide = <E extends HTMLElement | SVGElement = HTMLElement>(
       attribute: string,
@@ -533,45 +549,48 @@ const LOCKS = [
     let refacing = false;
 
     /*
-     * Visibility is the only control. The observer fires for the viewport and
-     * for `display: none` alike, so widening the window past 60rem — where the
-     * CSS removes this figure — pauses the loop through the same path as
-     * scrolling away from it. The first intersection is also the boot: the SDK
-     * chunk is not fetched for a reader who never reaches the demo band.
+     * Starting is the reader's press, the wide stage's own opening; visibility
+     * only pauses and resumes a reel that exists. The observer fires for the
+     * viewport and for `display: none` alike, so widening the window past
+     * 60rem — where the CSS removes this figure — pauses the loop through the
+     * same path as scrolling away from it. Before the press both calls are
+     * no-ops, and the SDK chunk is not fetched for a reader who never asks.
      */
     const watcher = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) void start();
+        if (entries.some((entry) => entry.isIntersecting)) resume();
         else pause();
       },
       { threshold: 0.25 },
     );
     watcher.observe(root);
 
+    /*
+     * What the curtain says while it is still down — the wide stage's rule:
+     * the reader pressed a button in the middle of a blurred figure, so the
+     * button is where the answer has to appear. The caption is written too,
+     * for the `aria-live` reader the blur does not reach.
+     */
+    const START_LABEL = startButton.textContent ?? '';
+    const opening = (label: string, sentence: string) => {
+      startButton.textContent = label;
+      caption.textContent = sentence;
+    };
+
+    startButton.addEventListener('click', () => void start());
+
     async function start() {
-      if (frames) {
-        resume();
-        return;
-      }
-      if (booting) return;
+      if (frames || booting) return;
       booting = true;
+      startButton.disabled = true;
 
-      /* The wide console's gate, for the same reason: an insecure origin has
-         no `crypto.subtle`, the run would fail at its first encrypt, and the
-         caption is where this reader is looking. */
-      if (!window.isSecureContext) {
-        caption.textContent =
-          'This page is not a secure context, so the browser withholds WebCrypto. Open it over HTTPS to watch the conversation run.';
-        return;
-      }
-
-      caption.textContent = 'Fetching the SDK…';
+      opening('Fetching the SDK…', 'Fetching the SDK…');
       try {
         const [reel, runModule] = await Promise.all([
           import('../../lib/demo/mobile-reel'),
           import('../../lib/demo/run'),
         ]);
-        caption.textContent = 'Running the conversation at full speed…';
+        opening('Running the conversation…', 'Running the conversation at full speed…');
         const run = await runModule.startDemoRun({
           a: names.a,
           b: names.b,
@@ -590,11 +609,22 @@ const LOCKS = [
         await run.stop();
         frames = reel.buildMobileReel(events, names);
         dwells = reel.MOBILE_DWELL_MS;
+        /* The reel is only now something the figure has, which is what lifts
+           the curtain — held back until the opening has finished, so an
+           opening that threw leaves the reader the button that starts one
+           instead of a lifted curtain over a figure with nothing playing. */
+        curtain.hidden = true;
         step();
       } catch (error) {
         caption.textContent = `The demo could not start: ${
           error instanceof Error ? error.message : String(error)
         }`;
+        /* The press failed, so the button owes the reader both halves of the
+           answer: that it failed — the caption's sentence is behind the blur —
+           and that pressing again asks again. */
+        startButton.textContent = 'Could not start — try again';
+        startButton.disabled = false;
+        booting = false;
       }
     }
 
@@ -1383,6 +1413,22 @@ const LOCKS = [
         }
       }
     }
+
+    /* The wide console's gate, in the wide console's place — before the
+       button comes live, not inside the press: an insecure origin has no
+       `crypto.subtle`, the run would fail at its first encrypt, and the
+       button — where the reader is looking — carries the answer. The curtain
+       stays down over the figure, exactly as it does with no scripts. */
+    if (!window.isSecureContext) {
+      startButton.textContent = 'Demo needs HTTPS';
+      caption.textContent =
+        'This page is not a secure context, so the browser withholds WebCrypto. Open it over HTTPS to watch the conversation run.';
+      return;
+    }
+
+    /* The figure is startable from here: the reader who can press the button
+       is the reader the shipped `disabled` was withholding it from. */
+    startButton.disabled = false;
   }
 
   for (const root of document.querySelectorAll<HTMLElement>('[data-demo-mobile]')) {
