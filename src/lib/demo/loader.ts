@@ -17,7 +17,7 @@
  * live demo rendering as a broken page" that invariant forbids.
  */
 
-import type { DemoSession, DemoSessionOptions } from './driver';
+import type { DemoSession, DemoSessionOptions } from './driver.ts';
 
 /** The shape of the chunk. Type-only, so importing it costs no bytes here. */
 export interface DemoDriverModule {

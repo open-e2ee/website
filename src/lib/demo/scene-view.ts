@@ -35,14 +35,14 @@
  * do not already say.
  */
 
-import type { Actor, Cue, Step } from './trace';
+import type { Actor, Cue, Step } from './trace.ts';
 /* The freeze-and-release both morphs ride comes from the same module the
    mobile figure's morphs do, so the idiom cannot fork between the scenes. */
-import { endsMorph, freezeAndRelease, releaseBox } from './box-morph';
+import { endsMorph, freezeAndRelease, releaseBox } from './box-morph.ts';
 /* One tooth per key's click under the pawl: the angle comes from the same
    module that draws the teeth, so the two cannot disagree. */
-import { DEGREES_PER_KEY } from './drawing';
-import { humanBytes } from './units';
+import { DEGREES_PER_KEY } from './drawing.ts';
+import { humanBytes } from './units.ts';
 
 /** A device. The relay is not one, which is why it is not in this union. */
 export type Side = 'a' | 'b';
