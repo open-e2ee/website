@@ -234,8 +234,9 @@ const trustLinks = [
         </p>
         <div class="actions">
           {/* Two actions, founder-set labels. The primary is the demo, not the
-              quickstart: it scrolls to `#demo`, where the arc the two demo
-              bands make starts, directly after the code sample below. The
+              quickstart: it scrolls to `#demo`, which is the exhibit itself
+              and not the band around it, so the reader arrives at the running
+              scene rather than at the sentence describing it. The
               GitHub button is gone from the hero — the repo stays one click
               away from the "Check the work" links, the header, and /product,
               and a third button split the decision this row exists to force.
@@ -315,10 +316,12 @@ const trustLinks = [
   {/*
     The demo opens the page's evidence, directly after the code sample the
     hero closes on: the program a reader has just read is the program running
-    here. `id="demo"` is the hero primary action's scroll target — the arc the
-    two demo bands make starts at this heading.
+    here. The arc the two demo bands make starts at this heading, but `#demo`
+    does not: the fragment is on the exhibit inside `DemoConsole.astro`, so
+    that pressing Demo lands on the animation instead of on the paragraph
+    above it. The reasoning is written where the id is.
   */}
-  <section id="demo" class="band band-surface">
+  <section class="band band-surface">
     <div class="container stack">
       {/*
         The demo is one exhibit across the page rather than a panel beside a

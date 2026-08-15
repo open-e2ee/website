@@ -199,37 +199,63 @@ const TOGGLES = [
   </div>
 
   {/*
-    The stage holds the scene and the curtain. The curtain sits over the scene
-    instead of around it, so both share one positioned box.
+    `id="demo"` is here, on the running thing, and not on the band around it.
+
+    A reader who presses Demo in the nav, or "See Demo" in the hero, is asking
+    for the exhibit. Pointing the fragment at the section landed them on the
+    heading and the paragraph with the animation below the fold — at every
+    width measured, not only on a phone: at 1440x900 the scene's last 38px
+    were still under the fold, and at 390x664 the animation began 328px down a
+    664px screen. The offset that fixes it is the height of a paragraph that
+    wraps differently at every width, so the fragment has to name the exhibit
+    rather than the band. `:target` in `global.css` clears the sticky header.
+
+    One box for the two exhibits, because which one is drawn depends on the
+    width — the stage from 60rem up, the mobile figure below it — and the
+    fragment must land on whichever it is. The box carries no styles of its
+    own: the hidden exhibit contributes no height, so it is exactly as tall as
+    the one on screen.
+
+    The scene is taller than a phone screen (676px against 664 at 390 wide), so
+    this lands its top under the header rather than fitting its bottom to the
+    fold. Bottom-fitting would push the beginning of the animation off the top
+    of a phone, which is where the conversation starts.
   */}
-  <div class="demo-console-stage">
-    <DemoScene />
+  <div id="demo" class="demo-console-exhibit">
+    {/*
+      The stage holds the scene and the curtain. The curtain sits over the
+      scene instead of around it, so both share one positioned box.
+    */}
+    <div class="demo-console-stage">
+      <DemoScene />
+
+      {/*
+        The curtain covers the scene and carries the one control that starts
+        it. The reader looks at the scene while deciding to run it.
+
+        Start fetches the code and raises the relay — nothing more. The devices
+        come up one at a time, on the Register button each phone carries,
+        because bringing a device up is the reader's own act and the thing this
+        demo wants watched.
+
+        The script lifts the curtain once the run is up, and Reset puts it
+        back. A reader with no scripts keeps a blurred scene under a button
+        that is visibly unavailable, with the recorded row below it.
+      */}
+      <div class="demo-console-curtain" data-console-curtain>
+        <button type="button" class="oe-button" data-console-start disabled>Start demo</button>
+      </div>
+    </div>
 
     {/*
-      The curtain covers the scene and carries the one control that starts it.
-      The reader looks at the scene while deciding to run it.
-
-      Start fetches the code and raises the relay — nothing more. The devices
-      come up one at a time, on the Register button each phone carries, because
-      bringing a device up is the reader's own act and the thing this demo
-      wants watched.
-
-      The script lifts the curtain once the run is up, and Reset puts it back. A
-      reader with no scripts keeps a blurred scene under a button that is
-      visibly unavailable, with the recorded row below it.
+      The narrow screen's demo. Below 60rem the stage, the log, the status line
+      and the note are all hidden — `global.css` owns the rule — and this
+      figure plays the same conversation as an autonomous loop. Its own CSS
+      keeps it `display: none` from 60rem up, so exactly one of the two is ever
+      drawn.
     */}
-    <div class="demo-console-curtain" data-console-curtain>
-      <button type="button" class="oe-button" data-console-start disabled>Start demo</button>
-    </div>
+    <DemoMobile a={NAMES.a} b={NAMES.b} />
   </div>
-
-  {/*
-    The narrow screen's demo. Below 60rem the stage, the log, the status line
-    and the note are all hidden — `global.css` owns the rule — and this figure
-    plays the same conversation as an autonomous loop. Its own CSS keeps it
-    `display: none` from 60rem up, so exactly one of the two is ever drawn.
-  */}
-  <DemoMobile a={NAMES.a} b={NAMES.b} />
 
   <p class="demo-console-status" data-console-status role="status" aria-live="polite"></p>
 

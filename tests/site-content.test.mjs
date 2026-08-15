@@ -597,6 +597,46 @@ test('stands the demo’s settings in the band’s corner, on the heading’s li
   assert.match(raw, /@media \(max-width: 60rem\) \{\s*\.demo-console-head > \.demo-console-settings \{/);
 });
 
+test('lands the demo fragment on the exhibit, not on the paragraph above it', async () => {
+  const console_ = await read('../src/components/demo/DemoConsole.astro');
+  const index = await read('../src/pages/index.astro');
+  const raw = await read('../src/styles/global.css');
+  const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  /* The fragment names the running thing. On the band it landed the reader on
+     the heading with the animation below the fold at every width measured —
+     328px down a 664px screen at 390 wide, and still 38px short at 1440x900 —
+     and the offset that would fix it is the height of a paragraph that wraps
+     differently at every width. */
+  assert.match(console_, /<div id="demo" class="demo-console-exhibit">/);
+  assert.doesNotMatch(
+    index,
+    /<section id="demo"/,
+    'the band has taken the fragment back, so Demo lands on the heading again',
+  );
+
+  /* Both exhibits inside it, because which one is drawn depends on the width
+     and the fragment has to land on whichever it is. A wrapper around only the
+     wide stage would be `display: none` on a phone, and a fragment pointing at
+     a hidden element scrolls nowhere. */
+  const open = console_.indexOf('<div id="demo" class="demo-console-exhibit">');
+  const close = console_.indexOf('<p class="demo-console-status"');
+  assert.ok(open > 0 && close > open, 'the exhibit box is not where the console renders');
+  const exhibit = console_.slice(open, close);
+  assert.match(exhibit, /<div class="demo-console-stage">/);
+  assert.match(exhibit, /<DemoMobile /);
+
+  /* The links that lead there. Both are the reader asking for the exhibit. */
+  assert.match(index, /<a class="cta-primary" href="#demo">/);
+  const header = await read('../src/components/Header.astro');
+  assert.match(header, /href: '\/#demo'/);
+
+  /* And the one rule that stands it clear of the sticky header. This is not a
+     legal-page detail: scoping it away would park the scene under the header
+     on every press of Demo, with nothing else in the stylesheet to catch it. */
+  assert.match(ruleFor(css, ':target'), /scroll-margin-top:\s*calc\(4rem \+ var\(--oe-space-6\)\)/);
+});
+
 test('shows every metadata field the relay was recorded holding', async () => {
   /* The panel is captioned "the row in your database" and used to render a
    * hand-written six of the recorded ten. The two it dropped —

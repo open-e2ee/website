@@ -3578,7 +3578,10 @@ table.data td {
 }
 
 /* The header is sticky, so a contents link would otherwise park its section
-   heading underneath it. */
+   heading underneath it. Every fragment on the site depends on this, not only
+   the legal contents links it was written for: `#demo` is the homepage
+   exhibit, and this is the whole of what stands the scene clear of the
+   header. */
 :target {
   scroll-margin-top: calc(4rem + var(--oe-space-6));
 }
