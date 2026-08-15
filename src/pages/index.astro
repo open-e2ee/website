@@ -320,35 +320,12 @@ const trustLinks = [
   */}
   <section id="demo" class="band band-surface">
     <div class="container stack">
-      <div class="band-head">
-        <h2>One message, end to end</h2>
-        {/* "Ciphertext" and not "sealed". Sealed sender is a real feature of
-            this SDK, and the row the relay stores in the scene below prints
-            `senderUserId` in the clear. This caption stands directly over that
-            row, so the loose sense of the word would promise what the evidence
-            under it withholds.
-
-            `tests/site-content.test.mjs` pins "Not a mock-up", "type a
-            sentence" and "against the in-memory relay". The claim and its limit
-            belong in one sentence, and the `<noscript>` inside the console
-            answers the offer to type.
-
-            The offer itself is width-dependent: below 60rem the console gives
-            way to the autonomous mobile loop and there is nothing to type
-            into, so the sentence swaps its middle for what that reader
-            actually gets. An offer that cannot be taken is the "nothing to
-            press" defect this band has already paid for once. */}
-        <p class="measure">
-          Plaintext and private keys exist only on the devices at each end. Everything in between is
-          ciphertext, and carries metadata your relay can still see. Not a mock-up —{' '}
-          <span class="demo-offer-wide">type a sentence and the installed SDK encrypts it</span><span class="demo-offer-narrow">a scripted conversation runs on the installed SDK</span>{' '}
-          here, in this tab, against the in-memory relay.
-        </p>
-      </div>
-
       {/*
         The demo is one exhibit across the page rather than a panel beside a
-        figure.
+        figure, and the band's head is inside it: the console hangs Demo
+        Settings off the heading's own line, which it can only do if the
+        heading is under its root. That is the whole reason for the slot — the
+        copy in it is still this page's, written here.
 
         The two-column arrangement that stood here put the drawing next to the
         controls and asked the reader to hold both. It also had a second window
@@ -373,9 +350,59 @@ const trustLinks = [
         assistive technology because that caption already carries what it would
         announce.
       */}
-      <div id="what-the-relay-stores" class="demo-band">
-        <DemoConsole />
-      </div>
+      <DemoConsole>
+        <Fragment slot="head">
+          <h2>Live demo, in your browser</h2>
+          {/* The heading makes the claim and the paragraph is the evidence for
+              it, in that order. The band used to open on the end-to-end claim
+              and reach the running program three clauses later, as a denial:
+              "Not a mock-up". That asks a reader to rule out a mock-up before
+              anyone has told them there is one. Founder's call, and the plainer
+              shape: say it is live, then show what live means.
+
+              Short sentences on purpose. This is the one band whose subject is
+              the thing directly under it, so the copy's whole job is to get out
+              of the way of it.
+
+              "Ciphertext" and not "sealed". Sealed sender is a real feature of
+              this SDK, and the row the relay stores in the scene below prints
+              `senderUserId` in the clear. This caption stands directly over that
+              row, so the loose sense of the word would promise what the evidence
+              under it withholds.
+
+              The sentence used to close on "and metadata", and the admission has
+              not left the page with it: the carrier panel below prints every
+              field the relay was recorded holding, and the "Every claim is
+              inspectable" cell says the list is published. Naming it here as
+              well made the shortest paragraph on the page carry the longest
+              qualification.
+
+              Which is also why the closing sentence is about plaintext and not
+              about ciphertext. An "only sees ciphertext" formulation is the
+              shorter line and it is false: the row two bands down prints
+              `senderUserId`, `senderDeviceId` and `serverTimestamp` in the
+              clear, so the page would be contradicted by its own evidence
+              before a reader finished scrolling. Stated as a negative about
+              plaintext the claim is exact, and it is the one the whole product
+              rests on.
+
+              `tests/site-content.test.mjs` pins the live-demo claim and "against
+              the in-memory relay": the claim and its limit belong together, and
+              the relay is the half that is simulated. `tests/demo-panel.test.mjs`
+              pins "type a sentence", because the `<noscript>` inside the console
+              exists to answer that offer.
+
+              The offer itself is width-dependent: below 60rem the console gives
+              way to the autonomous mobile loop and there is nothing to type
+              into, so the sentence swaps its middle for what that reader
+              actually gets. An offer that cannot be taken is the "nothing to
+              press" defect this band has already paid for once. */}
+          <p class="measure">
+            <span class="demo-offer-wide">Type a sentence and the installed SDK encrypts it</span><span class="demo-offer-narrow">A scripted conversation plays through the installed SDK</span>{' '}
+            against the in-memory relay. Keys stay on the devices. The relay never sees plaintext.
+          </p>
+        </Fragment>
+      </DemoConsole>
 
       {/* The demo's own log is the only thing under the demo. The next thing to
           do is the band directly below, where the page makes the same SDK fail.

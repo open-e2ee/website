@@ -169,7 +169,10 @@ test('takes the SDK version it advertises from the installed package', () => {
 
 test('is what the homepage renders', async () => {
   const page = await readFile(new URL('../src/pages/index.astro', import.meta.url), 'utf8');
-  assert.match(page, /<DemoConsole\s*\/>/);
+  /* Open tag rather than self-closing: the band's heading and paragraph go in
+     through a slot, so the console can put Demo Settings on the heading's own
+     line. */
+  assert.match(page, /<DemoConsole>/);
   /* And the console is what renders the recording, so neither can be dropped
      without the other's guard here going quiet. */
   assert.match(source, /<CarrierPanel\s*\/>/);

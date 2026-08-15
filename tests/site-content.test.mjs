@@ -526,9 +526,75 @@ test('keeps the recorded carrier row on the page, wherever it sits', async () =>
    * where it came from, one line under the recording, which is the assertion
    * in "does not overstate the one artefact that exists to not be
    * overstated". */
-  assert.match(index, /<DemoConsole \/>/);
+  assert.match(index, /<DemoConsole>/);
   assert.match(live, /<CarrierPanel \/>/);
-  assert.match(index, /Not a mock-up/);
+
+  /* And the band still states what it is, positively. It used to reach the
+     same claim as a denial — "Not a mock-up" — which hands a reader the doubt
+     it then asks them to drop. Both halves are checked, because either one
+     alone is weaker than the pair: the heading claims the demo is live, and
+     the paragraph names the package that makes it so. */
+  assert.match(index, /<h2>Live demo, in your browser<\/h2>/);
+  assert.match(index, /the installed SDK encrypts it/);
+});
+
+test('stands the demo’s settings in the band’s corner, on the heading’s line', async () => {
+  const console_ = await read('../src/components/demo/DemoConsole.astro');
+  const index = await read('../src/pages/index.astro');
+  const raw = await read('../src/styles/global.css');
+  const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  /* "Demo Settings" and not "Settings". The control used to stand over the
+     scene, where the scene said what it settled; in the band's own corner the
+     bare word could be read as the site's settings. */
+  assert.match(console_, /<\/svg>\s*Demo Settings\s*<\/summary>/);
+
+  /* The head is inside the console's root, which is what lets one absolute
+     corner serve both. Placed beside it, the distance from the heading to the
+     control is however tall the paragraph happened to wrap, and no offset can
+     be written for that. */
+  assert.match(index, /<DemoConsole>\s*<Fragment slot="head">\s*<h2>/);
+  assert.ok(
+    console_.indexOf('<slot name="head" />') <
+      console_.indexOf('<details class="demo-console-settings"'),
+    'the settings control is no longer in the head it is meant to sit in',
+  );
+  assert.ok(
+    console_.indexOf('<details class="demo-console-settings"') <
+      console_.indexOf('<div class="demo-console-stage">'),
+    'the settings control is back inside the stage, which is a different corner',
+  );
+
+  /* Two rows, three boxes: the heading and the control share the first, the
+     paragraph takes the second across both columns. The control is pinned to
+     row one, because auto-placement would put it wherever the source order
+     landed it. */
+  const head = ruleFor(css, '.demo-console-head');
+  assert.match(head, /display:\s*grid/);
+  assert.match(head, /grid-template-columns:\s*minmax\(0, 1fr\) auto/);
+  /* Two rules carry this selector — the cell, and the narrow-width removal
+     below — so it is filtered rather than `ruleFor`ed, which throws on the
+     pair. */
+  const cells = cssRules(css).filter(
+    (rule) =>
+      rule.selector === '.demo-console-head > .demo-console-settings' &&
+      /grid-column:/.test(rule.body),
+  );
+  assert.equal(cells.length, 1, `${cells.length} rules place the control in the head`);
+  assert.match(cells[0].body, /grid-column:\s*2/);
+  assert.match(cells[0].body, /grid-row:\s*1/);
+  assert.match(cells[0].body, /justify-self:\s*end/);
+
+  /* And it goes where the stage goes. Below 60rem the mobile reel plays on its
+     own and there is no run whose terms this could change — it used to inherit
+     that from the stage it lived in, and in the head it has to be stated. */
+  const hidden = cssRules(css).some(
+    (rule) =>
+      rule.selector === '.demo-console-head > .demo-console-settings' &&
+      /display:\s*none/.test(rule.body),
+  );
+  assert.ok(hidden, 'the phone is offered settings for an exhibit it cannot see');
+  assert.match(raw, /@media \(max-width: 60rem\) \{\s*\.demo-console-head > \.demo-console-settings \{/);
 });
 
 test('shows every metadata field the relay was recorded holding', async () => {
@@ -778,25 +844,27 @@ test('shows the example on a phone rather than offering it', async () => {
   }
   assert.match(adapterRules[0].body, /display:\s*flex/);
 
-  /* Below the breakpoint the group takes its own row and the copy button rises
-   * beside the filename, which is the arrangement that makes this two rows
-   * instead of three. The auto margin moves with it: at wide widths the group
-   * carries it and pushes the button to the far edge, and down here the group
-   * is not beside the button any more, so the button carries it itself. Two
-   * auto margins at the same width would compete for the same free space, so
-   * each of these appears exactly once and in the right place. */
+  /* Below the breakpoint the group takes its own row under the filename, which
+   * is the whole of the arrangement now that the copy button is over the code
+   * rather than at the end of this row. The auto margin that pushes the group
+   * to the far edge at wide widths is turned off with it: a full-width item has
+   * no free space for one to divide, and leaving it in states a layout the
+   * element cannot perform. */
+  assert.match(narrow, /\.code-adapters \{[^}]*flex-basis:\s*100%/);
+  assert.match(narrow, /\.code-adapters \{[^}]*margin-inline-start:\s*0/);
+
+  /* The copy button is not on this row at any width, so nothing may push it
+   * along one. `margin-inline-start: auto` on `.code-copy` was how it reached
+   * the far edge while it lived in the toolbar; the corner it stands in now is
+   * absolute, and an auto margin left behind would fight the offsets. */
   const copyMargins = cssRules(css).filter(
     (rule) => rule.selector === '.code-copy' && /margin-inline-start:\s*auto/.test(rule.body),
   );
   assert.equal(
     copyMargins.length,
-    1,
-    `${copyMargins.length} rules push the copy button; the group owns that at every other width`,
+    0,
+    `${copyMargins.length} rules still push the copy button along a flex row it has left`,
   );
-  assert.match(narrow, /\.code-copy \{[^}]*margin-inline-start:\s*auto/);
-  assert.match(narrow, /\.code-adapters \{[^}]*order:\s*1/);
-  assert.match(narrow, /\.code-adapters \{[^}]*flex-basis:\s*100%/);
-  assert.match(narrow, /\.code-adapters \{[^}]*margin-inline-start:\s*0/);
 
   /* And the two comboboxes divide that row rather than keeping their natural
      width, which is what stops them wrapping into two more rows. `flex: 1 1 0`
@@ -832,6 +900,69 @@ test('shows the example on a phone rather than offering it', async () => {
     '<span class="code-select-label"><span class="code-select-qualifier">Device </span>Store</span>',
     '<span class="code-select-label">Relay<span class="code-select-qualifier"> Server</span></span>',
   ]);
+});
+
+test('puts the example’s copy control in the code’s corner, not among the settings', async () => {
+  const component = await read('../src/components/HeroSnippet.astro');
+  const raw = await read('../src/styles/global.css');
+  const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  /* The toolbar configures the example; the copy button does not configure
+     anything. Standing at the end of that row it was the third control a reader
+     had to read past to find the two that change the program. */
+  const toolbar = component.slice(
+    component.indexOf('<div class="code-toolbar">'),
+    component.indexOf('<div class="code-body">'),
+  );
+  assert.ok(toolbar.includes('code-select'), 'the toolbar slice missed the comboboxes');
+  assert.doesNotMatch(toolbar, /data-code-copy\b/, 'the copy button is back on the toolbar row');
+
+  /* And it is inside the box that holds still. The `<pre>` is the scroll
+     container, so a control positioned against that one rides off the panel
+     with the first long line a reader drags sideways. */
+  const body = component.slice(component.indexOf('<div class="code-body">'));
+  assert.match(body, /<button type="button" class="copy-button code-copy" data-code-copy>/);
+  assert.match(cssRules(css).find((rule) => rule.selector === '.code-body').body, /position:\s*relative/);
+
+  const corner = cssRules(css).find((rule) => rule.selector === '.code-body > .code-copy');
+  assert.ok(corner, 'nothing puts the copy button in the corner, so it sits in the flow of the code');
+  assert.match(corner.body, /position:\s*absolute/);
+  assert.match(corner.body, /top:\s*var\(--oe-space-3\)/);
+  assert.match(corner.body, /right:\s*var\(--oe-space-3\)/);
+
+  /* Opaque, because it is over the program rather than over a toolbar.
+     `.copy-button` is transparent and below 48rem the code scrolls under this
+     one, where a transparent chip is a glyph with a border round it. */
+  assert.match(corner.body, /background:\s*var\(--oe-editor\)/);
+
+  /* Above 48rem the size solves for a 91-character line and the longest first
+     line is the 76-character import, so the code stops short of the corner —
+     measured clearances of 90.5px at 768 and 279.6px at 1440. Below it nothing
+     solves, the panel scrolls, and the program starts under the control unless
+     the first line is given the button's own height to clear. */
+  const clearances = cssRules(css).filter(
+    (rule) => rule.selector === '.hero-snippet .code-body pre' && /padding-top:/.test(rule.body),
+  );
+  assert.equal(
+    clearances.length,
+    1,
+    `${clearances.length} rules clear the first line of the button; the wide panel needs none`,
+  );
+  /* Inside the panel's own breakpoint and no other, so the clearance appears
+     exactly where the fit stops holding. Brace-walked from the condition — a
+     `[^}]*` match would stop at the first nested rule's closing brace. */
+  const narrowBlock = (() => {
+    const start = css.indexOf('{', css.indexOf('@media not all and (min-width: 48rem)')) + 1;
+    let depth = 1;
+    let index = start;
+    while (index < css.length && depth > 0) {
+      if (css[index] === '{') depth += 1;
+      if (css[index] === '}') depth -= 1;
+      index += 1;
+    }
+    return css.slice(start, index - 1);
+  })();
+  assert.match(narrowBlock, /\.hero-snippet \.code-body pre \{[^}]*padding-top:/);
 });
 
 test('centres the hero at the phone’s width as well as the desktop’s', async () => {
@@ -1404,7 +1535,7 @@ test('keeps the signature diagram off the page that carries the plate', async ()
    * The demo's own three-column figure is not a second signature device. It
    * draws the relay as an outlined container rather than as the mark, which is
    * the discrimination that keeps this page inside the one-device cap. */
-  assert.match(index, /<DemoConsole \/>/);
+  assert.match(index, /<DemoConsole>/);
   assert.doesNotMatch(index, /<SignatureDiagram \/>/);
   assert.doesNotMatch(index, /import SignatureDiagram/);
 
@@ -1423,7 +1554,15 @@ test('keeps the signature diagram off the page that carries the plate', async ()
   /* The caption used to point at the drawing — "inside a device outline" —
    * and would have been left pointing at nothing. */
   assert.doesNotMatch(index, /device outline/);
-  assert.match(index, /exist only on the devices at each end/);
+  assert.match(index, /Keys stay on the devices/);
+  /* And the exclusivity claim is made about plaintext, never about ciphertext.
+     An "only sees ciphertext" formulation is false on this page's own
+     evidence: the panel below prints senderUserId, senderDeviceId and
+     serverTimestamp in the clear, so the page would be contradicted by the
+     thing it scrolls to. Checked against the source rather than dist, because
+     CI runs the tests before it builds and a dist-only guard would never
+     run there. */
+  assert.doesNotMatch(index, /relay\s+only\s+(?:ever\s+)?sees/i);
 });
 
 test('keeps the relay formula out of the absolute, in the drawings too', async () => {

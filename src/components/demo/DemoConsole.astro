@@ -126,23 +126,31 @@ const TOGGLES = [
   data-console-name-b={NAMES.b}
 >
   {/*
-    The stage holds the scene, the settings, and the curtain. The settings and
-    the curtain sit over the scene instead of around it, so all three share one
-    positioned box.
+    The band's own heading and paragraph, passed in by the page that writes
+    them, so the console can put a control on the heading's line. The page kept
+    them in a `.band-head` beside the console until the settings control was
+    asked for the top right corner: the gap between that heading and the top of
+    the scene is however tall the paragraph wrapped to, so no absolutely
+    positioned control can find the heading's line across it. The slot moves
+    the boundary instead of guessing the distance, and everything the script
+    drives stays under one root.
   */}
-  <div class="demo-console-stage">
-    <DemoScene />
+  <div class="demo-console-head">
+    <slot name="head" />
 
     {/*
-      The settings, in the corner above the scene. Everything that changes the
-      terms of a run is behind this control, so Start is the only control in the
-      open.
+      The settings, on the heading's line. Everything that changes the terms of
+      a run is behind this control, so Start is the only control in the open.
 
       A native `<details>` instead of a scripted popover. It opens, closes and
       answers the keyboard on its own. The script adds one behaviour the
       element does not have: a press outside it closes it, because a panel
       that floats over the scene reads as a popover and a popover that stays
       up under an outside press reads as stuck.
+
+      "Demo Settings" and not "Settings". On the heading's line the control
+      stands in the band's own corner rather than the scene's, where the bare
+      word could be read as the site's settings.
 
       Everything inside ships disabled and the script enables it. A control that
       does nothing is worse than a control that is absent. The reader presses it
@@ -161,7 +169,7 @@ const TOGGLES = [
           <circle cx="9" cy="8" r="3" fill="currentColor"></circle>
           <circle cx="16" cy="16" r="3" fill="currentColor"></circle>
         </svg>
-        Settings
+        Demo Settings
       </summary>
 
       <div class="demo-console-settings-panel">
@@ -188,6 +196,14 @@ const TOGGLES = [
         </button>
       </div>
     </details>
+  </div>
+
+  {/*
+    The stage holds the scene and the curtain. The curtain sits over the scene
+    instead of around it, so both share one positioned box.
+  */}
+  <div class="demo-console-stage">
+    <DemoScene />
 
     {/*
       The curtain covers the scene and carries the one control that starts it.

@@ -171,14 +171,6 @@ import {
         </select>
       </label>
     </span>
-    <button type="button" class="copy-button code-copy" data-code-copy>
-      <Icon name="copy" class="copy-icon copy-icon-idle" />
-      <Icon name="check" class="copy-icon copy-icon-done" />
-      <span class="oe-visually-hidden">Copy the example</span>
-    </button>
-    {/* Its own region, for the same reason the install button has one. This
-        button's name must keep saying what it does. */}
-    <span class="oe-visually-hidden" role="status" data-code-copy-status></span>
     {/* Changing a select swaps which of ten blocks is visible, which is a
         loud change on screen and a silent one otherwise: focus stays on the
         combobox, so the only thing announced is the option name — "Expo" —
@@ -211,36 +203,66 @@ import {
       The label names the adapters rather than saying "excerpt", which is what
       it said while this was one. Nine of the ten are `hidden`, so only the
       selected one is in the accessibility tree and only its label is read. */}
-  {
-    snippetVariants.map((variant) => (
-      <div
-        class="code-variant"
-        data-storage={variant.storage}
-        data-relay={variant.relay}
-        hidden={!variant.isDefault}
-      >
-        <Code
-          code={variant.code}
-          lang="ts"
-          themes={codeThemes}
-          defaultColor={false}
-          role="group"
-          aria-label={`Quickstart example, ${variant.storageLabel} store, ${variant.relayLabel} relay`}
-        />
-        {/* The disclosure that used to sit here as a `<p class="code-note">` is
-            in the program now. It named three objects the reader brings, and
-            they did not turn out to be the same kind of thing. `convex` and
-            `api` are importable — a Convex client and a generated API module —
-            so the Convex variant imports them, and a name a program binds needs
-            no caption. `storage` is not: the store wants an implementation of
-            `ReactNativeKeyValueStorage`, which is the reader's to write, so it
-            keeps a comment on the line above. Either way the disclosure is now
-            inside what the copy button copies, which prose under the panel
-            never was. `snippetComments` in src/lib/hero-snippet.mjs holds the
-            comments; the imports are on the option itself. */}
-      </div>
-    ))
-  }
+  {/*
+    The program, and the control that takes it away.
+
+    The copy button used to stand at the far end of the toolbar, beside the two
+    comboboxes. That row is where the example is *configured*, and the control
+    that copies it is not another setting — a reader scanning the row met three
+    controls and had to read all three to find the one that does not change the
+    program. It sits in the code's own top-right corner now, where every editor
+    and every code host on the internet puts it.
+
+    Absolutely positioned against this box and not against the `<pre>`, because
+    the `<pre>` is the scroll container: pinned inside it the button would slide
+    off the panel the moment a reader scrolled a long line. It carries the
+    editor surface as its own background for the same reason it has to overlap
+    at all — below 48rem the program scrolls under it, and a transparent chip
+    over code is unreadable. Above that width nothing runs into it: the
+    hero-snippet size solves for a 91-character line and the import on line one
+    is 76, so the code stops well short of the corner.
+  */}
+  <div class="code-body">
+    <button type="button" class="copy-button code-copy" data-code-copy>
+      <Icon name="copy" class="copy-icon copy-icon-idle" />
+      <Icon name="check" class="copy-icon copy-icon-done" />
+      <span class="oe-visually-hidden">Copy the example</span>
+    </button>
+    {/* Its own region, for the same reason the install button has one. This
+        button's name must keep saying what it does. */}
+    <span class="oe-visually-hidden" role="status" data-code-copy-status></span>
+
+    {
+      snippetVariants.map((variant) => (
+        <div
+          class="code-variant"
+          data-storage={variant.storage}
+          data-relay={variant.relay}
+          hidden={!variant.isDefault}
+        >
+          <Code
+            code={variant.code}
+            lang="ts"
+            themes={codeThemes}
+            defaultColor={false}
+            role="group"
+            aria-label={`Quickstart example, ${variant.storageLabel} store, ${variant.relayLabel} relay`}
+          />
+          {/* The disclosure that used to sit here as a `<p class="code-note">` is
+              in the program now. It named three objects the reader brings, and
+              they did not turn out to be the same kind of thing. `convex` and
+              `api` are importable — a Convex client and a generated API module —
+              so the Convex variant imports them, and a name a program binds needs
+              no caption. `storage` is not: the store wants an implementation of
+              `ReactNativeKeyValueStorage`, which is the reader's to write, so it
+              keeps a comment on the line above. Either way the disclosure is now
+              inside what the copy button copies, which prose under the panel
+              never was. `snippetComments` in src/lib/hero-snippet.mjs holds the
+              comments; the imports are on the option itself. */}
+        </div>
+      ))
+    }
+  </div>
 </div>
 
 <script>

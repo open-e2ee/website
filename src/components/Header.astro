@@ -17,18 +17,18 @@ const path = Astro.url.pathname;
  * bands under "How it compares" on /product, and `public/_redirects` keeps
  * `/compare` pointing at them.
  *
- * There is no Demo slot either. It held one, on the argument that Product
- * claims, Compare cites and Demo runs — the only page that answered a question
- * by executing the shipped package in the reader's own tab. That argument was
- * right about the evidence and wrong about where it belonged: a demo behind a
- * nav item is a demo a reader has to decide to visit, and the exemplars the
- * design review checked all put the running thing directly under the code that
- * describes it. The scenarios are now a homepage section, one band below the
- * panel they are the second half of, and `public/_redirects` keeps `/demo`
- * pointing at them.
+ * Demo is a fragment and not a route. The running thing belongs directly under
+ * the code that describes it, so it is a homepage band rather than a page of
+ * its own — but a reader who arrives on /security or /pricing has no way back
+ * to the one piece of evidence that executes, and "scroll the homepage" is not
+ * a route. The item points at the band, which is why `current()` never marks
+ * it: it names a place on a page, and the page it is on may be any of them.
+ * `public/_redirects` keeps the retired `/demo` route pointing at the
+ * scenarios, one band below.
  */
 const links = [
   { href: '/product', label: 'Product' },
+  { href: '/#demo', label: 'Demo' },
   { href: '/learn', label: 'Learn' },
   { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
   { href: '/security', label: 'Security' },

@@ -1492,13 +1492,6 @@ a:hover {
    `flex-start` acts on it from above. Without the stretch, the band sits at
    its content width, and that width changes the moment a run starts and the
    scene fills — the whole console widens under the reader's press. */
-.demo-band {
-  display: flex;
-  flex-direction: column;
-  gap: var(--oe-space-4);
-  align-self: stretch;
-}
-
 /*
  * The demo console: the drawing, a transport under it, and three columns.
  *
@@ -1516,6 +1509,47 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: var(--oe-space-6);
+  /* `.stack` starts its children at their content width. Every other band's
+     exhibit is a full-width box, and this one has to be too or the scene sets
+     its own width from the widest device in it. */
+  align-self: stretch;
+}
+
+/*
+ * The band's head, with Demo Settings in the corner of it.
+ *
+ * A grid and not the column `.band-head` is, because the control belongs on
+ * the heading's line and the paragraph belongs under the heading — three boxes
+ * in two rows, which is one grid and no wrapper. The heading and the paragraph
+ * keep the 62ch of every other band head; the control goes to the container's
+ * edge, which is the scene's edge directly below it, so the band's right-hand
+ * boundary is one line at both ends.
+ *
+ * `align-items: baseline` on the first row would sit the control's text on the
+ * heading's baseline and put the button's box above the heading's cap height.
+ * Centred against the heading's first line is what reads as "on the line".
+ */
+.demo-console-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--oe-space-4);
+  row-gap: var(--oe-space-3);
+  /* The console's own `gap` is 1.5rem and every other band head clears 3rem —
+     `.stack`'s 1rem plus `.band-head`'s 2rem. The difference, so this band's
+     head stands off its exhibit by the same distance as the rest. */
+  margin-bottom: var(--oe-space-6);
+}
+
+.demo-console-head > :not(.demo-console-settings) {
+  grid-column: 1;
+  max-width: 62ch;
+}
+
+.demo-console-head > .demo-console-settings {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
 }
 
 /*
@@ -1637,17 +1671,27 @@ a:hover {
  * Settings: quiet in the corner until the reader opens it.
  *
  * A native `<details>`, so the browser owns the open state, the keyboard and
- * the focus order. The panel sits in absolute position, so opening it never
- * pushes the scene down the page. A reader who changes a switch during a run
- * would otherwise watch the drawing jump.
+ * the focus order. The panel sits in absolute position against this box, so
+ * opening it never pushes the scene down the page. A reader who changes a
+ * switch during a run would otherwise watch the drawing jump.
+ *
+ * It used to hang off the stage, above the scene's top-right corner. The
+ * corner it stands in now is the band's, on the heading's line, which is the
+ * same edge one heading higher up.
  */
 .demo-console-settings {
-  position: absolute;
-  /* Above the scene's top-right corner, not inside it. Inside the box it would
-     cover a device, and it is not part of the drawing. */
-  bottom: calc(100% + var(--oe-space-2));
-  right: 0;
+  position: relative;
   z-index: 4;
+}
+
+/* Below 60rem the stage goes and the mobile reel plays on its own — there is
+   no run whose terms this could change. It went with the stage while it lived
+   inside it; in the head it has to be told. Same breakpoint, or the band would
+   offer settings for an exhibit that is not there. */
+@media (max-width: 60rem) {
+  .demo-console-head > .demo-console-settings {
+    display: none;
+  }
 }
 
 .demo-console-settings-summary {
@@ -2379,7 +2423,8 @@ table.data td {
   border-bottom: 0;
 }
 
-/* Pushes the copy control to the far edge and lets the selects sit together. */
+/* Pushes the two selects to the far edge, away from the filename. The copy
+   control used to be the thing this pushed against; it is over the code now. */
 .code-adapters {
   display: flex;
   flex-wrap: wrap;
@@ -2755,6 +2800,28 @@ table.data td {
   color: var(--oe-muted);
 }
 
+/*
+ * The code's own top-right corner, which is where a reader looks for this.
+ *
+ * The box is this one and not the `<pre>`: the `<pre>` scrolls, and a control
+ * pinned inside a scroll container leaves the panel with the first long line a
+ * reader drags. `.code-body` holds still around it.
+ */
+.code-body {
+  position: relative;
+}
+
+.code-body > .code-copy {
+  position: absolute;
+  top: var(--oe-space-3);
+  right: var(--oe-space-3);
+  /* Over the program, so the editor surface comes with it. `.copy-button` is
+     transparent, which is right on a toolbar and unreadable on code — below
+     48rem the panel scrolls and the line passes under this control. */
+  background: var(--oe-editor);
+  z-index: 1;
+}
+
 .code-copy:hover {
   color: var(--oe-foreground);
   border-color: var(--oe-foreground);
@@ -3110,6 +3177,21 @@ table.data td {
   }
 
   /*
+   * And the copy button stops sharing line one with the program.
+   *
+   * Above this width the size solves for a 91-character line and the import on
+   * line one is 76, so the code stops a long way short of the corner control.
+   * Down here nothing solves: the panel scrolls, and at 390 the button covered
+   * the last five characters of `createSignalProtocolClient` before a reader
+   * had touched it. The line starts below the control instead — 12px of offset
+   * plus the 24px ring plus a step of clearance, which is what the button
+   * occupies. Only the top, so the scroll and the fit terms are untouched.
+   */
+  .hero-snippet .code-body pre {
+    padding-top: calc(var(--oe-space-3) + 1.5rem + var(--oe-space-2));
+  }
+
+  /*
    * And the command follows it up, because down here the code stops solving and
    * starts climbing.
    *
@@ -3151,10 +3233,9 @@ table.data td {
    * The adapter selects used to be `display: none` here, and are not any more.
    *
    * The argument for hiding them was toolbar chrome, and the measurement was
-   * right: two comboboxes and their labels against the filename and the copy
-   * button do not fit one row on a phone. Measured again this round, with the
-   * selects shown — 49px becomes 80px at 390, 412 and 430, 116px at 358 and
-   * 375, and 152px at 320, where the toolbar is four stacked rows.
+   * right: two comboboxes and their labels do not fit one phone row beside the
+   * filename. Measured again this round, with the selects shown — 49px becomes
+   * 80px at 390, 412 and 430, 116px at 358 and 375, and 152px at 320.
    *
    * The founder's call is that the controls are the argument. Changing the
    * dropdown and watching one import line change with it is the only place on
@@ -3162,39 +3243,22 @@ table.data td {
    * phone was the one device that got the sentence without the demonstration.
    * Chrome is what that costs.
    *
-   * The layout is authored down here rather than left to the natural wrap.
-   * Four items and one `flex-wrap` put the filename, the group and the button
-   * on three separate rows at 390 — 96.7px, 304px and 24px against 324px of
-   * usable width, so the group cannot join either neighbour — and the third
-   * row was one 24px button alone under a row half empty.
+   * The layout is authored down here rather than left to the natural wrap. The
+   * filename names the row and the two selects take their own underneath, as
+   * one row of controls: `flex-basis: 100%` is what puts the group on a line of
+   * its own, and the auto margin that pushes it to the far edge at wide widths
+   * has no free space left to work on, so it is stated as zero.
    *
-   * Two rows, and which two is the point. The filename and the button belong
-   * together: one names the file and the other copies it, and the button has
-   * no meaning next to a control it does not act on. The two selects belong
-   * together underneath, as one row of controls.
-   *
-   * An earlier round measured `flex-basis: 100%` on the group and recorded
-   * that it made 390 worse. It did, on its own — a full-width group still
-   * leaves the button below it. `order` is the half that was missing: the
-   * group is ordered after both, so the button rises into the first row
-   * instead of falling under the group, and the auto margin moves onto the
-   * button because the element that was carrying it is no longer beside it.
-   *
-   * The selects share the row rather than sitting at their natural width,
+   * The selects share that row rather than sitting at their natural width,
    * which is what keeps them on one line. At 320 they need 304px against 254px
    * of room and would wrap into two more rows; `flex: 1 1 0` splits what is
    * there evenly and each combobox gives up the same characters. Measured
    * rows: two at 320, 360, 390 and 430.
    */
   .code-adapters {
-    order: 1;
     flex-basis: 100%;
     flex-wrap: nowrap;
     margin-inline-start: 0;
-  }
-
-  .code-copy {
-    margin-inline-start: auto;
   }
 
   .code-select {
