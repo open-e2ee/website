@@ -1700,8 +1700,8 @@ test('closes the page on what the licence hands over, not on forking it', async 
    * a deleted link would satisfy a comparison that reads as an order check. */
   assert.match(
     band,
-    /<CommitLine \/>[\s\S]+Understand AGPL use[\s\S]+class="closing"/,
-    'the graph, the licence link and the closing action are no longer in that order',
+    /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+Understand AGPL use[\s\S]+class="closing"/,
+    'the graph, the mark, the licence link and the closing action are no longer in that order',
   );
   assert.equal(
     index.indexOf('class="closing"'),
@@ -1709,12 +1709,115 @@ test('closes the page on what the licence hands over, not on forking it', async 
     'a second closing block means the page no longer ends on one action',
   );
 
-  /* The graph is vertical at every width and the links wrap on their own, so the
-   * band has no width step at all. A column rule here would be a second
-   * arrangement to keep true against a drawing that never needed one. */
+  /* The two figures share a row, and the graph is the one that leads. Source
+   * order is what a phone gets — the columns collapse and the figures stack in
+   * the order they are written — so the graph coming second here would put the
+   * decoration above the claim on every narrow screen. The ordered match above
+   * is the pin; this is the arrangement it relies on. */
+  const pairRules = cssRules(css).filter((rule) => rule.selector === '.commitline-pair');
+  assert.ok(pairRules.length >= 1, 'the two figures no longer share an arrangement');
+  assert.match(pairRules[0].body, /display: grid;/);
+  assert.doesNotMatch(
+    pairRules[0].body,
+    /grid-template-columns/,
+    'the columns are the wide case and belong behind a query, not in the base rule',
+  );
+
+  /* The wrapper around both is still only spacing. The columns live on the pair,
+   * so a width step appearing here would be a second arrangement to keep true. */
   const bandRules = cssRules(css).filter((rule) => rule.selector === '.commitline-band');
   assert.equal(bandRules.length, 1, 'the band grew a second arrangement at some width');
   assert.doesNotMatch(bandRules[0].body, /grid|flex|columns/);
+});
+
+test('draws the mark from the real path and puts every light back', async () => {
+  const [mark, css] = await Promise.all([
+    read('../src/components/StarfieldMark.astro'),
+    read('../src/styles/global.css'),
+  ]);
+
+  /*
+   * The geometry is imported, never transcribed. A path pasted into this file is
+   * a copy that stops tracking the icon package the moment either moves, and a
+   * hand-drawn approximation of another company's trademark is worse than no
+   * mark at all — which is the call `Icon.astro` already makes for the same
+   * glyph. The literal check is the one that bites: an inlined path is a long
+   * run of `M`/`c` coordinates, and nothing else in this file looks like one.
+   */
+  assert.match(mark, /import \{ ICON_VIEW_BOX, iconPaths \} from '@open-e2ee\/design\/icons';/);
+  assert.match(mark, /const \[path\] = iconPaths\.github;/);
+  const source = mark.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+  assert.doesNotMatch(source, /"M[\d.\-\s,a-zA-Z]{60,}"/, 'the path is transcribed rather than imported');
+
+  /*
+   * The order the field replaces the drawing in is the whole fallback. The mark
+   * is authored complete, the script rasterises it to find out where its lights
+   * go, and only then sets `starlit` to hide it. Any other order ships an empty
+   * box to every reader whose JavaScript did not run, and leaves the field with
+   * nothing to measure for the readers whose did.
+   *
+   * Pinned three ways: the markup carries no state, the stylesheet hides the
+   * drawing on `starlit` alone, and `starlit` is set after the sampling pass.
+   */
+  assert.doesNotMatch(source, /data-starlit=/);
+  assert.match(css, /\.starfield\[data-starlit\] \.starfield-mark \{\s*visibility: hidden;/);
+  const sampled = mark.indexOf('getImageData');
+  const starlit = mark.indexOf("root.dataset.starlit = ''");
+  assert.notEqual(sampled, -1, 'the field no longer measures the drawing it replaces');
+  assert.ok(starlit > sampled, 'the drawing is hidden before the field has sampled it');
+
+  /*
+   * DESIGN.md asks motion to be short and reversible, and a star field is the
+   * shape of thing that quietly becomes neither: a loop redrawing an idle field
+   * forever keeps a phone's compositor awake for a decoration. The loop asks
+   * whether anything is still moving and stops on the frame nothing is, so the
+   * only `requestAnimationFrame` that continues it sits inside that decision.
+   */
+  assert.match(mark, /frame = moving \|\| pointerNear \? requestAnimationFrame\(tick\) : 0;/);
+
+  /* And reversible means the lights land back on the path rather than near it.
+   * A light inside the settled threshold is snapped home, so the shape the field
+   * comes to rest in is the mark, not a blur of it. */
+  assert.match(mark, /light\.x = light\.homeX;\s*light\.y = light\.homeY;/);
+
+  /* Reduced motion drops the whole field and leaves the mark. This figure
+   * teaches nothing by moving, so a reader who asked for less movement loses
+   * only movement. */
+  assert.match(mark, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)/);
+  assert.match(mark, /if \(!still\.matches\) \{/);
+
+  /*
+   * Its dwell is local. `--oe-duration-*` are transition durations and collapse
+   * to 0.01ms under reduced motion, so a constant derived from one would run the
+   * entrance inside a single frame. The same reason the graph beside it states
+   * its beat as a literal.
+   *
+   * Against the comment-stripped source: the constants above are commented with
+   * the reason they are not tokens, and a check that cannot tell a declaration
+   * from the reasoning for it fires on the reasoning.
+   */
+  assert.doesNotMatch(source, /--oe-duration/);
+
+  /*
+   * Neither colour is baked into a light. Both resolve differently in the two
+   * themes and the switch in the header can flip with this band on screen, so a
+   * light carries only whether it is an accent one and the colours are re-read
+   * when the theme attribute changes. A `colour` on the light would paint the
+   * field in the old palette until the next resize.
+   */
+  assert.match(mark, /const readColours = \(\) => \{/);
+  assert.match(mark, /attributeFilter: \['class'\]/);
+  assert.match(mark, /context\.fillStyle = light\.accent \? accent : ink;/);
+
+  /* The mark is decorative: the band links to the repository in words directly
+   * below it, and a second route to one place is a reader wondering what the
+   * difference is. */
+  assert.match(source, /<div class="starfield" data-starfield data-starfield-path=\{path\} aria-hidden="true">/);
+
+  /* It says nothing about encryption, so it carries none of the diagram grammar.
+   * A slab or a carrier bracket here would be a licence band drifting into a
+   * claim about the protocol. */
+  assert.doesNotMatch(source, /--oe-diagram-|class="diagram/);
 });
 
 test('keeps the signature diagram off the page that carries the plate', async () => {

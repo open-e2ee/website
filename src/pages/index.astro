@@ -4,6 +4,7 @@ import BatteryMark from '../components/BatteryMark.astro';
 import DemoConsole from '../components/demo/DemoConsole.astro';
 import ScenarioList from '../components/demo/ScenarioList.astro';
 import CommitLine from '../components/CommitLine.astro';
+import StarfieldMark from '../components/StarfieldMark.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
@@ -674,11 +675,15 @@ const trustLinks = [
         </p>
       </div>
 
-      {/* The graph carries this band on its own. What the AGPL asks of the
-          reader's own application is not stated here — `/licensing` owns that
-          wording, and the second link is the route to it. */}
+      {/* The two figures carry this band between them: the graph says what the
+          licence hands over, and the mark is where the source is. What the AGPL
+          asks of the reader's own application is not stated here — `/licensing`
+          owns that wording, and the second link is the route to it. */}
       <div class="commitline-band">
-        <CommitLine />
+        <div class="commitline-pair">
+          <CommitLine />
+          <StarfieldMark />
+        </div>
 
         <p class="text-links">
           <a href="https://github.com/open-e2ee/signal-protocol-js">Read the source on GitHub</a>

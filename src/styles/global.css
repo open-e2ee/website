@@ -2264,15 +2264,67 @@ a:hover {
   }
 }
 
-/* The graph and the two links under it. No columns and no width step: the graph
-   is vertical at every width and the links wrap on their own, so the band reads
-   the same from 320px up and there is one arrangement to keep true. */
+/* The two figures side by side, and the two links under both of them. */
 .commitline-band {
   margin-bottom: var(--oe-space-8);
 }
 
-.commitline-band .commitline {
+/* One column below 48rem, and the graph first in both arrangements. The graph is
+   vertical at every width and the mark is square at every width, so the pair
+   stacks without either figure being redrawn for the narrow case. */
+.commitline-pair {
+  display: grid;
+  gap: var(--oe-space-6);
+  align-items: center;
   margin-bottom: var(--oe-space-4);
+}
+
+/* Both columns are sized to their figures rather than sharing the container, and
+   the pair sits left. A second column taking the whole remainder centres the mark
+   near two thirds across a band this wide, which puts a screen's worth of air
+   between two figures that are meant to be read as a pair.
+
+   The graph's column is `max-content` rather than a width picked to fit it: its
+   longest row is the one the graph ends on, and a fixed width wraps that row the
+   moment the wording changes. Held to the container underneath, so a narrow
+   viewport shrinks the column instead of overflowing the band. */
+@media (min-width: 48rem) {
+  .commitline-pair {
+    grid-template-columns: minmax(0, max-content) minmax(0, 20rem);
+    justify-content: start;
+    gap: var(--oe-space-8);
+  }
+}
+
+/*
+ * The mark's box, which the script measures to place its lights. A square with a
+ * width cap rather than a fixed size: the lights are laid out from this box, so
+ * a box that changed shape between breakpoints would be a second composition to
+ * keep true, and one that grew without limit would put the mark at badge scale
+ * beside a figure it is meant to sit level with.
+ */
+.starfield {
+  position: relative;
+  width: 100%;
+  max-width: 17rem;
+  aspect-ratio: 1;
+  margin-inline: auto;
+  color: var(--oe-muted);
+}
+
+.starfield-mark,
+.starfield-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Hidden only once the script has read the path out of it and has lights to draw
+   in its place. `visibility` rather than `display`, so the box the lights were
+   measured against does not collapse underneath them. */
+.starfield[data-starlit] .starfield-mark {
+  visibility: hidden;
 }
 
 .definition-rows {
