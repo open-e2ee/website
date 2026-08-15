@@ -877,27 +877,14 @@ test('shows the example on a phone rather than offering it', async () => {
   assert.match(css, /@media not all and \(min-width: 48rem\) \{\s*\.hero-snippet\.code-block pre \{/);
   assert.doesNotMatch(css, /47\.99rem/);
 
-  /* That block's own body, for the phone layout asserted below. Brace-walked
-     from the condition rather than matched with `[^}]*`, which would stop at
-     the first nested rule's closing brace. */
-  const narrow = (() => {
-    const start = css.indexOf('{', css.indexOf('@media not all and (min-width: 48rem)')) + 1;
-    let depth = 1;
-    let index = start;
-    while (index < css.length && depth > 0) {
-      if (css[index] === '{') depth += 1;
-      if (css[index] === '}') depth -= 1;
-      index += 1;
-    }
-    return css.slice(start, index - 1);
-  })();
-
   /* The adapter selects are operable on a phone too, and that is the second
    * half of the same decision: a panel a reader can see but not drive is the
    * page's central claim shown as a picture. They were `display: none` below
-   * this breakpoint for measured reasons — the toolbar is four stacked rows at
-   * 320 with them back — and the founder's call is that the demonstration is
-   * worth the chrome.
+   * this breakpoint for measured reasons — the toolbar grew to 152px at 320
+   * with them back, while the row still stacked — and the founder's call is
+   * that the demonstration is worth the chrome. It costs none now: the row
+   * shortens its writing instead of taking a second line, which the test below
+   * this one owns.
    *
    * Every rule carrying the selector, because the failure to catch is a second
    * one turning them off again — inside a query or not. Writing this exposed a
@@ -913,15 +900,6 @@ test('shows the example on a phone rather than offering it', async () => {
   }
   assert.match(adapterRules[0].body, /display:\s*flex/);
 
-  /* Below the breakpoint the group takes its own row under the filename, which
-   * is the whole of the arrangement now that the copy button is over the code
-   * rather than at the end of this row. The auto margin that pushes the group
-   * to the far edge at wide widths is turned off with it: a full-width item has
-   * no free space for one to divide, and leaving it in states a layout the
-   * element cannot perform. */
-  assert.match(narrow, /\.code-adapters \{[^}]*flex-basis:\s*100%/);
-  assert.match(narrow, /\.code-adapters \{[^}]*margin-inline-start:\s*0/);
-
   /* The copy button is not on this row at any width, so nothing may push it
    * along one. `margin-inline-start: auto` on `.code-copy` was how it reached
    * the far edge while it lived in the toolbar; the corner it stands in now is
@@ -935,23 +913,26 @@ test('shows the example on a phone rather than offering it', async () => {
     `${copyMargins.length} rules still push the copy button along a flex row it has left`,
   );
 
-  /* And the two comboboxes divide that row rather than keeping their natural
-     width, which is what stops them wrapping into two more rows. `flex: 1 1 0`
-     with `min-width: 0` is both halves — the basis is what makes the split
-     even, and without the minimum a flex item will not shrink below its
-     content at all. Each half is 123px at 320. */
-  assert.match(narrow, /\.code-select \{[^}]*flex:\s*1 1 0/);
-  assert.match(narrow, /\.code-select \{[^}]*min-width:\s*0/);
-  assert.match(narrow, /\.code-select select \{[^}]*width:\s*100%/);
+  /* And the two comboboxes divide the row rather than keeping their natural
+     width, which is what lets them share one line with their names instead of
+     wrapping. `flex: 1 1 0` with `min-width: 0` is both halves — the basis is
+     what makes the split even, and without the minimum a flex item will not
+     shrink below its content at all. Each half is 121px at 320 and 156px at
+     390. These are the base rules: the panel drops back to them below the rung
+     that gives the selects their natural width, which is the narrow case this
+     test is about. */
+  const selectRule = cssRules(css).filter((rule) => rule.selector === '.code-select')[0];
+  assert.match(selectRule.body, /flex:\s*1 1 0/);
+  assert.match(selectRule.body, /min-width:\s*0/);
+  assert.match(cssRules(css).filter((rule) => rule.selector === '.code-select select')[0].body, /width:\s*100%/);
 
   /* The label stays beside its combobox at every width; what gives way is the
-     name. Each one is a qualifier plus the word that carries the choice, and
-     below 30rem the qualifier is dropped, so "Device Store" reads "Store" and
-     "Relay Server" reads "Relay". The full names want 89.3px each, which the
-     cell can spare from 480px of viewport up; below that the label is squeezed
-     to 67.2px at 430 and 44.6px at 320, where the whole name would wrap or be
-     cut mid-word. `nowrap` is the guard on the wrapping half of that: without
-     it a squeezed label takes a second line instead of shortening. */
+     name. Each one is a qualifier plus the word that carries the choice, and a
+     panel under 34.5rem drops the qualifier, so "Device Store" reads "Store"
+     and "Relay Server" reads "Relay" — 37.2px each, whole, at every width down
+     to 320. `nowrap` is the guard on the other way a name can give way: without
+     it a squeezed label takes a second line instead of shortening. Which rung
+     drops it, and at what measured width, is owned by the test below. */
   const labelRules = cssRules(css).filter((rule) => rule.selector === '.code-select-label');
   assert.equal(labelRules.length, 1, `${labelRules.length} rules style the label`);
   assert.match(labelRules[0].body, /white-space:\s*nowrap/);
@@ -1018,6 +999,61 @@ test('puts the example’s copy control in the code’s corner, not among the se
     clearances.length,
     0,
     `${clearances.length} rules push the program down to clear the button; it floats over the code at every width`,
+  );
+});
+
+test('keeps the example’s settings on one row, and shortens the writing to hold it', async () => {
+  const raw = await read('../src/styles/global.css');
+  const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  /* The row never becomes two. It used to stack the comboboxes under the
+     filename below 48rem — 720px of panel, and nothing had stopped fitting:
+     measured against the previous rules replayed over this markup, the second
+     line gave the comboboxes not one pixel more (75.8 at 320, 95.8 at 360,
+     100.8 from 375, in both layouts) and cost 31.2px of height. */
+  assert.match(ruleFor(css, '.code-toolbar'), /flex-wrap:\s*nowrap/);
+  const stacked = cssRules(css).filter(
+    (rule) => rule.selector === '.code-adapters' && /flex-basis:\s*100%/.test(rule.body),
+  );
+  assert.equal(stacked.length, 0, 'a rule puts the comboboxes on a line of their own again');
+
+  /* Both rungs ask the panel, not the viewport. The toolbar has to fit the box
+     it is drawn in, and `.hero-demo` is a container, so a `@media` rule here
+     would be measuring the wrong thing — it is right only while the hero's own
+     padding and track never move. */
+  assert.match(ruleFor(css, '.hero-demo'), /container-type:\s*inline-size/);
+
+  /* Rung one: the qualifiers. "Device Store" and "Relay Server" cost the row
+     104.2px over "Store" and "Relay", which the panel has from 34.5rem up. */
+  const qualifier = cssRules(css).filter((rule) => rule.selector === '.code-select-qualifier');
+  assert.equal(qualifier.length, 2, 'the qualifier is not a hidden default plus one rung');
+  assert.match(qualifier[0].body, /display:\s*none/);
+  assert.match(raw, /@container \(min-width: [\d.]+rem\) \{\s*\.code-select-qualifier \{\s*display: inline/);
+
+  /* Rung two: the filename, and only inside the toolbar. /product writes
+     `.code-filename` on its own, outside any container, where a container query
+     never matches — a hidden default on the bare class would leave it hidden
+     there for good. */
+  assert.doesNotMatch(ruleFor(css, '.code-filename'), /display:/);
+  const filename = cssRules(css).filter((rule) => rule.selector === '.code-toolbar .code-filename');
+  assert.equal(filename.length, 2, 'the filename is not a hidden default plus one rung');
+  assert.match(filename[0].body, /display:\s*none/);
+  assert.match(raw, /@container \(min-width: [\d.]+rem\) \{\s*\.code-toolbar \.code-filename \{\s*display: block/);
+
+  /* Both rungs, at the widths they were measured at, and in that order. The
+     numbers are read out of the source rather than written into two regexes
+     above, so this is the one assertion that fails when either moves. A row
+     holding the filename and both short labels needs 444.7px of panel and one
+     holding the qualifiers as well needs 548.9px, so a lower rung overflows and
+     a higher one gives up writing the panel had room for. The writing goes
+     first: a panel narrow enough to drop "quickstart.ts" has already spent the
+     cheaper rung. */
+  const rung = (selector) => Number(raw.match(new RegExp(`@container \\(min-width: ([\\d.]+)rem\\) \\{\\s*\\${selector}`))[1]);
+  assert.equal(rung('.code-toolbar .code-filename'), 28, 'the filename rung moved off its measured width');
+  assert.equal(rung('.code-select-qualifier'), 34.5, 'the qualifier rung moved off its measured width');
+  assert.ok(
+    rung('.code-select-qualifier') > rung('.code-toolbar .code-filename'),
+    'the filename goes before the qualifiers do, so the name is dropped while there is still writing to shorten',
   );
 });
 

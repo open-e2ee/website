@@ -2409,9 +2409,44 @@ table.data td {
  * Two rules for one edge is a smell; one rule that two elements can own is the
  * alternative and it would have meant changing a page this round is not about.
  */
+/*
+ * One row, at every width. What gives way is the writing, never the layout.
+ *
+ * The controls used to drop onto a line of their own under the filename below
+ * 48rem, which is 720px of panel — long before anything stopped fitting. The
+ * row is authored as a ladder now, and each rung is a measured width of the
+ * panel rather than of the viewport: the toolbar has to fit the panel, and
+ * `.hero-demo` is already a container, so the query asks the box that decides.
+ *
+ * Measured with the row held to one line and its intrinsic width read off a
+ * `max-content` box — `scrollWidth` cannot answer this, because it saturates at
+ * the width available the moment the content fits and reports every wide panel
+ * as needing exactly what it has:
+ *
+ *   548.9px  filename, "Device Store" and "Relay Server"
+ *   444.7px  filename, "Store" and "Relay"
+ *   336.0px  "Store" and "Relay", no filename
+ *
+ * So the qualifiers go first, at 34.5rem, and the filename second, at 28rem.
+ * Below that the two selects share the row between them.
+ *
+ * Keeping "quickstart.ts" on a phone is what the third rung buys: at 390 the
+ * panel is 358px, and a row holding the filename and both short labels leaves
+ * each combobox 57.6px of the 101px it wants — the option text is cut mid-word
+ * on the one control the page exists to be operated by. The name of the file is
+ * the most inferable thing in the panel; the code below it is TypeScript and
+ * says `quickstart` nowhere else, but it is a name, not a control.
+ *
+ * What the stack cost is height and nothing else. Measured against the previous
+ * rules replayed over this markup, the comboboxes come out the same width on
+ * every phone — 75.8px at 320, 95.8 at 360, 100.8 from 375 up, in both layouts —
+ * while the bar went from 80.2px tall to 49. The second line was never buying
+ * the controls room; "In-memory" is 98.8px whole, so it is still cut at 320 and
+ * 360 and whole from 375, exactly as it was.
+ */
 .code-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--oe-space-3);
   padding: var(--oe-space-3) var(--oe-space-4);
@@ -2421,22 +2456,59 @@ table.data td {
 .code-toolbar .code-filename {
   padding: 0;
   border-bottom: 0;
+  /* The bottom rung. Scoped to the toolbar because /product uses this class on
+     its own, outside any container, where a container query never matches and
+     a hidden default would stay hidden. */
+  display: none;
 }
 
-/* Pushes the two selects to the far edge, away from the filename. The copy
-   control used to be the thing this pushed against; it is over the code now. */
 .code-adapters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--oe-space-3);
-  margin-inline-start: auto;
+  /* The selects have the row to themselves until the filename joins them. */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
+/* Sharing it evenly, so neither combobox gives up more of its option text than
+   the other. At 390 each name-and-control pair gets 156px of the row. */
 .code-select {
   display: inline-flex;
   align-items: center;
   gap: var(--oe-space-2);
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The 14ch cap below is a maximum, and this is the width under it: without one
+   the combobox keeps its content size and `flex` on the parent has nothing to
+   divide. */
+.code-select select {
+  width: 100%;
+  min-width: 0;
+}
+
+@container (min-width: 28rem) {
+  .code-toolbar .code-filename {
+    display: block;
+  }
+
+  /* And the selects stop filling the row: they take their own width and stand
+     at the far edge, away from the name. */
+  .code-adapters {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+  }
+
+  .code-select {
+    flex: 0 0 auto;
+  }
+
+  .code-select select {
+    width: auto;
+  }
 }
 
 .code-select-label {
@@ -2449,17 +2521,21 @@ table.data td {
 }
 
 /*
- * "Device Store" and "Relay Server" want 89.3px each, and beside a combobox
- * holding its 14ch cap that is the width the row can spare from about 480px of
- * viewport up. Below that the label is squeezed — 67.2px at 430, 51.1px at 390,
- * 44.6px at 320 — so the qualifier is dropped and the label falls back to the
- * word that carries the choice. "Store" and "Relay" are 37px and fit the
- * narrowest cell whole, which is the point: a name that shortens beats one that
- * wraps into a second line or is cut off mid-word.
+ * The top rung. "Device Store" and "Relay Server" cost the row 104.2px over
+ * "Store" and "Relay", and the panel has that to spare from 34.5rem up.
+ *
+ * The qualifier is the first thing to go because it is the only part of the row
+ * that is not load-bearing: "Store" and "Relay" are the words the choice is
+ * made on, and each is 37px whole. A name that shortens beats one that wraps
+ * into a second line or is cut off mid-word.
  */
-@media not all and (min-width: 30rem) {
+.code-select-qualifier {
+  display: none;
+}
+
+@container (min-width: 34.5rem) {
   .code-select-qualifier {
-    display: none;
+    display: inline;
   }
 }
 
@@ -3232,47 +3308,23 @@ table.data td {
   /*
    * The adapter selects used to be `display: none` here, and are not any more.
    *
-   * The argument for hiding them was toolbar chrome, and the measurement was
-   * right: two comboboxes and their labels do not fit one phone row beside the
-   * filename. Measured again this round, with the selects shown — 49px becomes
-   * 80px at 390, 412 and 430, 116px at 358 and 375, and 152px at 320.
+   * The argument for hiding them was toolbar chrome. Two comboboxes and their
+   * labels do not fit one phone row beside the filename, and while the row
+   * answered that by stacking, showing them cost real height: 49px became 80px
+   * at 390 and 152px at 320.
    *
    * The founder's call is that the controls are the argument. Changing the
    * dropdown and watching one import line change with it is the only place on
    * the page where "your backend stays yours" stops being a sentence, and a
    * phone was the one device that got the sentence without the demonstration.
-   * Chrome is what that costs.
    *
-   * The layout is authored down here rather than left to the natural wrap. The
-   * filename names the row and the two selects take their own underneath, as
-   * one row of controls: `flex-basis: 100%` is what puts the group on a line of
-   * its own, and the auto margin that pushes it to the far edge at wide widths
-   * has no free space left to work on, so it is stated as zero.
-   *
-   * The selects share that row rather than sitting at their natural width,
-   * which is what keeps them on one line. At 320 they need 304px against 254px
-   * of room and would wrap into two more rows; `flex: 1 1 0` splits what is
-   * there evenly and each combobox gives up the same characters. Measured
-   * rows: two at 320, 360, 390 and 430.
+   * The chrome it costs is now none. The layout that stacked them is not here
+   * either — it split the row from this breakpoint down, which is 720px of
+   * panel and nowhere near where anything stopped fitting. The toolbar holds one
+   * row at every width, 49px tall from 320 to 1280, and gives up the qualifiers
+   * and then the filename to keep it. The ladder is written where
+   * `.code-toolbar` is.
    */
-  .code-adapters {
-    flex-basis: 100%;
-    flex-wrap: nowrap;
-    margin-inline-start: 0;
-  }
-
-  .code-select {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  .code-select select {
-    /* The 14ch cap is a maximum and this is the width under it: without a
-       width the combobox keeps its content size and `flex` on the parent has
-       nothing to divide. */
-    width: 100%;
-    min-width: 0;
-  }
 }
 
 /* --------------------------------------------------------------- price --- */
