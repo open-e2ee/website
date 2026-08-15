@@ -1004,34 +1004,21 @@ test('puts the example’s copy control in the code’s corner, not among the se
      one, where a transparent chip is a glyph with a border round it. */
   assert.match(corner.body, /background:\s*var\(--oe-editor\)/);
 
-  /* Above 48rem the size solves for a 91-character line and the longest first
-     line is the 76-character import, so the code stops short of the corner —
-     measured clearances of 90.5px at 768 and 279.6px at 1440. Below it nothing
-     solves, the panel scrolls, and the program starts under the control unless
-     the first line is given the button's own height to clear. */
+  /* And nothing gives it room. The narrow panel used to push line one down by
+     the button's height, which bought a 28px band of empty editor above the
+     program on the screens with the least room. Measured with the line flush at
+     320, 390 and 430: the control covers four of line one's glyphs at rest, and
+     the panel scrolls sideways, so a reader moves them out from under it on the
+     drag a 76-character import in a 356px column already costs. A padding-top
+     here is that band coming back. */
   const clearances = cssRules(css).filter(
     (rule) => rule.selector === '.hero-snippet .code-body pre' && /padding-top:/.test(rule.body),
   );
   assert.equal(
     clearances.length,
-    1,
-    `${clearances.length} rules clear the first line of the button; the wide panel needs none`,
+    0,
+    `${clearances.length} rules push the program down to clear the button; it floats over the code at every width`,
   );
-  /* Inside the panel's own breakpoint and no other, so the clearance appears
-     exactly where the fit stops holding. Brace-walked from the condition — a
-     `[^}]*` match would stop at the first nested rule's closing brace. */
-  const narrowBlock = (() => {
-    const start = css.indexOf('{', css.indexOf('@media not all and (min-width: 48rem)')) + 1;
-    let depth = 1;
-    let index = start;
-    while (index < css.length && depth > 0) {
-      if (css[index] === '{') depth += 1;
-      if (css[index] === '}') depth -= 1;
-      index += 1;
-    }
-    return css.slice(start, index - 1);
-  })();
-  assert.match(narrowBlock, /\.hero-snippet \.code-body pre \{[^}]*padding-top:/);
 });
 
 test('centres the hero at the phone’s width as well as the desktop’s', async () => {

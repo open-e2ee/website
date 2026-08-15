@@ -2806,6 +2806,21 @@ table.data td {
  * The box is this one and not the `<pre>`: the `<pre>` scrolls, and a control
  * pinned inside a scroll container leaves the panel with the first long line a
  * reader drags. `.code-body` holds still around it.
+ *
+ * It floats at every width, and the program never moves to make room. The
+ * narrow panel used to push line one down by this button's own height — 12px of
+ * offset, the 24px ring, and a step of clearance — so that no glyph ever sat
+ * under it. That bought a 28px band of empty editor above the program on
+ * exactly the screens with the least room, and a reader on a phone met the
+ * panel's blank corner before its first line.
+ *
+ * The overlap it was avoiding is four characters. Measured at 320, 390 and 430
+ * with the line flush: the control covers four of line one's glyphs at rest,
+ * and the panel scrolls sideways, so those four come out from under it on the
+ * drag a 76-character import in a 356px column already costs. The button is
+ * opaque against the editor surface, so the four are hidden rather than
+ * jumbled. Above 48rem nothing is covered at all — the size solves for a
+ * 91-character line, so the code stops 90.5px short of the corner at 768.
  */
 .code-body {
   position: relative;
@@ -3174,21 +3189,6 @@ table.data td {
    */
   .hero-snippet.code-block pre {
     font-size: 0.9375rem;
-  }
-
-  /*
-   * And the copy button stops sharing line one with the program.
-   *
-   * Above this width the size solves for a 91-character line and the import on
-   * line one is 76, so the code stops a long way short of the corner control.
-   * Down here nothing solves: the panel scrolls, and at 390 the button covered
-   * the last five characters of `createSignalProtocolClient` before a reader
-   * had touched it. The line starts below the control instead — 12px of offset
-   * plus the 24px ring plus a step of clearance, which is what the button
-   * occupies. Only the top, so the scroll and the fit terms are untouched.
-   */
-  .hero-snippet .code-body pre {
-    padding-top: calc(var(--oe-space-3) + 1.5rem + var(--oe-space-2));
   }
 
   /*
