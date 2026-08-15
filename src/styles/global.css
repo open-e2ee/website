@@ -2055,6 +2055,226 @@ a:hover {
   }
 }
 
+/*
+ * The commit graph that closes the page: four commits down a trunk, and the
+ * line running on past the last of them.
+ *
+ * Geometry in local rem rather than the spacing scale. The scale prices reading
+ * rhythm — the distance from a heading to its paragraph — and this is a drawing,
+ * where a rail has to land on the centre of a node to the pixel. The diagram CSS
+ * further up works the same way for the same reason.
+ */
+.commitline {
+  --commitline-node: 0.75rem;
+  --commitline-rail: 2px;
+  --commitline-row: 3.25rem;
+  /* Where the words start. The rails keep a gutter to themselves and every word
+     sits in one column — the arrangement of `git log --graph`. */
+  --commitline-gutter: 3.5rem;
+  /*
+   * The dwell: how long one step of the sequence takes to arrive, and the
+   * spacing between steps. A local constant, never `--oe-duration-*` — those are
+   * transition durations and collapse to 0.01ms under reduced motion, which
+   * would play the whole sequence inside a single frame.
+   */
+  --commitline-beat: 0.42s;
+}
+
+.commitline-commits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.commitline-commits > li,
+.commitline-onward {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: var(--commitline-row);
+  padding-left: var(--commitline-gutter);
+}
+
+/* The run past the last commit is longer than a row, because a rail that leaves
+   the figure has to read as continuing rather than as stopping just below. */
+.commitline-onward {
+  height: calc(var(--commitline-row) * 1.4);
+}
+
+/* A rail segment fills its own row, so consecutive rows draw one unbroken trunk
+   with no seam to align. */
+.commitline-seg {
+  position: absolute;
+  top: 0;
+  left: calc(var(--commitline-node) / 2 - var(--commitline-rail) / 2);
+  width: var(--commitline-rail);
+  height: 100%;
+  /* `--oe-border` is the colour of a container edge and is all but invisible
+     against the dark canvas. This is a drawn line and has to carry at reading
+     distance. */
+  background: var(--oe-muted);
+  transform-origin: top;
+}
+
+/* The trunk starts at the first commit. A stub above it would draw history this
+   graph does not show. */
+.commitline-commits > li:first-child .commitline-seg {
+  top: 50%;
+  height: 50%;
+}
+
+/*
+ * Solid rather than a ring. A ring needs an opaque interior for the rail to pass
+ * behind instead of through, and the only colour that could fill it is whichever
+ * surface the band happens to sit on — a value this rule would have to guess and
+ * then keep guessing right through every band reshuffle above it. A filled dot
+ * occludes the rail by being the rail's own colour family, and owes nothing to
+ * its background.
+ */
+.commitline-node {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  margin-top: calc(var(--commitline-node) / -2);
+  width: var(--commitline-node);
+  height: var(--commitline-node);
+  border-radius: 50%;
+  background: var(--oe-foreground);
+}
+
+.commitline-word {
+  display: inline-block;
+  font-family: var(--oe-metadata-font-family);
+  font-weight: var(--oe-metadata-weight);
+  letter-spacing: var(--oe-metadata-tracking);
+  font-size: 1.125rem;
+  color: var(--oe-foreground);
+}
+
+/* One accent, spent on the line continuing, because the line continuing is what
+   the band is for. */
+.commitline-seg-onward {
+  background: var(--oe-accent);
+}
+
+.commitline-word-onward {
+  color: var(--oe-accent);
+}
+
+/* The beat each row plays on. Held here rather than in the animation rules so
+   the order lives with the rows and the timing lives with the animation. */
+.commitline-commits > li:nth-child(1) {
+  --commitline-step: 0;
+}
+
+.commitline-commits > li:nth-child(2) {
+  --commitline-step: 1;
+}
+
+.commitline-commits > li:nth-child(3) {
+  --commitline-step: 2;
+}
+
+.commitline-commits > li:nth-child(4) {
+  --commitline-step: 3;
+}
+
+.commitline-onward {
+  --commitline-step: 4;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * Armed is the finished drawing taken back to nothing, and only the script
+   * applies it. Authoring the empty state in the markup instead would ship a
+   * blank band to every reader whose JavaScript never ran.
+   *
+   * Nothing here animates opacity or colour. A rail grows, a dot lands, a word
+   * is written out — every step is geometry, and every step is still present in
+   * the finished state a reduced-motion reader gets.
+   */
+  .commitline[data-armed] .commitline-seg {
+    transform: scaleY(0);
+  }
+
+  .commitline[data-armed] .commitline-node {
+    transform: scale(0);
+  }
+
+  .commitline[data-armed] .commitline-word {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  .commitline[data-playing] .commitline-seg {
+    animation: commitline-rail calc(var(--commitline-beat) * 0.9) ease-out both;
+    animation-delay: calc(var(--commitline-step) * var(--commitline-beat));
+  }
+
+  /* The run past the last commit takes longer, because it is longer. Reusing the
+     row duration would send it out of the figure at nearly twice the speed of
+     every rail above it. */
+  .commitline[data-playing] .commitline-seg-onward {
+    animation-duration: calc(var(--commitline-beat) * 1.3);
+  }
+
+  .commitline[data-playing] .commitline-node {
+    animation: commitline-land calc(var(--commitline-beat) * 0.8) ease-out both;
+    animation-delay: calc(var(--commitline-step) * var(--commitline-beat) + var(--commitline-beat) * 0.5);
+  }
+
+  .commitline[data-playing] .commitline-word {
+    animation: commitline-write var(--commitline-beat) steps(8, end) both;
+    animation-delay: calc(var(--commitline-step) * var(--commitline-beat) + var(--commitline-beat) * 0.75);
+  }
+
+  /* The closing line waits for the rail it sits beside to have run most of its
+     length, so it reads as what the run amounts to rather than as a fifth row. */
+  .commitline[data-playing] .commitline-word-onward {
+    animation-delay: calc(var(--commitline-step) * var(--commitline-beat) + var(--commitline-beat) * 1.2);
+  }
+
+  @keyframes commitline-rail {
+    from {
+      transform: scaleY(0);
+    }
+
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  @keyframes commitline-land {
+    from {
+      transform: scale(0);
+    }
+
+    to {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes commitline-write {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+}
+
+/* The graph and the two links under it. No columns and no width step: the graph
+   is vertical at every width and the links wrap on their own, so the band reads
+   the same from 320px up and there is one arrangement to keep true. */
+.commitline-band {
+  margin-bottom: var(--oe-space-8);
+}
+
+.commitline-band .commitline {
+  margin-bottom: var(--oe-space-4);
+}
+
 .definition-rows {
   display: grid;
   grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr);

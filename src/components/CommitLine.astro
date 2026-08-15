@@ -1,0 +1,107 @@
+---
+/*
+ * A commit graph: four commits down a trunk, and the line carrying on past
+ * them. The four commits are what the licence hands over; the run below them is
+ * the grant not expiring.
+ *
+ * Three shapes were available here and two of them say the wrong thing. A branch
+ * peeling away draws the reader leaving with a copy of their own, and a branch
+ * merging back draws a contributor base — the first makes forking the point of
+ * the licence, the second implies the project is waiting on help it has not
+ * asked for. What is left is the trunk, which is the honest one: the project
+ * runs, and the licence is why you can build on it.
+ *
+ * The verbs are all uses, never repairs. "Change it" belongs to the free-software
+ * definition and is accurate as a right, but on a landing page beside a version
+ * number it reads as an invitation to fix something.
+ *
+ * The grammar is `git log --graph` — the rail down the side of every git client
+ * and every network view. It needs no key, which is what lets this band carry
+ * its claim in five words. Grounding it in the tool rather than in another
+ * company's landing page is deliberate: the tool is what a developer has already
+ * learned to read.
+ *
+ * The graph runs vertically at every width. A landscape one has to become a
+ * second composition on a phone, and the two drift; a vertical one puts its
+ * labels at a fixed indent, so nothing reflows between 320px and a wide desktop
+ * and there is a single drawing to keep true.
+ *
+ * It is HTML rather than SVG because `width: 100%` on an SVG scales its declared
+ * font sizes by container ÷ viewBox. Rules and dots are cheap in CSS; text at a
+ * size the reader actually chose is not available any other way.
+ *
+ * This is not a diagram in DESIGN.md's sense and carries none of that grammar —
+ * no slabs, no carrier brackets, no boundary, no `--oe-diagram-*` token. It says
+ * nothing about encryption.
+ */
+
+const GRANTS = ['read it', 'run it', 'share it', 'build on it'];
+---
+
+{/* Decorative. The heading above this band names the same verbs in a sentence,
+    so a screen reader that walked the graph would hear the claim twice, the
+    second time as a list of dots. */}
+<div class="commitline" data-commitline aria-hidden="true">
+  <ol class="commitline-commits">
+    {
+      GRANTS.map((grant) => (
+        <li>
+          <span class="commitline-seg" />
+          <span class="commitline-node" />
+          <span class="commitline-word">{grant}</span>
+        </li>
+      ))
+    }
+  </ol>
+
+  {/* The line does not stop at the last commit, and nothing is drawn at its end.
+      A terminating dot would be a fifth commit and an arrowhead would be a claim
+      about a destination; an unbroken run leaving the figure is the shape that
+      says only what is true. */}
+  <div class="commitline-onward">
+    <span class="commitline-seg commitline-seg-onward"></span>
+    <span class="commitline-word commitline-word-onward">released stays released</span>
+  </div>
+</div>
+
+<script>
+  /*
+   * The graph is authored complete and the script hides it before playing it, so
+   * the finished state is what a reader gets when the script never runs — no
+   * JavaScript, a throw earlier on the page, or a reader who asked for less
+   * movement. The other order round ships a blank band.
+   *
+   * DESIGN.md: under reduced motion a teaching sequence keeps every step and
+   * drops the transitions between them. Every step of this one is present in the
+   * finished state, so dropping the animation drops only the movement.
+   */
+  const root = document.querySelector<HTMLElement>('[data-commitline]');
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  if (root && !still.matches) {
+    root.dataset.armed = '';
+
+    /* Replays on re-entry rather than once per page. The band is the last thing
+       before the footer, so a reader who scrolls back up and returns is the
+       ordinary case here, not the edge one. */
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) root.dataset.playing = '';
+          else delete root.dataset.playing;
+        }
+      },
+      { threshold: 0.35 },
+    );
+    observer.observe(root);
+
+    /* Switching the preference on mid-visit leaves the finished state, and stops
+       the observer arming a state it would no longer play out of. */
+    still.addEventListener('change', (event) => {
+      if (!event.matches) return;
+      observer.disconnect();
+      delete root.dataset.playing;
+      delete root.dataset.armed;
+    });
+  }
+</script>

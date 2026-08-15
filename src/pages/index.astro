@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import BatteryMark from '../components/BatteryMark.astro';
 import DemoConsole from '../components/demo/DemoConsole.astro';
 import ScenarioList from '../components/demo/ScenarioList.astro';
+import CommitLine from '../components/CommitLine.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
@@ -632,10 +633,65 @@ const trustLinks = [
           <li><a href={link.href}>{link.label}</a></li>
         ))}
       </ul>
+    </div>
+  </section>
+
+  {/* The hero calls the SDK fully open source three folds up, beside a mark
+      drawn under OSI's trademark conditions. This band is where that adverb is
+      cashed, for a reader who has scrolled the whole page and is deciding
+      whether to take the dependency.
+
+      The usual shape of this band on a developer site is social proof: a star
+      count, a contributor wall, a "join us". That is unavailable — the public
+      repository has one star and no forks — and a version built out of anything
+      else would be the one band on the page making a claim a reader cannot
+      check. So the band is about the reader's position instead, and it argues
+      it in a drawing rather than in prose: four commits for what the licence
+      hands over, and the line running on past them for the grant not expiring.
+      `CommitLine.astro` holds the reasoning for the shape, including why it
+      neither forks nor merges.
+
+      The mark is not repeated here. `OsiMark.astro` draws it at text size on
+      the condition that it never reaches badge scale, and a second, larger use
+      in a band headed by an open-source claim is exactly the implied
+      endorsement the trademark licence rules out. */}
+  <section class="band">
+    <div class="container">
+      <div class="band-head">
+        {/* Every verb is a use. "Change it" is accurate as a right and is how
+            the free-software definition words it, but on a landing page next to
+            a 0.x version number it reads as an invitation to fix something. */}
+        <h2>Yours to read, run, share, and build on</h2>
+        {/* `docs/messaging.md` §4 renders the second option as "commercial
+            license" and nothing else — the tier vocabulary it bans describes a
+            different product shape, one where the free thing is the smaller
+            thing. Here the two are the same build, so the sentence says what
+            the licence changes instead: what you may ship, never what the code
+            does. */}
+        <p class="measure">
+          AGPL-3.0-or-later, or a commercial license — the same build either way, every feature in
+          the package, none of it time-limited.
+        </p>
+      </div>
+
+      {/* The graph carries this band on its own. What the AGPL asks of the
+          reader's own application is not stated here — `/licensing` owns that
+          wording, and the second link is the route to it. */}
+      <div class="commitline-band">
+        <CommitLine />
+
+        <p class="text-links">
+          <a href="https://github.com/open-e2ee/signal-protocol-js">Read the source on GitHub</a>
+          <a href="/licensing">Understand AGPL use</a>
+        </p>
+      </div>
 
       {/* The page used to end on a text link to GitHub. Every reader who did
           not act on the fold arrived here persuaded and found nothing to press,
-          and the last interactive element routed to a supporting action. */}
+          and the last interactive element routed to a supporting action. This
+          band ends on three such links, so the closing action moved down with
+          it rather than staying a band above — the decision was about what the
+          page ends on, not about which section the button sits in. */}
       <div class="closing">
         <p class="lead">The fastest way to check any of it is to run it.</p>
         <div class="actions">

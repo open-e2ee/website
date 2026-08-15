@@ -1593,6 +1593,130 @@ test('gives every article its own share card, falling back to the site card', as
   assert.match(layout, /image=\{image\}/);
 });
 
+test('closes the page on what the licence hands over, not on forking it', async () => {
+  const [graph, index, css] = await Promise.all([
+    read('../src/components/CommitLine.astro'),
+    read('../src/pages/index.astro'),
+    read('../src/styles/global.css'),
+  ]);
+
+  /* Four commits, and every verb a use. The free-software definition says
+   * "change it", which is accurate as a right and wrong as copy here: beside a
+   * 0.x version number it reads as an invitation to fix something, and a landing
+   * page that asks for repairs is selling a different product. The heading spends
+   * the same four verbs, so both move together or this fails. */
+  const grants = graph.match(/^const GRANTS = \[(.+)\];$/m);
+  assert.ok(grants, 'the graph no longer declares its commits as one list');
+  assert.deepEqual(
+    grants[1].split(',').map((word) => word.trim().replace(/^'|'$/g, '')),
+    ['read it', 'run it', 'share it', 'build on it'],
+  );
+  assert.match(index, /<h2>Yours to read, run, share, and build on<\/h2>/);
+
+  /* The shape carries the claim, and two shapes available to a commit graph say
+   * something this band must not. A branch peeling off makes taking your own copy
+   * the point of the licence; a branch merging back draws a contributor base the
+   * project does not have and implies it is waiting on help. Neither the drawing
+   * nor its stylesheet may grow one.
+   *
+   * The comments are stripped first: the component's own comment names both
+   * shapes in order to rule them out, and a check that cannot tell a drawing from
+   * the reasoning for it fires on the reasoning. */
+  const drawing = graph
+    .replace(/^---[\s\S]*?^---$/m, '')
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(drawing, /fork|branch|merge|elbow|contribut|patch|change it/i);
+
+  /* The stylesheet block, bounded by its first rule and the next unrelated one.
+   * Everything asserted below is about this block and nothing else. */
+  const block = css
+    .slice(css.indexOf('.commitline {'), css.indexOf('.definition-rows {'))
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(block.length > 0, 'the commit graph no longer has a block in the stylesheet');
+  assert.doesNotMatch(block, /elbow|branch|fork/i);
+
+  /*
+   * DESIGN.md's motion contract, which is the part of this a future edit breaks
+   * silently. `--oe-duration-*` are transition durations and collapse to 0.01ms
+   * under reduced motion; a dwell derived from one plays the whole teaching
+   * sequence inside a single frame, with every step technically present and none
+   * of them legible. The dwell is therefore a local constant with a literal
+   * value, and this is the assertion that keeps it one.
+   */
+  assert.match(block, /--commitline-beat:\s*[\d.]+m?s;/);
+  assert.doesNotMatch(block, /--oe-duration/);
+
+  /*
+   * And every animation is gated. Under reduced motion the sequence keeps its
+   * steps and drops the transitions between them, which works only while the
+   * `animation` declarations are all inside the `no-preference` query — an
+   * ungated one would be added next to the rules it belongs with, which is the
+   * text before the query opens.
+   */
+  const gate = block.indexOf('@media (prefers-reduced-motion: no-preference)');
+  assert.notEqual(gate, -1, 'the graph animates without asking whether motion is wanted');
+  assert.doesNotMatch(block.slice(0, gate), /animation/);
+
+  /*
+   * The empty state belongs to the script, never to the markup. Authoring the
+   * graph hidden and revealing it is the arrangement that ships a blank band to
+   * every reader whose JavaScript did not run — which is also every reader whose
+   * page threw three components earlier.
+   */
+  assert.doesNotMatch(drawing, /data-armed|data-playing/);
+  assert.match(graph, /root\.dataset\.armed = ''/);
+  assert.match(graph, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)/);
+
+  /* `Icon.astro` and every glyph on this page render `aria-hidden`, and so does
+   * the whole graph — its words are the heading's words, so a screen reader that
+   * walked it would hear the claim twice, the second time as a list of dots. */
+  assert.match(drawing, /<div class="commitline" data-commitline aria-hidden="true">/);
+
+  /* The band states neither licence's terms and routes to the page that owns
+   * them, so the route has to survive. `/licensing` carries what the AGPL asks
+   * of the reader's own application; a band that hands over four things and
+   * links nowhere would leave a developer to learn it from a lawyer. */
+  assert.match(index, /<a href="\/licensing">Understand AGPL use<\/a>/);
+  assert.match(index, /<a href="https:\/\/github\.com\/open-e2ee\/signal-protocol-js">/);
+
+  /* `docs/messaging.md` §4: the tier vocabulary is banned as a rendering of
+   * "commercial license", and a band that names both licences is where it would
+   * turn up. Comments are stripped for the same reason as above — the one over
+   * this band's lead names the banned phrase in order to rule it out. */
+  const band = index
+    .slice(index.indexOf('Yours to read, run, share, and build on'))
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+  assert.doesNotMatch(band, /paid tier|enterprise edition|pro version/i);
+
+  /* The graph makes no claim about encryption, so it carries none of the diagram
+   * grammar. A slab or a carrier bracket turning up here would be a licence
+   * statement drifting into saying something about the protocol. */
+  assert.doesNotMatch(drawing, /--oe-diagram-|class="diagram/);
+
+  /* Order: the graph, the route to the licence terms, then the single action the
+   * page ends on. One ordered match rather than compared offsets — `indexOf`
+   * returns -1 for a part that is gone, and -1 is less than every real offset, so
+   * a deleted link would satisfy a comparison that reads as an order check. */
+  assert.match(
+    band,
+    /<CommitLine \/>[\s\S]+Understand AGPL use[\s\S]+class="closing"/,
+    'the graph, the licence link and the closing action are no longer in that order',
+  );
+  assert.equal(
+    index.indexOf('class="closing"'),
+    index.lastIndexOf('class="closing"'),
+    'a second closing block means the page no longer ends on one action',
+  );
+
+  /* The graph is vertical at every width and the links wrap on their own, so the
+   * band has no width step at all. A column rule here would be a second
+   * arrangement to keep true against a drawing that never needed one. */
+  const bandRules = cssRules(css).filter((rule) => rule.selector === '.commitline-band');
+  assert.equal(bandRules.length, 1, 'the band grew a second arrangement at some width');
+  assert.doesNotMatch(bandRules[0].body, /grid|flex|columns/);
+});
+
 test('keeps the signature diagram off the page that carries the plate', async () => {
   const [index, security, product] = await Promise.all([
     flat('../src/pages/index.astro'),
