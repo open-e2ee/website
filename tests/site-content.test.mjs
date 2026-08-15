@@ -637,6 +637,35 @@ test('lands the demo fragment on the exhibit, not on the paragraph above it', as
   assert.match(ruleFor(css, ':target'), /scroll-margin-top:\s*calc\(4rem \+ var\(--oe-space-6\)\)/);
 });
 
+test('says what the phone’s first reading measured, and breaks its row cleanly', async () => {
+  const mobile = await read('../src/components/demo/DemoMobile.astro');
+
+  /* Each label has to answer "what was measured" on its own. The other two do:
+     a figure in milliseconds beside "encryption" is the cost of encrypting.
+     "generation" beside one does not, whatever the key store above it says,
+     because the row is read as a row. */
+  assert.match(mobile, /\{ key: 'keygen', label: 'key generation' \}/);
+  assert.match(mobile, /\{ key: 'encrypt', label: 'encryption' \}/);
+  assert.match(mobile, /\{ key: 'decrypt', label: 'decryption' \}/);
+
+  /* The name costs a line on a phone: 83.3px of the 133 this row has at 390 and
+     the 98 it has at 320, so a filled figure cannot share the line. Three rules
+     decide where it breaks, and without all three it broke through the name —
+     "key" beside the figure and "generation" under it, which reads as two
+     readings rather than one. `nowrap` on the name moves the break to the gap;
+     `flex-wrap` lets the figure take the second line at all rather than
+     overflow; and the auto margin holds it at the right edge, because
+     `space-between` puts a lone item on a wrapped line at the start. */
+  const styles = mobile.slice(mobile.indexOf('<style>'), mobile.indexOf('</style>'));
+  assert.ok(styles.length > 0, 'the component has no style block to read');
+  assert.match(ruleFor(styles, '.demo-mobile-reading'), /flex-wrap:\s*wrap/);
+  assert.match(ruleFor(styles, '.demo-mobile-reading-name'), /white-space:\s*nowrap/);
+
+  const value = ruleFor(styles, '.demo-mobile-reading-value');
+  assert.match(value, /margin-inline-start:\s*auto/);
+  assert.match(value, /white-space:\s*nowrap/);
+});
+
 test('shows every metadata field the relay was recorded holding', async () => {
   /* The panel is captioned "the row in your database" and used to render a
    * hand-written six of the recorded ten. The two it dropped —

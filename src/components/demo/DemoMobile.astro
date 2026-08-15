@@ -76,11 +76,23 @@ const GEARS = [
    other two rows stay behind: the post-quantum share is a slice of key
    generation, and the key agreement's span is also a first opening's — both
    are the console's deeper reading, and a half-width pane holds three rows
-   a phone owner pays, not five. The first label drops the wide module's
-   "key": the noun triple has to share a row with its figure, and the key
-   store above already names what the device generates. */
+   a phone owner pays, not five.
+
+   All three labels are the wide module's own. The first was "generation"
+   here, on the reasoning that the key store above it already named what the
+   device generates, but the row is read on its own: bare "generation" beside
+   a figure in milliseconds is the one reading of the three that does not say
+   what was measured.
+
+   It costs a line on a phone. The pane gives this row 133px at 390 and 98px
+   at 320, and the name alone takes 83.3px of it, so once a real figure lands
+   the row stands two lines high — the name, then the figure beneath it against
+   the right edge. From 430 up it is one line again, and at 320 the two shorter
+   names wrap the same way, so a stacked reading is what this pane already does
+   at its narrowest rather than something this label introduces. The rules on
+   the row below put that break between the name and the figure. */
 const METRICS = [
-  { key: 'keygen', label: 'generation' },
+  { key: 'keygen', label: 'key generation' },
   { key: 'encrypt', label: 'encryption' },
   { key: 'decrypt', label: 'decryption' },
 ] as const;
@@ -1895,8 +1907,18 @@ const LOCKS = [
     font-size: 0.62rem;
   }
 
+  /* The pane is half a phone wide, and the longest of the three names does not
+     share a line with a filled figure there: "key generation" and "142.1 ms"
+     want 134.9px of the 133 this row has at 390, and 320 is further short
+     again. So the row wraps, and these rules decide where. Left to itself it
+     broke through the name — "key" on the figure's line and "generation"
+     under it, which reads as two readings rather than one. The name is
+     unbreakable now and the figure takes the second line instead, holding the
+     right edge on its own auto margin, since `space-between` puts a lone item
+     on a line at the start. */
   .demo-mobile-reading {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
     gap: var(--oe-space-1);
@@ -1904,10 +1926,12 @@ const LOCKS = [
 
   .demo-mobile-reading-name {
     color: var(--oe-text-muted);
+    white-space: nowrap;
   }
 
   .demo-mobile-reading-value {
     margin: 0;
+    margin-inline-start: auto;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
     text-align: right;
