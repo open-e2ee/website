@@ -186,8 +186,17 @@ const differentiators: Differentiator[] = [
      *
      * The claim holds without a qualifier: AGPL-3.0-or-later is OSI-approved,
      * the whole SDK is under it, and docs/messaging.md §5 states it plainly.
-     * The commercial option is not lost by dropping it from the title — it is
-     * what "See the tiers" leads to, and /pricing carries all three.
+     *
+     * The commercial license belongs in the body, not only behind the link. A
+     * reader who cannot take copyleft has to meet the second option in the
+     * sentence they are already reading: "See the tiers" reads as pricing
+     * detail for the thing just described, so a reader who ruled the product
+     * out at "AGPLv3" has no reason to follow it. Naming it here is also what
+     * makes the link an answer to a question the body has raised.
+     *
+     * The body says a license is available and not what it costs. The numbers
+     * are one click away on /pricing, and this page may not promise a figure it
+     * does not show — the suite fails the build on "at a published price".
      *
      * The id does not follow the title. It is a deep link a reader can arrive
      * on from elsewhere, and both halves of the name are still what the cell
@@ -201,7 +210,7 @@ const differentiators: Differentiator[] = [
     id: 'agpl-or-commercial',
     title: 'Open Source',
     icon: 'law',
-    body: 'The complete SDK is free under AGPLv3 — every feature.',
+    body: 'The complete SDK is free under AGPLv3 — every feature. A commercial license is available for closed-source products.',
     link: { href: '/pricing', label: 'See the tiers' },
   },
   /*
