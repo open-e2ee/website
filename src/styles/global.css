@@ -2280,34 +2280,48 @@ a:hover {
 }
 
 /* Both columns are sized to their figures rather than sharing the container, and
-   the pair sits left. A second column taking the whole remainder centres the mark
-   near two thirds across a band this wide, which puts a screen's worth of air
-   between two figures that are meant to be read as a pair.
+   the pair is centred in it. A second column taking the whole remainder would
+   push the mark near two thirds across a band this wide, which puts a screen's
+   worth of air between two figures that are meant to be read as a pair; sizing
+   both to their contents keeps them together and leaves the slack outside the
+   pair, where centring can split it evenly.
 
    The graph's column is `max-content` rather than a width picked to fit it: its
    longest row is the one the graph ends on, and a fixed width wraps that row the
    moment the wording changes. Held to the container underneath, so a narrow
-   viewport shrinks the column instead of overflowing the band. */
+   viewport shrinks the column instead of overflowing the band.
+
+   The mark's column is its own `max-width` and not a round number above it. A
+   wider track centres the two tracks but not the two drawings: the mark sits at
+   the left of its track, so every pixel the track has spare lands on the right
+   of the composition and the ink reads off-centre by that much. */
 @media (min-width: 48rem) {
   .commitline-pair {
-    grid-template-columns: minmax(0, max-content) minmax(0, 20rem);
-    justify-content: start;
+    grid-template-columns: minmax(0, max-content) minmax(0, 34rem);
+    justify-content: center;
     gap: var(--oe-space-8);
   }
 }
 
 /*
- * The mark's box, which the script measures to place its lights. A square with a
- * width cap rather than a fixed size: the lights are laid out from this box, so
- * a box that changed shape between breakpoints would be a second composition to
- * keep true, and one that grew without limit would put the mark at badge scale
- * beside a figure it is meant to sit level with.
+ * The field's box, which the script measures to place its lights. The ratio is
+ * the composition's own — `FIELD_VIEW_BOX` in `src/lib/starfield-marks.mjs`,
+ * asserted against this rule in `tests/site-content.test.mjs`. A box of another
+ * shape does not crop the composition, it squashes it, because the marks are
+ * laid out from the box rather than drawn into it.
+ *
+ * The cap is what the horizontal lockup costs. That lockup is 4.7 times wider
+ * than it is tall and its symbol is a sixth of its width, so the symbol — and
+ * with it the bracket stem the field has to resolve — is set by how wide this
+ * box gets. At 20rem the stem fell to 5px and our own mark read as a dotted
+ * line beside two solid ones. 34rem still leaves the pair centred inside the
+ * band at every width the two columns hold.
  */
 .starfield {
   position: relative;
   width: 100%;
-  max-width: 17rem;
-  aspect-ratio: 1;
+  max-width: 34rem;
+  aspect-ratio: 100 / 42;
   margin-inline: auto;
   color: var(--oe-muted);
 }
@@ -2320,9 +2334,9 @@ a:hover {
   height: 100%;
 }
 
-/* Hidden only once the script has read the path out of it and has lights to draw
-   in its place. `visibility` rather than `display`, so the box the lights were
-   measured against does not collapse underneath them. */
+/* Hidden only once the script has read every path out of it and has lights to
+   draw in their place. `visibility` rather than `display`, so the box the lights
+   were measured against does not collapse underneath them. */
 .starfield[data-starlit] .starfield-mark {
   visibility: hidden;
 }

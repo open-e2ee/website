@@ -1611,7 +1611,7 @@ test('closes the page on what the licence hands over, not on forking it', async 
     grants[1].split(',').map((word) => word.trim().replace(/^'|'$/g, '')),
     ['read it', 'run it', 'share it', 'build on it'],
   );
-  assert.match(index, /<h2>Yours to read, run, share, and build on<\/h2>/);
+  assert.match(index, /<h2>Open Source — read, run, share, and build on<\/h2>/);
 
   /* The shape carries the claim, and two shapes available to a commit graph say
    * something this band must not. A branch peeling off makes taking your own copy
@@ -1685,7 +1685,7 @@ test('closes the page on what the licence hands over, not on forking it', async 
    * turn up. Comments are stripped for the same reason as above — the one over
    * this band's lead names the banned phrase in order to rule it out. */
   const band = index
-    .slice(index.indexOf('Yours to read, run, share, and build on'))
+    .slice(index.indexOf('Open Source — read, run, share, and build on'))
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
   assert.doesNotMatch(band, /paid tier|enterprise edition|pro version/i);
 
@@ -1730,24 +1730,93 @@ test('closes the page on what the licence hands over, not on forking it', async 
   assert.doesNotMatch(bandRules[0].body, /grid|flex|columns/);
 });
 
-test('draws the mark from the real path and puts every light back', async () => {
-  const [mark, css] = await Promise.all([
+test('draws three marks from the real artwork and puts every light back', async () => {
+  const [mark, marks, css] = await Promise.all([
     read('../src/components/StarfieldMark.astro'),
+    read('../src/lib/starfield-marks.mjs'),
     read('../src/styles/global.css'),
   ]);
+  const source = mark.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+  const composition = marks.replace(/\/\*[\s\S]*?\*\//g, '');
 
   /*
-   * The geometry is imported, never transcribed. A path pasted into this file is
-   * a copy that stops tracking the icon package the moment either moves, and a
+   * The geometry is imported, never transcribed — in the module that owns the
+   * composition, and therefore nowhere else. A path pasted into either file is a
+   * copy that stops tracking its package the moment either moves, and a
    * hand-drawn approximation of another company's trademark is worse than no
-   * mark at all — which is the call `Icon.astro` already makes for the same
-   * glyph. The literal check is the one that bites: an inlined path is a long
-   * run of `M`/`c` coordinates, and nothing else in this file looks like one.
+   * mark at all, which is the call `Icon.astro` already makes for the same
+   * glyph. Our own lockup is read off disk for a further reason: rebuilding it
+   * from `carrierBracketPaths` would mean choosing the parameters, and a wrong
+   * arm is a wrong logo that still draws.
+   *
+   * The literal check is the one that bites: an inlined path is a long run of
+   * coordinates, and nothing else in either file looks like one.
    */
-  assert.match(mark, /import \{ ICON_VIEW_BOX, iconPaths \} from '@open-e2ee\/design\/icons';/);
-  assert.match(mark, /const \[path\] = iconPaths\.github;/);
-  const source = mark.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
-  assert.doesNotMatch(source, /"M[\d.\-\s,a-zA-Z]{60,}"/, 'the path is transcribed rather than imported');
+  assert.match(composition, /from '@open-e2ee\/design\/icons';/);
+  assert.match(composition, /const \[githubPath\] = iconPaths\.github;/);
+  assert.match(composition, /open-e2ee-lockup-horizontal-mono\.svg/);
+  assert.doesNotMatch(composition, /"M[\d.\-\s,a-zA-Z]{60,}"/, 'a path is transcribed rather than imported');
+  assert.doesNotMatch(source, /"M[\d.\-\s,a-zA-Z]{60,}"/, 'a path is transcribed rather than imported');
+
+  /*
+   * A silently partial lockup is the failure this composition cannot see for
+   * itself: two brackets and no payload, or a mark with no name beside it, still
+   * draws. The module therefore parses the shipped file into its three symbol
+   * paths and two wordmark runs and throws when it stops being that, which turns
+   * a package change into a red build rather than into a wrong logo.
+   */
+  assert.match(composition, /symbolPaths\.length !== 3 \|\| runs\.length !== 2/);
+  assert.match(composition, /throw new Error\(/);
+
+  /*
+   * The composition is one lockup over two sources, and it is the lockup that
+   * has to read as the larger drawing. It spans the field, so it is wider by
+   * construction — but the eye compares one glyph with another, and our symbol
+   * losing to the two marks below it would make the band's own logo the smallest
+   * thing in it. Measured rather than asserted from the numbers in the file: the
+   * symbol is scaled twice, once into the lockup and once into the field.
+   */
+  const { FIELD_HEIGHT, FIELD_WIDTH, marks: placed, placement } = await import('../src/lib/starfield-marks.mjs');
+  assert.deepEqual(
+    placed.map((entry) => entry.id),
+    ['lockup', 'osi', 'github'],
+    'the composition is no longer our lockup over the two sources',
+  );
+  const lockup = placed[0];
+  const symbol = lockup.pieces.find((piece) => piece.kind === 'paths');
+  const glyph = 512 * symbol.scale * placement(lockup).scale;
+  for (const other of placed.slice(1)) {
+    assert.ok(
+      glyph > other.width,
+      `our symbol draws at ${glyph} units, smaller than ${other.id} at ${other.width}`,
+    );
+  }
+
+  /*
+   * The element's box is the composition's own shape. The marks are laid out
+   * from that box rather than drawn into it, so a box of another ratio does not
+   * crop the composition — it squashes it, and the lights settle into a lockup
+   * that is not the lockup.
+   */
+  const fieldRule = cssRules(css).find((rule) => rule.selector === '.starfield');
+  assert.ok(fieldRule, 'the field lost the box its lights are measured against');
+  assert.match(
+    fieldRule.body,
+    new RegExp(`aspect-ratio: ${FIELD_WIDTH} / ${FIELD_HEIGHT};`),
+    `the field's box is not the composition's ${FIELD_WIDTH} by ${FIELD_HEIGHT}`,
+  );
+
+  /*
+   * `design/DESIGN.md` grants this band one exception to a mark that does not
+   * move, and clear space is a condition of it. The lockup's own bottom edge is
+   * the floor; the module throws when a source rises above it, so the check here
+   * is that the check exists and that the composition currently clears it.
+   */
+  assert.match(composition, /enters the lockup's clear space/);
+  const floor = lockup.y + placement(lockup).height;
+  for (const other of placed.slice(1)) {
+    assert.ok(other.y >= floor, `${other.id} sits at ${other.y}, inside the clear space above ${floor}`);
+  }
 
   /*
    * The order the field replaces the drawing in is the whole fallback. The mark
@@ -1804,15 +1873,34 @@ test('draws the mark from the real path and puts every light back', async () => 
    * light carries only whether it is an accent one and the colours are re-read
    * when the theme attribute changes. A `colour` on the light would paint the
    * field in the old palette until the next resize.
+   *
+   * All three marks light in the page's own ink, which is also the condition
+   * DESIGN.md's exception states: payload, carrier and wordmark alike. OSI's
+   * mark keeps its published palette in the page's lead, where it is the
+   * licence condition `OsiMark.astro` sets out; here it does not, which that
+   * file records as a breach rather than as a policy.
    */
   assert.match(mark, /const readColours = \(\) => \{/);
   assert.match(mark, /attributeFilter: \['class'\]/);
   assert.match(mark, /context\.fillStyle = light\.accent \? accent : ink;/);
+  assert.doesNotMatch(composition, /OSI_BODY|OSI_EDGE\b/, 'a mark in the field carries a palette of its own');
+  assert.doesNotMatch(source, /fill="#|fillStyle = '#/, 'a light is painted from a literal rather than the page');
+
+  /*
+   * The wordmark ships as live text — `DESIGN.md` has a standing TODO to outline
+   * it — so the field rasterises text, and text drawn before its family arrives
+   * settles the lights into a fallback face and leaves them there. The artwork
+   * stays on screen until then, which is the same arrangement as above for the
+   * same reason.
+   */
+  assert.match(mark, /document\.fonts\.load\(face\)/);
+  assert.match(mark, /facesReady\(\)\.then\(\(\) => \{/);
 
   /* The mark is decorative: the band links to the repository in words directly
    * below it, and a second route to one place is a reader wondering what the
    * difference is. */
-  assert.match(source, /<div class="starfield" data-starfield data-starfield-path=\{path\} aria-hidden="true">/);
+  assert.match(source, /data-starfield\n\s+data-starfield-field=\{JSON\.stringify\(/);
+  assert.match(source, /aria-hidden="true"/);
 
   /* It says nothing about encryption, so it carries none of the diagram grammar.
    * A slab or a carrier bracket here would be a licence band drifting into a
@@ -3445,10 +3533,25 @@ test('carries what the OSI mark is licensed on, wherever the mark is', async () 
   /* The palette is a condition — "never stray from the color palette" — so the
    * mark's own colours are literals rather than tokens, and this is the guard
    * against a well-meant sweep replacing them with `currentColor` or
-   * `--oe-muted` the way every other mark on this site is drawn. */
-  const mark = await readFile(new URL('../src/components/OsiMark.astro', import.meta.url), 'utf8');
-  assert.match(mark, /fill="#3DA639"/i, 'the OSI mark must be drawn in an OSI palette colour');
-  assert.match(mark, /stroke="#1E531D"/i, 'the OSI mark must keep its palette outline');
+   * `--oe-muted` the way every other mark on this site is drawn. The closing
+   * band's star field draws this same artwork and does exactly that, at the
+   * founder's direction, so the lead is now the only instance that honours the
+   * condition and the only one this guard can hold. It reads the module the
+   * artwork moved to, and then that the component draws from it — either half
+   * alone would pass with the mark painted from something else. */
+  const [artwork, mark] = await Promise.all([
+    readFile(new URL('../src/lib/osi-artwork.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/OsiMark.astro', import.meta.url), 'utf8'),
+  ]);
+  assert.match(artwork, /OSI_BODY = '#3DA639'/i, 'the OSI mark must be drawn in an OSI palette colour');
+  assert.match(artwork, /OSI_EDGE = '#1E531D'/i, 'the OSI mark must keep its palette outline');
+  assert.match(mark, /fill=\{OSI_BODY\}/, 'the mark in the lead no longer takes the OSI palette');
+  assert.match(mark, /stroke=\{OSI_EDGE\}/, 'the mark in the lead no longer takes the OSI outline');
+  assert.match(
+    built,
+    /fill="#3DA639"/i,
+    'the built page draws the OSI mark in something other than its palette',
+  );
 
   /* The outline variant of this mark has a 0.8-unit wall on a 24 viewBox and
    * renders 0.65px wide at the lead's text size; it shipped for one round and
