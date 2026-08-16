@@ -180,6 +180,37 @@ test('answers the runtime question on the homepage', async () => {
   }
 });
 
+/**
+ * Cut one rendered snippet line into the code the recording proves and the
+ * comment the module declares.
+ *
+ * The scan is quote-aware rather than an `indexOf('//')`, because a `//` is
+ * only a comment outside a string and the panel is a file full of module
+ * specifiers. None of them contains one today — `"@open-e2ee/…"` is a bare
+ * path — but the day a variant needs a URL, an index-of split would quietly
+ * feed half a string literal to the capture lookup and blame the editor for a
+ * line they wrote correctly.
+ *
+ * Returns the code trimmed of the space that separated the two, so the lookup
+ * sees the line as the recording has it, and the comment trimmed of nothing
+ * else, so the declared-comment check compares what the reader sees.
+ */
+function splitComment(line) {
+  let quote = null;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (quote) {
+      if (char === '\\') index += 1;
+      else if (char === quote) quote = null;
+    } else if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+    } else if (char === '/' && line[index + 1] === '/') {
+      return { code: line.slice(0, index).trimEnd(), comment: line.slice(index).trim() };
+    }
+  }
+  return { code: line.trimEnd(), comment: null };
+}
+
 test('keeps the hero snippet traceable to the recording', () => {
   /* The carrier panel's rule applies to the snippet beside it: nothing on
    * this page is drawn, mocked up, or hand-typed. A hero example written to
@@ -194,24 +225,32 @@ test('keeps the hero snippet traceable to the recording', () => {
    * Showing both devices closed it. An editor who pastes a "small fix" into
    * the rendered string fails here, and there is nothing left to fix it
    * through. */
-  /* Comment-only lines are the page's own voice and are excluded here, then
-   * held to their own rule in the test below. Splitting the two is what keeps
-   * this assertion meaningful: the recording proves the API, and a comment
-   * makes no API claim, so requiring it to appear in a capture of a program
-   * that has no comments would only mean the panel could not have any.
+  /* Comments are the page's own voice and are cut off each line before it is
+   * looked up, then held to their own rule in the test below. Splitting the
+   * two is what keeps this assertion meaningful: the recording proves the API,
+   * and a comment makes no API claim, so requiring it to appear in a capture
+   * of a program that has almost no comments would only mean the panel could
+   * not have any.
    *
-   * Trailing comments are not excluded and must not be. `// plaintext, only on
-   * Bob's device` rides on a code line and is in the recording as written, so
-   * it is proved by the capture like the code it annotates. */
+   * The split is by position rather than by line, which it was not before the
+   * panel put five of its six comments on the end of a line of code to save
+   * the reader five lines of scrolling. `splitComment` is what makes that
+   * cheap: the code half of every line is still matched whole, so a "small
+   * fix" pasted into the program fails here whether or not a comment follows
+   * it on the same line. */
   const all = heroCode.split('\n').filter((line) => line.trim());
-  const rendered = all.filter((line) => !line.trim().startsWith('//'));
-  assert.ok(rendered.length > 0);
-  assert.ok(all.length > rendered.length, 'the panel lost the comments that explain it');
+  const split = all.map(splitComment);
+  assert.ok(split.some((line) => line.code));
+  assert.ok(
+    split.filter((line) => line.comment).length >= 5,
+    'the panel lost the comments that explain it',
+  );
 
-  for (const line of rendered) {
+  for (const { code } of split) {
+    if (!code) continue;
     assert.ok(
-      capture.quickstartCode.includes(line),
-      `hero line is not in the recorded capture: ${line}`,
+      capture.quickstartCode.includes(code),
+      `hero line is not in the recorded capture: ${code}`,
     );
   }
 
@@ -468,19 +507,25 @@ test('binds the names the reader brings, or says whose they are', async () => {
     }
   }
 
-  /* Every comment-only line in every variant is one the module declares. The
-   * panel is now a place the page can say things in its own voice, and this is
-   * the boundary on that: a claim smuggled into the program has to be added to
-   * `snippetComments` first, where the absolutes guard and the build audit both
-   * already read it. */
+  /* Every comment in every variant is one the module declares, wherever on the
+   * line it sits. The panel is a place the page can say things in its own
+   * voice, and this is the boundary on that: a claim smuggled into the program
+   * has to be added to `snippetComments` first, where the absolutes guard and
+   * the build audit both already read it.
+   *
+   * This used to read comment-only lines and would now miss five of the six —
+   * the ones that moved onto the end of a line of code — which is the shape of
+   * a guard that goes dark without failing. The adapters' own disclosures are
+   * declared through `snippetComments` too, so a store that explains itself in
+   * a new sentence is still caught. */
   const declared = new Set(snippetComments);
   for (const variant of snippetVariants) {
     for (const line of variant.code.split('\n')) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith('//')) continue;
+      const { comment } = splitComment(line);
+      if (!comment) continue;
       assert.ok(
-        declared.has(trimmed),
-        `${variant.storage}/${variant.relay} carries an undeclared comment: ${trimmed}`,
+        declared.has(comment),
+        `${variant.storage}/${variant.relay} carries an undeclared comment: ${comment}`,
       );
     }
   }

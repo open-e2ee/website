@@ -223,17 +223,23 @@ export const relayOptions = [
 /*
  * The comments the page writes, as opposed to the code the recording proves.
  *
- * These are the one part of the panel that is not traceable to the capture, and
+ * These are the part of the panel that is not traceable to the capture, and
  * naming them here rather than inlining them in `buildSnippet` is what lets
- * `tests/site-content.test.mjs` hold the line between the two: every code line
- * must still be in the recording under the rename, and every comment-only line
- * must be one of these. An editor who wants to say something new in the panel
- * has to say it here, where the test will notice.
+ * `tests/site-content.test.mjs` hold the line between the two: the code half
+ * of every line must be in the recording, and every comment on it must be one
+ * of these. An editor who wants to say something new in the panel has to say
+ * it here, where the test will notice.
+ *
+ * `PLAINTEXT_COMMENT` is the exception and is declared anyway. It comes from
+ * the recording rather than from the page, so the capture would prove it — but
+ * it renders as a comment, and a comment the declared list does not contain is
+ * a comment the absolutes guard does not read. The list is what the panel
+ * says, not what the panel invented.
  *
  * They exist because the panel was answering "what is the API" and not "what is
  * happening", and the second question is the one a reader arrives with. Each
- * one names the beat of the program it sits above: what the relay is, pass
- * adapters as values, receive, send.
+ * one names the beat of the program it sits on: what the relay is, whose
+ * device this is, where the keys stay, when the hook fires, what is encrypted.
  *
  * One of them also carries what used to sit under the panel in a
  * `<p class="code-note">` — that `storage`, in the bare React Native variant,
@@ -282,19 +288,33 @@ export const relayOptions = [
    one. */
 const RELAY_COMMENT =
   '// The relay is the mailbox: devices post encrypted envelopes and collect their own.';
-const ADAPTERS_COMMENT = '// Adapters are values you pass. Your keys stay in your store.';
-
-/* The two device labels, and the one disclosure the shape needs.
+/*
+ * The five that ride on a line of code, and the width that shapes them.
  *
- * Alice's carries it because hers is the block a reader meets first, and what
- * it discloses is that these are two runtimes rather than two objects: with a
- * device store, the second block belongs on the second device. See the header
- * comment for why that is a property of the stores and not a hedge. Bob's
- * label is bare — the sentence is said once, and repeating it on the next
- * block would read as a second, different caveat. */
-const ALICE_COMMENT = "// Alice's device. In an application each device runs its own half.";
-const BOB_COMMENT = "// Bob's device.";
-const RECEIVE_COMMENT = "// Fires on Bob's device, after the SDK decrypts.";
+ * Every comment below the relay's is a trailing one, which is worth five lines
+ * of panel — the program is 23 lines and was 28. The cost is that a trailing
+ * comment is spent from a line budget rather than given a line: the panel is
+ * 1130px at 1280 in a 18px monospace, so a line over about 100 characters puts
+ * a horizontal scrollbar under a program that fits today. Each of these is
+ * written to the space that is left after the longest variant's code, which is
+ * React Native's 67-character adapters line.
+ *
+ * So they say one thing each, and the thing they say is the one the code does
+ * not. `adapters:` shows that an adapter is a value you pass, so its comment
+ * spends the room on where the keys go instead. `bob.registerHook` names the
+ * device, so its comment spends the room on when the hook fires.
+ *
+ * Bob's label carries the disclosure rather than Alice's, and that is a change
+ * of position as well as of length: two clients in one listing raise the
+ * question at the second one, not the first. With a device store the second
+ * block belongs on a second device — `indexedDbStore()` takes no argument and
+ * opens one fixed database name — and the label is where a reader is told so.
+ */
+const ADAPTERS_COMMENT = '// Your keys stay in your store.';
+const ALICE_COMMENT = "// Alice's device.";
+const BOB_COMMENT = "// Bob's device. In an app, each runs its own.";
+const RECEIVE_COMMENT = '// Fires after the SDK decrypts.';
+const PLAINTEXT_COMMENT = "// plaintext, only on Bob's device";
 const SEND_COMMENT = "// Encrypted on Alice's device before the relay carries it.";
 
 export const snippetComments = [
@@ -303,6 +323,7 @@ export const snippetComments = [
   ADAPTERS_COMMENT,
   BOB_COMMENT,
   RECEIVE_COMMENT,
+  PLAINTEXT_COMMENT,
   SEND_COMMENT,
   ...[...storageOptions, ...relayOptions]
     .map((option) => option.comment)
@@ -346,39 +367,41 @@ export const buildSnippet = (storageId, relayId) => {
     ...(relay.comment ? [`// ${relay.comment}`] : []),
     relay.setup,
     '',
-    ALICE_COMMENT,
-    'const alice = await createSignalProtocolClient({',
+    `const alice = await createSignalProtocolClient({ ${ALICE_COMMENT}`,
     '  identity: { userId: "alice" },',
-    `  ${ADAPTERS_COMMENT}`,
     ...(store.comment ? [`  // ${store.comment}`] : []),
-    `  adapters: { storage: ${store.expr}, relay },`,
+    `  adapters: { storage: ${store.expr}, relay }, ${ADAPTERS_COMMENT}`,
     '});',
-    '',
     /* Bob's block is the same four lines with a different identity, and it
        deliberately carries neither the adapters note nor the store's own
        disclosure. Both are said one block up, about the same two values; a
        reader who needs the React Native note has already read it above the
-       line that first uses it, which is the order the test checks. */
-    BOB_COMMENT,
-    'const bob = await createSignalProtocolClient({',
+       line that first uses it, which is the order the test checks.
+
+       No blank line between the two, either. They are one beat — two devices
+       — and a gap made them read as two unrelated setups. */
+    `const bob = await createSignalProtocolClient({ ${BOB_COMMENT}`,
     '  identity: { userId: "bob" },',
     `  adapters: { storage: ${store.expr}, relay },`,
     '});',
     '',
-    RECEIVE_COMMENT,
     /* Receive first, then send. That is the order the SDK's own docstring uses
        (`client.d.ts`, the ServicesProvider example), and it is the order that
        is actually correct: `startRelaySubscription` is called automatically by
        `create()` only when a hook was already configured, so a hook registered
        afterwards needs the subscription started by hand. Sending last also
        puts the payoff on the last line. */
-    'bob.registerHook("onMessageDecrypted", async (message) => {',
-    "  console.log(message.content); // plaintext, only on Bob's device",
+    `bob.registerHook("onMessageDecrypted", async (message) => { ${RECEIVE_COMMENT}`,
+    `  console.log(message.content); ${PLAINTEXT_COMMENT}`,
     '});',
     'bob.startRelaySubscription();',
     '',
+    /* The send keeps its comment on a line of its own. The call is 74
+       characters with the message in it, and the claim beside it is the one
+       that has to survive at full length: what is encrypted, where, and when
+       relative to the relay. */
     SEND_COMMENT,
-    'await alice.send("bob", "Ship it Thursday. The staging key rotates at 09:00 UTC.");',
+    `await alice.send("bob", "${capture.plaintext}");`,
   ].join('\n');
 };
 

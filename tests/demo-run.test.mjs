@@ -31,7 +31,7 @@ import { startDemoRun } from '../src/lib/demo/run.ts';
 import { SEALED_SENDER_HIDES } from '../src/lib/demo/scene-view.ts';
 import { STEPS } from '../src/lib/demo/trace.ts';
 
-const OUTBOUND = 'Ship it Thursday. The staging key rotates at 09:00 UTC.';
+const OUTBOUND = 'Dinner at 7. I got us the table by the window.';
 const REPLY = 'Acknowledged. I will hold the rotation until the deploy is green.';
 
 /** Field names an interface declares, read out of the installed package. */

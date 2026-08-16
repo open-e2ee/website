@@ -64,7 +64,7 @@ const bob = await createSignalProtocolClient({
 await alice.syncToServer();
 await bob.syncToServer();
 
-await alice.send("bob", "Ship it Thursday. The staging key rotates at 09:00 UTC.");
+await alice.send("bob", "Dinner at 7. I got us the table by the window.");
 
 // This is all the relay ever holds:
 const [envelope] = relay.getPendingMessages("bob", 1);
@@ -75,7 +75,7 @@ bob.registerHook("onMessageDecrypted", async (message) => {
 bob.startRelaySubscription();`;
 
 /** The plaintext the program sends, and the device pane's whole content. */
-const PLAINTEXT = 'Ship it Thursday. The staging key rotates at 09:00 UTC.';
+const PLAINTEXT = 'Dinner at 7. I got us the table by the window.';
 
 /*
  * What each envelope field is, in the site's own voice.

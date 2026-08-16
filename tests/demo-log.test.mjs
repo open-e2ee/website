@@ -20,7 +20,7 @@ function encryptedEvent(overrides = {}) {
     to: 'b',
     atMs: 1250.75,
     measures: { encryptMs: 12.3 },
-    detail: { text: 'Ship it Thursday. The staging key rotates at 09:00 UTC.' },
+    detail: { text: 'Dinner at 7. I got us the table by the window.' },
     ...overrides,
   };
 }
@@ -61,7 +61,7 @@ test('matches: a query that matches nothing returns false', () => {
 
 test('summarise reads the real detail and measures shapes run.ts records', () => {
   const summary = summarise(encryptedEvent());
-  assert.match(summary, /Ship it Thursday/);
+  assert.match(summary, /Dinner at 7/);
   assert.match(summary, /12\.3/);
 });
 

@@ -383,7 +383,7 @@ const scenarioBeaconBody = (slug) => `scenario_opened / ${slug}`;
 const SCENARIO_TIMEOUT_MS = 60000;
 
 const NONCE = randomUUID().slice(0, 8);
-const PROBE = `Smoke probe ${NONCE}: the staging key rotates at 09:00 UTC.`;
+const PROBE = `Smoke probe ${NONCE}: dinner at 7, table by the window.`;
 /* A second sentence through a session that is already warm. The repeat send is
    a different path — the SDK chunk is there, the handshake is done, the ratchet
    has moved on — and until LD3 nothing ever exercised it. It is also what makes
