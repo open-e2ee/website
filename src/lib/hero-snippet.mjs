@@ -267,37 +267,46 @@ export const relayOptions = [
    being operable. The first question a name like `relay` raises is what it
    does with a message, so that is what the line says now.
 
-   The mailbox is the frame: devices post envelopes to it and collect the ones
-   left for them. `envelope` is the SDK's own noun for what travels —
-   `relay.send({ ciphertext, … })` and `relay.subscribe(userId, deviceId, cb)`
-   are literally post and collect — so the metaphor is the API's vocabulary
-   rather than a picture laid over it.
+   Post and collect is the frame, and `envelope` is the SDK's own noun for what
+   travels: `relay.send({ ciphertext, … })` and `relay.subscribe(userId,
+   deviceId, cb)` are literally those two verbs, so the picture is the API's
+   vocabulary rather than one laid over it.
 
-   "Encrypted" and not "sealed", and this was the draft's mistake before a test
-   caught it. Sealed sender is a real feature of this SDK, named on this page,
-   and a round of fresh readers stopped on a loose "sealed" in the lead asking
-   whether it meant that one — so the homepage may use the word only in the
-   phrase "sealed sender", and a test on the built HTML holds it. The reasoning
-   that produced the loose use here was that "sealed" describes the contents
-   rather than the sender, which is true and did not help: a reader meets the
-   word before the distinction. "Encrypted envelopes" is the page's own phrase
-   for the same thing, three paragraphs below this panel.
+   It rides on the construction, which took the sentence down from 84
+   characters to 37 and decided what came off. "The relay is the mailbox" was
+   the subject, and a trailing comment already has one — `const relay =` is on
+   the same line — so naming it twice was the affordable loss. "Encrypted" went
+   with it, and is not gone from the panel: the send says what is encrypted,
+   where, and when, which is the stronger place for the claim.
+
+   Losing that word was also a hazard removed. Sealed sender is a real feature
+   of this SDK, named on this page, and a round of fresh readers stopped on a
+   loose "sealed" in the lead asking whether it meant that one — so the homepage
+   may use the word only in the phrase "sealed sender", and a test on the built
+   HTML holds it. This line reached for "sealed" first for exactly the reason
+   that fails: it describes the contents rather than the sender, which is true
+   and does not help a reader who meets the word before the distinction.
 
    True of both options, which is the standing constraint on a fixed comment:
-   `inMemoryRelay` is a mailbox in this process and `convexRelay` is a hosted
-   one. */
-const RELAY_COMMENT =
-  '// The relay is the mailbox: devices post encrypted envelopes and collect their own.';
+   devices post to `inMemoryRelay` in this process and to `convexRelay` over the
+   network, and collect from either the same way. */
+const RELAY_COMMENT = '// Devices post and collect envelopes.';
 /*
- * The five that ride on a line of code, and the width that shapes them.
+ * The ones that ride on a line of code, and the width that shapes them.
  *
- * Every comment below the relay's is a trailing one, which is worth five lines
- * of panel — the program is 23 lines and was 28. The cost is that a trailing
- * comment is spent from a line budget rather than given a line: the panel is
- * 1130px at 1280 in a 18px monospace, so a line over about 100 characters puts
- * a horizontal scrollbar under a program that fits today. Each of these is
- * written to the space that is left after the longest variant's code, which is
- * React Native's 67-character adapters line.
+ * Every comment here but the send's is a trailing one, which is worth six
+ * lines of panel — the program is 22 lines and was 28. The cost is that a
+ * trailing comment is spent from a width budget rather than given a line, and
+ * the budget is measurable: the pre is 1130px of 18px monospace at 1280 and
+ * scales with the page, which is 110 characters at 1280 and 97 at 1024. Each
+ * of these is written to the room left after the longest code it can land on —
+ * React Native's 67-character adapters line, and the second of Convex's two
+ * setup lines.
+ *
+ * Known and older than the trailing comments: React Native's adapters line is
+ * 101 characters with its comment, so the two React Native variants scroll
+ * horizontally below a 1120px viewport — measured, not estimated. Nothing else
+ * scrolls at any desktop width.
  *
  * So they say one thing each, and the thing they say is the one the code does
  * not. `adapters:` shows that an adapter is a value you pass, so its comment
@@ -336,6 +345,13 @@ export const defaultVariant = { storage: 'memory', relay: 'memory' };
 
 const specifier = (subpath) => `"${PACKAGE}/${subpath}"`;
 
+/** A block of code with `comment` on its last line, as separate lines. */
+const withTrailingComment = (code, comment) => {
+  const lines = code.split('\n');
+  lines[lines.length - 1] = `${lines[lines.length - 1]} ${comment}`;
+  return lines;
+};
+
 /*
  * One program, assembled from the two choices.
  *
@@ -363,9 +379,12 @@ export const buildSnippet = (storageId, relayId) => {
     ...(store.imports ?? []),
     ...(relay.imports ?? []),
     '',
-    RELAY_COMMENT,
     ...(relay.comment ? [`// ${relay.comment}`] : []),
-    relay.setup,
+    /* The relay's comment rides on the last line of its construction, not the
+       first. Convex builds a client before it builds a relay, and a comment
+       about what a relay does, sitting on the line that makes a Convex client,
+       would be describing its neighbour. */
+    ...withTrailingComment(relay.setup, RELAY_COMMENT),
     '',
     `const alice = await createSignalProtocolClient({ ${ALICE_COMMENT}`,
     '  identity: { userId: "alice" },',
