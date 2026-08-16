@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BatteryMark from '../components/BatteryMark.astro';
+import BoxMark from '../components/BoxMark.astro';
 import DemoConsole from '../components/demo/DemoConsole.astro';
 import CommitLine from '../components/CommitLine.astro';
 import DeckIcon from '../components/DeckIcon.astro';
@@ -62,9 +63,13 @@ const differentiators: Differentiator[] = [
      *
      * So the body names both constructions, in the SDK's own words:
      * `internal/protocol/triple-ratchet/` and `internal/protocol/spqr/`, whose
-     * spec table lists ML-KEM Braid revision 1. The 32 bytes is `CHUNK_SIZE`
-     * in `spqr/ml-kem-braid/rs/codec.ts`, and it is what makes "spreads each
-     * encapsulation" mean something rather than sound like one.
+     * spec table lists ML-KEM Braid revision 1. It names them and stops there.
+     * How the braid works — 32 bytes per message, `CHUNK_SIZE` in
+     * `spqr/ml-kem-braid/rs/codec.ts` — rode here for a round and came off on
+     * the founder's call: it ran the cell to twice the length of its
+     * neighbours, and a deck of seven read at a glance cannot carry one cell
+     * that explains a mechanism. The two names are what a reader who wants the
+     * mechanism searches for.
      *
      * No FIPS claim, deliberately. docs/DEVIATIONS.md §4.1 records that in
      * braid mode the KEM is ML-KEM-768 with a modified `hek` derivation, and
@@ -74,15 +79,21 @@ const differentiators: Differentiator[] = [
      *
      * The cell closed on "Not a future roadmap item", which spends its last
      * sentence on what a competitor has not done. The default is the better
-     * fact and it is the reader's: nothing to turn on, and the scope stated
-     * with it. Both halves are the installed README's, which says the session
-     * establishment is "on without configuration, and fail closed" and that
-     * identities are classical Ed25519 — so the cell claims post-quantum for
-     * key agreement and for the ratchet, which is what ships, and not for
-     * signatures. */
+     * fact and it is the reader's, and it is the installed README's words:
+     * session establishment is "on without configuration, and fail closed".
+     *
+     * The scope is carried by the subject rather than by a clause, the way the
+     * TypeScript cell above carries its own. The body names the two things
+     * that are post-quantum — the key agreement and the ratchet — and claims
+     * nothing about the third. It closed on "identity signatures are Ed25519"
+     * for a round, on the founder's call that a deck cell is read at a glance
+     * and a reader who wants the signature line is not reading for it here.
+     * The fact is not lost: /security states that identities remain classical
+     * Ed25519 and X25519, and the comparison table spends a whole row on it as
+     * the axis this SDK loses to ts-mls. */
     title: 'Post-quantum',
     icon: 'lock',
-    body: 'PQXDH with ML-KEM-1024 establishes every session, and the Triple Ratchet carries it forward: the Double Ratchet plus the ML-KEM Braid, a post-quantum ratchet spread 32 bytes at a time across the messages you were already sending. On without configuration and failing closed; identity signatures are Ed25519.',
+    body: 'PQXDH with ML-KEM-1024 establishes every session, and the Triple Ratchet carries it forward: the Double Ratchet plus the ML-KEM Braid. On without configuration, and failing closed.',
   },
   {
     title: 'Your backend stays yours',
@@ -504,7 +515,7 @@ const runtimes = [
             reader to hold a structure before they have read a single cell —
             the rows do that work themselves. So: one clause, and the clause
             is the offer. */}
-        <h2>What ships in the box</h2>
+        <h2>What ships in the box<BoxMark /></h2>
         <p class="measure">
           {/* The lead used to open on the deck's one limit and send the reader
               to that cell before any other: a reader whose product cannot live

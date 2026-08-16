@@ -1,0 +1,34 @@
+---
+/*
+ * The box at the end of "What ships in the box".
+ *
+ * Octicons 19.32.0 `package` (MIT, GitHub Inc.), copied unmodified from the
+ * 24-unit master and accounted for in `THIRD_PARTY_NOTICES.md` with the rest of
+ * the copied set. The alternative on the table was a rocket, and this heading is
+ * not about a launch: it names what is inside the package a reader installs, and
+ * the company shipping it has not launched anything. A rocket beside that
+ * sentence claims momentum the page does not have, where a box is the noun the
+ * heading already uses.
+ *
+ * The mark is an isometric cube with its top face seamed — a package seen as a
+ * solid rather than as an outline, which is the one drawing in the set that a
+ * reader can open in their head. `archive` and `gift` were the other two boxes
+ * and both say something else: `archive` is where things are put away, and a
+ * wrapped gift is a surprise, which is the opposite of a band that lists its
+ * contents.
+ *
+ * Sizing and alignment are in `global.css` beside the lead's three marks, which
+ * is where this site settles how big a mark is and where it sits on a line.
+ *
+ * aria-hidden. "Box" is the last word of the heading it follows, and a mark that
+ * repeats the word beside it is a second announcement of one heading.
+ */
+---
+
+<span class="box-mark">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+    <path
+      d="M12.876.64V.639l8.25 4.763c.541.313.875.89.875 1.515v9.525a1.75 1.75 0 0 1-.875 1.516l-8.25 4.762a1.748 1.748 0 0 1-1.75 0l-8.25-4.763a1.75 1.75 0 0 1-.875-1.515V6.917c0-.625.334-1.202.875-1.515L11.126.64a1.748 1.748 0 0 1 1.75 0Zm-1 1.298L4.251 6.34l7.75 4.474 7.75-4.474-7.625-4.402a.248.248 0 0 0-.25 0Zm.875 19.123 7.625-4.402a.25.25 0 0 0 .125-.216V7.639l-7.75 4.474ZM3.501 7.64v8.803c0 .09.048.172.125.216l7.625 4.402v-8.947Z"
+    ></path>
+  </svg>
+</span>

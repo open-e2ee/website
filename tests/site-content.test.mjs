@@ -1152,11 +1152,12 @@ test('sends the reader to the console rather than to a doorway', async () => {
 });
 
 test('ships the license for the icon set it copied', async () => {
-  const [notices, license, icon, deckIcon] = await Promise.all([
+  const [notices, license, icon, deckIcon, boxMark] = await Promise.all([
     read('../THIRD_PARTY_NOTICES.md'),
     read('../third-party/Octicons-MIT.txt'),
     read('../src/components/Icon.astro'),
     read('../src/components/DeckIcon.astro'),
+    read('../src/components/BoxMark.astro'),
   ]);
 
   /* The MIT license asks for the notice to travel with the copy, and the
@@ -1168,6 +1169,13 @@ test('ships the license for the icon set it copied', async () => {
   assert.match(notices, /third-party\/Octicons-MIT\.txt/);
   assert.match(icon, /THIRD_PARTY_NOTICES\.md/);
   assert.match(deckIcon, /THIRD_PARTY_NOTICES\.md/);
+
+  /* The third copy is one path in one heading, which is exactly the kind of
+   * copy that gets deleted, renamed, or swapped for another Octicon without
+   * anyone opening the notice file. It is named here rather than derived,
+   * because a single-icon component has no list to derive from. */
+  assert.match(boxMark, /THIRD_PARTY_NOTICES\.md/);
+  assert.match(notices, /`src\/components\/BoxMark\.astro` renders one more, `package`,/);
 
   /* The second copy is the one that will drift. `Icon.astro` draws a fixed set
    * of chrome and has not changed in months; the deck icons are on a page
@@ -3299,11 +3307,13 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
    * against the product. A seventh cell under a lead that says six is the
    * same species of drift the carrier panel already paid for. The heading is
    * pinned alongside it because both were rewritten in one pass, and a count
-   * pinned on its own would survive the band losing its name. */
+   * pinned on its own would survive the band losing its name. The mark is in
+   * the same pin because it is positional: a box reads as this heading's last
+   * word, and one moved to the front of the line is a bullet. */
   const cells = index.match(/title: '/g) ?? [];
   assert.equal(cells.length, 7, `differentiator count changed to ${cells.length}`);
   assert.match(index, /Seven things that are true the first time you install it/);
-  assert.match(index, /<h2>What ships in the box<\/h2>/);
+  assert.match(index, /<h2>What ships in the box<BoxMark \/><\/h2>/);
 
   /* Sending the wrong reader away is the point, not a hedge to be softened
    * later: the objective is qualified starts, and a team that needs

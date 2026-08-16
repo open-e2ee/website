@@ -281,6 +281,41 @@ code {
   vertical-align: calc(0.386em - var(--oe-mark-size) / 2);
 }
 
+/*
+ * The box at the end of one band heading, sized by the same two questions as
+ * the three marks above and answered differently, because the line it sits on
+ * is twice their size.
+ *
+ * HOW BIG. The lead's marks run above their cap band — 1.05em to 1.15em against
+ * a 0.72em cap — because at the lead's 19.4px a mark held to the caps reads as a
+ * bullet. A heading runs at 2rem and up, where the same ratio would put a glyph
+ * a third taller than the letters beside it and turn a heading into a lockup.
+ * 0.8em is a shade over the cap band, which is what keeps the box from reading
+ * as the small one without it competing with the words.
+ *
+ * WHERE IT SITS is the lead's formula with the heading's own cap band in it.
+ * Public Sans caps reach 0.72em, so their middle is 0.36em above the baseline,
+ * and a box of height S has its bottom edge 0.36em - S/2 from there.
+ *
+ * MUTED, and this is the one that was rendered before it was chosen. In ink the
+ * cube is a solid block at the end of a line of letterforms and the eye goes to
+ * it first, which makes the mark the subject and the heading its caption. The
+ * muted value is the same one the band's own lead sentence takes, so the box
+ * reads at the weight of a heading's second line rather than of its first word.
+ */
+.box-mark {
+  display: inline-block;
+  line-height: 0;
+  margin-inline-start: 0.3em;
+  color: var(--oe-muted);
+}
+
+.box-mark svg {
+  height: 0.8em;
+  width: 0.8em;
+  vertical-align: calc(0.36em - 0.4em);
+}
+
 .muted {
   color: var(--oe-muted);
 }

@@ -17,6 +17,11 @@ unmodified from its 24-pixel masters: `devices`, `broadcast`, `server`, `search`
 text covers it. Its seventh name, `battery`, is not an Octicon: it is drawn in
 this repository and the Battery section below covers it.
 
+`src/components/BoxMark.astro` renders one more, `package`, from the same
+release and the same 24-pixel masters, at the end of the landing page's "What
+ships in the box" heading. It is a separate component because it is a mark on a
+heading rather than a label in a column, and the same license text covers it.
+
 The GitHub mark is copied rather than redrawn on purpose. It is a trademark,
 and an approximation of someone else's trademark is worse than no mark at all.
 Using it to link to our own repository is nominative use; it is not a claim of
