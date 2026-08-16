@@ -2,18 +2,27 @@
 /*
  * The icon that labels one row of the homepage deck.
  *
- * Octicons 19.32.0 (MIT, GitHub Inc.), the same family the header chrome draws
- * from, at the 24-unit master rather than the 16 — these sit at 2rem beside a
- * heading, and the 16 masters are drawn for 16 and thicken visibly when scaled.
- * The licence text ships at `third-party/Octicons-MIT.txt` and
- * `THIRD_PARTY_NOTICES.md` names every path this site inlines, these seven
- * included. A test fails the build if a name here is missing from that list.
+ * Six are Octicons 19.32.0 (MIT, GitHub Inc.), the same family the header
+ * chrome draws from, at the 24-unit master rather than the 16 — these sit at
+ * 2rem beside a heading, and the 16 masters are drawn for 16 and thicken
+ * visibly when scaled. The licence text ships at `third-party/Octicons-MIT.txt`
+ * and `THIRD_PARTY_NOTICES.md` accounts for every name below. A test fails the
+ * build if one is missing from that file.
+ *
+ * The seventh is `battery`, which is this project's own drawing and comes from
+ * `BatteryGlyph.astro` rather than from the table here. The row it labels says
+ * "Batteries included", the lead at the top of the same page ends on the same
+ * three words, and one mark serving both is the point: a reader meets the claim
+ * twice and the second time it is already familiar. It draws in the column's
+ * muted colour and not in the lead's green, because a single coloured icon in a
+ * grey column reads as that row being more important than its neighbours, which
+ * is a claim nobody meant to make.
  *
  * The paths live here rather than in `@open-e2ee/design/icons`, which is where
- * `Icon.astro` correctly says an icon set belongs. These seven label one deck on
- * one page and have not earned a place in a package two products pin; if a
- * second surface needs them, they move there and this file imports them like
- * the chrome does.
+ * `Icon.astro` correctly says an icon set belongs. These label one deck on one
+ * page and have not earned a place in a package two products pin; if a second
+ * surface needs them, they move there and this file imports them like the
+ * chrome does.
  *
  * These are labels, not diagrams. DESIGN.md's material law — open is outlined,
  * opaque is filled — governs what a shape means inside a diagram, and a filled
@@ -23,11 +32,13 @@
  *
  * Every icon is aria-hidden, because the heading beside it is the row's name.
  */
+import BatteryGlyph from './BatteryGlyph.astro';
+
 export type DeckIconName =
   | 'devices'
   | 'key'
   | 'server'
-  | 'package'
+  | 'battery'
   | 'search'
   | 'law'
   | 'lock';
@@ -38,7 +49,7 @@ interface Props {
 
 const { name } = Astro.props;
 
-const iconPaths: Record<DeckIconName, string[]> = {
+const iconPaths: Record<Exclude<DeckIconName, 'battery'>, string[]> = {
   'devices': [
     "M1 3.75C1 2.784 1.784 2 2.75 2h18.5c.966 0 1.75.784 1.75 1.75v4a.75.75 0 0 1-1.5 0v-4a.25.25 0 0 0-.25-.25H2.75a.25.25 0 0 0-.25.25v11.5c0 .138.112.25.25.25h9a.75.75 0 0 1 0 1.5h-1.287c-.126 1.266-.564 2.445-1.223 3.5h2.51a.75.75 0 0 1 0 1.5h-4a.75.75 0 0 1-.565-1.243c.964-1.105 1.598-2.382 1.769-3.757H2.75A1.75 1.75 0 0 1 1 15.25V3.75Z",
     "M14 11.75c0-.967.783-1.75 1.75-1.75h5.5c.966 0 1.75.783 1.75 1.75v8.5A1.75 1.75 0 0 1 21.25 22h-5.5A1.75 1.75 0 0 1 14 20.25Zm1.75-.25a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h5.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25Z",
@@ -50,9 +61,6 @@ const iconPaths: Record<DeckIconName, string[]> = {
   'server': [
     "M10.75 6.5a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5ZM6 7.25a.75.75 0 0 1 .75-.75h.5a.75.75 0 0 1 0 1.5h-.5A.75.75 0 0 1 6 7.25Zm4 9a.75.75 0 0 1 .75-.75h6.5a.75.75 0 0 1 0 1.5h-6.5a.75.75 0 0 1-.75-.75Zm-3.25-.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5h-.5Z",
     "M3.25 2h17.5c.966 0 1.75.784 1.75 1.75v7c0 .372-.116.716-.314 1 .198.284.314.628.314 1v7a1.75 1.75 0 0 1-1.75 1.75H3.25a1.75 1.75 0 0 1-1.75-1.75v-7c0-.358.109-.707.314-1a1.741 1.741 0 0 1-.314-1v-7C1.5 2.784 2.284 2 3.25 2Zm0 10.5a.25.25 0 0 0-.25.25v7c0 .138.112.25.25.25h17.5a.25.25 0 0 0 .25-.25v-7a.25.25 0 0 0-.25-.25Zm0-1.5h17.5a.25.25 0 0 0 .25-.25v-7a.25.25 0 0 0-.25-.25H3.25a.25.25 0 0 0-.25.25v7c0 .138.112.25.25.25Z",
-  ],
-  'package': [
-    "M12.876.64V.639l8.25 4.763c.541.313.875.89.875 1.515v9.525a1.75 1.75 0 0 1-.875 1.516l-8.25 4.762a1.748 1.748 0 0 1-1.75 0l-8.25-4.763a1.75 1.75 0 0 1-.875-1.515V6.917c0-.625.334-1.202.875-1.515L11.126.64a1.748 1.748 0 0 1 1.75 0Zm-1 1.298L4.251 6.34l7.75 4.474 7.75-4.474-7.625-4.402a.248.248 0 0 0-.25 0Zm.875 19.123 7.625-4.402a.25.25 0 0 0 .125-.216V7.639l-7.75 4.474ZM3.501 7.64v8.803c0 .09.048.172.125.216l7.625 4.402v-8.947Z",
   ],
   'search': [
     "M10.25 2a8.25 8.25 0 0 1 6.34 13.53l5.69 5.69a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215l-5.69-5.69A8.25 8.25 0 1 1 10.25 2ZM3.5 10.25a6.75 6.75 0 1 0 13.5 0 6.75 6.75 0 0 0-13.5 0Z",
@@ -67,12 +75,17 @@ const iconPaths: Record<DeckIconName, string[]> = {
 
 /* An unknown name would otherwise render an empty <svg>: a row whose label
    column is a hole, which is the thing the icon was added to fill. */
-const paths = iconPaths[name];
-if (!paths) {
+const isBattery = name === 'battery';
+const paths = isBattery ? [] : iconPaths[name];
+if (!isBattery && !paths) {
   throw new Error(`DeckIcon "${name}" is not drawn in DeckIcon.astro`);
 }
 ---
 
+{/* One viewBox for all seven, including the battery, which is drawn on the same
+    24-unit grid but paints a tall narrow glyph inside it. `xMidYMid meet` is
+    the default, so it centres at its own proportions instead of stretching to
+    the square, and it lines up with the six that fill the box. */}
 <svg
   class="deck-icon"
   viewBox="0 0 24 24"
@@ -80,5 +93,5 @@ if (!paths) {
   aria-hidden="true"
   focusable="false"
 >
-  {paths.map((d) => <path d={d} />)}
+  {isBattery ? <BatteryGlyph /> : paths.map((d) => <path d={d} />)}
 </svg>

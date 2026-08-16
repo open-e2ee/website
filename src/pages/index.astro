@@ -10,7 +10,6 @@ import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
 import TypeScriptMark from '../components/TypeScriptMark.astro';
-import { startupTier } from '../data/pricing.mjs';
 
 /* Annotated rather than inferred: a bare array literal widens `icon` to
  * `string`, and the point of naming the icons is that a typo is a build error
@@ -82,9 +81,15 @@ const differentiators: Differentiator[] = [
 
        It then said "the parts a working one-to-one prototype still leaves to
        build", which is the same fact told as the reader's remaining work. The
-       list is the value; naming what ships is enough. */
-    title: 'The hard parts are included',
-    icon: 'package',
+       list is the value; naming what ships is enough.
+
+       The title is the lead's third clause, word for word, and the icon is the
+       lead's third mark. "The hard parts are included" made the same claim in
+       words the page used nowhere else, so a reader met one claim twice under
+       two names. Batteries included is what this row has always meant, and
+       this row is the only place that says what is in them. */
+    title: 'Batteries included',
+    icon: 'battery',
     body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files all ship in the same package as the one-to-one case. Each is a protocol in its own right.',
   },
   {
@@ -93,22 +98,19 @@ const differentiators: Differentiator[] = [
     body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay holds are all published.',
   },
   {
-    /* This cell said "at a published price" and showed no price, for the whole
-     * loop. A fresh reader took the word "published" literally and was right
-     * to: "it promises a number that is not on the page and not linked", and
-     * they listed it as one of two go/no-go inputs they could not get. The
-     * number existed the entire time — /pricing has carried $5,000 since
-     * before this loop started, and the header links to it. The page was
-     * being coy about the one fact a solo developer decides on.
+    /* The cell states the licence and hands the reader to /pricing, which
+     * carries all three tiers and their numbers.
      *
-     * The price is read from the same module /pricing renders, so the two
-     * surfaces cannot disagree. Naming the entry tier only, because "starts
-     * at" is the honest shape of a three-tier table and the link carries the
-     * rest. */
+     * What it may not do is promise a number it does not show. It once read
+     * "at a published price" with no price on the page and none linked from
+     * it, and a fresh reader listed that as one of two go/no-go inputs they
+     * could not get. `tests/site-content.test.mjs` fails the build if the
+     * page promises a published price again, and if the link stops leading to
+     * a page that renders every tier. */
     id: 'agpl-or-commercial',
     title: 'AGPLv3, or a commercial license',
     icon: 'law',
-    body: `The complete SDK is free under AGPLv3 — every feature, nothing time-limited. Closed-source products buy annual production rights, from ${startupTier.price} ${startupTier.period} for one product.`,
+    body: 'The complete SDK is free under AGPLv3 — every feature.',
     link: { href: '/pricing', label: 'See the tiers' },
   },
   /*
@@ -224,18 +226,23 @@ const runtimes = [
             the fold was the licence, which is the first thing a developer
             evaluating a dependency wants and the one answer no competitor in
             this category can copy. "Fully" is the load-bearing word, and it is
-            not decoration: the feature band below states that every feature is
-            AGPLv3 with nothing time-limited, which is what makes the adverb
-            true rather than promotional.
+            not decoration: the closing licence band states that every feature
+            is in the package under AGPLv3 and none of it is time-limited, which
+            is what makes the adverb true rather than promotional.
 
             Three fragments, three marks: one per clause, or the pattern reads
             as an accident. All three are now drawings rather than emoji. ⚡ went
             first — a bolt reads "fast" beside a clause that is not about speed,
             and TypeScript has a mark of its own that states the claim instead
             of decorating it. 🔋 followed, because one emoji left among two real
-            marks is the accident rather than the pattern; `BatteryMark.astro`
-            is drawn here, since "batteries included" is a figure of speech
-            about defaults and nobody owns a mark for it.
+            marks is the accident rather than the pattern; the drawing is in
+            `BatteryGlyph.astro`, since "batteries included" is a figure of
+            speech about defaults and nobody owns a mark for it.
+
+            The third clause and its mark both appear again in the deck below,
+            as the title and icon of the row that lists what the batteries are.
+            That is the one repetition on this page that is deliberate: the lead
+            makes the claim and the deck cashes it.
 
             Only the keyhole is exposed to assistive technology, and only
             because it is a trademark drawn under conditions, one of which is

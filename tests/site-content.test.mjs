@@ -3021,7 +3021,7 @@ test('backs the durability claim it prints under the recorded row', async () => 
   assert.match(panel, /const installedVersion = sdkManifest\.version;/);
 });
 
-test('shows the price it calls published, and cannot drift from /pricing', async () => {
+test('promises no price it does not show, and links to one that shows them all', async () => {
   const { startupTier, tiers } = await import('../src/data/pricing.mjs');
   const [index, dist, pricingPage] = await Promise.all([
     flat('../src/pages/index.astro'),
@@ -3029,27 +3029,24 @@ test('shows the price it calls published, and cannot drift from /pricing', async
     readFile(new URL('../dist/pricing/index.html', import.meta.url), 'utf8').catch(() => null),
   ]);
 
-  /* The landing page said "at a published price" and printed no price, while
-   * /pricing had carried $5,000 the whole time. A fresh reader listed it as
-   * one of two go/no-go inputs the page would not give them: "the word
-   * 'published' promises a number that is not on the page and not linked".
-   * Both surfaces now read the same module, so the only way to make them
-   * disagree is to edit the module, which moves both. */
+  /* The landing page names no figure. It once said "at a published price" and
+   * printed none, while /pricing had carried the number the whole time, and a
+   * fresh reader listed that as one of two go/no-go inputs the page would not
+   * give them: "the word 'published' promises a number that is not on the page
+   * and not linked". Either half closes it — show the number, or make no
+   * promise and link to where the numbers are. The cell does the second, so
+   * what has to hold is that the promise stays gone and the link stays good. */
   assert.equal(startupTier.name, 'Startup');
   assert.match(startupTier.price, /^\$[\d,]+$/);
-  assert.match(index, /from \$\{startupTier\.price\}/);
   assert.match(index, /href: '\/pricing'/);
 
   if (!dist) return skipUnbuilt('dist/index.html');
   assert.doesNotMatch(dist, /at a published price/);
-  assert.ok(
-    dist.includes(startupTier.price),
-    `landing page does not print the entry price ${startupTier.price}`,
-  );
   assert.match(dist, /href="\/pricing"/);
 
-  /* And the page it links to still renders every tier, so the link does not
-   * lead somewhere that lost the number the cell just promised. */
+  /* And the page it links to renders every tier, so the link does not lead
+   * somewhere that lost the numbers the landing page declines to state. That
+   * is what makes the silence safe rather than evasive. */
   if (!pricingPage) return skipUnbuilt('dist/pricing/index.html');
   for (const tier of tiers) {
     assert.ok(
@@ -3084,10 +3081,10 @@ test('quotes the entry price from the module on every marketing page', async () 
     );
   }
 
-  /* And no page reintroduces a typed figure. Comments are stripped first: the
-   * landing page's own comment recounts the drift incident by quoting the
-   * price, and a guard that failed on the history of the bug it prevents would
-   * be deleted by the next person who hit it. */
+  /* And no page reintroduces a typed figure. Comments are stripped first: a
+   * comment does not render, so a figure inside one cannot drift on the page,
+   * and a guard that fired on the prose explaining the rule would be deleted
+   * by the next person who hit it. */
   const strip = (text) => text.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ');
 
   /* Recursive, with the exemption named rather than implied. The first version
