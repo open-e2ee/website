@@ -1995,10 +1995,12 @@ a:hover {
  * empty — so the span costs no vertical space and the row's rule reads as the
  * band closing rather than as a column ending early.
  *
- * The body takes the page measure instead of the column's 54ch. 54ch is set
- * for a half-width column and holds a paragraph to about six lines there; the
- * same cap in a full-width row is a narrow strip of text with half the row
- * blank beside it, which reads as a layout fault rather than as a wide row.
+ * The body drops the column's 54ch cap and takes the row instead. 54ch is set
+ * for a half-width column; keeping it here, or swapping it for the page
+ * measure, leaves a strip of text with a third of the row blank beside it,
+ * which reads as a layout fault rather than as a wide row. The line runs long
+ * at desktop widths — that is the trade the span is making, and the row is one
+ * paragraph at the end of a band rather than something a reader settles into.
  */
 .rows > .row-wide {
   grid-column: 1 / -1;
@@ -2006,7 +2008,7 @@ a:hover {
 
 .rows > .row-wide > p,
 .rows > .row-wide > .row-body > p {
-  max-width: var(--oe-content-measure);
+  max-width: none;
 }
 
 /*
