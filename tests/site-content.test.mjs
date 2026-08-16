@@ -21,6 +21,7 @@ import {
   defaultVariant,
   heroCode,
   installCommand,
+  relayComment,
   relayOptions,
   snippetComments,
   snippetVariants,
@@ -299,9 +300,21 @@ test('offers every adapter as a real, complete, copyable program', () => {
       ),
       `${variant.storage}/${variant.relay} does not import its store`,
     );
+    /* Line by line rather than as one block, because the two are no longer
+       always adjacent: the relay's comment takes the trailing position on the
+       construction's last line where that line has room, and the line above it
+       where it does not, which is Convex. What must hold is that every line of
+       the construction ships — a variant that lost one would not run — and
+       that the comment ships with it, whichever of the two places it took. */
+    for (const line of relay.setup.split('\n')) {
+      assert.ok(
+        variant.code.includes(line),
+        `${variant.storage}/${variant.relay} does not construct its relay: ${line}`,
+      );
+    }
     assert.ok(
-      variant.code.includes(relay.setup),
-      `${variant.storage}/${variant.relay} does not construct its relay`,
+      variant.code.includes(relayComment),
+      `${variant.storage}/${variant.relay} lost the comment that says what a relay does`,
     );
 
     /* No elision may reappear. The panel has a copy button on it, and a

@@ -273,11 +273,10 @@ export const relayOptions = [
    vocabulary rather than one laid over it.
 
    It rides on the construction, which took the sentence down from 84
-   characters to 37 and decided what came off. "The relay is the mailbox" was
-   the subject, and a trailing comment already has one — `const relay =` is on
-   the same line — so naming it twice was the affordable loss. "Encrypted" went
-   with it, and is not gone from the panel: the send says what is encrypted,
-   where, and when, which is the stronger place for the claim.
+   characters to 53 and decided what came off. "The relay is the mailbox" was a
+   metaphor spent on a noun the next word defines anyway. "Encrypted" went with
+   it, and is not gone from the panel: the send says what is encrypted, where,
+   and when, which is the stronger place for the claim.
 
    Losing that word was also a hazard removed. Sealed sender is a real feature
    of this SDK, named on this page, and a round of fresh readers stopped on a
@@ -289,24 +288,27 @@ export const relayOptions = [
 
    True of both options, which is the standing constraint on a fixed comment:
    devices post to `inMemoryRelay` in this process and to `convexRelay` over the
-   network, and collect from either the same way. */
-const RELAY_COMMENT = '// Devices post and collect envelopes.';
+   network, and collect from either the same way.
+
+   Exported, alone among the six, because it is the one whose place in the
+   listing depends on the option chosen. A test that only knew the comment
+   existed could not tell the fallback below from the comment being dropped. */
+export const relayComment = '// Devices post and collect envelopes from the relay.';
 /*
  * The ones that ride on a line of code, and the width that shapes them.
  *
  * Every comment here but the send's is a trailing one, which is worth six
  * lines of panel — the program is 22 lines and was 28. The cost is that a
  * trailing comment is spent from a width budget rather than given a line, and
- * the budget is measurable: the pre is 1130px of 18px monospace at 1280 and
- * scales with the page, which is 110 characters at 1280 and 97 at 1024. Each
- * of these is written to the room left after the longest code it can land on —
- * React Native's 67-character adapters line, and the second of Convex's two
- * setup lines.
+ * the budget is measurable: 108 characters at 1280, 97 at 1024. Each of these
+ * is written to the room left after the longest code it can land on, which is
+ * React Native's 67-character adapters line.
  *
- * Known and older than the trailing comments: React Native's adapters line is
- * 101 characters with its comment, so the two React Native variants scroll
- * horizontally below a 1120px viewport — measured, not estimated. Nothing else
- * scrolls at any desktop width.
+ * Nothing overruns 1280. Below it two do, and both are known: React Native's
+ * adapters line is 101 characters with its comment and scrolls under a 1120px
+ * viewport, and Convex's construction takes `PANEL_COLUMNS` off the trailing
+ * position entirely, so its comment is a line rather than a scrollbar. All
+ * three figures are measured in a browser, not estimated from a font size.
  *
  * So they say one thing each, and the thing they say is the one the code does
  * not. `adapters:` shows that an adapter is a value you pass, so its comment
@@ -327,7 +329,7 @@ const PLAINTEXT_COMMENT = "// plaintext, only on Bob's device";
 const SEND_COMMENT = "// Encrypted on Alice's device before the relay carries it.";
 
 export const snippetComments = [
-  RELAY_COMMENT,
+  relayComment,
   ALICE_COMMENT,
   ADAPTERS_COMMENT,
   BOB_COMMENT,
@@ -345,11 +347,38 @@ export const defaultVariant = { storage: 'memory', relay: 'memory' };
 
 const specifier = (subpath) => `"${PACKAGE}/${subpath}"`;
 
-/** A block of code with `comment` on its last line, as separate lines. */
+/*
+ * What fits on one line of the panel, measured rather than guessed.
+ *
+ * The pre is 1130px of 18px monospace at 1280 and scales down with the page,
+ * so this is the widest viewport's budget: 108 characters render inside it and
+ * 109 overrun it by 12px. Every width below 1280 is stricter — see the note
+ * over the comments themselves.
+ */
+const PANEL_COLUMNS = 108;
+
+/*
+ * A block of code with `comment` on its last line, where that line has room.
+ *
+ * Where it does not, the comment goes on its own line directly above the line
+ * it describes, which costs a line of panel and is the cheaper of the two
+ * losses: a trailing comment that does not fit puts a horizontal scrollbar
+ * under the program for as long as it ships, at every viewport width, because
+ * the panel has a maximum width and this exceeds it there too.
+ *
+ * Only Convex takes that branch today, and only because its construction line
+ * is the longest in the file at 54 characters. Above it rather than below is
+ * deliberate: `const convex = …` sits on the line before, and a comment about
+ * what a relay does would be answering for its neighbour.
+ */
 const withTrailingComment = (code, comment) => {
   const lines = code.split('\n');
-  lines[lines.length - 1] = `${lines[lines.length - 1]} ${comment}`;
-  return lines;
+  const last = lines[lines.length - 1];
+  if (`${last} ${comment}`.length <= PANEL_COLUMNS) {
+    lines[lines.length - 1] = `${last} ${comment}`;
+    return lines;
+  }
+  return [...lines.slice(0, -1), comment, last];
 };
 
 /*
@@ -384,7 +413,7 @@ export const buildSnippet = (storageId, relayId) => {
        first. Convex builds a client before it builds a relay, and a comment
        about what a relay does, sitting on the line that makes a Convex client,
        would be describing its neighbour. */
-    ...withTrailingComment(relay.setup, RELAY_COMMENT),
+    ...withTrailingComment(relay.setup, relayComment),
     '',
     `const alice = await createSignalProtocolClient({ ${ALICE_COMMENT}`,
     '  identity: { userId: "alice" },',
