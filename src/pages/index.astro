@@ -27,21 +27,29 @@ interface Differentiator {
 const differentiators: Differentiator[] = [
   {
     title: 'Pure TypeScript, everywhere your app runs',
-    icon: 'code-square',
-    /* "No native modules, no prebuild step, no ejecting" was true of the crypto
-     * and false of the storage this site's own /product page documents: the
-     * encrypted Expo store is expo-sqlite with SQLCipher, which Expo Go does
-     * not carry. The limit belongs in the same breath as the capability.
+    icon: 'devices',
+    /* Scoped, not qualified. "No native modules, no prebuild step, no ejecting"
+     * was true of the crypto and false of the storage this site's own /product
+     * page documents: the encrypted Expo store is expo-sqlite with SQLCipher,
+     * which Expo Go does not carry. Appending the limit to the wide claim was
+     * tried and two readers called the result a contradiction, because a
+     * development build is native project generation however it is spelled.
      *
-     * Appending the limit was not enough: "no prebuild step" and "needs a
-     * development build" stayed in one sentence, and two readers called it a
-     * contradiction, because a development build is native project generation
-     * however it is spelled. The claim is now scoped the way the approved
-     * proof point in docs/messaging.md §5 scopes it — to the *protocol code*,
-     * which really is pure TypeScript — rather than to the package as a whole.
-     * /product keeps the full reconciliation, where there is room to explain
-     * that `npx expo prebuild` is not a command the reader types. */
-    body: 'Expo, React Native, browsers, and Node from one package. The protocol code is pure TypeScript with no native crypto module to link — the encrypted Expo store uses SQLCipher, which needs a development build rather than Expo Go.',
+     * What holds the sentence honest is therefore the subject and not a clause
+     * after it: docs/messaging.md §5 approves the adjective of the *protocol
+     * code*, which really is pure TypeScript with no native crypto module, and
+     * that is all this claims. The store the exception is about is a different
+     * component of the same package, and /product carries the reconciliation
+     * in full, where there is room to explain that `npx expo prebuild` is not a
+     * command the reader types.
+     *
+     * The exception used to ride here too, on the founder's call that a cell
+     * naming four runtimes should name the one that needs a build. It came off
+     * on the founder's call in the round after: a deck cell is read at a
+     * glance, the second half of this one was the only sentence in the band
+     * that qualified rather than offered, and the scoping already does the work
+     * the clause was added for. */
+    body: 'Expo, React Native, browsers, and Node from one package. The protocol code is pure TypeScript with no native crypto module to link.',
   },
   {
     /* The cell closed on "Not a future roadmap item", which spends its last
@@ -81,7 +89,7 @@ const differentiators: Differentiator[] = [
   },
   {
     title: 'Every claim is inspectable',
-    icon: 'telescope',
+    icon: 'search',
     body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay holds are all published.',
   },
   {
@@ -188,10 +196,17 @@ const runtimes = [
             §5 approves the adjective of the *protocol code*; one level down the
             encrypted Expo store is expo-sqlite with SQLCipher and needs a
             development build. As its own sentence the phrase reads across the
-            whole package, so the exception in the feature band below is not a
-            footnote to it — it is the condition on it, and
+            whole package, so the runtime cell in the feature band below is not
+            an elaboration of it — it is the condition on it, and
             `tests/site-content.test.mjs` fails if the lead makes this claim
-            while the page drops the exception.
+            while the page drops the scoping.
+
+            The condition is the scoping and not the exception. The cell stated
+            the SQLCipher limit outright for several rounds and no longer does;
+            what a reader has to be able to reach from this fragment is the
+            sentence that names *protocol code* as its subject. The limit
+            itself lives on /product, one line under the same band, where the
+            note on the stores links to it by name.
 
             No runtime list and no adapter ownership in this paragraph. Both
             are on the page — the runtime links, and the quickstart caveat

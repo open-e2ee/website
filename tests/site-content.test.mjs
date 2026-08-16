@@ -3231,9 +3231,13 @@ test('does not overstate the one artefact that exists to not be overstated', asy
    * requires one. "No native crypto module to link" is scoped to the protocol
    * code, which is the scope docs/messaging.md §5 uses for the same claim;
    * SQLCipher needs a development build however it is generated, and
-   * local/store/expo/README.md says so outright. */
+   * local/store/expo/README.md says so outright.
+   *
+   * The scoping is what this pins. The cell also stated the SQLCipher limit
+   * for several rounds and the founder cut it; the denial is what the guard
+   * was built against, and a page that never claims "no prebuild step" is not
+   * denying anything. /product states the limit and pins it there. */
   assert.match(index, /protocol code is pure TypeScript with no native crypto module/);
-  assert.match(index, /needs a development build rather than Expo Go/);
   if (dist) assert.doesNotMatch(dist, /no prebuild step/);
 });
 
@@ -3453,19 +3457,26 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
      * docs/messaging.md §5 approves "pure TypeScript protocol code". The
      * unqualified form is false one level down — the encrypted Expo store is
      * expo-sqlite with SQLCipher and needs a development build — so the lead
-     * may use the short form only while the page states the storage exception
-     * somewhere a reader reaches. That is a condition on the phrase, not a
+     * may use the short form only while the page names the subject the
+     * adjective is approved of. That is a condition on the phrase, not a
      * requirement to use it: a lead that drops the phrase owes nothing, and
      * this used to pin one exact sentence and would have failed the next two
      * times the lead was rewritten while the claim it guards stayed true.
      *
-     * The exception is checked on the built page, in the block below. */
+     * What the condition is has moved once. It was the storage exception —
+     * "needs a development build rather than Expo Go" — for as long as the
+     * runtime cell carried that clause, and the founder cut the clause on
+     * 2026-08-16. The scoping is the part §5 actually approves and the part
+     * that survived, so the guard follows it rather than following a sentence
+     * off the page; the exception itself is on /product and pinned there.
+     *
+     * The scoping is checked on the built page, in the block below. */
     if (/pure TypeScript/i.test(lead)) {
       const built = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
       assert.match(
         built,
-        /needs a development build rather than Expo Go/,
-        'the lead claims pure TypeScript and the page no longer states the storage exception',
+        /protocol code is pure TypeScript with no native crypto module/,
+        'the lead claims pure TypeScript and the page no longer scopes the claim',
       );
     }
   }
@@ -3520,11 +3531,13 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
      * quietly rewritten to match whatever the lead said next, and neither of
      * those is a gate. What is left is the fact and the place it is provable:
      * the caption stands directly over the recorded relay row. */
-    /* The storage exception that scopes "pure TypeScript" in the lead.
-     * Asserted here rather than only beside the runtime cell, because the two
-     * are one claim split across a screen: the lead is allowed its short form
-     * precisely while this is on the same page. */
-    assert.match(dist, /needs a development build rather than Expo Go/);
+    /* The subject that scopes "pure TypeScript" in the lead. Asserted here
+     * rather than only beside the runtime cell, because the two are one claim
+     * split across a screen: the lead is allowed its short form precisely
+     * while this is on the same page. It named the storage exception until the
+     * founder cut that clause from the cell; the scoping is what §5 approves
+     * and what the page still carries, and /product holds the exception. */
+    assert.match(dist, /protocol code is pure TypeScript with no native crypto module/);
     /* The demo caption had the same collision and the worse placement — it
      * stands directly over the recorded row. Two assertions here pinned the
      * sentence that fixed it, "Everything in between is ciphertext"; the
