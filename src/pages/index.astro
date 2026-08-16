@@ -152,20 +152,25 @@ const differentiators: Differentiator[] = [
     body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files all ship in the same package as the one-to-one case. Each is a protocol in its own right.',
   },
   {
-    /* Noun first, like its neighbours, and the noun is what the cell offers
-       rather than a property of the claims. "Every claim is inspectable" is a
-       sentence about our claims, so a sceptical reader meets the assertion
-       before the thing that answers it; "Evidence for every claim" leads with
-       what they get and lets the body list it.
+    /* The title says what the reader can do, not what our claims are like.
+       "Every claim is inspectable" is a sentence about our claims, so a
+       sceptical reader meets the assertion before the thing that answers it.
+       Publication is the fact, and review is what it is for: the body is a
+       list of artefacts a reader can open and check for themselves.
 
-       It is also the deck's own word for this. docs/messaging.md §5 calls the
-       list of checkable facts the proof points, and every item in this body is
-       one of them — the implementation, the protocol profile, the threat
+       Not "everything published" and not "open to": the internal repository
+       and the test suite stay private, so an unbounded claim would be false,
+       and the cell below this one is the licence. Two adjacent titles built on
+       "open" would read as one claim told twice.
+
+       The body carries the deck's own word for these. docs/messaging.md §5
+       calls the list of checkable facts the proof points, and every item here
+       is one of them — the implementation, the protocol profile, the threat
        model, and the metadata list are four published artefacts, not four
        assurances. */
-    title: 'Evidence for every claim',
+    title: 'Published for anyone to review',
     icon: 'search',
-    body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay holds are all published.',
+    body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay holds are all public.',
   },
   {
     /* The cell states the licence and hands the reader to /pricing, which
@@ -544,8 +549,8 @@ const runtimes = [
 
               The sentence used to close on "and metadata", and the admission has
               not left the page with it: the carrier panel below prints every
-              field the relay was recorded holding, and the "Evidence for
-              every claim" cell says the list is published. Naming it here as
+              field the relay was recorded holding, and the "Published for
+              anyone to review" cell says the list is public. Naming it here as
               well made the shortest paragraph on the page carry the longest
               qualification.
 
