@@ -109,9 +109,10 @@ const differentiators: Differentiator[] = [
      * only one the client demands — so the sentence says they are interfaces
      * you fill and does not say you must fill all of them.
      *
-     * Sentence case, against the founder's capital, because the other six
-     * titles in the deck are sentence case and a single title-cased cell reads
-     * as a mistake in a row of seven.
+     * "Infrastructure you own" and not "Your infrastructure": the ownership is
+     * the claim, and a possessive at the front of a title is read as an
+     * article. It puts the word a reader is scanning for first, too, which is
+     * what the other six titles do — none of them opens on "your".
      *
      * "Nothing phones home" stays. It was the shortest line in the old body
      * and it is the one an on-premises reader is actually asking about: no
@@ -121,7 +122,7 @@ const differentiators: Differentiator[] = [
      *
      * The relay is named here as one of the three and argued in the last cell,
      * which is where what it holds, and the cost of holding it, belong. */
-    title: 'Your infrastructure',
+    title: 'Infrastructure you own',
     icon: 'server',
     body: 'Storage, relay, and encrypted object storage are interfaces you fill, with an adapter from the package or one you write, and run on your own hardware, a VPS, or the cloud you already pay for. We host nothing, and nothing phones home.',
   },
@@ -151,7 +152,18 @@ const differentiators: Differentiator[] = [
     body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files all ship in the same package as the one-to-one case. Each is a protocol in its own right.',
   },
   {
-    title: 'Every claim is inspectable',
+    /* Noun first, like its neighbours, and the noun is what the cell offers
+       rather than a property of the claims. "Every claim is inspectable" is a
+       sentence about our claims, so a sceptical reader meets the assertion
+       before the thing that answers it; "Evidence for every claim" leads with
+       what they get and lets the body list it.
+
+       It is also the deck's own word for this. docs/messaging.md §5 calls the
+       list of checkable facts the proof points, and every item in this body is
+       one of them — the implementation, the protocol profile, the threat
+       model, and the metadata list are four published artefacts, not four
+       assurances. */
+    title: 'Evidence for every claim',
     icon: 'search',
     body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay holds are all published.',
   },
@@ -164,9 +176,24 @@ const differentiators: Differentiator[] = [
      * it, and a fresh reader listed that as one of two go/no-go inputs they
      * could not get. `tests/site-content.test.mjs` fails the build if the
      * page promises a published price again, and if the link stops leading to
-     * a page that renders every tier. */
+     * a page that renders every tier.
+     *
+     * The title is the category and the body is the licence, on the founder's
+     * call. "AGPLv3, or a commercial license" put a licence identifier and a
+     * disjunction in a scanned row of seven, where the reader is sorting the
+     * product into a kind of thing rather than reading terms; the terms are
+     * one line below it and the tiers are one click below that.
+     *
+     * The claim holds without a qualifier: AGPL-3.0-or-later is OSI-approved,
+     * the whole SDK is under it, and docs/messaging.md §5 states it plainly.
+     * The commercial option is not lost by dropping it from the title — it is
+     * what "See the tiers" leads to, and /pricing carries all three.
+     *
+     * The id does not follow the title. It is a deep link a reader can arrive
+     * on from elsewhere, and both halves of the name are still what the cell
+     * is about. */
     id: 'agpl-or-commercial',
-    title: 'AGPLv3, or a commercial license',
+    title: 'Open source',
     icon: 'law',
     body: 'The complete SDK is free under AGPLv3 — every feature.',
     link: { href: '/pricing', label: 'See the tiers' },
@@ -229,10 +256,13 @@ const differentiators: Differentiator[] = [
    * would read as a condition on the relay rather than the fact about the
    * whole package that it is.
    *
-   * The title went from "The relay is built in, and you run it" to four words
-   * on the founder's call. Both halves of the old one were already in the
-   * body's first clause, and a title that summarises the sentence under it
-   * spends the widest row on the deck saying one thing twice.
+   * The title went from "The relay is built in, and you run it" to "A relay
+   * you can run anywhere" on the founder's call. Both halves of the old one
+   * were already in the body's first clause, and a title that summarises the
+   * sentence under it spends the widest row on the deck saying one thing
+   * twice. What replaced it is the offer, and it is a noun phrase rather than
+   * an instruction: the six cells above it name things, and the one that
+   * issued a command read as the odd one out of the seven.
    *
    * The cost stays attached to it, because the relay is what produces it.
    * docs/messaging.md §1.2 puts the limit in the same breath as the
@@ -247,7 +277,7 @@ const differentiators: Differentiator[] = [
    */
   {
     id: 'your-relay-holds-ciphertext',
-    title: 'Run the relay anywhere',
+    title: 'A relay you can run anywhere',
     icon: 'broadcast',
     wide: true,
     body: 'The relay is code in the package, not a service: in-memory for development, a Convex component for your own deployment, and one interface for any backend you want to put it on. It holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
@@ -499,8 +529,8 @@ const runtimes = [
 
               The sentence used to close on "and metadata", and the admission has
               not left the page with it: the carrier panel below prints every
-              field the relay was recorded holding, and the "Every claim is
-              inspectable" cell says the list is published. Naming it here as
+              field the relay was recorded holding, and the "Evidence for
+              every claim" cell says the list is published. Naming it here as
               well made the shortest paragraph on the page carry the longest
               qualification.
 
