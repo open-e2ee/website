@@ -180,19 +180,20 @@ test('answers the runtime question on the homepage', async () => {
   }
 });
 
-test('keeps the hero snippet traceable to the recording, rename apart', () => {
+test('keeps the hero snippet traceable to the recording', () => {
   /* The carrier panel's rule applies to the snippet beside it: nothing on
    * this page is drawn, mocked up, or hand-typed. A hero example written to
    * read well is a claim about the API surface, and it is the one claim this
    * brand cannot afford to get wrong.
    *
-   * The rule used to be "every line appears in the capture", which the
-   * selector broke honestly: the recording drives an `alice` and a `bob` in
-   * one process, and an application has one client. So the test now allows
-   * exactly one transformation — that rename — and nothing else. Undo the
-   * rename and every line must be back in the recording verbatim. An editor
-   * who pastes a "small fix" into the rendered string still fails here,
-   * because a fix is not a rename. */
+   * The rule is "every code line appears in the capture", with no licensed
+   * edit. It was weaker for a while: the panel showed one client called
+   * `signal` where the recording drives an `alice` and a `bob`, so this test
+   * had to undo that rename before it could look a line up, and a `.replace()`
+   * chain sitting in front of an assertion is a hole the next editor widens.
+   * Showing both devices closed it. An editor who pastes a "small fix" into
+   * the rendered string fails here, and there is nothing left to fix it
+   * through. */
   /* Comment-only lines are the page's own voice and are excluded here, then
    * held to their own rule in the test below. Splitting the two is what keeps
    * this assertion meaningful: the recording proves the API, and a comment
@@ -200,33 +201,28 @@ test('keeps the hero snippet traceable to the recording, rename apart', () => {
    * that has no comments would only mean the panel could not have any.
    *
    * Trailing comments are not excluded and must not be. `// plaintext, only on
-   * this device` rides on a code line, is in the recording as "only on Bob's
-   * device", and the rename above is what carries it — so it is still proved
-   * by the capture like the code it annotates. */
+   * Bob's device` rides on a code line and is in the recording as written, so
+   * it is proved by the capture like the code it annotates. */
   const all = heroCode.split('\n').filter((line) => line.trim());
   const rendered = all.filter((line) => !line.trim().startsWith('//'));
   assert.ok(rendered.length > 0);
   assert.ok(all.length > rendered.length, 'the panel lost the comments that explain it');
 
-  const unrename = (line) =>
-    line
-      .replace(/\bconst signal\b/, 'const alice')
-      .replace(/\bawait signal\.send\b/, 'await alice.send')
-      .replace(/\bsignal\./g, 'bob.')
-      .replace('only on this device', "only on Bob's device");
-
   for (const line of rendered) {
     assert.ok(
-      capture.quickstartCode.includes(unrename(line)),
-      `hero line is not in the recorded capture, even after the rename: ${line}`,
+      capture.quickstartCode.includes(line),
+      `hero line is not in the recorded capture: ${line}`,
     );
   }
 
-  /* The rename is the only licensed edit, so `alice` and `bob` must not
-   * survive as identifiers in the example. The message string still names
-   * `"bob"` as a recipient, which is data rather than a client. */
-  assert.doesNotMatch(heroCode, /\b(?:alice|bob)\s*\./);
-  assert.doesNotMatch(heroCode, /\bconst (?:alice|bob)\b/);
+  /* Both devices are constructed, and they are the recording's own two. This
+   * is what the removed rename guard used to enforce in the negative, and it
+   * is the shape the founder asked the panel for: a reader sees a conversation
+   * rather than a client sending to a string. */
+  assert.match(heroCode, /const alice = await createSignalProtocolClient\(\{/);
+  assert.match(heroCode, /const bob = await createSignalProtocolClient\(\{/);
+  assert.match(heroCode, /identity: \{ userId: "alice" \},/);
+  assert.match(heroCode, /identity: \{ userId: "bob" \},/);
 
   assert.equal(installCommand, `npm install ${capture.packageName}`);
 });
@@ -2935,14 +2931,20 @@ test('shows the receive side in the hero, not only the send', () => {
    * relay delivers it — and the recorded comment beside it is the page's
    * central claim in code that ran rather than in a sentence about code.
    * Trimming the snippet back to the send call gives both of those up. */
-  assert.match(heroCode, /signal\.registerHook\("onMessageDecrypted"/);
-  assert.match(heroCode, /plaintext, only on this device/);
+  assert.match(heroCode, /bob\.registerHook\("onMessageDecrypted"/);
+  assert.match(heroCode, /plaintext, only on Bob's device/);
 
   /* Registering a hook after `create()` means the subscription has to be
    * started by hand — `client.d.ts` starts it automatically only when a hook
    * was already configured. A snippet that registers and never subscribes
    * shows a receive path that never fires. */
-  assert.match(heroCode, /signal\.startRelaySubscription\(\);/);
+  assert.match(heroCode, /bob\.startRelaySubscription\(\);/);
+
+  /* The receiving client is the one the sender addresses. Two devices in the
+   * panel make that checkable where one client and a `"bob"` string could not:
+   * a panel that subscribed on `alice` and sent to `"bob"` would print
+   * nothing, and would still have passed every assertion above. */
+  assert.match(heroCode, /await alice\.send\("bob", /);
 });
 
 test('declares what the example uses', async () => {
