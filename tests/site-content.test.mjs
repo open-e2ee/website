@@ -1722,10 +1722,10 @@ test('closes the page on what the licence hands over, not on forking it', async 
   assert.match(drawing, /<div class="commitline" data-commitline aria-hidden="true">/);
 
   /* The band states neither licence's terms and routes to the page that owns
-   * them, so the route has to survive. `/licensing` carries what the AGPL asks
+   * them, so the route has to survive. `/licensing` carries what AGPLv3 asks
    * of the reader's own application; a band that hands over four things and
    * links nowhere would leave a developer to learn it from a lawyer. */
-  assert.match(index, /<a href="\/licensing">Understand AGPL use<\/a>/);
+  assert.match(index, /<a href="\/licensing">Understand AGPLv3 use<\/a>/);
   assert.match(index, /<a href="https:\/\/github\.com\/open-e2ee\/signal-protocol-js">/);
 
   /* `docs/messaging.md` §4: the tier vocabulary is banned as a rendering of
@@ -1753,7 +1753,7 @@ test('closes the page on what the licence hands over, not on forking it', async 
    * assumed: a restored closing block would land inside this band. */
   assert.match(
     band,
-    /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+Understand AGPL use/,
+    /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+Understand AGPLv3 use/,
     'the graph, the mark and the licence link are no longer in that order',
   );
   assert.doesNotMatch(
@@ -3621,13 +3621,17 @@ test('carries what the OSI mark is licensed on, wherever the mark is', async () 
     'the OSI mark is on the page without its required attribution statement',
   );
 
-  /* The permission itself. AGPL-3.0 is on OSI's approved list; the mark is
-   * allowed here because the page says the SDK is under it. Matched on the
-   * licence identifier rather than on any one sentence, because four different
-   * sentences on this page have carried it and any of them discharges this. */
+  /* The permission itself. The GNU Affero General Public License version 3 is
+   * on OSI's approved list; the mark is allowed here because the page says the
+   * SDK is under it. Matched on the licence rather than on any one sentence,
+   * because four different sentences on this page have carried it and any of
+   * them discharges this. Both renderings satisfy the condition and both are
+   * matched: `docs/messaging.md` §4 makes AGPLv3 the prose form and leaves the
+   * SPDX identifier in place where a licence field or a legal clause names it,
+   * and OSI's condition is about the licence, not about its spelling. */
   assert.match(
     built,
-    /AGPL-3\.0/,
+    /AGPLv3|AGPL-3\.0/,
     'the OSI mark is permitted only on a page that promotes an OSI-approved licence',
   );
 
@@ -3999,9 +4003,9 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
    * was cut with the rest of that line on 2026-08-09. The licence cell in the
    * feature band is the homepage's statement now, and it is the fuller one —
    * it quotes the entry price from the same module /pricing renders. */
-  assert.match(index, /The complete SDK is free under AGPL-3\.0/);
+  assert.match(index, /The complete SDK is free under AGPLv3/);
   assert.match(index, /link: \{ href: '\/pricing', label: 'See the tiers' \}/);
-  assert.match(pricing, /Free under AGPL\./i);
+  assert.match(pricing, /Free under AGPLv3\./i);
 
   /* The tier copy and the prices moved out of this page and into
    * src/data/pricing.mjs, so that the landing page could quote the entry
@@ -4010,7 +4014,7 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
   const { tiers } = await import('../src/data/pricing.mjs');
   assert.ok(
     tiers.some((tier) => /You run your own infrastructure/i.test(tier.detail)),
-    'the AGPL tier no longer says who runs the infrastructure',
+    'the AGPLv3 tier no longer says who runs the infrastructure',
   );
 
   /* The sentence that creates the debt now links to the page that prices it.
@@ -4023,6 +4027,49 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
     tiers.filter((tier) => /^\$[\d,]+\+?$/.test(tier.price)).length >= 3,
     'fewer than three tiers carry a concrete price',
   );
+});
+
+test('names the licence AGPLv3 wherever the site is not quoting an identifier', async () => {
+  /* `docs/messaging.md` §4: AGPLv3 is the prose rendering. The bare word is
+   * what the rule is against — it names a licence family rather than a version,
+   * and the family has three versions with different obligations.
+   *
+   * The SPDX identifier is not prose and passes: `AGPL-3.0-or-later` is what
+   * `package.json` declares, and `AGPL-3.0-only` is libsignal's grant on the
+   * comparison table, where the difference from ours is the point of the row.
+   * So this matches the word with no version after it, in either rendering.
+   *
+   * /legal is excluded because a contract defines its own terms. The commercial
+   * terms name the licence in full — "Affero General Public License, version 3
+   * or later (AGPL-3.0-or-later)" — and then use the short form the way a
+   * defined term is used. Rewriting a defined term to match a marketing rule is
+   * an edit to an instrument, and this project keeps executed instruments as
+   * they were executed.
+   *
+   * On the built pages rather than the sources, because the sources carry
+   * comments — this one included — that quote the banned form in order to rule
+   * it out, and a source-side sweep would fail on its own reasoning. */
+  const distDir = new URL('../dist/', import.meta.url);
+  let pages;
+  try {
+    pages = (await readdir(distDir, { recursive: true })).filter((name) => name.endsWith('.html'));
+  } catch {
+    skipUnbuilt('dist/');
+    return;
+  }
+
+  const offenders = [];
+  for (const page of pages) {
+    if (page.startsWith('legal/')) continue;
+    const text = (await readFile(new URL(page, distDir), 'utf8'))
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ');
+    for (const hit of text.matchAll(/.{0,40}\bAGPL\b(?!-3\.0).{0,40}/g)) {
+      offenders.push(`${page}: …${hit[0]}…`);
+    }
+  }
+
+  assert.deepEqual(offenders, [], `the licence is named without its version:\n${offenders.join('\n')}`);
 });
 
 /* A test here — "points at the documentation it says it has" — pinned the

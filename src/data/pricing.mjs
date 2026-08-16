@@ -20,13 +20,13 @@
  */
 export const tiers = [
   {
-    name: 'AGPL-3.0',
+    name: 'AGPLv3',
     price: 'Free',
     period: null,
-    body: 'The complete SDK, for products that can meet the AGPL obligations. No feature is held back and nothing is time-limited.',
+    body: 'The complete SDK, for products that can meet the AGPLv3 obligations. No feature is held back and nothing is time-limited.',
     detail:
       'You run your own infrastructure, you keep your own keys, and your source obligations are the license text rather than anything we decide later.',
-    cta: { href: '/licensing', label: 'Understand AGPL use', secondary: true },
+    cta: { href: '/licensing', label: 'Understand AGPLv3 use', secondary: true },
   },
   {
     name: 'Startup',
