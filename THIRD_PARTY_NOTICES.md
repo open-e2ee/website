@@ -11,7 +11,7 @@ than pointing at a dependency. License text: `third-party/Octicons-MIT.txt`.
 Naming a license without shipping it does not satisfy it.
 
 `src/components/DeckIcon.astro` renders six more from the same release, copied
-unmodified from its 24-pixel masters: `devices`, `key`, `server`, `search`,
+unmodified from its 24-pixel masters: `devices`, `inbox`, `server`, `search`,
 `law`, and `lock`. These are held in this repository rather than in
 `@open-e2ee/design/icons`, so the copy here is the only one and the same license
 text covers it. Its seventh name, `battery`, is not an Octicon: it is drawn in

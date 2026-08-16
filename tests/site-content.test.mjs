@@ -3281,8 +3281,14 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
    * frames seven capabilities as a charge. What the guard protects is the
    * cost itself, which is still here, written as the property it follows
    * from rather than as a loss — so the pins move to the new wording and the
-   * count of them does not drop. */
-  assert.match(index, /title: 'Your relay holds ciphertext'/);
+   * count of them does not drop.
+   *
+   * The cell then took a second job on the founder's call: it leads with the
+   * relay that ships, and the cost follows from what that relay holds. The
+   * title is no longer where the cost lives, so the pin on it is gone rather
+   * than repointed — a title pin here would fail on the next founder edit
+   * without protecting anything. What is pinned is the sentence, which is the
+   * thing docs/messaging.md §1.2 requires to travel with the offer. */
   assert.match(index, /all your backend can leak and all it can produce for a legal request/);
   assert.match(
     index,
@@ -3336,6 +3342,18 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
   assert.equal(icons.length, cells.length, `${icons.length} icons for ${cells.length} cells`);
   assert.match(index, /<DeckIcon name=\{item\.icon\} \/>/);
   assert.match(index, /<ul class="rows rows-iconed">/);
+
+  /* The cost cell spans both columns, which is the only reason its body has
+   * room to lead with the relay and still carry the limit. Three things have
+   * to hold together for that and each can be lost on its own: the flag on
+   * the cell, the binding that turns it into a class, and the rule that makes
+   * the class mean something. A flag with no rule is a plain row that reads as
+   * a narrow strip of text beside half an empty grid line, and nothing else on
+   * the page would fail. */
+  assert.match(index, /wide: true,/);
+  assert.match(index, /class=\{item\.wide \? 'row-wide' : undefined\}/);
+  const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
+  assert.match(css, /\.rows > \.row-wide \{\n {2}grid-column: 1 \/ -1;/);
 
   /* An assertion here pinned the lead sentence "Not a hosted chat service,
    * and more than TLS". The lead stopped carrying that sentence when it became
@@ -3495,7 +3513,7 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
    * cell is addressable through the same `item.id`, so the pin is on the id
    * and on the binding that renders it, not on a sentence pointing at it. */
   assert.match(index, /id: 'your-relay-holds-ciphertext'/);
-  assert.match(index, /<li id=\{item\.id\}>/);
+  assert.match(index, /<li id=\{item\.id\}/);
 
   /* docs/messaging.md §3 bans "the relay can't read your messages" by name.
    * The lead therefore claims what the envelope is, which the recorded row

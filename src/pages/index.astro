@@ -21,6 +21,9 @@ interface Differentiator {
   icon: DeckIconName;
   body: string;
   link?: { href: string; label: string };
+  /* Spans both columns. Only the last cell may set it: a wide row in the
+     middle of the grid leaves a hole beside the row before it. */
+  wide?: boolean;
 }
 
 const differentiators: Differentiator[] = [
@@ -51,16 +54,35 @@ const differentiators: Differentiator[] = [
     body: 'Expo, React Native, browsers, and Node from one package. The protocol code is pure TypeScript with no native crypto module to link.',
   },
   {
-    /* The cell closed on "Not a future roadmap item", which spends its last
+    /* "Post-quantum from the first handshake" spent five words on when the
+     * property starts and none on what it is, and the handshake is only half
+     * of it. A reader who knows the field asks one question here — is the
+     * ratchet post-quantum, or only the key agreement — and a title that stops
+     * at the first handshake answers it the wrong way round.
+     *
+     * So the body names both constructions, in the SDK's own words:
+     * `internal/protocol/triple-ratchet/` and `internal/protocol/spqr/`, whose
+     * spec table lists ML-KEM Braid revision 1. The 32 bytes is `CHUNK_SIZE`
+     * in `spqr/ml-kem-braid/rs/codec.ts`, and it is what makes "spreads each
+     * encapsulation" mean something rather than sound like one.
+     *
+     * No FIPS claim, deliberately. docs/DEVIATIONS.md §4.1 records that in
+     * braid mode the KEM is ML-KEM-768 with a modified `hek` derivation, and
+     * that a FIPS conformance claim would not hold on that path. Naming the
+     * construction is true; naming the certification is not. A parameter set
+     * appears once, on PQXDH, which really is ML-KEM-1024.
+     *
+     * The cell closed on "Not a future roadmap item", which spends its last
      * sentence on what a competitor has not done. The default is the better
      * fact and it is the reader's: nothing to turn on, and the scope stated
      * with it. Both halves are the installed README's, which says the session
      * establishment is "on without configuration, and fail closed" and that
      * identities are classical Ed25519 — so the cell claims post-quantum for
-     * key agreement, which is what ships, and not for signatures. */
-    title: 'Post-quantum from the first handshake',
-    icon: 'key',
-    body: 'PQXDH with ML-KEM establishes every session and the Double Ratchet carries it forward, on without configuration and failing closed. Key agreement is post-quantum; identity signatures are Ed25519.',
+     * key agreement and for the ratchet, which is what ships, and not for
+     * signatures. */
+    title: 'Post-quantum',
+    icon: 'lock',
+    body: 'PQXDH with ML-KEM-1024 establishes every session, and the Triple Ratchet carries it forward: the Double Ratchet plus the ML-KEM Braid, a post-quantum ratchet spread 32 bytes at a time across the messages you were already sending. On without configuration and failing closed; identity signatures are Ed25519.',
   },
   {
     title: 'Your backend stays yours',
@@ -154,12 +176,32 @@ const differentiators: Differentiator[] = [
    * and the sentence still says so. It stops there deliberately: the SDK ships
    * no reporting API, and describing the client-side pattern as though it
    * were one would trade an over-disqualification for an invented feature.
+   *
+   * What the cell now opens on is the founder's call, and it is the fact the
+   * page was leaving out: a relay is not something the reader has to go and
+   * build. Two ship — `inMemoryRelay()` for development and tests, and a
+   * Convex component the application installs into its own deployment with
+   * `app.use(signalProtocol)` — and anything else implements
+   * `ISignalProtocolRelayServer`. The cell above already says the backend is
+   * the reader's to run; this one says there is something to run.
+   *
+   * The cost stays attached to it, because the relay is what produces it.
+   * docs/messaging.md §1.2 puts the limit in the same breath as the
+   * capability, and a cell that offers a relay and stops there would move the
+   * one cost in the deck off the page entirely. Full width is what pays for
+   * both halves: the row is alone on the last line of a two-column grid, so
+   * the span costs no vertical space and buys the body a full measure.
+   *
+   * The id does not change with the title. It is the one deep link on this
+   * page a reader arrives on from somewhere else, and the cell still holds
+   * ciphertext, so the anchor is still true.
    */
   {
     id: 'your-relay-holds-ciphertext',
-    title: 'Your relay holds ciphertext',
-    icon: 'lock',
-    body: 'It stores the row the demo above records: ciphertext, with routing metadata on the outside. That row is all your backend can leak and all it can produce for a legal request, which is the same reason search, moderation, and restoring a user who has lost every device stay yours to design — the SDK ships encrypted device-to-device transfer to build the last one on. If any of the three has to run on your server, encrypt in transit and at rest instead.',
+    title: 'The relay is built in, and you run it',
+    icon: 'inbox',
+    wide: true,
+    body: 'A relay ships with the SDK: in-memory for development, a Convex component you install into your own project, and one interface for any other backend. Whichever you run holds the row the demo above records — ciphertext, with routing metadata on the outside. That row is all your backend can leak and all it can produce for a legal request, which is the same reason search, moderation, and restoring a user who has lost every device stay yours to design; the SDK ships encrypted device-to-device transfer to build the last one on. If any of the three has to run on your server, encrypt in transit and at rest instead.',
   },
 ];
 
@@ -471,8 +513,8 @@ const runtimes = [
               though — a deck of seven capabilities that opens by naming the
               thing it cannot do reads as a warning rather than as an offer.
               The disqualifier is still on the page, last in the deck, written
-              as the property it follows from. A reader who needs it recognises
-              "Your relay holds ciphertext" from the demo they just watched.
+              as the property it follows from. A reader who needs it meets it
+              in the cell that names the row the demo above just recorded.
 
               What is left is the count and the tense. Both are load-bearing:
               seven is what the reader is about to scroll, and "the first time
@@ -488,7 +530,7 @@ const runtimes = [
           exactly as it did before to anything that is not looking at it. */}
       <ul class="rows rows-iconed">
         {differentiators.map((item) => (
-          <li id={item.id}>
+          <li id={item.id} class={item.wide ? 'row-wide' : undefined}>
             <DeckIcon name={item.icon} />
             <div class="row-body">
               <h3>{item.title}</h3>

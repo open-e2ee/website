@@ -1990,6 +1990,26 @@ a:hover {
 }
 
 /*
+ * A row that spans both columns. It is for the last row of an odd-numbered
+ * grid, which sits alone on its line with the other half of that line already
+ * empty — so the span costs no vertical space and the row's rule reads as the
+ * band closing rather than as a column ending early.
+ *
+ * The body takes the page measure instead of the column's 54ch. 54ch is set
+ * for a half-width column and holds a paragraph to about six lines there; the
+ * same cap in a full-width row is a narrow strip of text with half the row
+ * blank beside it, which reads as a layout fault rather than as a wide row.
+ */
+.rows > .row-wide {
+  grid-column: 1 / -1;
+}
+
+.rows > .row-wide > p,
+.rows > .row-wide > .row-body > p {
+  max-width: var(--oe-content-measure);
+}
+
+/*
  * The deck with an icon column. The icon column is a fixed width and the text
  * takes the rest, so the icons line up down the band as one column rather than
  * each one sitting wherever its own row's text starts.
