@@ -10,6 +10,12 @@ them into its own pages, so it redistributes them too and states it here rather
 than pointing at a dependency. License text: `third-party/Octicons-MIT.txt`.
 Naming a license without shipping it does not satisfy it.
 
+`src/components/DeckIcon.astro` renders seven more from the same release, copied
+unmodified from its 24-pixel masters: `code-square`, `key`, `server`,
+`package`, `telescope`, `law`, and `lock`. These are held in this repository
+rather than in `@open-e2ee/design/icons`, so the copy here is the only one and
+the same license text covers it.
+
 The GitHub mark is copied rather than redrawn on purpose. It is a trademark,
 and an approximation of someone else's trademark is worse than no mark at all.
 Using it to link to our own repository is nominative use; it is not a claim of

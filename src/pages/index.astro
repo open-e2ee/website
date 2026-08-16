@@ -3,6 +3,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import BatteryMark from '../components/BatteryMark.astro';
 import DemoConsole from '../components/demo/DemoConsole.astro';
 import CommitLine from '../components/CommitLine.astro';
+import DeckIcon from '../components/DeckIcon.astro';
+import type { DeckIconName } from '../components/DeckIcon.astro';
 import StarfieldMark from '../components/StarfieldMark.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
@@ -10,9 +12,22 @@ import PlatformStrip from '../components/PlatformStrip.astro';
 import TypeScriptMark from '../components/TypeScriptMark.astro';
 import { startupTier } from '../data/pricing.mjs';
 
-const differentiators = [
+/* Annotated rather than inferred: a bare array literal widens `icon` to
+ * `string`, and the point of naming the icons is that a typo is a build error
+ * instead of a row that silently renders nothing. `DeckIcon.astro` throws on an
+ * unknown name for the same reason, one layer down. */
+interface Differentiator {
+  id?: string;
+  title: string;
+  icon: DeckIconName;
+  body: string;
+  link?: { href: string; label: string };
+}
+
+const differentiators: Differentiator[] = [
   {
     title: 'Pure TypeScript, everywhere your app runs',
+    icon: 'code-square',
     /* "No native modules, no prebuild step, no ejecting" was true of the crypto
      * and false of the storage this site's own /product page documents: the
      * encrypted Expo store is expo-sqlite with SQLCipher, which Expo Go does
@@ -29,12 +44,21 @@ const differentiators = [
     body: 'Expo, React Native, browsers, and Node from one package. The protocol code is pure TypeScript with no native crypto module to link — the encrypted Expo store uses SQLCipher, which needs a development build rather than Expo Go.',
   },
   {
+    /* The cell closed on "Not a future roadmap item", which spends its last
+     * sentence on what a competitor has not done. The default is the better
+     * fact and it is the reader's: nothing to turn on, and the scope stated
+     * with it. Both halves are the installed README's, which says the session
+     * establishment is "on without configuration, and fail closed" and that
+     * identities are classical Ed25519 — so the cell claims post-quantum for
+     * key agreement, which is what ships, and not for signatures. */
     title: 'Post-quantum from the first handshake',
-    body: 'PQXDH with ML-KEM establishes the session; the Double Ratchet carries it forward. Not a future roadmap item.',
+    icon: 'key',
+    body: 'PQXDH with ML-KEM establishes every session and the Double Ratchet carries it forward, on without configuration and failing closed. Key agreement is post-quantum; identity signatures are Ed25519.',
   },
   {
     title: 'Your backend stays yours',
-    body: 'Your application composes the storage, relay, and encrypted-object adapters. We do not host anything, and nothing phones home.',
+    icon: 'server',
+    body: 'You compose the storage, relay, and encrypted-object adapters and run them where you already run things. We host nothing, and nothing phones home.',
   },
   {
     /* The clause here used to be "the work teams usually discover three
@@ -46,13 +70,19 @@ const differentiators = [
        trade the rest of the page refuses — borrowing the authority of a
        measurement without doing one — and it was buying a rhetorical beat.
        The replacement says the same thing as a fact about scope, which any
-       reader can check against their own prototype. */
+       reader can check against their own prototype.
+
+       It then said "the parts a working one-to-one prototype still leaves to
+       build", which is the same fact told as the reader's remaining work. The
+       list is the value; naming what ships is enough. */
     title: 'The hard parts are included',
-    body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files — the parts a working one-to-one prototype still leaves to build.',
+    icon: 'package',
+    body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files all ship in the same package as the one-to-one case. Each is a protocol in its own right.',
   },
   {
     title: 'Every claim is inspectable',
-    body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay still sees are all published.',
+    icon: 'telescope',
+    body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay holds are all published.',
   },
   {
     /* This cell said "at a published price" and showed no price, for the whole
@@ -69,28 +99,35 @@ const differentiators = [
      * rest. */
     id: 'agpl-or-commercial',
     title: 'AGPL, or a commercial license',
+    icon: 'law',
     body: `The complete SDK is free under AGPL-3.0 — every feature, nothing time-limited. Closed-source products buy annual production rights, from ${startupTier.price} ${startupTier.period} for one product.`,
     link: { href: '/pricing', label: 'See the tiers' },
   },
   /*
-   * The band is titled "What you get, and what it costs you to find out" and
-   * for eight rounds it listed only the first half. Three fresh readers in two
-   * consecutive waves arrived at the missing half unaided and made it their
-   * largest gap: one asked what happens to dispute resolution, fraud review
-   * and trust-and-safety; one wrote that support messages under E2EE cannot be
-   * produced under subpoena, cannot be supervised, and cannot have DLP run
-   * over them, and that "the page never names the tradeoff — not to solve it,
-   * not even to acknowledge it exists." Their shared conclusion was not that
-   * the product is wrong. It is that a page which omits the one cost every
-   * evaluator finds in the first meeting has not met an evaluator yet, and
-   * that reading is more expensive than the cost itself.
+   * The deck's one limit, and it is written as the property that produces it
+   * rather than as a loss. Three fresh readers in two consecutive waves
+   * arrived at that limit unaided and made it their largest gap: one asked
+   * what happens to dispute resolution, fraud review and trust-and-safety; one
+   * wrote that support messages under E2EE cannot be produced under subpoena,
+   * cannot be supervised, and cannot have DLP run over them, and that "the
+   * page never names the tradeoff — not to solve it, not even to acknowledge
+   * it exists." Their shared conclusion was not that the product is wrong. It
+   * is that a page which omits the one cost every evaluator finds in the first
+   * meeting has not met an evaluator yet, and that reading is more expensive
+   * than the cost itself.
    *
-   * It is stated as a consequence of what the relay holds, because that is the
-   * part this page can prove: the recorded row two bands up is ciphertext,
-   * and everything in this cell follows from that and nothing else. No
-   * regulation is named — docs/messaging.md bans "required for HIPAA / GDPR /
-   * SOC 2" outright, and the honest form of this cost is the capability a team
-   * loses, not a rule someone must obey.
+   * The answer to them was a cell titled "What you give up", with the band's
+   * lead sending readers into it before anything else. The two are not in
+   * conflict with a deck that states value: what the relay holds is the
+   * property the whole product rests on, and what a backend can do with it
+   * follows from that and nothing else. So the cell leads with the property,
+   * and docs/messaging.md §1.2 — the limit is part of the claim, not a
+   * disclaimer under it — is what keeps the rest of the sentence attached.
+   *
+   * The row named here is the one the demo directly above records, which is
+   * the only reason this page can assert any of it. No regulation is named:
+   * §2 bans "required for HIPAA / GDPR / SOC 2" outright, and the honest form
+   * is the capability a team loses, not a rule someone must obey.
    *
    * The last sentence sends the wrong reader away on purpose. The brief
    * optimises for qualified starts of a ten-minute quickstart, and a team that
@@ -104,14 +141,15 @@ const differentiators = [
    * report — is a solved pattern, so the page was disqualifying products it
    * actually fits, in the last sentence they would read before closing the
    * tab. The condition is server-side capability, not the capability itself,
-   * and the sentence now says so. It stops there deliberately: the SDK ships
+   * and the sentence still says so. It stops there deliberately: the SDK ships
    * no reporting API, and describing the client-side pattern as though it
    * were one would trade an over-disqualification for an invented feature.
    */
   {
-    id: 'what-you-give-up',
-    title: 'What you give up',
-    body: 'Your relay holds ciphertext, so nothing on your backend can search message contents, moderate them, or produce them for a legal request. The SDK ships encrypted device-to-device transfer, but restoring history to a user who has lost every device is a backup you design. If any of that has to happen on your server, encrypt in transit and at rest instead — this is the wrong tool, and it is cheaper to know now.',
+    id: 'your-relay-holds-ciphertext',
+    title: 'Your relay holds ciphertext',
+    icon: 'lock',
+    body: 'It stores the row the demo above records: ciphertext, with routing metadata on the outside. That row is all your backend can leak and all it can produce for a legal request, which is the same reason search, moderation, and restoring a user who has lost every device stay yours to design — the SDK ships encrypted device-to-device transfer to build the last one on. If any of the three has to run on your server, encrypt in transit and at rest instead.',
   },
 ];
 
@@ -395,33 +433,53 @@ const runtimes = [
   <section class="band">
     <div class="container">
       <div class="band-head">
-        <h2>What you get, and what it costs you to find out</h2>
+        {/* "What you get, and what it costs you to find out" for eight rounds.
+            The second half priced the reader's attention rather than naming
+            anything the product does, which framed a deck of seven
+            capabilities as a bill. A head with two halves also asks the
+            reader to hold a structure before they have read a single cell —
+            the rows do that work themselves. So: one clause, and the clause
+            is the offer. */}
+        <h2>What ships in the box</h2>
         <p class="measure">
-          {/* The deck used to end "including the one that decides it against",
-              which names a disqualifier and then withholds it. A reader whose
-              product cannot live without server-side moderation had to read
-              all seven cards to find the one that tells them to leave, and the
-              whole point of putting it on the page is that they leave early
-              and cheaply. A tease is the wrong shape for a warning. */}
-          Seven things that decide whether protocol-level encryption is workable for your product.
-          Read <a href="#what-you-give-up">What you give up</a> first &mdash; it rules this out for
-          products with retention, moderation, or account-recovery duties, and it is cheaper to know
-          now.
+          {/* The lead used to open on the deck's one limit and send the reader
+              to that cell before any other: a reader whose product cannot live
+              without server-side moderation left early and cheaply, which is
+              worth more than the visit. It cost every other reader the band,
+              though — a deck of seven capabilities that opens by naming the
+              thing it cannot do reads as a warning rather than as an offer.
+              The disqualifier is still on the page, last in the deck, written
+              as the property it follows from. A reader who needs it recognises
+              "Your relay holds ciphertext" from the demo they just watched.
+
+              What is left is the count and the tense. Both are load-bearing:
+              seven is what the reader is about to scroll, and "the first time
+              you install it" is the claim the deck's own cells keep — nothing
+              here is configured on, bought separately, or coming later. */}
+          Seven things that are true the first time you install it.
         </p>
       </div>
-      <ul class="rows">
+      {/* `rows-iconed` and not `rows`: every other deck on the site is text,
+          and this one gains an icon column, which changes the row's layout
+          rather than its content. The icon carries no accessible name —
+          `DeckIcon.astro` argues that where they are drawn — so the row reads
+          exactly as it did before to anything that is not looking at it. */}
+      <ul class="rows rows-iconed">
         {differentiators.map((item) => (
           <li id={item.id}>
-            <h3>{item.title}</h3>
-            <p>{item.body}</p>
-            {/* Only the licence cell carries one. A row of links here would
-                flatten the band into a nav list; one link, on the one cell
-                whose answer lives on another page, reads as a continuation. */}
-            {item.link && (
-              <p class="row-link">
-                <a href={item.link.href}>{item.link.label}</a>
-              </p>
-            )}
+            <DeckIcon name={item.icon} />
+            <div class="row-body">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+              {/* Only the licence cell carries one. A row of links here would
+                  flatten the band into a nav list; one link, on the one cell
+                  whose answer lives on another page, reads as a continuation. */}
+              {item.link && (
+                <p class="row-link">
+                  <a href={item.link.href}>{item.link.label}</a>
+                </p>
+              )}
+            </div>
           </li>
         ))}
       </ul>

@@ -1966,17 +1966,75 @@ a:hover {
   border-top: 1px solid var(--oe-border);
 }
 
-.rows > li > .label {
+/*
+ * A row's text is either the row's own children or, where a mark shares the
+ * row with it, the children of `.row-body`. The pairs below are written out
+ * rather than collapsed into a descendant selector on purpose: `.rows` nests
+ * inside other `.rows` nowhere today, and a descendant rule would be the thing
+ * that makes the first nesting silently restyle its parent.
+ */
+.rows > li > .label,
+.rows > li > .row-body > .label {
   margin-bottom: var(--oe-space-2);
 }
 
-.rows > li > h3 {
+.rows > li > h3,
+.rows > li > .row-body > h3 {
   margin-bottom: var(--oe-space-2);
 }
 
-.rows > li > p {
+.rows > li > p,
+.rows > li > .row-body > p {
   color: var(--oe-muted);
   max-width: 54ch;
+}
+
+/*
+ * The deck with an icon column. The icon column is a fixed width and the text
+ * takes the rest, so the icons line up down the band as one column rather than
+ * each one sitting wherever its own row's text starts.
+ *
+ * `align-items: start` and not `center`: the icons are read against the
+ * headings, and one centred on a two-line body drifts below the heading it
+ * belongs to as soon as one cell runs longer than another. The top padding
+ * lands the icon's optical centre on the heading's x-height instead of on its
+ * cap line, which is where a flush-top square sits.
+ *
+ * `--oe-muted` and not the foreground: the heading names the row and the icon
+ * repeats it, so the icon carries the weight of the body copy it sits beside
+ * rather than competing with the words that do the work.
+ */
+.rows-iconed > li {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  column-gap: var(--oe-space-4);
+  align-items: start;
+}
+
+.deck-icon {
+  width: 2rem;
+  height: 2rem;
+  padding-top: 0.15rem;
+  color: var(--oe-muted);
+}
+
+/*
+ * Below this width the rows are already one per line, so the icon column is
+ * competing with the body copy for the whole viewport rather than for half of
+ * it. The column narrows and the gap closes; the icon itself keeps its size,
+ * because an Octicon master is drawn for one scale and a 24-unit drawing put
+ * under 24 device pixels loses the half-pixel details first.
+ */
+@media (max-width: 30rem) {
+  .rows-iconed > li {
+    grid-template-columns: 1.75rem minmax(0, 1fr);
+    column-gap: var(--oe-space-3);
+  }
+
+  .deck-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
 }
 
 /*
@@ -1986,7 +2044,8 @@ a:hover {
  * global link rules, because a link that styles itself is a link that will
  * eventually disagree with the rest of the page about what a link looks like.
  */
-.rows > li > .row-link {
+.rows > li > .row-link,
+.rows > li > .row-body > .row-link {
   margin-top: var(--oe-space-2);
 }
 

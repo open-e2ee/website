@@ -1152,10 +1152,11 @@ test('sends the reader to the console rather than to a doorway', async () => {
 });
 
 test('ships the license for the icon set it copied', async () => {
-  const [notices, license, icon] = await Promise.all([
+  const [notices, license, icon, deckIcon] = await Promise.all([
     read('../THIRD_PARTY_NOTICES.md'),
     read('../third-party/Octicons-MIT.txt'),
     read('../src/components/Icon.astro'),
+    read('../src/components/DeckIcon.astro'),
   ]);
 
   /* The MIT license asks for the notice to travel with the copy, and the
@@ -1166,6 +1167,23 @@ test('ships the license for the icon set it copied', async () => {
   assert.match(license, /THE SOFTWARE IS PROVIDED "AS IS"/);
   assert.match(notices, /third-party\/Octicons-MIT\.txt/);
   assert.match(icon, /THIRD_PARTY_NOTICES\.md/);
+  assert.match(deckIcon, /THIRD_PARTY_NOTICES\.md/);
+
+  /* The second copy is the one that will drift. `Icon.astro` draws a fixed set
+   * of chrome and has not changed in months; the deck icons are on a page
+   * under revision, and an eighth cell arrives with an eighth icon and no
+   * reason for anyone to remember a licence file. So the list is derived from
+   * the component rather than written out here: a name the union declares and
+   * the notice does not name fails this test at the name that is missing. */
+  const declared = [...deckIcon.matchAll(/^ {2}\| '([a-z-]+)';?$/gm)].map((m) => m[1]);
+  assert.equal(declared.length, 7, `DeckIconName declares ${declared.length} names`);
+  const noticed = notices.slice(notices.indexOf('DeckIcon.astro'));
+  for (const name of declared) {
+    assert.ok(
+      noticed.includes(`\`${name}\``),
+      `THIRD_PARTY_NOTICES.md does not name the copied Octicon "${name}"`,
+    );
+  }
 });
 
 test('answers “what does the relay see” in the fixed wording', async () => {
@@ -3244,7 +3262,7 @@ test('does not deny a build step in the /product lead the page later explains', 
   assert.match(dist, /needs a development build rather than Expo Go/);
 });
 
-test('names the cost of E2EE in the band whose title promises one', async () => {
+test('names the cost of E2EE in the deck that lists the benefits', async () => {
   const index = await flat('../src/pages/index.astro');
 
   /* Nine fresh readers, and the two who reached the same omission reached it
@@ -3252,19 +3270,33 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
    * once the backend cannot read anything, the other that support messages
    * under E2EE cannot be produced under subpoena or supervised — "the page
    * never names the tradeoff, not to solve it, not even to acknowledge it
-   * exists." The band has been titled "and what it costs you to find out"
-   * since round 1 while listing six benefits, which is the kind of gap that
-   * reads as concealment on a page whose whole argument is inspectability. */
-  assert.match(index, /title: 'What you give up'/);
-  assert.match(index, /nothing on your backend can search message contents/);
-  assert.match(index, /produce them for a legal request/);
+   * exists." A deck of benefits that omits the one cost every evaluator finds
+   * in the first meeting reads as concealment on a page whose whole argument
+   * is inspectability.
+   *
+   * The band was titled "and what it costs you to find out" and its lead sent
+   * the reader to the cost before anything else. Both are gone: a deck states
+   * what the product does, and a title that bills the reader for reading it
+   * frames seven capabilities as a charge. What the guard protects is the
+   * cost itself, which is still here, written as the property it follows
+   * from rather than as a loss — so the pins move to the new wording and the
+   * count of them does not drop. */
+  assert.match(index, /title: 'Your relay holds ciphertext'/);
+  assert.match(index, /all your backend can leak and all it can produce for a legal request/);
+  assert.match(
+    index,
+    /search, moderation, and restoring a user who has lost every device stay yours to design/,
+  );
 
-  /* The heading has to keep counting the cells, including the one that argues
-   * against the product. A seventh cell under a heading that says six is the
-   * same species of drift the carrier panel already paid for. */
+  /* The lead has to keep counting the cells, including the one that argues
+   * against the product. A seventh cell under a lead that says six is the
+   * same species of drift the carrier panel already paid for. The heading is
+   * pinned alongside it because both were rewritten in one pass, and a count
+   * pinned on its own would survive the band losing its name. */
   const cells = index.match(/title: '/g) ?? [];
   assert.equal(cells.length, 7, `differentiator count changed to ${cells.length}`);
-  assert.match(index, /Seven things that decide/);
+  assert.match(index, /Seven things that are true the first time you install it/);
+  assert.match(index, /<h2>What ships in the box<\/h2>/);
 
   /* Sending the wrong reader away is the point, not a hedge to be softened
    * later: the objective is qualified starts, and a team that needs
@@ -3277,9 +3309,10 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
    * pairs two devices by QR. So transfer ships and total-loss recovery does
    * not, and the sentence must not flatten either half — the first draft said
    * a user who loses every device loses their history, which is false for an
-   * application that built the backup this cell says is theirs to build. */
-  assert.match(index, /ships encrypted device-to-device transfer/);
-  assert.match(index, /lost every device is a backup you design/);
+   * application that built the backup this cell says is theirs to build. The
+   * half that does not ship is pinned above, in the clause that leaves total
+   * loss to the application; this is the half that does. */
+  assert.match(index, /ships encrypted device-to-device transfer to build the last one on/);
 
   /* The disqualification is scoped to the server, because that is where the
    * constraint actually bites. "If your product needs any of that" turned
@@ -3288,7 +3321,20 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
    * one such a reader sees before leaving. It stays silent about that pattern
    * on purpose: the SDK ships no reporting API, and naming one here would
    * trade an over-disqualification for an invented feature. */
-  assert.match(index, /If any of that has to happen on your server/);
+  assert.match(index, /If any of the three has to run on your server/);
+
+  /* Every cell carries an icon, and the type is what makes that true at build
+   * time — `icon` is required on `Differentiator`, so a cell added without one
+   * does not compile. What a type cannot say is that the icon column exists at
+   * all: the field could be declared, populated seven times, and never
+   * rendered, which is a whole column of drawings the page never asks for. So
+   * the binding is pinned, and the count of icons is checked against the count
+   * of cells above rather than against a literal seven, which would need
+   * editing in two places for the same change. */
+  const icons = index.match(/icon: '[a-z-]+',/g) ?? [];
+  assert.equal(icons.length, cells.length, `${icons.length} icons for ${cells.length} cells`);
+  assert.match(index, /<DeckIcon name=\{item\.icon\} \/>/);
+  assert.match(index, /<ul class="rows rows-iconed">/);
 
   /* An assertion here pinned the lead sentence "Not a hosted chat service,
    * and more than TLS". The lead stopped carrying that sentence when it became
@@ -3432,11 +3478,15 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
    * stop. */
   assert.doesNotMatch(index, /(prevents|stops|eliminates) (a )?breach/i);
 
-  /* The disqualifier is signposted rather than teased: the deck used to say
-   * "including the one that decides it against" and decline to say which, so
-   * the reader who should leave had to read all seven cards to find out. */
-  assert.match(index, /Read <a href="#what-you-give-up">What you give up<\/a> first/);
-  assert.match(index, /id: 'what-you-give-up'/);
+  /* The lead used to signpost the disqualifier — "Read What you give up
+   * first" — because the round before that had teased it without naming it.
+   * The lead no longer opens on it at all: a deck of seven capabilities that
+   * starts by sending the reader to the one thing the product cannot do reads
+   * as a warning. What has to survive is the anchor, because the cell is the
+   * one deep link on this page that a reader is given by someone else. Every
+   * cell is addressable through the same `item.id`, so the pin is on the id
+   * and on the binding that renders it, not on a sentence pointing at it. */
+  assert.match(index, /id: 'your-relay-holds-ciphertext'/);
   assert.match(index, /<li id=\{item\.id\}>/);
 
   /* docs/messaging.md §3 bans "the relay can't read your messages" by name.
