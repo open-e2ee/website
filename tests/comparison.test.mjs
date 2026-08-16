@@ -127,20 +127,19 @@ test('keeps the matrix in one place', async () => {
 });
 
 test('keeps the comparison reachable now that it has no route of its own', async () => {
-  const [header, index, product, redirects] = await Promise.all([
+  const [header, product, redirects] = await Promise.all([
     flat('../src/components/Header.astro'),
-    flat('../src/pages/index.astro'),
     flat('../src/pages/product.astro'),
     read('../public/_redirects'),
   ]);
 
   /* The section id is the whole reachability story: it is the redirect target
-   * for the retired route and the anchor the homepage summary points at. */
+   * for the retired route, and the page holding it is a nav item on every page
+   * of the site. The homepage used to summarise the matrix and link this id,
+   * which is what made it reachable without the nav; that band was cut, so the
+   * nav item is now the only standing route in and this test holds it. */
   assert.match(product, /id="how-it-compares"/);
-  assert.match(index, /href="\/product#how-it-compares"/);
-  /* The homepage summarises the matrix in prose. Importing the date means the
-   * summary ages with the measurement instead of outliving it. */
-  assert.match(index, /MEASURED_ON/);
+  assert.match(header, /href: '\/product'/);
 
   /* Not a nav item, and not a route. Both were true of /compare for eleven
    * releases, so both are the shapes an edit would restore by habit. */

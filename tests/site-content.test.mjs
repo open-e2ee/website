@@ -103,34 +103,36 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
 });
 
 test('makes the same ten-minute promise everywhere it makes one', async () => {
-  const [index, product, learn, footer] = await Promise.all([
-    flat('../src/pages/index.astro'),
+  const [product, learn, footer] = await Promise.all([
     flat('../src/pages/product.astro'),
     flat('../src/pages/learn.astro'),
     flat('../src/components/Footer.astro'),
   ]);
 
-  for (const page of [index, product, learn]) {
+  for (const page of [product, learn]) {
     assert.match(page, /ten minutes · two clients · no account/);
   }
   assert.match(learn, /takes about ten minutes/i);
   assert.match(footer, /Ten-minute quickstart/);
 
-  /* The homepage makes the promise once, and never in the hero. The promise
-   * argues for spending the ten minutes, so it belongs under the button a
-   * reader reaches after the evidence. Under the first button it is a third
-   * line of small grey type between the offer and the proof. The test asserts
-   * the count because the failure is additive. A sublabel is the obvious thing
-   * to paste onto a new call to action. */
+  /* The homepage makes it nowhere. The promise argues for spending the ten
+   * minutes, so it belongs under a button a reader reaches after the evidence;
+   * the landing page's own closing ask was cut by the founder, and it now ends
+   * on the licence with no second offer, so the reader who has decided meets
+   * the promise on /product or /learn. Under the hero button it would be a
+   * third line of small grey type between the offer and the proof.
+   *
+   * Read off the built page and not the source: `flat()` keeps comments, and
+   * the comment over the hero actions quotes this exact sublabel in order to
+   * rule it out there. A source-side negative would fail on its own tombstone.
+   * The count is asserted because the failure is additive — a sublabel is the
+   * obvious thing to paste onto a new call to action. */
   const dist = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
   if (!dist) return skipUnbuilt('dist/index.html');
-  assert.equal((dist.match(/ten minutes · two clients · no account/g) ?? []).length, 1);
-  const heroStart = dist.indexOf('<section class="hero">');
-  assert.notEqual(heroStart, -1, 'the hero section is not on the built page');
-  const hero = dist.slice(heroStart, dist.indexOf('</section>', heroStart));
-  assert.doesNotMatch(hero, /cta-sublabel/);
+  assert.equal((dist.match(/ten minutes · two clients · no account/g) ?? []).length, 0);
+  assert.doesNotMatch(dist, /cta-sublabel/);
 });
 
 test('states maturity as the version plus the before-1.0 caveat, with no stage adjective', async () => {
@@ -1185,16 +1187,18 @@ test('answers “what does the relay see” in the fixed wording', async () => {
   assert.doesNotMatch(index, /relay can(?:’|')t read/i);
 });
 
-test('reaches the security review pack from the homepage and the footer', async () => {
-  const [index, footer] = await Promise.all([
-    flat('../src/pages/index.astro'),
+test('reaches the security review pack from the product page and the footer', async () => {
+  const [product, footer] = await Promise.all([
+    flat('../src/pages/product.astro'),
     flat('../src/components/Footer.astro'),
   ]);
 
   /* Both build their links from a data array now, so the path is quoted
-   * rather than written as an attribute. On the homepage it belongs in the
-   * "Check the work" band with the rest of the evidence, not in a third row
-   * of hero links competing with the hero's primary action.
+   * rather than written as an attribute. The "Check the work" band holding
+   * them spent time at the foot of the homepage and moved to /product when the
+   * landing page was cut back to the demo, the feature deck, and the licence;
+   * it answers "prove it" for a reader who has just read a page of capability
+   * claims, which is the page it is on.
    *
    * The destination is /security. It was /evaluate, which asked the questions
    * /security answers and rendered the same pinned specifications from the
@@ -1202,7 +1206,7 @@ test('reaches the security review pack from the homepage and the footer', async 
    * content under two names. What has to stay true is that the pack is
    * reachable from each surface exactly once — a second entry pointing at the
    * same page under the other name is the defect this replaced. */
-  assert.match(index, /href: '\/security'/);
+  assert.match(product, /href: '\/security'/);
   assert.match(footer, /href: '\/security'/);
   assert.match(footer, /Security model and review pack/);
 
@@ -1211,7 +1215,7 @@ test('reaches the security review pack from the homepage and the footer', async 
    * a guard that forbade the word outright would forbid explaining itself —
    * the same reason the relay-formula guards on this page read the rendered
    * output rather than the file. */
-  for (const source of [index, footer]) {
+  for (const source of [product, footer]) {
     const hrefs = [...source.matchAll(/href: '([^']+)'/g)].map((match) => match[1]);
     assert.ok(!hrefs.includes('/evaluate'), 'a link still points at the folded page');
     assert.equal(
@@ -1254,18 +1258,33 @@ test('sends the folded demo route at a section the homepage still has', async ()
 
   /* Same reasoning as /evaluate above, with one difference that needs its own
    * check: this destination carries a fragment. `/security/` is a route, and a
-   * route either exists or 404s loudly. `/#when-something-goes-wrong` is a
-   * route plus an anchor, and an anchor that has gone missing fails silently —
-   * the homepage serves 200, the browser finds nothing to scroll to, and every
-   * reader who followed a /demo link lands at the top of the page instead of
-   * the section they asked for. Nothing else on the site would notice. */
-  assert.match(redirects, /^\/demo \/#when-something-goes-wrong 308$/m);
-  assert.match(redirects, /^\/demo\/ \/#when-something-goes-wrong 308$/m);
+   * route either exists or 404s loudly. `/#demo` is a route plus an anchor, and
+   * an anchor that has gone missing fails silently — the homepage serves 200,
+   * the browser finds nothing to scroll to, and every reader who followed a
+   * /demo link lands at the top of the page instead of the thing they asked
+   * for. Nothing else on the site would notice.
+   *
+   * The route first pointed at the scenarios, which were what the folded /demo
+   * page had been. They were cut from the homepage, and this rule is exactly
+   * the kind of reference that survives such a cut pointing at nothing. */
+  assert.match(redirects, /^\/demo \/#demo 308$/m);
+  assert.match(redirects, /^\/demo\/ \/#demo 308$/m);
 
   /* So the anchor is read out of the rule rather than typed here a second time,
    * and then looked for on the page. A rename that updates one and not the
    * other is the failure this exists for, and hard-coding the id in the
    * assertion would make this guard agree with whichever half was edited last.
+   *
+   * The id is not on the homepage itself: it is on the exhibit inside the
+   * component the homepage renders, argued where it is written. So the search
+   * covers the page plus every local component it imports, which is also what
+   * keeps this from naming `DemoConsole.astro` and becoming a second place to
+   * edit on a move.
+   *
+   * Comments come out first. The component's own comment opens by quoting
+   * `id="demo"` to explain why the id is on the exhibit, and with comments left
+   * in, renaming the real attribute passed this guard on that sentence alone —
+   * a tombstone standing in for the thing it is a tombstone for.
    *
    * Source rather than dist, so the guard also holds on an unbuilt tree —
    * a redirect guard that skips without a build is worth nothing. */
@@ -1273,10 +1292,21 @@ test('sends the folded demo route at a section the homepage still has', async ()
   assert.ok(fragment, 'the /demo rule no longer targets a fragment');
 
   const home = await read('../src/pages/index.astro');
-  assert.match(
+  const imports = [...home.matchAll(/from '(\.\.\/components\/[^']+\.astro)'/g)].map(
+    (match) => match[1],
+  );
+  assert.ok(imports.length > 0, 'expected to be scanning the homepage components, found none');
+  const rendered = [
     home,
-    new RegExp(`<section id="${fragment}"`),
-    `_redirects sends /demo to #${fragment}, and no section on the homepage has that id`,
+    ...(await Promise.all(imports.map((path) => read(`../src/pages/${path}`)))),
+  ]
+    .join('\n')
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.match(
+    rendered,
+    new RegExp(`id="${fragment}"`),
+    `_redirects sends /demo to #${fragment}, and nothing the homepage renders has that id`,
   );
 });
 
@@ -1694,19 +1724,24 @@ test('closes the page on what the licence hands over, not on forking it', async 
    * statement drifting into saying something about the protocol. */
   assert.doesNotMatch(drawing, /--oe-diagram-|class="diagram/);
 
-  /* Order: the graph, the route to the licence terms, then the single action the
-   * page ends on. One ordered match rather than compared offsets — `indexOf`
-   * returns -1 for a part that is gone, and -1 is less than every real offset, so
-   * a deleted link would satisfy a comparison that reads as an order check. */
+  /* Order: the graph, the field beside it, then the route to the licence terms.
+   * One ordered match rather than compared offsets — `indexOf` returns -1 for a
+   * part that is gone, and -1 is less than every real offset, so a deleted link
+   * would satisfy a comparison that reads as an order check.
+   *
+   * This ran to a fourth part, `class="closing"`, a repeat of the hero's action
+   * under a rule. The founder cut it, so the licence is the last thing on the
+   * page and there is no second ask after it. That is asserted rather than
+   * assumed: a restored closing block would land inside this band. */
   assert.match(
     band,
-    /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+Understand AGPL use[\s\S]+class="closing"/,
-    'the graph, the mark, the licence link and the closing action are no longer in that order',
+    /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+Understand AGPL use/,
+    'the graph, the mark and the licence link are no longer in that order',
   );
-  assert.equal(
-    index.indexOf('class="closing"'),
-    index.lastIndexOf('class="closing"'),
-    'a second closing block means the page no longer ends on one action',
+  assert.doesNotMatch(
+    index,
+    /class="closing"/,
+    'the page ends on a second action again rather than on the licence',
   );
 
   /* The two figures share a row, and the graph is the one that leads. Source
@@ -3440,10 +3475,13 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
      * are one claim split across a screen: the lead is allowed its short form
      * precisely while this is on the same page. */
     assert.match(dist, /needs a development build rather than Expo Go/);
-    /* The carrier band's caption had the same collision and the worse
-     * placement — it stands directly over the recorded row. */
-    assert.doesNotMatch(dist, /Everything in between is\s+sealed/);
-    assert.match(dist, /Everything in between is\s+ciphertext/);
+    /* The demo caption had the same collision and the worse placement — it
+     * stands directly over the recorded row. Two assertions here pinned the
+     * sentence that fixed it, "Everything in between is ciphertext"; the
+     * founder rewrote the caption and it says the same thing in other words,
+     * so pinning the wording again would only buy the next rewrite a red. The
+     * rule survives as the sweep below, which is what actually holds: on the
+     * whole visible page, "sealed" may only appear as "sealed sender". */
     /* The feature band still names the real one, which is the whole reason
      * the loose sense had to go. "sealed" may reach a reader on this page only
      * as part of "sealed sender".
@@ -3926,10 +3964,9 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
 
 /* A test here — "points at the documentation it says it has" — pinned the
  * hero's "we document exactly what" link to /security. The founder cut that
- * paragraph on 2026-08-09, so the pin went with the copy. The homepage still
- * reaches /security exactly once, through the trust-links band, and the guard
- * for that is "reaches the security review pack from the homepage and the
- * footer" above. */
+ * paragraph on 2026-08-09, so the pin went with the copy. The trust-links band
+ * that reached /security is on /product now, and the guard for it is "reaches
+ * the security review pack from the product page and the footer" above. */
 
 /*
  * The platform strip claims a support matrix. These check it against the

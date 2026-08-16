@@ -206,7 +206,11 @@ const GEARS = [
   {
     kind: 'pq',
     caption: LOCKS[1].label,
-    tip: 'Layers ML-KEM agreements into the same session, so recorded ciphertext stays sealed against a future quantum computer.',
+    /* "unreadable to" and not "sealed against": sealed sender is a real
+     * feature of this SDK and one of the toggles beside this one, so the loose
+     * sense of the word would name a different guarantee than the one this tip
+     * describes. `tests/site-content.test.mjs` sweeps the visible page for it. */
+    tip: 'Layers ML-KEM agreements into the same session, so recorded ciphertext stays unreadable to a future quantum computer.',
   },
 ] as const;
 

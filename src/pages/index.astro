@@ -2,16 +2,13 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BatteryMark from '../components/BatteryMark.astro';
 import DemoConsole from '../components/demo/DemoConsole.astro';
-import ScenarioList from '../components/demo/ScenarioList.astro';
 import CommitLine from '../components/CommitLine.astro';
 import StarfieldMark from '../components/StarfieldMark.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
 import TypeScriptMark from '../components/TypeScriptMark.astro';
-import { MEASURED_ON } from '../lib/comparison.mjs';
 import { startupTier } from '../data/pricing.mjs';
-import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 
 const differentiators = [
   {
@@ -129,34 +126,6 @@ const runtimes = [
   { href: 'https://docs.open-e2ee.dev/start/browser', label: 'Browser' },
   { href: 'https://docs.open-e2ee.dev/start/node', label: 'Node' },
 ];
-
-/*
- * Everything a reader can check, in the band that exists to be checked. The
- * security model used to sit in a third row of links in the hero, where it
- * read as an afterthought to the CTA rather than as the page's answer to
- * "prove it".
- *
- * A second entry here pointed at /evaluate as "the security review pack". That
- * page asked the questions /security answers and rendered the same pinned
- * specifications from the same module, so the two links sent a reader to one
- * body of content under two names. /security absorbed it and this list names
- * it once.
- */
-const trustLinks = [
-  { href: '/security', label: 'What the relay can and cannot see' },
-  {
-    href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/SECURITY.md',
-    label: 'The security model and threat model',
-  },
-  {
-    href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/ARCHITECTURE.md',
-    label: 'Architecture and protocol profile',
-  },
-  {
-    href: 'https://github.com/open-e2ee/signal-protocol-js',
-    label: 'View the SDK on GitHub',
-  },
-];
 ---
 
 <BaseLayout
@@ -240,14 +209,15 @@ const trustLinks = [
               and not the band around it, so the reader arrives at the running
               scene rather than at the sentence describing it. The
               GitHub button is gone from the hero — the repo stays one click
-              away from the "Check the work" links, the header, and /product,
-              and a third button split the decision this row exists to force.
+              away from the closing licence band, the footer, and /product, and
+              a third button split the decision this row exists to force.
 
-              No sublabel under this button. "ten minutes · two clients · no
-              account" is under the two quickstart buttons further down the
-              page, where a reader who has read the evidence is being asked to
-              commit; a scroll needs no time promise, and a third line of small
-              grey type here would stand between the offer and the proof. */}
+              No sublabel under either button. This page ends on the licence
+              rather than on a second ask, so "ten minutes · two clients · no
+              account" is only on the pages a reader reaches after deciding to
+              spend them, /product and /learn. A scroll needs no time promise,
+              and a third line of small grey type here would stand between the
+              offer and the proof. */}
           <a class="cta-primary" href="#demo">
             <span class="oe-button">See Demo</span>
           </a>
@@ -310,7 +280,7 @@ const trustLinks = [
             metadata admission, /product and /security carry the maturity line,
             the licence cell in the feature band names the AGPL/commercial
             split, the quickstart caveat below the feature band grades the
-            stores, and the alternatives band carries the libsignal facts. */}
+            stores, and /product carries the libsignal facts. */}
       </div>
     </div>
   </section>
@@ -318,10 +288,11 @@ const trustLinks = [
   {/*
     The demo opens the page's evidence, directly after the code sample the
     hero closes on: the program a reader has just read is the program running
-    here. The arc the two demo bands make starts at this heading, but `#demo`
-    does not: the fragment is on the exhibit inside `DemoConsole.astro`, so
-    that pressing Demo lands on the animation instead of on the paragraph
-    above it. The reasoning is written where the id is.
+    here. The band starts at this heading, but `#demo` does not: the fragment
+    is on the exhibit inside `DemoConsole.astro`, so that pressing Demo lands
+    on the animation instead of on the paragraph above it. The reasoning is
+    written where the id is, and `public/_redirects` sends /demo to the same
+    fragment.
   */}
   <section class="band band-surface">
     <div class="container stack">
@@ -409,12 +380,10 @@ const trustLinks = [
         </Fragment>
       </DemoConsole>
 
-      {/* The demo's own log is the only thing under the demo. The next thing to
-          do is the band directly below, where the page makes the same SDK fail.
-          The hero, the header, the band under the scenarios and the footer all
-          carry the quickstart already. An offer repeated at every band boundary
-          stops reading as an offer, and a link that scrolls the reader forward
-          one band is furniture.
+      {/* The demo's own log is the only thing under the demo. The hero, the
+          header, and the footer all carry the quickstart already. An offer
+          repeated at every band boundary stops reading as an offer, and a link
+          that scrolls the reader forward one band is furniture.
 
           "Start demo" is the one free-standing filled button in this band, and
           it sits over the scene it starts. Each device's "Send" carries the same
@@ -423,72 +392,7 @@ const trustLinks = [
     </div>
   </section>
 
-  {/*
-    The second move of the demo that starts at `#demo` above, and deliberately
-    a continuation rather than a new subject. The arc is one demo in two moves:
-    a message goes end to end, then the same SDK is asked to fail. Two headings
-    that both said "here is a demo" would read as two products, so the two
-    bands stay adjacent, in that order.
-
-    `id` because `public/_redirects` sends `/demo` to this fragment, which is
-    what makes a bookmarked `/demo` land on the thing it asked for rather than
-    at the top of a long page — the folded /demo page was the scenarios, so the
-    scenarios are what that route still means, not the arc's `#demo` start. The
-    four scenario slugs stay `id`s of their own inside the list, so
-    `/#flip-a-byte` works — but `/demo#flip-a-byte` resolves here instead,
-    because a destination fragment replaces the reader's. That trade is argued
-    in `_redirects` beside the rule.
-
-    No count in the heading. `/demo`'s h1 was "Four things that go wrong, and
-    what the protocol does about each", which stopped being maintainable the
-    moment a fifth scenario was worth adding, and named an inventory rather than
-    what the reader gets from it.
-  */}
-  <section id="when-something-goes-wrong" class="band">
-    <div class="container stack">
-      <div class="band-head">
-        <h2>What it does when something goes wrong</h2>
-        <p class="measure">
-          Every library documents its failure modes in prose. These run them: each scenario below
-          drives the installed SDK in this tab, forces one situation on purpose, and prints what the
-          devices said about it — their own logs, unedited. In two of them, what they say is nothing
-          at all, and that is the point of running them rather than describing them.
-        </p>
-        {/*
-          Invariant 5, before the reader has run anything rather than after. The
-          cryptography is the shipped cryptography; the infrastructure under it
-          is not, and in a section whose whole subject is failure the reader has
-          to know which failures are real ones.
-
-          Repeated from the panel above rather than inherited from it. A reader
-          redirected from `/demo#flip-a-byte` lands on a scenario below this
-          line and never passes the panel's copy of it.
-        */}
-        <p class="muted measure">
-          Real protocol and real cryptography, simulated infrastructure — <code
-            >inMemoryStore()</code
-          >{' '}and <code>inMemoryRelay()</code> run in the browser, so every device and the relay
-          are this machine. {sdkManifest.name}@{sdkManifest.version}.
-        </p>
-      </div>
-
-      <ScenarioList />
-
-      {/*
-        The same invitation the panel above makes, in the place it is worth
-        more: this section runs a protocol failure and still has nothing to
-        report to anybody. What it does send is one beacon saying which scenario
-        was opened, which is why the sentence names it rather than claiming
-        silence.
-      */}
-      <p class="muted measure">
-        All of it runs here. The only thing this section sends is one beacon naming the scenario you
-        opened — no message content, no sizes, no timings. Check the network tab.
-      </p>
-    </div>
-  </section>
-
-  <section class="band band-surface">
+  <section class="band">
     <div class="container">
       <div class="band-head">
         <h2>What you get, and what it costs you to find out</h2>
@@ -538,105 +442,6 @@ const trustLinks = [
     </div>
   </section>
 
-  <section class="band">
-    <div class="container">
-      <div class="band-head">
-        <h2>Why this exists at all</h2>
-        {/* "the full matrix … is in the SDK README" was true and is still true,
-            and it sent a reader off the site for a table that now sits one link
-            below on /product. The README version is shorter; naming the fuller
-            one first is the honest order. */}
-        <p class="measure">
-          If something else fit, you should use it. Here is the honest state of the alternatives;
-          the full matrix, with links to every project, is on the product page.
-        </p>
-      </div>
-      <dl class="definition-rows">
-        <div>
-          <dt>The official implementation</dt>
-          <dd>
-            <code>@signalapp/libsignal-client</code> is actively maintained and post-quantum, and it
-            ships prebuilt native binaries for Windows, macOS, and Linux. It does not run in Expo,
-            React Native, or a browser.
-          </dd>
-        </div>
-        <div>
-          <dt>The older JavaScript ports</dt>
-          <dd>
-            {/* The explicit space is load-bearing: Astro collapses the newline
-                between a text node and a following inline element, so this
-                rendered as "archived in 2021.@privacyresearch/…" for the whole
-                loop. A fresh critic found it in the one band whose job is
-                being scrupulous about other people's projects. */}
-            <code>libsignal-protocol-javascript</code> was archived in 2021.{' '}
-            <code>@privacyresearch/libsignal-protocol-typescript</code> last shipped in 2023. Neither
-            is post-quantum, and neither documents a React Native path.
-          </dd>
-        </div>
-        <div>
-          <dt>A different protocol</dt>
-          <dd>
-            {/* "runs everywhere" was this page's own summary of a row that
-                does not say it: `comparison.mjs` records browsers, Node, and
-                serverless runtimes, and no React Native or Expo path. The
-                looser word overstated a competitor and understated the one
-                axis this SDK is built on. */}
-            <code>ts-mls</code> is well maintained and runs in browsers, Node, and serverless
-            runtimes, but it implements MLS, not the Signal Protocol. That is a real choice — a
-            different one.
-          </dd>
-        </div>
-        <div>
-          <dt>This SDK</dt>
-          <dd>
-            An independent TypeScript implementation of the published Signal Protocol
-            specifications, running in the JavaScript runtimes your product already targets, with
-            storage and transport left to you and a commercial license available.
-          </dd>
-        </div>
-      </dl>
-      <p class="text-links">
-        {/* One link, not two. "See the SDK surface" pointed at /product as
-            well, and once the comparison moved there the row offered the same
-            page twice under two names. /product is already linked twice further
-            up this page and sits first in the nav. */}
-        <a href="/product#how-it-compares">The full comparison, measured on {MEASURED_ON}</a>
-      </p>
-    </div>
-  </section>
-
-  {/* The libsignal sentence used to have a band of its own here, four folds
-      below the question it answers, and as a standalone h2-weight blockquote it
-      read as a disclosure about this SDK rather than a quotation about another
-      one. It then moved to the hero, and the hero's objection paragraphs were
-      cut on 2026-08-09 — the alternatives band above is now the page's one
-      statement of the libsignal facts. */}
-
-  <section class="band band-surface">
-    <div class="container">
-      <div class="band-head">
-        <h2>Check the work</h2>
-        {/* The promise of a firm review was retired on 2026-08-09, when
-            adversarial AI review became the assurance approach. docs/messaging.md
-            §7 fixes the sentence and the rule that governs it: the two halves
-            never separate, and no future firm engagement is promised in any
-            tense. The band whose subject is what a reader can check is the last
-            place the site should round up. */}
-        <p class="measure">
-          Reviewed continuously by adversarial AI agents; not audited by any independent firm.
-          Every change passes an adversarial AI review before it merges, and recurring
-          whole-codebase AI audit passes run against the engineering repository — so every claim
-          on this page has something you can read behind it.
-        </p>
-      </div>
-      <ul class="rows rows-single">
-        {trustLinks.map((link) => (
-          <li><a href={link.href}>{link.label}</a></li>
-        ))}
-      </ul>
-    </div>
-  </section>
-
   {/* The hero calls the SDK fully open source three folds up, beside a mark
       drawn under OSI's trademark conditions. This band is where that adverb is
       cashed, for a reader who has scrolled the whole page and is deciding
@@ -659,7 +464,7 @@ const trustLinks = [
       draws it at badge scale anyway, at the founder's direction and in the
       page's own ink rather than OSI's; that file records the breach and what
       survives it. */}
-  <section class="band">
+  <section class="band band-surface">
     <div class="container">
       <div class="band-head">
         {/* Every verb is a use. "Change it" is accurate as a right and is how
@@ -694,22 +499,6 @@ const trustLinks = [
           <a href="https://github.com/open-e2ee/signal-protocol-js">Read the source on GitHub</a>
           <a href="/licensing">Understand AGPL use</a>
         </p>
-      </div>
-
-      {/* The page used to end on a text link to GitHub. Every reader who did
-          not act on the fold arrived here persuaded and found nothing to press,
-          and the last interactive element routed to a supporting action. This
-          band ends on three such links, so the closing action moved down with
-          it rather than staying a band above — the decision was about what the
-          page ends on, not about which section the button sits in. */}
-      <div class="closing">
-        <p class="lead">The fastest way to check any of it is to run it.</p>
-        <div class="actions">
-          <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
-            <span class="oe-button">Build your first encrypted message</span>
-            <span class="cta-sublabel">ten minutes · two clients · no account</span>
-          </a>
-        </div>
       </div>
     </div>
   </section>

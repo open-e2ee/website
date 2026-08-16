@@ -10,22 +10,25 @@
 # crawlers, so the route has real inbound links even pre-launch.
 /evaluate /security/ 308
 /evaluate/ /security/ 308
-# /demo was the scenario page. It is now a section of the homepage, so the
-# target carries a fragment: Cloudflare's redirects support them in the
-# destination ("Can include fragments, query strings, splats, and placeholders"),
-# and only a line-leading # is a comment. The sitemap published /demo/ too.
+# /demo was the scenario page. It folded into the homepage, and the section it
+# folded into — four scenarios that ran the SDK into a failure on purpose — was
+# cut from that page later. What survives under this name is the live demo, so
+# the target is the exhibit inside `DemoConsole.astro`: the fragment is on the
+# animation rather than on the paragraph above it, which is argued where the id
+# is written.
+#
+# The target carries a fragment because Cloudflare's redirects support them in
+# the destination ("Can include fragments, query strings, splats, and
+# placeholders"), and only a line-leading # is a comment. The sitemap published
+# /demo/ too.
 #
 # The cost, recorded because it is a real one: a destination fragment replaces
 # whatever fragment the reader arrived with, so /demo#flip-a-byte lands on the
-# section rather than on that scenario. Dropping the fragment here would invert
-# the trade — deep links would keep working and every bare /demo would land at
-# the top of the homepage, a band above the thing it asked for. Bare /demo is
-# what the sitemap, the old nav item, and any bookmark all point at. The one
-# deep link the site itself published was /demo#flip-a-byte on the homepage, and
-# the commit that folded the page deleted it, so the cost falls only on a link
-# somebody else wrote.
-/demo /#when-something-goes-wrong 308
-/demo/ /#when-something-goes-wrong 308
+# demo rather than on a scenario. It would now land nowhere in any case — the
+# scenario ids left with the section — and bare /demo is what the sitemap, the
+# old nav item, and any bookmark all point at.
+/demo /#demo 308
+/demo/ /#demo 308
 # /compare was the comparison page. Its table and its five project notes are now
 # the two bands under "How it compares" on /product, so the destination carries
 # that section's id.

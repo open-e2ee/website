@@ -454,21 +454,6 @@ a:hover {
   color: var(--oe-muted);
 }
 
-/*
- * The last thing on the page is the first action again. A rule closes the
- * evidence list above it without opening another band, which the page does not
- * need — this is the same offer, not a new argument.
- */
-.closing {
-  display: flex;
-  flex-direction: column;
-  gap: var(--oe-space-4);
-  align-items: flex-start;
-  margin-top: var(--oe-space-8);
-  padding-top: var(--oe-space-6);
-  border-top: 1px solid var(--oe-border);
-}
-
 .text-links {
   display: flex;
   flex-wrap: wrap;
