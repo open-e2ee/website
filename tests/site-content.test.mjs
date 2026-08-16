@@ -3298,9 +3298,11 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
    * without protecting anything. What is pinned is the sentence, which is the
    * thing docs/messaging.md §1.2 requires to travel with the offer. */
   assert.match(index, /all your backend can leak and all it can produce for a legal request/);
+  /* The list opens a sentence in one draft and closes one in the next, so the
+   * first letter is the one character of this pin that carries no meaning. */
   assert.match(
     index,
-    /search, moderation, and restoring a user who has lost every device stay yours to design/,
+    /[Ss]earch, moderation, and restoring a user who has lost every device stay yours to design/,
   );
 
   /* The lead has to keep counting the cells, including the one that argues
@@ -3317,29 +3319,13 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
 
   /* Sending the wrong reader away is the point, not a hedge to be softened
    * later: the objective is qualified starts, and a team that needs
-   * server-side moderation costs more to disappoint after the quickstart. */
-  assert.match(index, /encrypt in transit and at rest instead/);
-
-  /* Verified against the installed package rather than asserted: dist/device
-   * exports createDeviceBackup, encryptBackup and restoreDeviceBackup over a
-   * BackupStorage interface the application implements, and the transfer flow
-   * pairs two devices by QR. So transfer ships and total-loss recovery does
-   * not, and the sentence must not flatten either half — the first draft said
-   * a user who loses every device loses their history, which is false for an
-   * application that built the backup this cell says is theirs to build. The
-   * half that does not ship is pinned above, in the clause that leaves total
-   * loss to the application; this is the half that does. */
-  assert.match(index, /ships encrypted device-to-device transfer to build the last one on/);
-
-  /* The disqualification is scoped to the server, because that is where the
-   * constraint actually bites. "If your product needs any of that" turned
-   * away products the SDK fits — a reader building a marketplace showed that
-   * client-side reporting is a solved pattern, and this sentence is the last
-   * one such a reader sees before leaving. It stays silent about that pattern
-   * on purpose: the SDK ships no reporting API, and naming one here would
-   * trade an over-disqualification for an invented feature. */
-  assert.match(index, /If any of the three has to run on your server/);
-
+   * server-side moderation costs more to disappoint after the quickstart. What
+   * carries that now is the sentence pinned above and nothing else. The cell
+   * used to close on what to do instead — encrypt in transit and at rest — and
+   * on the device-to-device transfer the recovery case is built from, and both
+   * are gone from the page rather than moved to another one. Neither is
+   * pinned here as an absence: they are candidates for /learn, and a
+   * `doesNotMatch` would make putting one back a test failure. */
   /* Every cell carries an icon, and the type is what makes that true at build
    * time — `icon` is required on `Differentiator`, so a cell added without one
    * does not compile. What a type cannot say is that the icon column exists at

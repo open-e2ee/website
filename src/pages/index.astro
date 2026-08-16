@@ -178,15 +178,17 @@ const differentiators: Differentiator[] = [
    * variable is whether they discover it here or after the ten minutes, and
    * only one of those two outcomes is repairable.
    *
-   * It said "if your product needs any of that" for one round, and that was
-   * too wide. A fresh reader building a marketplace pointed out that
-   * client-side reporting — the user's own device attaches the plaintext to a
-   * report — is a solved pattern, so the page was disqualifying products it
-   * actually fits, in the last sentence they would read before closing the
-   * tab. The condition is server-side capability, not the capability itself,
-   * and the sentence still says so. It stops there deliberately: the SDK ships
-   * no reporting API, and describing the client-side pattern as though it
-   * were one would trade an over-disqualification for an invented feature.
+   * It ended on what to do instead — encrypt in transit and at rest — and on
+   * the device-to-device transfer the third case is built from. Both came off
+   * on the founder's call, in the round that cut every cell to its outcome:
+   * they are the two sentences here that answer "then how do I build it",
+   * which is a question a reader asks after they are convinced rather than in
+   * a deck they are scanning. /learn §1 and §2 take the redesign of search and
+   * moderation much further than a cell can. It does not carry the "encrypt in
+   * transit and at rest instead" advice, and no page does at the moment —
+   * that sentence is off the site rather than moved, and /learn is where it
+   * goes if it comes back. What stays here is the disqualifier itself, which
+   * is a property of the product rather than advice about it.
    *
    * What the cell now opens on is the founder's call, and it is the fact the
    * page was leaving out: a relay is not something the reader has to go and
@@ -212,7 +214,7 @@ const differentiators: Differentiator[] = [
     title: 'The relay is built in, and you run it',
     icon: 'broadcast',
     wide: true,
-    body: 'A relay ships with the SDK: in-memory for development, a Convex component you install into your own project, and one interface for any other backend. Whichever you run holds the row the demo above records — ciphertext, with routing metadata on the outside. That row is all your backend can leak and all it can produce for a legal request, which is the same reason search, moderation, and restoring a user who has lost every device stay yours to design; the SDK ships encrypted device-to-device transfer to build the last one on. If any of the three has to run on your server, encrypt in transit and at rest instead.',
+    body: 'A relay ships with the SDK: in-memory for development, a Convex component for your own project, and one interface for any other backend. It holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
   },
 ];
 
