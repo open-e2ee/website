@@ -15,6 +15,7 @@ import tokens from '@open-e2ee/design/tokens' with { type: 'json' };
 import capture from '../src/data/carrier-capture.json' with { type: 'json' };
 import { checks, dependencies, reporting, specifications } from '../src/lib/assurance.mjs';
 import { codeSurfaces, codeThemes, shellSurface } from '../src/lib/code-theme.mjs';
+import { maturityLine, sdkLine, sdkVersion } from '../src/lib/sdk.mjs';
 import { cssRules, ruleFor } from './css-rules.mjs';
 import {
   buildSnippet,
@@ -148,8 +149,14 @@ test('states maturity as the version plus the before-1.0 caveat, with no stage a
     flat('../src/pages/security.astro'),
   ]);
 
+  /* The source is checked for the composition and the built page for its
+   * value, because those are two different defects. A page that types the
+   * sentence is stale at the next minor and nothing notices; a page that
+   * composes it from a module the build does not reach renders nothing at all.
+   * Asserting a literal here could only ever catch the second. */
   for (const page of [product, security]) {
-    assert.match(page, /0\.1\.x — public APIs and persisted formats may change before 1\.0\./);
+    assert.match(page, /<p class="maturity">\{maturityLine\}<\/p>/);
+    assert.match(page, /import \{ maturityLine \} from '\.\.\/lib\/sdk\.mjs';/);
   }
   /* The lookahead exempts version identifiers: a prerelease suffix inside a
    * version — `0.1.0-alpha.14` — names a release, not a maturity stage. */
@@ -167,10 +174,75 @@ test('states maturity as the version plus the before-1.0 caveat, with no stage a
     ),
   );
   if (!builtIndex || !builtProduct || !builtSecurity) return skipUnbuilt('dist/');
-  assert.doesNotMatch(builtIndex, /0\.1\.x — public APIs/);
+  assert.doesNotMatch(builtIndex, /\d+\.\d+\.x — public APIs/);
+  /* The wording is pinned separately from its presence. `maturityLine` is
+   * composed, so asserting only that the built page contains it would pass on
+   * any sentence the module happened to build — including one that had lost the
+   * caveat and kept the number. */
+  assert.equal(
+    maturityLine,
+    `${sdkLine} — public APIs and persisted formats may change before 1.0.`,
+  );
   for (const page of [builtProduct, builtSecurity]) {
-    assert.match(page, /0\.1\.x — public APIs and persisted formats may change before 1\.0\./);
+    assert.ok(page.includes(maturityLine), `built page does not state "${maturityLine}"`);
   }
+});
+
+test('no page states a release line or an SDK version as a literal', async () => {
+  /* The defect this replaced: /product, /security, the comparison matrix, and
+   * two journal posts each typed `0.1.x` while the installed SDK was 0.2.3.
+   * They went stale together at 0.2.0 and nothing could fail, because a typed
+   * number is indistinguishable from a correct one. `src/lib/sdk.mjs` is the
+   * one place allowed to know a version, and `src/data/carrier-capture.json`
+   * records the version it was measured against — restamping that by hand
+   * would be fabricating provenance, so it is read, never written. */
+  const allowed = new Set(['src/lib/sdk.mjs', 'src/data/carrier-capture.json']);
+  const root = new URL('../', import.meta.url);
+  const offenders = [];
+
+  const walk = async (dir) => {
+    for (const entry of await readdir(new URL(dir, root), { withFileTypes: true })) {
+      const path = `${dir}${entry.name}`;
+      if (entry.isDirectory()) {
+        await walk(`${path}/`);
+        continue;
+      }
+      if (allowed.has(path)) continue;
+      if (!/\.(astro|mdx|mjs|ts|json)$/.test(entry.name)) continue;
+
+      const text = await readFile(new URL(path, root), 'utf8');
+      for (const match of text.matchAll(/\d+\.\d+\.x/g)) {
+        offenders.push(`${path}: states ${match[0]}, compose it from src/lib/sdk.mjs`);
+      }
+      for (const match of text.matchAll(new RegExp(`(?<![-\\d.])${sdkVersion.replaceAll('.', '\\.')}(?![\\d.])`, 'g'))) {
+        offenders.push(`${path}: states the installed version ${match[0]} as a literal`);
+      }
+    }
+  };
+
+  await walk('src/');
+  assert.deepEqual(offenders, []);
+});
+
+test('the design profile names the release package.json installs', async () => {
+  /* The prose pin said v0.2.2 against a v0.8.0 dependency — six minors of
+   * drift in the one place a reader looks to find out which contract the
+   * surfaces follow. Same class as the version literals above, so it gets the
+   * same treatment rather than another convention. */
+  const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const installed = /refs\/tags\/(v\d+\.\d+\.\d+)\.tar\.gz$/.exec(
+    manifest.dependencies['@open-e2ee/design'],
+  );
+  assert.ok(installed, 'cannot read a tag out of the design dependency');
+
+  const profile = await readFile(new URL('../DESIGN.md', import.meta.url), 'utf8');
+  const stated = /`@open-e2ee\/design` (v\d+\.\d+\.\d+)/.exec(profile);
+  assert.ok(stated, 'DESIGN.md names no shared release to check');
+  assert.equal(
+    stated[1],
+    installed[1],
+    `DESIGN.md says ${stated[1]} but package.json installs ${installed[1]}`,
+  );
 });
 
 test('answers the runtime question on the homepage', async () => {

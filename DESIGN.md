@@ -3,7 +3,7 @@
 The authoritative OpenE2EE design contract lives in
 [`open-e2ee/design`](https://github.com/open-e2ee/design/blob/main/DESIGN.md).
 
-- Shared release: `@open-e2ee/design` v0.2.2, pinned in `package.json` as a
+- Shared release: `@open-e2ee/design` v0.8.0, pinned in `package.json` as a
   tagged tarball
 - Surface: public marketing and engineering editorial
 - Density: spacious and expressive
