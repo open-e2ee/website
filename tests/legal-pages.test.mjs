@@ -16,7 +16,7 @@ test('pins the first Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-07-23');
   assert.equal(commercialTermsPath, '/legal/terms/2026-07-23');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-07-23');
-  assert.equal(privacyVersion, '2026-08-09');
+  assert.equal(privacyVersion, '2026-08-16');
 });
 
 /*
@@ -122,6 +122,7 @@ test('keeps the privacy version history truthful about when each event arrived',
      constant into an older entry re-dates a change that already happened. */
   assert.match(privacy, /<strong>Version 2026-08-07:<\/strong> a tenth event was added/);
   assert.match(privacy, /<strong>Version 2026-08-07\.2:<\/strong>[^<]{0,240}eleventh event/);
+  assert.match(privacy, /<strong>Version 2026-08-09:<\/strong> no new event/);
 
   /*
    * Exactly one entry may interpolate the constant, and this is the whole rule.

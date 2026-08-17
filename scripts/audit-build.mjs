@@ -189,14 +189,14 @@ const problems = [];
  * Everything a reader can be shown, which is not the same as everything in the
  * HTML.
  *
- * `/demo` writes its prose at runtime: every sentence `src/lib/demo/render.ts`
- * produces ships as a string inside `dist/_astro/render.*.js` and reaches the
- * page only once the scenario has run. So the scans below, run over `.html`
- * alone, could not see the largest body of copy on the site — and `textOf`
- * strips `<script>` before matching, so they could not see inline script text
- * either. ld0-verify demonstrated the gap rather than argued it: two of this
- * file's own TERMINOLOGY patterns, planted in the shipped quotation paragraph,
- * built and passed this audit.
+ * The demo writes its prose at runtime: every line the console and its reel
+ * print ships as a string inside a built script and reaches the page only once
+ * a reader has sent something. So the scans below, run over `.html` alone,
+ * could not see that copy — and `textOf` strips `<script>` before matching, so
+ * they could not see inline script text either. ld0-verify demonstrated the gap
+ * rather than argued it: two of this file's own TERMINOLOGY patterns, planted
+ * in a paragraph the demo shipped as a runtime string, built and passed this
+ * audit.
  *
  * So the prose scans take the built scripts too. Scanning them whole, rather
  * than picking string literals out of them, is deliberate: a literal extractor
@@ -212,10 +212,9 @@ const problems = [];
  * Two limits worth knowing. A phrase the bundler split across a concatenation
  * or a template hole (`"…the Signal " + name`) is invisible to any static scan
  * of the output, here and in the HTML pass alike. And AUDIT/FIPS want their
- * qualifier on the same *page*, which does not map onto a chunk: a scenario
- * that ever needs to say "audited" has to carry "not audited by any
- * independent firm" in the same chunk, which is where the sentence belongs
- * anyway.
+ * qualifier on the same *page*, which does not map onto a chunk: a script that
+ * ever needs to say "audited" has to carry "not audited by any independent
+ * firm" in the same chunk, which is where the sentence belongs anyway.
  */
 const scripts = await filesWith(DIST, '.js');
 const prose = [
@@ -441,17 +440,6 @@ function bareIdentifier(span) {
 const PUBLIC_DOC_LINK =
   /https:\/\/github\.com\/open-e2ee\/signal-protocol-js\/blob\/[^/"]+\/([A-Za-z0-9._/-]+)(?:#([A-Za-z0-9._-]+))?/g;
 
-/*
- * The interface whose members are the SDK's whole hook surface, and the name
- * of the list a page prints and calls exactly that surface.
- *
- * The page finds it by printing the list, so the check goes looking for the
- * list rather than for a page: whichever page shows `WATCHED_HOOKS` is the one
- * making the claim.
- */
-const HOOKS_INTERFACE = 'SignalProtocolClientHooks';
-const WATCHED_HOOKS = 'WATCHED_HOOKS';
-
 /* GitHub's heading-to-fragment rule: case folded, punctuation dropped, spaces
  * hyphenated. It also numbers repeated headings `-1`, `-2`; ours are unique,
  * and a link to a repeated one fails here loudly rather than silently. */
@@ -527,9 +515,9 @@ if (!surface) {
   /*
    * A link into the public repository's `docs/` resolves only if the export
    * allowlist carries that file. `DEVICE_LIFECYCLE.md` is in the internal
-   * repository and not on the allowlist, so a scenario's link to it was a 404 on
-   * production from the day it shipped — reachable to whoever wrote it and to
-   * nobody else.
+   * repository and not on the allowlist, so a page that linked to it served a
+   * 404 on production from the day it shipped — reachable to whoever wrote it
+   * and to nobody else.
    *
    * The installed package stands in for the public repository here, which
    * needs no network and so cannot flake. What makes it a fair stand-in is
@@ -584,42 +572,6 @@ if (!surface) {
     }
   }
 
-  /*
-   * A scenario prints a hand-written list of hook names and says of it, in as many
-   * words, that it is every hook the SDK offers. It has to be hand-written —
-   * the page shows it as code a reader could have written themselves — so only
-   * a check like this holds it equal to the SDK's hook surface.
-   *
-   * The list carries a type-level exhaustiveness guard too, and that one is not
-   * enough on its own. It is checked against the SDK the site type-checks
-   * against; this is checked against the copy the site was built against, which
-   * is the copy the shipped sentence is a claim about. The annotation that used
-   * to stand where that guard is now caught nothing at all: `HookName[]` widens,
-   * so a list short of a hook type-checked happily.
-   *
-   * One direction only. A hook the SDK gained and the list has not is what this
-   * catches, and it is the direction staleness runs in. A hook the SDK *lost*
-   * can still be found elsewhere on a page this size, so it is left to the
-   * exhaustiveness guard, which sees the list itself rather than the page.
-   */
-  const hooks = surface.members.get(HOOKS_INTERFACE);
-  if (!hooks || hooks.size === 0) {
-    problems.push(
-      `cannot verify the hook list: the ${surface.origin} copy of ${SDK_PACKAGE} declares no ${HOOKS_INTERFACE} members`,
-    );
-  } else {
-    for (const file of files) {
-      const html = await readFile(file, 'utf8');
-      if (!html.includes(WATCHED_HOOKS)) continue;
-      const missing = [...hooks].filter((hook) => !html.includes(hook));
-      if (missing.length > 0) {
-        problems.push(
-          `${relative(DIST, file)}: prints ${WATCHED_HOOKS} as every hook the SDK offers, but names ` +
-            `${hooks.size - missing.length} of the ${hooks.size} in ${HOOKS_INTERFACE} — missing ${missing.join(', ')}`,
-        );
-      }
-    }
-  }
 }
 
 /* Social cards are produced in the design repo on their own schedule, so a
@@ -651,5 +603,5 @@ if (problems.length > 0) {
 
 console.log(
   `Build audit passed: ${files.length} pages and ${scripts.length} scripts, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts, every preloaded font loaded by a stylesheet, ` +
-    `every code identifier, every linked public doc, and every ${HOOKS_INTERFACE} member found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
+    `every code identifier and every linked public doc found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
 );

@@ -33,26 +33,17 @@ export const EVENTS = new Set([
   'pricing_view',
   'signup_start',
   'enterprise_contact',
-  'scenario_opened',
 ]);
 
 /*
  * The only labels any event carries. Free text is never stored.
  *
- * The scenario slugs are here one at a time, as each scenario ships. A label
- * accepted before the page that sends it exists would make an unopened
- * scenario and an unbuilt one look the same in the dataset — which is the
- * question the homepage scenarios are measured to answer.
+ * These are the three runtimes `runtime_select` chooses between, and no other
+ * event carries a label. An accepted label that nothing sends is worse than no
+ * label at all: it makes an untriggered event and an unbuilt one the same empty
+ * row, which is the question a label is added to answer.
  */
-export const LABELS = new Set([
-  'expo',
-  'browser',
-  'node',
-  'flip-a-byte',
-  'add-a-second-device',
-  'run-out-of-prekeys',
-  'reinstall-a-device',
-]);
+export const LABELS = new Set(['expo', 'browser', 'node']);
 
 const COLLECT_PATH = '/e';
 const MAX_BODY_BYTES = 128;

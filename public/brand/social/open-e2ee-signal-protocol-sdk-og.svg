@@ -15,7 +15,7 @@
     <text x="856" y="380" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">multi-device · groups · sealed sender</text>
     <path d="M856 412 L1071 412 L1071 468 L856 468 Z" fill="#34312d"/>
     <rect x="860" y="398" width="2" height="10" fill="#a5700d"/><rect x="876" y="398" width="2" height="10" fill="#a5700d"/><rect x="892" y="398" width="2" height="10" fill="#a5700d"/><rect x="908" y="398" width="2" height="10" fill="#a5700d"/><rect x="924" y="398" width="2" height="10" fill="#a5700d"/><rect x="940" y="398" width="2" height="10" fill="#a5700d"/>
-    <text x="856" y="492" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">AGPL-3.0-or-later · commercial</text>
+    <text x="856" y="492" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">AGPLv3 · commercial</text>
   </g>
   <g transform="translate(88 88) scale(0.1875)">
     <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#090806"/>

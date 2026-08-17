@@ -23,8 +23,8 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * event, but no longer says the event fired on `/demo`: the route is gone, and
  * an entry that named it would send a reader looking for a page.
  *
- * This version needs no suffix: it is a later day. It exists because the
- * scenarios moved onto the home page and the transmitted string moved with
+ * The 2026-08-09 version needs no suffix: it is a later day. It exists because
+ * the scenarios moved onto the home page and the transmitted string moved with
  * them — `scenario_opened /demo <slug>` became `scenario_opened / <slug>`. No
  * new event, no new category, nothing additional collected; only the page-path
  * token, because the page moved. It is versioned anyway, and the reason is the
@@ -38,24 +38,20 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * tell a reader a notice takes effect tomorrow while the string it describes is
  * already going out.
  *
- * Here the notice trails the string rather than leading it: the fold shipped one
- * pull request ahead of this, so the site has been sending `scenario_opened /`
- * since that deployed. What was stale in that window is worth naming exactly,
- * because it was never the quotation. The fold changed the sent string and the
- * quoted string in one commit, so section 5 quoted the right words throughout.
- * Everything around the quotation is what lagged: the stamp still read
- * 2026-08-07.2 and August 7, no changelog entry described the change, and both
- * the event list and the previous entry still sent readers to `the demo page`,
- * which that same commit deleted. A reader in the window found an accurate
- * quotation under an out-of-date version, pointing at a page that was gone. What
- * bounds that is the two merges landing 76 minutes apart on 2026-08-09, each
- * deploying on push — the window is shorter than the day this version names, so
- * no dated notice was ever wrong for a whole day of its own effect. The reverse
- * order is the one that cannot be bounded that way: a notice published ahead of
- * the string describes transmission that is not happening yet, and it keeps
- * describing it for as long as the second deploy is delayed. So a wider gap
- * would need the notice to go first. The same reasoning kept 2026-08-07.2 on
- * August 7 rather than moving it.
+ * This version removes an event. The scenarios left the site, so nothing can
+ * send `scenario_opened` and nothing can carry a scenario slug; both the event
+ * and the four labels left the collector in the commit that deleted them. The
+ * same standard applies as when the string changed: section 5 said the site
+ * measured eleven things and quoted a message it no longer sends.
+ *
+ * Order matters differently in this direction, and it is the safe one. A notice
+ * that still describes a removed event over-states what is collected, and a
+ * reader who acts on it is protected by more than the notice promises. The
+ * dangerous direction is the reverse — a notice published ahead of the string
+ * describes transmission that is not happening yet, and keeps describing it for
+ * as long as the second deploy is delayed. That is why 2026-08-07.2 stayed on
+ * August 7, and why the removal and the notice ship in one commit here rather
+ * than one leading the other.
  */
-export const privacyVersion = '2026-08-09';
-export const privacyEffectiveDate = 'August 9, 2026';
+export const privacyVersion = '2026-08-16';
+export const privacyEffectiveDate = 'August 16, 2026';
