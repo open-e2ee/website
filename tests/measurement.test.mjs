@@ -16,7 +16,6 @@ import { gzipSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { EVENTS, LABELS, collect } from '../src/workers/site.ts';
-import { SCENARIOS } from '../src/lib/demo/scenarios/catalog.ts';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
@@ -28,11 +27,7 @@ const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
  * A sender that is not on this list is invisible to the set check below, so a
  * new one belongs here in the same commit that writes it.
  */
-const SENDERS = [
-  '../public/measure.js',
-  '../src/components/demo/DemoConsole.astro',
-  '../src/components/demo/ScenarioList.astro',
-];
+const SENDERS = ['../public/measure.js', '../src/components/demo/DemoConsole.astro'];
 
 /*
  * How the privacy notice counts the events, so the sentence a reader is asked
@@ -213,35 +208,20 @@ test('measures the demo without measuring what was typed into it', async () => {
 });
 
 /*
- * The same pinning for the scenario list, whose label is the one dimension any
- * event on this site carries beyond its own name. One argument past the event
- * name, and that argument is the slug the section already puts in its fragment
- * — never a count of records, a timing, or anything the scenario printed.
+ * A label the collector accepts that nothing can send is worse than no label:
+ * an untriggered event and an unbuilt one become the same empty row, which is
+ * the exact question a label is added to answer. The scenario slugs were the
+ * case that mattered — they left the collector when the scenarios left the
+ * site — so what remains is the runtime choice, and the set has to say so in
+ * both directions rather than accumulate the leavings of a removed feature.
  */
-test('measures which scenario was opened, and nothing about what it did', async () => {
-  const list = await read('../src/components/demo/ScenarioList.astro');
-  assert.match(list, /window\.oeMeasure\?\.\('scenario_opened', slug\)/);
-  assert.equal([...list.matchAll(/oeMeasure/g)].length, 1, 'the list measures at one place');
-});
+test('accepts a label only for the one event that carries one', async () => {
+  /* Read from the alternation `measure.js` matches the href against, which is
+     the only place a label is produced, rather than from a list retyped here. */
+  const sent = /\\\/start\\\/\(([a-z|]+)\)/.exec(await read('../public/measure.js'));
+  assert.ok(sent, 'measure.js no longer picks a runtime label out of the href');
 
-/*
- * A label the collector accepts for a scenario nobody can open is worse than
- * no label: an unopened scenario and an unbuilt one become the same row in the
- * dataset, which is the exact question this event was added to answer. So the
- * accepted set and the shipped set have to match in both directions, less the
- * three runtime labels that belong to `runtime_select`.
- */
-test('accepts a scenario label only for a scenario the site actually ships', () => {
-  const runtimes = new Set(['expo', 'browser', 'node']);
-  const slugs = new Set(SCENARIOS.map((scenario) => scenario.slug));
-
-  for (const slug of slugs) {
-    assert.ok(LABELS.has(slug), `the site ships ${slug} but the collector would drop its label`);
-  }
-  for (const label of LABELS) {
-    if (runtimes.has(label)) continue;
-    assert.ok(slugs.has(label), `${label} is an accepted label but no scenario ships it`);
-  }
+  assert.deepEqual([...LABELS].sort(), sent[1].split('|').sort());
 });
 
 test('describes the measurement in the privacy notice it points at', async () => {

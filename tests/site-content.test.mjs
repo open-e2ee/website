@@ -4363,11 +4363,11 @@ async function demoSources() {
   }
 
   /* A glob that quietly matched nothing would pass every caller forever. The
-     floor is the tree's measured size — 22 files on 2026-08-10 — rather than a
-     loose lower bound. Adding a file keeps this passing; losing one is what it
-     is for. */
+     floor is the tree's measured size — 20 files on 2026-08-16, after the
+     failure scenarios and their renderer left — rather than a loose lower
+     bound. Adding a file keeps this passing; losing one is what it is for. */
   assert.ok(
-    sources.length >= 22,
+    sources.length >= 20,
     `expected the whole demo source tree, found ${sources.length} files`,
   );
   return sources;
