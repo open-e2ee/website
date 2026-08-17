@@ -4603,15 +4603,16 @@ test('keeps the space on both sides of every inline code span', async () => {
   }
 
   /* A regex that stopped matching would pass on every file in the tree. The
-   * floor is the tree's measured count: 38 spans on 2026-08-10, the two most
-   * recent having left with `LiveCarrierPanel.astro`, whose caption named
-   * `inMemoryStore()` and `inMemoryRelay()` — the homepage's own caption above
-   * the demo names both.
+   * floor is the tree's measured count: 33 spans on 2026-08-16. The homepage
+   * held the last five and now holds none — cutting the landing page back to
+   * the demo, the deck and the licence took the alternatives fold with it,
+   * and with the fold went the four package names it compared against and the
+   * `inMemoryRelay()` in the caption above the demo.
    *
    * Re-measure and record the reason when this moves. The number is a tripwire
    * for a regex that has stopped matching, so it is only worth what its last
    * measurement was worth. */
-  assert.ok(spans >= 38, `expected to be scanning real code spans, counted ${spans}`);
+  assert.ok(spans >= 33, `expected to be scanning real code spans, counted ${spans}`);
 });
 
 test('the scene places the envelope at every step the run records', async () => {
@@ -4711,9 +4712,16 @@ test('the spent key carries its transition on the flying state, never at rest', 
 
   const flying = rules.filter((rule) => rule.selector === ".demo-spent-key[data-flying='true']");
   assert.equal(flying.length, 1, 'the flying state is no longer one rule');
+  /* The property is the one the placement writes. The key rides a motion path
+     — the rack, the wire, the wheel — so what animates is `offset-distance`,
+     and a rule that transitioned `transform` instead would leave the crossing
+     to happen in a single frame. The clock is still the shared one: the
+     crossing is a multiple of `--demo-flight-ms` rather than a number of its
+     own, which is what keeps it inside the step's dwell when that dwell
+     moves. */
   assert.match(
     flying[0].body,
-    /transition:\s*transform\s+var\(--demo-flight-ms/,
+    /transition:\s*offset-distance\s+calc\(var\(--demo-flight-ms/,
     'the flying state no longer flies on --demo-flight-ms, so the key crosses the gap at a ' +
       'speed unrelated to the step holding it',
   );

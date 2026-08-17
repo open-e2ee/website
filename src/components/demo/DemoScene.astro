@@ -94,7 +94,7 @@ const DEVICE_METRICS: readonly {
      Every row is real cryptographic work this device did on its own processor —
      the cost a developer pays on their users' hardware. The publish and
      round-trip figures the recording also carries are deliberately absent:
-     each is a span through a relay that runs in this same tab, and a simulated
+     each is a span through a relay that runs in this tab, and a simulated
      network's timings price nothing a developer can use. Encryption and
      decryption qualify only because `run.ts` brackets them at the device's own
      edge — sealing ends where the envelope is handed to transport, opening
@@ -312,13 +312,21 @@ const STEP_LIST = STEPS.join(' ');
           ))}
 
           <div class="demo-relay-rack">
-            {/* The faceplate. The vent slats are the server's answer to the
+            {/* The faceplate. The vent slats are the relay's answer to the
                 phones' notch: the one flourish that says what kind of object
                 this is, drawn in the same ink and the same flat idiom, and
-                meaning nothing beyond that. */}
+                meaning nothing beyond that.
+
+                The sub-line is the fixed formula, not a description of the
+                service. `design/DESIGN.md` settles the words — "the relay
+                never needs message plaintext or device private keys" — and
+                this header is the one place in the demo where the relay
+                speaks for itself, so it is where the formula has to be. The
+                mobile figure carries the same two words for the same reason:
+                one demo at two widths cannot make two promises. */}
             <header class="demo-relay-header">
-              <span class="demo-relay-title">relay server</span>
-              <span class="demo-relay-sub">delivers encrypted messages</span>
+              <span class="demo-relay-title">relay</span>
+              <span class="demo-relay-sub">never needs plaintext</span>
               <span class="demo-relay-vents" aria-hidden="true">
                 <span />
                 <span />
@@ -2019,7 +2027,7 @@ const STEP_LIST = STEPS.join(' ');
    * The rack is drawn as the phones are drawn: the same casing colour, the
    * same 2px border ink, a screen-coloured panel per unit inside. One
    * hardware grammar for every machine in the scene — the devices are
-   * abstract phones, this is the same abstraction of a server. It used to
+   * abstract phones, this is the same abstraction of a relay. It used to
    * carry a darker outline of its own, which made the one box that is mere
    * infrastructure the heaviest thing in the drawing.
    *
@@ -2062,7 +2070,7 @@ const STEP_LIST = STEPS.join(' ');
     opacity: 0.7;
   }
 
-  /* The notch's ink and idiom, worn the server's way. */
+  /* The notch's ink and idiom, worn the relay's way. */
   .demo-relay-vents {
     grid-column: 2;
     grid-row: 1 / span 2;
@@ -2085,7 +2093,7 @@ const STEP_LIST = STEPS.join(' ');
 
      Drawn as a rack unit: a screen-coloured panel in the casing, the exact
      treatment a phone gives its screen, because an account is the part of the
-     server one device sees. */
+     relay one device sees. */
   .demo-relay-account {
     display: flex;
     flex-direction: column;

@@ -101,16 +101,22 @@ const NAMES = { a: 'Alice', b: 'Bob' } as const;
  * trust root to mint a sender certificate against, so that switch is a lens
  * over the envelope's addressing rather than a session setting.
  */
+/* `slug` and not `id`: it is the kebab half of the DOM id below, and the SDK's
+   `Envelope` declares a field called `id`. `tests/demo-panel.test.mjs` reads
+   every name this file writes down and fails on an envelope field named
+   outside `NAMED_FIELDS`, deliberately without knowing what the name was for —
+   a scanner that tried to tell an envelope's `id` from a toggle's would be
+   guessing. The rename costs a word and keeps the guard closed. */
 const TOGGLES = [
   {
-    id: 'sealed-sender',
+    slug: 'sealed-sender',
     key: 'sealedSender',
     label: 'Sealed sender',
     on: true,
     note: 'a lens over the envelope’s addressing — seals the sender the relay would see',
   },
   {
-    id: 'braid',
+    slug: 'braid',
     key: 'braid',
     label: 'Braid',
     on: false,
@@ -177,10 +183,10 @@ const TOGGLES = [
           <legend class="demo-console-toggles-legend">Protocol</legend>
           {
             TOGGLES.map((toggle) => (
-              <label class="demo-console-toggle" for={`demo-toggle-${toggle.id}`}>
+              <label class="demo-console-toggle" for={`demo-toggle-${toggle.slug}`}>
                 <input
                   type="checkbox"
-                  id={`demo-toggle-${toggle.id}`}
+                  id={`demo-toggle-${toggle.slug}`}
                   data-console-toggle={toggle.key}
                   checked={toggle.on}
                 />
@@ -871,7 +877,7 @@ const TOGGLES = [
      * session, sealing a message and opening one — the last two bracketed at
      * the device's edge by `run.ts`, so neither contains the relay. The
      * publish and round-trip spans the recording also carries are deliberately
-     * not printed — each is a span through a relay that runs in this same tab,
+     * not printed — each is a span through a relay that runs in this tab,
      * and a simulated network's timings price nothing a developer can use.
      */
     function printMetrics(event: TraceEvent) {

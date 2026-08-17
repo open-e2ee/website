@@ -45,7 +45,7 @@ export function summarise(event: TraceEvent): string {
     case 'registered': {
       const detail = event.detail as { userId?: string } | undefined;
       const who = detail?.userId ?? event.actor;
-      return `Relay registered ${who} — the account now exists server-side, able to receive (${ms(measures.registerMs ?? 0)}).`;
+      return `Relay registered ${who} — the account now exists on the relay, able to receive (${ms(measures.registerMs ?? 0)}).`;
     }
 
     /* One line per progress report the SDK raised, so the log reads as the

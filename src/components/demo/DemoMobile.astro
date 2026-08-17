@@ -125,9 +125,9 @@ const LOCKS = [
         anything that reads text rather than layout. The flex row ignores the
         whitespace-only nodes, so the visible spacing stays the gap's. */}
     <p class="demo-mobile-relay-head">
-      <span class="demo-mobile-relay-title">relay server</span>{' '}
+      <span class="demo-mobile-relay-title">relay</span>{' '}
       <span class="demo-mobile-relay-dot" aria-hidden="true">·</span>{' '}
-      <span class="demo-mobile-relay-sub">delivers encrypted messages</span>
+      <span class="demo-mobile-relay-sub">never needs plaintext</span>
       <span class="demo-mobile-relay-vents" aria-hidden="true"><span></span><span></span><span></span></span>
     </p>
     <div class="demo-mobile-accounts">
@@ -540,7 +540,7 @@ const LOCKS = [
        rests dim until its seal commits, and the receiver's is born when the
        unseal settles — so each is held here between its frame and the
        transition that pays it out, and `show` flushes any the transitions
-       lost (a hidden tab clamps them). */
+       lost (a tab in the background clamps them). */
     let sealingBubble: HTMLElement | null = null;
     let openedSentence: { side: MobileSide; text: string } | null = null;
     /* The choreography's one-shot continuations. `refaceDone` is what the
@@ -549,7 +549,8 @@ const LOCKS = [
        bubble-to-envelope morph owes; `revealTimer` is the reader's beat
        between the unseal settling and the tile folding into the bubble;
        `morphingBubble` is the born-invisible bubble that fold is aimed at.
-       All flushed by `show` — a clamped tab can lose any transition. */
+       All flushed by `show` — a tab the browser has clamped can lose any
+       transition. */
     let refaceDone: (() => void) | null = null;
     let pendingSeal: { side: MobileSide; dwell: number } | null = null;
     let revealTimer: number | null = null;
@@ -1169,7 +1170,8 @@ const LOCKS = [
     function show(frame: MobileFrame) {
       caption.textContent = frame.caption;
       /* No sentence outlives its frame unspoken or dim: the payouts above
-         ride transitions, and a clamped tab can lose one. Idempotent when
+         ride transitions, and a tab the browser has clamped can lose one.
+         Idempotent when
          the transitions did their work. */
       if (revealTimer !== null) {
         window.clearTimeout(revealTimer);

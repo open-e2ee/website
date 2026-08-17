@@ -302,10 +302,16 @@ export function buildMobileReel(
           kind: 'stored',
           to,
           ...(bytes === undefined ? {} : { bytes }),
+          /* The relay's own line, and it says what the relay holds rather than
+             what it is unable to do. "Cannot read" is the absolute
+             `design/DESIGN.md` rules out — untrue of a hostile relay, which
+             /security states plainly — and naming the ciphertext makes the
+             same point from the side that is checkable: a row of ciphertext is
+             what the mailbox has. */
           caption:
             bytes === undefined
-              ? `${names[to]}’s mailbox holds a row the relay cannot read.`
-              : `${names[to]}’s mailbox holds ${humanBytes(bytes)} the relay cannot read.`,
+              ? `${names[to]}’s mailbox holds a row of ciphertext.`
+              : `${names[to]}’s mailbox holds ${humanBytes(bytes)} of ciphertext.`,
         });
       }
     }

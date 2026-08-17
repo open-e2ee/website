@@ -28,7 +28,6 @@ import test from 'node:test';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import { createPlayback } from '../src/lib/demo/playback.ts';
 import { startDemoRun } from '../src/lib/demo/run.ts';
-import { SEALED_SENDER_HIDES } from '../src/lib/demo/scene-view.ts';
 import { STEPS } from '../src/lib/demo/trace.ts';
 
 const OUTBOUND = 'Dinner at 7. I got us the table by the window.';
@@ -105,10 +104,20 @@ function failsIfSlow(promise, ms, message) {
   return Promise.race([promise, tripwire]).finally(() => clearTimeout(timer));
 }
 
-/** Boot once per test and always tear down, subscriptions included. */
+/**
+ * Boot once per test and always tear down, subscriptions included.
+ *
+ * `startDemoRun()` hands back a relay and no devices: bringing one up is the
+ * reader's own press, and the page has a button for each. Both presses happen
+ * here, left then right, because every test below is about what a run does
+ * once its devices are up. The cold start is covered on its own by the
+ * activation tests, which call `startDemoRun()` directly.
+ */
 async function withRun(body, options) {
   const run = await startDemoRun(options);
   try {
+    await run.activate('a');
+    await run.activate('b');
     return await body(run);
   } finally {
     await run.stop();
@@ -117,6 +126,33 @@ async function withRun(body, options) {
 
 /** The steps recorded, in the order they were recorded. */
 const stepsOf = (run) => run.trace.events.map((event) => event.step);
+
+test('starts with a relay and no devices', async () => {
+  const run = await startDemoRun();
+  try {
+    assert.deepEqual(stepsOf(run), [], 'the run recorded something before a device came up');
+    for (const actor of ['a', 'b']) {
+      assert.throws(
+        () => run.client(actor),
+        `${actor} had a client before anyone activated it`,
+      );
+    }
+    /* The second press on a device that is already up is not a second boot.
+       The button stays live on the page, and a reader who presses it twice
+       must not get two registrations against one mailbox. */
+    await run.activate('a');
+    const client = run.client('a');
+    await run.activate('a');
+    assert.equal(run.client('a'), client, 'a second press rebuilt the device');
+    assert.equal(
+      stepsOf(run).filter((step) => step === 'devices-ready').length,
+      1,
+      'a second press recorded a second boot',
+    );
+  } finally {
+    await run.stop();
+  }
+});
 
 test('boots two devices and records each one coming up', async () => {
   await withRun((run) => {
@@ -307,14 +343,25 @@ test('round-trips a sentence and records every step in protocol order', async ()
     assert.ok(sent.roundTripMs > 0);
 
     /* Checked against `STEPS` rather than against a list typed out here, so
-       the order this asserts is the order the module declares. */
+       the order this asserts is the order the module declares.
+       Per actor and not across the whole recording: each device comes up on
+       its own press, so the second one's ascent begins after the first has
+       finished and the trace steps back down to `registered`. Protocol order
+       is a property of one participant's own record, and a sort across both
+       would be asserting that the presses cannot be separate. */
+    for (const actor of ['a', 'b', 'relay']) {
+      const own = run.trace.events.filter(
+        (event) => event.actor === actor && event.step !== 'devices-ready',
+      );
+      const ranks = own.map((event) => STEPS.indexOf(event.step));
+      assert.deepEqual(
+        ranks,
+        [...ranks].sort((x, y) => x - y),
+        `${actor}'s recording is out of protocol order: ` +
+          own.map((event) => event.step).join(' → '),
+      );
+    }
     const recorded = stepsOf(run).filter((step) => step !== 'devices-ready');
-    const ranks = recorded.map((step) => STEPS.indexOf(step));
-    assert.deepEqual(
-      ranks,
-      [...ranks].sort((x, y) => x - y),
-      `the recording is out of protocol order: ${recorded.join(' → ')}`,
-    );
     for (const step of ['bundles-published', 'session-established', 'encrypted', 'in-transit',
       'stored-at-relay', 'delivered', 'opened']) {
       assert.ok(recorded.includes(step), `no ${step} step was recorded`);
@@ -342,29 +389,37 @@ test('hands over the live envelope the relay held, not a description of it', asy
 });
 
 /*
- * The inspector prints every field the envelope carries, by iterating it — so
- * it cannot name a field that does not exist. The one place a field name is
- * still written down by hand is the sealed-sender lens, `SEALED_SENDER_HIDES`,
- * which is a *claim* about which fields a sealed send removes rather than a
- * description of what is there. A name in it that stops matching the envelope
- * does not throw and does not blank the inspector loudly — the lens marks
- * nothing, the note underneath still says "0 struck fields", and a page that
- * has stopped teaching its point looks entirely correct. That is the failure
- * this exists to make loud, and it can only be caught against a real envelope,
- * because the SDK's own declaration is a superset of what a send actually puts
- * on the object.
+ * Sealed sender is a lens, not a session setting — the demo has no trust root
+ * to mint a sender certificate against — so what it does is cover the sender
+ * address on the drawn envelope while the relay's real copy keeps its fields.
+ * The lens is therefore a *claim* about which field a sealed send would remove,
+ * and it names that field by hand: `NAMED_FIELDS.from` in `DemoConsole.astro`
+ * is the one place the sender's address is spelled out.
+ *
+ * A name there that stops matching the envelope fails silently in the direction
+ * that flatters us. The address the drawing shows falls back to nothing, the
+ * lock closes over a field that was never there, and a page that has stopped
+ * teaching its point looks entirely correct. Only a real envelope can catch it:
+ * the SDK's declaration is a superset of what a send actually puts on the
+ * object, so `demo-panel.test.mjs` checking the name against the type is
+ * necessary and not sufficient.
  */
-test('sealed sender only claims to hide fields a real send produced', async () => {
+const consoleSource = await readFile(
+  new URL('../src/components/demo/DemoConsole.astro', import.meta.url),
+  'utf8',
+);
+const SEALED_FIELD = consoleSource.match(/NAMED_FIELDS = \{[^}]*?from:\s*'([^']+)'/s)?.[1];
+
+test('sealed sender only claims to hide a field a real send produced', async () => {
+  assert.ok(SEALED_FIELD, "the console's NAMED_FIELDS must name the sender field it covers");
   await withRun(async (run) => {
     const sent = await run.send('a', OUTBOUND);
     const keys = new Set(Object.keys(sent.envelope));
-    const missing = SEALED_SENDER_HIDES.filter((field) => !keys.has(field));
-    assert.deepEqual(
-      missing,
-      [],
-      `sealed sender claims to hide ${missing.join(', ')}, which a real envelope does not carry ` +
-        `— the lens would mark nothing, the note would still say "0 struck fields", and the page ` +
-        `would look entirely correct while teaching nothing. The envelope has: ${[...keys].join(', ')}`,
+    assert.ok(
+      keys.has(SEALED_FIELD),
+      `sealed sender claims to cover "${SEALED_FIELD}", which a real envelope does not carry — ` +
+        `the drawn address would be blank before the lens ever closed, and the page would look ` +
+        `entirely correct while teaching nothing. The envelope has: ${[...keys].join(', ')}`,
     );
   });
 });
@@ -1238,27 +1293,28 @@ test('the chunks the drawing is given are the chunks the braid reported', async 
   );
 });
 
-test('reset forgets the conversation and boots fresh devices', async () => {
+test('reset forgets the conversation and leaves both devices to be booted again', async () => {
   await withRun(async (run) => {
     await run.send('a', OUTBOUND);
     const firstClient = run.client('a');
 
     await run.reset();
 
-    /* Boot, and nothing that happened before it. The kinds are checked rather
-       than a literal list of events: each device now reports its key generation
-       on the way to being ready, and how many reports that takes is the SDK's
-       batch size, which this test is not about. What it is about — that no step
-       from the sent message survived — a list of kinds still fails on. */
-    assert.deepEqual(
-      [...new Set(stepsOf(run))],
-      ['generating-keys', 'devices-ready'],
-      'the recording kept something from the run before the reset',
+    /* Back to the cold start: an empty recording and no devices. A reset that
+       rebooted the pair for the reader would hand back a page it had filled in
+       itself, and the presses are the demo's first teaching moment. */
+    assert.deepEqual(stepsOf(run), [], 'the recording kept something from the run before the reset');
+    assert.throws(
+      () => run.client('a'),
+      'a device survived the reset instead of waiting to be activated again',
     );
+
+    await run.activate('a');
+    await run.activate('b');
     assert.equal(
       stepsOf(run).filter((step) => step === 'devices-ready').length,
       2,
-      'the reset did not boot both devices',
+      'the devices did not come back up after the reset',
     );
     assert.notEqual(run.client('a'), firstClient, 'reset reused the old client');
     assert.equal(
@@ -1280,6 +1336,8 @@ test('subscribers on the trace survive a reset', async () => {
     run.trace.on((event) => seen.push(event.step));
 
     await run.reset();
+    await run.activate('a');
+    await run.activate('b');
     await run.send('a', OUTBOUND);
 
     assert.ok(

@@ -149,7 +149,7 @@ export interface DemoRun {
    *
    * A run starts with a relay and no devices, and this is the reader's own
    * act of adding one: the device registers with the relay — the relay's
-   * answer is the account existing server-side, the thing its mailbox and
+   * answer is the account existing on the relay, the thing its mailbox and
    * shelf hang off — then the client builds, generating its keys, and
    * finally the public halves are published up to the shelf.
    *
@@ -580,7 +580,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     /*
      * The relay has accepted this device. Registration is the first thing a
      * device sends over its connection, and the relay's answer is the account
-     * taking shape server-side: a device id, and the registry row that makes
+     * taking shape on the relay: a device id, and the registry row that makes
      * the device an addressable recipient — the thing its mailbox hangs off.
      * Recorded before the client is built because that is the order it
      * happens in: a device registers on its way up, before it has made a
