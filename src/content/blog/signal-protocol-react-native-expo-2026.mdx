@@ -12,6 +12,7 @@ tags:
 ---
 
 import ExpoKeyMap from '../../components/diagrams/ExpoKeyMap.astro';
+import { sdkLine } from '../../lib/sdk.mjs';
 
 **Who this is for:** a React Native or Expo developer who plans to add end-to-end encryption. Search results show several packages with different platform and maintenance limits. This article compares those packages and builds two encrypted identities in an Expo app. It also explains key storage, key lifetime, relay data, and prekey capacity.
 
@@ -181,4 +182,4 @@ For implementation, the Expo guide covers SQLCipher setup, vault bootstrap, and 
 
 [The Expo quickstart](https://docs.open-e2ee.dev/start/expo) gives the ten-minute version. [The Convex relay guide](https://docs.open-e2ee.dev/guides/expo-convex-relay) covers the relay. [The migration guide](https://docs.open-e2ee.dev/guides/migrating-from-libsignal) applies if you shipped the privacyresearch port. Review [the production checklist](https://docs.open-e2ee.dev/operate/production-checklist) before release.
 
-The SDK is `@open-e2ee/signal-protocol-sdk` on the `0.1.x` line. Public APIs and persisted formats may change before 1.0. It is reviewed continuously by adversarial AI agents; it is not audited by any independent firm, and none is engaged.
+The SDK is `@open-e2ee/signal-protocol-sdk` on the <code>{sdkLine}</code> line. Public APIs and persisted formats may change before 1.0. It is reviewed continuously by adversarial AI agents; it is not audited by any independent firm, and none is engaged.

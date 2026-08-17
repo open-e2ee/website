@@ -5,6 +5,7 @@ import SignatureDiagram from '../components/SignatureDiagram.astro';
 import capture from '../data/carrier-capture.json';
 import { codeThemes } from '../lib/code-theme.mjs';
 import { MEASURED_ON, axes, libsignalReadme, notes, projects } from '../lib/comparison.mjs';
+import { maturityLine } from '../lib/sdk.mjs';
 import { startupTier } from '../data/pricing.mjs';
 
 /*
@@ -142,7 +143,7 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
         pure TypeScript with no native crypto module to link — the encrypted Expo store uses
         SQLCipher, which needs a development build rather than Expo Go.
       </p>
-      <p class="maturity">0.1.x — public APIs and persisted formats may change before 1.0.</p>
+      <p class="maturity">{maturityLine}</p>
       <div class="actions">
         <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
           <span class="oe-button">Build your first encrypted message</span>

@@ -13,6 +13,7 @@ tags:
 
 import WhoHoldsPlaintext from '../../components/diagrams/WhoHoldsPlaintext.astro';
 import CarrierPanel from '../../components/CarrierPanel.astro';
+import { sdkLine } from '../../lib/sdk.mjs';
 
 **Who this is for:** a JavaScript or TypeScript developer who ships HTTPS and stores plaintext in a database. A customer, security questionnaire, or lawyer asks whether the product uses end-to-end encryption. For most server-readable systems, the answer is no. This article explains the architectural difference and its limits.
 
@@ -82,7 +83,7 @@ Install it from npm:
 npm install @open-e2ee/signal-protocol-sdk
 ```
 
-The package is `@open-e2ee/signal-protocol-sdk` on the `0.1.x` line. Public APIs and persisted formats may change before 1.0.
+The package is `@open-e2ee/signal-protocol-sdk` on the <code>{sdkLine}</code> line. Public APIs and persisted formats may change before 1.0.
 
 ## What your database actually holds
 
