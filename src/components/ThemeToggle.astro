@@ -35,7 +35,7 @@ import Icon from './Icon.astro';
  */
 ---
 
-<button class="oe-theme-toggle" type="button" data-theme-toggle>
+<button class="oe-icon-button" type="button" data-theme-toggle>
   <Icon name="desktop" class="theme-icon theme-icon-system" />
   <Icon name="sun" class="theme-icon theme-icon-light" />
   <Icon name="moon" class="theme-icon theme-icon-dark" />
@@ -54,6 +54,18 @@ import Icon from './Icon.astro';
   function render(preference: string) {
     if (label) label.textContent = preference;
     document.documentElement.dataset.themePreference = preference;
+    /* The phone's status bar, which `theme-init.js` set before first paint and
+       nothing else moves afterwards. Read off the live token rather than
+       restated: by the time anything here runs the stylesheet has resolved, so
+       this is the one of the two writers that can ask instead of remember. */
+    const canvas = getComputedStyle(document.documentElement)
+      .getPropertyValue('--oe-canvas')
+      .trim();
+    if (canvas) {
+      for (const tag of document.head.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
+        tag.content = canvas;
+      }
+    }
   }
 
   render(getStoredTheme());

@@ -8,7 +8,7 @@
  * provided five conditions hold, and four of them are satisfied somewhere
  * other than in this file.
  *
- *   Promote OSI-approved licences  the AGPL-3.0 cell in the feature band
+ *   Promote OSI-approved licences  the AGPLv3 cell in the feature band
  *   No disparagement               nothing on this site is about OSI
  *   No implied endorsement         one glyph at text size, never at badge
  *                                  scale — see `.osi-mark` in global.css
@@ -19,7 +19,9 @@
  * the mark being present, so removing a footer paragraph or rewriting the
  * feature band fails the build for the page carrying the mark.
  *
- * THE ARTWORK, which is the whole reason this file was rewritten.
+ * THE ARTWORK, which is the whole reason this file was rewritten. The path and
+ * the palette moved to `src/lib/osi-artwork.mjs` when the closing band's star
+ * field became a second consumer; the reasoning stayed here.
  *
  * The first version drew simple-icons' `opensourceinitiative` path. That is a
  * faithful copy of OSI's black-and-white file and it was still the wrong
@@ -58,12 +60,27 @@
  * acknowledgement rides on the attribution statement in the footer instead,
  * which is where a 1.7px symbol would have been unreadable anyway.
  *
+ * THE SECOND INSTANCE, and the one place this file's reasoning does not hold.
+ * The closing band draws this mark again, at badge scale, as a field of lights,
+ * and in the page's own ink. That breaks three of the conditions set out above:
+ * "never alter or add elements to the logo", the text-size treatment this file
+ * relies on to keep "no implied endorsement" true, and "never stray from the
+ * color palette" — the paragraph above calls `--oe-muted` the violation, and
+ * the field uses it. Drawn at the founder's direction after each condition was
+ * put to him in writing; the last of them was directed after the field had
+ * first been built keeping OSI's green, because one mark in its own colour
+ * beside two in the page's read as a mistake rather than as a licence being
+ * honoured. What survives there is the link: the one below is still the site's
+ * hyperlink to opensource.org, and the field is decorative and carries no
+ * accessible name of its own. See `StarfieldMark.astro`.
+ *
  * The link is not optional and it is not free: "The OSI Logo must be
  * hyperlinked to opensource.org where technically feasible." It is feasible,
  * so this is an outbound link sitting above the fold beside the one primary
  * action, which is a cost the page pays because the condition is not ours to
  * waive.
  */
+import { OSI_BODY, OSI_EDGE, OSI_EDGE_WIDTH, OSI_PATH, OSI_VIEW_BOX } from '../lib/osi-artwork.mjs';
 ---
 
 {/* aria-hidden on the drawing because the visible words beside it already name
@@ -71,12 +88,12 @@
     `scripts/external-links.mjs` appends "(opens in a new tab)" to this label —
     text appended inside an icon-only link is never announced. */}
 <a class="osi-mark" href="https://opensource.org" aria-label="Open Source Initiative">
-  <svg viewBox="1.88 0 466.32 448.94" aria-hidden="true" focusable="false">
+  <svg viewBox={OSI_VIEW_BOX} aria-hidden="true" focusable="false">
     <path
-      d="m262.006 307.1224c32.25781-11.98047 49.09765-35.05078 49.09765-74.75781s-33.46093-74.69531-75.26953-74.76563c-44.12109-0.0703-77.40234 34.91407-76.87109 74.76563s19.53906 66.36328 49.95703 75.94922l-53.88672 132.5703c-72.12109-18.67187-145.4727-103.7539-145.4727-208.5195 0-124.0859 99.70313-224.6797 224.6719-224.6797s226.2734 100.5937 226.2734 224.6797c0 106.3945-72.65625 190.293-146.3164 208.8906zm0 0"
-      fill="#3DA639"
-      stroke="#1E531D"
-      stroke-width="15.3697"
+      d={OSI_PATH}
+      fill={OSI_BODY}
+      stroke={OSI_EDGE}
+      stroke-width={OSI_EDGE_WIDTH}
       stroke-linecap="round"
       stroke-linejoin="round"></path>
   </svg>

@@ -1,41 +1,139 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BatteryMark from '../components/BatteryMark.astro';
+import BoxMark from '../components/BoxMark.astro';
 import DemoConsole from '../components/demo/DemoConsole.astro';
-import ScenarioList from '../components/demo/ScenarioList.astro';
+import CommitLine from '../components/CommitLine.astro';
+import DeckIcon from '../components/DeckIcon.astro';
+import type { DeckIconName } from '../components/DeckIcon.astro';
+import StarfieldMark from '../components/StarfieldMark.astro';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
 import TypeScriptMark from '../components/TypeScriptMark.astro';
-import { MEASURED_ON } from '../lib/comparison.mjs';
-import { startupTier } from '../data/pricing.mjs';
-import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 
-const differentiators = [
+/* Annotated rather than inferred: a bare array literal widens `icon` to
+ * `string`, and the point of naming the icons is that a typo is a build error
+ * instead of a row that silently renders nothing. `DeckIcon.astro` throws on an
+ * unknown name for the same reason, one layer down. */
+interface Differentiator {
+  id?: string;
+  title: string;
+  icon: DeckIconName;
+  body: string;
+  link?: { href: string; label: string };
+  /* Spans both columns. Only the last cell may set it: a wide row in the
+     middle of the grid leaves a hole beside the row before it. */
+  wide?: boolean;
+}
+
+const differentiators: Differentiator[] = [
   {
-    title: 'Pure TypeScript, everywhere your app runs',
-    /* "No native modules, no prebuild step, no ejecting" was true of the crypto
-     * and false of the storage this site's own /product page documents: the
-     * encrypted Expo store is expo-sqlite with SQLCipher, which Expo Go does
-     * not carry. The limit belongs in the same breath as the capability.
+    title: 'Pure TypeScript, wherever your app runs',
+    icon: 'devices',
+    /* Scoped, not qualified. "No native modules, no prebuild step, no ejecting"
+     * was true of the crypto and false of the storage this site's own /product
+     * page documents: the encrypted Expo store is expo-sqlite with SQLCipher,
+     * which Expo Go does not carry. Appending the limit to the wide claim was
+     * tried and two readers called the result a contradiction, because a
+     * development build is native project generation however it is spelled.
      *
-     * Appending the limit was not enough: "no prebuild step" and "needs a
-     * development build" stayed in one sentence, and two readers called it a
-     * contradiction, because a development build is native project generation
-     * however it is spelled. The claim is now scoped the way the approved
-     * proof point in docs/messaging.md §5 scopes it — to the *protocol code*,
-     * which really is pure TypeScript — rather than to the package as a whole.
-     * /product keeps the full reconciliation, where there is room to explain
-     * that `npx expo prebuild` is not a command the reader types. */
-    body: 'Expo, React Native, browsers, and Node from one package. The protocol code is pure TypeScript with no native crypto module to link — the encrypted Expo store uses SQLCipher, which needs a development build rather than Expo Go.',
+     * What holds the sentence honest is therefore the subject and not a clause
+     * after it: docs/messaging.md §5 approves the adjective of the *protocol
+     * code*, which really is pure TypeScript with no native crypto module, and
+     * that is all this claims. The store the exception is about is a different
+     * component of the same package, and /product carries the reconciliation
+     * in full, where there is room to explain that `npx expo prebuild` is not a
+     * command the reader types.
+     *
+     * The exception used to ride here too, on the founder's call that a cell
+     * naming four runtimes should name the one that needs a build. It came off
+     * on the founder's call in the round after: a deck cell is read at a
+     * glance, the second half of this one was the only sentence in the band
+     * that qualified rather than offered, and the scoping already does the work
+     * the clause was added for. */
+    body: 'Expo, React Native, browsers, and Node from one package. The protocol code is pure TypeScript with no native crypto module to link.',
   },
   {
-    title: 'Post-quantum from the first handshake',
-    body: 'PQXDH with ML-KEM establishes the session; the Double Ratchet carries it forward. Not a future roadmap item.',
+    /* "Post-quantum from the first handshake" spent five words on when the
+     * property starts and none on what it is, and the handshake is only half
+     * of it. A reader who knows the field asks one question here — is the
+     * ratchet post-quantum, or only the key agreement — and a title that stops
+     * at the first handshake answers it the wrong way round.
+     *
+     * So the body names both constructions, in the SDK's own words:
+     * `internal/protocol/triple-ratchet/` and `internal/protocol/spqr/`, whose
+     * spec table lists ML-KEM Braid revision 1. It names them and stops there.
+     * How the braid works — 32 bytes per message, `CHUNK_SIZE` in
+     * `spqr/ml-kem-braid/rs/codec.ts` — rode here for a round and came off on
+     * the founder's call: it ran the cell to twice the length of its
+     * neighbours, and a deck of seven read at a glance cannot carry one cell
+     * that explains a mechanism. The two names are what a reader who wants the
+     * mechanism searches for.
+     *
+     * No FIPS claim, deliberately. docs/DEVIATIONS.md §4.1 records that in
+     * braid mode the KEM is ML-KEM-768 with a modified `hek` derivation, and
+     * that a FIPS conformance claim would not hold on that path. Naming the
+     * construction is true; naming the certification is not. A parameter set
+     * appears once, on PQXDH, which really is ML-KEM-1024.
+     *
+     * The cell closed on "Not a future roadmap item", which spends its last
+     * sentence on what a competitor has not done. The default is the better
+     * fact and it is the reader's, and it is the installed README's words:
+     * session establishment is "on without configuration, and fail closed".
+     *
+     * The scope is carried by the subject rather than by a clause, the way the
+     * TypeScript cell above carries its own. The body names the two things
+     * that are post-quantum — the key agreement and the ratchet — and claims
+     * nothing about the third. It closed on "identity signatures are Ed25519"
+     * for a round, on the founder's call that a deck cell is read at a glance
+     * and a reader who wants the signature line is not reading for it here.
+     * The fact is not lost: /security states that identities remain classical
+     * Ed25519 and X25519, and the comparison table spends a whole row on it as
+     * the axis this SDK loses to ts-mls. */
+    title: 'Post-quantum',
+    icon: 'lock',
+    body: 'PQXDH with ML-KEM-1024 establishes every session, and the Triple Ratchet carries it forward: the Double Ratchet plus the ML-KEM Braid. On without configuration, and failing closed.',
   },
   {
-    title: 'Your backend stays yours',
-    body: 'Your application composes the storage, relay, and encrypted-object adapters. We do not host anything, and nothing phones home.',
+    /* "Your backend stays yours" was a promise about what we will not do, and
+     * a reader evaluating where this runs wants the other half: what they own,
+     * and which parts of it they can change. The title names the thing rather
+     * than the assurance about it, and the body spends its room on the seams.
+     *
+     * The three are the SDK's own adapter roles, from the installed
+     * ADAPTERS.md: `ISignalProtocolRelayServer`, `ISignalProtocolLocalStore`
+     * and `SignalProtocolRemoteObjectStore`, each with shipped implementations
+     * and each documented as taking "a custom implementation" instead. Three
+     * is a count of interfaces, not of required arguments — storage is the
+     * only one the client demands — so the sentence says they are interfaces
+     * you fill and does not say you must fill all of them.
+     *
+     * "Infrastructure you own" and not "Your infrastructure": the ownership is
+     * the claim, and a possessive at the front of a title is read as an
+     * article. It puts the word a reader is scanning for first, too, which is
+     * what the other six titles do — none of them opens on "your".
+     *
+     * "Nothing phones home" stays. It was the shortest line in the old body
+     * and it is the one an on-premises reader is actually asking about: no
+     * telemetry, no licence check, no egress this package opens on its own.
+     * "We host nothing" is the neighbouring but different fact — no service of
+     * ours is in the path — and the two are worth the words separately.
+     *
+     * The relay is named here as one of the three and argued in the last cell,
+     * which is where what it holds, and the cost of holding it, belong.
+     *
+     * The body wraps to three lines at 1280 and above, which is what its six
+     * neighbours do; four made this one cell look like the deck's exception.
+     * Both facts and all three placements survived the cut. What went was
+     * length that carried nothing: "encrypted" before object storage, which
+     * the batteries cell already claims for attachments, "an adapter from the
+     * package" for "a shipped adapter", and "the cloud you already pay for"
+     * for "your cloud". Measured in the column, not counted in characters —
+     * wrapping is what decides it. */
+    title: 'Infrastructure you own',
+    icon: 'server',
+    body: 'Storage, relay, and object storage are interfaces you fill, with a shipped adapter or one you write, and run on your own hardware, a VPS, or your cloud. We host nothing, and nothing phones home.',
   },
   {
     /* The clause here used to be "the work teams usually discover three
@@ -47,51 +145,113 @@ const differentiators = [
        trade the rest of the page refuses — borrowing the authority of a
        measurement without doing one — and it was buying a rhetorical beat.
        The replacement says the same thing as a fact about scope, which any
-       reader can check against their own prototype. */
-    title: 'The hard parts are included',
-    body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files — the parts a working one-to-one prototype still leaves to build.',
+       reader can check against their own prototype.
+
+       It then said "the parts a working one-to-one prototype still leaves to
+       build", which is the same fact told as the reader's remaining work. The
+       list is the value; naming what ships is enough.
+
+       The title is the lead's third clause, word for word, and the icon is the
+       lead's third mark. "The hard parts are included" made the same claim in
+       words the page used nowhere else, so a reader met one claim twice under
+       two names. Batteries included is what this row has always meant, and
+       this row is the only place that says what is in them. */
+    title: 'Batteries included',
+    icon: 'battery',
+    body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files all ship in the same package as the one-to-one case. Each is a protocol in its own right.',
   },
   {
-    title: 'Every claim is inspectable',
-    body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay still sees are all published.',
+    /* The title says what the reader can do, not what our claims are like.
+       "Every claim is inspectable" is a sentence about our claims, so a
+       sceptical reader meets the assertion before the thing that answers it.
+       Publication is the fact, and review is what it is for: the body is a
+       list of artefacts a reader can open and check for themselves.
+
+       Not "everything published" and not "open to": the internal repository
+       and the test suite stay private, so an unbounded claim would be false,
+       and the cell below this one is the licence. Two adjacent titles built on
+       "open" would read as one claim told twice.
+
+       The body carries the deck's own word for these. docs/messaging.md §5
+       calls the list of checkable facts the proof points, and every item here
+       is one of them — the implementation, the protocol profile, the threat
+       model, and the metadata list are four published artefacts, not four
+       assurances. */
+    title: 'Published for anyone to review',
+    icon: 'search',
+    body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay holds are all public.',
   },
   {
-    /* This cell said "at a published price" and showed no price, for the whole
-     * loop. A fresh reader took the word "published" literally and was right
-     * to: "it promises a number that is not on the page and not linked", and
-     * they listed it as one of two go/no-go inputs they could not get. The
-     * number existed the entire time — /pricing has carried $5,000 since
-     * before this loop started, and the header links to it. The page was
-     * being coy about the one fact a solo developer decides on.
+    /* The cell states the licence and hands the reader to /pricing, which
+     * carries all three tiers and their numbers.
      *
-     * The price is read from the same module /pricing renders, so the two
-     * surfaces cannot disagree. Naming the entry tier only, because "starts
-     * at" is the honest shape of a three-tier table and the link carries the
-     * rest. */
+     * What it may not do is promise a number it does not show. It once read
+     * "at a published price" with no price on the page and none linked from
+     * it, and a fresh reader listed that as one of two go/no-go inputs they
+     * could not get. `tests/site-content.test.mjs` fails the build if the
+     * page promises a published price again, and if the link stops leading to
+     * a page that renders every tier.
+     *
+     * The title is the category and the body is the licence, on the founder's
+     * call. "AGPLv3, or a commercial license" put a licence identifier and a
+     * disjunction in a scanned row of seven, where the reader is sorting the
+     * product into a kind of thing rather than reading terms; the terms are
+     * one line below it and the tiers are one click below that.
+     *
+     * The claim holds without a qualifier: AGPL-3.0-or-later is OSI-approved,
+     * the whole SDK is under it, and docs/messaging.md §5 states it plainly.
+     *
+     * The commercial license belongs in the body, not only behind the link. A
+     * reader who cannot take copyleft has to meet the second option in the
+     * sentence they are already reading: "See the tiers" reads as pricing
+     * detail for the thing just described, so a reader who ruled the product
+     * out at "AGPLv3" has no reason to follow it. Naming it here is also what
+     * makes the link an answer to a question the body has raised.
+     *
+     * The body says a license is available and not what it costs. The numbers
+     * are one click away on /pricing, and this page may not promise a figure it
+     * does not show — the suite fails the build on "at a published price".
+     *
+     * The id does not follow the title. It is a deep link a reader can arrive
+     * on from elsewhere, and both halves of the name are still what the cell
+     * is about.
+     *
+     * Capitals, unlike every other title in the deck, because the page has
+     * already made this one a proper name twice: "Fully Open Source" beside
+     * the OSI mark in the lead, and the band heading three folds down. A third
+     * spelling of the same two words is the split-terminology defect in
+     * miniature. */
     id: 'agpl-or-commercial',
-    title: 'AGPL, or a commercial license',
-    body: `The complete SDK is free under AGPL-3.0 — every feature, nothing time-limited. Closed-source products buy annual production rights, from ${startupTier.price} ${startupTier.period} for one product.`,
+    title: 'Open Source',
+    icon: 'law',
+    body: 'The complete SDK is free under AGPLv3 — every feature. A commercial license is available for closed-source products.',
     link: { href: '/pricing', label: 'See the tiers' },
   },
   /*
-   * The band is titled "What you get, and what it costs you to find out" and
-   * for eight rounds it listed only the first half. Three fresh readers in two
-   * consecutive waves arrived at the missing half unaided and made it their
-   * largest gap: one asked what happens to dispute resolution, fraud review
-   * and trust-and-safety; one wrote that support messages under E2EE cannot be
-   * produced under subpoena, cannot be supervised, and cannot have DLP run
-   * over them, and that "the page never names the tradeoff — not to solve it,
-   * not even to acknowledge it exists." Their shared conclusion was not that
-   * the product is wrong. It is that a page which omits the one cost every
-   * evaluator finds in the first meeting has not met an evaluator yet, and
-   * that reading is more expensive than the cost itself.
+   * The deck's one limit, and it is written as the property that produces it
+   * rather than as a loss. Three fresh readers in two consecutive waves
+   * arrived at that limit unaided and made it their largest gap: one asked
+   * what happens to dispute resolution, fraud review and trust-and-safety; one
+   * wrote that support messages under E2EE cannot be produced under subpoena,
+   * cannot be supervised, and cannot have DLP run over them, and that "the
+   * page never names the tradeoff — not to solve it, not even to acknowledge
+   * it exists." Their shared conclusion was not that the product is wrong. It
+   * is that a page which omits the one cost every evaluator finds in the first
+   * meeting has not met an evaluator yet, and that reading is more expensive
+   * than the cost itself.
    *
-   * It is stated as a consequence of what the relay holds, because that is the
-   * part this page can prove: the recorded row two bands up is ciphertext,
-   * and everything in this cell follows from that and nothing else. No
-   * regulation is named — docs/messaging.md bans "required for HIPAA / GDPR /
-   * SOC 2" outright, and the honest form of this cost is the capability a team
-   * loses, not a rule someone must obey.
+   * The answer to them was a cell titled "What you give up", with the band's
+   * lead sending readers into it before anything else. The two are not in
+   * conflict with a deck that states value: what the relay holds is the
+   * property the whole product rests on, and what a backend can do with it
+   * follows from that and nothing else. So the cell leads with the property,
+   * and docs/messaging.md §1.2 — the limit is part of the claim, not a
+   * disclaimer under it — is what keeps the rest of the sentence attached.
+   *
+   * The row named here is the one the demo directly above records, which is
+   * the only reason this page can assert any of it. No regulation is named:
+   * §2 bans "required for HIPAA / GDPR / SOC 2" outright, and the honest form
+   * is the capability a team loses, not a rule someone must obey.
    *
    * The last sentence sends the wrong reader away on purpose. The brief
    * optimises for qualified starts of a ten-minute quickstart, and a team that
@@ -99,20 +259,57 @@ const differentiators = [
    * variable is whether they discover it here or after the ten minutes, and
    * only one of those two outcomes is repairable.
    *
-   * It said "if your product needs any of that" for one round, and that was
-   * too wide. A fresh reader building a marketplace pointed out that
-   * client-side reporting — the user's own device attaches the plaintext to a
-   * report — is a solved pattern, so the page was disqualifying products it
-   * actually fits, in the last sentence they would read before closing the
-   * tab. The condition is server-side capability, not the capability itself,
-   * and the sentence now says so. It stops there deliberately: the SDK ships
-   * no reporting API, and describing the client-side pattern as though it
-   * were one would trade an over-disqualification for an invented feature.
+   * It ended on what to do instead — encrypt in transit and at rest — and on
+   * the device-to-device transfer the third case is built from. Both came off
+   * on the founder's call, in the round that cut every cell to its outcome:
+   * they are the two sentences here that answer "then how do I build it",
+   * which is a question a reader asks after they are convinced rather than in
+   * a deck they are scanning. /learn §1 and §2 take the redesign of search and
+   * moderation much further than a cell can. It does not carry the "encrypt in
+   * transit and at rest instead" advice, and no page does at the moment —
+   * that sentence is off the site rather than moved, and /learn is where it
+   * goes if it comes back. What stays here is the disqualifier itself, which
+   * is a property of the product rather than advice about it.
+   *
+   * What the cell now opens on is the founder's call, and it is the fact the
+   * page was leaving out: a relay is not something the reader has to go and
+   * build. Two ship — `inMemoryRelay()` for development and tests, and a
+   * Convex component the application installs into its own deployment with
+   * `app.use(signalProtocol)` — and anything else implements
+   * `ISignalProtocolRelayServer`.
+   *
+   * "Code in the package, not a service" is what that is worth to a reader
+   * deciding where this runs, and it is why the sentence ends on the backend
+   * of their choosing rather than on the two that ship. The licence is not
+   * restated here: the deck already has a cell for it, and a second mention
+   * would read as a condition on the relay rather than the fact about the
+   * whole package that it is.
+   *
+   * The title went from "The relay is built in, and you run it" to "A relay
+   * you can run anywhere" on the founder's call. Both halves of the old one
+   * were already in the body's first clause, and a title that summarises the
+   * sentence under it spends the widest row on the deck saying one thing
+   * twice. What replaced it is the offer, and it is a noun phrase rather than
+   * an instruction: the six cells above it name things, and the one that
+   * issued a command read as the odd one out of the seven.
+   *
+   * The cost stays attached to it, because the relay is what produces it.
+   * docs/messaging.md §1.2 puts the limit in the same breath as the
+   * capability, and a cell that offers a relay and stops there would move the
+   * one cost in the deck off the page entirely. Full width is what pays for
+   * both halves: the row is alone on the last line of a two-column grid, so
+   * the span costs no vertical space and buys the body a full measure.
+   *
+   * The id does not change with the title. It is the one deep link on this
+   * page a reader arrives on from somewhere else, and the cell still holds
+   * ciphertext, so the anchor is still true.
    */
   {
-    id: 'what-you-give-up',
-    title: 'What you give up',
-    body: 'Your relay holds ciphertext, so nothing on your backend can search message contents, moderate them, or produce them for a legal request. The SDK ships encrypted device-to-device transfer, but restoring history to a user who has lost every device is a backup you design. If any of that has to happen on your server, encrypt in transit and at rest instead — this is the wrong tool, and it is cheaper to know now.',
+    id: 'your-relay-holds-ciphertext',
+    title: 'A relay you can run anywhere',
+    icon: 'broadcast',
+    wide: true,
+    body: 'The relay is code in the package, not a service: in-memory for development, a Convex component for your own deployment, and one interface for any backend you want to put it on. It holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
   },
 ];
 
@@ -126,34 +323,6 @@ const runtimes = [
   { href: 'https://docs.open-e2ee.dev/start/expo', label: 'Expo' },
   { href: 'https://docs.open-e2ee.dev/start/browser', label: 'Browser' },
   { href: 'https://docs.open-e2ee.dev/start/node', label: 'Node' },
-];
-
-/*
- * Everything a reader can check, in the band that exists to be checked. The
- * security model used to sit in a third row of links in the hero, where it
- * read as an afterthought to the CTA rather than as the page's answer to
- * "prove it".
- *
- * A second entry here pointed at /evaluate as "the security review pack". That
- * page asked the questions /security answers and rendered the same pinned
- * specifications from the same module, so the two links sent a reader to one
- * body of content under two names. /security absorbed it and this list names
- * it once.
- */
-const trustLinks = [
-  { href: '/security', label: 'What the relay can and cannot see' },
-  {
-    href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/SECURITY.md',
-    label: 'The security model and threat model',
-  },
-  {
-    href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/ARCHITECTURE.md',
-    label: 'Architecture and protocol profile',
-  },
-  {
-    href: 'https://github.com/open-e2ee/signal-protocol-js',
-    label: 'View the SDK on GitHub',
-  },
 ];
 ---
 
@@ -179,10 +348,17 @@ const trustLinks = [
             §5 approves the adjective of the *protocol code*; one level down the
             encrypted Expo store is expo-sqlite with SQLCipher and needs a
             development build. As its own sentence the phrase reads across the
-            whole package, so the exception in the feature band below is not a
-            footnote to it — it is the condition on it, and
+            whole package, so the runtime cell in the feature band below is not
+            an elaboration of it — it is the condition on it, and
             `tests/site-content.test.mjs` fails if the lead makes this claim
-            while the page drops the exception.
+            while the page drops the scoping.
+
+            The condition is the scoping and not the exception. The cell stated
+            the SQLCipher limit outright for several rounds and no longer does;
+            what a reader has to be able to reach from this fragment is the
+            sentence that names *protocol code* as its subject. The limit
+            itself lives on /product, one line under the same band, where the
+            note on the stores links to it by name.
 
             No runtime list and no adapter ownership in this paragraph. Both
             are on the page — the runtime links, and the quickstart caveat
@@ -200,18 +376,23 @@ const trustLinks = [
             the fold was the licence, which is the first thing a developer
             evaluating a dependency wants and the one answer no competitor in
             this category can copy. "Fully" is the load-bearing word, and it is
-            not decoration: the feature band below states that every feature is
-            AGPL-3.0 with nothing time-limited, which is what makes the adverb
-            true rather than promotional.
+            not decoration: the closing licence band states that every feature
+            is in the package under AGPLv3 and none of it is time-limited, which
+            is what makes the adverb true rather than promotional.
 
             Three fragments, three marks: one per clause, or the pattern reads
             as an accident. All three are now drawings rather than emoji. ⚡ went
             first — a bolt reads "fast" beside a clause that is not about speed,
             and TypeScript has a mark of its own that states the claim instead
             of decorating it. 🔋 followed, because one emoji left among two real
-            marks is the accident rather than the pattern; `BatteryMark.astro`
-            is drawn here, since "batteries included" is a figure of speech
-            about defaults and nobody owns a mark for it.
+            marks is the accident rather than the pattern; the drawing is in
+            `BatteryGlyph.astro`, since "batteries included" is a figure of
+            speech about defaults and nobody owns a mark for it.
+
+            The third clause and its mark both appear again in the deck below,
+            as the title and icon of the row that lists what the batteries are.
+            That is the one repetition on this page that is deliberate: the lead
+            makes the claim and the deck cashes it.
 
             Only the keyhole is exposed to assistive technology, and only
             because it is a trademark drawn under conditions, one of which is
@@ -234,17 +415,19 @@ const trustLinks = [
         </p>
         <div class="actions">
           {/* Two actions, founder-set labels. The primary is the demo, not the
-              quickstart: it scrolls to `#demo`, where the arc the two demo
-              bands make starts, directly after the code sample below. The
+              quickstart: it scrolls to `#demo`, which is the exhibit itself
+              and not the band around it, so the reader arrives at the running
+              scene rather than at the sentence describing it. The
               GitHub button is gone from the hero — the repo stays one click
-              away from the "Check the work" links, the header, and /product,
-              and a third button split the decision this row exists to force.
+              away from the closing licence band, the footer, and /product, and
+              a third button split the decision this row exists to force.
 
-              No sublabel under this button. "ten minutes · two clients · no
-              account" is under the two quickstart buttons further down the
-              page, where a reader who has read the evidence is being asked to
-              commit; a scroll needs no time promise, and a third line of small
-              grey type here would stand between the offer and the proof. */}
+              No sublabel under either button. This page ends on the licence
+              rather than on a second ask, so "ten minutes · two clients · no
+              account" is only on the pages a reader reaches after deciding to
+              spend them, /product and /learn. A scroll needs no time promise,
+              and a third line of small grey type here would stand between the
+              offer and the proof. */}
           <a class="cta-primary" href="#demo">
             <span class="oe-button">See Demo</span>
           </a>
@@ -305,9 +488,9 @@ const trustLinks = [
             explanatory hedging the hero does not carry. The facts they stated
             did not leave the site: /security carries the relay formula and the
             metadata admission, /product and /security carry the maturity line,
-            the licence cell in the feature band names the AGPL/commercial
+            the licence cell in the feature band names the AGPLv3/commercial
             split, the quickstart caveat below the feature band grades the
-            stores, and the alternatives band carries the libsignal facts. */}
+            stores, and /product carries the libsignal facts. */}
       </div>
     </div>
   </section>
@@ -315,33 +498,20 @@ const trustLinks = [
   {/*
     The demo opens the page's evidence, directly after the code sample the
     hero closes on: the program a reader has just read is the program running
-    here. `id="demo"` is the hero primary action's scroll target — the arc the
-    two demo bands make starts at this heading.
+    here. The band starts at this heading, but `#demo` does not: the fragment
+    is on the exhibit inside `DemoConsole.astro`, so that pressing Demo lands
+    on the animation instead of on the paragraph above it. The reasoning is
+    written where the id is, and `public/_redirects` sends /demo to the same
+    fragment.
   */}
-  <section id="demo" class="band band-surface">
+  <section class="band band-surface">
     <div class="container stack">
-      <div class="band-head">
-        <h2>One message, end to end</h2>
-        {/* "Ciphertext" and not "sealed". Sealed sender is a real feature of
-            this SDK, and the row the relay stores in the scene below prints
-            `senderUserId` in the clear. This caption stands directly over that
-            row, so the loose sense of the word would promise what the evidence
-            under it withholds.
-
-            `tests/site-content.test.mjs` pins "Not a mock-up", "type a
-            sentence" and "against the in-memory relay". The claim and its limit
-            belong in one sentence, and the `<noscript>` inside the console
-            answers the offer to type. */}
-        <p class="measure">
-          Plaintext and private keys exist only on the devices at each end. Everything in between is
-          ciphertext, and carries metadata your relay can still see. Not a mock-up — type a sentence
-          and the installed SDK encrypts it here, in this tab, against the in-memory relay.
-        </p>
-      </div>
-
       {/*
         The demo is one exhibit across the page rather than a panel beside a
-        figure.
+        figure, and the band's head is inside it: the console hangs Demo
+        Settings off the heading's own line, which it can only do if the
+        heading is under its root. That is the whole reason for the slot — the
+        copy in it is still this page's, written here.
 
         The two-column arrangement that stood here put the drawing next to the
         controls and asked the reader to hold both. It also had a second window
@@ -366,16 +536,64 @@ const trustLinks = [
         assistive technology because that caption already carries what it would
         announce.
       */}
-      <div id="what-the-relay-stores" class="demo-band">
-        <DemoConsole />
-      </div>
+      <DemoConsole>
+        <Fragment slot="head">
+          <h2>Live demo, in your browser</h2>
+          {/* The heading makes the claim and the paragraph is the evidence for
+              it, in that order. The band used to open on the end-to-end claim
+              and reach the running program three clauses later, as a denial:
+              "Not a mock-up". That asks a reader to rule out a mock-up before
+              anyone has told them there is one. Founder's call, and the plainer
+              shape: say it is live, then show what live means.
 
-      {/* The demo's own log is the only thing under the demo. The next thing to
-          do is the band directly below, where the page makes the same SDK fail.
-          The hero, the header, the band under the scenarios and the footer all
-          carry the quickstart already. An offer repeated at every band boundary
-          stops reading as an offer, and a link that scrolls the reader forward
-          one band is furniture.
+              Short sentences on purpose. This is the one band whose subject is
+              the thing directly under it, so the copy's whole job is to get out
+              of the way of it.
+
+              "Ciphertext" and not "sealed". Sealed sender is a real feature of
+              this SDK, and the row the relay stores in the scene below prints
+              `senderUserId` in the clear. This caption stands directly over that
+              row, so the loose sense of the word would promise what the evidence
+              under it withholds.
+
+              The sentence used to close on "and metadata", and the admission has
+              not left the page with it: the carrier panel below prints every
+              field the relay was recorded holding, and the "Published for
+              anyone to review" cell says the list is public. Naming it here as
+              well made the shortest paragraph on the page carry the longest
+              qualification.
+
+              Which is also why the closing sentence is about plaintext and not
+              about ciphertext. An "only sees ciphertext" formulation is the
+              shorter line and it is false: the row two bands down prints
+              `senderUserId`, `senderDeviceId` and `serverTimestamp` in the
+              clear, so the page would be contradicted by its own evidence
+              before a reader finished scrolling. Stated as a negative about
+              plaintext the claim is exact, and it is the one the whole product
+              rests on.
+
+              `tests/site-content.test.mjs` pins the live-demo claim and "against
+              the in-memory relay": the claim and its limit belong together, and
+              the relay is the half that is simulated. `tests/demo-panel.test.mjs`
+              pins "type a sentence", because the `<noscript>` inside the console
+              exists to answer that offer.
+
+              The offer itself is width-dependent: below 60rem the console gives
+              way to the autonomous mobile loop and there is nothing to type
+              into, so the sentence swaps its middle for what that reader
+              actually gets. An offer that cannot be taken is the "nothing to
+              press" defect this band has already paid for once. */}
+          <p class="measure">
+            <span class="demo-offer-wide">Type a sentence and the installed SDK encrypts it</span><span class="demo-offer-narrow">A scripted conversation plays through the installed SDK</span>{' '}
+            against the in-memory relay. Keys stay on the devices. The relay never sees plaintext.
+          </p>
+        </Fragment>
+      </DemoConsole>
+
+      {/* The demo's own log is the only thing under the demo. The hero, the
+          header, and the footer all carry the quickstart already. An offer
+          repeated at every band boundary stops reading as an offer, and a link
+          that scrolls the reader forward one band is furniture.
 
           "Start demo" is the one free-standing filled button in this band, and
           it sits over the scene it starts. Each device's "Send" carries the same
@@ -384,101 +602,56 @@ const trustLinks = [
     </div>
   </section>
 
-  {/*
-    The second move of the demo that starts at `#demo` above, and deliberately
-    a continuation rather than a new subject. The arc is one demo in two moves:
-    a message goes end to end, then the same SDK is asked to fail. Two headings
-    that both said "here is a demo" would read as two products, so the two
-    bands stay adjacent, in that order.
-
-    `id` because `public/_redirects` sends `/demo` to this fragment, which is
-    what makes a bookmarked `/demo` land on the thing it asked for rather than
-    at the top of a long page — the folded /demo page was the scenarios, so the
-    scenarios are what that route still means, not the arc's `#demo` start. The
-    four scenario slugs stay `id`s of their own inside the list, so
-    `/#flip-a-byte` works — but `/demo#flip-a-byte` resolves here instead,
-    because a destination fragment replaces the reader's. That trade is argued
-    in `_redirects` beside the rule.
-
-    No count in the heading. `/demo`'s h1 was "Four things that go wrong, and
-    what the protocol does about each", which stopped being maintainable the
-    moment a fifth scenario was worth adding, and named an inventory rather than
-    what the reader gets from it.
-  */}
-  <section id="when-something-goes-wrong" class="band">
-    <div class="container stack">
-      <div class="band-head">
-        <h2>What it does when something goes wrong</h2>
-        <p class="measure">
-          Every library documents its failure modes in prose. These run them: each scenario below
-          drives the installed SDK in this tab, forces one situation on purpose, and prints what the
-          devices said about it — their own logs, unedited. In two of them, what they say is nothing
-          at all, and that is the point of running them rather than describing them.
-        </p>
-        {/*
-          Invariant 5, before the reader has run anything rather than after. The
-          cryptography is the shipped cryptography; the infrastructure under it
-          is not, and in a section whose whole subject is failure the reader has
-          to know which failures are real ones.
-
-          Repeated from the panel above rather than inherited from it. A reader
-          redirected from `/demo#flip-a-byte` lands on a scenario below this
-          line and never passes the panel's copy of it.
-        */}
-        <p class="muted measure">
-          Real protocol and real cryptography, simulated infrastructure — <code
-            >inMemoryStore()</code
-          >{' '}and <code>inMemoryRelay()</code> run in the browser, so every device and the relay
-          are this machine. {sdkManifest.name}@{sdkManifest.version}.
-        </p>
-      </div>
-
-      <ScenarioList />
-
-      {/*
-        The same invitation the panel above makes, in the place it is worth
-        more: this section runs a protocol failure and still has nothing to
-        report to anybody. What it does send is one beacon saying which scenario
-        was opened, which is why the sentence names it rather than claiming
-        silence.
-      */}
-      <p class="muted measure">
-        All of it runs here. The only thing this section sends is one beacon naming the scenario you
-        opened — no message content, no sizes, no timings. Check the network tab.
-      </p>
-    </div>
-  </section>
-
-  <section class="band band-surface">
+  <section class="band">
     <div class="container">
       <div class="band-head">
-        <h2>What you get, and what it costs you to find out</h2>
+        {/* "What you get, and what it costs you to find out" for eight rounds.
+            The second half priced the reader's attention rather than naming
+            anything the product does, which framed a deck of seven
+            capabilities as a bill. A head with two halves also asks the
+            reader to hold a structure before they have read a single cell —
+            the rows do that work themselves. So: one clause, and the clause
+            is the offer. */}
+        <h2>What ships in the box<BoxMark /></h2>
         <p class="measure">
-          {/* The deck used to end "including the one that decides it against",
-              which names a disqualifier and then withholds it. A reader whose
-              product cannot live without server-side moderation had to read
-              all seven cards to find the one that tells them to leave, and the
-              whole point of putting it on the page is that they leave early
-              and cheaply. A tease is the wrong shape for a warning. */}
-          Seven things that decide whether protocol-level encryption is workable for your product.
-          Read <a href="#what-you-give-up">What you give up</a> first &mdash; it rules this out for
-          products with retention, moderation, or account-recovery duties, and it is cheaper to know
-          now.
+          {/* The lead used to open on the deck's one limit and send the reader
+              to that cell before any other: a reader whose product cannot live
+              without server-side moderation left early and cheaply, which is
+              worth more than the visit. It cost every other reader the band,
+              though — a deck of seven capabilities that opens by naming the
+              thing it cannot do reads as a warning rather than as an offer.
+              The disqualifier is still on the page, last in the deck, written
+              as the property it follows from. A reader who needs it meets it
+              in the cell that names the row the demo above just recorded.
+
+              What is left is the count and the tense. Both are load-bearing:
+              seven is what the reader is about to scroll, and "the first time
+              you install it" is the claim the deck's own cells keep — nothing
+              here is configured on, bought separately, or coming later. */}
+          Seven things that are true the first time you install it.
         </p>
       </div>
-      <ul class="rows">
+      {/* `rows-iconed` and not `rows`: every other deck on the site is text,
+          and this one gains an icon column, which changes the row's layout
+          rather than its content. The icon carries no accessible name —
+          `DeckIcon.astro` argues that where they are drawn — so the row reads
+          exactly as it did before to anything that is not looking at it. */}
+      <ul class="rows rows-iconed">
         {differentiators.map((item) => (
-          <li id={item.id}>
-            <h3>{item.title}</h3>
-            <p>{item.body}</p>
-            {/* Only the licence cell carries one. A row of links here would
-                flatten the band into a nav list; one link, on the one cell
-                whose answer lives on another page, reads as a continuation. */}
-            {item.link && (
-              <p class="row-link">
-                <a href={item.link.href}>{item.link.label}</a>
-              </p>
-            )}
+          <li id={item.id} class={item.wide ? 'row-wide' : undefined}>
+            <DeckIcon name={item.icon} />
+            <div class="row-body">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+              {/* Only the licence cell carries one. A row of links here would
+                  flatten the band into a nav list; one link, on the one cell
+                  whose answer lives on another page, reads as a continuation. */}
+              {item.link && (
+                <p class="row-link">
+                  <a href={item.link.href}>{item.link.label}</a>
+                </p>
+              )}
+            </div>
           </li>
         ))}
       </ul>
@@ -499,114 +672,63 @@ const trustLinks = [
     </div>
   </section>
 
-  <section class="band">
-    <div class="container">
-      <div class="band-head">
-        <h2>Why this exists at all</h2>
-        {/* "the full matrix … is in the SDK README" was true and is still true,
-            and it sent a reader off the site for a table that now sits one link
-            below on /product. The README version is shorter; naming the fuller
-            one first is the honest order. */}
-        <p class="measure">
-          If something else fit, you should use it. Here is the honest state of the alternatives;
-          the full matrix, with links to every project, is on the product page.
-        </p>
-      </div>
-      <dl class="definition-rows">
-        <div>
-          <dt>The official implementation</dt>
-          <dd>
-            <code>@signalapp/libsignal-client</code> is actively maintained and post-quantum, and it
-            ships prebuilt native binaries for Windows, macOS, and Linux. It does not run in Expo,
-            React Native, or a browser.
-          </dd>
-        </div>
-        <div>
-          <dt>The older JavaScript ports</dt>
-          <dd>
-            {/* The explicit space is load-bearing: Astro collapses the newline
-                between a text node and a following inline element, so this
-                rendered as "archived in 2021.@privacyresearch/…" for the whole
-                loop. A fresh critic found it in the one band whose job is
-                being scrupulous about other people's projects. */}
-            <code>libsignal-protocol-javascript</code> was archived in 2021.{' '}
-            <code>@privacyresearch/libsignal-protocol-typescript</code> last shipped in 2023. Neither
-            is post-quantum, and neither documents a React Native path.
-          </dd>
-        </div>
-        <div>
-          <dt>A different protocol</dt>
-          <dd>
-            {/* "runs everywhere" was this page's own summary of a row that
-                does not say it: `comparison.mjs` records browsers, Node, and
-                serverless runtimes, and no React Native or Expo path. The
-                looser word overstated a competitor and understated the one
-                axis this SDK is built on. */}
-            <code>ts-mls</code> is well maintained and runs in browsers, Node, and serverless
-            runtimes, but it implements MLS, not the Signal Protocol. That is a real choice — a
-            different one.
-          </dd>
-        </div>
-        <div>
-          <dt>This SDK</dt>
-          <dd>
-            An independent TypeScript implementation of the published Signal Protocol
-            specifications, running in the JavaScript runtimes your product already targets, with
-            storage and transport left to you and a commercial license available.
-          </dd>
-        </div>
-      </dl>
-      <p class="text-links">
-        {/* One link, not two. "See the SDK surface" pointed at /product as
-            well, and once the comparison moved there the row offered the same
-            page twice under two names. /product is already linked twice further
-            up this page and sits first in the nav. */}
-        <a href="/product#how-it-compares">The full comparison, measured on {MEASURED_ON}</a>
-      </p>
-    </div>
-  </section>
+  {/* The hero calls the SDK fully open source three folds up, beside a mark
+      drawn under OSI's trademark conditions. This band is where that adverb is
+      cashed, for a reader who has scrolled the whole page and is deciding
+      whether to take the dependency.
 
-  {/* The libsignal sentence used to have a band of its own here, four folds
-      below the question it answers, and as a standalone h2-weight blockquote it
-      read as a disclosure about this SDK rather than a quotation about another
-      one. It then moved to the hero, and the hero's objection paragraphs were
-      cut on 2026-08-09 — the alternatives band above is now the page's one
-      statement of the libsignal facts. */}
+      The usual shape of this band on a developer site is social proof: a star
+      count, a contributor wall, a "join us". That is unavailable — the public
+      repository has one star and no forks — and a version built out of anything
+      else would be the one band on the page making a claim a reader cannot
+      check. So the band is about the reader's position instead, and it argues
+      it in a drawing rather than in prose: four commits for what the licence
+      hands over, and the line running on past them for the grant not expiring.
+      `CommitLine.astro` holds the reasoning for the shape, including why it
+      neither forks nor merges.
 
+      OSI's mark is repeated here, and that is the expensive part. `OsiMark.astro`
+      draws it in the hero at text size on the condition that it never reaches
+      badge scale, because a larger use in a band headed by an open-source claim
+      is the implied endorsement the trademark licence rules out. The star field
+      draws it at badge scale anyway, at the founder's direction and in the
+      page's own ink rather than OSI's; that file records the breach and what
+      survives it. */}
   <section class="band band-surface">
     <div class="container">
       <div class="band-head">
-        <h2>Check the work</h2>
-        {/* The promise of a firm review was retired on 2026-08-09, when
-            adversarial AI review became the assurance approach. docs/messaging.md
-            §7 fixes the sentence and the rule that governs it: the two halves
-            never separate, and no future firm engagement is promised in any
-            tense. The band whose subject is what a reader can check is the last
-            place the site should round up. */}
+        {/* Every verb is a use. "Change it" is accurate as a right and is how
+            the free-software definition words it, but on a landing page next to
+            a 0.x version number it reads as an invitation to fix something. */}
+        <h2>Open Source — read, run, share, and build on</h2>
+        {/* `docs/messaging.md` §4 renders the second option as "commercial
+            license" and nothing else — the tier vocabulary it bans describes a
+            different product shape, one where the free thing is the smaller
+            thing. Here the two are the same build, so the sentence says what
+            the licence changes instead: what you may ship, never what the code
+            does. */}
         <p class="measure">
-          Reviewed continuously by adversarial AI agents; not audited by any independent firm.
-          Every change passes an adversarial AI review before it merges, and recurring
-          whole-codebase AI audit passes run against the engineering repository — so every claim
-          on this page has something you can read behind it.
+          AGPLv3, or a commercial license — the same build either way, every feature in
+          the package, none of it time-limited.
         </p>
       </div>
-      <ul class="rows rows-single">
-        {trustLinks.map((link) => (
-          <li><a href={link.href}>{link.label}</a></li>
-        ))}
-      </ul>
 
-      {/* The page used to end on a text link to GitHub. Every reader who did
-          not act on the fold arrived here persuaded and found nothing to press,
-          and the last interactive element routed to a supporting action. */}
-      <div class="closing">
-        <p class="lead">The fastest way to check any of it is to run it.</p>
-        <div class="actions">
-          <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
-            <span class="oe-button">Build your first encrypted message</span>
-            <span class="cta-sublabel">ten minutes · two clients · no account</span>
-          </a>
+      {/* The two figures carry this band between them: the graph says what the
+          licence hands over, and the field says who says so — our own lockup
+          over the two marks the claim is answerable to, OSI's and the host the
+          source sits on. What AGPLv3 asks of the reader's own application is
+          not stated here — `/licensing` owns that wording, and the second link
+          is the route to it. */}
+      <div class="commitline-band">
+        <div class="commitline-pair">
+          <CommitLine />
+          <StarfieldMark />
         </div>
+
+        <p class="text-links">
+          <a href="https://github.com/open-e2ee/signal-protocol-js">Read the source on GitHub</a>
+          <a href="/licensing">Understand AGPLv3 use</a>
+        </p>
       </div>
     </div>
   </section>

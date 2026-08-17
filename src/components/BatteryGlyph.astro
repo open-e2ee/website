@@ -1,0 +1,31 @@
+---
+/*
+ * The battery drawing itself, and nothing around it.
+ *
+ * Two surfaces draw this mark: the landing page's lead, through
+ * `BatteryMark.astro`, and the deck row it labels, through `DeckIcon.astro`.
+ * They differ in everything except the ink — one is an em-sized glyph in a
+ * sentence, in the green this site uses where something is settled; the other
+ * is a 2rem icon in a muted column beside six Octicons. The geometry is what
+ * they share, so the geometry is what lives here, with no `<svg>`, no viewBox,
+ * and no colour. A second copy of these coordinates would be free to drift
+ * from the first, and the argument for every number in them is in
+ * `BatteryMark.astro`.
+ *
+ * `evenodd` is what makes the bolt a hole rather than a second filled shape,
+ * so the rule is written out rather than left to the default. The nub is a
+ * separate element for the opposite reason — it has to *union* with the body,
+ * and it deliberately overlaps it by a unit, because two shapes meeting
+ * exactly on an edge show an antialiasing seam. Under one `evenodd` path that
+ * overlap would punch a hole in the top of the battery.
+ *
+ * Drawn on the same 24-unit grid the deck's Octicons use, so the two callers
+ * can crop it or not. It paints x 6 to 18 and y 2 to 22.
+ */
+---
+
+<path
+  fill-rule="evenodd"
+  d="M8 5h8a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z M13.6 7.4 8.9 14.1h2.6L10.4 19.6l4.7-6.9h-2.6z"
+></path>
+<rect x="9.75" y="2" width="4.5" height="4" rx="1.25"></rect>

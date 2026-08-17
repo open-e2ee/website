@@ -36,15 +36,16 @@ const surface = await readSdkSurface();
 const envelopeFields = surface?.members.get('Envelope');
 
 /*
- * The fields the panel deliberately does not print, read out of the panel
- * rather than retyped here — a copy in this file would be one more list to
- * drift, which is the defect these tests exist for.
+ * The panel used to print a table of envelope fields and hold two of them back,
+ * and the held-back list was read out of the source here so a copy could not
+ * drift. There is no table now: the relay's column is the mailbox drawing and
+ * the byte figure, and the only envelope values that reach the page are the two
+ * addresses on the drawn envelope. So the set is empty by construction, and the
+ * test that watched it is replaced below by the rule that took over its job —
+ * every field is withheld, and the two that are not have to come through
+ * `NAMED_FIELDS`.
  */
-const heldBack = new Set(
-  [...(source.match(/HELD_BACK = new Set\(\[([^\]]*)\]\)/s)?.[1] ?? '').matchAll(/'([^']+)'/g)].map(
-    (match) => match[1],
-  ),
-);
+const heldBack = new Set();
 
 /*
  * Every way this file can write down a field name.
@@ -86,8 +87,18 @@ function collectNames(code, into) {
   ts.forEachChild(file, visit);
 }
 
+/* Comments come out before the regex runs, and only for the regex: the parse
+   below never saw them, because TypeScript does not put a comment in the tree.
+   The union exists to cover the markup between the two blocks, which is not
+   TypeScript, and a comment is not markup either — it renders nothing. The
+   alternative is a file whose prose may not name the field it is explaining,
+   which is how `NAMED_FIELDS`'s own note came to be about "the relay's own
+   messageType". `tests/site-content.test.mjs` strips comments before the
+   banned-claim sweep for the same reason. */
 const writtenNames = new Set(
-  [...source.matchAll(/['"`]([A-Za-z_$][\w$]*)['"`]/g)].map((match) => match[1]),
+  [...source.replace(/\/\*[\s\S]*?\*\//g, ' ').matchAll(/['"`]([A-Za-z_$][\w$]*)['"`]/g)].map(
+    (match) => match[1],
+  ),
 );
 for (const block of [
   source.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1],
@@ -143,15 +154,33 @@ test('every envelope field it names still exists in the installed SDK', () => {
   }
 });
 
-test('holds back only fields the installed Envelope actually declares', () => {
-  assert.ok(heldBack.size > 0, 'the held-back set must be readable from the panel source');
-  for (const field of heldBack) {
-    assert.ok(
-      envelopeFields.has(field),
-      `the panel withholds "${field}", which @open-e2ee/signal-protocol-sdk@${surface.version} ` +
-        `does not declare on Envelope — the exclusion is stale and silently excludes nothing`,
-    );
-  }
+/*
+ * The other half of the same bargain, in the form the panel takes now. Nothing
+ * about a stored row reaches the page except the two addresses and the size, so
+ * the way this file can start overstating the evidence again is by reaching
+ * into the envelope for one more field — `envelope.contentHint`, a timestamp,
+ * the message id — and drawing it somewhere.
+ *
+ * Literal reads only, which is exactly right here: the two legitimate reads go
+ * through `NAMED_FIELDS`, so they are computed and invisible to this, and a
+ * field spelled out in the source is the thing being ruled out. A name built at
+ * runtime is beyond any source scan, and `demo-smoke.mjs` is the check that
+ * does not care how it was spelled.
+ */
+test('reads the envelope only through the fields it declares', () => {
+  const literal = [
+    ...source.matchAll(/envelope(?:\.([A-Za-z_$][\w$]*)|\[\s*'([^']+)'\s*\])/g),
+  ]
+    .map((match) => match[1] ?? match[2])
+    .filter((field) => envelopeFields.has(field));
+
+  assert.deepEqual(
+    literal,
+    [],
+    `the panel reads ${literal.join(', ')} straight off the envelope. The relay's column is the ` +
+      `mailbox and its byte figure; an address it draws comes through NAMED_FIELDS, where the ` +
+      `test above holds it to the installed SDK. A field reached for here is one nothing checks.`,
+  );
 });
 
 test('takes the SDK version it advertises from the installed package', () => {
@@ -169,7 +198,10 @@ test('takes the SDK version it advertises from the installed package', () => {
 
 test('is what the homepage renders', async () => {
   const page = await readFile(new URL('../src/pages/index.astro', import.meta.url), 'utf8');
-  assert.match(page, /<DemoConsole\s*\/>/);
+  /* Open tag rather than self-closing: the band's heading and paragraph go in
+     through a slot, so the console can put Demo Settings on the heading's own
+     line. */
+  assert.match(page, /<DemoConsole>/);
   /* And the console is what renders the recording, so neither can be dropped
      without the other's guard here going quiet. */
   assert.match(source, /<CarrierPanel\s*\/>/);

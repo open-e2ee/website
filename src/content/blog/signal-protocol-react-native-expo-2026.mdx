@@ -98,7 +98,7 @@ signal.registerHook('onMessageDecrypted', (message) => {
 });
 signal.startRelaySubscription();
 
-await signal.send(peerUserId, 'Ship it Thursday.');
+await signal.send(peerUserId, 'Dinner at 7.');
 ```
 
 On first run, `createSignalProtocolClient()` generates the identity keys. With a relay, it publishes the public material during initial synchronization. The first send establishes a session.

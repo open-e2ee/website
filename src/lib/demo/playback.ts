@@ -88,27 +88,45 @@ export type DwellTable = Readonly<Record<string, number>>;
  */
 export const STEP_DWELL_MS: DwellTable = {
   idle: 0,
+  /* The relay accepting a device: the wire connects, the account's mailbox is
+     built, and the device's state flips online. Three changes across the whole
+     width of the scene, and the first thing a reader watches this device do —
+     so it gets time to land as a sequence rather than a flicker. */
+  registered: 2000,
   /* One batch of keys arriving on one device's bar. The SDK reports a batch at
      a time, so there are four of these in an opening — two devices, two
      batches each — and the step that used to be the reel's longest silence is
      now its busiest run of frames. Short, because each holds one bar moving
      and one number changing, and because four of them are spent in a row. */
   'generating-keys': 700,
-  /* One device coming online, and there are two of these. The pair used to be
-     drawn on the first of them and the second held a frame identical to it, so
-     the reel opened on two dwells of one still picture; each now stamps its own
-     device, and one word changing is the smallest change in the reel. */
-  'devices-ready': 1000,
+  /* The device's client is up. The scene changed nothing on this cue — the
+     device came online back on `registered`, where the relay accepted it —
+     so this is a beat between the key bars finishing and the publish burst,
+     not a frame with a change to hold. */
+  'devices-ready': 600,
   'bundles-published': 1500,
-  'session-established': 1900,
-  encrypted: 1000,
-  'in-transit': 1200,
-  'stored-at-relay': 1500,
-  delivered: 900,
-  /* The longest of the message steps: the envelope opens, is readable, and then
-     folds into the conversation, and `scene-view.ts` holds it open for part of
-     that. A shorter dwell here cuts the fold off midway. */
-  opened: 1600,
+  /* Carries the spent-key flight — a key leaving the responder's relay shelf
+     for the initiating phone — and the shelf's count dropping. The one moment
+     the reel shows whose prekeys a session costs, so it gets the reel's
+     slowest crossing: the key flies at 1.75× the shared flight clock —
+     `DemoScene.astro` says why — which is 2.8s of travel inside this hold,
+     plus the landing's beat to be absorbed into the wheel. */
+  'session-established': 3200,
+  /* Two message keys fly from the wheel and each turns its keyhole in
+     sequence — the second launches at 0.35 of the flight, so its turn ends
+     near 1.7 flights. Sized so that finishes inside the dwell rather than
+     being cut off by the tile leaving for the wire. */
+  encrypted: 3200,
+  'in-transit': 2200,
+  'stored-at-relay': 1800,
+  delivered: 1400,
+  /* The longest of the message steps, and it holds a whole sequence: the
+     unlock keys fly to the tile, their landing turns the keyholes back and
+     opens the payload, the plaintext is readable for a beat, and only then
+     does the tile fold into the conversation — the fold's `transition-delay`
+     in `DemoScene.astro` derives from the same flight clock. A shorter dwell
+     here cuts the fold off midway. */
+  opened: 3600,
 };
 
 /** What an unlisted step is held for. Long enough to see a state change. */

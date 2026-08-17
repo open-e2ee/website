@@ -55,6 +55,7 @@ import type {
   ProtocolSelectionEvent,
 } from '@open-e2ee/signal-protocol-sdk/client/config';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
+import type { InMemorySignalProtocolStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import type { InMemorySignalProtocolRelayServer } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import { ciphertextBytes } from './ciphertext.ts';
@@ -97,7 +98,7 @@ export interface DemoRunOptions {
    * before.
    *
    * A factory rather than a relay because `reset()` needs a new one; see
-   * `boot()`.
+   * `raiseRelay()`.
    */
   relay?: () => InMemorySignalProtocolRelayServer;
   /** How long any one wait on the relay may take before it is called a failure. */
@@ -131,23 +132,38 @@ export interface DemoSend {
 export interface DemoRun {
   /** The recording. Stable across `reset()`, so subscribers survive one. */
   readonly trace: Trace;
-  /** The relay both accounts are currently registered with. Replaced by a reset. */
+  /** The relay this run's devices register with. Replaced by a reset. */
   readonly relay: InMemorySignalProtocolRelayServer;
   /** Account name for an actor, for anything that has to print one. */
   userId(actor: DeviceActor): string;
-  /** The client for an actor, for the SDK calls a surface makes by hand. */
+  /**
+   * The client for an actor, for the SDK calls a surface makes by hand.
+   *
+   * Throws for a device that has not been activated: there is no client to
+   * hand back, and a null here would put the failure two calls away from the
+   * button that caused it.
+   */
   client(actor: DeviceActor): SignalProtocolClient;
   /**
-   * Put both accounts' public prekey bundles on the relay.
+   * Bring one device up, in the order a real device comes up.
    *
-   * What a real device does when it comes online, before anyone has written
-   * anything: the bundle has to be on the relay for the first message to be a
-   * PQXDH handshake rather than a failure. Offered on its own because the demo
-   * starts here — the reader watches the shelves fill and the private halves
-   * stay behind before any conversation exists to explain it with.
+   * A run starts with a relay and no devices, and this is the reader's own
+   * act of adding one: the device registers with the relay — the relay's
+   * answer is the account existing on the relay, the thing its mailbox and
+   * shelf hang off — then the client builds, generating its keys, and
+   * finally the public halves are published up to the shelf.
    *
-   * Idempotent, and the same call `send()` makes on its way past, so a caller
-   * that skips it loses nothing but the order.
+   * Idempotent per device: a second press while the first activation is in
+   * flight joins it, and one after it has finished does nothing.
+   */
+  activate(actor: DeviceActor): Promise<void>;
+  /**
+   * Put every activated device's public prekey bundle on the relay.
+   *
+   * Activation publishes on its way up, so this is normally a no-op kept for
+   * the send path: the bundle has to be on the relay for the first message to
+   * be a PQXDH handshake rather than a failure, and `send()` makes this call
+   * on its way past rather than trusting that every caller activated politely.
    */
   publishBundles(): Promise<void>;
   /**
@@ -160,7 +176,10 @@ export interface DemoRun {
    */
   exchangeKeys(): Promise<void>;
   send(from: DeviceActor, text: string): Promise<DemoSend>;
-  /** Forget the conversation and boot two fresh devices. Same `trace` object. */
+  /**
+   * Forget the conversation: a fresh relay, no devices, both waiting to be
+   * activated again. Same `trace` object, so subscribers survive.
+   */
   reset(): Promise<void>;
   /** Put both clients and the relay observers away. */
   stop(): Promise<void>;
@@ -171,6 +190,13 @@ interface Device {
   readonly actor: DeviceActor;
   readonly userId: string;
   readonly client: SignalProtocolClient;
+  /**
+   * The device's own key store, kept so the run can count what the device is
+   * holding — `countHeldKeys` reads it after an opening, because the first
+   * successful decrypt is when the SDK deletes the one-time private halves the
+   * peer's fetch consumed the public copies of.
+   */
+  readonly store: InMemorySignalProtocolStore;
   readonly address: ProtocolAddress;
   /** What the SDK last reported about a key agreement this device took part in. */
   selection(): ProtocolSelectionEvent | null;
@@ -392,6 +418,48 @@ async function countPublishedKeys(
   );
 }
 
+/**
+ * How many private keys one device is holding in its own store, counted by the
+ * model `countPublishedKeys` uses so the two figures are comparable: an
+ * identity is two keys, the signed and last-resort prekeys one each, and the
+ * one-time batches count themselves.
+ *
+ * This is the number that moves when a session is agreed. The SDK defers
+ * deleting the one-time private halves a peer's bundle fetch consumed until
+ * the first successful decryption commits the session, so a read after an
+ * opening shows the spend — the device's column dips where the relay's shelf
+ * dipped at the fetch, one step later, which is when it really happens.
+ *
+ * `null` when the store holds nothing at all, `countPublishedKeys`' rule: an
+ * absent reading rather than a zero nothing observed.
+ */
+async function countHeldKeys(store: InMemorySignalProtocolStore): Promise<number | null> {
+  const [identity, ecSignedPreKey, kemLastResortPreKey, ecOneTime, kemOneTime] =
+    await Promise.all([
+      store.getIdentityKey(),
+      store.getEcSignedPreKey(),
+      store.getKyberPreKey(),
+      store.getEcOneTimePreKeys(),
+      store.getKemOneTimePreKeys(),
+    ]);
+  if (
+    !identity &&
+    !ecSignedPreKey &&
+    !kemLastResortPreKey &&
+    ecOneTime.length === 0 &&
+    kemOneTime.length === 0
+  ) {
+    return null;
+  }
+  return (
+    (identity ? 2 : 0) +
+    (ecSignedPreKey ? 1 : 0) +
+    (kemLastResortPreKey ? 1 : 0) +
+    ecOneTime.length +
+    kemOneTime.length
+  );
+}
+
 export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRun> {
   const names: Record<DeviceActor, string> = {
     a: options.a ?? 'alice',
@@ -404,16 +472,56 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
 
   /* Mutable because `reset()` replaces them. What survives a reset is the trace
      and the object the page is holding; the devices and the relay do not, and
-     `boot()` says why. */
+     `raiseRelay()` says why. */
   let relay: InMemorySignalProtocolRelayServer;
-  let devices: Record<DeviceActor, Device>;
-  /* Whether this generation of devices has published its prekey bundles. Reset
-     with the devices, because fresh devices have published nothing. */
-  let published = false;
+  /* Partial because devices exist one activation at a time: a run comes up
+     with neither, and each `activate()` adds its own. */
+  let devices: Partial<Record<DeviceActor, Device>> = {};
+  /* One activation per device, held as its promise so a second press while
+     the first is still in flight joins it rather than registering the device
+     with the relay twice. */
+  let activations: Partial<Record<DeviceActor, Promise<void>>> = {};
+  /* Which devices have published their prekey bundles. Cleared with the
+     devices, because fresh devices have published nothing. */
+  const published = new Set<DeviceActor>();
   /* Names the performance marks so a reset's second run does not collide with
      the first's entries under the same name. */
   let generation = 0;
   let sends = 0;
+
+  /*
+   * The name of the mark the next relay handoff should drop, or null when no
+   * send is in flight.
+   *
+   * `client.send()` is one call that seals the message and hands it to the
+   * relay, and in memory the relay then delivers — and the receiver decrypts —
+   * before that call returns. A bracket around the whole call therefore prices
+   * the trip, not the sealing. The device's own share ends at the moment the
+   * envelope reaches transport, so `boot()` wraps the relay's envelope-
+   * accepting methods to drop this mark on the way in: armed just before the
+   * send, disarmed by the first handoff, and the sealing span is start → that
+   * mark. Calls the relay takes outside a send find this null and mark
+   * nothing.
+   */
+  let handoffMark: string | null = null;
+
+  /* Wrap the relay methods a send can hand its envelope to. All three, because
+     which one the SDK picks is the sealed-sender setting's business, not
+     ours. */
+  function instrumentRelay(target: InMemorySignalProtocolRelayServer): void {
+    const wrap = <A extends unknown[], R>(fn: (...args: A) => R): ((...args: A) => R) => {
+      return (...args: A) => {
+        if (handoffMark !== null) {
+          performance.mark(handoffMark);
+          handoffMark = null;
+        }
+        return fn(...args);
+      };
+    };
+    target.send = wrap(target.send.bind(target));
+    target.sendUnidentified = wrap(target.sendUnidentified.bind(target));
+    target.sendMultiRecipientUnidentified = wrap(target.sendMultiRecipientUnidentified.bind(target));
+  }
 
   async function makeDevice(actor: DeviceActor): Promise<Device> {
     const userId = names[actor];
@@ -463,6 +571,28 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
 
     performance.mark(mark('start'));
     await relay.registerDevice(userId, { encryptedDeviceName: new ArrayBuffer(0) });
+    performance.mark(mark('registered'));
+    const registerMs = measure(
+      `oe-demo:register:${generation}:${actor}`,
+      mark('start'),
+      mark('registered'),
+    );
+    /*
+     * The relay has accepted this device. Registration is the first thing a
+     * device sends over its connection, and the relay's answer is the account
+     * taking shape on the relay: a device id, and the registry row that makes
+     * the device an addressable recipient — the thing its mailbox hangs off.
+     * Recorded before the client is built because that is the order it
+     * happens in: a device registers on its way up, before it has made a
+     * single key.
+     */
+    trace.append({
+      step: 'registered',
+      actor,
+      atMs: performance.now(),
+      measures: { registerMs },
+      detail: { userId },
+    });
     /*
      * Composed and then constructed, rather than `createSignalProtocolClient`.
      *
@@ -474,9 +604,13 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      * exports and the SDK's own example for `onProtocolSelected` is written
      * against `SignalProtocolClient.create`.
      */
+    /* Held by the device record as well as by the client, because the run
+       reads it back: the private-key count the column prints comes from this
+       store, the only place the private halves exist. */
+    const storage = inMemoryStore();
     const config = createSignalProtocolClientConfig({
       identity: { userId },
-      adapters: { storage: inMemoryStore(), relay },
+      adapters: { storage, relay },
       protocol,
     });
     /*
@@ -523,6 +657,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       actor,
       userId,
       client,
+      store: storage,
       /* `deviceId` read off the client rather than written as 1: it is the id
          the relay gave this device, and a second copy here would be a number
          this file believed rather than the one the SDK is addressing. */
@@ -578,9 +713,10 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
   }
 
   /**
-   * Two fresh devices on a fresh relay.
+   * A fresh relay for a fresh generation of devices.
    *
-   * The relay is rebuilt, not reused, and both reasons are load-bearing.
+   * On a reset the relay is rebuilt, not reused, and both reasons are
+   * load-bearing.
    *
    * It is what the reader is looking at. The middle column shows what the relay
    * is holding, so a reset that kept the relay would clear the recording and
@@ -594,19 +730,28 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
    * with `INITIALIZATION_FAILED`. That is the relay refusing an identity change
    * it did not authorise, which is correct of it: it is the same refusal the
    * reinstall scenario exists to provoke.
+   *
+   * No devices come up here. Bringing a device up is the reader's own act —
+   * `activate()` — and a run begins as the relay alone, standing between two
+   * machines that have not yet spoken to it.
    */
-  async function boot(): Promise<void> {
+  function raiseRelay(): void {
     generation += 1;
     relay = makeRelay();
-    /* Concurrent because they are independent, and because a reader watching
-       two devices come up expects them to come up together. Each is measured on
-       its own marks, so the overlap costs nothing in the numbers. */
-    const [a, b] = await Promise.all([makeDevice('a'), makeDevice('b')]);
-    devices = { a, b };
+    instrumentRelay(relay);
+  }
+
+  /** The device an actor has, or the reason there is nothing to call. */
+  function deviceOf(actor: DeviceActor): Device {
+    const device = devices[actor];
+    if (device === undefined) {
+      throw new Error(`${names[actor]}'s device has not been activated`);
+    }
+    return device;
   }
 
   async function teardown(): Promise<void> {
-    const current = Object.values(devices);
+    const current = Object.values(devices).filter((device) => device !== undefined);
     for (const device of current) {
       device.unsubscribeRelay();
       device.onEnvelope = null;
@@ -616,52 +761,60 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
   }
 
   /**
-   * Put both accounts' prekey bundles on the relay.
+   * Put one account's prekey bundle on the relay, once.
    *
-   * Both, because both are running in this tab: a bundle is what makes the
-   * first message to a device a PQXDH handshake rather than a failure, and
-   * either device may be the one spoken to first.
+   * The last leg of an activation: a bundle is what makes the first message to
+   * this device a PQXDH handshake rather than a failure, so a device is not
+   * usefully up until its public halves are on the shelf.
    */
+  async function publishBundle(actor: DeviceActor): Promise<void> {
+    if (published.has(actor)) return;
+    published.add(actor);
+    const device = deviceOf(actor);
+    const mark = (stage: string) => `oe-demo:publish:${generation}:${actor}:${stage}`;
+
+    /* A device that came up on a fresh relay published on the way up, so
+       this sync normally finds the account in order and generates nothing —
+       and records nothing, which is the point of watching it. The day it
+       does have to replenish, the reel shows that rather than a still
+       relay column with half a second missing from it. */
+    const generating = recordGeneration(trace, actor, mark);
+
+    performance.mark(mark('start'));
+    await device.client.syncToServer(generating.onProgress);
+    performance.mark(mark('end'));
+    generating.commit();
+    const publishMs = measure(
+      `oe-demo:publish:${generation}:${actor}`,
+      mark('start'),
+      mark('end'),
+    );
+    /* Outside the marks above on purpose: this reads the relay back, and
+       a reader watching `publishMs` should see how long the publish took,
+       not that plus a diagnostic query the publish itself never made. */
+    const publicKeys = await countPublishedKeys(relay, device.userId, device.address.deviceId);
+    /* The device's own count rides the same report. At this step the two
+       are equal — publishing copies public halves out and consumes nothing
+       — but the column that prints private keys reads its figure from the
+       store that holds them, not from the relay's shelf agreeing with it. */
+    const heldKeys = await countHeldKeys(device.store);
+    trace.append({
+      step: 'bundles-published',
+      actor,
+      atMs: performance.now(),
+      measures: { publishMs },
+      ...(publicKeys === null
+        ? {}
+        : { detail: { publicKeys, ...(heldKeys === null ? {} : { heldKeys }) } }),
+    });
+  }
+
+  /** Every activated device's bundle. See the interface note: normally a no-op. */
   async function publishBundles(): Promise<void> {
-    if (published) return;
-    published = true;
-    const mark = (actor: DeviceActor, stage: string) =>
-      `oe-demo:publish:${generation}:${actor}:${stage}`;
-
     await Promise.all(
-      (['a', 'b'] as const).map(async (actor) => {
-        /* A device that came up on a fresh relay published on the way up, so
-           this sync normally finds the account in order and generates nothing —
-           and records nothing, which is the point of watching it. The day it
-           does have to replenish, the reel shows that rather than a still
-           relay column with half a second missing from it. */
-        const generating = recordGeneration(trace, actor, (stage) => mark(actor, stage));
-
-        performance.mark(mark(actor, 'start'));
-        await devices[actor].client.syncToServer(generating.onProgress);
-        performance.mark(mark(actor, 'end'));
-        generating.commit();
-        const publishMs = measure(
-          `oe-demo:publish:${generation}:${actor}`,
-          mark(actor, 'start'),
-          mark(actor, 'end'),
-        );
-        /* Outside the marks above on purpose: this reads the relay back, and
-           a reader watching `publishMs` should see how long the publish took,
-           not that plus a diagnostic query the publish itself never made. */
-        const publicKeys = await countPublishedKeys(
-          relay,
-          devices[actor].userId,
-          devices[actor].address.deviceId,
-        );
-        trace.append({
-          step: 'bundles-published',
-          actor,
-          atMs: performance.now(),
-          measures: { publishMs },
-          ...(publicKeys === null ? {} : { detail: { publicKeys } }),
-        });
-      }),
+      (['a', 'b'] as const)
+        .filter((actor) => devices[actor] !== undefined)
+        .map((actor) => publishBundle(actor)),
     );
   }
 
@@ -699,6 +852,31 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       mark('end'),
     );
 
+    /*
+     * What the peer's shelf holds now the bundle has been taken off it.
+     *
+     * `fetchPreKeyBundle` above consumed one EC and one KEM one-time prekey
+     * from `to`'s account — atomically, and for real, which is the whole reason
+     * `countPublishedKeys` exists in the form it does rather than calling
+     * `fetchPreKeyBundle` itself. This is the reading that says so.
+     *
+     * Read back off the relay rather than worked out from the published figure.
+     * A subtraction here would be this file asserting how much a fetch costs,
+     * and the cost is not fixed: an account out of one-time prekeys is served
+     * from its last-resort KEM key and loses less. The relay is the only thing
+     * that knows, and it is being asked.
+     *
+     * Outside the marks above, for the reason the publish reads its own count
+     * outside its: `establishMs` is how long agreeing a key took, and a
+     * diagnostic query the agreement never made does not belong inside it.
+     *
+     * Absent when the relay has nothing for that account, and kept out of the
+     * recording rather than reported as a zero — the same rule the publish
+     * follows, and what leaves the shelf standing at its last known figure
+     * instead of drawing an account that has been emptied.
+     */
+    const peerKeys = await countPublishedKeys(relay, to.userId, to.address.deviceId);
+
     /* `establishSession` resolves to nothing, so what the agreement produced is
        read from the event it raised on the way past. Nullable, and left
        nullable: a surface that has no selection to show should show none. What
@@ -713,15 +891,35 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       atMs: performance.now(),
       measures: { establishMs },
       ...braidOf(from),
-      detail: { selection: from.selection() },
+      detail: {
+        selection: from.selection(),
+        /* Named with the account it is a reading of. Which device was spoken to
+           is already on the event as `to`, and a surface could pair the two — but
+           a count and the account it belongs to arriving as one object is what
+           makes them impossible to file against the wrong shelf downstream. */
+        ...(peerKeys === null ? {} : { peer: { side: to.actor, publicKeys: peerKeys } }),
+      },
     });
   }
 
   async function exchange(fromActor: DeviceActor, text: string): Promise<DemoSend> {
-    const from = devices[fromActor];
-    const to = devices[fromActor === 'a' ? 'b' : 'a'];
+    const from = deviceOf(fromActor);
+    const to = deviceOf(fromActor === 'a' ? 'b' : 'a');
 
     await ensureSession(from, to);
+
+    /*
+     * Whether this send is the one that gives `to` its session.
+     *
+     * The responder's share of the key agreement happens inside its first
+     * decrypt: the incoming prekey message carries the material, and the KEM
+     * decapsulation and DH work run on arrival. The SDK raises no
+     * receiver-side timing event for that, so the honest bracket is the one
+     * recorded below — arrival to decrypted, on exactly the message that
+     * created the session. Asked before the send with `hasSession`,
+     * `ensureSession`'s own rule: asked after it, the answer is always yes.
+     */
+    const answering = !(await to.client.hasSession(from.address));
 
     const n = ++sends;
     const mark = (stage: string) => `oe-demo:send:${generation}:${n}:${stage}`;
@@ -748,16 +946,37 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     );
 
     performance.mark(mark('start'));
+    handoffMark = mark('sealed');
     let result: SendResult;
     try {
       result = await from.client.send(to.userId, text);
     } catch (error) {
+      handoffMark = null;
       to.onEnvelope = null;
       to.onDecrypted = null;
       throw error;
     }
     performance.mark(mark('accepted'));
-    const encryptMs = measure(`oe-demo:encrypt:${generation}:${n}`, mark('start'), mark('accepted'));
+    /* Sealing is start → the relay handoff, not start → return: see
+       `handoffMark`. A send the wrapped relay never saw — no transport path
+       does this today — would leave the mark armed; the span then falls back
+       to the whole call rather than measuring to a mark that does not
+       exist. */
+    const sealed = handoffMark === null;
+    handoffMark = null;
+    const encryptMs = measure(
+      `oe-demo:encrypt:${generation}:${n}`,
+      mark('start'),
+      sealed ? mark('sealed') : mark('accepted'),
+    );
+
+    /* The sealed envelope's size, if its bytes have already been seen. In
+       memory the relay delivers inside the send, so the arrival promise has
+       resolved by this line and the race is a read, not a wait. A transport
+       that had not delivered yet resolves the race null and the figure first
+       appears on `stored-at-relay`, which measures the relay's own copy. */
+    const seen = await Promise.race([envelopeArrived, Promise.resolve(null)]);
+    const sealedBytes = seen === null ? null : (ciphertextBytes(seen.envelope.ciphertext)?.length ?? 0);
 
     const encryptedAt = performance.now();
     /* Each side's reports are taken on the step that is that side's own work:
@@ -771,7 +990,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       from: from.actor,
       to: to.actor,
       atMs: encryptedAt,
-      measures: { encryptMs },
+      measures: { encryptMs, ...(sealedBytes === null ? {} : { ciphertextBytes: sealedBytes }) },
       ...braidOf(from),
       detail: { text, result },
     });
@@ -832,15 +1051,35 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       mark('start'),
       mark('decrypted'),
     );
+    /* Counted after the decrypt resolved, because that is when the spend
+       lands: the SDK deletes the one-time private halves the sender's fetch
+       consumed as part of committing the session on the first successful
+       decryption. On a session-creating message this read dips; on every
+       later one it merely holds still. */
+    const heldKeys = await countHeldKeys(to.store);
     trace.append({
       step: 'opened',
       actor: to.actor,
       from: from.actor,
       to: to.actor,
       atMs: decryptedAtMs,
-      measures: { roundTripMs },
+      /* One interval, two names, never both. Arrival to decrypted is the
+         receiver's own work on this envelope. On the session-creating message
+         that work *is* the responder's key agreement — the KEM decapsulation
+         and DH ratchet run inside the first decrypt — so the interval is
+         recorded as `establishMs` and dominated by it; pricing the same span
+         as a decrypt too would count the agreement twice. On every later
+         message it is `decryptMs`, the steady-state cost of opening one
+         envelope. Whichever the message has no claim to is absent rather than
+         zero. */
+      measures: {
+        roundTripMs,
+        ...(answering
+          ? { establishMs: decryptedAtMs - storedAtMs }
+          : { decryptMs: decryptedAtMs - storedAtMs }),
+      },
       ...braidOf(to),
-      detail: { decrypted },
+      detail: { decrypted, ...(heldKeys === null ? {} : { heldKeys }) },
     });
 
     return {
@@ -859,7 +1098,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      decryption slots, and a reader pressing send twice is ordinary. */
   let queue: Promise<unknown> = Promise.resolve();
 
-  await boot();
+  raiseRelay();
 
   return {
     trace,
@@ -871,12 +1110,22 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       return relay;
     },
 
+    /* From the names, not the device: an account has a name before its device
+       has been activated, and the scene prints names from the first frame. */
     userId(actor) {
-      return devices[actor].userId;
+      return names[actor];
     },
 
     client(actor) {
-      return devices[actor].client;
+      return deviceOf(actor).client;
+    },
+
+    activate(actor) {
+      const pending = (activations[actor] ??= (async () => {
+        devices[actor] = await makeDevice(actor);
+        await publishBundle(actor);
+      })());
+      return pending;
     },
 
     async publishBundles() {
@@ -884,7 +1133,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     },
 
     async exchangeKeys() {
-      await ensureSession(devices.a, devices.b);
+      await ensureSession(deviceOf('a'), deviceOf('b'));
     },
 
     send(from, text) {
@@ -906,9 +1155,11 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       await queue.catch(() => {});
       await teardown();
       trace.clear();
-      published = false;
+      devices = {};
+      activations = {};
+      published.clear();
       sends = 0;
-      await boot();
+      raiseRelay();
     },
 
     async stop() {

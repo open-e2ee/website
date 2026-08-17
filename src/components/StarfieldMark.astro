@@ -1,0 +1,532 @@
+---
+/*
+ * Three marks as one field of small lights: our lockup across the top, the Open
+ * Source Initiative keyhole and GitHub's mark below it. A cursor moving through
+ * the field pushes the lights aside, and they fall back into the artwork when
+ * it leaves.
+ *
+ * `src/lib/starfield-marks.mjs` owns which marks these are, where each one
+ * sits, where its artwork comes from, and — the part worth reading before
+ * changing anything here — what drawing two of them this way costs. This file
+ * owns only the drawing and the physics.
+ *
+ * This is not a diagram in DESIGN.md's sense and carries none of that grammar.
+ * It says nothing about encryption.
+ */
+import { FIELD_VIEW_BOX, FIELD_WIDTH, marks, placement } from '../lib/starfield-marks.mjs';
+
+/*
+ * Placement is resolved here, at build time, and handed to the script already
+ * flattened. The script cannot import the module that computes it — that module
+ * reads the shipped lockup off disk — and a second copy of the arithmetic in
+ * the browser is a second thing to keep true.
+ */
+const field = marks.map((mark) => {
+  const { scale, translateX, translateY } = placement(mark);
+  return { pieces: mark.pieces, scale, translateX, translateY };
+});
+---
+
+{/* Decorative, and it has to be: the band already links to the repository in
+    words below it, and a second route to one place is a reader wondering what
+    the difference is. The keyhole's own link to opensource.org is the one in
+    the page's lead, which is where this mark carries a name. */}
+<div
+  class="starfield"
+  data-starfield
+  data-starfield-field={JSON.stringify({ width: FIELD_WIDTH, marks: field })}
+  aria-hidden="true"
+>
+  {/* The artwork itself, in its own placement. This is what a reader gets with
+      no JavaScript, with a throw earlier on the page, or with a preference for
+      less movement — the field replaces it only once the script has run and has
+      something to replace it with. */}
+  <svg class="starfield-mark" viewBox={FIELD_VIEW_BOX} focusable="false">
+    {
+      field.map((mark) => (
+        <g transform={`translate(${mark.translateX} ${mark.translateY}) scale(${mark.scale})`}>
+          {mark.pieces.map((piece) =>
+            piece.kind === 'text' ? (
+              <text
+                x={piece.x}
+                y={piece.baseline}
+                fill="currentColor"
+                font-family={piece.fontFamily}
+                font-size={piece.fontSize}>
+                {piece.runs.map((run) => (
+                  <tspan font-weight={run.weight} letter-spacing={run.tracking}>
+                    {run.text}
+                  </tspan>
+                ))}
+              </text>
+            ) : (
+              <g transform={`translate(${piece.translateX ?? 0} ${piece.translateY ?? 0}) scale(${piece.scale ?? 1})`}>
+                {piece.paths.map((path) => (
+                  <path
+                    d={path}
+                    fill="currentColor"
+                    stroke={piece.strokeWidth ? 'currentColor' : undefined}
+                    stroke-width={piece.strokeWidth || undefined}
+                    stroke-linecap={piece.strokeWidth ? 'round' : undefined}
+                    stroke-linejoin={piece.strokeWidth ? 'round' : undefined}
+                  />
+                ))}
+              </g>
+            ),
+          )}
+        </g>
+      ))
+    }
+  </svg>
+
+  <canvas class="starfield-canvas" data-starfield-canvas></canvas>
+</div>
+
+<script>
+  /*
+   * THE ARRANGEMENT, which is the part worth keeping right. The artwork in the
+   * markup is the drawing. The script rasterises each mark, reads which cells it
+   * inked, drops a light on each, and only then hides it. Any other order ships
+   * an empty box to every reader whose script never ran.
+   *
+   * DESIGN.md asks motion to be short and reversible. The loop therefore runs
+   * only while something is moving: it starts when the field arrives or a
+   * pointer comes near, and stops on the frame every light is home and still. A
+   * field that twinkled on forever would be neither, and would hold a phone's
+   * compositor awake for a decoration.
+   */
+
+  /* Local constants, never `--oe-duration-*` — those are transition durations
+     and collapse to 0.01ms under reduced motion. */
+  /*
+   * The pointer's reach and the throw of a light are shares of the field's own
+   * width, not pixel counts: this composition holds three marks at two sizes
+   * and is drawn from 288px to 544px wide, so a fixed reach would swallow a
+   * whole small mark at one width and dent a big one at another.
+   *
+   * THROW states the push against the spring rather than picking it. A light
+   * sits where the two balance, so the furthest it goes is SHOVE ÷ SPRING px,
+   * and stating that as a multiple of REACH is what opens a clear hole under
+   * the pointer instead of a dent. Weakening the push without weakening the
+   * spring is the way this reads as barely moving.
+   */
+  const REACH_SHARE = 0.14; /* of the field's width, where a light first feels the pointer */
+  const THROW = 1.24; /* furthest a light travels, as a multiple of REACH */
+  const SCATTER_SHARE = 0.09; /* of the field's width, thrown when the field arrives */
+  const SPRING = 165; /* pull back home, in px/s² per px of displacement */
+  const DRAG = 10; /* damping; under 2·√SPRING (~26) the return overshoots a little */
+  const SETTLED = 0.3; /* px, and px/s, under which a light counts as home */
+  /*
+   * The grid is set by the thinnest limb in the composition, and it is a share
+   * of the field for the same reason the reach is. A bracket stem is 0.094 of
+   * the symbol's width and the symbol is 0.17 of the field, so a stem is 0.016
+   * of whatever this band is drawn at — about 9px at the widest and 5px at the
+   * narrowest. Sampling that on a fixed 3px grid put three lights across our
+   * own mark at one width and one and a half at another, so the composition
+   * held together on a desktop and came apart on a tablet. Held to a third of a
+   * stem everywhere, the field carries the same number of lights at every
+   * width, which is also what keeps the cost flat.
+   *
+   * A light is sized from the grid rather than in pixels, for the same reason:
+   * spacing and radius are one decision, not two.
+   */
+  const GRID_SHARE = 0.0055; /* of the field's width, between samples */
+  const CORE = 0.19; /* light radius as a share of the grid, for a solid cell */
+  const RIM = 0.13; /* and for a half-covered one, which is a mark's edge */
+  const JITTER = 0.14; /* random share of the grid added to either */
+  const ACCENT_SHARE = 0.16; /* how many lights carry the accent rather than the ink */
+
+  const root = document.querySelector<HTMLElement>('[data-starfield]');
+  const canvas = root?.querySelector<HTMLCanvasElement>('[data-starfield-canvas]');
+  const context = canvas?.getContext('2d');
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  type Piece =
+    | { kind: 'paths'; paths: string[]; translateX?: number; translateY?: number; scale?: number; strokeWidth?: number }
+    | {
+        kind: 'text';
+        x: number;
+        baseline: number;
+        fontFamily: string;
+        fontSize: number;
+        runs: { weight: number; tracking: number; text: string }[];
+      };
+
+  type Mark = { pieces: Piece[]; scale: number; translateX: number; translateY: number };
+
+  type Light = {
+    homeX: number;
+    homeY: number;
+    x: number;
+    y: number;
+    velocityX: number;
+    velocityY: number;
+    radius: number;
+    rest: number;
+    accent: boolean;
+  };
+
+  if (root && canvas && context && root.dataset.starfieldField) {
+    const { width: fieldWidth, marks: field } = JSON.parse(root.dataset.starfieldField) as {
+      width: number;
+      marks: Mark[];
+    };
+    /* Path2D is built once per path; a `new Path2D` per resize would rebuild the
+       whole composition's geometry on every frame of a drag. */
+    const shapes = field.map((mark) =>
+      mark.pieces.map((piece) => (piece.kind === 'paths' ? piece.paths.map((path) => new Path2D(path)) : [])),
+    );
+
+    let lights: Light[] = [];
+    let grid = 1;
+    let reach = 1;
+    let shove = 0;
+    let scatterBy = 0;
+    let pointerX = 0;
+    let pointerY = 0;
+    let pointerNear = false;
+    let frame = 0;
+    let last = 0;
+    let ink = '';
+    let accent = '';
+
+    /*
+     * Both colours resolve differently in the two themes, and the switch in the
+     * header can flip while this band is on screen. They are therefore read from
+     * the element and held, never baked into a light — a light carries only
+     * whether it is an accent one. Reading them per light per frame would be a
+     * layout read sixty times a second for a decoration.
+     */
+    const readColours = () => {
+      const styles = getComputedStyle(root);
+      ink = styles.color;
+      accent = styles.getPropertyValue('--oe-accent').trim() || ink;
+    };
+
+    /* The wordmark is live text in the artwork the package ships, so the field
+       rasterises text too. Drawing it before the family has loaded would settle
+       the lights into a fallback face and leave them there. */
+    const facesReady = () => {
+      const faces = new Set<string>();
+      for (const mark of field) {
+        for (const piece of mark.pieces) {
+          if (piece.kind !== 'text') continue;
+          for (const run of piece.runs) faces.add(`${run.weight} 64px ${piece.fontFamily}`);
+        }
+      }
+      if (!faces.size || !document.fonts) return Promise.resolve();
+      return Promise.all([...faces].map((face) => document.fonts.load(face)))
+        .then(() => document.fonts.ready)
+        .then(() => undefined)
+        .catch(() => undefined);
+    };
+
+    /*
+     * Homes are read out of the rasterised artwork rather than listed here, so
+     * the field is the marks and stays the marks when either package updates.
+     */
+    const layout = () => {
+      const box = root.getBoundingClientRect();
+      if (box.width < 1 || box.height < 1) return false;
+
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(box.width * ratio);
+      canvas.height = Math.round(box.height * ratio);
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      readColours();
+
+      grid = Math.max(1, box.width * GRID_SHARE);
+      reach = box.width * REACH_SHARE;
+      shove = SPRING * reach * THROW;
+      scatterBy = box.width * SCATTER_SHARE;
+
+      /* An offscreen copy at drawing size. Sampling the visible canvas instead
+         would mean clearing the field to measure it. */
+      const stamp = document.createElement('canvas');
+      stamp.width = Math.max(1, Math.round(box.width));
+      stamp.height = Math.max(1, Math.round(box.height));
+      const stampContext = stamp.getContext('2d', { willReadFrequently: true });
+      if (!stampContext) return false;
+
+      /* The composition is `fieldWidth` units across and the element's own box
+         is cut to its shape, so one unit is the same on both axes. */
+      const unit = box.width / fieldWidth;
+
+      const built: Light[] = [];
+      for (const [index, mark] of field.entries()) {
+        stampContext.setTransform(1, 0, 0, 1, 0, 0);
+        stampContext.clearRect(0, 0, stamp.width, stamp.height);
+        stampContext.setTransform(unit, 0, 0, unit, 0, 0);
+        stampContext.translate(mark.translateX, mark.translateY);
+        stampContext.scale(mark.scale, mark.scale);
+
+        for (const [slot, piece] of mark.pieces.entries()) {
+          stampContext.save();
+          if (piece.kind === 'text') {
+            /* Each run is placed by the width of the one before it, which is
+               how the artwork's own `<tspan>` sequence lays them out. */
+            stampContext.textBaseline = 'alphabetic';
+            let x = piece.x;
+            for (const run of piece.runs) {
+              stampContext.font = `${run.weight} ${piece.fontSize}px ${piece.fontFamily}`;
+              stampContext.letterSpacing = `${run.tracking}px`;
+              stampContext.fillText(run.text, x, piece.baseline);
+              x += stampContext.measureText(run.text).width;
+            }
+          } else {
+            stampContext.translate(piece.translateX ?? 0, piece.translateY ?? 0);
+            stampContext.scale(piece.scale ?? 1, piece.scale ?? 1);
+            for (const shape of shapes[index][slot]) {
+              stampContext.fill(shape);
+              if (piece.strokeWidth) {
+                stampContext.lineWidth = piece.strokeWidth;
+                stampContext.lineCap = 'round';
+                stampContext.lineJoin = 'round';
+                stampContext.stroke(shape);
+              }
+            }
+          }
+          stampContext.restore();
+        }
+
+        const { data } = stampContext.getImageData(0, 0, stamp.width, stamp.height);
+        for (let y = grid / 2; y < stamp.height; y += grid) {
+          for (let x = grid / 2; x < stamp.width; x += grid) {
+            const alpha = data[(Math.floor(y) * stamp.width + Math.floor(x)) * 4 + 3];
+            /* Half-covered cells are a mark's edge. Taking them keeps the
+               silhouette readable; taking them at full weight makes it furry. */
+            if (alpha < 96) continue;
+            const edge = alpha < 224;
+            const homeX = x + (Math.random() - 0.5) * grid * 0.55;
+            const homeY = y + (Math.random() - 0.5) * grid * 0.55;
+            built.push({
+              homeX,
+              homeY,
+              x: homeX,
+              y: homeY,
+              velocityX: 0,
+              velocityY: 0,
+              radius: grid * ((edge ? RIM : CORE) + Math.random() * JITTER),
+              rest: (edge ? 0.34 : 0.55) + Math.random() * 0.3,
+              accent: Math.random() < ACCENT_SHARE,
+            });
+          }
+        }
+      }
+
+      lights = built;
+      /* Only now. Hiding first would leave nothing to rasterise against. */
+      root.dataset.starlit = '';
+      return true;
+    };
+
+    const draw = () => {
+      const box = canvas.getBoundingClientRect();
+      context.clearRect(0, 0, box.width, box.height);
+      for (const light of lights) {
+        /* A light brightens and swells with how far it has been pushed, which is
+           what makes the field read as lit rather than as dots in flight. */
+        const shifted = Math.min(1, Math.hypot(light.x - light.homeX, light.y - light.homeY) / reach);
+        context.fillStyle = light.accent ? accent : ink;
+        context.globalAlpha = light.rest + (1 - light.rest) * shifted;
+        context.beginPath();
+        context.arc(light.x, light.y, light.radius * (1 + shifted), 0, Math.PI * 2);
+        context.fill();
+        if (shifted > 0.05) {
+          context.globalAlpha = shifted * 0.18;
+          context.beginPath();
+          context.arc(light.x, light.y, light.radius * (3 + shifted * 4), 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+      context.globalAlpha = 1;
+    };
+
+    /* Returns whether anything is still moving, which is what decides whether
+       the loop asks for another frame. */
+    const advance = (seconds: number) => {
+      let moving = false;
+      for (const light of lights) {
+        let forceX = (light.homeX - light.x) * SPRING - light.velocityX * DRAG;
+        let forceY = (light.homeY - light.y) * SPRING - light.velocityY * DRAG;
+
+        if (pointerNear) {
+          const awayX = light.x - pointerX;
+          const awayY = light.y - pointerY;
+          const distance = Math.hypot(awayX, awayY);
+          if (distance < reach) {
+            /*
+             * Squared falloff on the distance to the pointer, applied along the
+             * unit vector away from it. Skipping the unit vector — multiplying
+             * the raw offset instead — makes the push grow with distance inside
+             * the reach and collapse to nothing at the pointer itself, which is
+             * the shape of a dent rather than a hole. The floor under the
+             * divisor is for a pointer landing exactly on a light.
+             */
+            const near = 1 - distance / reach;
+            const push = (shove * near * near) / Math.max(distance, 1);
+            forceX += awayX * push;
+            forceY += awayY * push;
+          }
+        }
+
+        light.velocityX += forceX * seconds;
+        light.velocityY += forceY * seconds;
+        light.x += light.velocityX * seconds;
+        light.y += light.velocityY * seconds;
+
+        if (
+          Math.abs(light.x - light.homeX) > SETTLED ||
+          Math.abs(light.y - light.homeY) > SETTLED ||
+          Math.abs(light.velocityX) > SETTLED ||
+          Math.abs(light.velocityY) > SETTLED
+        ) {
+          moving = true;
+        } else {
+          /* Snapped rather than left a fraction of a pixel out, so the shape the
+             field settles into is the artwork, not a blur of it. */
+          light.x = light.homeX;
+          light.y = light.homeY;
+          light.velocityX = 0;
+          light.velocityY = 0;
+        }
+      }
+      return moving;
+    };
+
+    const tick = (now: number) => {
+      /* Clamped: a backgrounded tab hands back a gap of seconds, and a step that
+         size integrates into a field flung off the canvas. */
+      const seconds = Math.min((now - last) / 1000, 1 / 30);
+      last = now;
+      const moving = advance(seconds);
+      draw();
+      frame = moving || pointerNear ? requestAnimationFrame(tick) : 0;
+    };
+
+    const run = () => {
+      if (frame) return;
+      last = performance.now();
+      frame = requestAnimationFrame(tick);
+    };
+
+    const stop = () => {
+      if (!frame) return;
+      cancelAnimationFrame(frame);
+      frame = 0;
+    };
+
+    const rebuild = () => {
+      if (!layout()) return;
+      draw();
+    };
+
+    const scatter = () => {
+      for (const light of lights) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = scatterBy * (0.25 + Math.random() * 0.75);
+        light.x = light.homeX + Math.cos(angle) * distance;
+        light.y = light.homeY + Math.sin(angle) * distance;
+        light.velocityX = 0;
+        light.velocityY = 0;
+      }
+      run();
+    };
+
+    /*
+     * Under reduced motion the marks are simply the marks: no field, no loop, no
+     * pointer. That is the whole of this figure — it teaches nothing by
+     * stepping, so a reader who asked for less movement loses only movement.
+     */
+    const teardown = () => {
+      stop();
+      pointerNear = false;
+      const box = canvas.getBoundingClientRect();
+      context.clearRect(0, 0, box.width, box.height);
+      delete root.dataset.starlit;
+    };
+
+    if (!still.matches) {
+      /* The artwork stays on screen until there is a field to put in its place,
+         which is why nothing below runs before the family has arrived. */
+      facesReady().then(() => {
+        rebuild();
+
+        /*
+         * The field arriving throws itself apart and falls home, which is the
+         * physics the cursor already uses rather than a second entrance to keep
+         * true. It replays on re-entry: this band is the last thing before the
+         * footer, so a reader who scrolls back up and returns is ordinary.
+         */
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) scatter();
+              else stop();
+            }
+          },
+          { threshold: 0.35 },
+        );
+        observer.observe(root);
+
+        /*
+         * Tracked on the window rather than on the element, so the field starts
+         * reacting as the cursor approaches instead of only once it is over the
+         * marks. A reader should not have to aim at it to find the effect.
+         */
+        window.addEventListener(
+          'pointermove',
+          (event) => {
+            const box = root.getBoundingClientRect();
+            pointerX = event.clientX - box.x;
+            pointerY = event.clientY - box.y;
+            const near =
+              pointerX > -reach &&
+              pointerY > -reach &&
+              pointerX < box.width + reach &&
+              pointerY < box.height + reach;
+            if (!near && !pointerNear) return;
+            pointerNear = near;
+            run();
+          },
+          { passive: true },
+        );
+
+        const release = () => {
+          if (!pointerNear) return;
+          pointerNear = false;
+          run();
+        };
+        window.addEventListener('pointercancel', release);
+        window.addEventListener('blur', release);
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState !== 'hidden') return;
+          release();
+          stop();
+        });
+
+        /* A width change moves every home, and a field measured at the old size
+           would settle onto artwork that is no longer there. */
+        new ResizeObserver(rebuild).observe(root);
+
+        /*
+         * The switch in the header puts `dark` on <html>, so a reader can change
+         * the palette with this band on screen. Repainting is enough — the
+         * lights hold no colour of the page's own, and their homes did not move.
+         * Redrawing directly rather than through `run()` keeps a stopped loop
+         * stopped.
+         */
+        new MutationObserver(() => {
+          readColours();
+          if (!frame) draw();
+        }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+        still.addEventListener('change', (event) => {
+          if (!event.matches) return;
+          observer.disconnect();
+          teardown();
+        });
+      });
+    }
+  }
+</script>

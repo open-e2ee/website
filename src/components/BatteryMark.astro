@@ -33,12 +33,10 @@
  * gauge slot came out at 1.3px in an earlier draft and was a grey blur rather
  * than a detail.
  *
- * `evenodd` is what makes the bolt a hole rather than a second filled shape, so
- * the rule is written out rather than left to the default. The nub is a
- * separate element for the opposite reason — it has to *union* with the body,
- * and it deliberately overlaps it by a unit, because two shapes meeting exactly
- * on an edge show an antialiasing seam. Under one `evenodd` path that overlap
- * would punch a hole in the top of the battery.
+ * The coordinates are in `BatteryGlyph.astro`, because the deck row on the same
+ * page draws this mark too and one geometry cannot disagree with itself. What
+ * stays here is everything that is about the lead in particular: the crop, the
+ * size, and the colour.
  *
  * The viewBox is cropped to the ink — `6 2 12 20` and not `0 0 24 24`. On the
  * square grid this is drawn on, the battery is a tall narrow glyph with half
@@ -62,14 +60,11 @@
  * Size and alignment live in `global.css` with the other two, because the three
  * are set against each other rather than one at a time.
  */
+import BatteryGlyph from './BatteryGlyph.astro';
 ---
 
 <span class="battery-mark">
   <svg viewBox="6 2 12 20" aria-hidden="true" focusable="false" fill="currentColor">
-    <path
-      fill-rule="evenodd"
-      d="M8 5h8a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z M13.6 7.4 8.9 14.1h2.6L10.4 19.6l4.7-6.9h-2.6z"
-    ></path>
-    <rect x="9.75" y="2" width="4.5" height="4" rx="1.25"></rect>
+    <BatteryGlyph />
   </svg>
 </span>

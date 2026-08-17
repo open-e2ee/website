@@ -1,0 +1,96 @@
+---
+/*
+ * The icon that labels one row of the homepage deck.
+ *
+ * Six are Octicons 19.32.0 (MIT, GitHub Inc.), the same family the header
+ * chrome draws from, at the 24-unit master rather than the 16 — these sit at
+ * 2rem beside a heading, and the 16 masters are drawn for 16 and thicken
+ * visibly when scaled. The licence text ships at `third-party/Octicons-MIT.txt`
+ * and `THIRD_PARTY_NOTICES.md` accounts for every name below. A test fails the
+ * build if one is missing from that file.
+ *
+ * The seventh is `battery`, which is this project's own drawing and comes from
+ * `BatteryGlyph.astro` rather than from the table here. The row it labels says
+ * "Batteries included", the lead at the top of the same page ends on the same
+ * three words, and one mark serving both is the point: a reader meets the claim
+ * twice and the second time it is already familiar. It draws in the column's
+ * muted colour and not in the lead's green, because a single coloured icon in a
+ * grey column reads as that row being more important than its neighbours, which
+ * is a claim nobody meant to make.
+ *
+ * The paths live here rather than in `@open-e2ee/design/icons`, which is where
+ * `Icon.astro` correctly says an icon set belongs. These label one deck on one
+ * page and have not earned a place in a package two products pin; if a second
+ * surface needs them, they move there and this file imports them like the
+ * chrome does.
+ *
+ * These are labels, not diagrams. DESIGN.md's material law — open is outlined,
+ * opaque is filled — governs what a shape means inside a diagram, and a lock
+ * beside a heading that already says "post-quantum" is not making a second,
+ * quieter claim about encryption. The drawings that do carry meaning are in
+ * `src/components/diagrams/`, at the scale that vocabulary needs.
+ *
+ * Every icon is aria-hidden, because the heading beside it is the row's name.
+ */
+import BatteryGlyph from './BatteryGlyph.astro';
+
+export type DeckIconName =
+  | 'devices'
+  | 'broadcast'
+  | 'server'
+  | 'battery'
+  | 'search'
+  | 'law'
+  | 'lock';
+
+interface Props {
+  name: DeckIconName;
+}
+
+const { name } = Astro.props;
+
+const iconPaths: Record<Exclude<DeckIconName, 'battery'>, string[]> = {
+  'devices': [
+    "M1 3.75C1 2.784 1.784 2 2.75 2h18.5c.966 0 1.75.784 1.75 1.75v4a.75.75 0 0 1-1.5 0v-4a.25.25 0 0 0-.25-.25H2.75a.25.25 0 0 0-.25.25v11.5c0 .138.112.25.25.25h9a.75.75 0 0 1 0 1.5h-1.287c-.126 1.266-.564 2.445-1.223 3.5h2.51a.75.75 0 0 1 0 1.5h-4a.75.75 0 0 1-.565-1.243c.964-1.105 1.598-2.382 1.769-3.757H2.75A1.75 1.75 0 0 1 1 15.25V3.75Z",
+    "M14 11.75c0-.967.783-1.75 1.75-1.75h5.5c.966 0 1.75.783 1.75 1.75v8.5A1.75 1.75 0 0 1 21.25 22h-5.5A1.75 1.75 0 0 1 14 20.25Zm1.75-.25a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h5.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25Z",
+  ],
+  'broadcast': [
+    "M20.485 2.515a.75.75 0 0 0-1.06 1.06A10.465 10.465 0 0 1 22.5 11c0 2.9-1.174 5.523-3.075 7.424a.75.75 0 0 0 1.06 1.061A11.965 11.965 0 0 0 24 11c0-3.314-1.344-6.315-3.515-8.485Zm-15.91 1.06a.75.75 0 0 0-1.06-1.06A11.965 11.965 0 0 0 0 11c0 3.313 1.344 6.314 3.515 8.485a.75.75 0 0 0 1.06-1.06A10.465 10.465 0 0 1 1.5 11c0-2.9 1.174-5.524 3.075-7.425ZM8.11 7.11a.75.75 0 0 0-1.06-1.06A6.98 6.98 0 0 0 5 11a6.98 6.98 0 0 0 2.05 4.95.75.75 0 0 0 1.06-1.061 5.48 5.48 0 0 1-1.61-3.89 5.48 5.48 0 0 1 1.61-3.888Zm8.84-1.06a.75.75 0 1 0-1.06 1.06A5.48 5.48 0 0 1 17.5 11a5.48 5.48 0 0 1-1.61 3.889.75.75 0 1 0 1.06 1.06A6.98 6.98 0 0 0 19 11a6.98 6.98 0 0 0-2.05-4.949ZM14 11a2 2 0 0 1-1.25 1.855v8.395a.75.75 0 0 1-1.5 0v-8.395A2 2 0 1 1 14 11Z",
+  ],
+  'server': [
+    "M10.75 6.5a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5ZM6 7.25a.75.75 0 0 1 .75-.75h.5a.75.75 0 0 1 0 1.5h-.5A.75.75 0 0 1 6 7.25Zm4 9a.75.75 0 0 1 .75-.75h6.5a.75.75 0 0 1 0 1.5h-6.5a.75.75 0 0 1-.75-.75Zm-3.25-.75a.75.75 0 0 0 0 1.5h.5a.75.75 0 0 0 0-1.5h-.5Z",
+    "M3.25 2h17.5c.966 0 1.75.784 1.75 1.75v7c0 .372-.116.716-.314 1 .198.284.314.628.314 1v7a1.75 1.75 0 0 1-1.75 1.75H3.25a1.75 1.75 0 0 1-1.75-1.75v-7c0-.358.109-.707.314-1a1.741 1.741 0 0 1-.314-1v-7C1.5 2.784 2.284 2 3.25 2Zm0 10.5a.25.25 0 0 0-.25.25v7c0 .138.112.25.25.25h17.5a.25.25 0 0 0 .25-.25v-7a.25.25 0 0 0-.25-.25Zm0-1.5h17.5a.25.25 0 0 0 .25-.25v-7a.25.25 0 0 0-.25-.25H3.25a.25.25 0 0 0-.25.25v7c0 .138.112.25.25.25Z",
+  ],
+  'search': [
+    "M10.25 2a8.25 8.25 0 0 1 6.34 13.53l5.69 5.69a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215l-5.69-5.69A8.25 8.25 0 1 1 10.25 2ZM3.5 10.25a6.75 6.75 0 1 0 13.5 0 6.75 6.75 0 0 0-13.5 0Z",
+  ],
+  'law': [
+    "M12.75 2.75V4.5h1.975c.351 0 .694.106.984.303l1.697 1.154c.041.028.09.043.14.043h4.102a.75.75 0 0 1 0 1.5H20.07l3.366 7.68a.749.749 0 0 1-.23.896c-.1.074-.203.143-.31.206a6.296 6.296 0 0 1-.79.399 7.349 7.349 0 0 1-2.856.569 7.343 7.343 0 0 1-2.855-.568 6.205 6.205 0 0 1-.79-.4 3.205 3.205 0 0 1-.307-.202l-.005-.004a.749.749 0 0 1-.23-.896l3.368-7.68h-.886c-.351 0-.694-.106-.984-.303l-1.697-1.154a.246.246 0 0 0-.14-.043H12.75v14.5h4.487a.75.75 0 0 1 0 1.5H6.763a.75.75 0 0 1 0-1.5h4.487V6H9.275a.249.249 0 0 0-.14.043L7.439 7.197c-.29.197-.633.303-.984.303h-.886l3.368 7.68a.75.75 0 0 1-.209.878c-.08.065-.16.126-.31.223a6.077 6.077 0 0 1-.792.433 6.924 6.924 0 0 1-2.876.62 6.913 6.913 0 0 1-2.876-.62 6.077 6.077 0 0 1-.792-.433 3.483 3.483 0 0 1-.309-.221.762.762 0 0 1-.21-.88L3.93 7.5H2.353a.75.75 0 0 1 0-1.5h4.102c.05 0 .099-.015.141-.043l1.695-1.154c.29-.198.634-.303.985-.303h1.974V2.75a.75.75 0 0 1 1.5 0ZM2.193 15.198a5.414 5.414 0 0 0 2.557.635 5.414 5.414 0 0 0 2.557-.635L4.75 9.368Zm14.51-.024c.082.04.174.083.275.126.53.223 1.305.45 2.272.45a5.847 5.847 0 0 0 2.547-.576L19.25 9.367Z",
+  ],
+  'lock': [
+    "M6 9V7.25C6 3.845 8.503 1 12 1s6 2.845 6 6.25V9h.5a2.5 2.5 0 0 1 2.5 2.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 19.5v-8A2.5 2.5 0 0 1 5.5 9Zm-1.5 2.5v8a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-13a1 1 0 0 0-1 1Zm3-4.25V9h9V7.25c0-2.67-1.922-4.75-4.5-4.75-2.578 0-4.5 2.08-4.5 4.75Z",
+  ],
+};
+
+/* An unknown name would otherwise render an empty <svg>: a row whose label
+   column is a hole, which is the thing the icon was added to fill. */
+const isBattery = name === 'battery';
+const paths = isBattery ? [] : iconPaths[name];
+if (!isBattery && !paths) {
+  throw new Error(`DeckIcon "${name}" is not drawn in DeckIcon.astro`);
+}
+---
+
+{/* One viewBox for all seven, including the battery, which is drawn on the same
+    24-unit grid but paints a tall narrow glyph inside it. `xMidYMid meet` is
+    the default, so it centres at its own proportions instead of stretching to
+    the square, and it lines up with the six that fill the box. */}
+<svg
+  class="deck-icon"
+  viewBox="0 0 24 24"
+  fill="currentColor"
+  aria-hidden="true"
+  focusable="false"
+>
+  {isBattery ? <BatteryGlyph /> : paths.map((d) => <path d={d} />)}
+</svg>

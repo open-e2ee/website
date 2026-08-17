@@ -13,25 +13,19 @@
  * clause is the whole constraint, and it is stricter than it sounds — see
  * "Why the program is not simply the recording" below.
  *
- * Provenance is still the rule, but the rule had to change with the shape, and
- * saying so precisely matters more than sounding strict. The old claim was
- * "every line is lifted verbatim". That is no longer true and must not be
- * repeated: this is a usage example, not an excerpt. Five of its thirteen code
- * lines differ from the recording, and all five differ for one
- * reason — the recording drives both sides of a conversation in one process,
- * so it has an `alice` and a `bob` where an application has one client. Four
- * are that rename; the fifth is the comment beside it, which said "only on
- * Bob's device" and now says "only on this device", because in the reader's
- * application the device is theirs.
+ * Provenance is the rule, and the rule is the strict one again: every code
+ * line here is lifted verbatim from the recording. It was not, for a while.
+ * The panel used to show one client called `signal`, which cost four renamed
+ * lines and a reworded comment, and `tests/site-content.test.mjs` had to
+ * license exactly that rename to keep checking anything. Showing both devices
+ * gave the licence back — `alice` and `bob` are the recording's own names, so
+ * the test undoes nothing before it looks a line up.
  *
- * What is still exactly true, and is what `tests/site-content.test.mjs`
- * checks: every import line is verbatim from the capture; the relay
- * construction, the identity, the adapters line and the message string are
- * verbatim; every remaining line matches the recording under that one rename;
- * and every method called on the client is one the recording calls. Nothing
- * about the API's shape was invented for the page, and the build audit
- * independently re-checks every symbol and subpath against the installed
- * package's own types.
+ * What that check means: every import line, the relay construction, both
+ * identities, both adapters lines, the hook, the subscription and the message
+ * string appear in the capture as written. Nothing about the API's shape was
+ * invented for the page, and the build audit independently re-checks every
+ * symbol and subpath against the installed package's own types.
  *
  * That is a statement about the default combination, which is the one the
  * capture was recorded with. The other nine swap an adapter, so a capture
@@ -60,8 +54,25 @@ const PACKAGE = capture.packageName;
  * in the reader's head and fail on their machine — the exact failure this site
  * spends its whole budget avoiding. The program below is the subset that is
  * true of any relay: construct, subscribe, send. It is the shape the SDK's own
- * `convexRelay` docstring uses, and it is what an application actually writes,
- * because an application owns one side of the conversation rather than both.
+ * `convexRelay` docstring uses.
+ *
+ * It shows both sides of the conversation, which an earlier draft argued
+ * against — an application owns one client, so the panel showed one. That
+ * reasoning answered the wrong question. A reader at the top of this page is
+ * not yet writing their application; they are working out what an encrypted
+ * conversation costs them, and one client sending to a string called "bob"
+ * leaves the other half of that to imagination. Two clients and one relay is
+ * the whole shape in nine lines.
+ *
+ * The two blocks are labelled as devices, and the label is doing real work
+ * rather than decorating. With the in-memory store the listing runs exactly as
+ * written, both devices in one process, which is what the recording did. With
+ * the four device stores it does not: `indexedDbStore()` takes no arguments
+ * and opens one fixed database name, and the Node, Expo and React Native
+ * stores are the same kind of thing, so two clients in one runtime would share
+ * one device's keys. That is why `ALICE_COMMENT` says each device runs its own
+ * half in an application. The lines stay true of any store — each is a real
+ * call on a real device — and the disclosure travels with the paste.
  *
  * `syncToServer()` is not here, and its absence is deliberate. The recording
  * calls it twice, once per client, so an earlier draft of this snippet carried
@@ -72,11 +83,14 @@ const PACKAGE = capture.packageName;
  * The fact it was carrying — that your public prekeys go to the relay — is a
  * claim about the model, and the page makes it in prose where it belongs.
  *
- * It is a usage example rather than a self-contained script, and the
- * difference is worth being exact about: `signal.send("bob", …)` presumes a
- * `bob` who exists, which in an application he does and in a bare `node
- * file.js` he does not. The round trip is still on the page — /product carries
- * the whole 29-line recording, and the carrier panel below the fold shows the
+ * `await alice.send("bob", …)` needs a `bob` with published prekeys, and the
+ * block above it is now what publishes them: `create()` syncs to the relay on
+ * its own when one is configured, which is the same fact `syncToServer()` was
+ * dropped for. So the send has its recipient in the listing rather than in the
+ * reader's assumptions.
+ *
+ * The round trip is still on the page in fuller form — /product carries the
+ * whole 29-line recording, and the carrier panel below the fold shows the
  * ciphertext that running it produced. The hero shows the API; the capture
  * shows the result.
  */
@@ -209,17 +223,23 @@ export const relayOptions = [
 /*
  * The comments the page writes, as opposed to the code the recording proves.
  *
- * These are the one part of the panel that is not traceable to the capture, and
+ * These are the part of the panel that is not traceable to the capture, and
  * naming them here rather than inlining them in `buildSnippet` is what lets
- * `tests/site-content.test.mjs` hold the line between the two: every code line
- * must still be in the recording under the rename, and every comment-only line
- * must be one of these. An editor who wants to say something new in the panel
- * has to say it here, where the test will notice.
+ * `tests/site-content.test.mjs` hold the line between the two: the code half
+ * of every line must be in the recording, and every comment on it must be one
+ * of these. An editor who wants to say something new in the panel has to say
+ * it here, where the test will notice.
+ *
+ * `PLAINTEXT_COMMENT` is the exception and is declared anyway. It comes from
+ * the recording rather than from the page, so the capture would prove it — but
+ * it renders as a comment, and a comment the declared list does not contain is
+ * a comment the absolutes guard does not read. The list is what the panel
+ * says, not what the panel invented.
  *
  * They exist because the panel was answering "what is the API" and not "what is
  * happening", and the second question is the one a reader arrives with. Each
- * one names the beat of the program it sits above: what the relay is, pass
- * adapters as values, receive, send.
+ * one names the beat of the program it sits on: what the relay is, whose
+ * device this is, where the keys stay, when the hook fires, what is encrypted.
  *
  * One of them also carries what used to sit under the panel in a
  * `<p class="code-note">` — that `storage`, in the bare React Native variant,
@@ -247,35 +267,74 @@ export const relayOptions = [
    being operable. The first question a name like `relay` raises is what it
    does with a message, so that is what the line says now.
 
-   The mailbox is the frame: devices post envelopes to it and collect the ones
-   left for them. `envelope` is the SDK's own noun for what travels —
-   `relay.send({ ciphertext, … })` and `relay.subscribe(userId, deviceId, cb)`
-   are literally post and collect — so the metaphor is the API's vocabulary
-   rather than a picture laid over it.
+   Post and collect is the frame, and `envelope` is the SDK's own noun for what
+   travels: `relay.send({ ciphertext, … })` and `relay.subscribe(userId,
+   deviceId, cb)` are literally those two verbs, so the picture is the API's
+   vocabulary rather than one laid over it.
 
-   "Encrypted" and not "sealed", and this was the draft's mistake before a test
-   caught it. Sealed sender is a real feature of this SDK, named on this page,
-   and a round of fresh readers stopped on a loose "sealed" in the lead asking
-   whether it meant that one — so the homepage may use the word only in the
-   phrase "sealed sender", and a test on the built HTML holds it. The reasoning
-   that produced the loose use here was that "sealed" describes the contents
-   rather than the sender, which is true and did not help: a reader meets the
-   word before the distinction. "Encrypted envelopes" is the page's own phrase
-   for the same thing, three paragraphs below this panel.
+   It rides on the construction, which took the sentence down from 84
+   characters to 53 and decided what came off. "The relay is the mailbox" was a
+   metaphor spent on a noun the next word defines anyway. "Encrypted" went with
+   it, and is not gone from the panel: the send says what is encrypted, where,
+   and when, which is the stronger place for the claim.
+
+   Losing that word was also a hazard removed. Sealed sender is a real feature
+   of this SDK, named on this page, and a round of fresh readers stopped on a
+   loose "sealed" in the lead asking whether it meant that one — so the homepage
+   may use the word only in the phrase "sealed sender", and a test on the built
+   HTML holds it. This line reached for "sealed" first for exactly the reason
+   that fails: it describes the contents rather than the sender, which is true
+   and does not help a reader who meets the word before the distinction.
 
    True of both options, which is the standing constraint on a fixed comment:
-   `inMemoryRelay` is a mailbox in this process and `convexRelay` is a hosted
-   one. */
-const RELAY_COMMENT =
-  '// The relay is the mailbox: devices post encrypted envelopes and collect their own.';
-const ADAPTERS_COMMENT = '// Adapters are values you pass. Your keys stay in your store.';
-const RECEIVE_COMMENT = '// Fires on this device, after the SDK decrypts.';
-const SEND_COMMENT = '// Encrypted on this device before the relay carries it.';
+   devices post to `inMemoryRelay` in this process and to `convexRelay` over the
+   network, and collect from either the same way.
+
+   Exported, alone among the six, because it is the one whose place in the
+   listing depends on the option chosen. A test that only knew the comment
+   existed could not tell the fallback below from the comment being dropped. */
+export const relayComment = '// Devices post and collect envelopes from the relay.';
+/*
+ * The ones that ride on a line of code, and the width that shapes them.
+ *
+ * Every comment here but the send's is a trailing one, which is worth six
+ * lines of panel — the program is 22 lines and was 28. The cost is that a
+ * trailing comment is spent from a width budget rather than given a line, and
+ * the budget is measurable: 108 characters at 1280, 97 at 1024. Each of these
+ * is written to the room left after the longest code it can land on, which is
+ * React Native's 67-character adapters line.
+ *
+ * Nothing overruns 1280. Below it two do, and both are known: React Native's
+ * adapters line is 101 characters with its comment and scrolls under a 1120px
+ * viewport, and Convex's construction takes `PANEL_COLUMNS` off the trailing
+ * position entirely, so its comment is a line rather than a scrollbar. All
+ * three figures are measured in a browser, not estimated from a font size.
+ *
+ * So they say one thing each, and the thing they say is the one the code does
+ * not. `adapters:` shows that an adapter is a value you pass, so its comment
+ * spends the room on where the keys go instead. `bob.registerHook` names the
+ * device, so its comment spends the room on when the hook fires.
+ *
+ * Bob's label carries the disclosure rather than Alice's, and that is a change
+ * of position as well as of length: two clients in one listing raise the
+ * question at the second one, not the first. With a device store the second
+ * block belongs on a second device — `indexedDbStore()` takes no argument and
+ * opens one fixed database name — and the label is where a reader is told so.
+ */
+const ADAPTERS_COMMENT = '// Your keys stay in your store.';
+const ALICE_COMMENT = "// Alice's device.";
+const BOB_COMMENT = "// Bob's device. In an app, each runs its own.";
+const RECEIVE_COMMENT = '// Fires after the SDK decrypts.';
+const PLAINTEXT_COMMENT = "// plaintext, only on Bob's device";
+const SEND_COMMENT = "// Encrypted on Alice's device before the relay carries it.";
 
 export const snippetComments = [
-  RELAY_COMMENT,
+  relayComment,
+  ALICE_COMMENT,
   ADAPTERS_COMMENT,
+  BOB_COMMENT,
   RECEIVE_COMMENT,
+  PLAINTEXT_COMMENT,
   SEND_COMMENT,
   ...[...storageOptions, ...relayOptions]
     .map((option) => option.comment)
@@ -289,13 +348,47 @@ export const defaultVariant = { storage: 'memory', relay: 'memory' };
 const specifier = (subpath) => `"${PACKAGE}/${subpath}"`;
 
 /*
+ * What fits on one line of the panel, measured rather than guessed.
+ *
+ * The pre is 1130px of 18px monospace at 1280 and scales down with the page,
+ * so this is the widest viewport's budget: 108 characters render inside it and
+ * 109 overrun it by 12px. Every width below 1280 is stricter — see the note
+ * over the comments themselves.
+ */
+const PANEL_COLUMNS = 108;
+
+/*
+ * A block of code with `comment` on its last line, where that line has room.
+ *
+ * Where it does not, the comment goes on its own line directly above the line
+ * it describes, which costs a line of panel and is the cheaper of the two
+ * losses: a trailing comment that does not fit puts a horizontal scrollbar
+ * under the program for as long as it ships, at every viewport width, because
+ * the panel has a maximum width and this exceeds it there too.
+ *
+ * Only Convex takes that branch today, and only because its construction line
+ * is the longest in the file at 54 characters. Above it rather than below is
+ * deliberate: `const convex = …` sits on the line before, and a comment about
+ * what a relay does would be answering for its neighbour.
+ */
+const withTrailingComment = (code, comment) => {
+  const lines = code.split('\n');
+  const last = lines[lines.length - 1];
+  if (`${last} ${comment}`.length <= PANEL_COLUMNS) {
+    lines[lines.length - 1] = `${last} ${comment}`;
+    return lines;
+  }
+  return [...lines.slice(0, -1), comment, last];
+};
+
+/*
  * One program, assembled from the two choices.
  *
  * The body is fixed. What moves is the import an adapter needs and the
- * expression that constructs it — nothing below `createSignalProtocolClient`
- * changes for any of the ten — which is exactly the point the selector exists
- * to make: an adapter is a value your application passes, not a fork in your
- * application's code.
+ * expression that constructs it — the conversation itself, from the hook to
+ * the send, is the same nine lines for all ten — which is exactly the point
+ * the selector exists to make: an adapter is a value your application passes,
+ * not a fork in your application's code.
  */
 export const buildSnippet = (storageId, relayId) => {
   const store = storageOptions.find((option) => option.id === storageId);
@@ -315,31 +408,48 @@ export const buildSnippet = (storageId, relayId) => {
     ...(store.imports ?? []),
     ...(relay.imports ?? []),
     '',
-    RELAY_COMMENT,
     ...(relay.comment ? [`// ${relay.comment}`] : []),
-    relay.setup,
+    /* The relay's comment rides on the last line of its construction, not the
+       first. Convex builds a client before it builds a relay, and a comment
+       about what a relay does, sitting on the line that makes a Convex client,
+       would be describing its neighbour. */
+    ...withTrailingComment(relay.setup, relayComment),
     '',
-    'const signal = await createSignalProtocolClient({',
+    `const alice = await createSignalProtocolClient({ ${ALICE_COMMENT}`,
     '  identity: { userId: "alice" },',
-    `  ${ADAPTERS_COMMENT}`,
     ...(store.comment ? [`  // ${store.comment}`] : []),
+    `  adapters: { storage: ${store.expr}, relay }, ${ADAPTERS_COMMENT}`,
+    '});',
+    /* Bob's block is the same four lines with a different identity, and it
+       deliberately carries neither the adapters note nor the store's own
+       disclosure. Both are said one block up, about the same two values; a
+       reader who needs the React Native note has already read it above the
+       line that first uses it, which is the order the test checks.
+
+       No blank line between the two, either. They are one beat — two devices
+       — and a gap made them read as two unrelated setups. */
+    `const bob = await createSignalProtocolClient({ ${BOB_COMMENT}`,
+    '  identity: { userId: "bob" },',
     `  adapters: { storage: ${store.expr}, relay },`,
     '});',
     '',
-    RECEIVE_COMMENT,
     /* Receive first, then send. That is the order the SDK's own docstring uses
        (`client.d.ts`, the ServicesProvider example), and it is the order that
        is actually correct: `startRelaySubscription` is called automatically by
        `create()` only when a hook was already configured, so a hook registered
        afterwards needs the subscription started by hand. Sending last also
        puts the payoff on the last line. */
-    'signal.registerHook("onMessageDecrypted", async (message) => {',
-    '  console.log(message.content); // plaintext, only on this device',
+    `bob.registerHook("onMessageDecrypted", async (message) => { ${RECEIVE_COMMENT}`,
+    `  console.log(message.content); ${PLAINTEXT_COMMENT}`,
     '});',
-    'signal.startRelaySubscription();',
+    'bob.startRelaySubscription();',
     '',
+    /* The send keeps its comment on a line of its own. The call is 74
+       characters with the message in it, and the claim beside it is the one
+       that has to survive at full length: what is encrypted, where, and when
+       relative to the relay. */
     SEND_COMMENT,
-    'await signal.send("bob", "Ship it Thursday. The staging key rotates at 09:00 UTC.");',
+    `await alice.send("bob", "${capture.plaintext}");`,
   ].join('\n');
 };
 

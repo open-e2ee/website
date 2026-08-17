@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import externalLinks from './scripts/external-links.mjs';
 import { codeThemes } from './src/lib/code-theme.mjs';
 
@@ -14,6 +15,12 @@ export default defineConfig({
       // script must be emitted as an external file, never inlined into HTML.
       assetsInlineLimit: 0,
     },
+    /* DEV_SSL=1 serves `astro dev` over https with a self-signed cert, for
+       testing from other devices on the LAN: a `http://192.168.x.x` origin is
+       not a secure context, so `crypto.subtle` does not exist there and the
+       SDK cannot encrypt. Opt-in because the cert is untrusted (one browser
+       warning per device) and plain-http localhost covers everything else. */
+    plugins: process.env.DEV_SSL ? [basicSsl()] : [],
   },
   /* externalLinks runs last: it rewrites emitted HTML, so it has to see the
      output every other integration has finished producing. */

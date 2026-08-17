@@ -42,6 +42,12 @@ export function summarise(event: TraceEvent): string {
     case 'idle':
       return 'Nothing recorded yet.';
 
+    case 'registered': {
+      const detail = event.detail as { userId?: string } | undefined;
+      const who = detail?.userId ?? event.actor;
+      return `Relay registered ${who} — the account now exists on the relay, able to receive (${ms(measures.registerMs ?? 0)}).`;
+    }
+
     /* One line per progress report the SDK raised, so the log reads as the
        count climbing rather than as a single line stating the answer. The
        durations arrive on the last of them and are printed where they arrive:
@@ -54,7 +60,7 @@ export function summarise(event: TraceEvent): string {
       const total = detail?.total ?? 0;
       const timing =
         typeof measures.keygenMs === 'number'
-          ? ` (${ms(measures.keygenMs)}, of which ${ms(measures.kyberMs ?? 0)} on Kyber)`
+          ? ` (${ms(measures.keygenMs)}, of which ${ms(measures.kyberMs ?? 0)} on the post-quantum keys)`
           : '';
       return `Generated ${made} of ${total} keypairs${timing}.`;
     }
@@ -97,7 +103,13 @@ export function summarise(event: TraceEvent): string {
         typeof selection?.usedTripleRatchet === 'boolean'
           ? `, ${selection.usedTripleRatchet ? 'triple' : 'double'} ratchet`
           : '';
-      return `Session established with ${event.to ?? 'the other device'} — ${agreement}${ratchet} (${ms(measures.establishMs ?? 0)}).`;
+      /* Names whose prekeys paid for the session: `run.ts` appends this event
+         only after the initiator has taken the responder's bundle off the
+         relay, so the phrase is true by construction — and it is the answer to
+         the reader who watches their own shelf and wonders why it never moves.
+         Only the side that is written to first spends. */
+      const peer = event.to ?? 'the other device';
+      return `Session established with ${peer} — ${agreement}${ratchet}, paid for from ${peer}'s prekeys on the relay (${ms(measures.establishMs ?? 0)}).`;
     }
 
     case 'encrypted': {

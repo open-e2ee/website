@@ -21,6 +21,7 @@ import {
   defaultVariant,
   heroCode,
   installCommand,
+  relayComment,
   relayOptions,
   snippetComments,
   snippetVariants,
@@ -103,34 +104,36 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
 });
 
 test('makes the same ten-minute promise everywhere it makes one', async () => {
-  const [index, product, learn, footer] = await Promise.all([
-    flat('../src/pages/index.astro'),
+  const [product, learn, footer] = await Promise.all([
     flat('../src/pages/product.astro'),
     flat('../src/pages/learn.astro'),
     flat('../src/components/Footer.astro'),
   ]);
 
-  for (const page of [index, product, learn]) {
+  for (const page of [product, learn]) {
     assert.match(page, /ten minutes · two clients · no account/);
   }
   assert.match(learn, /takes about ten minutes/i);
   assert.match(footer, /Ten-minute quickstart/);
 
-  /* The homepage makes the promise once, and never in the hero. The promise
-   * argues for spending the ten minutes, so it belongs under the button a
-   * reader reaches after the evidence. Under the first button it is a third
-   * line of small grey type between the offer and the proof. The test asserts
-   * the count because the failure is additive. A sublabel is the obvious thing
-   * to paste onto a new call to action. */
+  /* The homepage makes it nowhere. The promise argues for spending the ten
+   * minutes, so it belongs under a button a reader reaches after the evidence;
+   * the landing page's own closing ask was cut by the founder, and it now ends
+   * on the licence with no second offer, so the reader who has decided meets
+   * the promise on /product or /learn. Under the hero button it would be a
+   * third line of small grey type between the offer and the proof.
+   *
+   * Read off the built page and not the source: `flat()` keeps comments, and
+   * the comment over the hero actions quotes this exact sublabel in order to
+   * rule it out there. A source-side negative would fail on its own tombstone.
+   * The count is asserted because the failure is additive — a sublabel is the
+   * obvious thing to paste onto a new call to action. */
   const dist = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
   if (!dist) return skipUnbuilt('dist/index.html');
-  assert.equal((dist.match(/ten minutes · two clients · no account/g) ?? []).length, 1);
-  const heroStart = dist.indexOf('<section class="hero">');
-  assert.notEqual(heroStart, -1, 'the hero section is not on the built page');
-  const hero = dist.slice(heroStart, dist.indexOf('</section>', heroStart));
-  assert.doesNotMatch(hero, /cta-sublabel/);
+  assert.equal((dist.match(/ten minutes · two clients · no account/g) ?? []).length, 0);
+  assert.doesNotMatch(dist, /cta-sublabel/);
 });
 
 test('states maturity as the version plus the before-1.0 caveat, with no stage adjective', async () => {
@@ -178,53 +181,88 @@ test('answers the runtime question on the homepage', async () => {
   }
 });
 
-test('keeps the hero snippet traceable to the recording, rename apart', () => {
+/**
+ * Cut one rendered snippet line into the code the recording proves and the
+ * comment the module declares.
+ *
+ * The scan is quote-aware rather than an `indexOf('//')`, because a `//` is
+ * only a comment outside a string and the panel is a file full of module
+ * specifiers. None of them contains one today — `"@open-e2ee/…"` is a bare
+ * path — but the day a variant needs a URL, an index-of split would quietly
+ * feed half a string literal to the capture lookup and blame the editor for a
+ * line they wrote correctly.
+ *
+ * Returns the code trimmed of the space that separated the two, so the lookup
+ * sees the line as the recording has it, and the comment trimmed of nothing
+ * else, so the declared-comment check compares what the reader sees.
+ */
+function splitComment(line) {
+  let quote = null;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (quote) {
+      if (char === '\\') index += 1;
+      else if (char === quote) quote = null;
+    } else if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+    } else if (char === '/' && line[index + 1] === '/') {
+      return { code: line.slice(0, index).trimEnd(), comment: line.slice(index).trim() };
+    }
+  }
+  return { code: line.trimEnd(), comment: null };
+}
+
+test('keeps the hero snippet traceable to the recording', () => {
   /* The carrier panel's rule applies to the snippet beside it: nothing on
    * this page is drawn, mocked up, or hand-typed. A hero example written to
    * read well is a claim about the API surface, and it is the one claim this
    * brand cannot afford to get wrong.
    *
-   * The rule used to be "every line appears in the capture", which the
-   * selector broke honestly: the recording drives an `alice` and a `bob` in
-   * one process, and an application has one client. So the test now allows
-   * exactly one transformation — that rename — and nothing else. Undo the
-   * rename and every line must be back in the recording verbatim. An editor
-   * who pastes a "small fix" into the rendered string still fails here,
-   * because a fix is not a rename. */
-  /* Comment-only lines are the page's own voice and are excluded here, then
-   * held to their own rule in the test below. Splitting the two is what keeps
-   * this assertion meaningful: the recording proves the API, and a comment
-   * makes no API claim, so requiring it to appear in a capture of a program
-   * that has no comments would only mean the panel could not have any.
+   * The rule is "every code line appears in the capture", with no licensed
+   * edit. It was weaker for a while: the panel showed one client called
+   * `signal` where the recording drives an `alice` and a `bob`, so this test
+   * had to undo that rename before it could look a line up, and a `.replace()`
+   * chain sitting in front of an assertion is a hole the next editor widens.
+   * Showing both devices closed it. An editor who pastes a "small fix" into
+   * the rendered string fails here, and there is nothing left to fix it
+   * through. */
+  /* Comments are the page's own voice and are cut off each line before it is
+   * looked up, then held to their own rule in the test below. Splitting the
+   * two is what keeps this assertion meaningful: the recording proves the API,
+   * and a comment makes no API claim, so requiring it to appear in a capture
+   * of a program that has almost no comments would only mean the panel could
+   * not have any.
    *
-   * Trailing comments are not excluded and must not be. `// plaintext, only on
-   * this device` rides on a code line, is in the recording as "only on Bob's
-   * device", and the rename above is what carries it — so it is still proved
-   * by the capture like the code it annotates. */
+   * The split is by position rather than by line, which it was not before the
+   * panel put five of its six comments on the end of a line of code to save
+   * the reader five lines of scrolling. `splitComment` is what makes that
+   * cheap: the code half of every line is still matched whole, so a "small
+   * fix" pasted into the program fails here whether or not a comment follows
+   * it on the same line. */
   const all = heroCode.split('\n').filter((line) => line.trim());
-  const rendered = all.filter((line) => !line.trim().startsWith('//'));
-  assert.ok(rendered.length > 0);
-  assert.ok(all.length > rendered.length, 'the panel lost the comments that explain it');
+  const split = all.map(splitComment);
+  assert.ok(split.some((line) => line.code));
+  assert.ok(
+    split.filter((line) => line.comment).length >= 5,
+    'the panel lost the comments that explain it',
+  );
 
-  const unrename = (line) =>
-    line
-      .replace(/\bconst signal\b/, 'const alice')
-      .replace(/\bawait signal\.send\b/, 'await alice.send')
-      .replace(/\bsignal\./g, 'bob.')
-      .replace('only on this device', "only on Bob's device");
-
-  for (const line of rendered) {
+  for (const { code } of split) {
+    if (!code) continue;
     assert.ok(
-      capture.quickstartCode.includes(unrename(line)),
-      `hero line is not in the recorded capture, even after the rename: ${line}`,
+      capture.quickstartCode.includes(code),
+      `hero line is not in the recorded capture: ${code}`,
     );
   }
 
-  /* The rename is the only licensed edit, so `alice` and `bob` must not
-   * survive as identifiers in the example. The message string still names
-   * `"bob"` as a recipient, which is data rather than a client. */
-  assert.doesNotMatch(heroCode, /\b(?:alice|bob)\s*\./);
-  assert.doesNotMatch(heroCode, /\bconst (?:alice|bob)\b/);
+  /* Both devices are constructed, and they are the recording's own two. This
+   * is what the removed rename guard used to enforce in the negative, and it
+   * is the shape the founder asked the panel for: a reader sees a conversation
+   * rather than a client sending to a string. */
+  assert.match(heroCode, /const alice = await createSignalProtocolClient\(\{/);
+  assert.match(heroCode, /const bob = await createSignalProtocolClient\(\{/);
+  assert.match(heroCode, /identity: \{ userId: "alice" \},/);
+  assert.match(heroCode, /identity: \{ userId: "bob" \},/);
 
   assert.equal(installCommand, `npm install ${capture.packageName}`);
 });
@@ -262,9 +300,21 @@ test('offers every adapter as a real, complete, copyable program', () => {
       ),
       `${variant.storage}/${variant.relay} does not import its store`,
     );
+    /* Line by line rather than as one block, because the two are no longer
+       always adjacent: the relay's comment takes the trailing position on the
+       construction's last line where that line has room, and the line above it
+       where it does not, which is Convex. What must hold is that every line of
+       the construction ships — a variant that lost one would not run — and
+       that the comment ships with it, whichever of the two places it took. */
+    for (const line of relay.setup.split('\n')) {
+      assert.ok(
+        variant.code.includes(line),
+        `${variant.storage}/${variant.relay} does not construct its relay: ${line}`,
+      );
+    }
     assert.ok(
-      variant.code.includes(relay.setup),
-      `${variant.storage}/${variant.relay} does not construct its relay`,
+      variant.code.includes(relayComment),
+      `${variant.storage}/${variant.relay} lost the comment that says what a relay does`,
     );
 
     /* No elision may reappear. The panel has a copy button on it, and a
@@ -470,19 +520,25 @@ test('binds the names the reader brings, or says whose they are', async () => {
     }
   }
 
-  /* Every comment-only line in every variant is one the module declares. The
-   * panel is now a place the page can say things in its own voice, and this is
-   * the boundary on that: a claim smuggled into the program has to be added to
-   * `snippetComments` first, where the absolutes guard and the build audit both
-   * already read it. */
+  /* Every comment in every variant is one the module declares, wherever on the
+   * line it sits. The panel is a place the page can say things in its own
+   * voice, and this is the boundary on that: a claim smuggled into the program
+   * has to be added to `snippetComments` first, where the absolutes guard and
+   * the build audit both already read it.
+   *
+   * This used to read comment-only lines and would now miss five of the six —
+   * the ones that moved onto the end of a line of code — which is the shape of
+   * a guard that goes dark without failing. The adapters' own disclosures are
+   * declared through `snippetComments` too, so a store that explains itself in
+   * a new sentence is still caught. */
   const declared = new Set(snippetComments);
   for (const variant of snippetVariants) {
     for (const line of variant.code.split('\n')) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith('//')) continue;
+      const { comment } = splitComment(line);
+      if (!comment) continue;
       assert.ok(
-        declared.has(trimmed),
-        `${variant.storage}/${variant.relay} carries an undeclared comment: ${trimmed}`,
+        declared.has(comment),
+        `${variant.storage}/${variant.relay} carries an undeclared comment: ${comment}`,
       );
     }
   }
@@ -526,9 +582,144 @@ test('keeps the recorded carrier row on the page, wherever it sits', async () =>
    * where it came from, one line under the recording, which is the assertion
    * in "does not overstate the one artefact that exists to not be
    * overstated". */
-  assert.match(index, /<DemoConsole \/>/);
+  assert.match(index, /<DemoConsole>/);
   assert.match(live, /<CarrierPanel \/>/);
-  assert.match(index, /Not a mock-up/);
+
+  /* And the band still states what it is, positively. It used to reach the
+     same claim as a denial — "Not a mock-up" — which hands a reader the doubt
+     it then asks them to drop. Both halves are checked, because either one
+     alone is weaker than the pair: the heading claims the demo is live, and
+     the paragraph names the package that makes it so. */
+  assert.match(index, /<h2>Live demo, in your browser<\/h2>/);
+  assert.match(index, /the installed SDK encrypts it/);
+});
+
+test('stands the demo’s settings in the band’s corner, on the heading’s line', async () => {
+  const console_ = await read('../src/components/demo/DemoConsole.astro');
+  const index = await read('../src/pages/index.astro');
+  const raw = await read('../src/styles/global.css');
+  const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  /* "Demo Settings" and not "Settings". The control used to stand over the
+     scene, where the scene said what it settled; in the band's own corner the
+     bare word could be read as the site's settings. */
+  assert.match(console_, /<\/svg>\s*Demo Settings\s*<\/summary>/);
+
+  /* The head is inside the console's root, which is what lets one absolute
+     corner serve both. Placed beside it, the distance from the heading to the
+     control is however tall the paragraph happened to wrap, and no offset can
+     be written for that. */
+  assert.match(index, /<DemoConsole>\s*<Fragment slot="head">\s*<h2>/);
+  assert.ok(
+    console_.indexOf('<slot name="head" />') <
+      console_.indexOf('<details class="demo-console-settings"'),
+    'the settings control is no longer in the head it is meant to sit in',
+  );
+  assert.ok(
+    console_.indexOf('<details class="demo-console-settings"') <
+      console_.indexOf('<div class="demo-console-stage">'),
+    'the settings control is back inside the stage, which is a different corner',
+  );
+
+  /* Two rows, three boxes: the heading and the control share the first, the
+     paragraph takes the second across both columns. The control is pinned to
+     row one, because auto-placement would put it wherever the source order
+     landed it. */
+  const head = ruleFor(css, '.demo-console-head');
+  assert.match(head, /display:\s*grid/);
+  assert.match(head, /grid-template-columns:\s*minmax\(0, 1fr\) auto/);
+  /* Two rules carry this selector — the cell, and the narrow-width removal
+     below — so it is filtered rather than `ruleFor`ed, which throws on the
+     pair. */
+  const cells = cssRules(css).filter(
+    (rule) =>
+      rule.selector === '.demo-console-head > .demo-console-settings' &&
+      /grid-column:/.test(rule.body),
+  );
+  assert.equal(cells.length, 1, `${cells.length} rules place the control in the head`);
+  assert.match(cells[0].body, /grid-column:\s*2/);
+  assert.match(cells[0].body, /grid-row:\s*1/);
+  assert.match(cells[0].body, /justify-self:\s*end/);
+
+  /* And it goes where the stage goes. Below 60rem the mobile reel plays on its
+     own and there is no run whose terms this could change — it used to inherit
+     that from the stage it lived in, and in the head it has to be stated. */
+  const hidden = cssRules(css).some(
+    (rule) =>
+      rule.selector === '.demo-console-head > .demo-console-settings' &&
+      /display:\s*none/.test(rule.body),
+  );
+  assert.ok(hidden, 'the phone is offered settings for an exhibit it cannot see');
+  assert.match(raw, /@media \(max-width: 60rem\) \{\s*\.demo-console-head > \.demo-console-settings \{/);
+});
+
+test('lands the demo fragment on the exhibit, not on the paragraph above it', async () => {
+  const console_ = await read('../src/components/demo/DemoConsole.astro');
+  const index = await read('../src/pages/index.astro');
+  const raw = await read('../src/styles/global.css');
+  const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  /* The fragment names the running thing. On the band it landed the reader on
+     the heading with the animation below the fold at every width measured —
+     328px down a 664px screen at 390 wide, and still 38px short at 1440x900 —
+     and the offset that would fix it is the height of a paragraph that wraps
+     differently at every width. */
+  assert.match(console_, /<div id="demo" class="demo-console-exhibit">/);
+  assert.doesNotMatch(
+    index,
+    /<section id="demo"/,
+    'the band has taken the fragment back, so Demo lands on the heading again',
+  );
+
+  /* Both exhibits inside it, because which one is drawn depends on the width
+     and the fragment has to land on whichever it is. A wrapper around only the
+     wide stage would be `display: none` on a phone, and a fragment pointing at
+     a hidden element scrolls nowhere. */
+  const open = console_.indexOf('<div id="demo" class="demo-console-exhibit">');
+  const close = console_.indexOf('<p class="demo-console-status"');
+  assert.ok(open > 0 && close > open, 'the exhibit box is not where the console renders');
+  const exhibit = console_.slice(open, close);
+  assert.match(exhibit, /<div class="demo-console-stage">/);
+  assert.match(exhibit, /<DemoMobile /);
+
+  /* The links that lead there. Both are the reader asking for the exhibit. */
+  assert.match(index, /<a class="cta-primary" href="#demo">/);
+  const header = await read('../src/components/Header.astro');
+  assert.match(header, /href: '\/#demo'/);
+
+  /* And the one rule that stands it clear of the sticky header. This is not a
+     legal-page detail: scoping it away would park the scene under the header
+     on every press of Demo, with nothing else in the stylesheet to catch it. */
+  assert.match(ruleFor(css, ':target'), /scroll-margin-top:\s*calc\(4rem \+ var\(--oe-space-6\)\)/);
+});
+
+test('says what the phone’s first reading measured, and breaks its row cleanly', async () => {
+  const mobile = await read('../src/components/demo/DemoMobile.astro');
+
+  /* Each label has to answer "what was measured" on its own. The other two do:
+     a figure in milliseconds beside "encryption" is the cost of encrypting.
+     "generation" beside one does not, whatever the key store above it says,
+     because the row is read as a row. */
+  assert.match(mobile, /\{ key: 'keygen', label: 'key generation' \}/);
+  assert.match(mobile, /\{ key: 'encrypt', label: 'encryption' \}/);
+  assert.match(mobile, /\{ key: 'decrypt', label: 'decryption' \}/);
+
+  /* The name costs a line on a phone: 83.3px of the 133 this row has at 390 and
+     the 98 it has at 320, so a filled figure cannot share the line. Three rules
+     decide where it breaks, and without all three it broke through the name —
+     "key" beside the figure and "generation" under it, which reads as two
+     readings rather than one. `nowrap` on the name moves the break to the gap;
+     `flex-wrap` lets the figure take the second line at all rather than
+     overflow; and the auto margin holds it at the right edge, because
+     `space-between` puts a lone item on a wrapped line at the start. */
+  const styles = mobile.slice(mobile.indexOf('<style>'), mobile.indexOf('</style>'));
+  assert.ok(styles.length > 0, 'the component has no style block to read');
+  assert.match(ruleFor(styles, '.demo-mobile-reading'), /flex-wrap:\s*wrap/);
+  assert.match(ruleFor(styles, '.demo-mobile-reading-name'), /white-space:\s*nowrap/);
+
+  const value = ruleFor(styles, '.demo-mobile-reading-value');
+  assert.match(value, /margin-inline-start:\s*auto/);
+  assert.match(value, /white-space:\s*nowrap/);
 });
 
 test('shows every metadata field the relay was recorded holding', async () => {
@@ -628,6 +819,13 @@ test('keeps the prompt glyph out of what the reader pastes', async () => {
 
   /* The command itself is the real string, not a retyped copy of it. */
   assert.match(snippet, /<span class="terminal-command">\{installCommand\}<\/span>/);
+
+  /* And its length comes from that same string. The row solves for a font size
+     that fits the panel, and the solution needs the character count — so a
+     count typed as a number here, or a constant in the stylesheet, would keep
+     the old length through a package rename and either wrap the line again or
+     leave it smaller than it has to be, with nothing failing. */
+  assert.match(snippet, /--terminal-command-chars: \$\{installCommand\.length\}/);
 });
 
 test('announces the copy result somewhere a screen reader will hear it', async () => {
@@ -679,7 +877,13 @@ test('never makes a control its own announcer', async () => {
   const toggle = await flat('../src/components/ThemeToggle.astro');
   assert.match(toggle, /<span class="oe-visually-hidden" role="status" data-theme-status><\/span>/);
   assert.match(toggle, /status\.textContent = `Colour theme set to \$\{next\}\.`/);
-  const render = toggle.slice(toggle.indexOf('function render'), toggle.indexOf('render(getStoredTheme'));
+  /* Comments stripped before the check. The rule is about what `render` does,
+     and the word appears in prose for an unrelated reason — the phone's status
+     bar, which this function also keeps in step. A guard that reads comments
+     fails on a note about a different subject and says nothing true. */
+  const render = toggle
+    .slice(toggle.indexOf('function render'), toggle.indexOf('render(getStoredTheme'))
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
   assert.doesNotMatch(render, /status/, 'restoring a stored preference must not announce a change');
 });
 
@@ -732,29 +936,180 @@ test('shows the example on a phone rather than offering it', async () => {
   /* The adapter selects are operable on a phone too, and that is the second
    * half of the same decision: a panel a reader can see but not drive is the
    * page's central claim shown as a picture. They were `display: none` below
-   * this breakpoint for measured reasons — the toolbar is four stacked rows at
-   * 320 with them back — and the founder's call is that the demonstration is
-   * worth the chrome.
+   * this breakpoint for measured reasons — the toolbar grew to 152px at 320
+   * with them back, while the row still stacked — and the founder's call is
+   * that the demonstration is worth the chrome. It costs none now: the row
+   * shortens its writing instead of taking a second line, which the test below
+   * this one owns.
    *
-   * `ruleFor` rather than a `doesNotMatch` on the whole file, because the
-   * failure to catch is a second rule turning them off again, and this throws
-   * on two. Writing it exposed a blind spot in the helper: its regex could not
-   * see the first rule inside a media block, so an override written at the top
-   * of one counted as zero. `./css-rules.mjs` is a brace walker now, and the
-   * mutation that proves this assertion — the rule put back where it was —
-   * fails here either way, because the ordering assertion above sees it too. */
-  const adapters = ruleFor(css, '.code-adapters');
-  assert.doesNotMatch(adapters, /display:\s*none/, 'the adapter selects are hidden on a phone again');
-  assert.match(adapters, /display:\s*flex/);
+   * Every rule carrying the selector, because the failure to catch is a second
+   * one turning them off again — inside a query or not. Writing this exposed a
+   * blind spot in the helper: its regex could not see the first rule inside a
+   * media block, so an override written at the top of one counted as zero.
+   * `./css-rules.mjs` is a brace walker now, and the mutation that proves this
+   * assertion — the rule put back where it was — fails here either way, because
+   * the ordering assertion above sees it too. */
+  const adapterRules = cssRules(css).filter((rule) => rule.selector === '.code-adapters');
+  assert.ok(adapterRules.length >= 1, 'the select group has no rule at all');
+  for (const rule of adapterRules) {
+    assert.doesNotMatch(rule.body, /display:\s*none/, 'the adapter selects are hidden on a phone again');
+  }
+  assert.match(adapterRules[0].body, /display:\s*flex/);
 
-  /* And the copy button takes its position from the select group, as it does
-   * at every other width. The `margin-inline-start: auto` that stood in for the
-   * group's own auto margin has to go with the rule that made it necessary, or
-   * two auto margins compete for the same free space. */
+  /* The copy button is not on this row at any width, so nothing may push it
+   * along one. `margin-inline-start: auto` on `.code-copy` was how it reached
+   * the far edge while it lived in the toolbar; the corner it stands in now is
+   * absolute, and an auto margin left behind would fight the offsets. */
+  const copyMargins = cssRules(css).filter(
+    (rule) => rule.selector === '.code-copy' && /margin-inline-start:\s*auto/.test(rule.body),
+  );
   assert.equal(
-    cssRules(css).filter((rule) => rule.selector === '.code-toolbar .code-copy').length,
+    copyMargins.length,
     0,
-    'the copy button is being pushed by a margin the select group already owns',
+    `${copyMargins.length} rules still push the copy button along a flex row it has left`,
+  );
+
+  /* And the two comboboxes divide the row rather than keeping their natural
+     width, which is what lets them share one line with their names instead of
+     wrapping. `flex: 1 1 0` with `min-width: 0` is both halves — the basis is
+     what makes the split even, and without the minimum a flex item will not
+     shrink below its content at all. Each half is 121px at 320 and 156px at
+     390. These are the base rules: the panel drops back to them below the rung
+     that gives the selects their natural width, which is the narrow case this
+     test is about. */
+  const selectRule = cssRules(css).filter((rule) => rule.selector === '.code-select')[0];
+  assert.match(selectRule.body, /flex:\s*1 1 0/);
+  assert.match(selectRule.body, /min-width:\s*0/);
+  assert.match(cssRules(css).filter((rule) => rule.selector === '.code-select select')[0].body, /width:\s*100%/);
+
+  /* The label stays beside its combobox at every width; what gives way is the
+     name. Each one is a qualifier plus the word that carries the choice, and a
+     panel under 34.5rem drops the qualifier, so "Device Store" reads "Store"
+     and "Relay Server" reads "Relay" — 37.2px each, whole, at every width down
+     to 320. `nowrap` is the guard on the other way a name can give way: without
+     it a squeezed label takes a second line instead of shortening. Which rung
+     drops it, and at what measured width, is owned by the test below. */
+  const labelRules = cssRules(css).filter((rule) => rule.selector === '.code-select-label');
+  assert.equal(labelRules.length, 1, `${labelRules.length} rules style the label`);
+  assert.match(labelRules[0].body, /white-space:\s*nowrap/);
+  const dropsQualifier = cssRules(css).some(
+    (rule) => rule.selector === '.code-select-qualifier' && /display:\s*none/.test(rule.body),
+  );
+  assert.ok(dropsQualifier, 'nothing drops the qualifier, so the full name has to fit at 320 or wrap');
+
+  /* To the end of the line: each label is written on one, and the nesting means
+     a non-greedy match for `</span>` would stop inside it. */
+  const labels = (await read('../src/components/HeroSnippet.astro')).match(
+    /<span class="code-select-label">.*/g,
+  );
+  assert.deepEqual(labels, [
+    '<span class="code-select-label"><span class="code-select-qualifier">Device </span>Store</span>',
+    '<span class="code-select-label">Relay<span class="code-select-qualifier"> Server</span></span>',
+  ]);
+});
+
+test('puts the example’s copy control in the code’s corner, not among the settings', async () => {
+  const component = await read('../src/components/HeroSnippet.astro');
+  const raw = await read('../src/styles/global.css');
+  const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  /* The toolbar configures the example; the copy button does not configure
+     anything. Standing at the end of that row it was the third control a reader
+     had to read past to find the two that change the program. */
+  const toolbar = component.slice(
+    component.indexOf('<div class="code-toolbar">'),
+    component.indexOf('<div class="code-body">'),
+  );
+  assert.ok(toolbar.includes('code-select'), 'the toolbar slice missed the comboboxes');
+  assert.doesNotMatch(toolbar, /data-code-copy\b/, 'the copy button is back on the toolbar row');
+
+  /* And it is inside the box that holds still. The `<pre>` is the scroll
+     container, so a control positioned against that one rides off the panel
+     with the first long line a reader drags sideways. */
+  const body = component.slice(component.indexOf('<div class="code-body">'));
+  assert.match(body, /<button type="button" class="copy-button code-copy" data-code-copy>/);
+  assert.match(cssRules(css).find((rule) => rule.selector === '.code-body').body, /position:\s*relative/);
+
+  const corner = cssRules(css).find((rule) => rule.selector === '.code-body > .code-copy');
+  assert.ok(corner, 'nothing puts the copy button in the corner, so it sits in the flow of the code');
+  assert.match(corner.body, /position:\s*absolute/);
+  assert.match(corner.body, /top:\s*var\(--oe-space-3\)/);
+  assert.match(corner.body, /right:\s*var\(--oe-space-3\)/);
+
+  /* Opaque, because it is over the program rather than over a toolbar.
+     `.copy-button` is transparent and below 48rem the code scrolls under this
+     one, where a transparent chip is a glyph with a border round it. */
+  assert.match(corner.body, /background:\s*var\(--oe-editor\)/);
+
+  /* And nothing gives it room. The narrow panel used to push line one down by
+     the button's height, which bought a 28px band of empty editor above the
+     program on the screens with the least room. Measured with the line flush at
+     320, 390 and 430: the control covers four of line one's glyphs at rest, and
+     the panel scrolls sideways, so a reader moves them out from under it on the
+     drag a 76-character import in a 356px column already costs. A padding-top
+     here is that band coming back. */
+  const clearances = cssRules(css).filter(
+    (rule) => rule.selector === '.hero-snippet .code-body pre' && /padding-top:/.test(rule.body),
+  );
+  assert.equal(
+    clearances.length,
+    0,
+    `${clearances.length} rules push the program down to clear the button; it floats over the code at every width`,
+  );
+});
+
+test('keeps the example’s settings on one row, and shortens the writing to hold it', async () => {
+  const raw = await read('../src/styles/global.css');
+  const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  /* The row never becomes two. It used to stack the comboboxes under the
+     filename below 48rem — 720px of panel, and nothing had stopped fitting:
+     measured against the previous rules replayed over this markup, the second
+     line gave the comboboxes not one pixel more (75.8 at 320, 95.8 at 360,
+     100.8 from 375, in both layouts) and cost 31.2px of height. */
+  assert.match(ruleFor(css, '.code-toolbar'), /flex-wrap:\s*nowrap/);
+  const stacked = cssRules(css).filter(
+    (rule) => rule.selector === '.code-adapters' && /flex-basis:\s*100%/.test(rule.body),
+  );
+  assert.equal(stacked.length, 0, 'a rule puts the comboboxes on a line of their own again');
+
+  /* Both rungs ask the panel, not the viewport. The toolbar has to fit the box
+     it is drawn in, and `.hero-demo` is a container, so a `@media` rule here
+     would be measuring the wrong thing — it is right only while the hero's own
+     padding and track never move. */
+  assert.match(ruleFor(css, '.hero-demo'), /container-type:\s*inline-size/);
+
+  /* Rung one: the qualifiers. "Device Store" and "Relay Server" cost the row
+     104.2px over "Store" and "Relay", which the panel has from 34.5rem up. */
+  const qualifier = cssRules(css).filter((rule) => rule.selector === '.code-select-qualifier');
+  assert.equal(qualifier.length, 2, 'the qualifier is not a hidden default plus one rung');
+  assert.match(qualifier[0].body, /display:\s*none/);
+  assert.match(raw, /@container \(min-width: [\d.]+rem\) \{\s*\.code-select-qualifier \{\s*display: inline/);
+
+  /* Rung two: the filename, and only inside the toolbar. /product writes
+     `.code-filename` on its own, outside any container, where a container query
+     never matches — a hidden default on the bare class would leave it hidden
+     there for good. */
+  assert.doesNotMatch(ruleFor(css, '.code-filename'), /display:/);
+  const filename = cssRules(css).filter((rule) => rule.selector === '.code-toolbar .code-filename');
+  assert.equal(filename.length, 2, 'the filename is not a hidden default plus one rung');
+  assert.match(filename[0].body, /display:\s*none/);
+  assert.match(raw, /@container \(min-width: [\d.]+rem\) \{\s*\.code-toolbar \.code-filename \{\s*display: block/);
+
+  /* Both rungs, at the widths they were measured at, and in that order. The
+     numbers are read out of the source rather than written into two regexes
+     above, so this is the one assertion that fails when either moves. A row
+     holding the filename and both short labels needs 444.7px of panel and one
+     holding the qualifiers as well needs 548.9px, so a lower rung overflows and
+     a higher one gives up writing the panel had room for. The writing goes
+     first: a panel narrow enough to drop "quickstart.ts" has already spent the
+     cheaper rung. */
+  const rung = (selector) => Number(raw.match(new RegExp(`@container \\(min-width: ([\\d.]+)rem\\) \\{\\s*\\${selector}`))[1]);
+  assert.equal(rung('.code-toolbar .code-filename'), 28, 'the filename rung moved off its measured width');
+  assert.equal(rung('.code-select-qualifier'), 34.5, 'the qualifier rung moved off its measured width');
+  assert.ok(
+    rung('.code-select-qualifier') > rung('.code-toolbar .code-filename'),
+    'the filename goes before the qualifiers do, so the name is dropped while there is still writing to shorten',
   );
 });
 
@@ -829,6 +1184,11 @@ test('names every icon-only control it puts in the header', async () => {
    * name is a button that only sighted mouse users can identify. */
   assert.match(header, /aria-label="The SDK on GitHub"/);
   assert.match(toggle, /Colour theme: <span data-theme-label>/);
+  /* The menu's trigger became a drawing too. Its name is a real element and
+   * not an `aria-label`, the way the toggle carries its own: the word is the
+   * summary's own content, so a reader who turns styles off gets the control
+   * back rather than an empty box. */
+  assert.match(header, /<span class="oe-visually-hidden">Menu<\/span>/);
   /* Decorative inside a named control: the name must not be read twice. */
   assert.match(icon, /aria-hidden="true"/);
   assert.match(icon, /focusable="false"/);
@@ -846,10 +1206,12 @@ test('sends the reader to the console rather than to a doorway', async () => {
 });
 
 test('ships the license for the icon set it copied', async () => {
-  const [notices, license, icon] = await Promise.all([
+  const [notices, license, icon, deckIcon, boxMark] = await Promise.all([
     read('../THIRD_PARTY_NOTICES.md'),
     read('../third-party/Octicons-MIT.txt'),
     read('../src/components/Icon.astro'),
+    read('../src/components/DeckIcon.astro'),
+    read('../src/components/BoxMark.astro'),
   ]);
 
   /* The MIT license asks for the notice to travel with the copy, and the
@@ -860,6 +1222,30 @@ test('ships the license for the icon set it copied', async () => {
   assert.match(license, /THE SOFTWARE IS PROVIDED "AS IS"/);
   assert.match(notices, /third-party\/Octicons-MIT\.txt/);
   assert.match(icon, /THIRD_PARTY_NOTICES\.md/);
+  assert.match(deckIcon, /THIRD_PARTY_NOTICES\.md/);
+
+  /* The third copy is one path in one heading, which is exactly the kind of
+   * copy that gets deleted, renamed, or swapped for another Octicon without
+   * anyone opening the notice file. It is named here rather than derived,
+   * because a single-icon component has no list to derive from. */
+  assert.match(boxMark, /THIRD_PARTY_NOTICES\.md/);
+  assert.match(notices, /`src\/components\/BoxMark\.astro` renders one more, `package`,/);
+
+  /* The second copy is the one that will drift. `Icon.astro` draws a fixed set
+   * of chrome and has not changed in months; the deck icons are on a page
+   * under revision, and an eighth cell arrives with an eighth icon and no
+   * reason for anyone to remember a licence file. So the list is derived from
+   * the component rather than written out here: a name the union declares and
+   * the notice does not name fails this test at the name that is missing. */
+  const declared = [...deckIcon.matchAll(/^ {2}\| '([a-z-]+)';?$/gm)].map((m) => m[1]);
+  assert.equal(declared.length, 7, `DeckIconName declares ${declared.length} names`);
+  const noticed = notices.slice(notices.indexOf('DeckIcon.astro'));
+  for (const name of declared) {
+    assert.ok(
+      noticed.includes(`\`${name}\``),
+      `THIRD_PARTY_NOTICES.md does not name the copied Octicon "${name}"`,
+    );
+  }
 });
 
 test('answers “what does the relay see” in the fixed wording', async () => {
@@ -881,16 +1267,18 @@ test('answers “what does the relay see” in the fixed wording', async () => {
   assert.doesNotMatch(index, /relay can(?:’|')t read/i);
 });
 
-test('reaches the security review pack from the homepage and the footer', async () => {
-  const [index, footer] = await Promise.all([
-    flat('../src/pages/index.astro'),
+test('reaches the security review pack from the product page and the footer', async () => {
+  const [product, footer] = await Promise.all([
+    flat('../src/pages/product.astro'),
     flat('../src/components/Footer.astro'),
   ]);
 
   /* Both build their links from a data array now, so the path is quoted
-   * rather than written as an attribute. On the homepage it belongs in the
-   * "Check the work" band with the rest of the evidence, not in a third row
-   * of hero links competing with the hero's primary action.
+   * rather than written as an attribute. The "Check the work" band holding
+   * them spent time at the foot of the homepage and moved to /product when the
+   * landing page was cut back to the demo, the feature deck, and the licence;
+   * it answers "prove it" for a reader who has just read a page of capability
+   * claims, which is the page it is on.
    *
    * The destination is /security. It was /evaluate, which asked the questions
    * /security answers and rendered the same pinned specifications from the
@@ -898,7 +1286,7 @@ test('reaches the security review pack from the homepage and the footer', async 
    * content under two names. What has to stay true is that the pack is
    * reachable from each surface exactly once — a second entry pointing at the
    * same page under the other name is the defect this replaced. */
-  assert.match(index, /href: '\/security'/);
+  assert.match(product, /href: '\/security'/);
   assert.match(footer, /href: '\/security'/);
   assert.match(footer, /Security model and review pack/);
 
@@ -907,7 +1295,7 @@ test('reaches the security review pack from the homepage and the footer', async 
    * a guard that forbade the word outright would forbid explaining itself —
    * the same reason the relay-formula guards on this page read the rendered
    * output rather than the file. */
-  for (const source of [index, footer]) {
+  for (const source of [product, footer]) {
     const hrefs = [...source.matchAll(/href: '([^']+)'/g)].map((match) => match[1]);
     assert.ok(!hrefs.includes('/evaluate'), 'a link still points at the folded page');
     assert.equal(
@@ -950,18 +1338,33 @@ test('sends the folded demo route at a section the homepage still has', async ()
 
   /* Same reasoning as /evaluate above, with one difference that needs its own
    * check: this destination carries a fragment. `/security/` is a route, and a
-   * route either exists or 404s loudly. `/#when-something-goes-wrong` is a
-   * route plus an anchor, and an anchor that has gone missing fails silently —
-   * the homepage serves 200, the browser finds nothing to scroll to, and every
-   * reader who followed a /demo link lands at the top of the page instead of
-   * the section they asked for. Nothing else on the site would notice. */
-  assert.match(redirects, /^\/demo \/#when-something-goes-wrong 308$/m);
-  assert.match(redirects, /^\/demo\/ \/#when-something-goes-wrong 308$/m);
+   * route either exists or 404s loudly. `/#demo` is a route plus an anchor, and
+   * an anchor that has gone missing fails silently — the homepage serves 200,
+   * the browser finds nothing to scroll to, and every reader who followed a
+   * /demo link lands at the top of the page instead of the thing they asked
+   * for. Nothing else on the site would notice.
+   *
+   * The route first pointed at the scenarios, which were what the folded /demo
+   * page had been. They were cut from the homepage, and this rule is exactly
+   * the kind of reference that survives such a cut pointing at nothing. */
+  assert.match(redirects, /^\/demo \/#demo 308$/m);
+  assert.match(redirects, /^\/demo\/ \/#demo 308$/m);
 
   /* So the anchor is read out of the rule rather than typed here a second time,
    * and then looked for on the page. A rename that updates one and not the
    * other is the failure this exists for, and hard-coding the id in the
    * assertion would make this guard agree with whichever half was edited last.
+   *
+   * The id is not on the homepage itself: it is on the exhibit inside the
+   * component the homepage renders, argued where it is written. So the search
+   * covers the page plus every local component it imports, which is also what
+   * keeps this from naming `DemoConsole.astro` and becoming a second place to
+   * edit on a move.
+   *
+   * Comments come out first. The component's own comment opens by quoting
+   * `id="demo"` to explain why the id is on the exhibit, and with comments left
+   * in, renaming the real attribute passed this guard on that sentence alone —
+   * a tombstone standing in for the thing it is a tombstone for.
    *
    * Source rather than dist, so the guard also holds on an unbuilt tree —
    * a redirect guard that skips without a build is worth nothing. */
@@ -969,10 +1372,21 @@ test('sends the folded demo route at a section the homepage still has', async ()
   assert.ok(fragment, 'the /demo rule no longer targets a fragment');
 
   const home = await read('../src/pages/index.astro');
-  assert.match(
+  const imports = [...home.matchAll(/from '(\.\.\/components\/[^']+\.astro)'/g)].map(
+    (match) => match[1],
+  );
+  assert.ok(imports.length > 0, 'expected to be scanning the homepage components, found none');
+  const rendered = [
     home,
-    new RegExp(`<section id="${fragment}"`),
-    `_redirects sends /demo to #${fragment}, and no section on the homepage has that id`,
+    ...(await Promise.all(imports.map((path) => read(`../src/pages/${path}`)))),
+  ]
+    .join('\n')
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.match(
+    rendered,
+    new RegExp(`id="${fragment}"`),
+    `_redirects sends /demo to #${fragment}, and nothing the homepage renders has that id`,
   );
 });
 
@@ -1174,6 +1588,62 @@ test('renders a phone at the phone’s own width, so overflow is visible', async
   assert.doesNotMatch(viewport, /user-scalable\s*=\s*no|maximum-scale/);
 });
 
+test('paints the phone’s status bar the colour of the page under it', async () => {
+  const [layout, init, tokens] = await Promise.all([
+    flat('../src/layouts/BaseLayout.astro'),
+    read('../public/theme-init.js'),
+    read('../node_modules/@open-e2ee/design/packages/design/dist/css/tokens.css'),
+  ]);
+
+  /* The canvas as the installed package defines it, light then dark. Both are
+     `--oe-canvas`; the second one is the redefinition inside the dark block. */
+  const canvases = [...tokens.matchAll(/--oe-canvas:\s*(#[0-9a-f]{6})/gi)].map((m) =>
+    m[1].toLowerCase(),
+  );
+  assert.equal(canvases.length, 2, 'tokens.css no longer defines --oe-canvas twice');
+  const [light, dark] = canvases;
+
+  /* Two files restate those hexes and neither can read the token: the metas
+     are markup, and `theme-init.js` runs before the stylesheet resolves. So
+     the copies are held to the source here. The dark one was `#090806` — the
+     light theme's *foreground*, near enough to black to look deliberate and
+     5% off the surface it was meant to match. */
+  assert.match(
+    layout,
+    new RegExp(`content="${light}" media="\\(prefers-color-scheme: light\\)"`),
+    'the light theme-color meta is not the light canvas',
+  );
+  assert.match(
+    layout,
+    new RegExp(`content="${dark}" media="\\(prefers-color-scheme: dark\\)"`),
+    'the dark theme-color meta is not the dark canvas',
+  );
+  assert.match(init, new RegExp(`light: '${light}'`));
+  assert.match(init, new RegExp(`dark: '${dark}'`));
+
+  /* The metas answer the *system* preference and this site has its own switch,
+     so a reader who chooses dark under a light system would get a cream strip
+     above a dark header — which on an iPhone reads as a gap at the top of the
+     page rather than as a colour. Both writers exist to close that: the
+     resolver rewrites the tags before first paint, and the switch rewrites
+     them again on every press. Either one alone leaves a case wrong. */
+  assert.match(init, /meta\[name="theme-color"\]/);
+  const toggle = await read('../src/components/ThemeToggle.astro');
+  assert.match(toggle, /meta\[name="theme-color"\]/);
+  /* And the switch reads the live token rather than restating the hexes a
+     third time — by the time it runs, the stylesheet has resolved. */
+  assert.match(toggle, /getPropertyValue\('--oe-canvas'\)/);
+  assert.doesNotMatch(toggle, /#[0-9a-f]{6}/i);
+
+  /* The resolver rewrites tags the parser must already have seen. A blocking
+     script in the head runs where it stands, so above the metas its
+     `querySelectorAll` would return nothing — and nothing would fail. */
+  assert.ok(
+    layout.indexOf('src="/theme-init.js"') > layout.lastIndexOf('name="theme-color"'),
+    'theme-init.js runs before the theme-color metas it rewrites exist',
+  );
+});
+
 test('offers the journal by feed as well as by page', async () => {
   const [layout, blogIndex, feed] = await Promise.all([
     flat('../src/layouts/BaseLayout.astro'),
@@ -1233,6 +1703,326 @@ test('gives every article its own share card, falling back to the site card', as
   assert.match(layout, /image=\{image\}/);
 });
 
+test('closes the page on what the licence hands over, not on forking it', async () => {
+  const [graph, index, css] = await Promise.all([
+    read('../src/components/CommitLine.astro'),
+    read('../src/pages/index.astro'),
+    read('../src/styles/global.css'),
+  ]);
+
+  /* Four commits, and every verb a use. The free-software definition says
+   * "change it", which is accurate as a right and wrong as copy here: beside a
+   * 0.x version number it reads as an invitation to fix something, and a landing
+   * page that asks for repairs is selling a different product. The heading spends
+   * the same four verbs, so both move together or this fails. */
+  const grants = graph.match(/^const GRANTS = \[(.+)\];$/m);
+  assert.ok(grants, 'the graph no longer declares its commits as one list');
+  assert.deepEqual(
+    grants[1].split(',').map((word) => word.trim().replace(/^'|'$/g, '')),
+    ['read it', 'run it', 'share it', 'build on it'],
+  );
+  assert.match(index, /<h2>Open Source — read, run, share, and build on<\/h2>/);
+
+  /* The shape carries the claim, and two shapes available to a commit graph say
+   * something this band must not. A branch peeling off makes taking your own copy
+   * the point of the licence; a branch merging back draws a contributor base the
+   * project does not have and implies it is waiting on help. Neither the drawing
+   * nor its stylesheet may grow one.
+   *
+   * The comments are stripped first: the component's own comment names both
+   * shapes in order to rule them out, and a check that cannot tell a drawing from
+   * the reasoning for it fires on the reasoning. */
+  const drawing = graph
+    .replace(/^---[\s\S]*?^---$/m, '')
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(drawing, /fork|branch|merge|elbow|contribut|patch|change it/i);
+
+  /* The stylesheet block, bounded by its first rule and the next unrelated one.
+   * Everything asserted below is about this block and nothing else. */
+  const block = css
+    .slice(css.indexOf('.commitline {'), css.indexOf('.definition-rows {'))
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(block.length > 0, 'the commit graph no longer has a block in the stylesheet');
+  assert.doesNotMatch(block, /elbow|branch|fork/i);
+
+  /*
+   * DESIGN.md's motion contract, which is the part of this a future edit breaks
+   * silently. `--oe-duration-*` are transition durations and collapse to 0.01ms
+   * under reduced motion; a dwell derived from one plays the whole teaching
+   * sequence inside a single frame, with every step technically present and none
+   * of them legible. The dwell is therefore a local constant with a literal
+   * value, and this is the assertion that keeps it one.
+   */
+  assert.match(block, /--commitline-beat:\s*[\d.]+m?s;/);
+  assert.doesNotMatch(block, /--oe-duration/);
+
+  /*
+   * And every animation is gated. Under reduced motion the sequence keeps its
+   * steps and drops the transitions between them, which works only while the
+   * `animation` declarations are all inside the `no-preference` query — an
+   * ungated one would be added next to the rules it belongs with, which is the
+   * text before the query opens.
+   */
+  const gate = block.indexOf('@media (prefers-reduced-motion: no-preference)');
+  assert.notEqual(gate, -1, 'the graph animates without asking whether motion is wanted');
+  assert.doesNotMatch(block.slice(0, gate), /animation/);
+
+  /*
+   * The empty state belongs to the script, never to the markup. Authoring the
+   * graph hidden and revealing it is the arrangement that ships a blank band to
+   * every reader whose JavaScript did not run — which is also every reader whose
+   * page threw three components earlier.
+   */
+  assert.doesNotMatch(drawing, /data-armed|data-playing/);
+  assert.match(graph, /root\.dataset\.armed = ''/);
+  assert.match(graph, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)/);
+
+  /* `Icon.astro` and every glyph on this page render `aria-hidden`, and so does
+   * the whole graph — its words are the heading's words, so a screen reader that
+   * walked it would hear the claim twice, the second time as a list of dots. */
+  assert.match(drawing, /<div class="commitline" data-commitline aria-hidden="true">/);
+
+  /* The band states neither licence's terms and routes to the page that owns
+   * them, so the route has to survive. `/licensing` carries what AGPLv3 asks
+   * of the reader's own application; a band that hands over four things and
+   * links nowhere would leave a developer to learn it from a lawyer. */
+  assert.match(index, /<a href="\/licensing">Understand AGPLv3 use<\/a>/);
+  assert.match(index, /<a href="https:\/\/github\.com\/open-e2ee\/signal-protocol-js">/);
+
+  /* `docs/messaging.md` §4: the tier vocabulary is banned as a rendering of
+   * "commercial license", and a band that names both licences is where it would
+   * turn up. Comments are stripped for the same reason as above — the one over
+   * this band's lead names the banned phrase in order to rule it out. */
+  const band = index
+    .slice(index.indexOf('Open Source — read, run, share, and build on'))
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+  assert.doesNotMatch(band, /paid tier|enterprise edition|pro version/i);
+
+  /* The graph makes no claim about encryption, so it carries none of the diagram
+   * grammar. A slab or a carrier bracket turning up here would be a licence
+   * statement drifting into saying something about the protocol. */
+  assert.doesNotMatch(drawing, /--oe-diagram-|class="diagram/);
+
+  /* Order: the graph, the field beside it, then the route to the licence terms.
+   * One ordered match rather than compared offsets — `indexOf` returns -1 for a
+   * part that is gone, and -1 is less than every real offset, so a deleted link
+   * would satisfy a comparison that reads as an order check.
+   *
+   * This ran to a fourth part, `class="closing"`, a repeat of the hero's action
+   * under a rule. The founder cut it, so the licence is the last thing on the
+   * page and there is no second ask after it. That is asserted rather than
+   * assumed: a restored closing block would land inside this band. */
+  assert.match(
+    band,
+    /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+Understand AGPLv3 use/,
+    'the graph, the mark and the licence link are no longer in that order',
+  );
+  assert.doesNotMatch(
+    index,
+    /class="closing"/,
+    'the page ends on a second action again rather than on the licence',
+  );
+
+  /* The two figures share a row, and the graph is the one that leads. Source
+   * order is what a phone gets — the columns collapse and the figures stack in
+   * the order they are written — so the graph coming second here would put the
+   * decoration above the claim on every narrow screen. The ordered match above
+   * is the pin; this is the arrangement it relies on. */
+  const pairRules = cssRules(css).filter((rule) => rule.selector === '.commitline-pair');
+  assert.ok(pairRules.length >= 1, 'the two figures no longer share an arrangement');
+  assert.match(pairRules[0].body, /display: grid;/);
+  assert.doesNotMatch(
+    pairRules[0].body,
+    /grid-template-columns/,
+    'the columns are the wide case and belong behind a query, not in the base rule',
+  );
+
+  /* The wrapper around both is still only spacing. The columns live on the pair,
+   * so a width step appearing here would be a second arrangement to keep true. */
+  const bandRules = cssRules(css).filter((rule) => rule.selector === '.commitline-band');
+  assert.equal(bandRules.length, 1, 'the band grew a second arrangement at some width');
+  assert.doesNotMatch(bandRules[0].body, /grid|flex|columns/);
+});
+
+test('draws three marks from the real artwork and puts every light back', async () => {
+  const [mark, marks, css] = await Promise.all([
+    read('../src/components/StarfieldMark.astro'),
+    read('../src/lib/starfield-marks.mjs'),
+    read('../src/styles/global.css'),
+  ]);
+  const source = mark.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+  const composition = marks.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  /*
+   * The geometry is imported, never transcribed — in the module that owns the
+   * composition, and therefore nowhere else. A path pasted into either file is a
+   * copy that stops tracking its package the moment either moves, and a
+   * hand-drawn approximation of another company's trademark is worse than no
+   * mark at all, which is the call `Icon.astro` already makes for the same
+   * glyph. Our own lockup is read off disk for a further reason: rebuilding it
+   * from `carrierBracketPaths` would mean choosing the parameters, and a wrong
+   * arm is a wrong logo that still draws.
+   *
+   * The literal check is the one that bites: an inlined path is a long run of
+   * coordinates, and nothing else in either file looks like one.
+   */
+  assert.match(composition, /from '@open-e2ee\/design\/icons';/);
+  assert.match(composition, /const \[githubPath\] = iconPaths\.github;/);
+  assert.match(composition, /open-e2ee-lockup-horizontal-mono\.svg/);
+  assert.doesNotMatch(composition, /"M[\d.\-\s,a-zA-Z]{60,}"/, 'a path is transcribed rather than imported');
+  assert.doesNotMatch(source, /"M[\d.\-\s,a-zA-Z]{60,}"/, 'a path is transcribed rather than imported');
+
+  /*
+   * A silently partial lockup is the failure this composition cannot see for
+   * itself: two brackets and no payload, or a mark with no name beside it, still
+   * draws. The module therefore parses the shipped file into its three symbol
+   * paths and two wordmark runs and throws when it stops being that, which turns
+   * a package change into a red build rather than into a wrong logo.
+   */
+  assert.match(composition, /symbolPaths\.length !== 3 \|\| runs\.length !== 2/);
+  assert.match(composition, /throw new Error\(/);
+
+  /*
+   * The composition is one lockup over two sources, and it is the lockup that
+   * has to read as the larger drawing. It spans the field, so it is wider by
+   * construction — but the eye compares one glyph with another, and our symbol
+   * losing to the two marks below it would make the band's own logo the smallest
+   * thing in it. Measured rather than asserted from the numbers in the file: the
+   * symbol is scaled twice, once into the lockup and once into the field.
+   */
+  const { FIELD_HEIGHT, FIELD_WIDTH, marks: placed, placement } = await import('../src/lib/starfield-marks.mjs');
+  assert.deepEqual(
+    placed.map((entry) => entry.id),
+    ['lockup', 'osi', 'github'],
+    'the composition is no longer our lockup over the two sources',
+  );
+  const lockup = placed[0];
+  const symbol = lockup.pieces.find((piece) => piece.kind === 'paths');
+  const glyph = 512 * symbol.scale * placement(lockup).scale;
+  for (const other of placed.slice(1)) {
+    assert.ok(
+      glyph > other.width,
+      `our symbol draws at ${glyph} units, smaller than ${other.id} at ${other.width}`,
+    );
+  }
+
+  /*
+   * The element's box is the composition's own shape. The marks are laid out
+   * from that box rather than drawn into it, so a box of another ratio does not
+   * crop the composition — it squashes it, and the lights settle into a lockup
+   * that is not the lockup.
+   */
+  const fieldRule = cssRules(css).find((rule) => rule.selector === '.starfield');
+  assert.ok(fieldRule, 'the field lost the box its lights are measured against');
+  assert.match(
+    fieldRule.body,
+    new RegExp(`aspect-ratio: ${FIELD_WIDTH} / ${FIELD_HEIGHT};`),
+    `the field's box is not the composition's ${FIELD_WIDTH} by ${FIELD_HEIGHT}`,
+  );
+
+  /*
+   * `design/DESIGN.md` grants this band one exception to a mark that does not
+   * move, and clear space is a condition of it. The lockup's own bottom edge is
+   * the floor; the module throws when a source rises above it, so the check here
+   * is that the check exists and that the composition currently clears it.
+   */
+  assert.match(composition, /enters the lockup's clear space/);
+  const floor = lockup.y + placement(lockup).height;
+  for (const other of placed.slice(1)) {
+    assert.ok(other.y >= floor, `${other.id} sits at ${other.y}, inside the clear space above ${floor}`);
+  }
+
+  /*
+   * The order the field replaces the drawing in is the whole fallback. The mark
+   * is authored complete, the script rasterises it to find out where its lights
+   * go, and only then sets `starlit` to hide it. Any other order ships an empty
+   * box to every reader whose JavaScript did not run, and leaves the field with
+   * nothing to measure for the readers whose did.
+   *
+   * Pinned three ways: the markup carries no state, the stylesheet hides the
+   * drawing on `starlit` alone, and `starlit` is set after the sampling pass.
+   */
+  assert.doesNotMatch(source, /data-starlit=/);
+  assert.match(css, /\.starfield\[data-starlit\] \.starfield-mark \{\s*visibility: hidden;/);
+  const sampled = mark.indexOf('getImageData');
+  const starlit = mark.indexOf("root.dataset.starlit = ''");
+  assert.notEqual(sampled, -1, 'the field no longer measures the drawing it replaces');
+  assert.ok(starlit > sampled, 'the drawing is hidden before the field has sampled it');
+
+  /*
+   * DESIGN.md asks motion to be short and reversible, and a star field is the
+   * shape of thing that quietly becomes neither: a loop redrawing an idle field
+   * forever keeps a phone's compositor awake for a decoration. The loop asks
+   * whether anything is still moving and stops on the frame nothing is, so the
+   * only `requestAnimationFrame` that continues it sits inside that decision.
+   */
+  assert.match(mark, /frame = moving \|\| pointerNear \? requestAnimationFrame\(tick\) : 0;/);
+
+  /* And reversible means the lights land back on the path rather than near it.
+   * A light inside the settled threshold is snapped home, so the shape the field
+   * comes to rest in is the mark, not a blur of it. */
+  assert.match(mark, /light\.x = light\.homeX;\s*light\.y = light\.homeY;/);
+
+  /* Reduced motion drops the whole field and leaves the mark. This figure
+   * teaches nothing by moving, so a reader who asked for less movement loses
+   * only movement. */
+  assert.match(mark, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)/);
+  assert.match(mark, /if \(!still\.matches\) \{/);
+
+  /*
+   * Its dwell is local. `--oe-duration-*` are transition durations and collapse
+   * to 0.01ms under reduced motion, so a constant derived from one would run the
+   * entrance inside a single frame. The same reason the graph beside it states
+   * its beat as a literal.
+   *
+   * Against the comment-stripped source: the constants above are commented with
+   * the reason they are not tokens, and a check that cannot tell a declaration
+   * from the reasoning for it fires on the reasoning.
+   */
+  assert.doesNotMatch(source, /--oe-duration/);
+
+  /*
+   * Neither colour is baked into a light. Both resolve differently in the two
+   * themes and the switch in the header can flip with this band on screen, so a
+   * light carries only whether it is an accent one and the colours are re-read
+   * when the theme attribute changes. A `colour` on the light would paint the
+   * field in the old palette until the next resize.
+   *
+   * All three marks light in the page's own ink, which is also the condition
+   * DESIGN.md's exception states: payload, carrier and wordmark alike. OSI's
+   * mark keeps its published palette in the page's lead, where it is the
+   * licence condition `OsiMark.astro` sets out; here it does not, which that
+   * file records as a breach rather than as a policy.
+   */
+  assert.match(mark, /const readColours = \(\) => \{/);
+  assert.match(mark, /attributeFilter: \['class'\]/);
+  assert.match(mark, /context\.fillStyle = light\.accent \? accent : ink;/);
+  assert.doesNotMatch(composition, /OSI_BODY|OSI_EDGE\b/, 'a mark in the field carries a palette of its own');
+  assert.doesNotMatch(source, /fill="#|fillStyle = '#/, 'a light is painted from a literal rather than the page');
+
+  /*
+   * The wordmark ships as live text — `DESIGN.md` has a standing TODO to outline
+   * it — so the field rasterises text, and text drawn before its family arrives
+   * settles the lights into a fallback face and leaves them there. The artwork
+   * stays on screen until then, which is the same arrangement as above for the
+   * same reason.
+   */
+  assert.match(mark, /document\.fonts\.load\(face\)/);
+  assert.match(mark, /facesReady\(\)\.then\(\(\) => \{/);
+
+  /* The mark is decorative: the band links to the repository in words directly
+   * below it, and a second route to one place is a reader wondering what the
+   * difference is. */
+  assert.match(source, /data-starfield\n\s+data-starfield-field=\{JSON\.stringify\(/);
+  assert.match(source, /aria-hidden="true"/);
+
+  /* It says nothing about encryption, so it carries none of the diagram grammar.
+   * A slab or a carrier bracket here would be a licence band drifting into a
+   * claim about the protocol. */
+  assert.doesNotMatch(source, /--oe-diagram-|class="diagram/);
+});
+
 test('keeps the signature diagram off the page that carries the plate', async () => {
   const [index, security, product] = await Promise.all([
     flat('../src/pages/index.astro'),
@@ -1267,7 +2057,7 @@ test('keeps the signature diagram off the page that carries the plate', async ()
    * The demo's own three-column figure is not a second signature device. It
    * draws the relay as an outlined container rather than as the mark, which is
    * the discrimination that keeps this page inside the one-device cap. */
-  assert.match(index, /<DemoConsole \/>/);
+  assert.match(index, /<DemoConsole>/);
   assert.doesNotMatch(index, /<SignatureDiagram \/>/);
   assert.doesNotMatch(index, /import SignatureDiagram/);
 
@@ -1286,7 +2076,15 @@ test('keeps the signature diagram off the page that carries the plate', async ()
   /* The caption used to point at the drawing — "inside a device outline" —
    * and would have been left pointing at nothing. */
   assert.doesNotMatch(index, /device outline/);
-  assert.match(index, /exist only on the devices at each end/);
+  assert.match(index, /Keys stay on the devices/);
+  /* And the exclusivity claim is made about plaintext, never about ciphertext.
+     An "only sees ciphertext" formulation is false on this page's own
+     evidence: the panel below prints senderUserId, senderDeviceId and
+     serverTimestamp in the clear, so the page would be contradicted by the
+     thing it scrolls to. Checked against the source rather than dist, because
+     CI runs the tests before it builds and a dist-only guard would never
+     run there. */
+  assert.doesNotMatch(index, /relay\s+only\s+(?:ever\s+)?sees/i);
 });
 
 test('keeps the relay formula out of the absolute, in the drawings too', async () => {
@@ -1571,11 +2369,26 @@ test('enlarges the hero code without enlarging code that has no room', async () 
    * relationship: 2/1.8 is a constant 1.111x at every width, so the command
    * stays a step above the code instead of the gap between them opening and
    * closing across the range. A flat size on either side is what this list is
-   * really guarding against. */
+   * really guarding against.
+   *
+   * `100cqi` is excluded from that census and counted on its own below. It is
+   * not a rate competing for the same width — it *is* the width, the whole of
+   * the container, read so the terminal row can subtract its chrome and solve
+   * for a size that fits. Leaving it in the list would mean re-deriving the
+   * 1.89 ceiling every time the row's fit term is touched, which is a false
+   * coupling: nothing about the code panel's arithmetic changes. */
   assert.deepEqual(
-    [...css.matchAll(/([\d.]+)cqi/g)].map((m) => Number(m[1])),
+    [...css.replace(/100cqi/g, '').matchAll(/([\d.]+)cqi/g)].map((m) => Number(m[1])),
     [1.8, 2],
     'a cqi length moved or a third appeared; re-derive against the 1.89 ceiling before changing this',
+  );
+
+  /* And the two that were excluded are the two the exclusion was written for:
+   * the terminal row's fit term, and its restatement inside the phone query. */
+  assert.equal(
+    [...css.matchAll(/100cqi/g)].length,
+    2,
+    'a `100cqi` appeared outside the terminal row’s fit term, or one of the two is gone',
   );
 
   /* The gutter term of that constraint, pinned here so the two cannot drift.
@@ -1945,9 +2758,14 @@ test('dresses the install command as a terminal, in both modes', async () => {
 test('sets the install command a step above the code it sits over', async () => {
   const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
 
+  /* The clamp is the *preference* term now, not the whole declaration: the
+     command's size is `min(preference, fit)`, where the second term solves the
+     row against the panel it has to fit inside. The sweep below is about the
+     first term, which is what carries the hierarchy — so it is read through the
+     wrapper rather than around it, and the fit term is asserted separately. */
   const sizeOf = (selector) => {
     const body = css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1];
-    const clamp = body?.match(/font-size:\s*clamp\(([\d.]+)rem,\s*([\d.]+)cqi,\s*([\d.]+)rem\)/);
+    const clamp = body?.match(/font-size:\s*(?:min\(\s*)?clamp\(([\d.]+)rem,\s*([\d.]+)cqi,\s*([\d.]+)rem\)/);
     return clamp && { floor: +clamp[1] * 16, rate: +clamp[2], ceiling: +clamp[3] * 16 };
   };
 
@@ -1968,10 +2786,17 @@ test('sets the install command a step above the code it sits over', async () => 
    * first note here claimed a constant 1.111x on exactly that reasoning and the
    * real range is 1.056 to 1.111.
    *
-   * So the property asserted is the one that actually matters and is true: at
-   * every width the panel can be, the command is larger. Evaluating both clamps
-   * across the range costs nothing and cannot be fooled by a plausible-looking
-   * pair of declarations. */
+   * So the property asserted is the one that actually matters: wherever these
+   * two clamps are what run, the command is larger. Evaluating both across the
+   * range costs nothing and cannot be fooled by a plausible-looking pair of
+   * declarations.
+   *
+   * "Wherever they run" is doing work in that sentence. Below 48rem the code
+   * takes a chosen size and the command takes whichever is smaller of its
+   * preference and the width it has to fit — and there the command is the
+   * smaller of the two, because at a phone's width it cannot be both one line
+   * and the larger type. The block at the end of this test is where that is
+   * measured and argued. */
   const evaluate = ({ floor, rate, ceiling }, width) =>
     Math.min(ceiling, Math.max(floor, (rate * width) / 100));
 
@@ -2036,16 +2861,32 @@ test('sets the install command a step above the code it sits over', async () => 
     return { condition: match[1].trim(), body: stripped.slice(start, index - 1) };
   });
 
+  const ruleIn = (body, selector) => body.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1];
   const sizeIn = (body, selector) => {
-    const rule = body.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1];
-    const rem = rule?.match(/font-size:\s*([\d.]+)rem\s*;/);
+    const rule = ruleIn(body, selector);
+    const rem = rule?.match(/font-size:\s*(?:min\(\s*)?([\d.]+)rem\s*[;,]/);
     return rem ? +rem[1] * 16 : null;
   };
+
+  /* The fit term, which is the same shape of override bug as the one above and
+     was found the same way. `min(preference, fit)` written as a bare preference
+     drops the fit silently: the row goes back to 403px of command in 270px of
+     panel and wraps, and no declaration in the block looks wrong. So every
+     place that sets this size has to carry both halves. */
+  const fit = /calc\(\(100cqi - var\(--terminal-chrome\)\) \/ \(var\(--terminal-command-chars\) \* 0\.6 \+ 0\.6\)\)/;
+  assert.match(ruleIn(stripped, '\\.terminal-line'), fit);
 
   let paired = 0;
   for (const { condition, body } of blocks) {
     const codeHere = sizeIn(body, '\\.hero-snippet\\.code-block pre');
     const commandHere = sizeIn(body, '\\.terminal-line');
+    if (commandHere !== null) {
+      assert.match(
+        ruleIn(body, '\\.terminal-line'),
+        fit,
+        `@media ${condition} sets the command's size without the term that fits it to the panel`,
+      );
+    }
     if (codeHere === null && commandHere === null) continue;
     assert.ok(
       codeHere !== null && commandHere !== null,
@@ -2059,6 +2900,65 @@ test('sets the install command a step above the code it sits over', async () => 
     );
     paired += 1;
   }
+
+  /* And the rendered size, which below the breakpoint is the fit term rather
+   * than the preference the loop above compared.
+   *
+   * This is where the rule this test is named for stops being satisfiable, and
+   * saying so is the point of the block. The command is 42 characters of a
+   * 0.6em face: one line at 15px needs 378px of text, and a 390px phone offers
+   * a 358px panel. "Fits on one line" and "larger than the code under it" are
+   * mutually exclusive below about a 500px viewport, at any padding — so the
+   * founder's call is that the command fits, and the step it holds above the
+   * code is the one it holds everywhere the two can both be had.
+   *
+   * What is asserted is the arithmetic, against a browser measurement. Chrome
+   * is read from the installed tokens rather than restated, so a spacing step
+   * that moves fails here instead of quietly re-wrapping the row. */
+  const tokens = await read('../node_modules/@open-e2ee/design/packages/design/dist/css/tokens.css');
+  const step = (name) => {
+    const rem = tokens.match(new RegExp(`--oe-space-${name}:\\s*([\\d.]+)rem`))?.[1];
+    assert.ok(rem, `--oe-space-${name} is gone from the installed tokens`);
+    return +rem * 16;
+  };
+  const chrome = 2 + step(3) * 3 + step(4) + 24;
+  const chars = 'npm install @open-e2ee/signal-protocol-sdk'.length;
+  const fitAt = (container) => (container - chrome) / (chars * 0.6 + 0.6);
+
+  assert.equal(chrome, 78, `the terminal row spends ${chrome}px on chrome; the fit below was solved at 78`);
+  assert.ok(
+    Math.abs(fitAt(358) - 10.85) < 0.05,
+    `the model says ${fitAt(358).toFixed(2)}px at a 390px phone and Chrome measured 10.85px — ` +
+      'one of the two moved, so the row may be wrapping again',
+  );
+  assert.ok(
+    fitAt(358) < 15,
+    'the command now fits *and* outranks the code at 390 — if that is real the trade above is ' +
+      'obsolete and this whole block should be re-derived rather than adjusted',
+  );
+
+  /* The other half of solving the size: a row that is taller than its own text
+   * has to say where the slack goes. `align-items: baseline` put all of it
+   * under the command, because the copy button is 24px of drawing whose
+   * baseline the browser synthesises at its bottom edge — measured at 320, 0px
+   * above the command and 10.6px below it in a 24px content box, and the gap
+   * closes as the fit term grows: 8px at 360, 6.1px at 390, 3.5px at 430, none
+   * at desktop where the text is the tallest item. The smaller the command, the
+   * further it rode from the middle of the panel it is the only thing in.
+   *
+   * Asserted as "not baseline" as well as "centre", because this row keeps a
+   * flex rule either way and the failure is a value, not a missing property. */
+  const terminalRow = ruleIn(stripped, '\\.terminal-line');
+  assert.match(
+    terminalRow,
+    /align-items:\s*center/,
+    'the terminal row does not centre its items; at a phone’s font size the command sits at the top of the panel',
+  );
+  assert.doesNotMatch(
+    terminalRow,
+    /align-items:\s*baseline/,
+    'the copy button has no text, so its synthesised baseline hangs the command off the bottom of a 24px box',
+  );
 
   /* And a count, because "no block resized either" and "every block agreed" are
    * otherwise the same passing run, and the first of those means this loop has
@@ -2089,14 +2989,20 @@ test('shows the receive side in the hero, not only the send', () => {
    * relay delivers it — and the recorded comment beside it is the page's
    * central claim in code that ran rather than in a sentence about code.
    * Trimming the snippet back to the send call gives both of those up. */
-  assert.match(heroCode, /signal\.registerHook\("onMessageDecrypted"/);
-  assert.match(heroCode, /plaintext, only on this device/);
+  assert.match(heroCode, /bob\.registerHook\("onMessageDecrypted"/);
+  assert.match(heroCode, /plaintext, only on Bob's device/);
 
   /* Registering a hook after `create()` means the subscription has to be
    * started by hand — `client.d.ts` starts it automatically only when a hook
    * was already configured. A snippet that registers and never subscribes
    * shows a receive path that never fires. */
-  assert.match(heroCode, /signal\.startRelaySubscription\(\);/);
+  assert.match(heroCode, /bob\.startRelaySubscription\(\);/);
+
+  /* The receiving client is the one the sender addresses. Two devices in the
+   * panel make that checkable where one client and a `"bob"` string could not:
+   * a panel that subscribed on `alice` and sent to `"bob"` would print
+   * nothing, and would still have passed every assertion above. */
+  assert.match(heroCode, /await alice\.send\("bob", /);
 });
 
 test('declares what the example uses', async () => {
@@ -2183,7 +3089,7 @@ test('backs the durability claim it prints under the recorded row', async () => 
   assert.match(panel, /const installedVersion = sdkManifest\.version;/);
 });
 
-test('shows the price it calls published, and cannot drift from /pricing', async () => {
+test('promises no price it does not show, and links to one that shows them all', async () => {
   const { startupTier, tiers } = await import('../src/data/pricing.mjs');
   const [index, dist, pricingPage] = await Promise.all([
     flat('../src/pages/index.astro'),
@@ -2191,27 +3097,24 @@ test('shows the price it calls published, and cannot drift from /pricing', async
     readFile(new URL('../dist/pricing/index.html', import.meta.url), 'utf8').catch(() => null),
   ]);
 
-  /* The landing page said "at a published price" and printed no price, while
-   * /pricing had carried $5,000 the whole time. A fresh reader listed it as
-   * one of two go/no-go inputs the page would not give them: "the word
-   * 'published' promises a number that is not on the page and not linked".
-   * Both surfaces now read the same module, so the only way to make them
-   * disagree is to edit the module, which moves both. */
+  /* The landing page names no figure. It once said "at a published price" and
+   * printed none, while /pricing had carried the number the whole time, and a
+   * fresh reader listed that as one of two go/no-go inputs the page would not
+   * give them: "the word 'published' promises a number that is not on the page
+   * and not linked". Either half closes it — show the number, or make no
+   * promise and link to where the numbers are. The cell does the second, so
+   * what has to hold is that the promise stays gone and the link stays good. */
   assert.equal(startupTier.name, 'Startup');
   assert.match(startupTier.price, /^\$[\d,]+$/);
-  assert.match(index, /from \$\{startupTier\.price\}/);
   assert.match(index, /href: '\/pricing'/);
 
   if (!dist) return skipUnbuilt('dist/index.html');
   assert.doesNotMatch(dist, /at a published price/);
-  assert.ok(
-    dist.includes(startupTier.price),
-    `landing page does not print the entry price ${startupTier.price}`,
-  );
   assert.match(dist, /href="\/pricing"/);
 
-  /* And the page it links to still renders every tier, so the link does not
-   * lead somewhere that lost the number the cell just promised. */
+  /* And the page it links to renders every tier, so the link does not lead
+   * somewhere that lost the numbers the landing page declines to state. That
+   * is what makes the silence safe rather than evasive. */
   if (!pricingPage) return skipUnbuilt('dist/pricing/index.html');
   for (const tier of tiers) {
     assert.ok(
@@ -2246,10 +3149,10 @@ test('quotes the entry price from the module on every marketing page', async () 
     );
   }
 
-  /* And no page reintroduces a typed figure. Comments are stripped first: the
-   * landing page's own comment recounts the drift incident by quoting the
-   * price, and a guard that failed on the history of the bug it prevents would
-   * be deleted by the next person who hit it. */
+  /* And no page reintroduces a typed figure. Comments are stripped first: a
+   * comment does not render, so a figure inside one cannot drift on the page,
+   * and a guard that fired on the prose explaining the rule would be deleted
+   * by the next person who hit it. */
   const strip = (text) => text.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ');
 
   /* Recursive, with the exemption named rather than implied. The first version
@@ -2393,9 +3296,13 @@ test('does not overstate the one artefact that exists to not be overstated', asy
    * requires one. "No native crypto module to link" is scoped to the protocol
    * code, which is the scope docs/messaging.md §5 uses for the same claim;
    * SQLCipher needs a development build however it is generated, and
-   * local/store/expo/README.md says so outright. */
+   * local/store/expo/README.md says so outright.
+   *
+   * The scoping is what this pins. The cell also stated the SQLCipher limit
+   * for several rounds and the founder cut it; the denial is what the guard
+   * was built against, and a page that never claims "no prebuild step" is not
+   * denying anything. /product states the limit and pins it there. */
   assert.match(index, /protocol code is pure TypeScript with no native crypto module/);
-  assert.match(index, /needs a development build rather than Expo Go/);
   if (dist) assert.doesNotMatch(dist, /no prebuild step/);
 });
 
@@ -2424,7 +3331,7 @@ test('does not deny a build step in the /product lead the page later explains', 
   assert.match(dist, /needs a development build rather than Expo Go/);
 });
 
-test('names the cost of E2EE in the band whose title promises one', async () => {
+test('names the cost of E2EE in the deck that lists the benefits', async () => {
   const index = await flat('../src/pages/index.astro');
 
   /* Nine fresh readers, and the two who reached the same omission reached it
@@ -2432,43 +3339,77 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
    * once the backend cannot read anything, the other that support messages
    * under E2EE cannot be produced under subpoena or supervised — "the page
    * never names the tradeoff, not to solve it, not even to acknowledge it
-   * exists." The band has been titled "and what it costs you to find out"
-   * since round 1 while listing six benefits, which is the kind of gap that
-   * reads as concealment on a page whose whole argument is inspectability. */
-  assert.match(index, /title: 'What you give up'/);
-  assert.match(index, /nothing on your backend can search message contents/);
-  assert.match(index, /produce them for a legal request/);
+   * exists." A deck of benefits that omits the one cost every evaluator finds
+   * in the first meeting reads as concealment on a page whose whole argument
+   * is inspectability.
+   *
+   * The band was titled "and what it costs you to find out" and its lead sent
+   * the reader to the cost before anything else. Both are gone: a deck states
+   * what the product does, and a title that bills the reader for reading it
+   * frames seven capabilities as a charge. What the guard protects is the
+   * cost itself, which is still here, written as the property it follows
+   * from rather than as a loss — so the pins move to the new wording and the
+   * count of them does not drop.
+   *
+   * The cell then took a second job on the founder's call: it leads with the
+   * relay that ships, and the cost follows from what that relay holds. The
+   * title is no longer where the cost lives, so the pin on it is gone rather
+   * than repointed — a title pin here would fail on the next founder edit
+   * without protecting anything. What is pinned is the sentence, which is the
+   * thing docs/messaging.md §1.2 requires to travel with the offer. */
+  assert.match(index, /all your backend can leak and all it can produce for a legal request/);
+  /* The list opens a sentence in one draft and closes one in the next, so the
+   * first letter is the one character of this pin that carries no meaning. */
+  assert.match(
+    index,
+    /[Ss]earch, moderation, and restoring a user who has lost every device stay yours to design/,
+  );
 
-  /* The heading has to keep counting the cells, including the one that argues
-   * against the product. A seventh cell under a heading that says six is the
-   * same species of drift the carrier panel already paid for. */
+  /* The lead has to keep counting the cells, including the one that argues
+   * against the product. A seventh cell under a lead that says six is the
+   * same species of drift the carrier panel already paid for. The heading is
+   * pinned alongside it because both were rewritten in one pass, and a count
+   * pinned on its own would survive the band losing its name. The mark is in
+   * the same pin because it is positional: a box reads as this heading's last
+   * word, and one moved to the front of the line is a bullet. */
   const cells = index.match(/title: '/g) ?? [];
   assert.equal(cells.length, 7, `differentiator count changed to ${cells.length}`);
-  assert.match(index, /Seven things that decide/);
+  assert.match(index, /Seven things that are true the first time you install it/);
+  assert.match(index, /<h2>What ships in the box<BoxMark \/><\/h2>/);
 
   /* Sending the wrong reader away is the point, not a hedge to be softened
    * later: the objective is qualified starts, and a team that needs
-   * server-side moderation costs more to disappoint after the quickstart. */
-  assert.match(index, /encrypt in transit and at rest instead/);
+   * server-side moderation costs more to disappoint after the quickstart. What
+   * carries that now is the sentence pinned above and nothing else. The cell
+   * used to close on what to do instead — encrypt in transit and at rest — and
+   * on the device-to-device transfer the recovery case is built from, and both
+   * are gone from the page rather than moved to another one. Neither is
+   * pinned here as an absence: they are candidates for /learn, and a
+   * `doesNotMatch` would make putting one back a test failure. */
+  /* Every cell carries an icon, and the type is what makes that true at build
+   * time — `icon` is required on `Differentiator`, so a cell added without one
+   * does not compile. What a type cannot say is that the icon column exists at
+   * all: the field could be declared, populated seven times, and never
+   * rendered, which is a whole column of drawings the page never asks for. So
+   * the binding is pinned, and the count of icons is checked against the count
+   * of cells above rather than against a literal seven, which would need
+   * editing in two places for the same change. */
+  const icons = index.match(/icon: '[a-z-]+',/g) ?? [];
+  assert.equal(icons.length, cells.length, `${icons.length} icons for ${cells.length} cells`);
+  assert.match(index, /<DeckIcon name=\{item\.icon\} \/>/);
+  assert.match(index, /<ul class="rows rows-iconed">/);
 
-  /* Verified against the installed package rather than asserted: dist/device
-   * exports createDeviceBackup, encryptBackup and restoreDeviceBackup over a
-   * BackupStorage interface the application implements, and the transfer flow
-   * pairs two devices by QR. So transfer ships and total-loss recovery does
-   * not, and the sentence must not flatten either half — the first draft said
-   * a user who loses every device loses their history, which is false for an
-   * application that built the backup this cell says is theirs to build. */
-  assert.match(index, /ships encrypted device-to-device transfer/);
-  assert.match(index, /lost every device is a backup you design/);
-
-  /* The disqualification is scoped to the server, because that is where the
-   * constraint actually bites. "If your product needs any of that" turned
-   * away products the SDK fits — a reader building a marketplace showed that
-   * client-side reporting is a solved pattern, and this sentence is the last
-   * one such a reader sees before leaving. It stays silent about that pattern
-   * on purpose: the SDK ships no reporting API, and naming one here would
-   * trade an over-disqualification for an invented feature. */
-  assert.match(index, /If any of that has to happen on your server/);
+  /* The cost cell spans both columns, which is the only reason its body has
+   * room to lead with the relay and still carry the limit. Three things have
+   * to hold together for that and each can be lost on its own: the flag on
+   * the cell, the binding that turns it into a class, and the rule that makes
+   * the class mean something. A flag with no rule is a plain row that reads as
+   * a narrow strip of text beside half an empty grid line, and nothing else on
+   * the page would fail. */
+  assert.match(index, /wide: true,/);
+  assert.match(index, /class=\{item\.wide \? 'row-wide' : undefined\}/);
+  const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
+  assert.match(css, /\.rows > \.row-wide \{\n {2}grid-column: 1 \/ -1;/);
 
   /* An assertion here pinned the lead sentence "Not a hosted chat service,
    * and more than TLS". The lead stopped carrying that sentence when it became
@@ -2587,19 +3528,26 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
      * docs/messaging.md §5 approves "pure TypeScript protocol code". The
      * unqualified form is false one level down — the encrypted Expo store is
      * expo-sqlite with SQLCipher and needs a development build — so the lead
-     * may use the short form only while the page states the storage exception
-     * somewhere a reader reaches. That is a condition on the phrase, not a
+     * may use the short form only while the page names the subject the
+     * adjective is approved of. That is a condition on the phrase, not a
      * requirement to use it: a lead that drops the phrase owes nothing, and
      * this used to pin one exact sentence and would have failed the next two
      * times the lead was rewritten while the claim it guards stayed true.
      *
-     * The exception is checked on the built page, in the block below. */
+     * What the condition is has moved once. It was the storage exception —
+     * "needs a development build rather than Expo Go" — for as long as the
+     * runtime cell carried that clause, and the founder cut the clause on
+     * 2026-08-16. The scoping is the part §5 actually approves and the part
+     * that survived, so the guard follows it rather than following a sentence
+     * off the page; the exception itself is on /product and pinned there.
+     *
+     * The scoping is checked on the built page, in the block below. */
     if (/pure TypeScript/i.test(lead)) {
       const built = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
       assert.match(
         built,
-        /needs a development build rather than Expo Go/,
-        'the lead claims pure TypeScript and the page no longer states the storage exception',
+        /protocol code is pure TypeScript with no native crypto module/,
+        'the lead claims pure TypeScript and the page no longer scopes the claim',
       );
     }
   }
@@ -2612,12 +3560,16 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
    * stop. */
   assert.doesNotMatch(index, /(prevents|stops|eliminates) (a )?breach/i);
 
-  /* The disqualifier is signposted rather than teased: the deck used to say
-   * "including the one that decides it against" and decline to say which, so
-   * the reader who should leave had to read all seven cards to find out. */
-  assert.match(index, /Read <a href="#what-you-give-up">What you give up<\/a> first/);
-  assert.match(index, /id: 'what-you-give-up'/);
-  assert.match(index, /<li id=\{item\.id\}>/);
+  /* The lead used to signpost the disqualifier — "Read What you give up
+   * first" — because the round before that had teased it without naming it.
+   * The lead no longer opens on it at all: a deck of seven capabilities that
+   * starts by sending the reader to the one thing the product cannot do reads
+   * as a warning. What has to survive is the anchor, because the cell is the
+   * one deep link on this page that a reader is given by someone else. Every
+   * cell is addressable through the same `item.id`, so the pin is on the id
+   * and on the binding that renders it, not on a sentence pointing at it. */
+  assert.match(index, /id: 'your-relay-holds-ciphertext'/);
+  assert.match(index, /<li id=\{item\.id\}/);
 
   /* docs/messaging.md §3 bans "the relay can't read your messages" by name.
    * The lead therefore claims what the envelope is, which the recorded row
@@ -2650,15 +3602,20 @@ test('names the cost of E2EE in the band whose title promises one', async () => 
      * quietly rewritten to match whatever the lead said next, and neither of
      * those is a gate. What is left is the fact and the place it is provable:
      * the caption stands directly over the recorded relay row. */
-    /* The storage exception that scopes "pure TypeScript" in the lead.
-     * Asserted here rather than only beside the runtime cell, because the two
-     * are one claim split across a screen: the lead is allowed its short form
-     * precisely while this is on the same page. */
-    assert.match(dist, /needs a development build rather than Expo Go/);
-    /* The carrier band's caption had the same collision and the worse
-     * placement — it stands directly over the recorded row. */
-    assert.doesNotMatch(dist, /Everything in between is\s+sealed/);
-    assert.match(dist, /Everything in between is\s+ciphertext/);
+    /* The subject that scopes "pure TypeScript" in the lead. Asserted here
+     * rather than only beside the runtime cell, because the two are one claim
+     * split across a screen: the lead is allowed its short form precisely
+     * while this is on the same page. It named the storage exception until the
+     * founder cut that clause from the cell; the scoping is what §5 approves
+     * and what the page still carries, and /product holds the exception. */
+    assert.match(dist, /protocol code is pure TypeScript with no native crypto module/);
+    /* The demo caption had the same collision and the worse placement — it
+     * stands directly over the recorded row. Two assertions here pinned the
+     * sentence that fixed it, "Everything in between is ciphertext"; the
+     * founder rewrote the caption and it says the same thing in other words,
+     * so pinning the wording again would only buy the next rewrite a red. The
+     * rule survives as the sweep below, which is what actually holds: on the
+     * whole visible page, "sealed" may only appear as "sealed sender". */
     /* The feature band still names the real one, which is the whole reason
      * the loose sense had to go. "sealed" may reach a reader on this page only
      * as part of "sealed sender".
@@ -2735,23 +3692,42 @@ test('carries what the OSI mark is licensed on, wherever the mark is', async () 
     'the OSI mark is on the page without its required attribution statement',
   );
 
-  /* The permission itself. AGPL-3.0 is on OSI's approved list; the mark is
-   * allowed here because the page says the SDK is under it. Matched on the
-   * licence identifier rather than on any one sentence, because four different
-   * sentences on this page have carried it and any of them discharges this. */
+  /* The permission itself. The GNU Affero General Public License version 3 is
+   * on OSI's approved list; the mark is allowed here because the page says the
+   * SDK is under it. Matched on the licence rather than on any one sentence,
+   * because four different sentences on this page have carried it and any of
+   * them discharges this. Both renderings satisfy the condition and both are
+   * matched: `docs/messaging.md` §4 makes AGPLv3 the prose form and leaves the
+   * SPDX identifier in place where a licence field or a legal clause names it,
+   * and OSI's condition is about the licence, not about its spelling. */
   assert.match(
     built,
-    /AGPL-3\.0/,
+    /AGPLv3|AGPL-3\.0/,
     'the OSI mark is permitted only on a page that promotes an OSI-approved licence',
   );
 
   /* The palette is a condition — "never stray from the color palette" — so the
    * mark's own colours are literals rather than tokens, and this is the guard
    * against a well-meant sweep replacing them with `currentColor` or
-   * `--oe-muted` the way every other mark on this site is drawn. */
-  const mark = await readFile(new URL('../src/components/OsiMark.astro', import.meta.url), 'utf8');
-  assert.match(mark, /fill="#3DA639"/i, 'the OSI mark must be drawn in an OSI palette colour');
-  assert.match(mark, /stroke="#1E531D"/i, 'the OSI mark must keep its palette outline');
+   * `--oe-muted` the way every other mark on this site is drawn. The closing
+   * band's star field draws this same artwork and does exactly that, at the
+   * founder's direction, so the lead is now the only instance that honours the
+   * condition and the only one this guard can hold. It reads the module the
+   * artwork moved to, and then that the component draws from it — either half
+   * alone would pass with the mark painted from something else. */
+  const [artwork, mark] = await Promise.all([
+    readFile(new URL('../src/lib/osi-artwork.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/OsiMark.astro', import.meta.url), 'utf8'),
+  ]);
+  assert.match(artwork, /OSI_BODY = '#3DA639'/i, 'the OSI mark must be drawn in an OSI palette colour');
+  assert.match(artwork, /OSI_EDGE = '#1E531D'/i, 'the OSI mark must keep its palette outline');
+  assert.match(mark, /fill=\{OSI_BODY\}/, 'the mark in the lead no longer takes the OSI palette');
+  assert.match(mark, /stroke=\{OSI_EDGE\}/, 'the mark in the lead no longer takes the OSI outline');
+  assert.match(
+    built,
+    /fill="#3DA639"/i,
+    'the built page draws the OSI mark in something other than its palette',
+  );
 
   /* The outline variant of this mark has a 0.8-unit wall on a 24 viewBox and
    * renders 0.65px wide at the lead's text size; it shipped for one round and
@@ -3098,9 +4074,9 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
    * was cut with the rest of that line on 2026-08-09. The licence cell in the
    * feature band is the homepage's statement now, and it is the fuller one —
    * it quotes the entry price from the same module /pricing renders. */
-  assert.match(index, /The complete SDK is free under AGPL-3\.0/);
+  assert.match(index, /The complete SDK is free under AGPLv3/);
   assert.match(index, /link: \{ href: '\/pricing', label: 'See the tiers' \}/);
-  assert.match(pricing, /Free under AGPL\./i);
+  assert.match(pricing, /Free under AGPLv3\./i);
 
   /* The tier copy and the prices moved out of this page and into
    * src/data/pricing.mjs, so that the landing page could quote the entry
@@ -3109,7 +4085,7 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
   const { tiers } = await import('../src/data/pricing.mjs');
   assert.ok(
     tiers.some((tier) => /You run your own infrastructure/i.test(tier.detail)),
-    'the AGPL tier no longer says who runs the infrastructure',
+    'the AGPLv3 tier no longer says who runs the infrastructure',
   );
 
   /* The sentence that creates the debt now links to the page that prices it.
@@ -3124,12 +4100,54 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
   );
 });
 
+test('names the licence AGPLv3 wherever the site is not quoting an identifier', async () => {
+  /* `docs/messaging.md` §4: AGPLv3 is the prose rendering. The bare word is
+   * what the rule is against — it names a licence family rather than a version,
+   * and the family has three versions with different obligations.
+   *
+   * The SPDX identifier is not prose and passes: `AGPL-3.0-or-later` is what
+   * `package.json` declares, and `AGPL-3.0-only` is libsignal's grant on the
+   * comparison table, where the difference from ours is the point of the row.
+   * So this matches the word with no version after it, in either rendering.
+   *
+   * /legal is excluded because a contract defines its own terms. The commercial
+   * terms name the licence in full — "Affero General Public License, version 3
+   * or later (AGPL-3.0-or-later)" — and then use the short form the way a
+   * defined term is used. Rewriting a defined term to match a marketing rule is
+   * an edit to an instrument, and this project keeps executed instruments as
+   * they were executed.
+   *
+   * On the built pages rather than the sources, because the sources carry
+   * comments — this one included — that quote the banned form in order to rule
+   * it out, and a source-side sweep would fail on its own reasoning. */
+  const distDir = new URL('../dist/', import.meta.url);
+  let pages;
+  try {
+    pages = (await readdir(distDir, { recursive: true })).filter((name) => name.endsWith('.html'));
+  } catch {
+    skipUnbuilt('dist/');
+    return;
+  }
+
+  const offenders = [];
+  for (const page of pages) {
+    if (page.startsWith('legal/')) continue;
+    const text = (await readFile(new URL(page, distDir), 'utf8'))
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ');
+    for (const hit of text.matchAll(/.{0,40}\bAGPL\b(?!-3\.0).{0,40}/g)) {
+      offenders.push(`${page}: …${hit[0]}…`);
+    }
+  }
+
+  assert.deepEqual(offenders, [], `the licence is named without its version:\n${offenders.join('\n')}`);
+});
+
 /* A test here — "points at the documentation it says it has" — pinned the
  * hero's "we document exactly what" link to /security. The founder cut that
- * paragraph on 2026-08-09, so the pin went with the copy. The homepage still
- * reaches /security exactly once, through the trust-links band, and the guard
- * for that is "reaches the security review pack from the homepage and the
- * footer" above. */
+ * paragraph on 2026-08-09, so the pin went with the copy. The trust-links band
+ * that reached /security is on /product now, and the guard for it is "reaches
+ * the security review pack from the product page and the footer" above. */
 
 /*
  * The platform strip claims a support matrix. These check it against the
@@ -3258,23 +4276,72 @@ test('shows a generic bucket for S3 only while there is no AWS client to name', 
   assert.doesNotMatch(marks, /label: '(Amazon[^']*|AWS[^']*)'/);
 
   /* The bare word only stays honest because of the heading over it. "S3" in a
-     row headed "Works with" is the API; the same word under "Integrations",
+     row headed "Built for" is the API; the same word under "Integrations",
      "Powered by", or "Partners" — or under no heading at all — is a vendor
      claim. So the heading is held to an allowlist of compatibility framings
      rather than to one string: rewording within the list is free, and adding to
      the list is the moment to re-decide whether the bare name still reads as a
-     protocol. */
+     protocol.
+
+     "Built for" is on the list because it is a claim about this SDK and not
+     about the other party: it says what the adapters were written against,
+     where "Works with" said something about the two of them together. */
   const strip = await read('../src/components/PlatformStrip.astro');
   const heading = strip.match(/class="platform-label">([^<]*)</)?.[1];
   assert.ok(heading, 'the strip no longer has a heading over the marks');
   assert.match(
     heading,
-    /^(Works|Compatible) with$/,
+    /^(Works with|Compatible with|Built for)$/,
     `"${heading}" over an entry named "S3" reads as an integration the SDK does not have`,
   );
 
   /* And that the export the entry stands for is really there. */
   assert.ok(manifest.exports['./remote/object-store/s3'], 's3 object store export is gone');
+});
+
+test('takes the platform row down to two rows on a phone by sizing it, not by hiding it', async () => {
+  const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
+  const strip = ruleFor(css, '.platform-strip');
+
+  /* Seven entries at the desktop's mark and name sizes need 413px for the four
+     runtimes alone, against 358px of page at 390 — a wrap inside the first
+     cluster and a third row under it. The four values below are what make the
+     same seven fit two rows down to 320, measured at 320, 360, 390 and 430.
+
+     Asserted as a range each rather than as a number, because the numbers are
+     a ladder someone will re-walk. What must not come back is a fixed size:
+     that is the shape the defect had. */
+  for (const property of [
+    '--platform-mark-size',
+    '--platform-name-size',
+    '--platform-gap',
+    '--platform-entry-gap',
+  ]) {
+    assert.match(
+      strip,
+      new RegExp(`${property}:\\s*clamp\\([^;]*vw[^;]*\\)`),
+      `${property} no longer scales with the viewport, so the row is one size at every width again`,
+    );
+  }
+
+  /* And the three places that spend them. A declaration that goes back to a
+     literal is the whole failure: nothing breaks, the row just wraps again on
+     the devices the clamps were added for. */
+  assert.match(ruleFor(css, '.platform-marks svg'), /width: var\(--platform-mark-size\)/);
+  assert.match(ruleFor(css, '.platform-marks svg'), /height: var\(--platform-mark-size\)/);
+  const entry = ruleFor(css, '.platform-cluster > ul > li');
+  assert.match(entry, /font-size: var\(--platform-name-size\)/);
+  assert.match(entry, /gap: var\(--platform-entry-gap\)/);
+  assert.match(
+    ruleFor(css, '.platform-marks, .platform-cluster > ul'),
+    /gap: var\(--oe-space-2\) var\(--platform-gap\)/,
+  );
+
+  /* The names stay. Dropping them is the other way to make the row fit and it
+     turns a compatibility list into a partner wall — the labels are what carry
+     the precision the marks cannot, and the test above this one holds the
+     heading over them to the same standard. */
+  assert.doesNotMatch(css, /\.platform-cluster > ul > li span \{[^}]*display:\s*none/);
 });
 
 /*
@@ -3536,15 +4603,16 @@ test('keeps the space on both sides of every inline code span', async () => {
   }
 
   /* A regex that stopped matching would pass on every file in the tree. The
-   * floor is the tree's measured count: 38 spans on 2026-08-10, the two most
-   * recent having left with `LiveCarrierPanel.astro`, whose caption named
-   * `inMemoryStore()` and `inMemoryRelay()` — the homepage's own caption above
-   * the demo names both.
+   * floor is the tree's measured count: 33 spans on 2026-08-16. The homepage
+   * held the last five and now holds none — cutting the landing page back to
+   * the demo, the deck and the licence took the alternatives fold with it,
+   * and with the fold went the four package names it compared against and the
+   * `inMemoryRelay()` in the caption above the demo.
    *
    * Re-measure and record the reason when this moves. The number is a tripwire
    * for a regex that has stopped matching, so it is only worth what its last
    * measurement was worth. */
-  assert.ok(spans >= 38, `expected to be scanning real code spans, counted ${spans}`);
+  assert.ok(spans >= 33, `expected to be scanning real code spans, counted ${spans}`);
 });
 
 test('the scene places the envelope at every step the run records', async () => {
@@ -3599,4 +4667,62 @@ test('the scene places the envelope at every step the run records', async () => 
   for (const [step, place] of Object.entries(ENVELOPE_AT)) {
     assert.ok(PLACES.has(place), `${step} puts the envelope at "${place}", which is not a place`);
   }
+});
+
+test('the spent key carries its transition on the flying state, never at rest', async () => {
+  /*
+   * The key that leaves the shelf when a session is agreed is placed and
+   * released inside one cue: the script writes the shelf it starts from, forces
+   * that placement out with a reflow, then writes the device it ends at. That
+   * only draws a crossing while the resting state has no transition of its own.
+   *
+   * Give `.demo-spent-key` a `transition: transform …` and the first of those
+   * two writes becomes an animation as well — from wherever the element last
+   * was, which at mount is the scene's top-left corner — and the second write
+   * retargets it from mid-flight. The key then sets off from the corner instead
+   * of from the shelf. Every gate stays green: the element is displayed, the
+   * counts are right, the arrival is right, and the only wrong thing is the
+   * half-second nobody asserts on.
+   *
+   * That is not hypothetical — it is what shipped in the first commit of this
+   * feature and it was found by sampling the live transform in a browser, not
+   * by any check here. The envelope never meets it because it is placed on one
+   * cue and flown on the next, so the arrangement this asserts is the published
+   * keys' rather than the envelope's.
+   *
+   * `cssRules` rather than `ruleFor`, because the selector legitimately carries
+   * two rules — the base one and the `display: none` that collapses it in the
+   * stacked layout — and `ruleFor` throws on a second. Every rule under the bare
+   * selector is checked, which is the point: a transition added inside the media
+   * block would be just as wrong.
+   */
+  const scene = await read('../src/components/demo/DemoScene.astro');
+  const rules = cssRules(scene);
+
+  const resting = rules.filter((rule) => rule.selector === '.demo-spent-key');
+  assert.ok(resting.length > 0, 'the scene no longer styles .demo-spent-key at all');
+  for (const rule of resting) {
+    assert.doesNotMatch(
+      rule.body,
+      /transition/,
+      'the spent key declares a transition on its resting state, so the placement write ' +
+        'animates too and the crossing starts from wherever the key last was',
+    );
+  }
+
+  const flying = rules.filter((rule) => rule.selector === ".demo-spent-key[data-flying='true']");
+  assert.equal(flying.length, 1, 'the flying state is no longer one rule');
+  /* The property is the one the placement writes. The key rides a motion path
+     — the rack, the wire, the wheel — so what animates is `offset-distance`,
+     and a rule that transitioned `transform` instead would leave the crossing
+     to happen in a single frame. The clock is still the shared one: the
+     crossing is a multiple of `--demo-flight-ms` rather than a number of its
+     own, which is what keeps it inside the step's dwell when that dwell
+     moves. */
+  assert.match(
+    flying[0].body,
+    /transition:\s*offset-distance\s+calc\(var\(--demo-flight-ms/,
+    'the flying state no longer flies on --demo-flight-ms, so the key crosses the gap at a ' +
+      'speed unrelated to the step holding it',
+  );
 });

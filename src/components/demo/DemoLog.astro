@@ -257,6 +257,16 @@
     margin: 0;
     color: var(--oe-muted);
   }
+
+  /* Below 60rem the console composition is replaced whole by `DemoMobile`,
+     which has no log. Stated here rather than in `global.css`'s hiding rule:
+     Astro scopes this file's selectors, so an outside rule of equal
+     specificity loses to the base `display: flex` above on source order. */
+  @media (max-width: 60rem) {
+    .demo-log {
+      display: none;
+    }
+  }
 </style>
 
 <script>
@@ -408,15 +418,18 @@
       li.append(button);
       button.addEventListener('click', () => selectRow(li, button, row.step));
 
-      rows.append(li);
-      entries.push({ row, li });
-      refresh();
-
       /* Newest-last with the scroll pinned to the bottom, so a reader
          watching the log does not have to keep scrolling down to follow it —
          unless they have scrolled up to read something older, which this
-         leaves alone. */
+         leaves alone. Measured before the row lands: the append grows
+         `scrollHeight` synchronously, and a reader pinned to the old bottom
+         is one row short of the new one, so a read taken after would say
+         "scrolled up" on every append and the pin would never hold. */
       const atBottom = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 1;
+
+      rows.append(li);
+      entries.push({ row, li });
+      refresh();
       if (atBottom) scroll.scrollTop = scroll.scrollHeight;
     }
 

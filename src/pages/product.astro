@@ -44,6 +44,34 @@ const capabilities = [
   },
 ];
 
+/*
+ * Everything a reader can check, in the band that exists to be checked. These
+ * links spent time in a third row under the homepage hero, where they read as
+ * an afterthought to the CTA rather than as an answer to "prove it"; they are
+ * on this page because the claims they answer for are on this page.
+ *
+ * A second entry here pointed at /evaluate as "the security review pack". That
+ * page asked the questions /security answers and rendered the same pinned
+ * specifications from the same module, so the two links sent a reader to one
+ * body of content under two names. /security absorbed it and this list names
+ * it once.
+ */
+const trustLinks = [
+  { href: '/security', label: 'What the relay can and cannot see' },
+  {
+    href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/SECURITY.md',
+    label: 'The security model and threat model',
+  },
+  {
+    href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/ARCHITECTURE.md',
+    label: 'Architecture and protocol profile',
+  },
+  {
+    href: 'https://github.com/open-e2ee/signal-protocol-js',
+    label: 'View the SDK on GitHub',
+  },
+];
+
 const adapters = [
   {
     role: 'Local store',
@@ -327,7 +355,7 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
       <p class="muted measure">
         A licence row is not a scorecard either. <code>ts-mls</code> is MIT, which already permits
         proprietary use, so &ldquo;no commercial licence offered&rdquo; costs its users nothing.
-        Ours is AGPL-3.0-or-later with a commercial licence available, which is a cost to some
+        Ours is AGPLv3 with a commercial licence available, which is a cost to some
         readers and the reason the row is there.
       </p>
     </div>
@@ -385,14 +413,44 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
     <div class="container measure stack">
       <h2>Licensing</h2>
       <p>
-        The complete SDK is available under AGPL-3.0. Proprietary products purchase annual
+        The complete SDK is available under AGPLv3. Proprietary products purchase annual
         commercial production rights at a published price, starting at {startupTier.price}{' '}
         {startupTier.period}.
       </p>
       <p class="text-links">
         <a href="/pricing">License for closed source</a>
-        <a href="/licensing">Understand AGPL use</a>
+        <a href="/licensing">Understand AGPLv3 use</a>
       </p>
+    </div>
+  </section>
+
+  {/* This band closed the homepage until the landing page was cut back to the
+      demo, the feature deck, and the licence. It answers "prove it" for a
+      reader who has just read a page of capability claims, which is the page
+      it belongs on now — /security states the same assurance sentence inside
+      its published limits, at the length that page has room for. */}
+  <section class="band band-surface">
+    <div class="container">
+      <div class="band-head">
+        <h2>Check the work</h2>
+        {/* The promise of a firm review was retired on 2026-08-09, when
+            adversarial AI review became the assurance approach. docs/messaging.md
+            §7 fixes the sentence and the rule that governs it: the two halves
+            never separate, and no future firm engagement is promised in any
+            tense. The band whose subject is what a reader can check is the last
+            place the site should round up. */}
+        <p class="measure">
+          Reviewed continuously by adversarial AI agents; not audited by any independent firm.
+          Every change passes an adversarial AI review before it merges, and recurring
+          whole-codebase AI audit passes run against the engineering repository — so every claim
+          on this page has something you can read behind it.
+        </p>
+      </div>
+      <ul class="rows rows-single">
+        {trustLinks.map((link) => (
+          <li><a href={link.href}>{link.label}</a></li>
+        ))}
+      </ul>
     </div>
   </section>
 

@@ -22,7 +22,7 @@ import test from 'node:test';
 import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
 
-const PROBE = 'Ship it Thursday. The staging key rotates at 09:00 UTC.';
+const PROBE = 'Dinner at 7. I got us the table by the window.';
 
 /** Field names the installed `Envelope` declares, read rather than typed. */
 const declaredEnvelopeFields = await (async () => {

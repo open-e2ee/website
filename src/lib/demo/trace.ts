@@ -65,9 +65,15 @@ export type Actor = 'a' | 'relay' | 'b';
  * SDK's own progress reports during `create()`, one event per report, because
  * a single event at the end would carry a finished count and nothing to draw
  * growing.
+ *
+ * `registered` is the relay accepting a device: the registration call is the
+ * first thing to cross the wire, and the relay builds the device's mailbox in
+ * answering it. It precedes `generating-keys` because a device registers on
+ * its way up, before its client has made a single key.
  */
 export type Step =
   | 'idle'
+  | 'registered'
   | 'generating-keys'
   | 'devices-ready'
   | 'bundles-published'
@@ -81,6 +87,7 @@ export type Step =
 /** Every step, in protocol order. Derived from nothing — this is the source. */
 export const STEPS: readonly Step[] = [
   'idle',
+  'registered',
   'generating-keys',
   'devices-ready',
   'bundles-published',

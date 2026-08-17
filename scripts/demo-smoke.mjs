@@ -66,11 +66,6 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
-import { SCENARIOS } from '../src/lib/demo/scenarios/catalog.ts';
-import { runFlipAByte } from '../src/lib/demo/scenarios/flip-a-byte.ts';
-import { runAddASecondDevice } from '../src/lib/demo/scenarios/add-a-second-device.ts';
-import { runOutOfPreKeys } from '../src/lib/demo/scenarios/run-out-of-prekeys.ts';
-import { reinstallADevice } from '../src/lib/demo/scenarios/reinstall-a-device.ts';
 import { EVENTS } from '../src/workers/site.ts';
 import {
   Cdp,
@@ -113,9 +108,34 @@ const STATUS = '[data-console-status]';
    budget against a page that had already answered. */
 const EXCUSED = `/did not finish/.test(document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? '')`;
 
-const META = '[data-console-row]';
-const CIPHER = '[data-console-hex]';
-const RELAY_EMPTY = '[data-console-relay-empty]';
+/*
+ * The mailbox the relay is holding a row in, and what the row is drawn as.
+ *
+ * The console used to print the relay's custody as a list of field names beside
+ * a hex dump. The scene draws it instead: a bay per account, lit by
+ * `data-holding` while the relay actually has the envelope, with the sealed
+ * message resting in it. So "the relay is holding something" is read off the
+ * bay's own state, and the addressing and the size are read off the message
+ * resting there — the two facts the relay can see, and the only two the drawing
+ * claims.
+ *
+ * Addressed per account rather than as one row, because which mailbox is a fact
+ * about who the envelope is for, and a reading that took any lit bay would pass
+ * on a relay that put the message in the sender's own.
+ */
+const MAILBOX = (side) => `[data-scene-slot="mailbox"][data-scene-side="${side}"]`;
+const MAILBOX_EMPTY = (side) =>
+  `[data-scene-slot-body="mailbox"][data-scene-side="${side}"] .demo-relay-slot-empty`;
+
+/* The sealed message, and what is written on its outside. The size is the
+   recording's own measure of the ciphertext, and the addressing is read off the
+   envelope the relay stored. Those are the two facts the relay has, and the
+   tile shows nothing else while it is sealed. */
+const ENVELOPE_SIZE = '[data-scene-envelope-size]';
+const ENVELOPE_TEXT = '[data-scene-envelope-text]';
+/* `humanBytes`'s grammar, which is where every size on the page comes from. */
+const STORED_SIZE = /^(\d+(?:\.\d)?) (B|KB|MB)$/;
+
 const RECORDED = '[data-console-recorded]';
 
 /* The composer, and it belongs to a device rather than to the console: the
@@ -123,15 +143,30 @@ const RECORDED = '[data-console-recorded]';
    in the arrangement the page draws. */
 const COMPOSE = (side) => `[data-scene-input="${side}"]`;
 const COMPOSE_SEND = (side) => `[data-scene-send="${side}"]`;
-const INPUT = COMPOSE('a');
-const SEND = COMPOSE_SEND('a');
+
+/* And the press that makes a phone a device. One per phone, because coming up
+   is something a device does for itself: it makes its own keys and publishes
+   its own bundle, and a single control for the pair would draw one act where
+   the protocol has two. */
+const SCENE_ACTIVATE = (side) => `[data-scene-activate="${side}"]`;
+
+/* Which device starts the conversation, and which one is spoken to. The first
+   sentence is what makes a session, and a session is made out of the *other*
+   device's published bundle — so this pair decides whose shelf is expected to
+   fall by the time the two are talking, and everything below that depends on
+   the direction is written from it rather than from a side letter typed twice. */
+const INITIATOR = 'a';
+const RESPONDER = 'b';
+
+const INPUT = COMPOSE(INITIATOR);
+const SEND = COMPOSE_SEND(INITIATOR);
 
 /* The near device's conversation, and the far one's. A round trip is proved by
    the sentence appearing in the device that did not type it — the claim the
    whole arrangement is built to make, and one that flattened page text cannot
    check, since the sentence is on the page from the moment it is typed. */
-const SENT = '[data-scene-chat="a"]';
-const DECRYPTED = '[data-scene-chat="b"]';
+const SENT = `[data-scene-chat="${INITIATOR}"]`;
+const DECRYPTED = `[data-scene-chat="${RESPONDER}"]`;
 
 /* The names the page is really running the SDK under. Read rather than assumed:
    the component renders them into the headings and into these attributes from
@@ -188,26 +223,39 @@ const SCENE_DEVICE_KEYS = (side) => `[data-scene-keys-count="${side}"]`;
 /*
  * Key generation, as the device draws it happening.
  *
- * The row ships hidden and is shown by `scene-view.ts` when the first progress
- * event reaches the reel, so its being visible at all is a fact about a script
- * that ran. The bar's length and the figure beside it are written from counts
- * the SDK reported while it was generating — nothing on this row is
- * interpolated, and nothing on it can be drawn by a page working from a
- * timetable.
+ * It is drawn on the device's own key store rather than on a row of its own:
+ * one bar, filling batch by batch from the SDK's progress reports and settling
+ * at the amount the store ends up holding. The bar's length and the figure
+ * beside it are written from counts the SDK reported while it was generating —
+ * nothing here is interpolated, and nothing here can be drawn by a page working
+ * from a timetable.
  *
  * Read as three separate things because they can disagree: the bar is an inline
  * width the script sets, the figure is text it writes, and the rendered
  * rectangle is what the reader actually sees. A bar told to be 100% inside a
  * track of zero width is on the page and is not on the screen.
  */
-const SCENE_KEYGEN = (side) => `[data-scene-keygen="${side}"]`;
-const SCENE_KEYGEN_BAR = (side) => `[data-scene-keygen-bar="${side}"]`;
-const SCENE_KEYGEN_FIGURE = (side) => `[data-scene-keygen-figure="${side}"]`;
+const SCENE_KEYGEN = (side) => `[data-scene-keys="${side}"]`;
+const SCENE_KEYGEN_BAR = (side) => `[data-scene-keys-bar="${side}"]`;
+const SCENE_KEYGEN_FIGURE = (side) => `[data-scene-keys-count="${side}"]`;
 
-/* The figure's whole grammar, so a row that printed a number without saying
-   what it counts, or counted past its own total, is caught here rather than
-   read as prose. */
-const KEYGEN_FIGURE = /^(\d+) of (\d+) keypairs$/;
+/*
+ * The figure's whole grammar, in the store's own words: `so far / total` while
+ * the two differ, and the plain amount once they meet — `outOf`'s rule, and the
+ * reason a settled store does not read `500 / 500` at a reader.
+ *
+ * Both forms come back as the same pair, so every check below compares counts
+ * rather than spellings. A row printing anything else is caught here rather
+ * than read as prose.
+ */
+const KEYGEN_FIGURE = /^(\d+)(?: \/ (\d+))?$/;
+
+function keygenCounts(figure) {
+  const parsed = KEYGEN_FIGURE.exec(figure ?? '');
+  if (!parsed) return null;
+  const count = Number(parsed[1]);
+  return { count, total: parsed[2] === undefined ? count : Number(parsed[2]) };
+}
 
 /*
  * The relay's shelves, one slot per kind per device.
@@ -225,8 +273,19 @@ const SCENE_SLOT_BODY = (kind, side) =>
 /* The name the slot is labelled with, which `scene-view.ts` stamps at mount
    from the same session the device columns take their names from. A label read
    here and held against the device's own name is the whole of "this shelf
-   belongs to that account". */
+   belongs to that account".
+
+   The relay draws one account block per device and both of that device's
+   shelves inside it, so the label is read by walking up from the slot rather
+   than by asking for the side's name directly. Containment is the drawing's
+   own claim about whose shelf this is: a slot moved into the other account
+   comes back wearing the other name, which is the failure this reads for, and
+   a slot addressed by its own side attribute could not see it. */
+const SCENE_ACCOUNT = '[data-scene-account]';
 const SCENE_SLOT_NAME = '[data-scene-slot-name]';
+const slotLabel = (slot) =>
+  `${slot}.closest(${JSON.stringify(SCENE_ACCOUNT)})` +
+  `?.querySelector(${JSON.stringify(SCENE_SLOT_NAME)})?.textContent?.trim() ?? ''`;
 
 /* The two kinds of shelf, named once. Used to read every slot rather than the
    one a check happens to care about: a reading that covered only the slot under
@@ -266,115 +325,68 @@ const SCENE_END_STATE = 'opened';
 const BRAID_TOGGLE = '[data-console-toggle="braid"]';
 
 /*
- * The braid's own row, and the two things it prints.
+ * The braid's counts, drawn on the thing the braid changes.
  *
- * The figure is the chunk counts the braid reported, and the mark is the braid
- * saying a device has produced its epoch key. Both are written from the report
- * the SDK raises and from nothing else, so neither can be drawn by a page that
- * is working from the sizes it measured — which is what makes them worth
- * reading here rather than reading the column's geometry again.
+ * The strip is written from the report the SDK raises and from nothing else, so
+ * it cannot be drawn by a page working from the sizes it measured — which is
+ * what makes it worth reading here rather than reading the column's geometry
+ * again. It prints how many chunks of the post-quantum key the message is
+ * carrying and how many the whole key takes, so the pair meeting is the braid
+ * saying a device has a complete epoch key.
  *
- * Both ship hidden and are shown by `scene-view.ts` when a report arrives, so
- * their presence is a fact about a braid that ran.
+ * It ships hidden and is shown by `scene-view.ts` only for a cue that carries a
+ * braid report, so a direct-mode run never grows the message and the strip's
+ * presence is a fact about a braid that ran.
  */
-const SCENE_BRAID = '[data-scene-braid]';
-const SCENE_BRAID_FIGURE = '[data-scene-braid-figure]';
-const SCENE_BRAID_MARK = '[data-scene-braid-mark]';
+const SCENE_BRAID_FIGURE = '[data-scene-envelope-chunk]';
 
-/* What a device is called, in the scene's own words. Read beside the mark so
-   the mark can be held against a name the page took from the session rather
-   than against a string this file also knows. */
-const SCENE_NAME = (side) => `[data-scene-name="${side}"]`;
+/* The strip's whole grammar: the drawing's word for what it is counting, then
+   what this message carries of what the key takes. Both figures are the braid's
+   to choose, so the shape is what is pinned and never the numbers. */
+const BRAID_FIGURE = /^pq chunks (\d+) \/ (\d+)$/;
 
 /*
  * The relay's column, whole, rather than any element inside it.
  *
- * The check below asks whether *something* in this column is drawn to the size
- * of what the relay is holding, and deliberately does not say which element
- * that is or how it is marked. Naming one would be this harness dictating a
- * drawing rather than reading one, and the drawing is free to move as long as
- * the column still answers the question.
+ * The check below asks what the column does when the envelope's size changes,
+ * and deliberately does not name the elements it measures. Every box in the
+ * column is measured and paired by where it sits, so the drawing is free to
+ * move, to be remarked or to be rebuilt, and the reading still describes it.
  */
 const RELAY_COLUMN = '.demo-scene-relay';
 
-/* What the relay says it is holding, in its own words. Reported beside the
-   geometry so a reader can see the sizes the two runs put through the column;
-   never asserted on, because a printed figure is exactly what a column can get
-   right while drawing nothing. */
-const RELAY_STORED = '[data-console-metric="relay-holding"]';
-
-/* And what it says about the one row it is showing, which is the row the
-   drawing beside it is drawing. Reported for the same reason and under the same
-   rule as the total above: context, never the claim. */
-const ROW_NOTE = '[data-console-row-note]';
+/* What the relay says about the one message it is holding. The scene draws
+   every size as a figure and none as a length, so this is the drawing of the
+   size rather than a caption beside one. */
+const ROW_NOTE = ENVELOPE_SIZE;
 
 /*
- * How much wider the drawing has to get, and how small an element may be and
- * still count.
+ * How far apart the two settings put the envelope, and how steady the drawing
+ * of it stays.
  *
- * The envelopes differ by roughly nine times between the two settings, so a
- * width drawn to scale differs by roughly nine times too. Three is the floor
- * that separates that from everything else in the column that moves a little
- * when the text changes: a longer byte figure or an extra field name reflows a
- * box by a few percent, never by three times. Sub-pixel boxes are dropped
- * rather than divided — an element a fraction of a pixel wide in one run is
- * noise, and it would otherwise manufacture an enormous ratio out of nothing.
+ * With the braid off the ML-KEM material rides whole in the message that agrees
+ * the session; with it on the same material is spread a chunk at a time, so
+ * that first envelope is the smaller of the two by roughly the size of the key
+ * it is no longer carrying. Measured at 3.1 KB against 1.9 KB, 1.63× apart.
+ * The sizes are deterministic — fixed key lengths and a fixed sentence — so the
+ * floor is not guarding against sampling noise; 1.3 is set where the setting
+ * remains unmistakable if the SDK's framing shifts a little around it.
+ *
+ * The width of the transit is the other half, and it is a claim in the other
+ * direction: the envelope rides the wire at one size whatever it carries, so
+ * the bigger message is drawn on the same box as the smaller. A tenth is the
+ * allowance for the text inside it reflowing a box — a byte figure gaining a
+ * digit, a chunk strip appearing — and nothing in a constant-size drawing
+ * moves further than that. Sub-pixel boxes are passed over rather than
+ * divided: an element a fraction of a pixel wide in one run is noise, and it
+ * would otherwise manufacture an enormous ratio out of nothing.
  */
-const BRAID_WIDTH_FACTOR = 3;
+const BRAID_SIZE_FACTOR = 1.3;
+const BRAID_STEADY_RATIO = 1.1;
 const BRAID_MIN_WIDTH_PX = 2;
 
-/*
- * The scenario section's contract, on the same terms. A scenario is addressed
- * by its slug rather than by position: a second scenario landing on the page
- * must not silently move what this drives.
- *
- * The slug is a parameter rather than a constant because the site now ships two
- * scenarios and will ship more. What is shared is everything that is true of
- * any scenario — it opens by fragment, it runs twice, it prints steps and
- * non-events and the SDK's log, it sends one beacon and no other request. What
- * is not shared is what the run should say, and that is derived per scenario by
- * running it in this process. A second scenario driven by a copy of this
- * function would be a second harness to keep honest.
- */
-const FLIP_SLUG = 'flip-a-byte';
-const SECOND_DEVICE_SLUG = 'add-a-second-device';
-const PREKEY_SLUG = 'run-out-of-prekeys';
-const REINSTALL_SLUG = 'reinstall-a-device';
-
-const scenarioRoot = (slug) => `[data-scenario="${slug}"]`;
-const SCENARIO_RUN = '[data-scenario-run]';
-const SCENARIO_STATUS = '[data-scenario-status]';
-const SCENARIO_OUTPUT = '[data-scenario-output]';
-const SCENARIO_STEPS = '[data-scenario-steps]';
-const SCENARIO_NOTS = '[data-scenario-nots]';
-/* A second ordered list, for the scenario whose recovery is a separate
-   argument from what happened. Kept apart from the steps rather than appended
-   to them because "nothing told the application" and "here is the ceremony it
-   takes to recover" are checked against different things, and a first-match
-   scan over one merged list would report the wrong half. */
-const SCENARIO_RECOVERY = '[data-scenario-recovery]';
-const SCENARIO_LOG_LINE = '[data-scenario-log-line]';
-const SCENARIO_DEVICE = '[data-scenario-device]';
-
-/* The beacon a scenario is allowed to send, in full. Same reasoning as
-   `DEMO_RUN_BODY`: the body is fixed before the browser starts, so a dimension
-   derived from the run — a timing, a byte count, an error code — is a failure
-   rather than something to be searched for.
-
-   The path is `/` because the scenarios are a homepage section now, which makes
-   this string identical in shape to `DEMO_RUN_BODY`. They still differ in the
-   part that matters: the panel sends one beacon per page, and a scenario sends
-   one per scenario with its slug attached. */
-const scenarioBeaconBody = (slug) => `scenario_opened / ${slug}`;
-
-/* The longest a scenario gets. The most expensive one boots three devices,
-   runs a provisioning handshake and sends twice; it ran in well under a second
-   where this was written, and the bound is for a machine under load rather than
-   for the protocol. */
-const SCENARIO_TIMEOUT_MS = 60000;
-
 const NONCE = randomUUID().slice(0, 8);
-const PROBE = `Smoke probe ${NONCE}: the staging key rotates at 09:00 UTC.`;
+const PROBE = `Smoke probe ${NONCE}: dinner at 7, table by the window.`;
 /* A second sentence through a session that is already warm. The repeat send is
    a different path — the SDK chunk is there, the handshake is done, the ratchet
    has moved on — and until LD3 nothing ever exercised it. It is also what makes
@@ -387,35 +399,41 @@ const REPEAT_PROBE = `Second probe ${NONCE}: sent again, on a session already wa
    after it is the first one sized by the session alone. */
 const REPLY_PROBE = `Reply probe ${NONCE}: answered from the far device.`;
 const STEADY_PROBE = `Third probe ${NONCE}: sent after the answer, on an agreed session.`;
-/* The sentence a whole epoch is driven with, numbered so a conversation of them
-   can be read back. Short, because the epoch pass sends it many times and the
+/* The sentence the braid is driven with, numbered so a conversation of them can
+   be read back. Short, because the braid pass sends it many times and the
    sentence is not what that pass is about. */
-const EPOCH_PROBE = (turn) => `Epoch probe ${NONCE} #${turn}`;
+const BRAID_PROBE = (turn) => `Braid probe ${NONCE} #${turn}`;
 
 /*
- * How many messages one braid epoch takes, measured through the SDK.
+ * How many messages the braid pass drives, and why that is not a whole epoch.
  *
- * The braid carries the ML-KEM key one chunk per message and needs the whole
- * epoch's worth before either device can close it, so a conversation shorter
- * than this can end without a single key having been produced. Driving this
- * many is what makes the completion the pass reads certain to exist.
+ * The braid carries the ML-KEM key one chunk per message and the SDK's epoch is
+ * about eighty of them, so the completed key this pass used to wait for cost
+ * eighty sends. It could afford them while the composer stayed live through a
+ * replay: the drive ran at the devices' pace and the reel trailed behind it. The
+ * console now holds both composers while any transport is playing, so that a
+ * reader cannot type into the middle of the last sentence's replay — which puts
+ * a whole reel inside every send, and an epoch of them past twenty minutes.
  *
- * The pass does not depend on the exact figure. It reads the braid's own report
- * of a completion, so an epoch that grows or shrinks upstairs changes how much
- * of this drive is spare and not whether the reading is true.
+ * So the drive is a run of messages and what is read off it is the climb rather
+ * than the arrival. That keeps the claim worth having: the two figures on the
+ * strip are the braid's own report, the carried count rises message by message,
+ * and the total beside it is a number no measurement of an envelope on this page
+ * produces. It gives up a completed key that no reader sees either — eighty
+ * sentences is not a thing anyone types into a demo — so nothing that was on
+ * screen for a reader went unchecked with it.
  */
-const EPOCH_MESSAGES = 86;
+const BRAID_MESSAGES = 10;
 
 /*
- * The longest the epoch pass gets to reach the mark.
+ * The longest the braid pass gets for the drawing to catch up with the drive.
  *
- * The drive runs at the devices' pace and the drawing runs at the reader's, so
- * the mark appears when the reel reaches the message that produced the key —
- * many dwells behind the send that produced it. Separate from `REEL_BUDGET_MS`
- * and much larger for that reason, and sized as a bound on a machine under load
- * rather than from the dwell table, for the reason `walk` gives.
+ * Every send is already reel-paced, so by the time the last one is away the
+ * strip has been drawn for every message before it and this covers that last
+ * message's own reel. Sized as a bound on a machine under load rather than from
+ * the dwell table, for the reason `walk` gives.
  */
-const EPOCH_BUDGET_MS = 240000;
+const BRAID_BUDGET_MS = 60000;
 
 const DECRYPT_TIMEOUT_MS = 30000;
 const LOAD_TIMEOUT_MS = 30000;
@@ -443,30 +461,37 @@ const VIEWPORT = { width: 1280, height: 800 };
 
 /*
  * Every script a page fetches before the reader asks for the SDK. The
- * interaction then pulls about 1790 KB, so the tripwire sits two orders of
- * magnitude below any build that has the SDK on its initial path.
+ * interaction then pulls about 1790 KB, so the tripwire sits well over an order
+ * of magnitude below any build that has the SDK on its initial path.
  *
  * The homepage is the page this measures, because it is the only page with demo
- * code on it. Measured on 2026-08-11, on the one-scene console: 29.9 KB over
- * eight responses by this harness's own count. Three of the eight are the
- * demo's, at the sizes the build wrote to disk —
+ * code on it. Measured on 2026-08-16, on the console and the mobile reel:
+ * 51.6 KB over twelve responses by this harness's own count. Five of the twelve
+ * are the demo's, at the sizes the build wrote to disk —
  *
- *   DemoConsole   8196 B  the curtain, the settings and the stored row
- *   DemoLog       5175 B  the event log under the scene
- *   ScenarioList  3672 B  the four scenarios
+ *   DemoMobile   14544 B  the reel the small screen reads the run on
+ *   DemoConsole   9173 B  the curtain, the settings and the stored row
+ *   DemoLog       5913 B  the event log under the scene
+ *   drawing        769 B  the scene's shared geometry
+ *   units          127 B  the byte grammar both of them print in
  *
  * — against the page furniture that has nothing to do with the demo:
- * `theme-init.js`, `measure.js`, the theme toggle, the hero's copy button, and
- * the shared runtime the bundler splits out, 7399 B between them. The two
- * instruments do not reconcile and are not meant to: the harness counts what the
- * browser fetched, the breakdown counts what the build emitted.
+ * `theme-init.js`, `measure.js`, the commit line, the starfield mark, the theme
+ * toggle, the hero's copy button, and the preload helper the bundler splits
+ * out, 14099 B between them. The two instruments do not reconcile exactly and
+ * are not meant to: the harness counts what the browser fetched, the breakdown
+ * counts what the build emitted.
  *
- * The ceiling is 32 KB and moved there from 20 KB when `/demo` folded into this
- * page, which is worth writing down because "the budget went up when a page got
- * bigger" is the shape of a tripwire being quietly retired. What it has always
- * been calibrated against is the SDK's 713 KB, and 32 KB is as far below that as
- * 20 KB was. Nothing that runs before a touch is new: the two demo scripts are
- * wiring the site already shipped, on one page instead of two.
+ * The ceiling is 60 KB. It has moved twice — 20 KB to 32 KB when `/demo` folded
+ * into this page, and 32 KB to 60 KB when the reel shipped — and both moves are
+ * written down here because "the budget went up when a page got bigger" is the
+ * shape of a tripwire being quietly retired. Two things make this one honest.
+ * The reel is a second reading of the same run for a screen the scene does not
+ * fit on, so it is the site's own wiring and not a dependency arriving; and the
+ * four scenarios that used to sit under the ceiling left with the page they
+ * were listed on, which is 3.7 KB the move did not have to pay for. What the
+ * ceiling has always been calibrated against is the SDK's 713 KB, and 60 KB is
+ * still an order of magnitude below it.
  *
  * One cost is small and worth naming. Each demo script carries its own
  * `__vite__mapDeps` array naming the SDK chunk graph, because Astro emits one
@@ -475,17 +500,10 @@ const VIEWPORT = { width: 1280, height: 800 };
  * component's handler on another component's DOM to save under a kilobyte on a
  * page that spends 1790.
  *
- * What a scenario costs is still about 0.4 KB: one entry in `ScenarioList`'s
- * `PROGRAMS` map, which is two dynamic `import()` specifiers and a status line.
- * Its prose, its runner and its renderer are all behind the press — the LD6
- * move that put the renderers in `src/lib/demo/render.ts` is what makes that
- * true.
- *
- * The headroom is 2.1 KB, which is about five more scenarios and is the tightest
- * this has been. That is worth reading before the next thing lands on this page:
- * the next component to ship a wiring script of its own will not fit, and the
- * answer then is to find the bytes rather than to raise the ceiling. What the
- * ceiling is calibrated against has never changed — see below.
+ * The headroom is 8.4 KB. That is worth reading before the next thing lands on
+ * this page: a third reading of the run, or any component shipping a wiring
+ * script the size of the reel's, will not fit, and the answer then is to find
+ * the bytes rather than to raise the ceiling again.
  *
  * These are wire bytes without compression: `chrome-harness.mjs` serves the
  * build as it is on disk, while Cloudflare compresses. So this is not
@@ -495,28 +513,15 @@ const VIEWPORT = { width: 1280, height: 800 };
  *
  * The proof's table reports lower figures, and both are right. It sums the
  * files on disk; this counts what Chrome received, and `encodedDataLength` is
- * the whole response, headers included. Both see the same eight responses —
+ * the whole response, headers included. Both see the same twelve responses —
  * there is no fetch here that the static walk misses — so the gap is a flat
  * per-response cost, 686 bytes apiece from `chrome-harness.mjs`, and the
- * 23.9 KB on disk arrives as the 29.9 KB above. Anything that changes those
+ * 43.6 KB on disk arrives as the 51.6 KB above. Anything that changes those
  * headers moves this number without a byte of script changing, which is one
  * more reason it is a tripwire and not a budget. The ceiling is set against
  * the figure measured here.
  */
-const PRE_INTERACTION_CEILING = 32 * 1024;
-
-/*
- * A floor on the expected set, not on what the page printed.
- *
- * The expectation itself is computed per run (see `expectedFields`), so this
- * number is only here to catch the expectation collapsing: an `Envelope` that
- * suddenly declares two fields would make an equality check trivially
- * satisfiable, and a harness that passes because it expected nothing is worse
- * than no harness. Ten is a floor, not the expectation: if the installed
- * `Envelope` ever declares fewer, this fails loudly rather than letting the
- * equality check pass on a shrunken set.
- */
-const MIN_DERIVED_FIELDS = 10;
+const PRE_INTERACTION_CEILING = 60 * 1024;
 
 /*
  * The decrypted text appearing is not the end of the story for invariant 8.
@@ -711,14 +716,15 @@ const SNAPSHOT = `(() => {
        it is typed — the claim being checked is that it reached the other one. */
     sent: said(${JSON.stringify(SENT)}),
     decrypted: said(${JSON.stringify(DECRYPTED)}).join('\\n'),
-    cipher: text(${JSON.stringify(CIPHER)}),
     status: text(${JSON.stringify(STATUS)}),
-    fields: [...root.querySelectorAll(${JSON.stringify(META)} + ' dt')].map((dt) => dt.textContent),
-    values: [...root.querySelectorAll(${JSON.stringify(META)} + ' dd')].map((dd) => dd.textContent),
-    /* The relay's two mutually exclusive states, both read: a page that showed
-       neither would pass a check written against only one of them. */
-    holdingNothing: visible(root.querySelector(${JSON.stringify(RELAY_EMPTY)})),
-    holdingRow: visible(root.querySelector(${JSON.stringify(META)})),
+    /* The relay's two mutually exclusive states, per mailbox and both read: a
+       page that showed neither would pass a check written against only one of
+       them, and a bay lit for the wrong account is the drawing this pair is
+       here to catch. */
+    holdingNothing: [${JSON.stringify(MAILBOX_EMPTY('a'))}, ${JSON.stringify(MAILBOX_EMPTY('b'))}]
+      .every((selector) => visible(root.querySelector(selector))),
+    holdingRow: [${JSON.stringify(MAILBOX('a'))}, ${JSON.stringify(MAILBOX('b'))}]
+      .some((selector) => root.querySelector(selector)?.dataset.holding === 'true'),
     /* The recorded capture: what the page shows before its script runs and what
        it goes back to if the run cannot be brought up. Read as visibility
        rather than as presence, because it is always in the HTML. */
@@ -778,7 +784,7 @@ const SNAPSHOT = `(() => {
         const said = (body.textContent ?? '').replace(/\\s+/g, ' ').trim();
         const digits = /\\d+/.exec(said);
         return {
-          label: slot.querySelector(${JSON.stringify(SCENE_SLOT_NAME)})?.textContent?.trim() ?? '',
+          label: ${slotLabel('slot')},
           holding: slot.dataset.holding ?? null,
           count: digits ? Number(digits[0]) : null,
           said,
@@ -870,6 +876,7 @@ const SNAPSHOT = `(() => {
    the recording rather than from this file's idea of the story. */
 const STORED_STEP = 'stored-at-relay';
 const SCENE_ENVELOPE_TO = '[data-scene-envelope-to]';
+const SCENE_ENVELOPE_FROM = '[data-scene-envelope-from]';
 
 /*
  * Watch for the moment the relay takes the row, and record it as it happens.
@@ -919,17 +926,34 @@ const WATCH_STORED = `(() => {
   const mailboxes = () => ({
     a: (() => {
       const slot = scene.querySelector(${JSON.stringify(SCENE_SLOT('mailbox', 'a'))});
-      return slot ? { holding: slot.dataset.holding ?? null, label: slot.querySelector(${JSON.stringify(SCENE_SLOT_NAME)})?.textContent?.trim() ?? '', box: box(slot) } : null;
+      return slot ? { holding: slot.dataset.holding ?? null, label: ${slotLabel('slot')}, box: box(slot) } : null;
     })(),
     b: (() => {
       const slot = scene.querySelector(${JSON.stringify(SCENE_SLOT('mailbox', 'b'))});
-      return slot ? { holding: slot.dataset.holding ?? null, label: slot.querySelector(${JSON.stringify(SCENE_SLOT_NAME)})?.textContent?.trim() ?? '', box: box(slot) } : null;
+      return slot ? { holding: slot.dataset.holding ?? null, label: ${slotLabel('slot')}, box: box(slot) } : null;
     })(),
   });
+  /* What the tile is showing while the relay has it, read in the same frame as
+     the mailbox it is resting on. \`sealed\` is the drawing's own word for the
+     face it is wearing; \`shows\` is what a reader can actually read off it,
+     taken from the rendered box rather than from the text node, because the
+     sealed face hides the message in CSS and a node the page never paints is
+     not something the relay was shown. */
+  const shown = (element) => {
+    if (!element) return null;
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return '';
+    if (getComputedStyle(element).display === 'none') return '';
+    return element.textContent ?? '';
+  };
   const reading = (via) => ({
     via,
     step: scene.dataset.sceneState ?? null,
     addressed: scene.querySelector(${JSON.stringify(SCENE_ENVELOPE_TO)})?.textContent?.trim() ?? '',
+    sender: scene.querySelector(${JSON.stringify(SCENE_ENVELOPE_FROM)})?.textContent?.trim() ?? '',
+    sealed: envelope.dataset.sealed ?? null,
+    shows: shown(scene.querySelector(${JSON.stringify(ENVELOPE_TEXT)})),
+    size: scene.querySelector(${JSON.stringify(ENVELOPE_SIZE)})?.textContent?.trim() ?? '',
     envelope: envelope.hidden ? null : box(envelope),
     mailboxes: mailboxes(),
   });
@@ -986,12 +1010,21 @@ const WATCH_KEYGEN = `(() => {
   const seen = [];
   window.__oeKeygenWatch = seen;
   const width = (element) => Math.round(element.getBoundingClientRect().width * 10) / 10;
+  /* The key store is one row and it is always on the page — it is the device's
+     own store, and generation fills it rather than replacing it. So there is no
+     hidden row to skip, and two things say a reading belongs to generation:
+     the step the observer is filtering on, and the row being the busy one.
+     Each device is brought up on its own now, so the other device's store is
+     on screen and empty for the whole of the first one's generation — and a
+     reading taken off it would be a device drawn as having made no keys of no
+     keys, which is not a figure the drawing ever claims. */
   const read = (side) => {
-    const row = scene.querySelector('[data-scene-keygen="' + side + '"]');
-    const bar = scene.querySelector('[data-scene-keygen-bar="' + side + '"]');
+    const row = scene.querySelector('[data-scene-keys="' + side + '"]');
+    const bar = scene.querySelector('[data-scene-keys-bar="' + side + '"]');
     const track = bar ? bar.parentElement : null;
-    if (!row || !bar || !track || row.hidden) return null;
-    const figure = scene.querySelector('[data-scene-keygen-figure="' + side + '"]');
+    if (!row || !bar || !track) return null;
+    if (row.dataset.busy !== 'true') return null;
+    const figure = scene.querySelector('[data-scene-keys-count="' + side + '"]');
     return {
       side,
       told: bar.style.width || '',
@@ -1009,6 +1042,110 @@ const WATCH_KEYGEN = `(() => {
       if (last && last.told === now.told && last.figure === now.figure) continue;
       seen.push(now);
     }
+  }).observe(scene, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+  });
+  return true;
+})()`;
+
+/*
+ * Watch the two prekey shelves, and keep every figure they are drawn at.
+ *
+ * The decrement this exists to catch is a fact about *two* frames — what the
+ * shelf said when the account published and what it says once the peer's key
+ * agreement has taken a bundle off it — and only one of those survives to the
+ * end of the run. A reading taken afterwards can report the second and has
+ * nothing to hold it against, so the shelves are recorded as they change.
+ *
+ * The step is recorded with each figure rather than the figures alone. A count
+ * that fell is only the right count if it fell on the step that spends one, and
+ * a shelf quietly losing keys on some other frame is a different defect wearing
+ * the same reading.
+ *
+ * Consecutive identical readings are dropped, for the reason the generation
+ * watcher drops them: the scene is mutated many times per cue and a list with
+ * one entry per mutation says nothing a list of changes does not.
+ *
+ * `MutationObserver` rather than a poll, and no clock of its own — the drawing
+ * announces its own step and the reading is taken on that announcement. A poll
+ * fast enough to catch a 1900 ms frame would be a poll deciding how long the
+ * frame lasted.
+ */
+/* The frame each shelf figure is read against: the one where an account's keys
+   arrive on the relay, and the one where a peer takes a bundle off them. Both
+   are the scene's own words, the same strings the recording steps carry. */
+const PUBLISH_STEP = 'bundles-published';
+const ESTABLISH_STEP = 'session-established';
+
+const WATCH_SHELVES = `(() => {
+  const scene = document.querySelector(${JSON.stringify(SCENE)});
+  if (!scene) return false;
+  if (window.__oeShelfWatch) return true;
+  const seen = [];
+  window.__oeShelfWatch = seen;
+  const read = (side) => {
+    const body = scene.querySelector(
+      '[data-scene-slot-body="bundles"][data-scene-side="' + side + '"]',
+    );
+    if (!body) return null;
+    const said = (body.textContent ?? '').replace(/\\s+/g, ' ').trim();
+    const digits = /\\d+/.exec(said);
+    return { said, count: digits ? Number(digits[0]) : null };
+  };
+  new MutationObserver(() => {
+    const step = scene.dataset.sceneState ?? null;
+    const a = read('a');
+    const b = read('b');
+    if (!a || !b) return;
+    const now = { step, a: a.count, b: b.count, saidA: a.said, saidB: b.said };
+    const last = seen[seen.length - 1];
+    if (
+      last &&
+      last.step === now.step &&
+      last.a === now.a &&
+      last.b === now.b
+    ) {
+      return;
+    }
+    seen.push(now);
+  }).observe(scene, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+  });
+  return true;
+})()`;
+
+/*
+ * Watch the braid's strip, and keep every figure it is drawn at.
+ *
+ * The strip rides the envelope: it is written on the sealing step of a braided
+ * message and cleared when the tile folds away, so no figure it ever showed
+ * survives to the end of a run. What the check needs is the sequence — a key
+ * arriving a chunk at a time is a claim about many messages, and one figure
+ * read afterwards is as consistent with a strip written once as with a braid.
+ *
+ * Consecutive identical figures are dropped, for the reason the two watchers
+ * above drop them: the scene is mutated many times per cue, and a list with one
+ * entry per mutation says nothing a list of changes does not.
+ */
+const WATCH_BRAID = `(() => {
+  const scene = document.querySelector(${JSON.stringify(SCENE)});
+  if (!scene) return false;
+  if (window.__oeBraidWatch) return true;
+  const seen = [];
+  window.__oeBraidWatch = seen;
+  const strip = scene.querySelector(${JSON.stringify(SCENE_BRAID_FIGURE)});
+  if (!strip) return false;
+  new MutationObserver(() => {
+    if (strip.hidden) return;
+    const figure = (strip.textContent ?? '').trim();
+    if (figure === '' || figure === seen[seen.length - 1]?.figure) return;
+    seen.push({ figure, step: scene.dataset.sceneState ?? null });
   }).observe(scene, {
     subtree: true,
     childList: true,
@@ -1054,46 +1191,7 @@ const RELAY_GEOMETRY = `(() => {
   measure(column, '');
   return {
     drawn,
-    stored: document.querySelector(${JSON.stringify(RELAY_STORED)})?.textContent?.trim() ?? '',
     note: document.querySelector(${JSON.stringify(ROW_NOTE)})?.textContent?.trim() ?? '',
-  };
-})()`;
-
-/*
- * Everything the page printed about the scenario it just ran.
- *
- * Read through the same data attributes the page renders, in one round trip.
- * The rendered text is what a reader sees, so it is what the checks read: a
- * harness that reached into a result object the page happened to expose would
- * pass on a page that computed the right answer and printed something else.
- */
-const scenarioSnapshot = (slug) => `(() => {
-  const scenario = document.querySelector(${JSON.stringify(scenarioRoot(slug))});
-  const output = scenario?.querySelector(${JSON.stringify(SCENARIO_OUTPUT)});
-  const flat = (node) => (node?.textContent ?? '').replace(/\\s+/g, ' ').trim();
-  const list = (selector) =>
-    [...(output?.querySelectorAll(selector + ' li') ?? [])].map(flat);
-  return {
-    open: Boolean(scenario?.open),
-    status: flat(scenario?.querySelector(${JSON.stringify(SCENARIO_STATUS)})),
-    outputVisible: Boolean(output) && !output.hidden,
-    text: flat(output),
-    steps: list(${JSON.stringify(SCENARIO_STEPS)}),
-    nots: list(${JSON.stringify(SCENARIO_NOTS)}),
-    recovery: list(${JSON.stringify(SCENARIO_RECOVERY)}),
-    /* One entry per device pane the scenario printed, each carrying what that
-       device's own client decrypted. A scenario whose whole argument is that
-       one device has a message and another does not cannot be checked from
-       flattened page text: "is this sentence on the page" is true either way. */
-    devices: [...(output?.querySelectorAll(${JSON.stringify(SCENARIO_DEVICE)}) ?? [])].map(
-      (pane) => ({
-        deviceId: pane.dataset.scenarioDevice,
-        messages: [...pane.querySelectorAll('li')].map(flat),
-      }),
-    ),
-    logLines: [...(output?.querySelectorAll(${JSON.stringify(SCENARIO_LOG_LINE)}) ?? [])].map(
-      (row) => ({ level: row.dataset.scenarioLogLine, text: flat(row) }),
-    ),
   };
 })()`;
 
@@ -1309,8 +1407,26 @@ async function openTab(cdp, held, { blocked = [] } = {}) {
  * reads `input.value` when send is pressed and nothing else, so this is the same
  * thing a reader does and two fewer round trips. `Input.insertText` rather than
  * assigning the value, so the page's own input handling runs.
+ *
+ * The composer comes first, because the console takes it away for the length of
+ * a send and gives it back after — and a press on a control that is away is a
+ * press that does nothing, which reads downstream as a demo that stopped
+ * answering rather than as a harness that typed too early.
  */
 async function type(cdp, sessionId, text, side = 'a') {
+  await waitFor(
+    cdp,
+    sessionId,
+    `(() => {
+       const send = document.querySelector(${JSON.stringify(COMPOSE_SEND(side))});
+       const input = document.querySelector(${JSON.stringify(COMPOSE(side))});
+       return (Boolean(send) && !send.disabled && Boolean(input) && !input.disabled) || ${EXCUSED};
+     })()`,
+    DECRYPT_TIMEOUT_MS,
+    `the composer on device ${side.toUpperCase()} was still away ${DECRYPT_TIMEOUT_MS} ms after ` +
+      'the previous send, so the sentence could not be typed',
+    () => [],
+  );
   await evaluate(
     cdp,
     sessionId,
@@ -1334,10 +1450,10 @@ async function type(cdp, sessionId, text, side = 'a') {
  * Send, and wait only for the composer to come back.
  *
  * The console takes both composers away for the length of a send and gives them
- * back when it resolves, and a send resolves when the devices are done rather
- * than when the reel has drawn what they did. So this waits at the pace the
- * protocol works at, and it is what lets a whole epoch be driven without
- * waiting out an epoch of dwell first.
+ * back when the reel that narrates it has finished, so this waits at the pace
+ * the page plays rather than the pace the protocol works at. Which is the
+ * console's decision and not this file's: a reader must not be able to type
+ * into the middle of the last sentence's replay.
  *
  * A failure the console reports ends the wait too, on the same grounds as every
  * other wait here: a composer that never comes back and a page saying why it
@@ -1436,12 +1552,12 @@ async function walk(cdp, sessionId, done, complaint, context = () => [], budgetM
  * switch itself and proves it took, so a run that says it was made with braid on
  * was made with braid on.
  *
- * `epoch` adds a whole braid epoch to the conversation and reads the completion
- * the braid reports for it. It is off by default, and the passes the drawing
- * checks read leave it off: they are measured against each other, and a run that
- * had sent ninety more messages would not be the same run.
+ * `drive` adds a run of braided messages to the conversation and keeps every
+ * figure the strip is drawn at along the way. It is off by default, and the
+ * passes the drawing checks read leave it off: they are measured against each
+ * other, and a run that had sent ten more messages would not be the same run.
  */
-async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = null, epoch = false } = {}) {
+async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = null, drive = false } = {}) {
   const tab = await openTab(cdp, held, { blocked });
   const { sessionId, requests, scripts, cspViolations, pageErrors, blockedRequests, quiet } = tab;
 
@@ -1492,6 +1608,8 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
     }
     for (const [selector, what] of [
       [START, 'a control that starts the demo'],
+      [SCENE_ACTIVATE('a'), 'a control that brings the near device up'],
+      [SCENE_ACTIVATE('b'), 'a control that brings the far device up'],
       [INPUT, 'a text input for the reader’s sentence'],
       [SEND, 'a control that sends it'],
       [DECRYPTED, 'a conversation on the far device'],
@@ -1567,15 +1685,17 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
     /*
      * Press as a reader would, in the order the console requires.
      *
-     * There is one control before the composer. Starting boots the two devices
-     * and publishes their public prekeys; the composers stay unavailable until
-     * that has happened, so a harness that went straight for send would press a
-     * disabled button and report the demo as broken. Pressing start first is
-     * not the harness being polite about the UI — it is the harness driving the
-     * step the page actually has.
+     * There are three controls before the composer. Starting brings the run up
+     * — a relay and no devices — and then each phone comes up on its own
+     * Register press, which is where its keys are made and its bundle
+     * published. The composers stay unavailable until both are up, so a harness
+     * that went straight for send would press a disabled button and report the
+     * demo as broken. Driving all three is not the harness being polite about
+     * the UI: they are the steps the page has, and the first press of each is
+     * the reader's own.
      *
-     * The chunk arrives on this press, which is why it happens after the byte
-     * accounting boundary rather than during setup.
+     * The chunk arrives on the start press, which is why it happens after the
+     * byte accounting boundary rather than during setup.
      *
      * Blamed on the demo for the same reason as the click: the elements were
      * there a moment ago, so if they are gone now the demo's own script moved
@@ -1591,11 +1711,66 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
       );
     }
 
+    /* Before the press for the same reason: the shelves fill on the publish
+       step, which the opening reaches on its own, and the figure they fill to
+       is what the spend later has to be lower than. */
+    if ((await evaluate(cdp, sessionId, WATCH_SHELVES, 'demo')) !== true) {
+      throw new Red(
+        `the scene has no prekey shelf to watch (${SCENE_SLOT_BODY('bundles', 'a')}), so what the ` +
+          `relay holds for each account cannot be followed as it changes`,
+      );
+    }
+
     await evaluate(cdp, sessionId, `document.querySelector(${JSON.stringify(START)}).click()`, 'demo');
 
-    /* Either outcome ends the wait: devices that can be typed at, or a status
-       line saying why there are none. Waiting on the button alone would not
-       distinguish them — `enable()` re-runs on both paths. */
+    /*
+     * Then a device at a time, each on its own press.
+     *
+     * Waited on the control before it is pressed, because the run has to exist
+     * for a device to be registered against it: the console holds the buttons
+     * until the modules have arrived and `startDemoRun` has returned. A press
+     * that arrived first would land on a disabled button and the run would sit
+     * here with no devices, reporting only that a sentence never went anywhere.
+     *
+     * Both presses, left then right, and both are the reader's: the page draws
+     * a phone that is not yet a device and asks for the press that makes it one.
+     * A harness that pressed one would be driving half the demo.
+     *
+     * Either outcome ends each wait: a control that can be pressed, or a status
+     * line saying why nothing can. Waiting on the control alone would not
+     * distinguish them — `enable()` re-runs on both paths.
+     */
+    for (const side of ['a', 'b']) {
+      const activate = SCENE_ACTIVATE(side);
+      await waitFor(
+        cdp,
+        sessionId,
+        `(() => {
+           const button = document.querySelector(${JSON.stringify(activate)});
+           return (Boolean(button) && !button.disabled) || ${EXCUSED};
+         })()`,
+        DECRYPT_TIMEOUT_MS,
+        `device ${side.toUpperCase()}'s register control never became operable within ` +
+          `${DECRYPT_TIMEOUT_MS} ms of the start control being pressed, so that device could ` +
+          `not be brought up`,
+        why({
+          'the control is on the page': present(activate),
+          "the control's disabled": `document.querySelector(${JSON.stringify(activate)})?.disabled ?? null`,
+          'the status line': `document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? null`,
+        }),
+      );
+      if (await evaluate(cdp, sessionId, EXCUSED)) break;
+      await evaluate(
+        cdp,
+        sessionId,
+        `document.querySelector(${JSON.stringify(activate)}).click()`,
+        'demo',
+      );
+    }
+
+    /* And then the composer, which is live only once both devices are up: a
+       sentence needs somewhere to go, and the run refuses a send to a device
+       that does not exist. */
     await waitFor(
       cdp,
       sessionId,
@@ -1606,10 +1781,12 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
          return !send.disabled || /did not finish/.test(status);
        })()`,
       DECRYPT_TIMEOUT_MS,
-      `the demo neither started nor reported a failure within ${DECRYPT_TIMEOUT_MS} ms of the ` +
-        `start control being pressed`,
+      `both devices were registered and neither a composer nor a failure appeared within ` +
+        `${DECRYPT_TIMEOUT_MS} ms`,
       why({
         "the send button's disabled": `document.querySelector(${JSON.stringify(SEND)}).disabled`,
+        "device A's register control": `document.querySelector(${JSON.stringify(SCENE_ACTIVATE('a'))})?.disabled ?? null`,
+        "device B's register control": `document.querySelector(${JSON.stringify(SCENE_ACTIVATE('b'))})?.disabled ?? null`,
         'the status line': `document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? null`,
       }),
     );
@@ -1625,6 +1802,16 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
       throw new Red(
         `the scene has no envelope to watch (${SCENE_ENVELOPE}), so where the relay puts a ` +
           `stored row cannot be measured`,
+      );
+    }
+
+    /* And the braid's, on the same terms: the strip is written on a sealing step
+       and cleared when the tile folds away, so it is watched from before the
+       first sentence rather than read after the last. */
+    if (drive && (await evaluate(cdp, sessionId, WATCH_BRAID, 'demo')) !== true) {
+      throw new Red(
+        `the scene has no chunk strip to watch (${SCENE_BRAID_FIGURE}), so what the braid is ` +
+          `carrying per message cannot be read`,
       );
     }
 
@@ -1700,6 +1887,11 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
        only thing that had been pressed. */
     const keygen = await evaluate(cdp, sessionId, 'window.__oeKeygenWatch ?? null', 'demo');
 
+    /* And the shelves, every figure they were drawn at from the publish to
+       here. Read at the same point as the generation rows: the first sentence
+       has landed, so the step that spends a bundle is behind us. */
+    const shelves = await evaluate(cdp, sessionId, 'window.__oeShelfWatch ?? null', 'demo');
+
     if (repeat) {
       await type(cdp, sessionId, REPEAT_PROBE);
       await walk(
@@ -1743,96 +1935,72 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
     }
 
     /*
-     * A whole epoch of the braid, and the completion it reports for it.
+     * A run of braided messages, and every figure the strip is drawn at along
+     * the way.
      *
      * The chunks the braid carries are added one per message, so the only way to
-     * reach a produced epoch key is to send the messages that carry them. The
-     * drive alternates for that reason: each side adds its chunk on the messages
-     * it sends, and a conversation that only ever went one way would carry half
-     * a braid however long it ran.
+     * see the count climb is to send the messages that carry them. The drive
+     * alternates for that reason: each side adds its chunk on the messages it
+     * sends, and a conversation that only ever went one way would carry half a
+     * braid however long it ran.
      *
-     * Driven at the devices' pace and read at the reader's. Each send waits only
-     * for the composer, so the conversation is complete long before the drawing
-     * has caught up with it, and the single wait afterwards is what the pass
-     * spends its time in. The reel is behind by design and this is the shape
-     * that costs the least: waiting out the dwell after every message would take
-     * the pass from minutes to hours and would prove nothing further.
+     * Driven at the reel's pace, because the console holds the composer for the
+     * whole of a replay and there is no faster door into the page. What that
+     * costs is why the drive is a run of messages and not an epoch of them; see
+     * `BRAID_MESSAGES`.
      *
-     * `EPOCH_MESSAGES` more, rather than that many in total. The sentences above
+     * `BRAID_MESSAGES` more, rather than that many in total. The sentences above
      * are already in the conversation, so counting from here is the bound that
      * holds whatever preceded it.
      */
-    let epochMark = null;
-    if (epoch) {
-      for (let turn = 0; turn < EPOCH_MESSAGES; turn += 1) {
+    let braidChunks = null;
+    if (drive) {
+      for (let turn = 0; turn < BRAID_MESSAGES; turn += 1) {
         await sendAndSettle(
           cdp,
           sessionId,
-          EPOCH_PROBE(turn),
+          BRAID_PROBE(turn),
           turn % 2 === 0 ? 'b' : 'a',
-          `the conversation stopped ${turn} messages into an epoch of ${EPOCH_MESSAGES}`,
+          `the conversation stopped ${turn} messages into a run of ${BRAID_MESSAGES}`,
         );
       }
 
       /*
-       * Then wait for the braid to say a device produced its key.
+       * Then wait for the drawing to have a figure for every message.
        *
-       * Waited on the mark rather than on a step: the mark is written from the
-       * report the SDK raised and a step is written for every message, so a walk
-       * to a step would arrive whether a braid had reported anything or not.
+       * Waited on what the watcher has recorded rather than on the strip as it
+       * stands: the strip belongs to the envelope, so a poll of the page is a
+       * poll against a tile that folds away between messages, and the figure
+       * would be gone by the time a sample landed on it.
+       *
+       * Waited on the figures rather than on a step, too. A step is written for
+       * every message and would arrive whether a braid had carried anything or
+       * not; a count of chunks is the braid's own report and nothing else on the
+       * page can produce it.
        */
       await walk(
         cdp,
         sessionId,
-        `!document.querySelector(${JSON.stringify(SCENE_BRAID_MARK)})?.hidden`,
-        `${EPOCH_MESSAGES} alternating messages went through the braid and the scene never ` +
-          `reported an epoch key`,
+        `(window.__oeBraidWatch ?? []).length >= ${BRAID_MESSAGES}`,
+        `${BRAID_MESSAGES} alternating messages went through the braid and the strip was drawn ` +
+          `for fewer of them than that`,
         why({
-          'the braid row is shown': `!document.querySelector(${JSON.stringify(SCENE_BRAID)})?.hidden`,
-          'the chunk figure': `document.querySelector(${JSON.stringify(SCENE_BRAID_FIGURE)})?.textContent ?? null`,
+          'what the strip has been drawn at': `JSON.stringify((window.__oeBraidWatch ?? []).map((entry) => entry.figure))`,
           'the reel is on': `document.querySelector(${JSON.stringify(SCENE)})?.dataset.sceneState ?? null`,
           'the status line': `document.querySelector(${JSON.stringify(STATUS)})?.textContent ?? null`,
         }),
-        EPOCH_BUDGET_MS,
+        BRAID_BUDGET_MS,
       );
 
-      /* Read in one round trip, so the mark, the figure beside it and the name
-         it is held against all describe the same moment. */
-      epochMark = await evaluate(
-        cdp,
-        sessionId,
-        `(() => {
-           const row = document.querySelector(${JSON.stringify(SCENE_BRAID)});
-           const mark = document.querySelector(${JSON.stringify(SCENE_BRAID_MARK)});
-           const figure = document.querySelector(${JSON.stringify(SCENE_BRAID_FIGURE)});
-           if (!row || !mark || !figure) return null;
-           const where = {
-             a: ${JSON.stringify(SCENE_NAME('a'))},
-             b: ${JSON.stringify(SCENE_NAME('b'))},
-           };
-           const side = mark.dataset.sceneBraidKey ?? null;
-           const named = where[side]
-             ? document.querySelector(where[side])?.textContent ?? null
-             : null;
-           return {
-             row: !row.hidden,
-             marked: !mark.hidden,
-             side,
-             named,
-             mark: mark.textContent ?? '',
-             figure: figure.textContent ?? '',
-           };
-         })()`,
-        'demo',
-      );
+      braidChunks = await evaluate(cdp, sessionId, 'window.__oeBraidWatch ?? null', 'demo');
     }
 
     /*
      * And to the end of the recording, so the state the checks read is the one
      * the run finishes in rather than wherever the last sentence happened to
      * leave it. Already there when the reel's last cue is the one that decrypted
-     * — the wait costs one sample and returns — and not when a scenario or a
-     * repeat put something after it.
+     * — the wait costs one sample and returns — and not when a repeat or a
+     * braid drive put something after it.
      */
     await walk(
       cdp,
@@ -1861,10 +2029,11 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
       afterFirst,
       stored,
       keygen,
+      shelves,
       dom,
       geometry,
       braid,
-      epochMark,
+      braidChunks,
       repeated: repeat,
       requests,
       cspViolations,
@@ -1881,210 +2050,96 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
   }
 }
 
-/**
- * Open the homepage at the scenario's own fragment, run it twice, and report
- * both runs plus everything the browser did across them.
- *
- * Twice, because once cannot tell a live protocol failure from a page that
- * prints one. Every fixed string in the output — the error code, the SDK's
- * message, the two "did not happen" lines — is exactly what a hand-written page
- * would print, and it would print it in 0 ms. What such a page cannot do is
- * produce a different message id on the second press, because that id comes
- * from a device pair booted for that run. So the checks require the fixed parts
- * to match across both runs and the per-run parts to differ.
- */
-async function visitScenario(cdp, origin, held, slug) {
-  const tab = await openTab(cdp, held);
-  const { sessionId } = tab;
-  const SCENARIO = scenarioRoot(slug);
-  const snapshot = scenarioSnapshot(slug);
-
-  const read = () => evaluate(cdp, sessionId, snapshot);
-
-  try {
-    /* The fragment, not the bare path: arriving at `/#<slug>` is a reader
-       asking for this scenario by name, and opening it is what the page
-       promises to do about that. */
-    await tab.navigate(`${origin}/#${slug}`, `/#${slug}`);
-
-    const title = await evaluate(cdp, sessionId, 'document.title');
-    if (!title)
-      throw new Infra('the homepage rendered no title — the served build looks wrong');
-
-    if (!(await evaluate(cdp, sessionId, present(SCENARIO)))) {
-      throw new Red(
-        `no scenario on the homepage: nothing matches ${SCENARIO}.\n` +
-          `  The page served and rendered (title: ${JSON.stringify(title)}), so the scenario is ` +
-          `absent rather than\n  unreachable.`,
-      );
-    }
-    for (const [selector, what] of [
-      [`${SCENARIO} ${SCENARIO_RUN}`, 'a control that runs it'],
-      [`${SCENARIO} ${SCENARIO_STATUS}`, 'a status line'],
-      [`${SCENARIO} ${SCENARIO_OUTPUT}`, 'a pane for what the SDK said'],
-    ]) {
-      if (!(await evaluate(cdp, sessionId, present(selector)))) {
-        throw new Red(`the scenario is on the page but exposes no ${what} (${selector})`);
-      }
-    }
-
-    const opened = await read();
-
-    await tab.quiet(IDLE_QUIET_MS, IDLE_MAX_MS);
-    const interactedAt = Date.now();
-
-    const runs = [];
-    for (const attempt of [1, 2]) {
-      await evaluate(
-        cdp,
-        sessionId,
-        `document.querySelector(${JSON.stringify(`${SCENARIO} ${SCENARIO_RUN}`)}).click()`,
-        'demo',
-      );
-      /*
-       * Wait for the run to be over, not for the output to change.
-       *
-       * Waiting on changed text reads well and is wrong: a page replaying one
-       * recorded run prints identical text twice, so the wait would sit there
-       * until the cap and report a page that printed nothing — blaming a hang
-       * for what is actually the most interesting failure this harness can
-       * find. Let both runs finish, and let the checks below say what was
-       * wrong with them.
-       *
-       * The control is disabled synchronously by the click handler before its
-       * first await and re-enabled in its `finally`, so "enabled again with
-       * the pane showing" is exactly one completed run, whichever attempt it
-       * is.
-       */
-      try {
-        await waitFor(
-          cdp,
-          sessionId,
-          `(() => {
-             const scenario = document.querySelector(${JSON.stringify(SCENARIO)});
-             const run = scenario?.querySelector(${JSON.stringify(SCENARIO_RUN)});
-             const output = scenario?.querySelector(${JSON.stringify(SCENARIO_OUTPUT)});
-             return Boolean(run) && !run.disabled && Boolean(output) && !output.hidden;
-           })()`,
-          SCENARIO_TIMEOUT_MS,
-          `run ${attempt} of the ${slug} scenario did not finish within ${SCENARIO_TIMEOUT_MS} ms`,
-          () => {
-            const lines = [];
-            if (tab.cspViolations.length) {
-              lines.push(
-                `  The page reported ${tab.cspViolations.length} CSP violation(s), which is the ` +
-                  `likeliest cause:`,
-                ...tab.cspViolations.map((v) => `    ${v}`),
-              );
-            }
-            if (tab.pageErrors.length) {
-              lines.push(
-                `  The page threw ${tab.pageErrors.length} uncaught error(s):`,
-                ...tab.pageErrors.map((e) => `    ${e.split('\n')[0]}`),
-              );
-            }
-            return lines;
-          },
-        );
-      } catch (error) {
-        /* The page writes its own failure into the status line, and a scenario
-           that could not run has already said why there. Reading it costs one
-           round trip on a path that has already failed. */
-        if (!(error instanceof Red)) throw error;
-        const status = await evaluate(cdp, sessionId, snapshot).catch(() => null);
-        throw new Red(
-          `${error.message}\n  The page's own status line reads: ` +
-            `${JSON.stringify(status?.status ?? '(unreadable)')}`,
-        );
-      }
-      runs.push(await read());
-    }
-
-    const wentQuiet = await tab.quiet(EGRESS_QUIET_MS, EGRESS_SETTLE_MAX_MS);
-    await tab.fillPostData();
-
-    const before = tab.scripts.filter((script) => script.at < interactedAt);
-    const after = tab.scripts.filter((script) => script.at >= interactedAt);
-    return {
-      slug,
-      opened,
-      runs,
-      requests: tab.requests,
-      cspViolations: tab.cspViolations,
-      pageErrors: tab.pageErrors,
-      wentQuiet,
-      before,
-      after,
-      bytesBefore: before.reduce((sum, script) => sum + script.bytes, 0),
-      bytesAfter: after.reduce((sum, script) => sum + script.bytes, 0),
-    };
-  } finally {
-    tab.off();
-  }
-}
-
 // ----------------------------------------------------------------- the verdict
 
 /*
- * What the metadata pane must print, computed rather than counted.
+ * What the sealed message must be addressed to, computed rather than quoted.
  *
- * A count is the wrong assertion, and this harness shipped with one. Ten rows
- * of the right names pass `>= 10` whether the panel iterated the envelope or
- * carried a list someone typed — which is the drift the recorded panel already
- * suffered, and the thing invariant 4 exists to stop. Adversarial review proved
- * the hole by hand-typing the current ten field names and watching the run stay
- * green.
+ * The drawing writes two facts on the outside of the envelope, the two the
+ * relay can read: who it is for and who it is from. Both are taken off the
+ * envelope object the relay stored, through a field table the console declares
+ * — and a harness that typed the account names here would go green against a
+ * page that had them typed in too, which is the drift this check exists to
+ * stop.
  *
- * So the expectation is derived the same way the panel's rows are supposed to
- * be: run the real driver here in Node, against the same installed package the
- * browser loads, and take the keys of the envelope it produces. Subtract the
- * fields the panel declares it holds back, read out of the panel source rather
- * than retyped here, and what remains is the exact set the pane must show —
- * no more, no less.
+ * So the expectation is derived the way the drawing's own values are supposed
+ * to be: run the real driver here in Node, against the same installed package
+ * the browser loads, and read the addressing out of the envelope it produces,
+ * through the same field names the console declares. The field names are read
+ * out of the console source rather than retyped, so a table that moved takes
+ * the expectation with it and cannot quietly stop being checked.
  *
- * That equality does not make a hand-typed list fail *today*: a list that
- * happens to be correct right now prints the correct names. What it does is
+ * Equality with a live envelope does not make a hand-typed value fail *today*:
+ * names that happen to be correct right now print correctly. What it does is
  * turn the next `Envelope` change into a red run instead of a silent
- * divergence, which is the failure this guard is for. The list has to be caught
- * at the source, and `tests/demo-panel.test.mjs` is where that happens.
+ * divergence. Reading the envelope through nothing but the declared table is a
+ * property of the source, and `tests/demo-panel.test.mjs` is where that is
+ * held.
  */
-async function expectedFields(envelopeFields) {
+async function expectedAddressing(envelopeFields) {
   const consoleSource = await readFile(
     new URL('../src/components/demo/DemoConsole.astro', import.meta.url),
     'utf8',
   );
-  const declared = consoleSource.match(/HELD_BACK = new Set\(\[([^\]]*)\]\)/s)?.[1];
-  if (declared === undefined) {
+  const table = consoleSource.match(/NAMED_FIELDS = \{(.*?)\}/s)?.[1];
+  if (table === undefined) {
     throw new Infra(
-      'could not read HELD_BACK out of DemoConsole.astro, so this run cannot tell a ' +
-        'deliberately withheld field from a missing one',
+      'could not read NAMED_FIELDS out of DemoConsole.astro, so this run cannot tell which ' +
+        'envelope fields the drawing is supposed to be addressed from',
     );
   }
-  const heldBack = new Set([...declared.matchAll(/'([^']+)'/g)].map((match) => match[1]));
+  const named = Object.fromEntries(
+    [...table.matchAll(/(\w+)\s*:\s*'([^']+)'/g)].map((match) => [match[1], match[2]]),
+  );
+  for (const half of ['to', 'from']) {
+    if (!named[half]) {
+      throw new Infra(
+        `the console's field table names no envelope field for "${half}", so half the addressing ` +
+          `the drawing shows could not be checked against a real envelope`,
+      );
+    }
+    if (!envelopeFields.has(named[half])) {
+      throw new Infra(
+        `the console reads "${named[half]}" for the envelope's ${half}, and the installed SDK ` +
+          `does not declare it on Envelope — the table is stale and this run would expect the ` +
+          `wrong name`,
+      );
+    }
+  }
+
+  /* And under the same two accounts. The console runs the SDK under the names
+     it prints over the columns, so an envelope built here under the driver's
+     own defaults would be addressed to a device this page has never heard of —
+     and the check would fail on the accounts rather than on the drawing. Read
+     from the same source the run reads, for the same reason the field table
+     is. */
+  const accounts = consoleSource.match(/NAMES = \{(.*?)\}/s)?.[1];
+  const names = Object.fromEntries(
+    [...(accounts ?? '').matchAll(/(\w+)\s*:\s*'([^']+)'/g)].map((match) => [match[1], match[2]]),
+  );
+  if (!names.a || !names.b) {
+    throw new Infra(
+      'could not read NAMES out of DemoConsole.astro, so this run cannot build an envelope for ' +
+        'the accounts the page is running the SDK under',
+    );
+  }
 
   let envelope;
   try {
-    const session = await startDemoSession();
-    ({ envelope } = await session.send('probe for the expected field set'));
+    const session = await startDemoSession({ sender: names.a, recipient: names.b });
+    ({ envelope } = await session.send('probe for the expected addressing'));
   } catch (cause) {
     throw new Infra(`the driver could not produce an envelope to expect: ${cause}`);
   }
 
-  const expected = new Set(Object.keys(envelope).filter((field) => !heldBack.has(field)));
-  for (const field of heldBack) {
-    if (!envelopeFields.has(field)) {
+  const expected = { to: envelope[named.to], from: envelope[named.from] };
+  for (const [half, value] of Object.entries(expected)) {
+    if (typeof value !== 'string' || value.length === 0) {
       throw new Infra(
-        `the console withholds "${field}", which the installed SDK does not declare on Envelope — ` +
-          `the exclusion is stale and this run would expect the wrong set`,
+        `a live envelope carried no ${half} in "${named[half]}" (${JSON.stringify(value)}), so ` +
+          `there is nothing to hold the drawing against and checking it would prove nothing`,
       );
     }
-  }
-  if (expected.size < MIN_DERIVED_FIELDS) {
-    throw new Infra(
-      `a live envelope yielded only ${expected.size} printable field(s) ` +
-        `(${[...expected].join(', ') || 'none'}), fewer than the ${MIN_DERIVED_FIELDS} this SDK ` +
-        `should produce — the expectation has collapsed, so checking against it proves nothing`,
-    );
   }
   return expected;
 }
@@ -2239,11 +2294,12 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
         `  ${pass.names.a}: ${pass.dom.sent.join(' / ') || '(nothing)'}`,
     );
   }
-  if (!pass.dom.holdingRow || pass.dom.holdingNothing) {
-    throw new Red(
-      'a sentence completed a round trip and the relay column still says it is holding nothing',
-    );
-  }
+  /* What the relay did with the row is not read here. The mailbox holds while
+     the relay has the row and empties when the far device collects it, so the
+     end of the reel is the one moment in the whole run when "holding nothing"
+     is the correct drawing. The row is checked where it exists — `stored`, out
+     of the watcher — and the empty rack it leaves behind is checked in
+     `checkRelayShelves`. */
 
   const carried = leaks(pass.requests, findProbe);
   if (carried.length) {
@@ -2300,49 +2356,97 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
     throw new Red(`the demo ran and the page threw:\n  ${pass.pageErrors.join('\n  ')}`);
   }
 
-  /* Invariant 4. The rows have to be the envelope's own keys, so every name on
-     screen must be a field the installed package declares — a hand-written list
-     survives the SDK renaming a field, and this is what notices. */
-  const invented = pass.dom.fields.filter((field) => !envelopeFields.has(field));
-  if (invented.length) {
+  /*
+   * Invariant 4, on the addressing. The value written on the envelope has to be
+   * the value on the envelope object, so it is held against one this process
+   * built from the same package.
+   *
+   * Only the recipient is compared. Sealed sender is on by default and the
+   * drawing is the lens: with it on the sender's half is blank on purpose, and
+   * a check that demanded a name there would be demanding the demo undo the
+   * thing it is demonstrating. That the blank is a lens rather than a gap is
+   * `tests/demo-run.test.mjs`'s to hold — it proves the field the lens covers
+   * is one a real send produced.
+   */
+  const stored = pass.stored?.at;
+  if (!stored) {
     throw new Red(
-      `the metadata pane printed ${invented.join(', ')}, which the installed SDK does not ` +
-        `declare on Envelope — those rows cannot have come from the live object`,
+      `the relay took a sentence and the scene never drew "${STORED_STEP}", so what the ` +
+        `envelope was addressed to while the relay held it was never on screen`,
+    );
+  }
+  if (stored.addressed !== expected.to) {
+    throw new Red(
+      `the envelope the relay held is addressed to ${JSON.stringify(stored.addressed)} and an ` +
+        `envelope built from the same package in this process is addressed to ` +
+        `${JSON.stringify(expected.to)}.\n` +
+        `A drawing that reads the address off the stored envelope cannot disagree with it. This ` +
+        `one did, so it is not being drawn that way.`,
+    );
+  }
+  if (stored.sender !== '' && stored.sender !== expected.from) {
+    throw new Red(
+      `the envelope the relay held names ${JSON.stringify(stored.sender)} as its sender, and an ` +
+        `envelope built from the same package in this process names ` +
+        `${JSON.stringify(expected.from)}`,
     );
   }
 
-  /* And it has to be *every* one of them. `expected` is the key set of an
-     envelope this process built from the same package, less what the panel says
-     it withholds, so a missing row is a field the pane stopped showing and an
-     extra row is one it shows without the envelope having it. Either is the
-     pane and the object disagreeing, which is the whole of invariant 4. */
-  const printed = new Set(pass.dom.fields);
-  const missing = [...expected].filter((field) => !printed.has(field));
-  const extra = [...printed].filter((field) => !expected.has(field));
-  if (missing.length || extra.length) {
+  /*
+   * And the relay is not shown the message.
+   *
+   * The tile wears a sealed face while the relay has it, and the sealed face
+   * does not paint the sentence. Read as what is rendered rather than as what
+   * the node holds: the drawing keeps the text through the journey so the
+   * opening has something to reveal, and a check on the text node alone would
+   * fail a page that is behaving. What the reader can see at the relay is the
+   * claim, and the size beside it is what a relay legitimately knows.
+   */
+  if (stored.sealed !== 'true') {
     throw new Red(
-      `the metadata pane and the live envelope disagree about which fields exist:\n` +
-        (missing.length ? `  never printed: ${missing.join(', ')}\n` : '') +
-        (extra.length ? `  printed anyway: ${extra.join(', ')}\n` : '') +
-        `  expected exactly: ${[...expected].join(', ')}\n` +
-        `  the pane showed:  ${pass.dom.fields.join(', ') || '(nothing)'}\n` +
-        `A pane built by iterating the envelope cannot disagree with it. This one did, so it ` +
-        `is not being built that way.`,
+      `the message resting in the relay's mailbox is drawn ${JSON.stringify(stored.sealed)}, not ` +
+        `sealed — the relay is being shown an open envelope`,
     );
   }
-  if (pass.dom.fields.length !== printed.size) {
+  const leaked = findProbe(stored.shows ?? '');
+  if (leaked) {
     throw new Red(
-      `the metadata pane printed the same field twice: ${pass.dom.fields.join(', ')}`,
+      `the message resting in the relay's mailbox shows the sentence itself (${leaked}) — the ` +
+        `drawing is handing the relay the plaintext`,
     );
   }
-  const empty = pass.dom.fields.filter((_, index) => !pass.dom.values[index]?.trim());
-  if (empty.length) {
-    throw new Red(`the metadata pane printed ${empty.join(', ')} with no value beside it`);
+  /*
+   * The size beside it is a measurement, not decoration.
+   *
+   * It is the one fact about the contents a relay legitimately holds, so it has
+   * to be the size of what is stored. Two things are held against it. The
+   * grammar is `humanBytes`'s, so a figure assembled anywhere else reads wrong
+   * here. And the quantity has to exceed the sentence: ciphertext is the
+   * sentence plus a header, so a figure that fits inside the plaintext is a
+   * drawing measuring the wrong thing — which is what a size taken off the typed
+   * text would look like.
+   */
+  const size = STORED_SIZE.exec(stored.size ?? '');
+  if (!size) {
+    throw new Red(
+      `the message resting in the relay's mailbox carries ${
+        stored.size ? `"${stored.size}"` : 'no size'
+      } where its size belongs, so the drawing shows the relay neither of the two facts it has`,
+    );
+  }
+  const bytes = Number(size[1]) * { B: 1, KB: 1024, MB: 1024 * 1024 }[size[2]];
+  if (bytes <= Buffer.byteLength(PROBE, 'utf8')) {
+    throw new Red(
+      `the relay's mailbox says it is holding ${stored.size}, and the sentence alone is ` +
+        `${Buffer.byteLength(PROBE, 'utf8')} bytes — no envelope carrying it can be that small, ` +
+        `so the figure is not a measurement of what is stored`,
+    );
   }
 
   checkScene(pass);
   checkKeyGeneration(pass);
-  checkRelayShelves(pass);
+  const spend = checkPrekeySpend(pass);
+  checkRelayShelves(pass, spend);
   checkStoredMailbox(pass);
   if (pass.repeated) checkSceneMoves(pass.afterFirst, pass.dom);
 
@@ -2360,6 +2464,10 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
         'reader touched it, or the demo is not the code under test',
     );
   }
+
+  /* For the PASS line: the two figures one shelf was drawn at, which no reading
+     of the settled page can recover. */
+  return { spend };
 }
 
 /*
@@ -2445,43 +2553,136 @@ function checkScene(pass) {
     );
   }
 
-  /* Invariant 4, on the bytes. The relay column prints the ciphertext it is
-     holding, and bytes drawn rather than read are the exact thing this page says
-     it does not do — so they have to be well-formed, and they have to not be the
-     sentence. */
-  const strip = pass.dom.cipher.split(/\s+/).filter(Boolean);
-  if (strip.length === 0) {
+}
+
+/*
+ * Agreeing a key spends one of the peer's prekeys, and the shelf says so.
+ *
+ * This is the whole point of publishing a bundle a peer can collect without
+ * asking: the first sentence is encrypted against material the recipient left
+ * on the relay while it was offline, and that material is taken. A shelf that
+ * still reads its published figure after a session exists is drawing a relay
+ * that hands out copies — which is the one thing a prekey is not, since the
+ * whole forward-secrecy argument rests on the one-time keys being one-time.
+ *
+ * Held between two frames rather than at the end. A shelf frozen at its
+ * published count and a shelf that has decremented look identical in a reading
+ * taken once, and the difference is the entire claim: what makes 202 the right
+ * figure is that the same shelf said 204 before the peer collected.
+ *
+ * Both directions are checked, and the second is the one that catches a shelf
+ * redrawn from the wrong place. Only the device that was *spoken to* pays: the
+ * initiator collected a bundle and published nothing new, so a run where both
+ * shelves fall is a scene subtracting from a pooled figure, and one where the
+ * initiator's falls instead is a scene that has the two accounts crossed.
+ *
+ * Then the figure is read a second time out of the settled page, by a path that
+ * shares nothing with the watcher — the end-of-run DOM snapshot rather than the
+ * live observer. A decrement drawn for one frame and quietly restored afterwards
+ * would satisfy the frames above and leave the reader looking at the published
+ * count.
+ */
+function checkPrekeySpend(pass) {
+  const seen = pass.shelves;
+  if (!Array.isArray(seen) || seen.length === 0) {
     throw new Red(
-      'the relay column printed no bytes — the hex strip is empty after a real envelope went ' +
-        'through it',
+      `the reel published two bundles and the scene never drew a prekey shelf — the watcher was ` +
+        `installed before the start control was pressed and recorded nothing.\n` +
+        `  what was recorded: ${JSON.stringify(seen)}`,
     );
   }
-  const malformed = strip.filter((byte) => !/^[0-9a-f]{2}$/.test(byte));
-  if (malformed.length) {
+
+  const establishedAt = seen.findIndex((entry) => entry.step === ESTABLISH_STEP);
+  if (establishedAt === -1) {
     throw new Red(
-      `the relay column's byte strip is not bytes: ${malformed.slice(0, 6).join(' ')}${
-        malformed.length > 6 ? ' …' : ''
-      }`,
+      `the two devices exchanged a sentence and the scene never drew "${ESTABLISH_STEP}", so ` +
+        `there is no frame on which a bundle is collected.\n` +
+        `  the steps the shelves were drawn on: ${[...new Set(seen.map((e) => e.step))].join(', ')}`,
     );
   }
-  /*
-   * Decoded, the strip must not be the sentence.
-   *
-   * This is the claim the column exists to make, checked rather than asserted: a
-   * page that printed the plaintext as hex would satisfy every shape test above
-   * and be exactly the demo this site says it is not. Latin-1 rather than UTF-8
-   * because the strip is a window into the middle of a document and may cut a
-   * multi-byte character in half — decoding byte for byte cannot throw, and a
-   * sentence of ASCII would still be plainly there.
-   */
-  const decoded = Buffer.from(strip.join(''), 'hex').toString('latin1');
-  const leaked = findProbe(decoded);
-  if (leaked) {
+
+  const before = seen
+    .slice(0, establishedAt)
+    .filter((entry) => entry.step === PUBLISH_STEP)
+    .at(-1);
+  if (!before) {
     throw new Red(
-      `the bytes the relay column printed decode to the sentence itself (${leaked}) — the strip ` +
-        `is not ciphertext`,
+      `the scene drew "${ESTABLISH_STEP}" without ever drawing "${PUBLISH_STEP}" first, so the ` +
+        `shelf figures at the key agreement have nothing to be held against — a session cannot ` +
+        `be made from a bundle that was never published.\n` +
+        `  what was recorded: ${JSON.stringify(seen)}`,
     );
   }
+
+  const established = seen.filter((entry) => entry.step === ESTABLISH_STEP);
+  const settled = established[0];
+  for (const entry of established) {
+    if (entry.a !== settled.a || entry.b !== settled.b) {
+      throw new Red(
+        `the shelves were drawn at two different pairs of figures on one "${ESTABLISH_STEP}" ` +
+          `frame — ${JSON.stringify([settled.a, settled.b])} and ` +
+          `${JSON.stringify([entry.a, entry.b])}. One frame is one state of the relay; a shelf ` +
+          `moving inside it is drawing a count from something other than the cue.`,
+      );
+    }
+  }
+
+  for (const [label, entry] of [
+    ['publish', before],
+    ['key agreement', settled],
+  ]) {
+    for (const side of [INITIATOR, RESPONDER]) {
+      if (typeof entry[side] !== 'number') {
+        throw new Red(
+          `on the ${label} frame the relay's prekey shelf for device ${side.toUpperCase()} printed ` +
+            `${JSON.stringify(side === INITIATOR ? entry.saidA : entry.saidB)}, which says no ` +
+            `number of keys`,
+        );
+      }
+    }
+  }
+
+  if (settled[RESPONDER] >= before[RESPONDER]) {
+    throw new Red(
+      `device ${RESPONDER.toUpperCase()} published ${before[RESPONDER]} prekeys and its shelf ` +
+        `still reads ${settled[RESPONDER]} once the other device has agreed a key with it. ` +
+        `Establishing a session collects a bundle and the relay does not hand out a second copy ` +
+        `of a one-time key, so the shelf has to have fallen — a shelf holding its published ` +
+        `figure is drawing prekeys as if they were reusable.\n` +
+        `  ${PUBLISH_STEP}:   a ${before[INITIATOR]}, b ${before[RESPONDER]}\n` +
+        `  ${ESTABLISH_STEP}: a ${settled[INITIATOR]}, b ${settled[RESPONDER]}`,
+    );
+  }
+
+  if (settled[RESPONDER] <= 0) {
+    throw new Red(
+      `device ${RESPONDER.toUpperCase()}'s shelf fell from ${before[RESPONDER]} to ` +
+        `${settled[RESPONDER]} on one key agreement — one session takes one bundle, so a shelf ` +
+        `emptied by it is being cleared rather than decremented`,
+    );
+  }
+
+  if (settled[INITIATOR] !== before[INITIATOR]) {
+    throw new Red(
+      `device ${INITIATOR.toUpperCase()} started the conversation and its own shelf moved from ` +
+        `${before[INITIATOR]} to ${settled[INITIATOR]}. The device that speaks first spends the ` +
+        `*other* account's bundle; nobody has collected its own, so a shelf falling on both sides ` +
+        `is one figure being subtracted from a pooled total rather than from an account.\n` +
+        `  ${PUBLISH_STEP}:   a ${before[INITIATOR]}, b ${before[RESPONDER]}\n` +
+        `  ${ESTABLISH_STEP}: a ${settled[INITIATOR]}, b ${settled[RESPONDER]}`,
+    );
+  }
+
+  const drawn = pass.dom.scene?.slots?.bundles?.[RESPONDER];
+  if (drawn && drawn.count !== settled[RESPONDER]) {
+    throw new Red(
+      `the shelf for ${pass.names[RESPONDER]} read ${settled[RESPONDER]} on the key agreement and ` +
+        `reads ${JSON.stringify(drawn.said)} at the end of the reel. The bundle stays collected, ` +
+        `so a count that came back is a decrement drawn for one frame and taken away again.`,
+    );
+  }
+
+  return { side: RESPONDER, before: before[RESPONDER], after: settled[RESPONDER] };
 }
 
 /*
@@ -2499,12 +2700,16 @@ function checkScene(pass) {
  * after the names changed; a slot labelled with the *other* device's name is
  * the failure this exists for, and it is only visible against the names.
  *
- * The counts are held against what each device says it holds. The public halves
- * on the relay's shelf are the halves of the private keys in that device's
- * column, so the two figures are one figure drawn twice — and the ways a
- * per-device shelf goes wrong all show here: a shelf drawn from a pooled total
- * reads too high, a pair of shelves fed the same figure agrees with one device
- * and not the other, and a shelf that never got a count reads nothing.
+ * The counts are held against what each device says it holds, less whatever the
+ * relay handed out while the reel ran. The public halves on the shelf are the
+ * halves of the private keys in that device's column, and the only thing that
+ * separates the two figures is a peer collecting a bundle — which the reel draws
+ * and `checkPrekeySpend` has already read off it. So the three numbers close,
+ * and the ways a per-device shelf goes wrong all show here: a shelf drawn from a
+ * pooled total reads too high, a pair of shelves fed the same figure agrees with
+ * one device and not the other, a shelf that never got a count reads nothing,
+ * and a shelf that decremented by something other than what was collected reads
+ * as a figure arrived at by arithmetic rather than from the relay.
  *
  * Read at the end of the reel, where the counts are settled and no row is
  * outstanding. The mailboxes are checked here for being empty, which is the
@@ -2512,7 +2717,7 @@ function checkScene(pass) {
  * after the sentence was opened would be drawing a message that is both
  * delivered and waiting.
  */
-function checkRelayShelves(pass) {
+function checkRelayShelves(pass, spend) {
   const scene = pass.dom.scene;
   const slots = scene?.slots;
   if (!slots) {
@@ -2550,25 +2755,36 @@ function checkRelayShelves(pass) {
     }
   }
 
+  /* The store's own figure, read through its own grammar: a settled store says
+     the plain amount, and one that has spent a key since it filled says `so far
+     / total`. The first number is what the device is holding now and the second
+     is the batch it made, and both are needed — the shelf is held against the
+     first, and the drop from the second is what the key agreement took. */
   const held = (side) => {
     const printed = scene.deviceKeys?.[side] ?? '';
-    const digits = /^\d+$/.test(printed) ? Number(printed) : null;
-    if (digits === null) {
+    const counts = keygenCounts(printed);
+    if (!counts) {
       throw new Red(
         `device ${side} prints ${JSON.stringify(printed || '(nothing)')} where its key count ` +
           `goes, so the relay's shelf for it has no figure to be held against`,
       );
     }
-    return digits;
+    return counts;
   };
+
+  const said = () =>
+    `  ${pass.names.a}: shelf ${slots.bundles.a.count}, device ${scene.deviceKeys.a}\n` +
+    `  ${pass.names.b}: shelf ${slots.bundles.b.count}, device ${scene.deviceKeys.b}\n` +
+    `  collected on ${ESTABLISH_STEP}: ${spend.before - spend.after} from device ` +
+    `${spend.side.toUpperCase()}`;
 
   for (const side of ['a', 'b']) {
     const slot = slots.bundles[side];
     const own = held(side);
-    if (own <= 0) {
+    if (own.count <= 0) {
       throw new Red(
-        `device ${side} finished a round trip holding ${own} keys — a device that published a ` +
-          `bundle holds the private halves of it`,
+        `device ${side} finished a round trip holding ${own.count} keys — a device that published ` +
+          `a bundle holds the private halves of it`,
       );
     }
     if (slot.count === null) {
@@ -2578,14 +2794,30 @@ function checkRelayShelves(pass) {
           `publish the recording carries, so a slot without one never received it.`,
       );
     }
-    if (slot.count !== own) {
+    /* One store drawn twice. The shelf is the public halves of the keys that
+       device is holding, so the two figures move together — a shelf showing
+       the pair's total, or the other device's figure, or one left behind by a
+       spend the device recorded, is what a disagreement here reads like. */
+    if (slot.count !== own.count) {
       throw new Red(
         `the relay says it holds ${slot.count} prekeys for ${pass.names[side]} and that device ` +
-          `says it holds ${own} keys. These are the two halves of one set, drawn twice, so they ` +
-          `cannot differ — a shelf showing the pair's total, or the other device's figure, is ` +
-          `what this reads like.\n` +
-          `  ${pass.names.a}: shelf ${slots.bundles.a.count}, device ${scene.deviceKeys.a}\n` +
-          `  ${pass.names.b}: shelf ${slots.bundles.b.count}, device ${scene.deviceKeys.b}`,
+          `says it holds ${own.count}. A shelf is the public halves of the keys that device is ` +
+          `holding, so the two cannot disagree.\n` +
+          said(),
+      );
+    }
+    /* And what left the store is what the reel drew leaving it. The device
+       that answered the key agreement consumed one prekey of each kind doing
+       it; the other one answered nothing and is still holding its whole
+       batch. */
+    const collected = side === spend.side ? spend.before - spend.after : 0;
+    if (own.total - own.count !== collected) {
+      throw new Red(
+        `${pass.names[side]} made ${own.total} keypairs and is holding ${own.count}, so ` +
+          `${own.total - own.count} left that store — and the reel drew ${collected} collected ` +
+          `from it. A key leaves this store when the peer's key agreement takes it, so a drop ` +
+          `nobody was drawn collecting is a store spending keys off screen.\n` +
+          said(),
       );
     }
   }
@@ -2645,14 +2877,14 @@ function checkKeyGeneration(pass) {
     }
 
     const read = drawn.map((entry) => {
-      const parsed = KEYGEN_FIGURE.exec(entry.figure);
-      if (!parsed) {
+      const counts = keygenCounts(entry.figure);
+      if (!counts) {
         throw new Red(
           `device ${side.toUpperCase()}'s generation row printed ${JSON.stringify(entry.figure)}, ` +
             `which does not say how many keypairs of how many were made`,
         );
       }
-      return { ...entry, count: Number(parsed[1]), total: Number(parsed[2]) };
+      return { ...entry, ...counts };
     });
 
     for (const entry of read) {
@@ -2710,20 +2942,29 @@ function checkKeyGeneration(pass) {
           `page at the end of it: ${JSON.stringify(row)}`,
       );
     }
-    const parsed = KEYGEN_FIGURE.exec(row.figure);
-    if (!parsed || parsed[1] !== parsed[2]) {
+    /* The row is the device's own store and the store is spent from: the
+       device that answered the key agreement consumed a one-time prekey of
+       each kind doing it, so the figure at rest is the batch it made less what
+       the session took. What cannot happen is a count over the batch, or a
+       store that emptied. Reaching the total is asserted where it is true —
+       above, off the generation the watcher recorded. */
+    const settled = keygenCounts(row.figure);
+    if (!settled || settled.count <= 0 || settled.count > settled.total) {
       throw new Red(
         `device ${side.toUpperCase()}'s generation row finished the run reading ` +
-          `${JSON.stringify(row.figure)}, so the last count the reel drew was not the total the ` +
-          `device generated`,
+          `${JSON.stringify(row.figure)}, which is not an amount of the batch that device made`,
       );
     }
-    if (!row.bar || !row.inner || row.bar.width < row.inner - 0.5) {
+    /* And the bar draws that amount. Told as a percentage of a track, so a
+       length that never reached the page is a full-looking figure over a bar
+       that is not there. */
+    const want = (settled.count / settled.total) * (row.inner ?? 0);
+    if (!row.bar || !row.inner || Math.abs(row.bar.width - want) > 0.5) {
       throw new Red(
-        `device ${side.toUpperCase()}'s generation row says every keypair was made and its bar is ` +
-          `${row.bar?.width} wide inside a track ${row.inner} across. The bar is told its length ` +
-          `as a percentage, so a full count under a short bar means the length never reached the ` +
-          `page.`,
+        `device ${side.toUpperCase()}'s generation row reads ${JSON.stringify(row.figure)} and its ` +
+          `bar is ${row.bar?.width} wide inside a track ${row.inner} across, where that figure is ` +
+          `${want.toFixed(1)}. The bar is told its length as a percentage of the figure beside ` +
+          `it, so the two cannot disagree.`,
       );
     }
   }
@@ -2743,8 +2984,8 @@ function generationSaid(pass, names) {
       const drawn = pass.keygen.filter((entry) => entry.side === side);
       const figures = drawn.map((entry) => entry.figure);
       const partway = figures.find((figure) => {
-        const parsed = KEYGEN_FIGURE.exec(figure);
-        return parsed && parsed[1] !== parsed[2];
+        const counts = keygenCounts(figure);
+        return counts && counts.count !== counts.total;
       });
       return (
         `${names[side]} drew "${partway}" then "${figures[figures.length - 1]}" ` +
@@ -2860,38 +3101,11 @@ function checkStoredMailbox(pass) {
 }
 
 /*
- * The relay pane and the byte lane, on a tab that is receiving.
+ * What a second sentence has to move.
  *
- * A tab watched only the rows it had sent. So the pane and the strip on a
- * receiving tab showed one of two things, both false: nothing at all, on a tab
- * that had never sent, or the bytes of that tab's own previous outbound message
- * — sitting beside a slab and a caption describing the message it had just been
- * handed. It rendered perfectly. It was a picture of the wrong envelope.
- *
- * The last thing to happen in the run is the second tab's reply, so afterwards
- * both tabs are looking at that one row: the tab that sent it, and the tab it
- * was addressed to. That gives an assertion neither tab can pass alone —
- * equality of the two printed ciphertexts across two browser tabs, which is
- * false the moment either tab goes back to printing only its own sends.
- *
- * Then each tab's own strip against its own pane, which is what makes the lane
- * evidence rather than decoration on the receiving side too.
- */
-/*
- * Two sends, two different strips.
- *
- * The first cut of the lane decoded one base64 layer and printed the head of
- * what came out, which is the head of the *inner* base64 document — and a
- * prekey header that two messages on one session share byte for byte. The strip
- * was therefore identical on every send: a still image of ciphertext, standing
- * under a caption claiming those are the bytes of the row that was just stored.
- * It rendered perfectly, it decoded correctly, and it was the one thing on the
- * page that was not evidence.
- *
- * Nothing about the fix is self-checking. The offset is a measurement of where
- * one build of the SDK puts its per-message material, and an SDK that moves it
- * takes the strip back to a constant without moving a line of this repository.
- * So the run sends twice and reads the lane both times.
+ * One frame cannot tell a drawing that follows the session from a drawing that
+ * was written once and left there, and the wheel is the thing on the page whose
+ * whole claim is per-message. So the run sends twice and reads it both times.
  */
 function checkSceneMoves(first, second) {
   /*
@@ -2903,11 +3117,12 @@ function checkSceneMoves(first, second) {
    */
   const keys = (pass, side) => {
     const printed = pass.scene?.[side]?.keys ?? '';
-    const [, digits] = /^(\d+) keys?$/.exec(printed) ?? [];
+    const [, digits] = /^(\d+) message keys? derived$/.exec(printed) ?? [];
     if (digits === undefined) {
       throw new Red(
         `device ${side} printed "${printed || '(nothing)'}" where its key count goes — the ` +
-          'wheel says "N key" or "N keys", and anything else is a count this run cannot read',
+          'wheel says "N message key derived" or "N message keys derived", and anything else ' +
+          'is a count this run cannot read',
       );
     }
     return Number(digits);
@@ -2947,23 +3162,6 @@ function checkSceneMoves(first, second) {
     }
   }
 
-  const before = first.cipher.trim();
-  const after = second.cipher.trim();
-  if (before.length === 0 || after.length === 0) {
-    throw new Red(
-      'the relay column printed no bytes on one of two sends, so there is nothing to compare — ' +
-        `first "${before}", second "${after}"`,
-    );
-  }
-  if (before === after) {
-    throw new Red(
-      'the relay column printed the same bytes for two different messages, so it is showing a ' +
-        'constant rather than this envelope:\n' +
-        `  both sends: ${before}\n` +
-        '  the strip is sampled from a stretch of the envelope that no longer varies per ' +
-        'message — HEX_OFFSET in src/lib/demo/ciphertext.ts is the measurement that moved',
-    );
-  }
 }
 
 function checkFallback(pass) {
@@ -3026,47 +3224,79 @@ function checkFallback(pass) {
 }
 
 /*
- * The relay's column draws the size of what the relay is holding.
+ * The braid changes the size of the message, and the drawing says so in
+ * figures while the transit stays one size.
  *
  * Two runs of the same page, differing in one switch. Braid off sends the
- * ML-KEM key whole in every message and braid on sends it in 32-byte chunks, so
- * the envelope the relay stores is several times larger in the first run than
- * in the second — and a column that draws that size has to be visibly different
- * between them.
+ * ML-KEM key whole in the message that agrees the session and braid on sends it
+ * a chunk at a time, so the envelope the relay stores is larger in the first
+ * run than in the second by about a key. The scene states that difference as a
+ * byte figure on the envelope, and draws the envelope itself at one size
+ * whatever it carries — a wire that widened with the payload would teach that a
+ * bigger message is a bigger journey, and the journey is the same journey.
  *
- * Geometry, and only geometry. The column already prints the byte count in
- * three places, and every one of those printed figures changes between these
- * two runs whether or not anything is drawn: a check that read one of them
- * would go green against the page as it stands and would go on being green if
- * the drawing were deleted. What no printed figure can do is change a box's
- * width, so the width is what is measured, at the size the reader's browser
- * gave it.
+ * So both halves are read, and they are read as opposites. The figure has to
+ * move by the factor the setting moves the envelope by; the boxes have to stay
+ * where they are. A drawing that scaled with the payload would pass the first
+ * and fail the second, which is the point: this is the check that would catch
+ * the constant-size transit being quietly given up.
  *
- * Which box is not this harness's business. Every box in the column is measured
- * in both runs and paired by where it sits, and the pair that moved the most is
- * the answer — so a drawing may be a bar, a strip, a stack of chunks or the row
- * itself, may carry any markup, and may be moved within the column, and this
- * check neither knows nor cares. What it requires is that the column contain
- * one box that gets several times wider when the envelope does.
+ * Which boxes is not this harness's business. Every box in the column is
+ * measured in both runs and paired by where it sits, so the drawing may be
+ * rebuilt, remarked or moved within the column and the reading still describes
+ * it.
  */
 function checkBraidDrawing(disabled, required) {
   const measured = (pass, setting) => {
     if (!pass.geometry) {
       throw new Red(
         `braid drawing — the run under braid ${setting} has no relay column on the page to ` +
-          `measure (${RELAY_COLUMN}), so whether it draws the size of an envelope cannot be asked`,
+          `measure (${RELAY_COLUMN}), so what the setting does to the drawing cannot be asked`,
       );
     }
-    return pass.geometry;
+    const printed = pass.stored?.at?.size ?? '';
+    const size = STORED_SIZE.exec(printed);
+    if (!size) {
+      throw new Red(
+        `braid drawing — the run under braid ${setting} put a message through the relay and the ` +
+          `envelope was drawn reading ${JSON.stringify(printed || '(nothing)')}, which is not a ` +
+          `size. The setting is a claim about how big a message is, so a run that never states ` +
+          `one says nothing about it.`,
+      );
+    }
+    return {
+      ...pass.geometry,
+      note: printed,
+      bytes: Number(size[1]) * { B: 1, KB: 1024, MB: 1024 * 1024 }[size[2]],
+    };
   };
   const whole = measured(disabled, 'off');
   const chunked = measured(required, 'on');
 
+  const held =
+    `  the message the relay held, braid off: ${JSON.stringify(whole.note)}\n` +
+    `  the message the relay held, braid on:  ${JSON.stringify(chunked.note)}`;
+
+  /* The setting did what the setting does. Read before the drawing, because a
+     run where the two envelopes came out the same size has nothing to say
+     about a drawing of either. */
+  const factor = whole.bytes / chunked.bytes;
+  if (!Number.isFinite(factor) || factor < BRAID_SIZE_FACTOR) {
+    throw new Red(
+      `braid drawing — the braid setting did not change the size of the message. The ML-KEM ` +
+        `material rides whole in the first message with the braid off and a chunk at a time ` +
+        `with the braid on, so the first envelope is the larger by about the size of that ` +
+        `material; these two are ${factor.toFixed(2)}× apart, under the ${BRAID_SIZE_FACTOR}× ` +
+        `floor.\n` +
+        held,
+    );
+  }
+
   /* Paired by position in the column rather than by anything either run's
      markup says about itself. A box drawn in only one of the two runs has no
-     pair and is passed over: the claim is about a box whose width answers the
-     setting, and a box that exists under one setting alone cannot be compared
-     to itself. */
+     pair and is passed over: the claim is about a box that is the same size
+     under both settings, and a box that exists under one setting alone cannot
+     be compared to itself. */
   const facing = new Map(chunked.drawn.map((box) => [box.path, box]));
   const pairs = [];
   for (const box of whole.drawn) {
@@ -3079,16 +3309,10 @@ function checkBraidDrawing(disabled, required) {
       classes: box.classes,
       whole: box.width,
       chunked: other.width,
-      ratio: box.width / other.width,
+      ratio: Math.max(box.width / other.width, other.width / box.width),
     });
   }
   pairs.sort((first, second) => second.ratio - first.ratio);
-
-  const held =
-    `  the relay held, braid off: ${JSON.stringify(whole.stored)}\n` +
-    `    of which the drawn row:  ${JSON.stringify(whole.note)}\n` +
-    `  the relay held, braid on:  ${JSON.stringify(chunked.stored)}\n` +
-    `    of which the drawn row:  ${JSON.stringify(chunked.note)}`;
 
   if (pairs.length === 0) {
     throw new Red(
@@ -3104,1506 +3328,129 @@ function checkBraidDrawing(disabled, required) {
     `    ${pair.ratio.toFixed(2)}×  ${pair.whole.toFixed(1)} px → ${pair.chunked.toFixed(1)} px  ` +
     `<${pair.tag}${pair.classes ? ` class="${pair.classes}"` : ''}> at ${pair.path || 'the column'}`;
 
-  if (widest.ratio < BRAID_WIDTH_FACTOR) {
+  if (widest.ratio > BRAID_STEADY_RATIO) {
     throw new Red(
-      `braid drawing — the relay column does not draw the size of what it is holding. The same ` +
-        `page ran under both braid settings, which put envelopes of very different sizes through ` +
-        `the relay, and the widest that any box in ${RELAY_COLUMN} changed between the two runs ` +
-        `was ${widest.ratio.toFixed(2)}×. A width drawn to the envelope's size changes by at ` +
-        `least ${BRAID_WIDTH_FACTOR}×.\n` +
+      `braid drawing — the relay column is drawn to the size of what it is holding. The same ` +
+        `page ran under both braid settings, ${factor.toFixed(2)}× apart in envelope size, and a ` +
+        `box in ${RELAY_COLUMN} changed by ${widest.ratio.toFixed(2)}× between them — over the ` +
+        `${BRAID_STEADY_RATIO}× a reflow accounts for. The envelope rides the wire at one size ` +
+        `whatever it carries, and the size it carries is stated in figures.\n` +
         held +
         `\n  the boxes that moved most, of ${pairs.length} measured in both runs:\n` +
         pairs.slice(0, 3).map(describe).join('\n'),
     );
   }
 
-  return { widest, whole, chunked, pairs };
+  return { widest, whole, chunked, pairs, factor };
 }
 
 /*
- * The braid tells the page when a device has produced its epoch key, and the
- * page draws it.
+ * The braid says how much of the key each message carries, and the strip draws
+ * it arriving.
  *
  * The column check above measures a drawing against the sizes the relay is
  * holding, and every number in it can be had from bytes the page measured
- * itself. A completion cannot. Nothing in an envelope's length says that enough
- * chunks have arrived for a device to close its epoch — only the braid knows
- * that, and it says so once, in a report the page subscribes to. So this reads
- * the one thing on the page that no amount of measuring could have produced.
+ * itself. These two cannot. Nothing in an envelope's length says how many chunks
+ * of a key it is carrying or how many the whole key takes — only the braid knows
+ * that, and it says so in the reports the page subscribes to. So this reads the
+ * one figure on the page that no amount of measuring could have produced.
  *
- * Read after a whole epoch has been driven, because that is how long it takes
- * for the claim to become available to make.
+ * The whole sequence rather than the last figure. A key arriving a chunk at a
+ * time is a claim about many messages: a strip written once carries a figure
+ * too, and the difference between the two is that the counts climbed. So the
+ * check is that they climbed, message by message, each one short of the total
+ * beside it. Reaching that total is not read here and is not driven for — see
+ * `BRAID_MESSAGES` for what an epoch costs at the pace the console plays.
  *
- * Held against the scene's own name for the device rather than against a name
- * this file knows. Both names come off the session the run booted, so a mark
- * that agrees with the column beside it is a mark written for a device that
- * exists; a fixed string typed into the markup would agree with neither.
+ * The counts themselves are never pinned. How many chunks a key takes is the
+ * braid's to choose and the SDK's to change; that the strip counts one against
+ * the other is the drawing's claim, and it is checkable without knowing either
+ * number in advance.
  */
 function checkBraidProgress(pass) {
-  const reading = pass.epochMark;
-  if (!reading) {
+  const seen = pass.braidChunks;
+  if (!Array.isArray(seen) || seen.length === 0) {
     throw new Red(
-      `braid progress — ${EPOCH_MESSAGES} alternating messages went through a braided session ` +
-        `and the scene has no braid row on it at all (${SCENE_BRAID}), so the page shows nothing ` +
-        `about how much of the key has arrived`,
-    );
-  }
-  if (!reading.row || !reading.marked) {
-    throw new Red(
-      `braid progress — the braid reported an epoch key and the scene is not showing it: the ` +
-        `row is ${reading.row ? 'shown' : 'hidden'} and the mark is ` +
-        `${reading.marked ? 'shown' : 'hidden'}`,
+      `braid progress — ${BRAID_MESSAGES} alternating messages went through a braided session ` +
+        `and the strip (${SCENE_BRAID_FIGURE}) was never drawn with a figure on it, so the page ` +
+        `shows nothing about how much of the key has arrived.\n` +
+        `  what was recorded: ${JSON.stringify(seen)}`,
     );
   }
 
-  /* The mark says which device produced the key, and it can only say it because
-     the report named one. A mark that stood for no device would be the page
-     announcing a completion it could not attribute. */
-  if (reading.side !== 'a' && reading.side !== 'b') {
-    throw new Red(
-      `braid progress — the scene marks an epoch key and does not say which device produced ` +
-        `it: it reads ${JSON.stringify(reading.mark)} and stands for ` +
-        `${JSON.stringify(reading.side)}`,
-    );
-  }
-  if (!reading.named || !reading.mark.includes(reading.named)) {
-    throw new Red(
-      `braid progress — the mark names a device the scene does not have. It reads ` +
-        `${JSON.stringify(reading.mark)}, it stands for device ${JSON.stringify(reading.side)}, ` +
-        `and that device's column calls it ${JSON.stringify(reading.named)}.`,
-    );
-  }
-
-  /* And the counts beside it, which come from the same report. Two numbers and
-     the word the drawing counts in — required as a shape rather than as a
-     figure, because the figures are the braid's to choose and change. */
-  const counted = /(\d+)\s+of\s+(\d+)\s+chunks/.exec(reading.figure);
-  if (!counted) {
-    throw new Red(
-      `braid progress — the braid row prints no chunk counts. It reads ` +
-        `${JSON.stringify(reading.figure)}, and the report it is drawn from carries how many ` +
-        `chunks a device is holding and how many it needs.`,
-    );
-  }
-
-  return {
-    side: reading.side,
-    named: reading.named,
-    mark: reading.mark,
-    figure: reading.figure,
-    carried: Number(counted[1]),
-    required: Number(counted[2]),
-  };
-}
-
-/*
- * What the receiving device actually calls this failure, computed rather than
- * quoted.
- *
- * The same reasoning as `expectedFields`, applied to the claim the scenario
- * exists to make. A harness carrying the string "MAC mismatch" would go green against
- * a page that had that string typed into it, which is precisely the page this
- * one must never become — and it would go red the day the SDK reworded its
- * errors, teaching whoever ran it to update the string rather than look. So the
- * expectation is produced by running the scenario here in Node, against the
- * same installed package the browser loads, and taking the SDK's own words out
- * of the run.
- *
- * A Node run that does not refuse is not a demo failure. It means the shipped
- * package accepted a ciphertext with a flipped byte, and there is no page left
- * worth checking.
- *
- * Deriving it is not enough on its own, and this was a real hole rather than a
- * theoretical one. Both sides of the comparison come from the same scenario
- * module, so a change to *what the scenario corrupts* moves the page and the
- * expectation together and the check stays green: reintroducing the base64
- * layer bug (§3 of the proof) made the page demonstrate `UNKNOWN` with a parse
- * error, the Node run derive the same, and both error-surface assertions pass —
- * the page was demonstrating something it does not claim, and only the
- * liveness check caught it, with a message about device pairs. So the derived
- * code is held against the code the scenario's own shipped copy names. That
- * string is not computed from anything; it is what the reader is told, and it
- * is the thing the page is actually claiming.
- */
-const CODE = /\b[A-Z][A-Z0-9_]{3,}\b/g;
-
-/** The error code the scenario's copy promises a reader, out of the copy. */
-function promisedErrorCode(slug) {
-  const scenario = SCENARIOS.find((entry) => entry.slug === slug);
-  if (!scenario) throw new Red(`no scenario in the catalogue is called ${slug}`);
-
-  const copy = [scenario.title, scenario.expectation, scenario.action, scenario.link.label];
-  const codes = [...new Set(copy.join(' ').match(CODE) ?? [])];
-  if (codes.length !== 1) {
-    throw new Red(
-      `${slug}'s copy names ${codes.length} error codes (${codes.join(', ') || 'none'}), ` +
-        `so there is\n  nothing for the derived expectation to be held against. The scenario has ` +
-        `to promise the reader\n  exactly one code, or this check is a comparison of a value ` +
-        `with itself.`,
-    );
-  }
-  return codes[0];
-}
-
-async function expectedRefusal() {
-  /* A scenario that throws is a demo failure, not an environment one. It is
-     the same throw the page would show a reader in its status line, and the
-     harness saying "this says nothing about the demo" over it would be wrong
-     in the most expensive direction — the scenario's own guards (the base64
-     depth check, above all) report exactly here. */
-  let result;
-  try {
-    result = await runFlipAByte();
-  } catch (cause) {
-    throw new Red(
-      `the scenario could not complete a run in this process: ` +
-        `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
-        `would see in the scenario's status line, so the page is broken rather than the harness.`,
-    );
-  }
-  if (!result.refusal) {
-    throw new Red(
-      'the installed SDK was handed a ciphertext with one byte flipped and reported no error ' +
-        'at all.\n  This is not the page being wrong. Nothing on it is worth checking until it ' +
-        'is explained.',
-    );
-  }
-  if (result.delivered !== null && result.delivered !== result.sentence) {
-    throw new Red(
-      `the installed SDK delivered something other than the sent sentence after one byte was ` +
-        `flipped:\n  sent:      ${result.sentence}\n  delivered: ${result.delivered}`,
-    );
-  }
-  const promised = promisedErrorCode(FLIP_SLUG);
-  if (result.refusal.errorCode !== promised) {
-    throw new Red(
-      `the scenario refuses with ${result.refusal.errorCode}, but the page says it is ` +
-        `${promised}.\n  ${JSON.stringify(result.refusal.errorMessage)}\n  Both halves of this ` +
-        `harness's expectation come from the scenario module, so a change to what the scenario ` +
-        `corrupts\n  moves the page and the expectation together — this is the check that does ` +
-        `not move with them. Either the\n  scenario is corrupting something other than the ` +
-        `ciphertext the MAC covers, or the copy in catalog.ts\n  is now wrong about what a ` +
-        `reader will see.`,
-    );
-  }
-
-  return { ...result.refusal, sentence: result.sentence };
-}
-
-/*
- * What linking a second device does, according to the installed SDK.
- *
- * Same stance as `expectedRefusal`: the scenario is run in this process first,
- * and what it produced becomes the expectation the page is held to. The
- * assertions below are about the SDK rather than about the page — if the pre-link
- * message turns up on a device that did not exist when it was encrypted, the
- * page printing that faithfully is not the interesting problem.
- *
- * The claim is checked in both directions on purpose. "The new device does not
- * have it" is satisfied by a device that has nothing at all, and by a run where
- * the second message never arrived anywhere; the scenario is only evidence if
- * the device that was there kept both sentences while the new one holds exactly
- * the sentence sent after it was linked.
- */
-async function expectedSecondDevice() {
-  let result;
-  try {
-    result = await runAddASecondDevice();
-  } catch (cause) {
-    throw new Red(
-      `the second-device scenario could not complete a run in this process: ` +
-        `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
-        `would see in the scenario's status line, so the page is broken rather than the harness.`,
-    );
-  }
-
-  if (!result.after) {
-    throw new Red(
-      'the message sent after the link never reached every device, so there is nothing to ' +
-        'compare.\n  The scenario waited and gave up: the new device was linked and then did ' +
-        'not receive.',
-    );
-  }
-  if (result.before.recipientDeviceCount !== 1) {
-    throw new Red(
-      `the message sent before the link was encrypted to ` +
-        `${result.before.recipientDeviceCount} devices, not 1. The account had one device at ` +
-        `that point,\n  and the whole scenario is arithmetic about that number.`,
-    );
-  }
-  if (result.after.recipientDeviceCount !== 2) {
-    throw new Red(
-      `the message sent after the link was encrypted to ` +
-        `${result.after.recipientDeviceCount} devices, not 2. The link and the explicit ` +
-        `establishSession both\n  succeeded, so the new device should have been in that fan-out.`,
-    );
-  }
-
-  const primary = result.scrollback.find((device) => device.deviceId !== result.linked.deviceId);
-  const linked = result.scrollback.find((device) => device.deviceId === result.linked.deviceId);
-  if (!primary || !linked || result.scrollback.length !== 2) {
-    throw new Red(
-      `the run produced ${result.scrollback.length} device scroll-back(s) and the relay linked ` +
-        `device ${result.linked.deviceId};\n  the scenario compares exactly two devices.`,
-    );
-  }
-  if (linked.messages.includes(result.before.text)) {
-    throw new Red(
-      `the installed SDK delivered a message to a device that did not exist when it was ` +
-        `encrypted:\n  ${JSON.stringify(result.before.text)} is on device ` +
-        `${linked.deviceId}.\n  This is not the page being wrong.`,
-    );
-  }
-  if (!primary.messages.includes(result.before.text)) {
-    throw new Red(
-      `the device that was already there lost the message sent before the link, so "the new ` +
-        `device does not have it"\n  says nothing about linking — nothing has it. Device ` +
-        `${primary.deviceId} holds: ${JSON.stringify(primary.messages)}`,
-    );
-  }
-  for (const device of [primary, linked]) {
-    if (!device.messages.includes(result.after.text)) {
+  const read = seen.map((entry) => {
+    const counted = BRAID_FIGURE.exec(entry.figure);
+    if (!counted) {
       throw new Red(
-        `the message sent after the link is not on device ${device.deviceId}, which the sender ` +
-          `was told it was encrypted to.\n  That device holds: ${JSON.stringify(device.messages)}`,
+        `braid progress — the strip was drawn reading ${JSON.stringify(entry.figure)}, which does ` +
+          `not say how many chunks of the key this message carries of how many the key takes`,
       );
     }
-  }
-
-  return {
-    before: result.before,
-    after: result.after,
-    linked: result.linked,
-    primaryMessages: primary.messages,
-    linkedMessages: linked.messages,
-  };
-}
-
-/*
- * What running the relay out of one-time prekeys does, according to the
- * installed SDK.
- *
- * This scenario's claim is a negative — the SDK does not complain — and a
- * negative is the easiest thing on this site to assert falsely, so the run is
- * done here first and the page is held to it. The assertions below are about
- * the SDK: they fail when the SDK's behaviour moves, including when it moves
- * in the direction everyone would prefer.
- */
-async function expectedPreKeys() {
-  let result;
-  try {
-    result = await runOutOfPreKeys();
-  } catch (cause) {
-    throw new Red(
-      `the prekey-exhaustion scenario could not complete a run in this process: ` +
-        `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
-        `would see in the scenario's status line, so the page is broken rather than the harness.`,
-    );
-  }
-
-  if (!result.bundle) {
-    throw new Red(
-      'the relay published no prekey bundle at all, so the run never reached the state the ' +
-        'scenario is about.',
-    );
-  }
-  if (result.bundle.ecOneTimePreKey !== null || result.bundle.kemOneTimePreKey !== null) {
-    throw new Red(
-      `the relay was told to serve no one-time prekeys and served them anyway: EC ` +
-        `${result.bundle.ecOneTimePreKey}, KEM ${result.bundle.kemOneTimePreKey}.\n  The ` +
-        `scenario has nothing to show, and the page would be describing an exhaustion that ` +
-        `did not happen.`,
-    );
-  }
-  if (result.bundle.kemLastResortPreKey === null) {
-    throw new Red(
-      'the relay published no last-resort prekey either, so this run is about a bundle with no ' +
-        'usable KEM key\n  rather than about the fallback the scenario exists to show.',
-    );
-  }
-  if (result.healthy.usedKemPreKeyType !== 'one-time') {
-    throw new Red(
-      `the ordinary conversation did not use a one-time prekey — the SDK called it ` +
-        `${JSON.stringify(result.healthy.usedKemPreKeyType)}.\n  Without that, the run has no ` +
-        `healthy case to contrast the exhausted one against.`,
-    );
-  }
-  if (result.fallback.usedKemPreKeyType !== 'last-resort' || result.fallback.usedOneTimePreKey) {
-    throw new Red(
-      `the handshake against the empty bundle did not fall back the way the page says: ` +
-        `usedKemPreKeyType ${JSON.stringify(result.fallback.usedKemPreKeyType)}, ` +
-        `usedOneTimePreKey ${String(result.fallback.usedOneTimePreKey)}.`,
-    );
-  }
-  if (result.delivered !== result.sentence) {
-    throw new Red(
-      `the first message of the new conversation never arrived, so this run cannot show that ` +
-        `exhaustion is survivable.\n  sent: ${JSON.stringify(result.sentence)}, delivered: ` +
-        `${JSON.stringify(result.delivered)}`,
-    );
-  }
-  if (result.exhausted.ec !== 0 || result.exhausted.kem !== 0) {
-    throw new Red(
-      `the relay still held ${result.exhausted.ec} EC and ${result.exhausted.kem} KEM one-time ` +
-        `prekeys at the moment it published an empty bundle.\n  The counts the page prints ` +
-        `would contradict the bundle beside them.`,
-    );
-  }
-
-  /*
-   * The finding, asserted in the direction that makes it a finding. If a future
-   * SDK does warn, this goes red — deliberately. The page's central sentence
-   * would then be false, and a harness that stayed green while the page told a
-   * reader "the SDK says nothing" about an SDK that says something is worse
-   * than no harness. The message says which way to fix it.
-   */
-  if (result.warnings.length > 0) {
-    throw new Red(
-      `the SDK now reports prekey exhaustion: ` +
-        `${result.warnings.map((record) => `${record.level} ${record.message}`).join('; ')}.\n` +
-        `  That is an improvement, and it makes the page wrong: the scenario is built around the ` +
-        `SDK saying nothing.\n  Update the page and this expectation together.`,
-    );
-  }
-
-  /*
-   * And the check that keeps the one above from being vacuous.
-   *
-   * An empty `warnings` array proves nothing by itself: an SDK that logged
-   * nothing at all would produce one, and so would a filter that had quietly
-   * stopped working. What makes the silence a finding is that the SDK is
-   * talking throughout — in breadcrumbs, several of them naming the fallback —
-   * and never at a level an application would see. A run where the breadcrumbs
-   * dried up is a run where "no warning" is no longer evidence of anything, and
-   * the page would be printing a finding it did not observe.
-   */
-  if (result.whileEmpty.namingFallback === 0) {
-    throw new Red(
-      `the SDK dropped ${result.whileEmpty.breadcrumbs} breadcrumb(s) during the exhausted ` +
-        `handshake and none of them\n  named the last-resort fallback. The page's "no warning" ` +
-        `line is read against what the SDK did say;\n  with nothing said, an empty warn/error ` +
-        `list stops being evidence that exhaustion goes unreported.`,
-    );
-  }
-
-  /*
-   * And the other half of the finding: the SDK's own prekey-health call cannot
-   * see the exhaustion, because it counts this device's stored prekeys rather
-   * than the server's. If it ever agrees with the server, the page's
-   * explanation of why it does not is wrong.
-   */
-  if (
-    result.health &&
-    result.health.oneTimePreKeysRemaining >= 0 &&
-    result.health.oneTimePreKeysRemaining === result.exhausted.ec
-  ) {
-    throw new Red(
-      `checkPreKeyStatus() now agrees with the relay (both ${result.exhausted.ec}), so it is no ` +
-        `longer counting only\n  local storage. The page tells a reader the opposite. Update ` +
-        `both.`,
-    );
-  }
-
-  return {
-    firstSentence: result.firstSentence,
-    sentence: result.sentence,
-    bundle: result.bundle,
-    exhausted: result.exhausted,
-    fallback: result.fallback,
-    health: result.health,
-    whileEmpty: result.whileEmpty,
-  };
-}
-
-/*
- * What destroying the receiving device and rebuilding it does, according to the
- * installed SDK.
- *
- * This scenario's central claim is the strongest negative on the site: the
- * application is told nothing. The plan it was built from expected a
- * safety-number change event, the SDK has no such hook, and the page says so.
- * That makes this expectation the thing standing between "the SDK has no
- * identity-change event" and "the page asserts the SDK has no identity-change
- * event" — so every assertion below is about the SDK, and each one fails when
- * the SDK grows the thing the page says it lacks.
- */
-async function expectedReinstall() {
-  let result;
-  try {
-    result = await reinstallADevice();
-  } catch (cause) {
-    throw new Red(
-      `the reinstall scenario could not complete a run in this process: ` +
-        `${cause instanceof Error ? cause.message : String(cause)}\n  This is what a reader ` +
-        `would see in the scenario's status line, so the page is broken rather than the harness.`,
-    );
-  }
-
-  if (result.established.delivered !== result.established.sentence) {
-    throw new Red(
-      `the opening message never arrived, so this run never had the working conversation the ` +
-        `reinstall is\n  supposed to interrupt. Everything after it would be about a first ` +
-        `contact instead.`,
-    );
-  }
-
-  /*
-   * The relay refusing the rebuilt device is the protocol half of the scenario.
-   * A run where it succeeds is a run where a device that has never seen the
-   * account took the account over, which would be a finding of an entirely
-   * different and much louder kind.
-   */
-  if (result.publish.ok) {
-    throw new Red(
-      `the rebuilt device published itself over the account identity and the relay allowed it. ` +
-        `That is not\n  a page that needs updating — a device with no prior relationship to the ` +
-        `account took it over.\n  Stop and look at the relay's identity provisioning before ` +
-        `touching the page.`,
-    );
-  }
-  /*
-   * The refusal arrives in two parts and the page prints both, so both are
-   * checked here. `message` is the SDK's own wrapper — "Failed to sync with
-   * server", which on its own could be a network error — and `cause` is the
-   * relay saying why. The page's claim is that a reinstalled device cannot
-   * quietly become the account; only the second sentence supports it, so a run
-   * that lost the cause would leave the page attributing a generic failure to a
-   * policy.
-   *
-   * Both halves are asserted non-empty *here* because the page-side check
-   * cannot assert it there. `reinstallExpectation` looks for each half with
-   * `run.text.includes(half)`, and `includes('')` is true of every string — so
-   * an empty half is not a check that fails, it is a check that stops existing.
-   * That is not hypothetical: this comment used to claim both halves were
-   * checked when only `cause` was, and emptying the wrapper message left the
-   * whole suite green. These two guards are what make the page-side `includes`
-   * mean anything, so they belong to it as much as to this function.
-   */
-  if (!result.publish.message.trim()) {
-    throw new Red(
-      `the relay refused the rebuilt device and the SDK wrapped the refusal in an empty message.\n` +
-        `  The page prints the SDK's wrapper beside the relay's reason to show that the wrapper ` +
-        `alone reads as a\n  network failure; with nothing there, the page prints the reason ` +
-        `twice and the check that it printed\n  the wrapper passes against the empty string.`,
-    );
-  }
-  if (!result.publish.cause) {
-    throw new Red(
-      `the relay refused the rebuilt device with "${result.publish.message}" and no underlying ` +
-        `reason.\n  The page quotes the reason as the evidence that this is a policy rather than ` +
-        `a network failure,\n  and there is nothing to quote.`,
-    );
-  }
-  if (!result.rotate.ok) {
-    throw new Red(
-      `the rebuilt device could not get back onto the account even with an explicit rotation: ` +
-        `${result.rotate.code ?? result.rotate.name}: ${result.rotate.message}.\n  The scenario ` +
-        `then has no recovery to show, and the page's account of what it takes is untested.`,
-    );
-  }
-
-  /*
-   * The finding, asserted in the direction that makes it a finding. Every hook
-   * the SDK offers was registered before the device was destroyed; a run where
-   * one of them fires means the SDK now tells the application something, the
-   * page's central sentence is false, and the fix is to update both.
-   */
-  if (result.hooks.fired.length > 0) {
-    throw new Red(
-      `the SDK now notifies the application when the far identity changes: ` +
-        `${result.hooks.fired.join(', ')}.\n  That is an improvement, and it makes the page ` +
-        `wrong: the scenario is built around no hook firing.\n  Update the page and this ` +
-        `expectation together.`,
-    );
-  }
-
-  /*
-   * And the check that keeps the one above from being vacuous, which this
-   * scenario needs more than the prekey one does. An empty `fired` list is
-   * exactly what a run that registered nothing produces, and it is also what a
-   * run that hooked the wrong device produces. Holding the registered list
-   * against the SDK's own union is what makes the silence evidence: these are
-   * all the hooks there are, they were live, and none of them fired.
-   */
-  if (result.hooks.registered.length === 0 || result.hooks.devices.length === 0) {
-    throw new Red(
-      `the run registered ${result.hooks.registered.length} hook(s) on ` +
-        `${result.hooks.devices.length} device(s), so "no hook fired" is a statement about an ` +
-        `empty\n  registration rather than about the SDK.`,
-    );
-  }
-
-  /*
-   * The other half of the finding: the SDK is not quiet, it is quiet *where an
-   * application looks*. A run with nothing at warn or error would make the
-   * page's "all of it went to the logger" line describe an absence of logging
-   * rather than a routing problem.
-   */
-  if (result.loud.length === 0) {
-    throw new Red(
-      `the SDK logged nothing at warn or error across the whole reinstall. The page's argument ` +
-        `is that it\n  says plenty and says all of it to the logger; with nothing said, "none ` +
-        `of it reached a hook" stops\n  being evidence about where the SDK reports and becomes ` +
-        `a sentence about an empty list.`,
-    );
-  }
-
-  /*
-   * And which codes those records carry, which the page prints by name and
-   * tells a reader to expect in their own logs. `REINSTALL_CODES` says why this
-   * is an exact set rather than a floor.
-   */
-  const seen = [...result.codes].sort();
-  const missing = REINSTALL_CODES.filter((code) => !seen.includes(code));
-  const extra = seen.filter((code) => !REINSTALL_CODES.includes(code));
-  if (missing.length > 0 || extra.length > 0) {
-    throw new Red(
-      `the reinstall's error codes are not the set the page names. Expected exactly ` +
-        `${REINSTALL_CODES.join(', ')};\n  this run carried ${seen.join(', ') || 'none'}` +
-        (missing.length > 0 ? `, missing ${missing.join(', ')}` : '') +
-        (extra.length > 0 ? `, and carrying ${extra.join(', ')} as well` : '') +
-        `.\n  Either the scenario stopped reading one of the four places the SDK puts a code, or ` +
-        `the SDK reports\n  something here it did not before. The page names these codes, so fix ` +
-        `the page and this list together.`,
-    );
-  }
-
-  /*
-   * And how they are spread across the records, which is the other half of what
-   * the page says and the half a check on the set cannot see. `REINSTALL_CODED`
-   * says why it is asserted separately.
-   */
-  if (result.loud.length !== REINSTALL_CODED.loud || result.coded !== REINSTALL_CODED.coded) {
-    throw new Red(
-      `the reinstall's records are not spread the way the page describes. Expected ` +
-        `${REINSTALL_CODED.coded} of ${REINSTALL_CODED.loud} records at warn or error to carry ` +
-        `a code and\n  ${REINSTALL_CODED.loud - REINSTALL_CODED.coded} to carry none; this run ` +
-        `had ${result.coded} of ${result.loud.length} carrying one and ` +
-        `${result.loud.length - result.coded} carrying none.\n  The page tells a reader how much ` +
-        `of this grepping for a single code accounts for, so that sentence and this ` +
-        `expectation\n  move together.`,
-    );
-  }
-
-  /*
-   * `verify()` throwing is what stops an application from rendering the changed
-   * number a "safety number changed" banner is made of. If it starts answering,
-   * the page's account of why the banner is hard to build is wrong.
-   */
-  if (result.asked.ok) {
-    throw new Red(
-      `verify() now returns a safety number after the far identity has changed, rather than ` +
-        `throwing.\n  The page tells a reader the application cannot render the comparison until ` +
-        `it has already accepted\n  the change. Update both.`,
-    );
-  }
-
-  if (!result.accepted.ok || result.recovered === null) {
-    throw new Red(
-      `the run never recovered: acceptIdentityRotation ` +
-        `${result.accepted.ok ? 'succeeded' : 'failed'} and delivery ` +
-        `${result.recovered === null ? 'did not resume' : 'resumed'}.\n  The scenario would then ` +
-        `be showing a break with no way out, which is not what it says.`,
-    );
-  }
-  if (!result.after) {
-    throw new Red(
-      'the run produced no safety number after the change, so the comparison the page prints ' +
-        'has nothing on\n  one side of it.',
-    );
-  }
-
-  /*
-   * The split. The page's closing argument is that a user is asked to re-read
-   * sixty digits of which thirty moved; that is only true while the local half
-   * holds still and the remote half does not.
-   */
-  if (result.before.localHalf !== result.after.localHalf) {
-    throw new Red(
-      `the sending party's own half of the safety number changed across a reinstall of the ` +
-        `other device\n  (${result.before.localHalf} then ${result.after.localHalf}), which no ` +
-        `part of this scenario touched.`,
-    );
-  }
-  if (result.before.remoteHalf === result.after.remoteHalf) {
-    throw new Red(
-      `the far party's half of the safety number is unchanged after they rebuilt on a new ` +
-        `identity\n  (${result.after.remoteHalf}). The number is then not a function of the ` +
-        `identity it is supposed to\n  commit to, and the whole comparison is worthless.`,
-    );
-  }
-
-  return {
-    sender: result.sender,
-    recipient: result.recipient,
-    established: result.established,
-    /* All three sentences this scenario types, including the one that never
-       arrives. A stranded message is still plaintext the page had in hand, and
-       "it did not reach the recipient" is not the same claim as "it did not
-       reach the network". */
-    sentences: [result.established.sentence, result.stranded.sentence, result.recovered].filter(
-      (sentence) => typeof sentence === 'string',
-    ),
-    publish: result.publish,
-    hooks: result.hooks,
-    asked: result.asked,
-    loud: result.loud,
-    codes: result.codes,
-    coded: result.coded,
-    before: result.before,
-    after: result.after,
-  };
-}
-
-/*
- * Sentences the page prints when the run did *not* go the way it claims runs
- * go. Each is the else-branch of a check against an observed value, so any of
- * them on screen means the page is being honest about a run that failed — which
- * is still a red harness result, and a far more interesting one than a missing
- * element.
- */
-const FLIP_DENIALS = [
-  'reported no error at all',
-  'Something other than the sent message was delivered',
-  'Garbage plaintext reached the application',
-  'no recovery to show',
-  'cannot say the drop was not silent',
-  'cannot say that no garbage plaintext reached it',
-];
-
-/*
- * Each of these is a branch the page renders when it cannot make its argument.
- * The page is right to print them; a run that reaches one is not a pass.
- *
- * `no scroll-back for the device it linked` is the state where the linked
- * device produced no pane at all — which is not the same as a pane that simply
- * lacks the pre-link message, and that difference is the whole point of the
- * scenario. It shares its cause with `never joined the session`, so both
- * render together, and the scan below reports the first match: the precise one
- * has to come first, or the failure is reported as the vaguer of the two.
- */
-const SECOND_DEVICE_DENIALS = [
-  'no scroll-back for the device it linked',
-  'is on the new device',
-  'never reached every device',
-  'never joined the session',
-];
-
-/*
- * The branches the prekey scenario renders when it cannot make its argument.
- *
- * Ordered so the scan below reports the most precise one first, as the
- * second-device list is. "went on serving them" is the state where the run
- * never reached exhaustion at all, and everything printed after it is about a
- * bundle that was never empty — so it has to be reported ahead of the vaguer
- * downstream branches it causes.
- *
- * `The SDK did warn` is in here for a different reason than the rest. It is not
- * a failed run: it is the page discovering that the SDK has grown the warning
- * this scenario says it does not have. It belongs on this list because it means
- * the page is stale, which is a stop, not a pass.
- *
- * What is deliberately *not* on this list is the health check declining to
- * answer. `checkPreKeyStatus()` is throttled per account for twelve hours in a
- * map that outlives the client, so the second press in a tab is always refused
- * — it was on the run that put this note here. That is the SDK behaving as
- * built rather than a run that failed, and it is the same finding as the
- * counted branch: no signal reaches the application either way. It is held to
- * instead by `checkRuns` below, which requires the counted branch from at least
- * one of the two presses, so a pass still proves the finding on screen.
- */
-const PREKEY_DENIALS = [
-  'went on serving them',
-  'The SDK reported no key agreement',
-  'The message never arrived',
-  'The SDK did warn',
-  'returned nothing on this run',
-];
-
-/*
- * Every error code the reinstall produces, and nothing else.
- *
- * The page names these codes and tells a reader which of the records carry one,
- * so the set is copy rather than a diagnostic. It shipped wrong once: the
- * scenario read a code from two of the four places the SDK puts one, saw only
- * the two records that carry `UNTRUSTED_IDENTITY`, missed the two that carry the
- * other codes — `INITIALIZATION_FAILED` and `PREKEY_NOT_FOUND`, one record each
- * — and the page told a reader to grep for a code most of the records do not
- * have. Nothing was red, because the set was printed in the summary and asserted
- * nowhere. The remaining three records carry no code at all, which is what
- * `REINSTALL_CODED` below is for.
- *
- * Asserted as an exact set, in both directions. A missing code means the
- * scenario stopped reading one of the four places, which is the mistake that
- * happened; an extra one means the SDK reports something new here, and the page
- * has to say so before it can go on claiming to list what a reader will see.
- */
-const REINSTALL_CODES = ['INITIALIZATION_FAILED', 'PREKEY_NOT_FOUND', 'UNTRUSTED_IDENTITY'];
-
-/*
- * How those codes are spread across the records: seven at warn or error, four
- * carrying a code and three carrying none.
- *
- * The set above is not enough on its own, and twice now it has not been. The
- * page does not only name the codes, it tells a reader how much of the noise
- * grepping for one of them accounts for — and that is a distribution claim, so
- * a check on the set leaves it unheld. Both sentences that shipped wrong here
- * had the set right: "all of them carrying `UNTRUSTED_IDENTITY`" and then "each
- * record carries one of those" were each contradicted by the three records that
- * carry no code, while `REINSTALL_CODES` stayed green through both.
- *
- * Exact in both directions for the same reason the set is. A different split is
- * either the scenario reading a code place it did not before, or the SDK
- * changing what it reports — and either way the page's sentence about grepping
- * is describing a run that no longer happens.
- */
-const REINSTALL_CODED = { loud: 7, coded: 4 };
-
-/*
- * The branches the reinstall scenario renders when it cannot make its argument.
- *
- * Ordered most precise first, like the two lists above, but the first entry is
- * here for a different reason than the rest: it is not a run that failed to
- * reach the state the page describes, it is the relay letting a device with no
- * prior relationship to the account publish under it. Everything below it is
- * downstream of a run going differently; that one is a security finding, and it
- * has to be the sentence the harness reports.
- */
-const REINSTALL_DENIALS = [
-  'published itself over the account identity without being challenged',
-  'never had the working conversation',
-  'could not rotate onto the account',
-  'The SDK did notify the application',
-  'send was rejected outright',
-  'no stranded message to show',
-  'returned a safety number rather than refusing',
-  'logged nothing at warn or error',
-  'Accepting the identity change failed',
-  'Delivery did not resume',
-  'does not split the way this page expects',
-];
-
-/*
- * The reinstall scenario's per-run value: the far party's half of the safety
- * number, after they rebuilt.
- *
- * It is the strongest divergence value on the page. The other scenarios pick a
- * fresh key because a fresh key is what a live run has and a recording does
- * not; here the fresh value is also the scenario's subject — those thirty
- * digits are a commitment to the identity the rebuilt device generated, and a
- * page that printed the same ones twice would be showing a reader a safety
- * number that does not depend on the identity it is supposed to commit to.
- */
-const SAFETY_HALF = /went from [\d ]+ to ([\d ]+?)\./;
-
-function safetyHalfIn(run) {
-  for (const step of run.recovery) {
-    const found = SAFETY_HALF.exec(step);
-    if (found) return found[1];
-  }
-  return null;
-}
-
-/*
- * The prekey scenario's per-run value: the last-resort key the empty bundle
- * handed over.
- *
- * It is the right one for this scenario twice over. It is key material rather
- * than an identifier, so it is fresh on every press and cannot be fresh on a
- * recording; and it is the exact key the scenario's argument is about — the one
- * every sender arriving at an empty stash shares.
- */
-const LAST_RESORT = /public key ([A-Za-z0-9+/]+)/;
-
-function lastResortIn(run) {
-  for (const step of run.steps) {
-    const found = LAST_RESORT.exec(step);
-    if (found) return found[1];
-  }
-  return null;
-}
-
-/*
- * The one value in the output that a page cannot have been born knowing.
- *
- * It has to come from the log rather than from the summary, and it has to be
- * key material rather than an identifier. The message id looked like the
- * obvious choice and is useless: the in-memory relay numbers messages from one,
- * so every run reports `msg-1`. The sending device's identity key fingerprint
- * is generated when that device boots, and every press of the button boots a
- * new pair — so it differs across runs of a live demo and cannot differ across
- * runs of a recording.
- */
-const FINGERPRINT = /"senderIdentityKeyFingerprint":"([^"]+)"/;
-
-function fingerprintIn(run) {
-  for (const row of run.logLines) {
-    const found = FINGERPRINT.exec(row.text);
-    if (found) return found[1];
-  }
-  return null;
-}
-
-/*
- * The same job for the second-device scenario, which has no fingerprint on
- * screen: its two info records are about the first send and carry no key
- * material. The provisioning URL does. The primary device puts a fresh
- * ephemeral public key in the QR code it shows, so the key differs on every
- * press of a live demo and cannot differ on a replayed one.
- */
-const QR_KEY = /link-device\?session=[^\s&]+&key=(\S+)/;
-
-function qrKeyIn(run) {
-  for (const step of run.steps) {
-    const found = QR_KEY.exec(step);
-    if (found) return found[1];
-  }
-  return null;
-}
-
-/*
- * Everything that is true of any scenario the site ships.
- *
- * `expectation` carries the rest: which slug this pass drove, the sentences
- * that must never leave the tab, the page's own denial strings, the per-run
- * checks, and the one value that has to differ between two live runs. All of
- * those are derived from a run of the scenario in this process, never typed
- * here — a harness holding the page to strings it was given by the same person
- * who wrote the page is checking that nobody made a typo.
- *
- * `checkRuns` is the optional half of `checkRun`: a claim that has to hold
- * across the pass rather than on every press. Only a scenario whose output
- * legitimately differs between presses needs one.
- */
-function checkScenario(pass, origin, expectation) {
-  const { slug, secrets, denials, divergence, checkRun, checkRuns } = expectation;
-
-  if (!pass.opened.open) {
-    throw new Red(
-      `/#${slug} did not open the scenario it names. The fragment is the whole point of\n  ` +
-        `addressing one: a reader who follows that link lands on a closed list.`,
-    );
-  }
-  if (pass.opened.outputVisible || pass.opened.text) {
-    throw new Red(
-      `the scenario showed output before anything had run: ${JSON.stringify(pass.opened.text)}`,
-    );
-  }
-
-  for (const [index, run] of pass.runs.entries()) {
-    const where = `run ${index + 1}`;
-
-    for (const denial of denials) {
-      if (run.text.includes(denial)) {
-        throw new Red(
-          `${where} reported that the protocol did not hold: the page printed "${denial}".\n` +
-            `  The page is telling the truth about a run that failed, which is the harness ` +
-            `working — but the\n  run failed.`,
-        );
-      }
-    }
-
-    checkRun(run, where);
-  }
-
-  checkRuns?.(pass.runs);
-
-  /*
-   * The two runs, against each other. This is what a page cannot fake: the
-   * fixed strings are identical because both runs asked the same SDK, and one
-   * value differs because each run boots its own devices with their own keys. A
-   * page with the output typed into it gets the first right and the second
-   * wrong.
-   */
-  const ids = pass.runs.map(divergence.of);
-  if (ids.some((id) => id === null)) {
-    throw new Red(
-      `a run printed no ${divergence.what} (${ids.map(String).join(', ')}), so the two runs ` +
-        `cannot be\n  told apart and this pass cannot say whether the page ran the SDK or ` +
-        `replayed a recording.\n  It does not mean no device booted: the scenario got far enough ` +
-        `to print ` +
-        `${pass.runs.map((run) => run.logLines.length).join(' and ')} log record(s). The likelier ` +
-        `reading is\n  that the run failed before that value existed, or that the SDK stopped ` +
-        `reporting it.`,
-    );
-  }
-  if (ids[0] === ids[1]) {
-    throw new Red(
-      `both runs reported ${divergence.what} ${ids[0]}. Every press boots fresh devices with ` +
-        `fresh keys,\n  so a repeated value means the page is printing a recording rather than ` +
-        `running the SDK.`,
-    );
-  }
-  if (pass.runs[0].text === pass.runs[1].text) {
-    throw new Red(
-      'both runs printed byte-for-byte the same output, which no two live runs of this scenario do',
-    );
-  }
-
-  /* The sentences a scenario sends are fixed and live in its module, so they
-     are on the page as source before they are ever encrypted. What must not
-     happen is one of them leaving in a request. */
-  const carried = leaks(pass.requests, (value) => findAny(value, secrets));
-  if (carried.length) {
-    throw new Red(
-      `the scenario's sentence left the page in ${carried.length} request(s):\n  ` +
-        carried.join('\n  '),
-    );
-  }
-
-  const offOrigin = pass.requests.filter(
-    (request) => /^https?:/i.test(request.url) && new URL(request.url).origin !== origin,
-  );
-  if (offOrigin.length) {
-    throw new Red(
-      `the page talked to ${offOrigin.length} host(s) that are not this site:\n  ` +
-        offOrigin.map((request) => `${request.method} ${request.url}`).join('\n  '),
-    );
-  }
-
-  const beacons = beaconsIn(pass.requests);
-  const sent = pass.requests.filter((request) => {
-    if (request.method === 'GET') return false;
-    try {
-      return new URL(request.url).pathname !== BEACON_PATH;
-    } catch {
-      return true;
-    }
+    return { ...entry, carried: Number(counted[1]), required: Number(counted[2]) };
   });
-  if (sent.length) {
-    throw new Red(
-      `the page posted to ${sent.length} destination(s) other than ${BEACON_PATH}:\n  ` +
-        sent.map((request) => `${request.method} ${request.url}`).join('\n  '),
-    );
-  }
 
-  for (const beacon of beacons) {
-    const body = beacon.postData ?? '';
-    const shape = BEACON_SHAPE.exec(body);
-    if (!shape) {
-      throw new Red(`a beacon body is not the collector's wire format: ${JSON.stringify(body)}`);
-    }
-    if (!EVENTS.has(shape[1])) {
+  for (const entry of read) {
+    if (entry.required === 0 || entry.carried > entry.required) {
       throw new Red(
-        `the page sent "${shape[1]}", which src/workers/site.ts does not accept — the collector ` +
-          `drops it,\n  so the page is measuring nothing while looking like it is`,
+        `braid progress — the strip was drawn reading ${JSON.stringify(entry.figure)}, which is ` +
+          `not a count of a total`,
       );
     }
   }
-  if (beacons.length !== 1) {
-    throw new Red(
-      `the page sent ${beacons.length} beacon(s) for one scenario opened once and run twice:\n  ` +
-        (beacons.map((beacon) => JSON.stringify(beacon.postData)).join('\n  ') || '(none)') +
-        `\n  It is one per scenario per page — not per run, and not per toggle.`,
-    );
-  }
-  if (beacons[0].postData !== scenarioBeaconBody(slug)) {
-    throw new Red(
-      `the scenario's beacon reads ${JSON.stringify(beacons[0].postData)}, not ` +
-        `${JSON.stringify(scenarioBeaconBody(slug))}.\n  It has grown a dimension, and everything ` +
-        `this page has to derive one from is a fact about a protocol\n  failure the reader ran — ` +
-        `the error code, the byte position, the milliseconds. None of those may leave the tab.`,
-    );
-  }
 
-  /* Invariant 7 again, on the page that has the most to gain from breaking it:
-     the SDK is 713 KB and every scenario needs it. */
-  if (pass.bytesBefore > PRE_INTERACTION_CEILING) {
+  const figures = () => JSON.stringify(read.map((entry) => entry.figure));
+
+  /* A figure for every message driven. One report rides every send, so a run
+     that drew fewer strips than it sent sentences is a drawing that skipped a
+     message — and the climb below would read as steady on a strip that was
+     simply not redrawn. */
+  if (read.length < BRAID_MESSAGES) {
     throw new Red(
-      `${kb(pass.bytesBefore)} of JavaScript arrived on the page before the reader ran anything, ` +
-        `over the ${kb(PRE_INTERACTION_CEILING)} tripwire:\n  ` +
-        pass.before.map((s) => `${s.url} (${s.bytes} B)`).join('\n  '),
-    );
-  }
-  if (pass.after.length === 0) {
-    throw new Red(
-      'running the scenario fetched no chunk at all — the SDK was already on the page before the ' +
-        'reader asked for it',
-    );
-  }
-  if (pass.pageErrors.length) {
-    throw new Red(`the page threw while running the scenario:\n  ${pass.pageErrors.join('\n  ')}`);
-  }
-  if (pass.cspViolations.length) {
-    throw new Red(
-      `the page violated the site's own CSP ${pass.cspViolations.length} time(s):\n  ` +
-        pass.cspViolations.join('\n  '),
+      `braid progress — ${BRAID_MESSAGES} braided messages went through the session and the ` +
+        `strip was drawn for ${read.length} of them: ${figures()}`,
     );
   }
 
-  return { beacons, ids };
-}
+  /* The counts climb. This is the whole reading: a strip written once and left
+     alone carries a plausible figure too, and what separates a key arriving
+     from a decoration is that the carried count is larger at the end of a
+     conversation than it was at the start, having risen along the way. */
+  const first = read[0];
+  const last = read[read.length - 1];
+  const fell = read.find((entry, index) => index > 0 && entry.carried < read[index - 1].carried);
+  if (fell) {
+    throw new Red(
+      `braid progress — the carried count went backwards, at ${JSON.stringify(fell.figure)}: ` +
+        `${figures()}. The chunks accumulate, so the count that reports them does not fall.`,
+    );
+  }
+  if (last.carried <= first.carried) {
+    throw new Red(
+      `braid progress — the strip never moved off ${JSON.stringify(first.figure)} across ` +
+        `${read.length} messages: ${figures()}. The chunks ride one per message, so a count that ` +
+        `stands still is a figure written once rather than a key arriving.`,
+    );
+  }
 
-/* What `flip-a-byte` has to have printed, held against the same scenario run in
-   this process. */
-function flipExpectation(refusal) {
-  return {
-    slug: FLIP_SLUG,
-    secrets: [refusal.sentence],
-    denials: FLIP_DENIALS,
-    divergence: { what: 'sending identity key fingerprint', of: fingerprintIn },
-    checkRun(run, where) {
-      /* The SDK's error surface, which is the reason this page exists. Both the
-         code and the message, because the code alone is a constant a page could
-         hold and the message is what the SDK actually said. */
-      for (const [what, value] of [
-        ['error code', refusal.errorCode],
-        ['error message', refusal.errorMessage],
-      ]) {
-        if (!run.text.includes(value)) {
-          throw new Red(
-            `${where} never printed the SDK's ${what}. The same scenario run in this process ` +
-              `against\n  the installed package reported ${JSON.stringify(value)}, and the page ` +
-              `printed:\n  ${run.text.slice(0, 400) || '(nothing)'}`,
-          );
-        }
-      }
-
-      /* And in the log pane, not only in the summary. The summary is this
-         page's prose about the run; the log is the SDK's own records, and a
-         page that printed the right sentence over an empty log would be
-         describing a failure rather than showing one. */
-      const named = run.logLines.filter(
-        (row) => row.text.includes(refusal.errorCode) && row.text.includes(refusal.errorMessage),
-      );
-      if (named.length === 0) {
-        throw new Red(
-          `${where} printed the refusal in its summary and no log record carrying it. The pane ` +
-            `is headed\n  "What the SDK said", so it has to be what the SDK said: ` +
-            `${run.logLines.length} record(s) shown.`,
-        );
-      }
-
-      /* Invariant: the scenario's two named non-events are on screen. They are
-         the half of the story a log does not tell, and the task they came from
-         names them. */
-      for (const promised of ['No garbage plaintext', 'No silent drop']) {
-        if (!run.nots.some((text) => text.startsWith(promised))) {
-          throw new Red(
-            `${where} did not say "${promised}". Naming what did not happen is the point of the ` +
-              `scenario;\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
-          );
-        }
-      }
-
-      if (!run.steps.some((text) => text.includes('One byte changed on the way into the relay'))) {
-        throw new Red(`${where} printed no step saying which byte was changed`);
-      }
-      if (!run.steps.some((text) => text.includes('the resend arrived intact'))) {
-        throw new Red(
-          `${where} never showed the recovery. Refusing is half the story; the sentence arriving ` +
-            `on the\n  resend is what makes it a protocol rather than a wall.`,
-        );
-      }
-    },
-  };
-}
-
-/*
- * The same for `add-a-second-device`, whose subject is an absence.
- *
- * The check that matters reads the per-device panes rather than the page's
- * text, and it runs in both directions: the sentence sent before the link is on
- * the device that was there and not on the device that was not, and the
- * sentence sent after is on both. Every one of those four facts is what the
- * installed SDK did in this process a moment earlier.
- */
-function secondDeviceExpectation(expected) {
-  const devices = (value) => new RegExp(`\\b${value} devices?\\b`);
+  /* And every one of them short of the total. The pass drives a run of messages
+     and not an epoch of them, so a strip that reported a whole key here is
+     reporting one the conversation was far too short to have carried. */
+  const arrived = read.find((entry) => entry.carried === entry.required);
+  if (arrived) {
+    throw new Red(
+      `braid progress — the strip reached a whole key at ${JSON.stringify(arrived.figure)} after ` +
+        `${read.length} messages: ${figures()}. A key takes an epoch of messages to carry, and ` +
+        `this conversation is nowhere near one, so a total met here is a total that was not ` +
+        `counted to.`,
+    );
+  }
 
   return {
-    slug: SECOND_DEVICE_SLUG,
-    secrets: [expected.before.text, expected.after.text],
-    denials: SECOND_DEVICE_DENIALS,
-    divergence: { what: 'provisioning key', of: qrKeyIn },
-    checkRun(run, where) {
-      /* The SDK's own fan-out figures, in the steps that carry each sentence.
-         These are the numbers the scenario is an argument about, so a page that
-         printed the sentences without them would be telling the story with the
-         evidence removed. */
-      for (const [what, message] of [
-        ['before the link', expected.before],
-        ['after the link', expected.after],
-      ]) {
-        const step = run.steps.find((text) => text.includes(message.text));
-        if (!step) {
-          throw new Red(
-            `${where} printed no step for the message sent ${what}. Steps printed:\n  ` +
-              (run.steps.join('\n  ') || '(none)'),
-          );
-        }
-        if (!devices(message.recipientDeviceCount).test(step)) {
-          throw new Red(
-            `${where} said the message sent ${what} went to a different number of devices than ` +
-              `the SDK did.\n  This process saw ${message.recipientDeviceCount}; the page ` +
-              `printed: ${JSON.stringify(step)}`,
-          );
-        }
-      }
-
-      /* Both scroll-backs, compared to the ones the SDK produced here. This is
-         the assertion the whole scenario exists for. */
-      if (run.devices.length !== 2) {
-        throw new Red(
-          `${where} printed ${run.devices.length} device scroll-back(s), not 2. The scenario is ` +
-            `a comparison;\n  one column is not one.`,
-        );
-      }
-      const linked = run.devices.find(
-        (device) => device.deviceId === String(expected.linked.deviceId),
-      );
-      const primary = run.devices.find(
-        (device) => device.deviceId !== String(expected.linked.deviceId),
-      );
-      if (!linked || !primary) {
-        throw new Red(
-          `${where} printed no pane for the device the relay linked as ` +
-            `${expected.linked.deviceId}; panes are for device(s) ` +
-            `${run.devices.map((device) => device.deviceId).join(', ') || 'none'}`,
-        );
-      }
-      if (linked.messages.includes(expected.before.text)) {
-        throw new Red(
-          `${where} showed the message sent before the link on the device that was linked after ` +
-            `it.\n  The SDK did not deliver it there in this process, so the page is printing ` +
-            `something it was not given:\n  ${JSON.stringify(linked.messages)}`,
-        );
-      }
-      if (!primary.messages.includes(expected.before.text)) {
-        throw new Red(
-          `${where} showed the message sent before the link on neither device, so "the new ` +
-            `device does not have it"\n  is not about linking. Device ${primary.deviceId} ` +
-            `printed: ${JSON.stringify(primary.messages)}`,
-        );
-      }
-      for (const device of [primary, linked]) {
-        if (!device.messages.includes(expected.after.text)) {
-          throw new Red(
-            `${where} did not show the message sent after the link on device ` +
-              `${device.deviceId}, which the page itself said it was encrypted to.\n  That pane ` +
-              `printed: ${JSON.stringify(device.messages)}`,
-          );
-        }
-      }
-      if (JSON.stringify(linked.messages) !== JSON.stringify(expected.linkedMessages)) {
-        throw new Red(
-          `${where} printed a different scroll-back for the linked device than the SDK produced ` +
-            `in this process.\n  here: ${JSON.stringify(expected.linkedMessages)}\n  page: ` +
-            `${JSON.stringify(linked.messages)}`,
-        );
-      }
-
-      /* And the reason, in the page's own words. The scenario is only worth
-         shipping if a reader is told that the absence is arithmetic rather than
-         a gap someone means to close. */
-      for (const promised of ['No history followed the device', 'No back-fill']) {
-        if (!run.nots.some((text) => text.startsWith(promised))) {
-          throw new Red(
-            `${where} did not say "${promised}". Naming what did not happen is the point of the ` +
-              `scenario;\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
-          );
-        }
-      }
-      if (!run.nots.some((text) => text.includes('did not exist when that message was encrypted'))) {
-        throw new Red(
-          `${where} said the message is missing and never said why. Without the arithmetic — the ` +
-            `device's keys\n  did not exist when the message was encrypted — the page reads as ` +
-            `an apology for a limitation.`,
-        );
-      }
-    },
-  };
-}
-
-/*
- * The same for `run-out-of-prekeys`, whose subject is a silence.
- *
- * The page is held to the SDK's own words for the fallback, to the bundle the
- * relay published, and to the two sentences it is only allowed to print when
- * the run earned them. The citation is checked as well: it is the one claim in
- * the output that this run did not produce, which is exactly why it must not be
- * quietly droppable.
- */
-function preKeysExpectation(expected) {
-  return {
-    slug: PREKEY_SLUG,
-    secrets: [expected.firstSentence, expected.sentence],
-    denials: PREKEY_DENIALS,
-    divergence: { what: 'last-resort prekey', of: lastResortIn },
-    checkRun(run, where) {
-      /* The SDK's own account of the handshake, in the page's steps. Both
-         fields, because "last-resort" alone is a string the page could hold
-         and `usedOneTimePreKey false` is the SDK conceding the other half. */
-      for (const value of [expected.fallback.usedKemPreKeyType, 'usedOneTimePreKey false']) {
-        if (!run.text.includes(value)) {
-          throw new Red(
-            `${where} never printed ${JSON.stringify(value)}. The same scenario run in this ` +
-              `process against\n  the installed package reported it, and the page printed:\n  ` +
-              `${run.text.slice(0, 400) || '(nothing)'}`,
-          );
-        }
-      }
-
-      /* The counts, which are the before and after the whole scenario turns
-         on. A page that printed the fallback without them would be asserting
-         the stash ran out rather than showing it — and the numbers themselves
-         are checked, not just their presence, because "99 and 99 left to give"
-         beside a bundle with nothing in it is the one arrangement of this
-         scenario's own figures that contradicts the rest of it. */
-      const left = `${expected.exhausted.ec} and ${expected.exhausted.kem} left to give`;
-      if (!run.steps.some((text) => text.includes(left))) {
-        throw new Red(
-          `${where} printed no step saying "${left}" — what the relay actually had when it ` +
-            `published\n  the empty bundle, as the same scenario reported it in this process.\n  ` +
-            `Steps printed:\n  ${run.steps.join('\n  ') || '(none)'}`,
-        );
-      }
-
-      /* The two named non-events. The first is the scenario's whole finding;
-         the second is the answer to the question a reader asks immediately
-         afterwards, and leaving it out would imply the SDK has a health call
-         that covers this. */
-      /* The page's silence line has to carry what the SDK did say, for the
-         reason the expectation above spells out: "no warning" beside a count
-         of breadcrumbs naming the fallback is a finding, and on its own it is
-         a sentence about an empty array. */
-      if (!run.nots.some((text) => /name the last-resort fallback outright/.test(text))) {
-        throw new Red(
-          `${where} said the SDK gave no warning without saying what it gave instead. The ` +
-            `breadcrumbs naming\n  the fallback are what make the silence evidence rather than ` +
-            `an absence of logging.\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
-        );
-      }
-
-      for (const promised of ['No warning', 'No signal from the health check']) {
-        if (!run.nots.some((text) => text.startsWith(promised))) {
-          throw new Red(
-            `${where} did not say "${promised}". Naming what did not happen is the point of the ` +
-              `scenario;\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
-          );
-        }
-      }
-
-      /* The measurement, with its source. This page may tell a reader that
-         exhaustion happens in production only while it also tells them who
-         measured it — an unsourced "13%" is the kind of claim this project has
-         a document forbidding. */
-      for (const required of ['13% of companion devices', 'arXiv:2511.20252']) {
-        if (!run.text.includes(required)) {
-          throw new Red(
-            `${where} printed the scenario without ${JSON.stringify(required)}. The measurement ` +
-              `and its source ship together\n  or neither ships.`,
-          );
-        }
-      }
-    },
-
-    /*
-     * The finding itself, which only one of the two presses can show.
-     *
-     * `checkPreKeyStatus()` answers at most once per account every twelve
-     * hours, in a map that outlives the client, so the second press in a tab
-     * is refused whatever it would have said. Both branches are honest and
-     * both are checked above as "No signal from the health check"; only the
-     * counted one carries the evidence — a healthy-looking number standing
-     * beside a relay holding nothing. Requiring it of every press would red on
-     * the throttle; requiring it of neither would let the page stop making its
-     * argument and still pass.
-     */
-    checkRuns(runs) {
-      /* `-1` is the SDK declining to answer, not a number of prekeys. A page
-         that printed it as a count would be handing a reader a reading the SDK
-         refused to give, in the one sentence on the page about whether the
-         application can find any of this out. */
-      for (const [index, run] of runs.entries()) {
-        const negative = run.nots.find((text) => /reported -\d+ remaining/.test(text));
-        if (negative) {
-          throw new Red(
-            `run ${index + 1} printed checkPreKeyStatus()'s refusal as though it were a count of ` +
-              `prekeys:\n  ${negative}\n  The SDK returns -1 when it declines to answer, and the ` +
-              `page has to say so rather than\n  report it.`,
-          );
-        }
-      }
-
-      const counted = runs.find((run) =>
-        run.nots.some((text) => text.includes('remaining and needsReplenishment')),
-      );
-      if (!counted) {
-        throw new Red(
-          `neither press printed what checkPreKeyStatus() actually returned, so this pass never ` +
-            `showed\n  the SDK's health call reporting good numbers over an empty relay — the ` +
-            `half of the scenario\n  a reader cannot infer. Printed:\n  ` +
-            `${runs.map((run) => run.nots.join(' | ') || '(nothing)').join('\n  ')}`,
-        );
-      }
-
-      /* And the number, held against the relay's. The page says the call
-         counts local storage rather than the server; a run where the two agree
-         means it no longer does, and the sentence beside them is then wrong. */
-      const held = String(expected.exhausted.ec);
-      if (new RegExp(`reported ${held} remaining`).test(counted.nots.join(' '))) {
-        throw new Red(
-          `checkPreKeyStatus() reported the same ${held} the relay had left, so it is no longer ` +
-            `counting only\n  local storage. The page tells a reader the opposite, in the ` +
-            `sentence right beside it. Update both.`,
-        );
-      }
-    },
-  };
-}
-
-/*
- * The same for `reinstall-a-device`, whose subject is an absence with no name.
- *
- * The other two silence scenarios can be held to something the SDK said. This
- * one has to be held to a list it did not act on, so the page is required to
- * print the registration beside the silence — the count of hooks, the devices
- * they were live on — and required to print the SDK's own noise beside it, so
- * that "nothing reached the application" is read against a logger that was busy
- * rather than against a run where nothing happened at all.
- */
-function reinstallExpectation(expected) {
-  return {
-    slug: REINSTALL_SLUG,
-    secrets: expected.sentences,
-    denials: REINSTALL_DENIALS,
-    divergence: { what: 'safety-number half', of: safetyHalfIn },
-    checkRun(run, where) {
-      /* The relay's own sentence, quoted rather than paraphrased. The page
-         claims a reinstalled device cannot quietly become the account; the
-         refusal is the evidence, and a page that summarised it would be asking
-         the reader to take the refusal on trust. */
-      for (const quoted of [expected.publish.message, expected.publish.cause]) {
-        if (!run.text.includes(quoted)) {
-          throw new Red(
-            `${where} never printed what came back when the rebuilt device tried to publish:\n  ` +
-              `${JSON.stringify(quoted)}\n  The same scenario run in this process against the ` +
-              `installed package got that sentence back.\n  Both halves ship: the SDK's wrapper ` +
-              `alone reads as a network failure, and the relay's reason is\n  what makes it a ` +
-              `policy. The page printed:\n  ${run.text.slice(0, 400) || '(nothing)'}`,
-          );
-        }
-      }
-
-      /* The finding, and the registration that makes it one. The count has to
-         be on screen: "no event fired" beside a number of hooks that were
-         listening is evidence, and on its own it is a sentence about an empty
-         array — the same trap the prekey scenario's breadcrumb counts exist to
-         avoid. */
-      const noEvent = run.nots.find((text) => text.startsWith('No event.'));
-      if (!noEvent) {
-        throw new Red(
-          `${where} did not say "No event." — the finding this scenario exists for. Naming what ` +
-            `did not\n  happen is the point; printed: ${run.nots.join(' | ') || '(nothing)'}`,
-        );
-      }
-      const registered = `${expected.hooks.registered.length} hooks`;
-      if (!noEvent.includes(registered)) {
-        throw new Red(
-          `${where} said no event fired without saying how many hooks were listening. The SDK ` +
-            `offers ${registered},\n  every one of them was registered by the run in this ` +
-            `process, and without that number on screen the\n  page is claiming a silence rather ` +
-            `than showing one.\n  printed: ${noEvent}`,
-        );
-      }
-      for (const device of expected.hooks.devices) {
-        if (!noEvent.includes(device)) {
-          throw new Red(
-            `${where} did not name ${JSON.stringify(device)} as a device the hooks were live ` +
-              `on. A silence that does not\n  say where it was measured is not evidence.\n  ` +
-              `printed: ${noEvent}`,
-          );
-        }
-      }
-
-      /* There is no hook to register, and the page has to say so outright. This
-         is the sentence a reader arrives looking for, and the one the plan this
-         scenario came from expected to be false. */
-      if (!noEvent.includes('no onIdentityChanged to register')) {
-        throw new Red(
-          `${where} reported the silence without saying that the SDK's hook surface has no entry ` +
-            `for this\n  event at all. A reader who has just watched every hook stay quiet will ` +
-            `assume they registered the\n  wrong one.\n  printed: ${noEvent}`,
-        );
-      }
-
-      /* And the counterweight. The page is not allowed to leave a reader with
-         "the SDK is silent" when it is not: it is loud in the log and quiet
-         everywhere an application is built to look. */
-      const notSilent = run.nots.find((text) => text.includes('It is not that the SDK said'));
-      if (!notSilent) {
-        throw new Red(
-          `${where} never said what the SDK did say. Without it the page reads as "the SDK ` +
-            `noticed nothing",\n  which is false — it logged ${expected.loud.length} record(s) ` +
-            `at warn or error in this process.\n  printed: ${run.nots.join(' | ') || '(nothing)'}`,
-        );
-      }
-      for (const code of expected.codes) {
-        if (!notSilent.includes(code)) {
-          throw new Red(
-            `${where} did not carry ${JSON.stringify(code)}, which the same run in this process ` +
-              `logged. That code is\n  what an application would have had to match on to find ` +
-              `out, so dropping it drops the point.\n  printed: ${notSilent}`,
-          );
-        }
-      }
-
-      /* And the spread, held to the run the same way the safety-number
-         arithmetic below is. Naming the codes is the easy half; what a reader
-         acts on is how much of the noise one of them accounts for, and that
-         sentence has been rewritten twice into a claim the run contradicts. */
-      const spread =
-        expected.coded === expected.loud.length
-          ? 'one on every record'
-          : `${expected.coded} of the ${expected.loud.length} carry one of those and ` +
-            `${expected.loud.length - expected.coded} carry none`;
-      if (!notSilent.includes(spread)) {
-        throw new Red(
-          `${where} did not print how the codes are spread across the records. The same run in ` +
-            `this process\n  produced "${spread}", and a reader told only which codes exist ` +
-            `will grep for one and conclude the\n  rest of the reinstall was quiet.\n  printed: ` +
-            `${notSilent}`,
-        );
-      }
-
-      /* The safety number, in halves, which is the closing argument. Both are
-         required: the near half proves the number did not simply regenerate,
-         and the far half is the thirty digits a user is asked to re-read. */
-      const split = run.recovery.find((text) => text.includes('changed — in half of itself'));
-      if (!split) {
-        throw new Red(
-          `${where} printed no comparison of the safety number before and after. The scenario ` +
-            `ends on what a\n  user would be asked to check, and without the halves the page ` +
-            `asserts a change rather than\n  showing one.\n  printed: ` +
-            `${run.recovery.join(' | ') || '(nothing)'}`,
-        );
-      }
-      const arithmetic =
-        `${expected.after.numeric.replace(/ /g, '').length} digits of which ` +
-        `${expected.after.remoteHalf.replace(/ /g, '').length} moved`;
-      if (!split.includes(arithmetic)) {
-        throw new Red(
-          `${where} did not print the arithmetic a user is handed — how much of the number they ` +
-            `have to re-read.\n  The same scenario run in this process produced "${arithmetic}".` +
-            `\n  printed: ${split}`,
-        );
-      }
-
-      /* The citation, checked for the same reason the prekey scenario's is: it
-         is the one claim in this output that the run did not produce. A page
-         that tells a reader warning fatigue is the industry's experience owes
-         them the source, and an unsourced version of that claim is exactly what
-         messaging.md forbids. */
-      for (const required of ['TADA', 'Keybase', 'no one bothers']) {
-        if (!run.text.includes(required)) {
-          throw new Red(
-            `${where} printed the scenario without ${JSON.stringify(required)}. The framing and ` +
-              `its source ship together\n  or neither ships.`,
-          );
-        }
-      }
-    },
+    drawn: read.length,
+    first: first.figure,
+    last: last.figure,
+    climbed: last.carried - first.carried,
+    required: last.required,
   };
 }
 
@@ -4626,11 +3473,7 @@ async function main() {
     );
   }
 
-  const expected = await expectedFields(envelopeFields);
-  const refusal = await expectedRefusal();
-  const secondDevice = await expectedSecondDevice();
-  const preKeys = await expectedPreKeys();
-  const reinstall = await expectedReinstall();
+  const expected = await expectedAddressing(envelopeFields);
 
   const held = { server: null, chrome: null, cdp: null, targets: [] };
   try {
@@ -4646,7 +3489,7 @@ async function main() {
     held.cdp = cdp;
 
     const live = await visit(cdp, origin, held, { repeat: true });
-    checkRoundTrip(live, origin, envelopeFields, expected);
+    const { spend } = checkRoundTrip(live, origin, envelopeFields, expected);
 
     /* Block every chunk the interaction asked for, so the dynamic import cannot
        resolve however Vite chose to split it. Taking only the first request
@@ -4655,34 +3498,6 @@ async function main() {
       blocked: live.after.map((script) => script.url),
     });
     checkFallback(starved);
-
-    /* A fresh tab of the homepage per scenario, so the accounting above stays
-       about the page a reader lands on and each scenario's egress is about that
-       scenario alone. Each is run twice in its tab, which is what the two runs
-       are compared against each other for. */
-    const flip = await visitScenario(cdp, origin, held, FLIP_SLUG);
-    const { beacons: flipBeacons, ids } = checkScenario(flip, origin, flipExpectation(refusal));
-
-    const linking = await visitScenario(cdp, origin, held, SECOND_DEVICE_SLUG);
-    const { beacons: linkingBeacons, ids: keys } = checkScenario(
-      linking,
-      origin,
-      secondDeviceExpectation(secondDevice),
-    );
-
-    const prekeys = await visitScenario(cdp, origin, held, PREKEY_SLUG);
-    const { beacons: prekeyBeacons, ids: lastResorts } = checkScenario(
-      prekeys,
-      origin,
-      preKeysExpectation(preKeys),
-    );
-
-    const reinstalled = await visitScenario(cdp, origin, held, REINSTALL_SLUG);
-    const { beacons: reinstallBeacons, ids: halves } = checkScenario(
-      reinstalled,
-      origin,
-      reinstallExpectation(reinstall),
-    );
 
     /*
      * The same page again under each braid setting, one sentence per run.
@@ -4701,21 +3516,20 @@ async function main() {
     const braid = checkBraidDrawing(braidOff, braidOn);
 
     /*
-     * And a third run, long enough for the braid to finish a key.
+     * And a third run, long enough to watch the chunk counts climb.
      *
      * Its own run rather than more sentences on either of the two above. The
      * check before it measures those two against each other, and a run carrying
-     * an extra epoch of conversation would be drawing a different message of a
-     * different length — so the pair it reads is left exactly as it was.
+     * ten more messages would be drawing a different message of a different
+     * length — so the pair it reads is left exactly as it was.
      *
-     * This is the slowest pass here by a wide margin, and the cost is the point:
-     * a braid key is produced after a whole epoch of messages and there is no
-     * shorter way to reach one.
+     * This is the slowest pass here, because every sentence in it waits out the
+     * reel that narrates the one before it.
      */
-    const epochStartedAt = Date.now();
-    const epoch = await visit(cdp, origin, held, { braid: true, epoch: true });
-    const progress = checkBraidProgress(epoch);
-    const epochSeconds = ((Date.now() - epochStartedAt) / 1000).toFixed(1);
+    const driveStartedAt = Date.now();
+    const driven = await visit(cdp, origin, held, { braid: true, drive: true });
+    const progress = checkBraidProgress(driven);
+    const driveSeconds = ((Date.now() - driveStartedAt) / 1000).toFixed(1);
 
     /* Say which of the two things happened. Claiming a quiet window we never
        got would overstate the egress evidence on exactly the chatty pages
@@ -4735,8 +3549,9 @@ async function main() {
         `  measured:       ${beacons.length} beacon(s) to ${BEACON_PATH} — ` +
         `${beacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ') || 'none'}, ` +
         `one for two sentences\n` +
-        `  metadata:       ${live.dom.fields.length} fields, exactly the set an envelope built ` +
-        `in this process yields less the withheld ones (${live.dom.fields.join(', ')})\n` +
+        `  addressing:     the sealed message the relay held was drawn for ` +
+        `"${live.stored.at.addressed}" at ${live.stored.at.size}, the address an envelope built ` +
+        `in this process carries\n` +
         /* Read off the scene rather than restated from the constants the checks
            compared against, so a line that prints is a line something observed. */
         `  the scene:      finished on "${live.dom.scene.state}", both wheels captioned ` +
@@ -4746,82 +3561,28 @@ async function main() {
         `  the relay:      ${live.names.a} ${live.dom.scene.slots.bundles.a.count} and ` +
         `${live.names.b} ${live.dom.scene.slots.bundles.b.count} prekeys, each on that device's ` +
         `own shelf,\n` +
+        `                  ${live.names[spend.side]}'s falling ${spend.before} → ${spend.after} ` +
+        `on "${ESTABLISH_STEP}" as the other collected a bundle,\n` +
         `                  and the row it stored waited in ${live.stored.at.addressed}'s mailbox ` +
         `alone (measured ${live.stored.rest.via})\n` +
-        `  the braid:      the relay held ${JSON.stringify(braid.whole.stored)} with the switch ` +
-        `off and ${JSON.stringify(braid.chunked.stored)} with it on, and the column drew that ` +
-        `${braid.widest.ratio.toFixed(2)}× wider — ${braid.widest.whole.toFixed(1)} px against ` +
-        `${braid.widest.chunked.toFixed(1)} px on <${braid.widest.tag}> at ` +
-        `${braid.widest.path || 'the column'}\n` +
-        `  the epoch:      ${EPOCH_MESSAGES} alternating messages through a braided session, and ` +
-        `the scene reported\n` +
-        `                  "${progress.mark}" beside "${progress.figure}" — a completion no ` +
-        `measurement of an envelope\n` +
-        `                  could produce (${epochSeconds} s)\n` +
+        `  the braid:      the relay held ${JSON.stringify(braid.whole.note)} with the switch ` +
+        `off and ${JSON.stringify(braid.chunked.note)} with it on, ` +
+        `${braid.factor.toFixed(1)}× apart,\n` +
+        `                  and the column drew both at one size — the furthest of ` +
+        `${braid.pairs.length} box(es) moved ${braid.widest.ratio.toFixed(2)}× ` +
+        `(${braid.widest.whole.toFixed(1)} px against ${braid.widest.chunked.toFixed(1)} px)\n` +
+        `  the chunks:     ${BRAID_MESSAGES} alternating messages through a braided session, and ` +
+        `the strip climbed\n` +
+        `                  from "${progress.first}" to "${progress.last}" over ` +
+        `${progress.drawn} figure(s), ${progress.climbed} chunk(s)\n` +
+        `                  of the ${progress.required} the key takes — counts no measurement of ` +
+        `an envelope could produce (${driveSeconds} s)\n` +
         `  before a touch: ${kb(live.bytesBefore)} of script over ${live.before.length} file(s), ` +
         `under the ${kb(PRE_INTERACTION_CEILING)} tripwire (uncompressed — this server does ` +
         `not gzip)\n` +
         `  the touch drew: ${kb(live.bytesAfter)} over ${live.after.length} chunk(s)\n` +
         `  those blocked:  nothing ran, nothing was claimed, and the page said so ` +
-        `("${starved.dom.status}")\n` +
-        `  scenario:       ${FLIP_SLUG} opened by fragment and run twice; both runs printed ` +
-        `${refusal.errorCode}\n` +
-        `                  ("${refusal.errorMessage}") in the SDK's own log, and the resend ` +
-        `arrived intact\n` +
-        `                  sending identity keys ${ids.join(' then ')} — a fresh device pair ` +
-        `per run\n` +
-        `                  measured ${flipBeacons.length} beacon(s): ` +
-        `${flipBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
-        `                  before a touch ${kb(flip.bytesBefore)} over ` +
-        `${flip.before.length} file(s); the run drew ${kb(flip.bytesAfter)} over ` +
-        `${flip.after.length} chunk(s)\n` +
-        `  scenario:       ${SECOND_DEVICE_SLUG} opened by fragment and run twice; each run ` +
-        `linked a device over\n` +
-        `                  the QR handshake and the sender was told ` +
-        `${secondDevice.before.recipientDeviceCount} device then ` +
-        `${secondDevice.after.recipientDeviceCount}\n` +
-        `                  the linked device's scroll-back held ` +
-        `${secondDevice.linkedMessages.length} of the ${secondDevice.primaryMessages.length} ` +
-        `sentences — not the one sent before it existed\n` +
-        `                  provisioning keys ${keys.map((key) => key.slice(0, 12)).join(' then ')} ` +
-        `— a fresh link per run\n` +
-        `                  measured ${linkingBeacons.length} beacon(s): ` +
-        `${linkingBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
-        `                  before a touch ${kb(linking.bytesBefore)} over ` +
-        `${linking.before.length} file(s); the run drew ${kb(linking.bytesAfter)} over ` +
-        `${linking.after.length} chunk(s)\n` +
-        `  scenario:       ${PREKEY_SLUG} opened by fragment and run twice; the relay published ` +
-        `a bundle with no\n` +
-        `                  one-time prekey of either type and ${preKeys.exhausted.ec} left to ` +
-        `give, and the SDK called the handshake\n` +
-        `                  "${preKeys.fallback.usedKemPreKeyType}" with no record at warn or ` +
-        `error\n` +
-        `                  checkPreKeyStatus() answered ` +
-        `${preKeys.health ? preKeys.health.oneTimePreKeysRemaining : 'nothing'} while the relay ` +
-        `held ${preKeys.exhausted.ec}\n` +
-        `                  last-resort prekeys ` +
-        `${lastResorts.map((key) => key.slice(0, 12)).join(' then ')} — a fresh stash per run\n` +
-        `                  measured ${prekeyBeacons.length} beacon(s): ` +
-        `${prekeyBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
-        `                  before a touch ${kb(prekeys.bytesBefore)} over ` +
-        `${prekeys.before.length} file(s); the run drew ${kb(prekeys.bytesAfter)} over ` +
-        `${prekeys.after.length} chunk(s)\n` +
-        `  scenario:       ${REINSTALL_SLUG} opened by fragment and run twice; the receiving ` +
-        `device was rebuilt on\n` +
-        `                  empty storage and the relay refused it — the SDK reported ` +
-        `"${reinstall.publish.message}"\n` +
-        `                  over the relay's "${reinstall.publish.cause}" — and of the\n` +
-        `                  ${reinstall.hooks.registered.length} hooks the SDK offers — all ` +
-        `registered on ${reinstall.hooks.devices.join(' and ')} — none fired\n` +
-        `                  the SDK logged ${reinstall.loud.length} record(s) at warn or error ` +
-        `(${reinstall.codes.join(', ') || 'no code'}), all of it to the logger\n` +
-        `                  far safety-number halves ${halves.join(' then ')} — a fresh identity ` +
-        `per run\n` +
-        `                  measured ${reinstallBeacons.length} beacon(s): ` +
-        `${reinstallBeacons.map((beacon) => JSON.stringify(beacon.postData)).join(', ')}\n` +
-        `                  before a touch ${kb(reinstalled.bytesBefore)} over ` +
-        `${reinstalled.before.length} file(s); the run drew ${kb(reinstalled.bytesAfter)} over ` +
-        `${reinstalled.after.length} chunk(s)`,
+        `("${starved.dom.status}")`,
     );
   } finally {
     await teardown(held);
