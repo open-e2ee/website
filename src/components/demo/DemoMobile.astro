@@ -584,7 +584,6 @@ const LOCKS = [
      * button is where the answer has to appear. The caption is written too,
      * for the `aria-live` reader the blur does not reach.
      */
-    const START_LABEL = startButton.textContent ?? '';
     const opening = (label: string, sentence: string) => {
       startButton.textContent = label;
       caption.textContent = sentence;
