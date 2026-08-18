@@ -1,5 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import { maturityLine } from '../lib/sdk.mjs';
 
 interface Props {
   title: string;
@@ -16,6 +17,12 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   day: 'numeric',
   year: 'numeric',
+  /* content.config.ts coerces publishedAt to a UTC midnight Date. Without this,
+   * Intl formats in the build machine's zone and every date west of Greenwich
+   * renders one day early: the shipped cards read "Jul 24, 2026" beside a
+   * datetime attribute of 2026-07-25. The same source built on a UTC runner
+   * printed a different date, so this was also non-deterministic. */
+  timeZone: 'UTC',
 });
 ---
 
@@ -46,6 +53,22 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
       <div class="prose">
         <slot />
       </div>
+      {/*
+        A standing disclosure, rendered once per post rather than typed into
+        post bodies. It was in two of the three: the Expo post closed on a
+        paraphrase of the audit formula, the TLS post carried the maturity half
+        mid-article after an install block, and the architecture post carried
+        neither. messaging.md §7 requires the audit sentence everywhere audit
+        status arises, and every post asks a reader to trust SDK behaviour, so
+        the gap was on the two posts rather than the one.
+
+        The version composes from src/lib/sdk.mjs. A typed literal here would go
+        stale on the next release and tests/site-content.test.mjs forbids one.
+      */}
+      <p class="maturity">
+        <code>@open-e2ee/signal-protocol-sdk</code> {maturityLine} Reviewed continuously by
+        adversarial AI agents; not audited by any independent firm.
+      </p>
     </div>
   </article>
 </BaseLayout>

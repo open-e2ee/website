@@ -9,6 +9,12 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
   year: 'numeric',
+  /* content.config.ts coerces publishedAt to a UTC midnight Date. Without this,
+   * Intl formats in the build machine's zone and every date west of Greenwich
+   * renders one day early: the shipped cards read "Jul 24, 2026" beside a
+   * datetime attribute of 2026-07-25. The same source built on a UTC runner
+   * printed a different date, so this was also non-deterministic. */
+  timeZone: 'UTC',
 });
 ---
 

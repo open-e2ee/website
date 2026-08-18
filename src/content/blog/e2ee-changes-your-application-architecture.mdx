@@ -14,9 +14,7 @@ import WhereWorkMoves from '../../components/diagrams/WhereWorkMoves.astro';
 import WhereQueriesRun from '../../components/diagrams/WhereQueriesRun.astro';
 import NoWayBack from '../../components/diagrams/NoWayBack.astro';
 
-**Who this is for:** an engineer or technical founder who might add end-to-end encryption to an existing product. You need to know the cost before you commit. This article is not a protocol explainer. The protocol has good documentation.
-
-Teams budget for the cryptography. Then they discover the cryptography was the small part.
+**Who this is for:** an engineer or technical founder who might add end-to-end encryption to an existing product. You need to know the cost before you commit. The protocol documentation lives elsewhere. This article covers the layer above it.
 
 Timothy Buck described this cost after working on end-to-end encryption for Meta's Messenger:
 
@@ -24,26 +22,26 @@ Timothy Buck described this cost after working on end-to-end encryption for Meta
 >
 > — [Security Cryptography Whatever, December 2023](https://securitycryptographywhatever.com/2023/12/28/e2ee-fb-messenger/)
 
-That is the whole article in one quote. What follows is the inventory: what stops working, what replaces it, and what the shift costs teams who have actually shipped it.
+The rest of this article is the inventory: what stops working, what replaces it, and what the shift cost teams who shipped it.
 
-## One sentence for the whole shift
+## Where the authoritative copy lives
 
-The organising idea comes from Ink & Switch's local-first essay: "The key difference between traditional systems and local-first systems is not an absence of servers, but a change in their responsibilities." ([Ink & Switch](https://www.inkandswitch.com/essay/local-first/))
+Ink & Switch's local-first essay states the shift: "The key difference between traditional systems and local-first systems is not an absence of servers, but a change in their responsibilities." ([Ink & Switch](https://www.inkandswitch.com/essay/local-first/))
 
 In a conventional application, the server holds the authoritative copy and the client holds a cache. End-to-end encryption inverts this relationship. The device holds the authoritative, readable copy. The relay holds an encrypted replica that it cannot interpret and routes envelopes between devices. Your infrastructure remains. The *work* moves across the boundary.
 
 <figure class="diagram">
   <WhereWorkMoves />
   <figcaption>
-    The same three pieces of work appear in both rows. The server-authoritative row has no trust
-    boundary, so plaintext reaches the server. In the device-authoritative row, the work sits inside
-    the device outline. The middle is a relay that routes envelopes.
+    The server-authoritative row has no trust boundary, so plaintext reaches the server. In the
+    device-authoritative row, the work sits inside the device outline. The middle is a relay that
+    routes envelopes.
   </figcaption>
 </figure>
 
 ## What stops working, in the order you will hit it
 
-**Week one: `WHERE content LIKE '%...%'` stops existing.** Search is the first casualty and the one users notice fastest. So do link previews, thumbnail generation, profanity filters, auto-tagging, and anything else that reads the body of a record. They have no input any more.
+**Week one: `WHERE content LIKE '%...%'` stops existing.** Search breaks first, and users notice it fastest. Link previews, thumbnail generation, profanity filters, auto-tagging, and anything else that reads the body of a record break with it. They have no input any more.
 
 **Week two: push notifications go quiet.** Your push provider cannot render "Sarah: are we still on for 3pm?" because it cannot read the message. Instead, send a contentless push that wakes the app. The app decrypts the message locally and rewrites the notification. On iOS, the app does this work inside a `UNNotificationServiceExtension`.
 
@@ -57,9 +55,7 @@ Another approach uses metadata-based abuse signals such as rate and fan-out. [Ac
 
 **Month six: a keypair is not a user.** Your `users` table becomes a directory of public keys. A person is a changing set of devices, not one account row. Every protocol decision must name the applicable device.
 
-## Somebody else already published the bill
-
-Two companies documented enough of the cost to support planning.
+## What Zoom, Discord, and Meta published
 
 **Zoom publishes its feature-loss list.** Zoom's [meeting documentation](https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0065408) lists unavailable features when a host enables E2EE: "Zoom AI features, Cloud recording, Meeting chat before and after the meeting, Live streaming, Live transcription, Polling and Surveys, Zoom Apps, Zoom Notes, Zoom Whiteboard." This list covers much of Zoom's product differentiation. Each feature needs a server that can see the meeting.
 
@@ -69,7 +65,7 @@ Meta announced plans for default end-to-end encryption in Messenger in 2019. It 
 
 Meta was still revising the backup protocol in [May 2026](https://engineering.fb.com/2026/05/11/security/labyrinth-1-1-end-to-end-encrypted-e2ee-backups-more-reliable/). Labyrinth 1.1 lets messages reach encrypted backup as users send them. Previously, backup waited for a device to return online. Meta continued to improve lost-phone reliability two and a half years after launch.
 
-Your product is smaller than Messenger. The point is not the absolute duration. It is that the long pole is the application layer, not the protocol.
+Your product is smaller than Messenger. These timelines show where the work sits: in the application layer, not the protocol.
 
 ## The patterns that replace what you lose
 
@@ -97,13 +93,13 @@ One gateway logged [a burst of 479 such exceptions](https://github.com/openclaw/
 
 **Observability must stay outside the plaintext.** Element shipped a bug that wrote "the private part of the backup key pair" to application debug logs. The issue affected 156 users' key material ([Element](https://element.io/blog/security-release-element-x-android-0-4-12-and-ios-1-6-7/)). Log envelope ids, session states, and error codes. Never log key material. Add a test that rejects it.
 
-## Recovery is a day-one decision you will discover in month twelve
+## Recovery: decide it before launch
 
-Users lose devices on a months-long clock, so this problem does not surface during development. It surfaces after launch, when someone's phone goes into a river and the answer is "your history is gone" and nobody agreed to that in advance.
+Users lose devices on a months-long clock, so this problem surfaces after launch, not during development. By then your architecture has already decided the answer.
 
-There is no universally correct answer, and you should be suspicious of any library that implies there is. What there is, is a tradeoff with an honest statement on both sides. 1Password's security design paper puts it as directly as anyone: "Recovery mechanisms are inherently weak points in maintaining the secrecy of data." ([1Password](https://agilebits.github.io/security-design/restore.html)) Matthew Green names the slope you step onto once you build one: "Nobody is going to engineer something as complex as Signal's SVR just to store contact lists. Once you have a hammer like SVR, you're going to want to use it to knock down other nails." ([Cryptography Engineering](https://blog.cryptographyengineering.com/2020/07/10/a-few-thoughts-about-signals-secure-value-recovery/))
+There is no universally correct answer, and you should be suspicious of any library that implies there is. 1Password's security design paper puts it directly: "Recovery mechanisms are inherently weak points in maintaining the secrecy of data." ([1Password](https://agilebits.github.io/security-design/restore.html))
 
-The useful move is to pick a named profile deliberately rather than to drift into one:
+Pick a named profile deliberately:
 
 - **A server-confidential business archive** prioritises continuity. History survives device loss, and multiple devices see everything. The recovery path is a target for coercion or account compromise. This profile can fit a team collaboration product.
 - **A higher-risk messaging profile** limits recoverable data. Lose the device and lose the history. A new device starts empty. This profile can fit a threat model that includes device seizure.
@@ -118,23 +114,25 @@ The useful move is to pick a named profile deliberately rather than to drift int
   </figcaption>
 </figure>
 
-The SDK provides device-to-device transfer, encrypted backup primitives, and QR-based provisioning for linked devices. Device transfer clones the identity private key and live ratchet state. If both devices remain active, a peer message that one device decrypts desynchronizes the other. Cloned state also weakens the forward-secrecy bound because one endpoint compromise exposes state that the other device shares. The [deviations document](https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/DEVIATIONS.md#54-extensions-provisioning-transfer-device-names) records both limits.
+The SDK provides device-to-device transfer, encrypted backup primitives, and QR-based provisioning for linked devices. [Signal Protocol in React Native and Expo in 2026](/blog/signal-protocol-react-native-expo-2026/) records the limits on state transfer.
 
 The SDK does not choose the recovery policy. That product policy determines what users lose. [Recovery, backup, and migration](https://docs.open-e2ee.dev/build/recovery-backup-migration) compares the profiles.
 
-## Metadata: state it, do not bury it
+## What metadata the relay still sees
 
-The most common overclaim in this category is that end-to-end encryption makes an application private. It makes the *contents* unreadable to the operator. It leaves the envelope.
+The most common overclaim in this category is that end-to-end encryption makes an application private. It makes the *contents* unreadable to the operator. The envelope stays readable.
 
-Your relay still knows who sent to whom, when, how often, from which device, and roughly how large. That is a rich behavioural signal, and it is why we never claim a relay is blind. The formulation we hold ourselves to is narrower and true: **the relay never needs message plaintext or device private keys.**
+Your relay still knows who sent to whom, when, how often, from which device, and roughly how large. It is not blind.
+
+**The relay never needs message plaintext or device private keys.**
 
 Sealed sender reduces this metadata. It does not eliminate it. Research on Signal Messenger found that "the promise of sealed sender does not compose over a conversation of messages." With delivery receipts enabled by default, "Signal could link sealed sender users in as few as 5 messages" ([NDSS 2021](https://www.ndss-symposium.org/ndss-paper/improving-signals-sealed-sender/)). [Follow-up work](https://arxiv.org/abs/2305.09799) extended the technique to entire group conversations. The SDK exports a `sealed-sender` module, and we recommend its use. [Limits and metadata](https://docs.open-e2ee.dev/learn/limits-and-metadata) states these limits beside the feature.
 
-Two more limits worth stating in the same breath. Endpoint compromise defeats all of this, because plaintext lives on the endpoint by design. And trust on first contact is trust: identity pinning detects a later key change, it does not prove who was on the other end originally.
+[TLS is not end-to-end encryption](/blog/tls-is-not-end-to-end-encryption/) covers endpoint compromise and first-contact trust.
 
 ## Is it worth it?
 
-Sometimes not, and that is a real answer. Slack has explicitly declined end-to-end encryption, citing the cost to search, apps, and bots. Meta shut down Instagram DM encryption in May 2026, saying very few people opted in. Regulated finance, where SEC Rule 17a-4 requires retained communications, is structurally hostile without an archival story.
+Sometimes not, and that is a real answer. [Slack](https://slack.com/enterprise-key-management) sells customer-managed encryption keys in AWS KMS, not end-to-end encryption. Meta [ended support](https://help.instagram.com/491565145294150) for end-to-end encrypted Instagram DMs in May 2026, saying very few people opted in. Regulated finance needs an archival story first, because [SEC Rule 17a-4(b)(4)](https://www.ecfr.gov/current/title-17/section-240.17a-4) makes a broker-dealer preserve its communications for three years.
 
 When E2EE is worth the cost, one of three reasons usually drives the decision:
 
@@ -143,8 +141,6 @@ When E2EE is worth the cost, one of three reasons usually drives the decision:
 - Reduced server-side breach exposure supports the product's risk model.
 
 An attacker who reaches the relay database gets ciphertext instead of message content. Applicable law and incident facts determine notification and disclosure duties. [TLS is not end-to-end encryption](/blog/tls-is-not-end-to-end-encryption/) examines that architecture.
-
-What should not decide it is a belief that the hard part is the cryptography. The hard part is the hundred features that assumed a server could read the data.
 
 **[Plan your app's E2EE architecture →](https://docs.open-e2ee.dev/learn/e2ee-architecture)**
 

@@ -13,13 +13,10 @@ tags:
 
 import WhoHoldsPlaintext from '../../components/diagrams/WhoHoldsPlaintext.astro';
 import CarrierPanel from '../../components/CarrierPanel.astro';
-import { sdkLine } from '../../lib/sdk.mjs';
 
-**Who this is for:** a JavaScript or TypeScript developer who ships HTTPS and stores plaintext in a database. A customer, security questionnaire, or lawyer asks whether the product uses end-to-end encryption. For most server-readable systems, the answer is no. This article explains the architectural difference and its limits.
+**Who this is for:** a JavaScript or TypeScript developer who ships HTTPS and stores plaintext in a database. A customer, security questionnaire, or lawyer asks whether the product uses end-to-end encryption. For most server-readable systems, the answer is no.
 
-Every deployment checklist has a line for TLS, and everybody ticks it. Certificates renew automatically, HSTS is on, the padlock shows. It is genuinely good engineering, and it is the reason a coffee-shop network cannot read your users' messages.
-
-It also has nothing to say about the largest reader of your users' data, which is you.
+TLS stops a coffee-shop network from reading your users' messages. It does not stop your own server from reading them. This article shows where the boundary moves, in code, and what it does not cover.
 
 ## What TLS actually promises
 
@@ -32,19 +29,18 @@ Under TLS alone, a server decrypts an incoming message and encrypts it again for
 <figure class="diagram">
   <WhoHoldsPlaintext />
   <figcaption>
-    The diagram uses the same devices, envelopes, and middle position. Under TLS, the server opens
-    and reseals the message. Four boundaries surround a middle that holds readable content. Under
-    end-to-end encryption, two device boundaries contain the plaintext.
+    Under TLS the server opens and reseals the message, so the middle holds readable content. Under
+    end-to-end encryption two device boundaries contain the plaintext.
   </figcaption>
 </figure>
 
 End-to-end encryption moves the boundary. The sending device generates keys and encrypts the message. The receiving device uses its local keys to decrypt it. Everything between the devices is transport. The middle carries the message without interpreting it.
 
-The next section shows the code change. [How E2EE changes your application architecture](/blog/e2ee-changes-your-application-architecture/) covers the wider application effects.
+[How E2EE changes your application architecture](/blog/e2ee-changes-your-application-architecture/) covers the wider application effects.
 
 ## What it looks like in code
 
-This complete round trip uses the OpenE2EE Signal Protocol SDK and its in-memory relay. The protocol and the cryptography are real; only the infrastructure is simulated:
+This complete round trip uses the OpenE2EE Signal Protocol SDK and its in-memory relay. The protocol and the cryptography are real. Only the infrastructure is simulated:
 
 ```ts
 import { createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
@@ -83,8 +79,6 @@ Install it from npm:
 npm install @open-e2ee/signal-protocol-sdk
 ```
 
-The package is `@open-e2ee/signal-protocol-sdk` on the <code>{sdkLine}</code> line. Public APIs and persisted formats may change before 1.0.
-
 ## What your database actually holds
 
 The record below shows what the relay held after the code ran. It uses the captured envelope, not an illustrative value. The panel shows the plaintext beside it for comparison.
@@ -95,31 +89,25 @@ The relay has a recipient, device, sender, and message type. It also has two tim
 
 **The relay never needs message plaintext or device private keys.** It is not blind. It sees the outside of the envelope, and the outside of an envelope is real information. It can observe who communicates, how often, at which hours, and at what size.
 
-The SDK's `sealed-sender` module blanks sender fields on the identified-delivery path. Published research on Signal Messenger found that "the promise of sealed sender does not compose over a conversation of messages" ([NDSS 2021](https://www.ndss-symposium.org/ndss-paper/improving-signals-sealed-sender/)). Sealed sender reduces linkability but does not provide anonymity. [Metadata and limits](https://docs.open-e2ee.dev/learn/limits-and-metadata) documents these limits.
+The SDK's `sealed-sender` module blanks sender fields on the identified-delivery path. It reduces linkability and does not provide anonymity. [Metadata and limits](https://docs.open-e2ee.dev/learn/limits-and-metadata) documents the published research and the limits.
 
-## The part your CFO will care about
+## What breach-notification law considers
 
-E2EE is not a universal compliance requirement. Each law and security program has its own scope and controls. TLS plus disk encryption does not establish compliance with a complete framework. E2EE can reduce the readable content that a relay holds. It does not determine a legal outcome.
+E2EE is not a universal compliance requirement. Each law and security program sets its own scope and controls. What it changes is the readable content a relay holds after a breach.
 
-Several breach-notification rules consider whether an unauthorized person could read the acquired data:
+Several breach-notification rules turn on whether an unauthorized person could read the acquired data:
 
 - [California Civil Code §1798.82](https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.82) applies to qualifying people and businesses. Its notice rule covers acquired unencrypted personal information. It also covers encrypted information when an unauthorized person gets a key that could make it readable.
 - The [FTC Safeguards Rule](https://www.ftc.gov/business-guidance/resources/ftc-safeguards-rule-what-your-business-needs-know) applies to covered financial institutions. A notification event involves at least 500 consumers' unencrypted information. The rule includes encrypted information when an unauthorized person accesses its encryption key.
 - [GDPR Article 34(3)(a)](https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_34) addresses communication to affected people. That communication is not required when applied protections make the affected data unintelligible to unauthorized people. Other GDPR duties can still apply.
 
-These rules consider readability only within their defined scope. Server-side encryption leaves the decryption key in the server environment. A compromise can therefore expose both the database and its decryption path. In this E2EE architecture, the relay does not hold device private keys.
+Server-side encryption leaves the decryption key in the server environment, so one compromise can expose both the database and the path to read it. In this architecture the relay does not hold device private keys.
 
-End-to-end encryption can limit the readable content that an attacker gets from a breached relay. Applicable law and incident facts determine notification and disclosure duties.
+This is not legal advice. Applicable law and incident facts determine notification and disclosure duties. Relay metadata can still show that people communicated, and that metadata can itself require notice. Ask counsel.
 
-This architecture discussion is not legal advice. Statutory definitions, exceptions, and duties depend on the jurisdiction, data, and incident facts. Ask counsel to assess those facts. E2EE protects message *contents*. Relay metadata can still show that people communicated.
-
-A stolen relay database can still reveal users and communication patterns. That metadata can itself require notice. Encryption can narrow readable exposure without eliminating every duty.
-
-[IBM's 2025 *Cost of a Data Breach* report](https://www.ibm.com/reports/data-breach) put the US average at $10.22M. It put healthcare at $7.42M. IBM described healthcare as the highest-cost sector for the fourteenth consecutive year. E2EE does not make breaches impossible. It changes the readable content that a relay breach can yield.
+[IBM's 2025 *Cost of a Data Breach* report](https://www.ibm.com/reports/data-breach) put the US average at $10.22M. It put healthcare at $7.42M. IBM described healthcare as the highest-cost sector for the fourteenth consecutive year. E2EE does not prevent a breach. It changes what a breached relay yields.
 
 ## What this does not buy you
-
-Being precise about the limits is the point of writing this down at all.
 
 **Endpoints are still endpoints.** If an attacker compromises a device, the attacker enters the plaintext boundary. E2EE protects the middle, not a compromised endpoint.
 
@@ -129,13 +117,11 @@ Being precise about the limits is the point of writing this down at all.
 
 **Recovery becomes a product decision.** A relay that cannot read the data cannot restore it. Define the lost-phone policy before launch. [Recovery, backup, and migration](https://docs.open-e2ee.dev/build/recovery-backup-migration) compares the tradeoffs.
 
-**Metadata remains.** Said once more, because it is the most common overclaim in the category.
+**Metadata remains.** Routing fields, timestamps, and message size stay visible to the relay.
 
 ## Where to go from here
 
-TLS answers "can someone on the network read this." End-to-end encryption answers "can the operator read this." They are different questions, both are worth answering, and only one of them is on your deployment checklist today.
-
-The fastest way to understand the difference is to run the code above and look at the row your relay stores. It takes about ten minutes, needs no account, and requires no server.
+Run the code above and read the row your relay stores. It takes about ten minutes, with no account and no server.
 
 **[Build your first encrypted message →](https://docs.open-e2ee.dev/start/quickstart)**
 
