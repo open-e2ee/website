@@ -113,14 +113,14 @@ const TOGGLES = [
     key: 'sealedSender',
     label: 'Sealed sender',
     on: true,
-    note: 'a lens over the envelope’s addressing — seals the sender the relay would see',
+    note: 'a lens over the envelope’s addressing. It seals the sender the relay would otherwise read.',
   },
   {
     slug: 'braid',
     key: 'braid',
     label: 'Braid',
     on: false,
-    note: 'carries the ML-KEM key in 32-byte chunks, one per message, instead of whole — watch the mailbox size',
+    note: 'carries the ML-KEM key in 32-byte chunks, one per message, instead of whole. Watch the mailbox size.',
   },
 ] as const;
 ---
@@ -280,8 +280,8 @@ const TOGGLES = [
     number here contains a network, and nothing on the page simulates one.
   */}
   <p class="demo-console-note measure">
-    Recorded at full speed, replayed at reading pace — every number comes from the run. The relay
-    is in this tab, so no timing includes a network.
+    Recorded at full speed and replayed at reading pace. Every number comes from that run.
+    The relay is in this tab, so no timing includes a network.
   </p>
 
   {/*

@@ -1302,12 +1302,12 @@ test('ships the license for the icon set it copied', async () => {
 
   /* The second copy is the one that will drift. `Icon.astro` draws a fixed set
    * of chrome and has not changed in months; the deck icons are on a page
-   * under revision, and an eighth cell arrives with an eighth icon and no
-   * reason for anyone to remember a licence file. So the list is derived from
-   * the component rather than written out here: a name the union declares and
-   * the notice does not name fails this test at the name that is missing. */
+   * under revision, and a new cell arrives with a new icon and no reason for
+   * anyone to remember a licence file. So the list is derived from the
+   * component rather than written out here: a name the union declares and the
+   * notice does not name fails this test at the name that is missing. */
   const declared = [...deckIcon.matchAll(/^ {2}\| '([a-z-]+)';?$/gm)].map((m) => m[1]);
-  assert.equal(declared.length, 7, `DeckIconName declares ${declared.length} names`);
+  assert.equal(declared.length, 5, `DeckIconName declares ${declared.length} names`);
   const noticed = notices.slice(notices.indexOf('DeckIcon.astro'));
   for (const name of declared) {
     assert.ok(
@@ -1786,15 +1786,18 @@ test('closes the page on what the licence hands over, not on forking it', async 
   /* Four commits, and every verb a use. The free-software definition says
    * "change it", which is accurate as a right and wrong as copy here: beside a
    * 0.x version number it reads as an invitation to fix something, and a landing
-   * page that asks for repairs is selling a different product. The heading spends
-   * the same four verbs, so both move together or this fails. */
+   * page that asks for repairs is selling a different product.
+   *
+   * The four labels are the only place the page names what the licence hands
+   * over. The heading listed the same four verbs and now does not, so the
+   * drawing carries them alone and this list is what keeps them on the page. */
   const grants = graph.match(/^const GRANTS = \[(.+)\];$/m);
   assert.ok(grants, 'the graph no longer declares its commits as one list');
   assert.deepEqual(
     grants[1].split(',').map((word) => word.trim().replace(/^'|'$/g, '')),
     ['read it', 'run it', 'share it', 'build on it'],
   );
-  assert.match(index, /<h2>Open Source — read, run, share, and build on<\/h2>/);
+  assert.match(index, /<h2>Open Source<\/h2>/);
 
   /* The shape carries the claim, and two shapes available to a commit graph say
    * something this band must not. A branch peeling off makes taking your own copy
@@ -1851,10 +1854,14 @@ test('closes the page on what the licence hands over, not on forking it', async 
   assert.match(graph, /root\.dataset\.armed = ''/);
   assert.match(graph, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)/);
 
-  /* `Icon.astro` and every glyph on this page render `aria-hidden`, and so does
-   * the whole graph — its words are the heading's words, so a screen reader that
-   * walked it would hear the claim twice, the second time as a list of dots. */
-  assert.match(drawing, /<div class="commitline" data-commitline aria-hidden="true">/);
+  /* The graph is not hidden from assistive technology, and that is load-bearing
+   * now rather than incidental. Its four labels are the only text on the page
+   * that names what the licence hands over: hiding them would leave a screen
+   * reader with a heading, a licence sentence, and nothing about the grant. It
+   * was `aria-hidden` while the heading listed the same four verbs, which is the
+   * only condition under which hiding it cost nothing. */
+  assert.match(drawing, /<div class="commitline" data-commitline>/);
+  assert.doesNotMatch(drawing, /aria-hidden/);
 
   /* The band states neither licence's terms and routes to the page that owns
    * them, so the route has to survive. `/licensing` carries what AGPLv3 asks
@@ -1868,7 +1875,7 @@ test('closes the page on what the licence hands over, not on forking it', async 
    * turn up. Comments are stripped for the same reason as above — the one over
    * this band's lead names the banned phrase in order to rule it out. */
   const band = index
-    .slice(index.indexOf('Open Source — read, run, share, and build on'))
+    .slice(index.indexOf('<h2>Open Source</h2>'))
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
   assert.doesNotMatch(band, /paid tier|enterprise edition|pro version/i);
 
@@ -3186,11 +3193,13 @@ test('promises no price it does not show, and links to one that shows them all',
    * fresh reader listed that as one of two go/no-go inputs the page would not
    * give them: "the word 'published' promises a number that is not on the page
    * and not linked". Either half closes it — show the number, or make no
-   * promise and link to where the numbers are. The cell does the second, so
-   * what has to hold is that the promise stays gone and the link stays good. */
+   * promise and link to where the numbers are. The page does the second, so
+   * what has to hold is that the promise stays gone and the link stays good.
+   * The link was a deck cell's `link` field and is now an anchor in the Open
+   * Source band's link row, which is why the source pin reads as markup. */
   assert.equal(startupTier.name, 'Startup');
   assert.match(startupTier.price, /^\$[\d,]+$/);
-  assert.match(index, /href: '\/pricing'/);
+  assert.match(index, /<a href="\/pricing">/);
 
   if (!dist) return skipUnbuilt('dist/index.html');
   assert.doesNotMatch(dist, /at a published price/);
@@ -3455,15 +3464,15 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
   );
 
   /* The lead has to keep counting the cells, including the one that argues
-   * against the product. A seventh cell under a lead that says six is the
+   * against the product. A cell added under a lead that still says five is the
    * same species of drift the carrier panel already paid for. The heading is
    * pinned alongside it because both were rewritten in one pass, and a count
    * pinned on its own would survive the band losing its name. The mark is in
    * the same pin because it is positional: a box reads as this heading's last
    * word, and one moved to the front of the line is a bullet. */
   const cells = index.match(/title: '/g) ?? [];
-  assert.equal(cells.length, 7, `differentiator count changed to ${cells.length}`);
-  assert.match(index, /Seven things that are true the first time you install it/);
+  assert.equal(cells.length, 5, `differentiator count changed to ${cells.length}`);
+  assert.match(index, /Five things that are true the first time you install it/);
   assert.match(index, /<h2>What ships in the box<BoxMark \/><\/h2>/);
 
   /* Sending the wrong reader away is the point, not a hedge to be softened
@@ -3479,11 +3488,11 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
   /* Every cell carries an icon, and the type is what makes that true at build
    * time — `icon` is required on `Differentiator`, so a cell added without one
    * does not compile. What a type cannot say is that the icon column exists at
-   * all: the field could be declared, populated seven times, and never
+   * all: the field could be declared, populated once per cell, and never
    * rendered, which is a whole column of drawings the page never asks for. So
    * the binding is pinned, and the count of icons is checked against the count
-   * of cells above rather than against a literal seven, which would need
-   * editing in two places for the same change. */
+   * of cells above rather than against a literal, which would need editing in
+   * two places for the same change. */
   const icons = index.match(/icon: '[a-z-]+',/g) ?? [];
   assert.equal(icons.length, cells.length, `${icons.length} icons for ${cells.length} cells`);
   assert.match(index, /<DeckIcon name=\{item\.icon\} \/>/);
@@ -3652,9 +3661,9 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
 
   /* The lead used to signpost the disqualifier — "Read What you give up
    * first" — because the round before that had teased it without naming it.
-   * The lead no longer opens on it at all: a deck of seven capabilities that
-   * starts by sending the reader to the one thing the product cannot do reads
-   * as a warning. What has to survive is the anchor, because the cell is the
+   * The lead no longer opens on it at all: a deck of capabilities that starts
+   * by sending the reader to the one thing the product cannot do reads as a
+   * warning. What has to survive is the anchor, because the cell is the
    * one deep link on this page that a reader is given by someone else. Every
    * cell is addressable through the same `item.id`, so the pin is on the id
    * and on the binding that renders it, not on a sentence pointing at it. */
@@ -4160,12 +4169,13 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
    * viewport and never gets there. The claim has to hold on both pages or the
    * landing page is inventing a commercial model.
    *
-   * The hero maturity line's "Free under AGPL-3.0; commercial licence" clause
-   * was cut with the rest of that line on 2026-08-09. The licence cell in the
-   * feature band is the homepage's statement now, and it is the fuller one —
-   * it quotes the entry price from the same module /pricing renders. */
+   * The Open Source band's lead is the homepage's statement, and the route to
+   * the tiers sits with it in that band's link row. Both used to be a cell in
+   * the feature band above, which put the licence in front of a reader twice
+   * under two headings; the band that is already about the licence is where
+   * the statement and its route belong. */
   assert.match(index, /The complete SDK is free under AGPLv3/);
-  assert.match(index, /link: \{ href: '\/pricing', label: 'See the tiers' \}/);
+  assert.match(index, /<a href="\/pricing">See the tiers<\/a>/);
   assert.match(pricing, /Free under AGPLv3\./i);
 
   /* The tier copy and the prices moved out of this page and into

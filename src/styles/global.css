@@ -2267,10 +2267,6 @@ a:hover {
   background: var(--oe-accent);
 }
 
-.commitline-word-onward {
-  color: var(--oe-accent);
-}
-
 /* The beat each row plays on. Held here rather than in the animation rules so
    the order lives with the rows and the timing lives with the animation. */
 .commitline-commits > li:nth-child(1) {
@@ -2335,12 +2331,6 @@ a:hover {
   .commitline[data-playing] .commitline-word {
     animation: commitline-write var(--commitline-beat) steps(8, end) both;
     animation-delay: calc(var(--commitline-step) * var(--commitline-beat) + var(--commitline-beat) * 0.75);
-  }
-
-  /* The closing line waits for the rail it sits beside to have run most of its
-     length, so it reads as what the run amounts to rather than as a fifth row. */
-  .commitline[data-playing] .commitline-word-onward {
-    animation-delay: calc(var(--commitline-step) * var(--commitline-beat) + var(--commitline-beat) * 1.2);
   }
 
   @keyframes commitline-rail {
