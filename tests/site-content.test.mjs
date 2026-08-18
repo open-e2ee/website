@@ -4655,8 +4655,10 @@ test('alternates the band surface down every page', async () => {
   }
 
   /* A regex that stopped matching would make every page trivially alternating.
-   * Re-measured after the copy prune: /learn took its seven bands off the tree
-   * and the surviving pages lost bands of their own. */
+   * Re-measured after the copy prune: 21 bands on 2026-08-18, after /learn took
+   * its seven off the tree and the surviving pages lost bands of their own.
+   * The floor sits one below the measurement, so a page that legitimately loses
+   * a band reds this and gets a fresh measurement rather than a slack one. */
   assert.ok(checked > 20, `expected to be checking real bands, counted ${checked}`);
 });
 
@@ -4718,14 +4720,15 @@ test('keeps the space on both sides of every inline code span', async () => {
   }
 
   /* A regex that stopped matching would pass on every file in the tree. The
-   * floor is the tree's measured count: 28 spans on 2026-08-18, down from 32
-   * when /product lost the quickstart band and three capability bodies, and
-   * from 33 when /learn left the tree.
+   * floor is the tree's measured count: 29 spans on 2026-08-18, down from 33
+   * when /learn left the tree and 32 when /product lost the quickstart band
+   * and three capability bodies, then up one when the maturity notice moved
+   * into the layout and took the package name with it.
    *
    * Re-measure and record the reason when this moves. The number is a tripwire
    * for a regex that has stopped matching, so it is only worth what its last
    * measurement was worth. */
-  assert.ok(spans >= 28, `expected to be scanning real code spans, counted ${spans}`);
+  assert.ok(spans >= 29, `expected to be scanning real code spans, counted ${spans}`);
 });
 
 test('the scene places the envelope at every step the run records', async () => {
