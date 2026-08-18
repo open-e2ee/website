@@ -2134,11 +2134,22 @@ test('keeps the signature diagram off the page that carries the plate', async ()
   assert.doesNotMatch(index, /<SignatureDiagram \/>/);
   assert.doesNotMatch(index, /import SignatureDiagram/);
 
+  /* One home, not two. /product rendered the same component under a paraphrase
+   * of /security's sentence, which put the question "what does the server see"
+   * on a page carrying the fixed relay formula zero times while the page that
+   * states the formula verbatim drew the same picture underneath it. The band
+   * went rather than the formula arriving in a third place. */
+  assert.match(security, /<SignatureDiagram \/>/, 'security lost the diagram');
+  assert.doesNotMatch(
+    product,
+    /import SignatureDiagram|<SignatureDiagram \/>/,
+    'the diagram is back on /product',
+  );
+
   for (const [name, page] of [
     ['security', security],
     ['product', product],
   ]) {
-    assert.match(page, /<SignatureDiagram \/>/, `${name} lost the diagram`);
     assert.doesNotMatch(
       page,
       /<(Live)?CarrierPanel \/>|<DemoConsole \/>/,
@@ -3394,14 +3405,19 @@ test('does not deny a build step in the /product lead the page later explains', 
    * unqualified claim was tried twice and read as a contradiction both times.
    *
    * The reconciliation stays where it was. This asserts the lead stops
-   * denying it, not that the explanation moved up. */
+   * denying it, not that the explanation moved up.
+   *
+   * The lead used to carry the limit as well, which put the same qualifier on
+   * the page twice. It is stated once, in the storage callout, so these assert
+   * the scoping in the lead and the limit in the section that owns storage
+   * rather than a phrase in both. */
   assert.match(source, /protocol code is\s*pure TypeScript with no native crypto module/);
-  assert.match(source, /needs a development build rather than Expo Go/);
-  assert.match(source, /SQLCipher requires a development build/);
+  assert.match(source, /needs a development build/);
+  assert.match(source, /not available in Expo Go/);
 
   if (!dist) return skipUnbuilt('dist/product/index.html');
   assert.doesNotMatch(dist, /No native modules\. No\s*prebuild step\./);
-  assert.match(dist, /needs a development build rather than Expo Go/);
+  assert.match(dist, /needs a development build, because SQLCipher is not available in Expo Go/);
 });
 
 test('names the cost of E2EE in the deck that lists the benefits', async () => {
@@ -4683,13 +4699,14 @@ test('keeps the space on both sides of every inline code span', async () => {
   }
 
   /* A regex that stopped matching would pass on every file in the tree. The
-   * floor is the tree's measured count: 32 spans on 2026-08-18, down from 33
-   * when /learn left the tree.
+   * floor is the tree's measured count: 28 spans on 2026-08-18, down from 32
+   * when /product lost the quickstart band and three capability bodies, and
+   * from 33 when /learn left the tree.
    *
    * Re-measure and record the reason when this moves. The number is a tripwire
    * for a regex that has stopped matching, so it is only worth what its last
    * measurement was worth. */
-  assert.ok(spans >= 32, `expected to be scanning real code spans, counted ${spans}`);
+  assert.ok(spans >= 28, `expected to be scanning real code spans, counted ${spans}`);
 });
 
 test('the scene places the envelope at every step the run records', async () => {

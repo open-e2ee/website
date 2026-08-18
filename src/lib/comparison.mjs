@@ -146,42 +146,38 @@ export const axes = [
 ];
 
 /**
- * The prose beside the table: one paragraph per project, each ending in the
- * thing a reader would actually decide on. `verdict` is deliberately not always
- * "use ours" — for two of the five it is not.
+ * The one line per alternative that the table cannot carry: what to do about
+ * it. Two of the four send the reader somewhere that is not this SDK, and
+ * `tests/comparison.test.mjs` requires that.
+ *
+ * A `body` field stood beside each of these, one paragraph per project,
+ * including one for this SDK. Every fact in all five was already a cell in the
+ * table above them: "Rust core reached through a Node native addon" is the
+ * TypeScript-native cell, "no browser build, no Expo build, and no React
+ * Native build" is two more, and the dates are the Maintained row. The verdicts
+ * are what survived, and there is no entry for this SDK because the table is
+ * the case for it.
  */
 export const notes = [
   {
     key: 'libsignal',
     heading: 'The official implementation',
-    body: 'The implementation Signal Messenger itself uses, and by a distance the most scrutinised Signal Protocol code that exists. It is very actively maintained, post-quantum, and AGPL-3.0 — 0.99.3 published 2026-07-31, with the repository pushed the same day. It is also a Rust core reached through a Node native addon: the published 0.99.3 tarball carries six prebuilt binaries, for macOS, Linux, and Windows on arm64 and x64. There is no browser build, no Expo build, and no React Native build, and the README does not describe use outside Signal as a supported case.',
-    verdict:
-      'If you are shipping a desktop or server application on Node, this is the one to reach for first.',
+    verdict: 'If you ship a desktop or server application on Node, reach for this one first.',
   },
   {
     key: 'js',
     heading: 'The original JavaScript port',
-    body: 'Signal’s own JavaScript port, and the ancestor of most of the browser Signal Protocol code in the wild. The repository is archived: the last push was 2021-08-04 and it is read-only on GitHub. It predates PQXDH, so it is classical X3DH with no post-quantum key agreement, and it is GPL-3.0.',
-    verdict: 'Archived means archived. Nothing new should start here.',
+    verdict: 'Archived on 2021-08-04. Do not start here.',
   },
   {
     key: 'pr',
     heading: 'The TypeScript rewrite of it',
-    body: 'An independent TypeScript rewrite of the archived port, and a genuinely useful one when it was current. Its last npm publish was 0.0.16 on 2023-05-06 and its last repository push was 2023-07-18. It is classical X3DH rather than post-quantum and it is GPL-3.0, and its README documents installation and API use without naming a target runtime — there is no React Native or Expo path in it to follow.',
-    verdict: 'Still runs, still unmaintained. Check the dates against your support horizon.',
+    verdict:
+      'Still runs, last published 2023-05-06. Check the dates against your support horizon.',
   },
   {
     key: 'mls',
     heading: 'A different protocol, done well',
-    body: 'ts-mls implements MLS (RFC 9420) in TypeScript for browsers, Node, and serverless runtimes, and is MIT-licensed. It is very actively maintained — the repository was pushed 2026-08-03, with 1.6.2 the current stable release from 2026-03-07 and a 2.0.0 release candidate line publishing through 2026-07-18. Its post-quantum coverage goes further than this SDK’s: alongside ML-KEM ciphersuites it offers ML-DSA-87 signatures, where identities here are still classical Ed25519. MLS is not the Signal Protocol — different group semantics, a different key schedule, a different ecosystem.',
-    verdict:
-      'If MLS suits your product, use ts-mls. That is a real choice and this page is not an argument against it.',
-  },
-  {
-    key: 'oe',
-    heading: 'This SDK',
-    body: `An independent TypeScript implementation of the published Signal Protocol specifications, running in Expo, React Native, modern browsers, and Node from one package, with post-quantum PQXDH on by default and failing closed. Storage and transport are yours to compose. It is ${sdkLine}, it is reviewed by adversarial AI agents but not audited by any independent firm, and it is not wire-compatible with Signal Messenger — each of those is stated at length elsewhere on this site rather than left for you to discover.`,
-    verdict:
-      'The case for it is the row above: the Signal Protocol, in the runtimes the other Signal Protocol libraries do not reach.',
+    verdict: 'If MLS suits your product, use ts-mls.',
   },
 ];
