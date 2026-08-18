@@ -170,7 +170,11 @@ test('reaches the terms from the pages that sell against them', async () => {
   assert.match(pricing, /href="\/legal\/terms"/);
   assert.match(pricing, /renews annually until you cancel/i);
   assert.match(licensing, /href="\/legal\/terms"/);
-  assert.match(licensing, /signed order form/i);
+  /* Was /signed order form/. Which instrument closes which tier is a purchase
+   * step, so /pricing's "How buying works" owns it and /licensing stopped
+   * printing it a third time. What this page still owes is a description of
+   * the negotiated path, which is what the pin follows. */
+  assert.match(licensing, /separately negotiated production grant/i);
 });
 
 test('permanently redirects short and historical legal paths to one hierarchy', async () => {

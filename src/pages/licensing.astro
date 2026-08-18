@@ -9,10 +9,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   <header class="page-hero">
     <div class="container measure">
       <p class="label">Licensing</p>
-      <h1>One SDK. Two ways to ship it.</h1>
+      {/*
+        The heading names the two paths instead of counting them. A reader
+        arrives here from four different link labels and needs to see the two
+        licence names, which is how Qt's licensing page leads.
+
+        The lead said three things and this page said all three again below:
+        "the same code either way" is /pricing's Evaluating row, "what differs
+        is the obligations" is what the two rows under this are, and "a summary,
+        not the license itself" is stated twice more on this 250-word page.
+        Elastic's licence FAQ and MongoDB's SSPL FAQ each state that disclaimer
+        once, at the top.
+      */}
+      <h1>AGPLv3, or a commercial license.</h1>
       <p class="lead">
-        The same code either way. What differs is the obligations you take on — and this page is a
-        summary of them, not the license itself.
+        This page summarizes the two paths. The license text and your agreement control.
       </p>
     </div>
   </header>
@@ -23,10 +34,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div>
           <dt>AGPLv3</dt>
           <dd>
-            The complete SDK, at no cost, for products whose distribution and network use can meet
-            the AGPLv3 obligations. Those obligations are real: AGPLv3 reaches applications offered
-            over a network, not only distributed binaries. Read the license text in the repository
-            before you rely on this path — it controls, not this description.
+            If you offer your product over a network, the AGPLv3 source obligations apply to it.
+            Read the license text before you rely on this path.
           </dd>
         </div>
         <div>
@@ -43,25 +52,29 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   <section class="band band-surface">
     <div class="container measure prose">
+      {/*
+        Three paragraphs, 111 words, down to one. The first was the only one
+        carrying a fact this page owns, and even it enumerated the five governed
+        items that /pricing's fine print and /legal/terms §2 both print already.
+        /pricing owns the enumeration because it sits next to the money, so this
+        page keeps only the precedence rule.
+
+        The second paragraph said which instrument applies per tier, which is
+        /pricing's "How buying works" rows word for word. The third closed on
+        "It is a shorter conversation than the one after launch", and its action
+        is the link directly below it.
+
+        The AGPLv3 row above now names the licence text as its destination, so
+        "Read the license text" is the link this row keeps and "Review Startup
+        terms" is the one it drops — /pricing carries that one twice.
+      */}
       <h2>The agreement is the license</h2>
       <p>
-        Everything on this website describes the intended commercial model in plain language. It
-        does not replace the agreement, and it is not legal advice. Where the two differ, the
-        agreement controls the grant, the covered products, the support commitments, renewal, and
-        what happens after expiration.
-      </p>
-      <p>
-        Which agreement depends on the path. Startup is self-service, so the agreement is the
-        versioned <a href="/legal/terms">commercial terms</a> you accept in checkout, and the
-        version you accepted is the one that keeps applying. Growth and Enterprise are scoped first
-        and closed on a signed order form.
-      </p>
-      <p>
-        If you are unsure which path applies to your product, ask before you build. It is a shorter
-        conversation than the one after launch.
+        This website describes the commercial model in plain language. It is not legal advice.
+        Where this page and your <a href="/legal/terms">agreement</a> differ, the agreement
+        controls.
       </p>
       <p class="text-links">
-        <a href="/legal/terms">Review Startup terms</a>
         <a href="/pricing">See pricing</a>
         <a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">
           Ask a licensing question

@@ -4153,9 +4153,13 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
    * price from the same source instead of describing it. The assertions
    * follow the data rather than the file it used to live in. */
   const { tiers } = await import('../src/data/pricing.mjs');
+  /* Was /You run your own infrastructure/. The free column states the
+   * obligation that disqualifies a reader from it rather than a benefit, so
+   * this follows the trigger sentence. positioning.md §3 makes that friction
+   * the qualification funnel, and it is the one fact the tier owes. */
   assert.ok(
-    tiers.some((tier) => /You run your own infrastructure/i.test(tier.detail)),
-    'the AGPLv3 tier no longer says who runs the infrastructure',
+    tiers.some((tier) => /applications offered over a network/i.test(tier.detail)),
+    'the AGPLv3 tier no longer states the network-use trigger',
   );
 
   /* The sentence that creates the debt now links to the page that prices it.
