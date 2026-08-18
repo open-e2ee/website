@@ -137,6 +137,13 @@ const ordered = projects
   <header class="page-hero">
     <div class="container measure">
       <p class="label">Signal Protocol SDK</p>
+      {/* This h1 is not free copy. It is the `product-hero` entry in
+          @open-e2ee/design's tagline registry, status `approved` since the founder
+          review of 2026-08-09, and tests/site-content.test.mjs asserts this page is
+          the one surface that carries it. The 2026-08-18 copy pass proposed cutting
+          "actually" here with the site's four other uses of the word. Retiring an
+          approved tagline is a founder call and a design-package change, so the
+          word stays on this line alone. */}
       <h1>The Signal Protocol, where your app actually runs.</h1>
       {/* "No native modules. No prebuild step." was true of the crypto and false of the storage
           this page documents further down: the encrypted Expo store is expo-sqlite with SQLCipher,
@@ -206,10 +213,14 @@ const ordered = projects
   <section class="band band-surface">
     <div class="container stack">
       <div class="band-head">
-        <h2>Composition, not configuration</h2>
+        {/* "Composition, not configuration" was an X-not-Y heading that also
+            failed as navigation: a reader scanning for the adapter list could
+            not tell this band held it. The lead's own first clause is the
+            heading, and it names the thing the band lists. */}
+        <h2>Four adapter boundaries you own</h2>
         <p class="measure">
-          Four boundaries are yours. You pass adapters into <code>createSignalProtocolClient</code>.
-          The protocol logic above them does not change.
+          You pass adapters into <code>createSignalProtocolClient</code>. The protocol logic
+          above them does not change.
         </p>
       </div>
       <dl class="definition-rows">

@@ -33,9 +33,9 @@ In a conventional application, the server holds the authoritative copy and the c
 <figure class="diagram">
   <WhereWorkMoves />
   <figcaption>
-    The server-authoritative row has no trust boundary, so plaintext reaches the server. In the
-    device-authoritative row, the work sits inside the device outline. The middle is a relay that
-    routes envelopes.
+    Search, notifications, and moderation run on the server while it holds plaintext. Under
+    end-to-end encryption the same three run on the device, and the middle only routes
+    envelopes.
   </figcaption>
 </figure>
 
@@ -81,7 +81,7 @@ Teams use established patterns for these problems.
   </figcaption>
 </figure>
 
-**Notification content moves to the extension.** Send a wake-up, decrypt locally, rewrite the notification body. Design a sensible fallback for the case where decryption fails or the budget expires, because it will.
+**Notification content moves to the extension.** Send a wake-up, decrypt locally, rewrite the notification body. Design a fallback for decryption failure and for the extension budget expiring.
 
 **Analytics moves to counts and shapes.** Envelope volume, delivery latency, error rates, and session establishment failures remain visible and useful. Content-derived metrics are gone.
 
@@ -97,7 +97,7 @@ One gateway logged [a burst of 479 such exceptions](https://github.com/openclaw/
 
 Users lose devices on a months-long clock, so this problem surfaces after launch, not during development. By then your architecture has already decided the answer.
 
-There is no universally correct answer, and you should be suspicious of any library that implies there is. 1Password's security design paper puts it directly: "Recovery mechanisms are inherently weak points in maintaining the secrecy of data." ([1Password](https://agilebits.github.io/security-design/restore.html))
+There is no universally correct answer. 1Password's security design paper puts it directly: "Recovery mechanisms are inherently weak points in maintaining the secrecy of data." ([1Password](https://agilebits.github.io/security-design/restore.html))
 
 Pick a named profile deliberately:
 
@@ -108,9 +108,9 @@ Pick a named profile deliberately:
 <figure class="diagram">
   <NoWayBack />
   <figcaption>
-    The higher-risk profile, drawn. The old device holds the private key, the relay holds sealed
-    slabs and no key, and the only arrow runs device to device. Nothing reaches the new device from
-    the middle.
+    Under the higher-risk profile the old device holds the private key and the relay holds no
+    key. A new device can only be restored from the old device. Nothing reaches it from the
+    relay.
   </figcaption>
 </figure>
 
