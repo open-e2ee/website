@@ -64,9 +64,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         "It is a shorter conversation than the one after launch", and its action
         is the link directly below it.
 
-        The AGPLv3 row above now names the licence text as its destination, so
-        "Read the license text" is the link this row keeps and "Review Startup
-        terms" is the one it drops — /pricing carries that one twice.
+        The AGPLv3 row above now names the license text as its destination, so
+        the LICENSE link is the one this row keeps and "Review Startup terms" is
+        the one it drops; /pricing carries that one twice. It is labelled
+        "LICENSE" rather than "Read the license text" because /security reaches
+        the same file and one destination gets one name.
       */}
       <h2>The agreement is the license</h2>
       <p>
@@ -75,12 +77,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         controls.
       </p>
       <p class="text-links">
-        <a href="/pricing">See pricing</a>
+        <a href="/pricing">Pricing</a>
         <a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">
           Ask a licensing question
         </a>
         <a href="https://github.com/open-e2ee/signal-protocol-js/blob/main/LICENSE">
-          Read the license text
+          LICENSE
         </a>
       </p>
     </div>

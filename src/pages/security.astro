@@ -203,7 +203,7 @@ const notHidden = [
         </p>
       </div>
       <p class="text-links">
-        <a href={docs.securityModel}>The full in-scope and out-of-scope lists</a>
+        <a href={docs.securityModel}>Threat model</a>
       </p>
     </div>
   </section>
@@ -261,8 +261,7 @@ const notHidden = [
         site" is a vocabulary reconciliation, which is a documentation job.
       */}
       <p class="text-links">
-        <a href={docs.assurance}>Assurance — what runs, what is not published, and why</a>
-        <a href={docs.thirdParty}>Third-party notices</a>
+        <a href={docs.assurance}>Assurance</a>
       </p>
     </div>
   </section>
@@ -367,16 +366,18 @@ const notHidden = [
         </p>
       </div>
       <ul class="rows rows-single">
-        <li><a href={`${DOCS}/docs/SECURITY.md`}>Security model and threat model</a></li>
+        <li><a href={`${DOCS}/docs/SECURITY.md`}>Threat model</a></li>
         <li><a href={`${DOCS}/docs/PROTOCOL_POLICY.md`}>Protocol policy and post-quantum modes</a></li>
-        <li><a href={`${DOCS}/ARCHITECTURE.md`}>Architecture and layer model</a></li>
+        <li><a href={`${DOCS}/ARCHITECTURE.md`}>Architecture</a></li>
         <li><a href={`${DOCS}/docs/E2EE.md`}>How the encryption works</a></li>
-        <li><a href={docs.deviations}>DEVIATIONS &mdash; every difference, and what it costs</a></li>
-        {/* The figures band links this file as "what runs, what is not
-            published, and why", and ASSURANCE.md's own subject is what is not
-            published, so that is the label both places carry. */}
+        <li><a href={docs.deviations}>DEVIATIONS</a></li>
+        {/* Both this entry and the figures band's link to the same file used to
+            carry the sentence "what runs, what is not published, and why". A
+            link label is a promise about a destination, and the footer already
+            sets one short name per destination; this list now uses those names
+            and lets the documents describe themselves. */}
         <li>
-          <a href={docs.assurance}>Assurance &mdash; what runs, what is not published, and why</a>
+          <a href={docs.assurance}>Assurance</a>
         </li>
         <li><a href={docs.thirdParty}>Third-party notices</a></li>
         <li><a href={`${DOCS}/SECURITY.md`}>Reporting a vulnerability</a></li>
@@ -428,7 +429,7 @@ const notHidden = [
         link itself, so this restores the whole path rather than half of it.
       */}
       <p class="text-links">
-        <a href="/licensing">Which license your product needs</a>
+        <a href="/licensing">Licensing</a>
       </p>
       <p class="muted">
         Email <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a> with a

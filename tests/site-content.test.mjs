@@ -1459,7 +1459,7 @@ test('sends the folded demo route at a section the homepage still has', async ()
   );
 });
 
-test('leaves the reviewer a path to the licence the review is for', async () => {
+test('leaves the reviewer a path to the license the review is for', async () => {
   /* /evaluate linked /licensing and /legal/terms inline. Folding it left this
    * page closing on an enterprise meeting and a quickstart, both of which
    * assume the licence question is already settled — and the reader who gets
@@ -1479,9 +1479,14 @@ test('leaves the reviewer a path to the licence the review is for', async () => 
    * link carries a comment naming both /licensing and /pricing to record the
    * choice between them, and a guard on the bare href would be satisfied by
    * its own explanation; no comment on this page contains the rendered anchor.
-   * Source rather than dist, so the guard also runs on an unbuilt tree. */
+   * Source rather than dist, so the guard also runs on an unbuilt tree.
+   *
+   * The label was "Which license your product needs" and is now the footer's
+   * name for the same destination. /licensing was reached under four names
+   * across the site, which left a reader unable to tell four links from four
+   * places. */
   const source = await read('../src/pages/security.astro');
-  assert.match(source, /<a href="\/licensing">Which license your product needs<\/a>/);
+  assert.match(source, /<a href="\/licensing">Licensing<\/a>/);
 });
 
 test('states the same assurance figures on every page that states them', async () => {
@@ -4171,11 +4176,15 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
    *
    * The Open Source band's lead is the homepage's statement, and the route to
    * the tiers sits with it in that band's link row. Both used to be a cell in
-   * the feature band above, which put the licence in front of a reader twice
-   * under two headings; the band that is already about the licence is where
-   * the statement and its route belong. */
+   * the feature band above, which put the license in front of a reader twice
+   * under two headings; the band that is already about the license is where
+   * the statement and its route belong.
+   *
+   * The label is the footer's, not a fresh one. /pricing was reached under
+   * four names across the site, and a destination with four names cannot make
+   * a promise about itself. */
   assert.match(index, /The complete SDK is free under AGPLv3/);
-  assert.match(index, /<a href="\/pricing">See the tiers<\/a>/);
+  assert.match(index, /<a href="\/pricing">Pricing<\/a>/);
   assert.match(pricing, /Free under AGPLv3\./i);
 
   /* The tier copy and the prices moved out of this page and into
