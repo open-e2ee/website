@@ -255,8 +255,8 @@ const ordered = projects
         The Expo, Node, browser, and bare React Native stores implement{' '}
         <code>ISignalProtocolLocalStore</code> in full, so groups and multi-device work on any of
         them. They differ in where the bytes land. Expo uses{' '}
-        <code>expo-sqlite</code> with SQLCipher, Node an encrypted filesystem under{' '}
-        <code>node:crypto</code> with 0600 permissions, the browser IndexedDB scoped to the
+        <code>expo-sqlite</code> with SQLCipher, and Node an encrypted filesystem under{' '}
+        <code>node:crypto</code> with 0600 permissions. The browser uses IndexedDB scoped to the
         page&rsquo;s origin, and bare React Native a key-value backend you supply.{' '}
         <code>ISignalProtocolLocalStore</code> and <code>ISignalProtocolRelayServer</code> are
         documented interfaces, so you can write your own.
@@ -300,7 +300,7 @@ const ordered = projects
             the evidence, so it makes that half of the point in the
             maintainers' own words. */}
         <p class="measure">
-          libsignal is the most scrutinised Signal Protocol code there is, and it is actively
+          libsignal is the most scrutinized Signal Protocol code there is, and it is actively
           maintained. It is also a Node native addon with no browser, Expo, or React Native build.
         </p>
         {/* Both sentences, not the famous one on its own. The first is the

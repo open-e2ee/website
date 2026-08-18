@@ -25,7 +25,7 @@ It ranked first in the 24 July 2026 GitHub search for "signal protocol typescrip
 
 **2. The replacement does not target React Native.**
 
-Signal actively maintains [`@signalapp/libsignal-client`](https://github.com/signalapp/libsignal/blob/main/README.md). The npm package is a Node native add-on. It provides prebuilt binaries for Windows, macOS, and Debian-flavoured Linux. It provides no iOS, Android, or browser build. Hermes is the default React Native JavaScript engine, and it does not implement Node's N-API. Configuration cannot add this missing runtime interface. The README defines the supported scope:
+Signal actively maintains [`@signalapp/libsignal-client`](https://github.com/signalapp/libsignal/blob/main/README.md). The npm package is a Node native add-on. It provides prebuilt binaries for Windows, macOS, and Debian-flavored Linux, and no iOS, Android, or browser build. Hermes is the default React Native JavaScript engine, and it does not implement Node's N-API. Configuration cannot add this missing runtime interface. The README defines the supported scope:
 
 > This repository is used by the Signal client apps (Android, iOS, and Desktop) as well as server-side. **Use outside of Signal is unsupported.** In particular... All APIs and implementations are subject to change without notice.
 

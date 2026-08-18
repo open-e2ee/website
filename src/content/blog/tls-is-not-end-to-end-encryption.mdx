@@ -113,7 +113,7 @@ This is not legal advice. Applicable law and incident facts determine notificati
 
 **The browser has a code-delivery problem.** In a web app, the server also ships the JavaScript that encrypts content. Subresource integrity and reproducible builds help. The code-delivery problem remains open. The [browser quickstart](https://docs.open-e2ee.dev/start/browser) states this limit.
 
-**First contact uses trust on first use (TOFU).** Neither person verifies the other during the first key exchange. The SDK pins the composite identity tuple per user. It fails closed after a later identity change. Pinning detects a *change* but does not prove the original identity. Safety numbers support that verification ceremony. The [threat model](https://docs.open-e2ee.dev/learn/threat-model) explains the boundary.
+**First contact uses trust on first use (TOFU).** Neither person verifies the other during the first key exchange. The SDK pins the composite identity tuple per user, and fails closed after a later identity change. Pinning detects a *change* but does not prove the original identity. Safety numbers support that verification ceremony. The [threat model](https://docs.open-e2ee.dev/learn/threat-model) explains the boundary.
 
 **Recovery becomes a product decision.** A relay that cannot read the data cannot restore it. Define the lost-phone policy before launch. [Recovery, backup, and migration](https://docs.open-e2ee.dev/build/recovery-backup-migration) compares the tradeoffs.
 

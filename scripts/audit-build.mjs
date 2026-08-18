@@ -126,8 +126,28 @@ const TERMINOLOGY = [
  * script today the only matches were this project's own files, and they are
  * fixed. A dependency that trips it later should be allowlisted here, loudly,
  * rather than dropping the guard.
+ *
+ * The families are the ones that actually shipped, not a general list: -our,
+ * -ise, -ogue, -mme, -ce, and the doubled l. A copy pass found "programme" in
+ * the FIPS row, "scrutinised" on /product, "catalogues" and "prioritises" in
+ * one article, "flavoured" in another, and "travelling" and "labelled" inside
+ * SVG `<desc>` text that only a screen reader reads.
+ *
+ * Two exclusions are deliberate. "cancelled" is not here because the SDK ships
+ * `Cancelled` as a media-attachment error code, and a guard that fails a build
+ * over a dependency's identifier gets dropped rather than fixed. `analyses` is
+ * not in the -ise pattern because it is also the American plural noun.
+ * `aria-labelledby` is safe without an exception: the word boundary after
+ * "labelled" does not hold inside it.
  */
-const SPELLING = [/\blicence(?:s|d)?\b/i, /\bbehaviour(?:s|al)?\b/i, /\bcolour(?:s|ed|ing)?\b/i];
+const SPELLING = [
+  /\b(?:licence|defence|offence|pretence)(?:s|d)?\b/i,
+  /\b(?:behaviour|colour|flavour|favour|honour|neighbour|endeavour|rumour|valour)(?:s|ed|al|ing|able)?\b/i,
+  /\b(?:catalogu|organis|prioritis|recognis|scrutinis|summaris)(?:e|es|ed|ing|ation|ations)\b/i,
+  /\banalys(?:e|ed|ing)\b/i,
+  /\bprogramme(?:s|d)?\b/i,
+  /\b(?:labell|modell|signall|travell)(?:ed|ing|er|ers)\b/i,
+];
 
 const AUDIT_NEGATIONS = [/not audited by any independent firm/i, /no independent firm has audited/i];
 const AUDIT_MENTION =

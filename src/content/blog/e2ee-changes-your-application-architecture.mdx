@@ -71,7 +71,7 @@ Your product is smaller than Messenger. These timelines show where the work sits
 
 Teams use established patterns for these problems.
 
-**Search moves to the device and needs a local store.** Only the device can read messages, so it needs an index. The OpenE2EE Signal Protocol SDK makes `storage` required and `relay` optional. The local encrypted store contains application state. Proton downloads and decrypts the mailbox, then indexes it locally. Proton says this "may take a few minutes and can be quite resource-intensive" ([Proton](https://proton.me/support/search-message-content)). Include that experience in the product plan.
+**Search moves to the device and needs a local store.** Only the device can read messages, so it needs an index. The OpenE2EE Signal Protocol SDK makes `storage` required and `relay` optional. Proton downloads and decrypts the mailbox, then indexes it locally. Proton says this "may take a few minutes and can be quite resource-intensive" ([Proton](https://proton.me/support/search-message-content)). Include that experience in the product plan.
 
 <figure class="diagram">
   <WhereQueriesRun />
@@ -89,7 +89,7 @@ Teams use established patterns for these problems.
 
 **Encrypted state creates distinct failure modes.** Each decrypt advances the ratchet, so the app must persist session state atomically. A partial write can corrupt that state beyond recovery. A common production symptom is a "Bad MAC" error.
 
-One gateway logged [a burst of 479 such exceptions](https://github.com/openclaw/openclaw/issues/14146) while its status still showed connected and listening. Matrix's meta-issue [catalogues over 70 causes](https://github.com/element-hq/element-meta/issues/245) of undecryptable messages. It says diagnosis generally requires logs from both the sender and receiver. Test encrypted failure paths before release.
+One gateway logged [a burst of 479 such exceptions](https://github.com/openclaw/openclaw/issues/14146) while its status still showed connected and listening. Matrix's meta-issue [catalogs over 70 causes](https://github.com/element-hq/element-meta/issues/245) of undecryptable messages. It says diagnosis generally requires logs from both the sender and receiver. Test encrypted failure paths before release.
 
 **Observability must stay outside the plaintext.** Element shipped a bug that wrote "the private part of the backup key pair" to application debug logs. The issue affected 156 users' key material ([Element](https://element.io/blog/security-release-element-x-android-0-4-12-and-ios-1-6-7/)). Log envelope ids, session states, and error codes. Never log key material. Add a test that rejects it.
 
@@ -101,7 +101,7 @@ There is no universally correct answer. 1Password's security design paper puts i
 
 Pick a named profile deliberately:
 
-- **A server-confidential business archive** prioritises continuity. History survives device loss, and multiple devices see everything. The recovery path is a target for coercion or account compromise. This profile can fit a team collaboration product.
+- **A server-confidential business archive** prioritizes continuity. History survives device loss, and multiple devices see everything. The recovery path is a target for coercion or account compromise. This profile can fit a team collaboration product.
 - **A higher-risk messaging profile** limits recoverable data. Lose the device and lose the history. A new device starts empty. This profile can fit a threat model that includes device seizure.
 - **A collaboration profile** sits between them, balancing offline work, membership changes, and recovery, and usually accepts more complexity than either.
 
