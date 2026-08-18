@@ -1871,8 +1871,13 @@ test('closes the page on what the licence hands over, not on forking it', async 
   /* The band states neither licence's terms and routes to the page that owns
    * them, so the route has to survive. `/licensing` carries what AGPLv3 asks
    * of the reader's own application; a band that hands over four things and
-   * links nowhere would leave a developer to learn it from a lawyer. */
-  assert.match(index, /<a href="\/licensing">Understand AGPLv3 use<\/a>/);
+   * links nowhere would leave a developer to learn it from a lawyer.
+   *
+   * The label is pinned as well as the href, because "Licensing" is the one
+   * name this destination answers to in a link row — the footer's, /security's
+   * and /product's included. The order check below pins the href alone: the
+   * label is copy, but the link's place after the two figures is the claim. */
+  assert.match(index, /<a href="\/licensing">Licensing<\/a>/);
   assert.match(index, /<a href="https:\/\/github\.com\/open-e2ee\/signal-protocol-js">/);
 
   /* `docs/messaging.md` §4: the tier vocabulary is banned as a rendering of
@@ -1900,7 +1905,7 @@ test('closes the page on what the licence hands over, not on forking it', async 
    * assumed: a restored closing block would land inside this band. */
   assert.match(
     band,
-    /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+Understand AGPLv3 use/,
+    /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+href="\/licensing"/,
     'the graph, the mark and the licence link are no longer in that order',
   );
   assert.doesNotMatch(
