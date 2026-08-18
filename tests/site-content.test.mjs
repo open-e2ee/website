@@ -945,7 +945,7 @@ test('never makes a control its own announcer', async () => {
   /* And the toggle in particular still announces somewhere, silently on load. */
   const toggle = await flat('../src/components/ThemeToggle.astro');
   assert.match(toggle, /<span class="oe-visually-hidden" role="status" data-theme-status><\/span>/);
-  assert.match(toggle, /status\.textContent = `Colour theme set to \$\{next\}\.`/);
+  assert.match(toggle, /status\.textContent = `Color theme set to \$\{next\}\.`/);
   /* Comments stripped before the check. The rule is about what `render` does,
      and the word appears in prose for an unrelated reason — the phone's status
      bar, which this function also keeps in step. A guard that reads comments
@@ -1252,7 +1252,7 @@ test('names every icon-only control it puts in the header', async () => {
    * name. Three of these became icons in one change, and an icon with no
    * name is a button that only sighted mouse users can identify. */
   assert.match(header, /aria-label="SDK on GitHub"/);
-  assert.match(toggle, /Colour theme: <span data-theme-label>/);
+  assert.match(toggle, /Color theme: <span data-theme-label>/);
   /* The menu's trigger became a drawing too. Its name is a real element and
    * not an `aria-label`, the way the toggle carries its own: the word is the
    * summary's own content, so a reader who turns styles off gets the control
@@ -1481,7 +1481,7 @@ test('leaves the reviewer a path to the licence the review is for', async () => 
    * its own explanation; no comment on this page contains the rendered anchor.
    * Source rather than dist, so the guard also runs on an unbuilt tree. */
   const source = await read('../src/pages/security.astro');
-  assert.match(source, /<a href="\/licensing">Which licence your product needs<\/a>/);
+  assert.match(source, /<a href="\/licensing">Which license your product needs<\/a>/);
 });
 
 test('states the same assurance figures on every page that states them', async () => {

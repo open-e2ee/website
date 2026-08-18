@@ -39,7 +39,7 @@ import Icon from './Icon.astro';
   <Icon name="desktop" class="theme-icon theme-icon-system" />
   <Icon name="sun" class="theme-icon theme-icon-light" />
   <Icon name="moon" class="theme-icon theme-icon-dark" />
-  <span class="oe-visually-hidden">Colour theme: <span data-theme-label>system</span></span>
+  <span class="oe-visually-hidden">Color theme: <span data-theme-label>system</span></span>
 </button>
 <span class="oe-visually-hidden" role="status" data-theme-status></span>
 
@@ -77,6 +77,6 @@ import Icon from './Icon.astro';
     render(next);
     /* Deliberately not the button's own name repeated back: this is the result
        of a press, and it should sound like one. */
-    if (status) status.textContent = `Colour theme set to ${next}.`;
+    if (status) status.textContent = `Color theme set to ${next}.`;
   });
 </script>

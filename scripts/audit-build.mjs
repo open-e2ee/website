@@ -109,6 +109,26 @@ const TERMINOLOGY = [
  * and a gate that keeps taking it lets the retired copy back in one page at a
  * time.
  */
+/*
+ * House spelling, which TERMINOLOGY cannot carry: that list is mirrored from
+ * the SDK's own export policy and has to stay in step with it, and this is a
+ * rule about this site's copy alone.
+ *
+ * docs/messaging.md §4 mandates "commercial license", the legal pages and the
+ * package metadata are American, and the site shipped both halves anyway —
+ * /security rendered "Which licence your product needs" directly above a
+ * footer that says "license", inside one viewport. CLAUDE.md names split
+ * terminology as a defect this project has already paid for once.
+ *
+ * These run over the built scripts as well as the pages, like every other
+ * prose rule here, so a word inside a bundled dependency would fail a build
+ * over text no reader sees. Measured rather than assumed: across every built
+ * script today the only matches were this project's own files, and they are
+ * fixed. A dependency that trips it later should be allowlisted here, loudly,
+ * rather than dropping the guard.
+ */
+const SPELLING = [/\blicence(?:s|d)?\b/i, /\bbehaviour(?:s|al)?\b/i, /\bcolour(?:s|ed|ing)?\b/i];
+
 const AUDIT_NEGATIONS = [/not audited by any independent firm/i, /no independent firm has audited/i];
 const AUDIT_MENTION =
   /\baudit(ed|able)\b|\b(?:security|third[- ]party|independent|external|formal|code)[- ](?:review[- ])?audits?\b/i;
@@ -242,6 +262,11 @@ for (const [rel, text] of prose) {
   for (const pattern of TERMINOLOGY) {
     const hit = text.match(pattern);
     if (hit) problems.push(`${rel}: naming violation ${pattern} — "${hit[0]}"`);
+  }
+
+  for (const pattern of SPELLING) {
+    const hit = text.match(pattern);
+    if (hit) problems.push(`${rel}: British spelling ${pattern} — "${hit[0]}"`);
   }
 
   if (
@@ -602,6 +627,6 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `Build audit passed: ${files.length} pages and ${scripts.length} scripts, no banned claims, no naming violations, all internal links resolve, no CSP-blocked inline scripts, every preloaded font loaded by a stylesheet, ` +
+  `Build audit passed: ${files.length} pages and ${scripts.length} scripts, no banned claims, no naming violations, no British spellings, all internal links resolve, no CSP-blocked inline scripts, every preloaded font loaded by a stylesheet, ` +
     `every code identifier and every linked public doc found in ${SDK_PACKAGE}@${surface.version} (${surface.origin}).`,
 );

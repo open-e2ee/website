@@ -26,10 +26,15 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 });
 ---
 
+{/* Each article ships its own card, drawn by scripts/generate-blog-cards.mjs:
+    the title, the publication date, the tags, the author, and the site
+    address. `imageAlt` says what that card shows, because the default one
+    describes the site-wide card this page does not use. */}
 <BaseLayout
   title={title}
   description={description}
   image={image}
+  imageAlt={`Social card for the article ${title}, on the OpenE2EE canvas.`}
   ogType="article"
   publishedTime={publishedAt}
   modifiedTime={updatedAt}

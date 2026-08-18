@@ -221,9 +221,20 @@ const runtimes = [
 ];
 ---
 
+{/* The site's highest-value string, and it used to be the brand name alone:
+    `title="OpenE2EE"` plus a special case in BaseLayout that suppressed the
+    suffix. It now carries the proposition and the query positioning.md §2
+    names as the thesis, and renders at 52 characters, inside the ~60 a
+    result row shows.
+
+    The description was 204 characters, so a search result cut it at the em
+    dash and the relay sentence was written for nobody. That sentence is the
+    policy-fixed formula from messaging.md §3 and it is now in the visible
+    demo copy, which is where a reader can act on it. What is left is the
+    offer and the four runtimes, at 139. */}
 <BaseLayout
-  title="OpenE2EE"
-  description="Add end-to-end encrypted messaging to a TypeScript app. The Signal Protocol in one npm package for Expo, React Native, browsers, and Node — your relay never needs message plaintext or device private keys."
+  title="End-to-end encryption for TypeScript apps"
+  description="Add end-to-end encrypted messaging to a TypeScript app. The Signal Protocol in one npm package for Expo, React Native, browsers, and Node."
 >
   <section class="hero">
     <div class="container hero-grid">

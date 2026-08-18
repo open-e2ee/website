@@ -130,9 +130,13 @@ const ordered = projects
   .map((project) => ({ project, note: byKey[project.key] }));
 ---
 
+{/* The description was 178 characters, so a search result dropped the last two
+    features. PQXDH is the post-quantum handshake, so naming it and
+    "post-quantum" in the same list spends characters saying one thing twice.
+    148 now. */}
 <BaseLayout
   title="Signal Protocol SDK"
-  description="Pure TypeScript Signal Protocol for Expo, React Native, browsers, and Node. Post-quantum PQXDH and the Double Ratchet, multi-device, groups, sealed sender, encrypted attachments."
+  description="Pure TypeScript Signal Protocol for Expo, React Native, browsers, and Node. PQXDH, Double Ratchet, multi-device, groups, sealed sender, attachments."
 >
   <header class="page-hero">
     <div class="container measure">
