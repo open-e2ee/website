@@ -3,8 +3,8 @@
  *
  * These are transcribed from the SDK repository, not estimated here, and each
  * carries the date it was measured — a trust page that says "extensively
- * tested" is worth less than one that says 5,875 assertions on a stated date,
- * and a figure with no date rots silently. When the SDK publishes a newer run,
+ * tested" is worth less than one that says a count of assertions on a stated
+ * date, and a figure with no date rots silently. When the SDK publishes a newer run,
  * update this file and the date with it; `tests/assurance-figures.test.mjs`
  * exists so the pages cannot quietly disagree with each other.
  *
@@ -31,11 +31,11 @@ export const docs = {
 
 /** Most recent full run of the automated checks, from docs/ASSURANCE.md. */
 export const checks = {
-  measuredOn: '2026-07-24',
-  modules: 351,
-  assertions: '5,875',
-  passed: '5,874',
-  skipped: 1,
+  measuredOn: '2026-08-17',
+  modules: 389,
+  assertions: '6,922',
+  passed: '6,920',
+  skipped: 2,
   failed: 0,
 };
 
