@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
-    "@open-e2ee/signal-protocol-sdk": "^0.2.3",
+    "@open-e2ee/signal-protocol-sdk": "^0.3.0",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "typescript": "^6.0.3",
     "wrangler": "4.111.0"
