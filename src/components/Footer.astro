@@ -16,16 +16,17 @@ const groups = [
          /evaluate until that page folded into this one, and a footer column
          listing the same destination twice under two names is worse than the
          split it replaced. */
-      { href: '/security', label: 'Security model and review pack' },
+      { href: '/security', label: 'Security model' },
       { href: '/pricing', label: 'Pricing' },
       { href: '/licensing', label: 'Licensing' },
+      { href: 'mailto:licensing@open-e2ee.dev', label: 'Ask a licensing question' },
     ],
   },
   {
     heading: 'Build',
     links: [
       { href: 'https://docs.open-e2ee.dev/start/quickstart', label: 'Ten-minute quickstart' },
-      { href: 'https://docs.open-e2ee.dev', label: 'Documentation' },
+      { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
       { href: 'https://github.com/open-e2ee/signal-protocol-js', label: 'SDK on GitHub' },
       { href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/SECURITY.md', label: 'Threat model' },
     ],
@@ -33,10 +34,11 @@ const groups = [
   {
     heading: 'Learn',
     links: [
-      { href: '/learn', label: 'How E2EE changes your architecture' },
+      {
+        href: '/blog/e2ee-changes-your-application-architecture/',
+        label: 'E2EE changes your application architecture',
+      },
       { href: '/blog', label: 'Blog' },
-      { href: 'https://console.open-e2ee.dev', label: 'Console' },
-      { href: 'mailto:licensing@open-e2ee.dev', label: 'Contact' },
     ],
   },
 ];
@@ -71,10 +73,7 @@ const groups = [
           page now carries the annotation itself, scoped to the one page that
           needs it. See `src/pages/product.astro`.
         */}
-        <p>
-          Open-source, protocol-level end-to-end encryption SDKs for TypeScript developers. AGPLv3
-          for open source; commercial licenses for proprietary products.
-        </p>
+        <p>End-to-end encryption for TypeScript applications. AGPLv3, or a commercial license.</p>
       </div>
       {groups.map((group) => (
         <div>
@@ -97,22 +96,6 @@ const groups = [
         affiliated with, endorsed by, or wire-compatible with Signal Messenger LLC or Signal
         Technology Foundation.
       </p>
-      {/*
-        Required, and quoted rather than paraphrased. OSI's guidelines give the
-        sentence verbatim — "include the statement 'The OSI logo trademark is
-        the trademark of Open Source Initiative.'" — and a trademark notice is
-        the one kind of copy on this site with a correct wording that is not
-        ours to improve. It also carries the ® acknowledgement for a mark shown
-        without the logotype the ® is attached to.
-
-        It sits in the footer on every page while the mark itself is on one,
-        which is the same shape as the Signal note above it and the reason
-        that note is above it: a reader looking for who owns what finds both in
-        the same place. `tests/site-content.test.mjs` ties the two together from
-        the other end — the landing page may not carry the keyhole without this
-        line and the AGPLv3 statement being on the site.
-      */}
-      <p>The OSI logo trademark is the trademark of Open Source Initiative.</p>
     </div>
   </div>
 </footer>

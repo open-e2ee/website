@@ -11,6 +11,8 @@ tags:
 ---
 
 import WhereWorkMoves from '../../components/diagrams/WhereWorkMoves.astro';
+import WhereQueriesRun from '../../components/diagrams/WhereQueriesRun.astro';
+import NoWayBack from '../../components/diagrams/NoWayBack.astro';
 
 **Who this is for:** an engineer or technical founder who might add end-to-end encryption to an existing product. You need to know the cost before you commit. This article is not a protocol explainer. The protocol has good documentation.
 
@@ -75,6 +77,14 @@ Teams use established patterns for these problems.
 
 **Search moves to the device and needs a local store.** Only the device can read messages, so it needs an index. The OpenE2EE Signal Protocol SDK makes `storage` required and `relay` optional. The local encrypted store contains application state. Proton downloads and decrypts the mailbox, then indexes it locally. Proton says this "may take a few minutes and can be quite resource-intensive" ([Proton](https://proton.me/support/search-message-content)). Include that experience in the product plan.
 
+<figure class="diagram">
+  <WhereQueriesRun />
+  <figcaption>
+    Routing fields sit outside the seal, so the relay can still answer a query by recipient, device,
+    group, or time. Content search sits inside the device outline.
+  </figcaption>
+</figure>
+
 **Notification content moves to the extension.** Send a wake-up, decrypt locally, rewrite the notification body. Design a sensible fallback for the case where decryption fails or the budget expires, because it will.
 
 **Analytics moves to counts and shapes.** Envelope volume, delivery latency, error rates, and session establishment failures remain visible and useful. Content-derived metrics are gone.
@@ -98,6 +108,15 @@ The useful move is to pick a named profile deliberately rather than to drift int
 - **A server-confidential business archive** prioritises continuity. History survives device loss, and multiple devices see everything. The recovery path is a target for coercion or account compromise. This profile can fit a team collaboration product.
 - **A higher-risk messaging profile** limits recoverable data. Lose the device and lose the history. A new device starts empty. This profile can fit a threat model that includes device seizure.
 - **A collaboration profile** sits between them, balancing offline work, membership changes, and recovery, and usually accepts more complexity than either.
+
+<figure class="diagram">
+  <NoWayBack />
+  <figcaption>
+    The higher-risk profile, drawn. The old device holds the private key, the relay holds sealed
+    slabs and no key, and the only arrow runs device to device. Nothing reaches the new device from
+    the middle.
+  </figcaption>
+</figure>
 
 The SDK provides device-to-device transfer, encrypted backup primitives, and QR-based provisioning for linked devices. Device transfer clones the identity private key and live ratchet state. If both devices remain active, a peer message that one device decrypts desynchronizes the other. Cloned state also weakens the forward-secrecy bound because one endpoint compromise exposes state that the other device shares. The [deviations document](https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/DEVIATIONS.md#54-extensions-provisioning-transfer-device-names) records both limits.
 

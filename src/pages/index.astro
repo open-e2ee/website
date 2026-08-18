@@ -264,11 +264,11 @@ const differentiators: Differentiator[] = [
    * on the founder's call, in the round that cut every cell to its outcome:
    * they are the two sentences here that answer "then how do I build it",
    * which is a question a reader asks after they are convinced rather than in
-   * a deck they are scanning. /learn §1 and §2 take the redesign of search and
-   * moderation much further than a cell can. It does not carry the "encrypt in
-   * transit and at rest instead" advice, and no page does at the moment —
-   * that sentence is off the site rather than moved, and /learn is where it
-   * goes if it comes back. What stays here is the disqualifier itself, which
+   * a deck they are scanning. The architecture post takes the redesign of
+   * search and moderation much further than a cell can. It does not carry the
+   * "encrypt in transit and at rest instead" advice, and no page does at the
+   * moment — that sentence is off the site rather than moved, and the
+   * architecture post is where it goes if it comes back. What stays here is the disqualifier itself, which
    * is a property of the product rather than advice about it.
    *
    * What the cell now opens on is the founder's call, and it is the fact the
@@ -424,8 +424,8 @@ const runtimes = [
 
               No sublabel under either button. This page ends on the licence
               rather than on a second ask, so "ten minutes · two clients · no
-              account" is only on the pages a reader reaches after deciding to
-              spend them, /product and /learn. A scroll needs no time promise,
+              account" is only on /product, which a reader reaches after
+              deciding to spend them. A scroll needs no time promise,
               and a third line of small grey type here would stand between the
               offer and the proof. */}
           <a class="cta-primary" href="#demo">
@@ -726,9 +726,27 @@ const runtimes = [
         </div>
 
         <p class="text-links">
-          <a href="https://github.com/open-e2ee/signal-protocol-js">Read the source on GitHub</a>
+          <a href="https://github.com/open-e2ee/signal-protocol-js">SDK on GitHub</a>
           <a href="/licensing">Understand AGPLv3 use</a>
         </p>
+
+        {/*
+          Required, and quoted rather than paraphrased. OSI's guidelines give
+          the sentence verbatim — "include the statement 'The OSI logo
+          trademark is the trademark of Open Source Initiative.'" — and a
+          trademark notice is the one kind of copy on this site with a correct
+          wording that is not ours to improve. It also carries the ®
+          acknowledgement for a mark shown without the logotype the ® is
+          attached to.
+
+          It sits on the page that carries the mark. It used to sit in the
+          footer, which put eleven words of trademark notice on all fifteen
+          pages to satisfy a condition attached to one mark on one of them.
+          `tests/site-content.test.mjs` reads `dist/index.html` and fails the
+          build for the page carrying the mark, so the guard follows the mark
+          rather than the file.
+        */}
+        <p class="legal-note">The OSI logo trademark is the trademark of Open Source Initiative.</p>
       </div>
     </div>
   </section>

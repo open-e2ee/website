@@ -40,3 +40,13 @@
 # is the widest inbound surface any route here has had.
 /compare /product/#how-it-compares 308
 /compare/ /product/#how-it-compares 308
+# /learn was the architecture guide. It made the same argument as the blog post
+# it now points at, down to a title collision — "How E2EE changes your
+# architecture" against "E2EE changes your application architecture" — and the
+# post carries a source for each claim where the page asserted them bare.
+#
+# No fragment: /learn's seven sections had ids, but the post's headings do not
+# match them one for one, so a wrong anchor would be worse than the top of the
+# article. The sitemap published /learn/ too, and two pages linked it inline.
+/learn /blog/e2ee-changes-your-application-architecture/ 308
+/learn/ /blog/e2ee-changes-your-application-architecture/ 308

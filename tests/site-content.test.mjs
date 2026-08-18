@@ -79,12 +79,13 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
     skipUnbuilt('dist/');
     return;
   }
-  /* 15 since /compare folded into /product, which followed /demo folding into
-   * the homepage. This is a floor on the walk finding the site, not a count
-   * anyone maintains for its own sake — but it is exactly met, so it reds the
-   * moment a route is dropped without being accounted for here. That is the
-   * intended behaviour and the reason it is not slack. */
-  assert.ok(pages.length >= 15, `expected the full site in dist/, found ${pages.length} pages`);
+  /* 14 since /learn folded into the architecture blog post, which followed
+   * /compare folding into /product and /demo folding into the homepage. This
+   * is a floor on the walk finding the site, not a count anyone maintains for
+   * its own sake — but it is exactly met, so it reds the moment a route is
+   * dropped without being accounted for here. That is the intended behaviour
+   * and the reason it is not slack. */
+  assert.ok(pages.length >= 14, `expected the full site in dist/, found ${pages.length} pages`);
 
   const failures = [];
   const usingTagline = [];
@@ -105,23 +106,19 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
 });
 
 test('makes the same ten-minute promise everywhere it makes one', async () => {
-  const [product, learn, footer] = await Promise.all([
+  const [product, footer] = await Promise.all([
     flat('../src/pages/product.astro'),
-    flat('../src/pages/learn.astro'),
     flat('../src/components/Footer.astro'),
   ]);
 
-  for (const page of [product, learn]) {
-    assert.match(page, /ten minutes · two clients · no account/);
-  }
-  assert.match(learn, /takes about ten minutes/i);
+  assert.match(product, /ten minutes · two clients · no account/);
   assert.match(footer, /Ten-minute quickstart/);
 
   /* The homepage makes it nowhere. The promise argues for spending the ten
    * minutes, so it belongs under a button a reader reaches after the evidence;
    * the landing page's own closing ask was cut by the founder, and it now ends
    * on the licence with no second offer, so the reader who has decided meets
-   * the promise on /product or /learn. Under the hero button it would be a
+   * the promise on /product. Under the hero button it would be a
    * third line of small grey type between the offer and the proof.
    *
    * Read off the built page and not the source: `flat()` keeps comments, and
@@ -1254,7 +1251,7 @@ test('names every icon-only control it puts in the header', async () => {
   /* DESIGN.md's accessibility baseline: a non-text control still needs a
    * name. Three of these became icons in one change, and an icon with no
    * name is a button that only sighted mouse users can identify. */
-  assert.match(header, /aria-label="The SDK on GitHub"/);
+  assert.match(header, /aria-label="SDK on GitHub"/);
   assert.match(toggle, /Colour theme: <span data-theme-label>/);
   /* The menu's trigger became a drawing too. Its name is a real element and
    * not an `aria-label`, the way the toggle carries its own: the word is the
@@ -1360,7 +1357,7 @@ test('reaches the security review pack from the product page and the footer', as
    * same page under the other name is the defect this replaced. */
   assert.match(product, /href: '\/security'/);
   assert.match(footer, /href: '\/security'/);
-  assert.match(footer, /Security model and review pack/);
+  assert.match(footer, /label: 'Security model'/);
 
   /* Absence is asserted against the link data, not the raw source. Both files
    * carry a comment naming /evaluate to record why the second entry went, and
@@ -2265,7 +2262,7 @@ test('keeps the relay formula intact in the strings that travel alone', async ()
    * CarrierPanel disproves six fields later — and it was served four times, as
    * description, og:description, og:image:alt and twitter:description. The
    * diagram guard above covers the drawings; nothing covered this. */
-  const pages = ['index', 'product', 'security', 'learn', 'pricing', 'licensing'];
+  const pages = ['index', 'product', 'security', 'pricing', 'licensing'];
   const descriptions = await Promise.all(
     pages.map(async (page) => {
       const built = await readFile(
@@ -3456,7 +3453,8 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
    * used to close on what to do instead — encrypt in transit and at rest — and
    * on the device-to-device transfer the recovery case is built from, and both
    * are gone from the page rather than moved to another one. Neither is
-   * pinned here as an absence: they are candidates for /learn, and a
+   * pinned here as an absence: they are candidates for the architecture post,
+   * and a
    * `doesNotMatch` would make putting one back a test failure. */
   /* Every cell carries an icon, and the type is what makes that true at build
    * time — `icon` is required on `Differentiator`, so a cell added without one
@@ -4475,7 +4473,7 @@ test("the demo's own source calls the relay a relay", async () => {
    * `.html`, and has since the gap was demonstrated. The reason "server" is not
    * one of its patterns is that it cannot be: the audit matches against whole
    * chunks, and the word is *correct* nearly everywhere else on this site. The
-   * TLS article, `/learn`, and the architecture diagrams all discuss servers on
+   * TLS article, the architecture post, and its diagrams all discuss servers on
    * purpose. A pattern there would have to be right about the whole site; this
    * rule only has to be right about the demo, and scoping it to the demo's own
    * source is what buys that.
@@ -4613,8 +4611,10 @@ test('alternates the band surface down every page', async () => {
     checked += bands.length;
   }
 
-  /* A regex that stopped matching would make every page trivially alternating. */
-  assert.ok(checked > 30, `expected to be checking real bands, counted ${checked}`);
+  /* A regex that stopped matching would make every page trivially alternating.
+   * Re-measured after the copy prune: /learn took its seven bands off the tree
+   * and the surviving pages lost bands of their own. */
+  assert.ok(checked > 20, `expected to be checking real bands, counted ${checked}`);
 });
 
 test('keeps the space on both sides of every inline code span', async () => {
@@ -4675,16 +4675,13 @@ test('keeps the space on both sides of every inline code span', async () => {
   }
 
   /* A regex that stopped matching would pass on every file in the tree. The
-   * floor is the tree's measured count: 33 spans on 2026-08-16. The homepage
-   * held the last five and now holds none — cutting the landing page back to
-   * the demo, the deck and the licence took the alternatives fold with it,
-   * and with the fold went the four package names it compared against and the
-   * `inMemoryRelay()` in the caption above the demo.
+   * floor is the tree's measured count: 32 spans on 2026-08-18, down from 33
+   * when /learn left the tree.
    *
    * Re-measure and record the reason when this moves. The number is a tripwire
    * for a regex that has stopped matching, so it is only worth what its last
    * measurement was worth. */
-  assert.ok(spans >= 33, `expected to be scanning real code spans, counted ${spans}`);
+  assert.ok(spans >= 32, `expected to be scanning real code spans, counted ${spans}`);
 });
 
 test('the scene places the envelope at every step the run records', async () => {

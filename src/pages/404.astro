@@ -2,20 +2,21 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<BaseLayout title="Page not found" description="The requested OpenE2EE page could not be found.">
+{/*
+  Thirteen words and one link. The page used to carry a five-link recovery
+  list, and every one of those destinations is in the header or the footer on
+  the same screen — three of them under the identical label. A bespoke site map
+  maintained by hand is what a 404 accumulates when the chrome is assumed not
+  to work. Vercel, Stripe and Cloudflare all ship a single home link or none.
+*/}
+<BaseLayout title="Page not found" description="This page does not exist.">
   <header class="page-hero">
     <div class="container measure">
       <p class="label">404</p>
-      <h1>Nothing here to open.</h1>
-      <p class="lead">
-        The page may have moved, or the address may be incomplete. These are the ones worth having.
-      </p>
+      <h1>Page not found.</h1>
+      <p class="lead">The page moved, or the address is incomplete.</p>
       <p class="text-links">
         <a href="/">Home</a>
-        <a href="/product">Signal Protocol SDK</a>
-        <a href="/learn">How E2EE changes your architecture</a>
-        <a href="/security">Security model</a>
-        <a href="https://docs.open-e2ee.dev">Documentation</a>
       </p>
     </div>
   </header>

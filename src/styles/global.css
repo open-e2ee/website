@@ -327,6 +327,15 @@ code {
   max-width: 58ch;
 }
 
+/* A required attribution, set at the size the footer's legal bar used to set
+   it, so moving the OSI statement onto the page carrying the mark did not
+   also promote it to body copy. */
+.legal-note {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--oe-muted);
+}
+
 /* ------------------------------------------------------------- linkage --- */
 
 a {
@@ -1396,8 +1405,8 @@ a:hover {
  * produced a line at 40% of the diagrams' scale — measurably the same token,
  * visibly a different, finer, busier rule beside them.
  *
- * These are the rendered numbers, so this line matches the boundary on /learn
- * at the width both are actually seen at.
+ * These are the rendered numbers, so this line matches the boundary drawn in
+ * the blog-post diagrams at the width both are actually seen at.
  */
 .carrier-boundary {
   display: flex;
@@ -1421,7 +1430,7 @@ a:hover {
 }
 
 /* The same fill the SVG boundary labels carry, so the word is the same colour
-   on the panel as it is inside a diagram on /learn. */
+   on the panel as it is inside a blog-post diagram. */
 .carrier-boundary-label {
   color: var(--oe-sealed);
   font-weight: 500;
@@ -1897,7 +1906,7 @@ a:hover {
 /*
  * The two labels swap weight here, and only here.
  *
- * In a `/learn` diagram the `.diagram-label`s name the parts — device, relay,
+ * In a blog-post diagram the `.diagram-label`s name the parts — device, relay,
  * ciphertext — so they are what the reader is meant to read, and the tick
  * labels annotate them. This figure is the other way round: `0` and
  * `1,986 bytes` are the ruler's ends, scaffolding for the one mark that is the

@@ -39,7 +39,7 @@
       var runtime = /\/start\/(expo|browser|node)\b/.exec(href);
       if (href.includes('/start/quickstart')) {
         // Reaching this link from writing means finishing it, not starting.
-        send(path.startsWith('/blog/') || path === '/learn' ? 'guide_finish' : 'quickstart_open');
+        send(path.startsWith('/blog/') ? 'guide_finish' : 'quickstart_open');
       } else if (runtime) send('runtime_select', runtime[1]);
       else if (href.includes('github.com/open-e2ee')) send('github_open');
       else if (href.includes('console.open-e2ee.dev')) {

@@ -6,7 +6,19 @@ import ThemeToggle from './ThemeToggle.astro';
 const path = Astro.url.pathname;
 
 /*
- * Nav follows the funnel: choose, learn, build, verify, buy, read.
+ * Five items: Product, Demo, Docs, Pricing, Blog. Five is the mode of the
+ * 35-site developer-infrastructure corpus this nav was measured against, and
+ * every label here is one the category already uses — Pricing on 33 of 35,
+ * Product on 20, Docs on 20, Blog on 7 among single-product pre-scale
+ * companies. Nobody has to learn this site's vocabulary before navigating it.
+ *
+ * Learn and Security are not here, and no site in that corpus carries either
+ * word at top level — not even the eleven whose whole product is security.
+ * That reader arrives on a sent link or lands on /product; the header is not
+ * how they get there. /security keeps its footer entry and its in-body link
+ * from /product. /learn is gone as a route: the architecture argument it made
+ * is the blog post it was competing with for the same phrase, and
+ * `public/_redirects` sends the URL there.
  *
  * There is no Compare slot. It held one, directly after Product, because "why
  * not libsignal" is the first question anyone asks. The question is real; the
@@ -29,17 +41,17 @@ const path = Astro.url.pathname;
 const links = [
   { href: '/product', label: 'Product' },
   { href: '/#demo', label: 'Demo' },
-  { href: '/learn', label: 'Learn' },
   { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
-  { href: '/security', label: 'Security' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/blog', label: 'Blog' },
 ];
 
 /*
- * The repository is the seventh nav item everywhere else on the internet and
- * the mark is how it is recognised, so it leaves the word list and joins the
- * actions as an icon — at every width. It used to be a desktop-only icon with
+ * The repository is a nav item on eight of the 35 sites in the corpus and the
+ * mark is how it is recognised, so it leaves the word list and joins the
+ * actions as an icon — at every width. Seven of those eight render the star
+ * count as the label rather than a bare icon, which is a change this header
+ * has not made yet. It used to be a desktop-only icon with
  * a word inside the narrow screen's menu, on the argument that a narrow header
  * has no room for a row of icons. The menu's own trigger is an icon now, so
  * the row exists either way, and the source is the page's whole argument: it
@@ -65,7 +77,7 @@ const current = (href: string) =>
       {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
     </nav>
     <div class="header-actions">
-      <a class="oe-icon-link" href={repository} aria-label="The SDK on GitHub">
+      <a class="oe-icon-link" href={repository} aria-label="SDK on GitHub">
         <Icon name="github" />
       </a>
       <ThemeToggle />
@@ -88,7 +100,6 @@ const current = (href: string) =>
         <nav aria-label="Site">
           {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
           <a href={consoleUrl}>Console</a>
-          <a href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message</a>
         </nav>
       </details>
     </div>
