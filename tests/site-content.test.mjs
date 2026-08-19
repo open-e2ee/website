@@ -79,12 +79,13 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
     skipUnbuilt('dist/');
     return;
   }
-  /* 15 since /compare folded into /product, which followed /demo folding into
-   * the homepage. This is a floor on the walk finding the site, not a count
-   * anyone maintains for its own sake — but it is exactly met, so it reds the
-   * moment a route is dropped without being accounted for here. That is the
-   * intended behaviour and the reason it is not slack. */
-  assert.ok(pages.length >= 15, `expected the full site in dist/, found ${pages.length} pages`);
+  /* 14 since /learn folded into the architecture blog post, which followed
+   * /compare folding into /product and /demo folding into the homepage. This
+   * is a floor on the walk finding the site, not a count anyone maintains for
+   * its own sake — but it is exactly met, so it reds the moment a route is
+   * dropped without being accounted for here. That is the intended behaviour
+   * and the reason it is not slack. */
+  assert.ok(pages.length >= 14, `expected the full site in dist/, found ${pages.length} pages`);
 
   const failures = [];
   const usingTagline = [];
@@ -105,23 +106,19 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
 });
 
 test('makes the same ten-minute promise everywhere it makes one', async () => {
-  const [product, learn, footer] = await Promise.all([
+  const [product, footer] = await Promise.all([
     flat('../src/pages/product.astro'),
-    flat('../src/pages/learn.astro'),
     flat('../src/components/Footer.astro'),
   ]);
 
-  for (const page of [product, learn]) {
-    assert.match(page, /ten minutes · two clients · no account/);
-  }
-  assert.match(learn, /takes about ten minutes/i);
+  assert.match(product, /ten minutes · two clients · no account/);
   assert.match(footer, /Ten-minute quickstart/);
 
   /* The homepage makes it nowhere. The promise argues for spending the ten
    * minutes, so it belongs under a button a reader reaches after the evidence;
    * the landing page's own closing ask was cut by the founder, and it now ends
    * on the licence with no second offer, so the reader who has decided meets
-   * the promise on /product or /learn. Under the hero button it would be a
+   * the promise on /product. Under the hero button it would be a
    * third line of small grey type between the offer and the proof.
    *
    * Read off the built page and not the source: `flat()` keeps comments, and
@@ -948,7 +945,7 @@ test('never makes a control its own announcer', async () => {
   /* And the toggle in particular still announces somewhere, silently on load. */
   const toggle = await flat('../src/components/ThemeToggle.astro');
   assert.match(toggle, /<span class="oe-visually-hidden" role="status" data-theme-status><\/span>/);
-  assert.match(toggle, /status\.textContent = `Colour theme set to \$\{next\}\.`/);
+  assert.match(toggle, /status\.textContent = `Color theme set to \$\{next\}\.`/);
   /* Comments stripped before the check. The rule is about what `render` does,
      and the word appears in prose for an unrelated reason — the phone's status
      bar, which this function also keeps in step. A guard that reads comments
@@ -1254,8 +1251,8 @@ test('names every icon-only control it puts in the header', async () => {
   /* DESIGN.md's accessibility baseline: a non-text control still needs a
    * name. Three of these became icons in one change, and an icon with no
    * name is a button that only sighted mouse users can identify. */
-  assert.match(header, /aria-label="The SDK on GitHub"/);
-  assert.match(toggle, /Colour theme: <span data-theme-label>/);
+  assert.match(header, /aria-label="SDK on GitHub"/);
+  assert.match(toggle, /Color theme: <span data-theme-label>/);
   /* The menu's trigger became a drawing too. Its name is a real element and
    * not an `aria-label`, the way the toggle carries its own: the word is the
    * summary's own content, so a reader who turns styles off gets the control
@@ -1305,12 +1302,12 @@ test('ships the license for the icon set it copied', async () => {
 
   /* The second copy is the one that will drift. `Icon.astro` draws a fixed set
    * of chrome and has not changed in months; the deck icons are on a page
-   * under revision, and an eighth cell arrives with an eighth icon and no
-   * reason for anyone to remember a licence file. So the list is derived from
-   * the component rather than written out here: a name the union declares and
-   * the notice does not name fails this test at the name that is missing. */
+   * under revision, and a new cell arrives with a new icon and no reason for
+   * anyone to remember a licence file. So the list is derived from the
+   * component rather than written out here: a name the union declares and the
+   * notice does not name fails this test at the name that is missing. */
   const declared = [...deckIcon.matchAll(/^ {2}\| '([a-z-]+)';?$/gm)].map((m) => m[1]);
-  assert.equal(declared.length, 7, `DeckIconName declares ${declared.length} names`);
+  assert.equal(declared.length, 5, `DeckIconName declares ${declared.length} names`);
   const noticed = notices.slice(notices.indexOf('DeckIcon.astro'));
   for (const name of declared) {
     assert.ok(
@@ -1360,7 +1357,7 @@ test('reaches the security review pack from the product page and the footer', as
    * same page under the other name is the defect this replaced. */
   assert.match(product, /href: '\/security'/);
   assert.match(footer, /href: '\/security'/);
-  assert.match(footer, /Security model and review pack/);
+  assert.match(footer, /label: 'Security model'/);
 
   /* Absence is asserted against the link data, not the raw source. Both files
    * carry a comment naming /evaluate to record why the second entry went, and
@@ -1462,7 +1459,7 @@ test('sends the folded demo route at a section the homepage still has', async ()
   );
 });
 
-test('leaves the reviewer a path to the licence the review is for', async () => {
+test('leaves the reviewer a path to the license the review is for', async () => {
   /* /evaluate linked /licensing and /legal/terms inline. Folding it left this
    * page closing on an enterprise meeting and a quickstart, both of which
    * assume the licence question is already settled — and the reader who gets
@@ -1482,9 +1479,14 @@ test('leaves the reviewer a path to the licence the review is for', async () => 
    * link carries a comment naming both /licensing and /pricing to record the
    * choice between them, and a guard on the bare href would be satisfied by
    * its own explanation; no comment on this page contains the rendered anchor.
-   * Source rather than dist, so the guard also runs on an unbuilt tree. */
+   * Source rather than dist, so the guard also runs on an unbuilt tree.
+   *
+   * The label was "Which license your product needs" and is now the footer's
+   * name for the same destination. /licensing was reached under four names
+   * across the site, which left a reader unable to tell four links from four
+   * places. */
   const source = await read('../src/pages/security.astro');
-  assert.match(source, /<a href="\/licensing">Which licence your product needs<\/a>/);
+  assert.match(source, /<a href="\/licensing">Licensing<\/a>/);
 });
 
 test('states the same assurance figures on every page that states them', async () => {
@@ -1499,7 +1501,11 @@ test('states the same assurance figures on every page that states them', async (
   for (const page of pages) {
     assert.match(page, /from '\.\.\/lib\/assurance\.mjs'/);
     assert.doesNotMatch(page, new RegExp(checks.assertions));
-    assert.doesNotMatch(page, /\b351 modules\b/);
+    /* Derived, not typed. This was `/\b351 modules\b/` and went on passing
+     * after the figures moved to 389 — a guard against a hand-typed number
+     * that is itself a hand-typed number is a guard against last year's
+     * mistake. */
+    assert.doesNotMatch(page, new RegExp(`\\b${checks.modules} modules\\b`));
   }
 });
 
@@ -1785,15 +1791,18 @@ test('closes the page on what the licence hands over, not on forking it', async 
   /* Four commits, and every verb a use. The free-software definition says
    * "change it", which is accurate as a right and wrong as copy here: beside a
    * 0.x version number it reads as an invitation to fix something, and a landing
-   * page that asks for repairs is selling a different product. The heading spends
-   * the same four verbs, so both move together or this fails. */
+   * page that asks for repairs is selling a different product.
+   *
+   * The four labels are the only place the page names what the licence hands
+   * over. The heading listed the same four verbs and now does not, so the
+   * drawing carries them alone and this list is what keeps them on the page. */
   const grants = graph.match(/^const GRANTS = \[(.+)\];$/m);
   assert.ok(grants, 'the graph no longer declares its commits as one list');
   assert.deepEqual(
     grants[1].split(',').map((word) => word.trim().replace(/^'|'$/g, '')),
     ['read it', 'run it', 'share it', 'build on it'],
   );
-  assert.match(index, /<h2>Open Source — read, run, share, and build on<\/h2>/);
+  assert.match(index, /<h2>Open Source<\/h2>/);
 
   /* The shape carries the claim, and two shapes available to a commit graph say
    * something this band must not. A branch peeling off makes taking your own copy
@@ -1850,16 +1859,25 @@ test('closes the page on what the licence hands over, not on forking it', async 
   assert.match(graph, /root\.dataset\.armed = ''/);
   assert.match(graph, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)/);
 
-  /* `Icon.astro` and every glyph on this page render `aria-hidden`, and so does
-   * the whole graph — its words are the heading's words, so a screen reader that
-   * walked it would hear the claim twice, the second time as a list of dots. */
-  assert.match(drawing, /<div class="commitline" data-commitline aria-hidden="true">/);
+  /* The graph is not hidden from assistive technology, and that is load-bearing
+   * now rather than incidental. Its four labels are the only text on the page
+   * that names what the licence hands over: hiding them would leave a screen
+   * reader with a heading, a licence sentence, and nothing about the grant. It
+   * was `aria-hidden` while the heading listed the same four verbs, which is the
+   * only condition under which hiding it cost nothing. */
+  assert.match(drawing, /<div class="commitline" data-commitline>/);
+  assert.doesNotMatch(drawing, /aria-hidden/);
 
   /* The band states neither licence's terms and routes to the page that owns
    * them, so the route has to survive. `/licensing` carries what AGPLv3 asks
    * of the reader's own application; a band that hands over four things and
-   * links nowhere would leave a developer to learn it from a lawyer. */
-  assert.match(index, /<a href="\/licensing">Understand AGPLv3 use<\/a>/);
+   * links nowhere would leave a developer to learn it from a lawyer.
+   *
+   * The label is pinned as well as the href, because "Licensing" is the one
+   * name this destination answers to in a link row — the footer's, /security's
+   * and /product's included. The order check below pins the href alone: the
+   * label is copy, but the link's place after the two figures is the claim. */
+  assert.match(index, /<a href="\/licensing">Licensing<\/a>/);
   assert.match(index, /<a href="https:\/\/github\.com\/open-e2ee\/signal-protocol-js">/);
 
   /* `docs/messaging.md` §4: the tier vocabulary is banned as a rendering of
@@ -1867,7 +1885,7 @@ test('closes the page on what the licence hands over, not on forking it', async 
    * turn up. Comments are stripped for the same reason as above — the one over
    * this band's lead names the banned phrase in order to rule it out. */
   const band = index
-    .slice(index.indexOf('Open Source — read, run, share, and build on'))
+    .slice(index.indexOf('<h2>Open Source</h2>'))
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
   assert.doesNotMatch(band, /paid tier|enterprise edition|pro version/i);
 
@@ -1887,7 +1905,7 @@ test('closes the page on what the licence hands over, not on forking it', async 
    * assumed: a restored closing block would land inside this band. */
   assert.match(
     band,
-    /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+Understand AGPLv3 use/,
+    /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+href="\/licensing"/,
     'the graph, the mark and the licence link are no longer in that order',
   );
   assert.doesNotMatch(
@@ -2133,11 +2151,22 @@ test('keeps the signature diagram off the page that carries the plate', async ()
   assert.doesNotMatch(index, /<SignatureDiagram \/>/);
   assert.doesNotMatch(index, /import SignatureDiagram/);
 
+  /* One home, not two. /product rendered the same component under a paraphrase
+   * of /security's sentence, which put the question "what does the server see"
+   * on a page carrying the fixed relay formula zero times while the page that
+   * states the formula verbatim drew the same picture underneath it. The band
+   * went rather than the formula arriving in a third place. */
+  assert.match(security, /<SignatureDiagram \/>/, 'security lost the diagram');
+  assert.doesNotMatch(
+    product,
+    /import SignatureDiagram|<SignatureDiagram \/>/,
+    'the diagram is back on /product',
+  );
+
   for (const [name, page] of [
     ['security', security],
     ['product', product],
   ]) {
-    assert.match(page, /<SignatureDiagram \/>/, `${name} lost the diagram`);
     assert.doesNotMatch(
       page,
       /<(Live)?CarrierPanel \/>|<DemoConsole \/>/,
@@ -2265,7 +2294,7 @@ test('keeps the relay formula intact in the strings that travel alone', async ()
    * CarrierPanel disproves six fields later — and it was served four times, as
    * description, og:description, og:image:alt and twitter:description. The
    * diagram guard above covers the drawings; nothing covered this. */
-  const pages = ['index', 'product', 'security', 'learn', 'pricing', 'licensing'];
+  const pages = ['index', 'product', 'security', 'pricing', 'licensing'];
   const descriptions = await Promise.all(
     pages.map(async (page) => {
       const built = await readFile(
@@ -3174,11 +3203,13 @@ test('promises no price it does not show, and links to one that shows them all',
    * fresh reader listed that as one of two go/no-go inputs the page would not
    * give them: "the word 'published' promises a number that is not on the page
    * and not linked". Either half closes it — show the number, or make no
-   * promise and link to where the numbers are. The cell does the second, so
-   * what has to hold is that the promise stays gone and the link stays good. */
+   * promise and link to where the numbers are. The page does the second, so
+   * what has to hold is that the promise stays gone and the link stays good.
+   * The link was a deck cell's `link` field and is now an anchor in the Open
+   * Source band's link row, which is why the source pin reads as markup. */
   assert.equal(startupTier.name, 'Startup');
   assert.match(startupTier.price, /^\$[\d,]+$/);
-  assert.match(index, /href: '\/pricing'/);
+  assert.match(index, /<a href="\/pricing">/);
 
   if (!dist) return skipUnbuilt('dist/index.html');
   assert.doesNotMatch(dist, /at a published price/);
@@ -3393,14 +3424,19 @@ test('does not deny a build step in the /product lead the page later explains', 
    * unqualified claim was tried twice and read as a contradiction both times.
    *
    * The reconciliation stays where it was. This asserts the lead stops
-   * denying it, not that the explanation moved up. */
+   * denying it, not that the explanation moved up.
+   *
+   * The lead used to carry the limit as well, which put the same qualifier on
+   * the page twice. It is stated once, in the storage callout, so these assert
+   * the scoping in the lead and the limit in the section that owns storage
+   * rather than a phrase in both. */
   assert.match(source, /protocol code is\s*pure TypeScript with no native crypto module/);
-  assert.match(source, /needs a development build rather than Expo Go/);
-  assert.match(source, /SQLCipher requires a development build/);
+  assert.match(source, /needs a development build/);
+  assert.match(source, /not available in Expo Go/);
 
   if (!dist) return skipUnbuilt('dist/product/index.html');
   assert.doesNotMatch(dist, /No native modules\. No\s*prebuild step\./);
-  assert.match(dist, /needs a development build rather than Expo Go/);
+  assert.match(dist, /needs a development build, because SQLCipher is not available in Expo Go/);
 });
 
 test('names the cost of E2EE in the deck that lists the benefits', async () => {
@@ -3438,15 +3474,15 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
   );
 
   /* The lead has to keep counting the cells, including the one that argues
-   * against the product. A seventh cell under a lead that says six is the
+   * against the product. A cell added under a lead that still says five is the
    * same species of drift the carrier panel already paid for. The heading is
    * pinned alongside it because both were rewritten in one pass, and a count
    * pinned on its own would survive the band losing its name. The mark is in
    * the same pin because it is positional: a box reads as this heading's last
    * word, and one moved to the front of the line is a bullet. */
   const cells = index.match(/title: '/g) ?? [];
-  assert.equal(cells.length, 7, `differentiator count changed to ${cells.length}`);
-  assert.match(index, /Seven things that are true the first time you install it/);
+  assert.equal(cells.length, 5, `differentiator count changed to ${cells.length}`);
+  assert.match(index, /Five things that are true the first time you install it/);
   assert.match(index, /<h2>What ships in the box<BoxMark \/><\/h2>/);
 
   /* Sending the wrong reader away is the point, not a hedge to be softened
@@ -3456,16 +3492,17 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
    * used to close on what to do instead — encrypt in transit and at rest — and
    * on the device-to-device transfer the recovery case is built from, and both
    * are gone from the page rather than moved to another one. Neither is
-   * pinned here as an absence: they are candidates for /learn, and a
+   * pinned here as an absence: they are candidates for the architecture post,
+   * and a
    * `doesNotMatch` would make putting one back a test failure. */
   /* Every cell carries an icon, and the type is what makes that true at build
    * time — `icon` is required on `Differentiator`, so a cell added without one
    * does not compile. What a type cannot say is that the icon column exists at
-   * all: the field could be declared, populated seven times, and never
+   * all: the field could be declared, populated once per cell, and never
    * rendered, which is a whole column of drawings the page never asks for. So
    * the binding is pinned, and the count of icons is checked against the count
-   * of cells above rather than against a literal seven, which would need
-   * editing in two places for the same change. */
+   * of cells above rather than against a literal, which would need editing in
+   * two places for the same change. */
   const icons = index.match(/icon: '[a-z-]+',/g) ?? [];
   assert.equal(icons.length, cells.length, `${icons.length} icons for ${cells.length} cells`);
   assert.match(index, /<DeckIcon name=\{item\.icon\} \/>/);
@@ -3634,9 +3671,9 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
 
   /* The lead used to signpost the disqualifier — "Read What you give up
    * first" — because the round before that had teased it without naming it.
-   * The lead no longer opens on it at all: a deck of seven capabilities that
-   * starts by sending the reader to the one thing the product cannot do reads
-   * as a warning. What has to survive is the anchor, because the cell is the
+   * The lead no longer opens on it at all: a deck of capabilities that starts
+   * by sending the reader to the one thing the product cannot do reads as a
+   * warning. What has to survive is the anchor, because the cell is the
    * one deep link on this page that a reader is given by someone else. Every
    * cell is addressable through the same `item.id`, so the pin is on the id
    * and on the binding that renders it, not on a sentence pointing at it. */
@@ -4142,12 +4179,17 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
    * viewport and never gets there. The claim has to hold on both pages or the
    * landing page is inventing a commercial model.
    *
-   * The hero maturity line's "Free under AGPL-3.0; commercial licence" clause
-   * was cut with the rest of that line on 2026-08-09. The licence cell in the
-   * feature band is the homepage's statement now, and it is the fuller one —
-   * it quotes the entry price from the same module /pricing renders. */
+   * The Open Source band's lead is the homepage's statement, and the route to
+   * the tiers sits with it in that band's link row. Both used to be a cell in
+   * the feature band above, which put the license in front of a reader twice
+   * under two headings; the band that is already about the license is where
+   * the statement and its route belong.
+   *
+   * The label is the footer's, not a fresh one. /pricing was reached under
+   * four names across the site, and a destination with four names cannot make
+   * a promise about itself. */
   assert.match(index, /The complete SDK is free under AGPLv3/);
-  assert.match(index, /link: \{ href: '\/pricing', label: 'See the tiers' \}/);
+  assert.match(index, /<a href="\/pricing">Pricing<\/a>/);
   assert.match(pricing, /Free under AGPLv3\./i);
 
   /* The tier copy and the prices moved out of this page and into
@@ -4155,9 +4197,13 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
    * price from the same source instead of describing it. The assertions
    * follow the data rather than the file it used to live in. */
   const { tiers } = await import('../src/data/pricing.mjs');
+  /* Was /You run your own infrastructure/. The free column states the
+   * obligation that disqualifies a reader from it rather than a benefit, so
+   * this follows the trigger sentence. positioning.md §3 makes that friction
+   * the qualification funnel, and it is the one fact the tier owes. */
   assert.ok(
-    tiers.some((tier) => /You run your own infrastructure/i.test(tier.detail)),
-    'the AGPLv3 tier no longer says who runs the infrastructure',
+    tiers.some((tier) => /applications offered over a network/i.test(tier.detail)),
+    'the AGPLv3 tier no longer states the network-use trigger',
   );
 
   /* The sentence that creates the debt now links to the page that prices it.
@@ -4475,7 +4521,7 @@ test("the demo's own source calls the relay a relay", async () => {
    * `.html`, and has since the gap was demonstrated. The reason "server" is not
    * one of its patterns is that it cannot be: the audit matches against whole
    * chunks, and the word is *correct* nearly everywhere else on this site. The
-   * TLS article, `/learn`, and the architecture diagrams all discuss servers on
+   * TLS article, the architecture post, and its diagrams all discuss servers on
    * purpose. A pattern there would have to be right about the whole site; this
    * rule only has to be right about the demo, and scoping it to the demo's own
    * source is what buys that.
@@ -4613,8 +4659,12 @@ test('alternates the band surface down every page', async () => {
     checked += bands.length;
   }
 
-  /* A regex that stopped matching would make every page trivially alternating. */
-  assert.ok(checked > 30, `expected to be checking real bands, counted ${checked}`);
+  /* A regex that stopped matching would make every page trivially alternating.
+   * Re-measured after the copy prune: 21 bands on 2026-08-18, after /learn took
+   * its seven off the tree and the surviving pages lost bands of their own.
+   * The floor sits one below the measurement, so a page that legitimately loses
+   * a band reds this and gets a fresh measurement rather than a slack one. */
+  assert.ok(checked > 20, `expected to be checking real bands, counted ${checked}`);
 });
 
 test('keeps the space on both sides of every inline code span', async () => {
@@ -4675,16 +4725,15 @@ test('keeps the space on both sides of every inline code span', async () => {
   }
 
   /* A regex that stopped matching would pass on every file in the tree. The
-   * floor is the tree's measured count: 33 spans on 2026-08-16. The homepage
-   * held the last five and now holds none — cutting the landing page back to
-   * the demo, the deck and the licence took the alternatives fold with it,
-   * and with the fold went the four package names it compared against and the
-   * `inMemoryRelay()` in the caption above the demo.
+   * floor is the tree's measured count: 29 spans on 2026-08-18, down from 33
+   * when /learn left the tree and 32 when /product lost the quickstart band
+   * and three capability bodies, then up one when the maturity notice moved
+   * into the layout and took the package name with it.
    *
    * Re-measure and record the reason when this moves. The number is a tripwire
    * for a regex that has stopped matching, so it is only worth what its last
    * measurement was worth. */
-  assert.ok(spans >= 33, `expected to be scanning real code spans, counted ${spans}`);
+  assert.ok(spans >= 29, `expected to be scanning real code spans, counted ${spans}`);
 });
 
 test('the scene places the envelope at every step the run records', async () => {

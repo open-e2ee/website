@@ -17,9 +17,14 @@
  *
  * The grammar is `git log --graph` — the rail down the side of every git client
  * and every network view. It needs no key, which is what lets this band carry
- * its claim in five words. Grounding it in the tool rather than in another
+ * its claim in four labels. Grounding it in the tool rather than in another
  * company's landing page is deliberate: the tool is what a developer has already
  * learned to read.
+ *
+ * The run past the last commit is unlabelled. It used to end on "released stays
+ * released", which is the band lead's "none of it is time-limited" said a second
+ * time in the shape of a slogan, and the rail leaving the figure already says
+ * it without words.
  *
  * The graph runs vertically at every width. A landscape one has to become a
  * second composition on a phone, and the two drift; a vertical one puts its
@@ -38,10 +43,13 @@
 const GRANTS = ['read it', 'run it', 'share it', 'build on it'];
 ---
 
-{/* Decorative. The heading above this band names the same verbs in a sentence,
-    so a screen reader that walked the graph would hear the claim twice, the
-    second time as a list of dots. */}
-<div class="commitline" data-commitline aria-hidden="true">
+{/* Not hidden from assistive technology. The four labels are the only place on
+    the page that names what the licence hands over, so the ordered list under
+    the drawing is content: a screen reader hears four grants under the band's
+    heading, and the rails and dots are empty spans it passes over. It was
+    `aria-hidden` while the heading listed the same four verbs and a reader
+    would have heard them twice. */}
+<div class="commitline" data-commitline>
   <ol class="commitline-commits">
     {
       GRANTS.map((grant) => (
@@ -60,7 +68,6 @@ const GRANTS = ['read it', 'run it', 'share it', 'build on it'];
       says only what is true. */}
   <div class="commitline-onward">
     <span class="commitline-seg commitline-seg-onward"></span>
-    <span class="commitline-word commitline-word-onward">released stays released</span>
   </div>
 </div>
 

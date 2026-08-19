@@ -1,6 +1,6 @@
 ---
 title: Signal Protocol in React Native and Expo in 2026
-description: The official JavaScript library is archived. Its replacement is a Node native add-on, and the community port has an open trust-check bug. Learn what runs in Expo and where the keys go.
+description: The official JavaScript library is archived. Its replacement is a Node native add-on, and the community port has an open trust-check bug.
 image: /social/blog/signal-protocol-react-native-expo-2026.png
 publishedAt: 2026-07-25
 updatedAt: 2026-08-06
@@ -12,11 +12,8 @@ tags:
 ---
 
 import ExpoKeyMap from '../../components/diagrams/ExpoKeyMap.astro';
-import { sdkLine } from '../../lib/sdk.mjs';
 
 **Who this is for:** a React Native or Expo developer who plans to add end-to-end encryption. Search results show several packages with different platform and maintenance limits. This article compares those packages and builds two encrypted identities in an Expo app. It also explains key storage, key lifetime, relay data, and prekey capacity.
-
-Start with the dated status of each search result.
 
 ## Four dated search results
 
@@ -26,7 +23,9 @@ Start with the dated status of each search result.
 
 It ranked first in the 24 July 2026 GitHub search for "signal protocol typescript." A [tutorial updated in January 2026](https://www.w3tutorials.net/blog/working-example-for-signal-protocol-in-js/) still called it "the official JavaScript implementation of the Signal Protocol."
 
-**2. The replacement does not target React Native.** Signal actively maintains [`@signalapp/libsignal-client`](https://github.com/signalapp/libsignal/blob/main/README.md). The npm package is a Node native add-on. It provides prebuilt binaries for Windows, macOS, and Debian-flavoured Linux. It provides no iOS, Android, or browser build. Hermes is the default React Native JavaScript engine, and it does not implement Node's N-API. Configuration cannot add this missing runtime interface. The README defines the supported scope:
+**2. The replacement does not target React Native.**
+
+Signal actively maintains [`@signalapp/libsignal-client`](https://github.com/signalapp/libsignal/blob/main/README.md). The npm package is a Node native add-on. It provides prebuilt binaries for Windows, macOS, and Debian-flavored Linux, and no iOS, Android, or browser build. Hermes is the default React Native JavaScript engine, and it does not implement Node's N-API. Configuration cannot add this missing runtime interface. The README defines the supported scope:
 
 > This repository is used by the Signal client apps (Android, iOS, and Desktop) as well as server-side. **Use outside of Signal is unsupported.** In particular... All APIs and implementations are subject to change without notice.
 
@@ -38,7 +37,9 @@ Its latest npm publish was 6 May 2023. Its latest repository push was 18 July 20
 
 [Issue #92](https://github.com/privacyresearchgroup/libsignal-protocol-typescript/issues/92) remained open on 1 August 2026. The issue title states: "Possible inbound PreKey trust-check bypass — `isTrustedIdentity()` Promise is not awaited in `SessionBuilder.processV3()`." The issue reports an unawaited promise in an inbound trust check. The July 2026 research snapshot measured roughly 29,800 downloads in 30 days.
 
-**4. A public WebAssembly attempt fails on Hermes.** The matrix-js-sdk tracker records `Error: Unable to bind Webassembly to React Native JSI., js engine: hermes`. A developer then asks, ["has anyone here successfully initialized Rust crypto (or even the legacy crypto) in React Native?"](https://github.com/matrix-org/matrix-js-sdk/issues/4150). `react-native-webassembly` shows its latest repository push on 3 November 2023. Its latest npm publish occurred on 10 May 2023.
+**4. A public WebAssembly attempt fails on Hermes.**
+
+The matrix-js-sdk tracker records `Error: Unable to bind Webassembly to React Native JSI., js engine: hermes`. A developer then asks, ["has anyone here successfully initialized Rust crypto (or even the legacy crypto) in React Native?"](https://github.com/matrix-org/matrix-js-sdk/issues/4150). `react-native-webassembly` shows its latest repository push on 3 November 2023. Its latest npm publish occurred on 10 May 2023.
 
 A January 2021 Stack Overflow question asks ["How to build a highly secure End to End Encryption React Native messaging app"](https://stackoverflow.com/questions/65604237/how-to-build-a-highly-secure-end-to-end-encryption-react-native-messaging-app). On 24 July 2026, it had 8,666 views and zero answers.
 
@@ -56,9 +57,9 @@ The `uuid` package [changed its code](https://github.com/uuidjs/uuid/pull/537) t
 
 Reported Hermes measurements also show a cost for pure JavaScript crypto. Wallet creation took [33.5s on Hermes and 14.4s on JSC](https://github.com/facebook/hermes/issues/626) on an iPhone 11 Pro. [`crypto-js` operations increased from 1.5s to 6s](https://github.com/facebook/hermes/issues/735) in another report.
 
-The OpenE2EE Signal Protocol SDK fills this protocol gap. Its TypeScript code uses `@noble/curves`, `@noble/hashes`, `@noble/ciphers`, and `@noble/post-quantum`. The protocol code adds no native crypto module. It checks `globalThis.crypto.getRandomValues`, then Node's `webcrypto`, then `expo-crypto`'s `getRandomBytesAsync`. Expo therefore needs no randomness polyfill import. If no secure source exists, the SDK throws a specific error and does not use an insecure fallback.
+The OpenE2EE Signal Protocol SDK implements the protocol in TypeScript. It uses `@noble/curves`, `@noble/hashes`, `@noble/ciphers`, and `@noble/post-quantum`. The protocol code adds no native crypto module. It checks `globalThis.crypto.getRandomValues`, then Node's `webcrypto`, then `expo-crypto`'s `getRandomBytesAsync`. Expo therefore needs no randomness polyfill import. If no secure source exists, the SDK throws a specific error and does not use an insecure fallback.
 
-The encrypted local store uses `expo-sqlite` with SQLCipher. [Expo's SQLCipher instructions](https://docs.expo.dev/versions/latest/sdk/sqlite/#sqlcipher) require `useSQLCipher` configuration and a native build. SQLCipher is not available in Expo Go. A project can run `npx expo prebuild` directly. [Expo build tools](https://docs.expo.dev/develop/development-builds/introduction/) also run Prebuild automatically when the native directories do not exist. The SDK adds no native crypto module, but SQLCipher still requires native configuration and a development build.
+The encrypted local store uses `expo-sqlite` with SQLCipher. [Expo's SQLCipher instructions](https://docs.expo.dev/versions/latest/sdk/sqlite/#sqlcipher) require `useSQLCipher` configuration and a native build. SQLCipher is not available in Expo Go. A project can run `npx expo prebuild` directly. [Expo build tools](https://docs.expo.dev/develop/development-builds/introduction/) also run Prebuild automatically when the native directories do not exist. SQLCipher still requires native configuration and a development build.
 
 ## Two encrypted identities in an Expo app
 
@@ -110,13 +111,13 @@ If you have no relay yet, use `inMemoryRelay()` from `@open-e2ee/signal-protocol
 
 ## Where the keys live
 
-An [`r/reactnative` thread](https://www.reddit.com/r/reactnative/comments/1bsqbnr/signal_protocol_on_rn/) asked where an Expo app should store keys. It also asked about key lifetime and preventing leaks to other apps or the relay. The thread had no answer during the 24 July 2026 review. The diagram shows the three storage locations.
+An [`r/reactnative` thread](https://www.reddit.com/r/reactnative/comments/1bsqbnr/signal_protocol_on_rn/) asked where an Expo app should store keys. It also asked about key lifetime and preventing leaks to other apps or the relay. The thread had no answer during the 24 July 2026 review.
 
 <figure class="diagram">
   <ExpoKeyMap />
   <figcaption>
-    Two containers sit inside the device. A solid notch represents private key material and appears
-    only inside the device. An open notch represents the readable prekey bundle that travels.
+    Private key material stays inside the device. Only the public prekey bundle leaves it. A solid
+    notch marks private material, and an open notch marks the bundle that travels.
   </figcaption>
 </figure>
 
@@ -130,11 +131,11 @@ On Apple platforms, `THIS_DEVICE_ONLY` excludes the secret from iCloud Keychain 
 
 **The relay never needs message plaintext or device private keys.** It is not blind. It sees public prekey material, opaque envelopes, and routing metadata. The relay adapter receives the public prekey bundle and ciphertext. Its interface has no private-key field.
 
-Do not upload or synchronize the SQLite file with the relay. Before a generic "device backup" feature includes this file, read the recovery guide.
+Do not upload or synchronize the SQLite file with the relay. Before a generic "device backup" feature includes this file, read [Recovery, backup, and migration](https://docs.open-e2ee.dev/build/recovery-backup-migration).
 
 ## How long they live, and how many
 
-Library selection is only the first decision. Key lifetime determines whether the app still works in month six.
+Key lifetime determines whether the app still works in month six.
 
 **The SDK generates 100 one-time prekeys at a time.** `ONE_TIME_PREKEY_BATCH_SIZE` is 100 for both EC and ML-KEM prekeys. One incoming session establishment consumes one prekey. The relay must consume it atomically to prevent two senders from receiving the same prekey.
 
@@ -174,12 +175,8 @@ The SDK records trust on first use (TOFU) as `UNVERIFIED_TOFU`. It pins one comp
 
 ## What to do next
 
-The dated results support a narrow library choice. The JavaScript archive has no push after 4 August 2021. The Node add-on does not target React Native. The community port's trust-check issue remained open on 1 August 2026. Each statement above links to its source.
-
-For implementation, the Expo guide covers SQLCipher setup, vault bootstrap, and a real relay. It also covers offline sends, out-of-order delivery, and identity changes.
+The Expo guide covers SQLCipher setup, vault bootstrap, a real relay, offline sends, out-of-order delivery, and identity changes.
 
 **[Follow the complete Expo guide →](https://docs.open-e2ee.dev/guides/expo-encrypted-chat)**
 
 [The Expo quickstart](https://docs.open-e2ee.dev/start/expo) gives the ten-minute version. [The Convex relay guide](https://docs.open-e2ee.dev/guides/expo-convex-relay) covers the relay. [The migration guide](https://docs.open-e2ee.dev/guides/migrating-from-libsignal) applies if you shipped the privacyresearch port. Review [the production checklist](https://docs.open-e2ee.dev/operate/production-checklist) before release.
-
-The SDK is `@open-e2ee/signal-protocol-sdk` on the <code>{sdkLine}</code> line. Public APIs and persisted formats may change before 1.0. It is reviewed continuously by adversarial AI agents; it is not audited by any independent firm, and none is engaged.

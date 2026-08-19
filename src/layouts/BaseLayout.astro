@@ -24,6 +24,11 @@ interface Props {
   title: string;
   description: string;
   image?: string;
+  /**
+   * Text alternative for the social card, not for the page. Defaults to the
+   * site-wide card; a page that overrides `image` should override this too.
+   */
+  imageAlt?: string;
   canonical?: string;
   /** `article` on blog posts so shares render as writing rather than a product page. */
   ogType?: 'website' | 'article';
@@ -36,13 +41,21 @@ const {
   title,
   description,
   image = '/brand/social/open-e2ee-website-og.png',
+  imageAlt = 'The OpenE2EE mark and wordmark over the line: open-source, protocol-level end-to-end encryption SDKs for TypeScript developers.',
   canonical = Astro.url.pathname,
   ogType = 'website',
   publishedTime,
   modifiedTime,
   author,
 } = Astro.props;
-const siteTitle = title === 'OpenE2EE' ? title : `${title} · OpenE2EE`;
+/* Every page spends this field, the homepage included. It used to pass
+ * title="OpenE2EE" and this expression suppressed the suffix, so the one page
+ * most likely to be found for the query positioning.md §2 names as the whole
+ * thesis carried an eight-character brand name and no proposition. Stripe,
+ * Vercel, and Supabase all spend it: "Stripe | Financial Infrastructure to
+ * Grow Your Revenue", "Vercel: Build and deploy the best web experiences with
+ * the AI Cloud", "Supabase | The Postgres Development Platform". */
+const siteTitle = `${title} · OpenE2EE`;
 const canonicalUrl = new URL(canonical, Astro.site);
 const imageUrl = new URL(image, Astro.site);
 ---
@@ -86,7 +99,11 @@ const imageUrl = new URL(image, Astro.site);
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={imageUrl} />
-    <meta property="og:image:alt" content={description} />
+    {/* The card, not the page. One `description` prop used to feed this as well
+        as the three description tags, so /security attached a 283-character
+        list of threat-model topics to a card that shows none of them. WCAG
+        1.1.1 asks for a text alternative to the image. */}
+    <meta property="og:image:alt" content={imageAlt} />
     <meta property="og:site_name" content="OpenE2EE" />
     {publishedTime && (
       <meta property="article:published_time" content={publishedTime.toISOString()} />
@@ -103,7 +120,7 @@ const imageUrl = new URL(image, Astro.site);
     <link
       rel="alternate"
       type="application/rss+xml"
-      title="OpenE2EE — Engineering journal"
+      title="OpenE2EE · Engineering journal"
       href="/rss.xml"
     />
     <link rel="icon" href="/brand/open-e2ee-favicon.svg" type="image/svg+xml" />

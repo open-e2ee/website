@@ -106,13 +106,13 @@ const DEVICE_METRICS: readonly {
   {
     key: 'keygen',
     label: 'key generation',
-    tip: 'One-time setup: this device mints its identity and the batches of single-use keys it will publish, before any message exists.',
+    tip: 'One-time setup. This device generates its identity and the batches of single-use keys it publishes, before any message exists.',
   },
   {
     key: 'kyber',
     label: 'post-quantum share',
     sub: true,
-    tip: 'The ML-KEM slice of the row above — what quantum resistance adds to the bill, already counted in key generation.',
+    tip: 'The ML-KEM part of the row above. It is already counted in key generation, not added to it.',
   },
   {
     key: 'establish',
@@ -127,7 +127,7 @@ const DEVICE_METRICS: readonly {
   {
     key: 'decrypt',
     label: 'decryption',
-    tip: 'Opening one arrived envelope, from arrival to plaintext. A first opening also performs this device’s share of the key agreement — one span, shared with that row until a later arrival prices decryption alone.',
+    tip: 'Opening one arrived envelope, from arrival to plaintext. The first opening also performs this device’s share of the key agreement, so both rows show that one span until a later arrival.',
   },
 ];
 
@@ -201,7 +201,7 @@ const GEARS = [
   {
     kind: 'chain',
     caption: 'chain',
-    tip: 'Hashes the running secret forward one notch per message — each notch yields exactly one message key, and it never turns back.',
+    tip: 'Hashes the running secret forward one notch per message. Each notch yields exactly one message key, and the hash does not reverse.',
   },
   {
     kind: 'pq',

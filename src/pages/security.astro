@@ -1,7 +1,14 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SignatureDiagram from '../components/SignatureDiagram.astro';
-import { checks, dependencies, docs, reporting, specifications } from '../lib/assurance.mjs';
+import {
+  checks,
+  dependencies,
+  docs,
+  reporting,
+  SDK_REPO,
+  specifications,
+} from '../lib/assurance.mjs';
 import { maturityLine } from '../lib/sdk.mjs';
 
 const DOCS = 'https://github.com/open-e2ee/signal-protocol-js/blob/main';
@@ -29,58 +36,50 @@ const envelopeFields = [
   },
 ];
 
+/*
+ * Two rows left this list and one arrived. "Who is receiving" restated the
+ * targetUserId and targetDeviceId rows of the table directly above, and "Group
+ * context" restated the groupId row.
+ *
+ * What stood in their place is the strongest published limit there is, and the
+ * page did not carry it: docs/positioning.md §6 requires that one-sided
+ * anonymity does not compose over a conversation. NDSS 2021 linked
+ * sealed-sender users in as few as five messages using delivery receipts, and
+ * follow-up work extended the technique to whole group conversations. This
+ * page is the only surface anywhere that states sealed sender's limits —
+ * docs/SECURITY.md in the SDK contains no occurrence of the word.
+ */
 const notHidden = [
   {
-    title: 'Who is receiving',
-    body: 'The recipient user and device are in the clear on every envelope, sealed or not. Sealed sender hides the sender, not the conversation.',
+    title: 'Anonymity does not compose over a conversation',
+    body: 'One-sided anonymity breaks when two parties exchange several messages. NDSS 2021 research linked sealed-sender users after as few as five messages, using delivery receipts. Later work extended the technique to whole group conversations. Whether your application supplies that signal is your design decision.',
   },
   {
     title: 'When, and roughly how much',
-    body: 'Timestamps are plaintext. Message bodies are padded into 160-byte buckets, which coarsens length but does not conceal it, and attachments travel through a separate object store.',
-  },
-  {
-    title: 'Group context',
-    body: 'The group ID travels in the clear. Multi-recipient sealed sends hand the relay the recipient list so it can fan the message out.',
+    body: 'Timestamps are plaintext. Message bodies are padded into 160-byte buckets, which coarsens length without concealing it. Attachments travel through a separate object store.',
   },
   {
     title: 'Network-level metadata',
-    body: 'Addresses, connection timing, and traffic patterns are properties of your transport and deployment. This SDK makes no claim about them, and implements no decoy traffic or timing jitter.',
+    body: 'Addresses, connection timing, and traffic patterns belong to your transport and deployment. This SDK implements no decoy traffic and no timing jitter.',
   },
   {
     title: 'Sealed sender is best effort',
-    body: 'If the recipient profile key or identity key is unavailable, the client falls back to identified delivery rather than failing the send. Design for the fallback, not the happy path.',
+    body: 'If the recipient profile key or identity key is unavailable, the client falls back to identified delivery rather than failing the send.',
   },
-];
-
-const inScope = [
-  'Passive network observation',
-  'Active tampering, replay, reordering, duplication, and truncation',
-  'Malicious or stale relay responses within the adapter contract',
-  'Identity component substitution after trust is pinned',
-  'Malformed prekeys, KEM material, protocol messages, and restored state',
-  'Loss and out-of-order delivery within configured protocol bounds',
-  'Later compromise followed by an uncompromised ratchet recovery step',
-];
-
-const outOfScope = [
-  'Compromised endpoints, JavaScript engines, dependencies, or build pipeline',
-  'Hostile same-process code and high-assurance local timing attackers',
-  'Guaranteed secret erasure from managed memory',
-  'Hardware, physical, speculative-execution, and microarchitectural attacks',
-  'Traffic-analysis resistance beyond the padding behaviour explicitly implemented',
-  'Signal Messenger interoperability outside the alignments stated in the security model',
-  'Authenticity on unverified first contact without a safety-number check',
 ];
 ---
 
 <BaseLayout
   title="Security model"
-  description="The security review pack for the OpenE2EE Signal Protocol SDK: what the relay can and cannot see, what sealed sender does not hide, the threat model boundary, pinned specification revisions, dependency and test figures, audit and validation status, and how to report a vulnerability."
+  description="What a relay adapter receives field by field, what sealed sender does not hide, the threat model boundary, and the published limits."
 >
   <header class="page-hero">
     <div class="container measure">
       <p class="label">Security model</p>
-      <h1>What your relay can see, written down.</h1>
+      {/* "written down" comments on the existence of the page to a reader who
+          is on it. What the heading has to do is name the question the page
+          answers, which is the question the lead under it answers verbatim. */}
+      <h1>What your relay can see</h1>
       <p class="lead">
         The relay never needs message plaintext or device private keys. It does need routing
         metadata.
@@ -89,29 +88,28 @@ const outOfScope = [
     </div>
   </header>
 
-  <section class="band">
-    <div class="container stack">
-      <div class="band-head">
-        <h2>Where the boundary sits</h2>
-        <p class="measure">
-          Plaintext and long-term private keys exist only inside a device. Everything the relay
-          holds is sealed, and everything sealed still carries an address.
-        </p>
-      </div>
-      <div class="diagram">
-        <SignatureDiagram />
-      </div>
-    </div>
-  </section>
+  {/*
+    "Where the boundary sits" was a whole band of preamble: one h2 and one
+    sentence asserting what the table below then proves with field names and
+    two columns. Its second clause — "everything the relay holds is sealed, and
+    everything sealed still carries an address" — was a parallel that added no
+    fact the table does not carry. The diagram stays on this page and moves
+    into the band that proves its point.
 
-  <section class="band band-surface">
+    The intro's own second clause went the same way: "it does not empty the
+    envelope" rebutted a claim no reader arrived with.
+  */}
+  <section class="band">
     <div class="container stack">
       <div class="band-head">
         <h2>The delivery envelope, field by field</h2>
         <p class="measure">
-          This is the shape a relay adapter receives. Sealed sender omits two fields; it does not
-          empty the envelope.
+          Plaintext and long-term private keys exist only inside a device. This is what a relay
+          adapter receives. Sealed sender omits two of these fields.
         </p>
+      </div>
+      <div class="diagram">
+        <SignatureDiagram />
       </div>
       <div class="table-scroll">
         <table class="data">
@@ -144,13 +142,18 @@ const outOfScope = [
     </div>
   </section>
 
-  <section class="band">
+  <section class="band band-surface">
     <div class="container stack">
       <div class="band-head">
         <h2>What sealed sender does not hide</h2>
+        {/* The intro hard-coded the row count and closed on "because a security
+            page that only lists wins is marketing", which is the page
+            congratulating itself in the middle of its own limits section.
+            messaging.md §2 bans "anonymous" and "untraceable" applied to
+            sealed sender, so the sentence that replaces it states the
+            negation the rows then support. */}
         <p class="measure">
-          Sealed sender removes the sender identity from the envelope. Five things it leaves in
-          place, because a security page that only lists wins is marketing.
+          Sealed sender omits the sender fields. It does not make a sender anonymous.
         </p>
       </div>
       <ul class="rows">
@@ -164,141 +167,118 @@ const outOfScope = [
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container stack">
-      <div class="band-head">
-        <h2>Threat model boundary</h2>
-        {/* The relay formula is fixed and this sentence used to paraphrase it
-            into an absolute — "it cannot read message plaintext or long-term
-            private keys" — which the callout at the foot of this same section
-            refutes sixteen lines later: a relay hostile from the very first
-            message can substitute an identity before any trust is pinned, and
-            then it reads exactly what the absolute promised it could not. The
-            scope clause is what makes the claim true, so it is in the sentence
-            rather than left to the reader to carry down the page. */}
-        <p class="measure">
-          Taken from the security model in the repository. An attacker in full control of your relay
-          can serve stale or hostile responses and observe every routing field above. The relay never
-          needs message plaintext or device private keys, and once trust is pinned, an identity
-          substitution that would reach them fails closed.
-        </p>
-      </div>
-      <div class="two-col">
-        <div>
-          <h3>In scope</h3>
-          <ul class="list">{inScope.map((item) => <li>{item}</li>)}</ul>
-        </div>
-        <div>
-          <h3>Out of scope, or only partly mitigated</h3>
-          <ul class="list">{outOfScope.map((item) => <li>{item}</li>)}</ul>
-        </div>
-      </div>
-      <div class="callout measure">
-        <p>
-          First contact is trust-on-first-use, not authenticated identity. A relay that is hostile
-          from the very first message can substitute an identity before any trust is pinned; a
-          safety-number comparison is what closes that gap. After trust is pinned, substituting
-          either half of the identity tuple fails closed until a rotation is explicitly accepted.
-        </p>
-      </div>
-    </div>
-  </section>
+  {/*
+    The in-scope and out-of-scope lists are gone, 117 words. They were a
+    transcription of docs/SECURITY.md in the SDK, which this page links twice
+    and about which this page says the documents win any disagreement. The copy
+    had already drifted twice: the in-scope malformed-input row dropped Braid
+    traces and Reed-Solomon chunks, and the out-of-scope first-contact row
+    dropped the SDK's disjunction, making the site stricter than the SDK. A
+    reviewer answering a questionnaire has to cite the repository document
+    anyway.
 
+    The relay formula stood here a second time; the hero carries it. Dropping
+    it here is safe for the guard, which matches the period form the hero has.
+
+    What stays is the trust-on-first-use callout, because it is the admission
+    this page exists to make and the one thing here that is not the title of a
+    linked section.
+  */}
   <section class="band">
     <div class="container stack">
       <div class="band-head">
-        <h2>What there is to check</h2>
+        <h2>Threat model boundary</h2>
         <p class="measure">
-          Everything above is a claim. These are the figures behind it, each with the date it was
-          measured, because an undated number stops being evidence the moment it ages.
+          An attacker in full control of your relay can serve stale or hostile responses and observe
+          every routing field above. Once trust is pinned, an identity substitution that would reach
+          plaintext fails closed.
         </p>
+      </div>
+      <div class="callout measure">
+        <p>
+          First contact is trust on first use. A relay that is hostile from the first message can
+          substitute an identity before trust is pinned. A safety-number comparison closes that gap.
+          After trust is pinned, substituting either half of the identity tuple fails closed until a
+          rotation is explicitly accepted.
+        </p>
+      </div>
+      <p class="text-links">
+        <a href={docs.securityModel}>Threat model</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>What there is to check</h2>
+        {/* "Everything above is a claim" undercut the four bands before it, and
+            the tail was an aphorism — "because an undated number stops being
+            evidence the moment it ages" — on a band whose headline figure was
+            24 days old when it was written. The figures carry their own dates,
+            so the intro only has to say that they do. */}
+        <p class="measure">Each figure carries the date it was measured.</p>
       </div>
       <dl class="figure-rows">
         <div>
           <dt>{checks.assertions}</dt>
           <dd>
             assertions across {checks.modules} modules, {checks.failed} failing and {checks.skipped}{' '}
-            skipped, on {checks.measuredOn}. The checks live in the private engineering repository
-            this one is exported from; an export is only cut from a revision where they pass.
+            skipped, on {checks.measuredOn}. An export is only cut from a revision where they pass.
           </dd>
         </div>
         <div>
           <dt>{dependencies.direct}</dt>
           <dd>
-            direct production dependencies &mdash; {dependencies.names.join(', ')} &mdash; resolving
-            to {dependencies.resolved} packages in total. The only transitive edges are the @noble
-            packages depending on one another, so the resolved tree adds nothing that list does not
-            already name. Everything else is a development or optional peer dependency. The
-            published repository runs a build, a typecheck, and a production-tree advisory audit on
-            every change.
+            direct production dependencies: {dependencies.names.join(', ')}. They resolve to{' '}
+            {dependencies.resolved} packages in total. The only edges inside the tree run between
+            the @noble packages. Everything else is a development or optional peer dependency.
           </dd>
         </div>
         <div>
           <dt>{specifications.length}</dt>
           <dd>
-            published specifications the implementation profile is pinned to, by revision, in the
-            table below.
+            published specifications the implementation profile is pinned to, by revision, in the{' '}
+            <a href={SDK_REPO}>SDK README</a>.
           </dd>
         </div>
         <div>
           <dt>{reporting.acknowledgment}</dt>
           <dd>
             to acknowledge a vulnerability report sent to{' '}
-            <a href={`mailto:${reporting.address}`}>{reporting.address}</a> rather than to a public
-            issue, and {reporting.assessment} to an initial assessment. The full policy, including
-            disclosure handling and severity targets, is{' '}
-            <a href={docs.reporting}>in the repository</a>.
+            <a href={`mailto:${reporting.address}`}>{reporting.address}</a>, and{' '}
+            {reporting.assessment} to an initial assessment. Do not open a public issue. The full
+            policy is <a href={docs.reporting}>in the repository</a>.
           </dd>
         </div>
       </dl>
-      <p class="muted measure">
-        What those checks are, in the terms used elsewhere on this site: cryptographic known-answer
-        checks run ML-KEM, hashing, AEAD, and signature primitives against published vector data.
-        Conformance scenarios check session, group, and sealed-sender invariants against
-        known-answer material and against behaviour documented in the published specifications.
-        Property-based checks run over protocol and encoding invariants. Integration flows cover
-        multi-device, group lifecycle, provisioning, and relay delivery. Adapter suites cover every
-        storage, relay, and object-store adapter. The quickstart printed in the README is executed
-        as written on every change.
-      </p>
+      {/*
+        An 85-word paragraph naming known-answer checks, conformance scenarios,
+        property-based checks, integration flows, adapter suites and the
+        executed quickstart stood here. It mirrored ASSURANCE.md's own coverage
+        list, and the link to ASSURANCE.md is on the next line. Its opening
+        clause gave the reason to cut it: "in the terms used elsewhere on this
+        site" is a vocabulary reconciliation, which is a documentation job.
+      */}
       <p class="text-links">
-        <a href={docs.assurance}>Assurance — what runs, what is not published, and why</a>
-        <a href={docs.thirdParty}>Third-party notices</a>
+        <a href={docs.assurance}>Assurance</a>
       </p>
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container stack">
-      <div class="band-head">
-        <h2>Specifications, pinned by revision</h2>
-        <p class="measure">
-          The implementation follows its own versioned profile, based on these published
-          specifications at these revisions. Mirrored from the SDK README, which is the maintained
-          source.
-        </p>
-      </div>
-      <div class="table-scroll">
-        <table class="data">
-          <thead>
-            <tr>
-              <th scope="col">Specification</th>
-              <th scope="col">Revision</th>
-            </tr>
-          </thead>
-          <tbody>
-            {specifications.map((spec) => (
-              <tr>
-                <th scope="row"><a href={spec.href}>{spec.name}</a></th>
-                <td>{spec.revision}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
+  {/*
+    "Specifications, pinned by revision" stood here: a seven-row table whose
+    own intro said "Mirrored from the SDK README, which is the maintained
+    source." A mirror of a maintained source, on a page whose stated rule is
+    that the documents win, is a maintenance liability with no reader benefit.
+    The other mirror on this page is the assertion figure, and that is the one
+    that went 24 days stale. The figure above now points at the README instead.
 
+    All seven rows were verified current on the day they were cut, which is
+    the moment the cut costs nothing. `specifications` stays in assurance.mjs:
+    the figure reads its length, and the test suite asserts every row still
+    carries a pinned revision.
+  */}
   <section class="band">
     <div class="container stack">
       <div class="band-head">
@@ -310,29 +290,26 @@ const outOfScope = [
           <dd>
             Reviewed continuously by adversarial AI agents; not audited by any independent firm.
             Every change passes an adversarial AI review before it merges, and recurring
-            whole-codebase AI audit passes run against the engineering repository. What that covers
-            — and what it does not — is stated in the <a href={docs.assurance}>assurance summary</a>.
-            No independent firm has audited the SDK, and none is engaged. The codebase is structured
-            for review — narrow state transitions, injectable adapters, small protocol seams — but
-            structure is not certification, and neither is a machine reading it.
+            whole-codebase AI audit passes run against the engineering repository. The{' '}
+            <a href={docs.assurance}>assurance summary</a> states what that covers and what it does
+            not. No independent firm has audited the SDK, and none is engaged.
           </dd>
         </div>
         <div>
           <dt>Not a validated cryptographic module</dt>
           <dd>
             Pure-JavaScript cryptography is not FIPS 140-validated, and no part of this SDK is
-            offered as a validated module. The ML-KEM implementation follows FIPS 203, but
-            following a standard and being validated against it are different things, and only the
-            second satisfies a programme that requires validation. If yours does, this is the wrong
-            choice, and we would rather you learned it here than in week six.
+            offered as a validated module. PQXDH uses FIPS 203 ML-KEM-1024. Braid mode uses a
+            modified derivation, so no FIPS conformance claim holds there either. If your program
+            requires a validated module, this SDK does not meet it.
           </dd>
         </div>
         <div>
           <dt>JavaScript is not a constant-time environment</dt>
           <dd>
             Browser, Node, and React Native engines provide no machine-level constant-time
-            guarantee. The implementation uses best-effort patterns on selected paths; it does not
-            claim timing equivalence against a co-resident adversary.
+            guarantee. Selected paths use best-effort patterns. The SDK claims no timing
+            equivalence against a co-resident adversary.
           </dd>
         </div>
         <div>
@@ -346,8 +323,10 @@ const outOfScope = [
           <dt>Post-quantum means confidentiality, not signatures</dt>
           <dd>
             Post-quantum key agreement is the default and fails closed, using ML-KEM-1024 for PQXDH
-            and an ML-KEM Braid ratchet. There is no public disabled mode. Identity signatures
-            remain classical Ed25519 and X25519.
+            and an ML-KEM Braid ratchet. One explicit opt-in,{' '}
+            <code>protocol.postQuantum: 'compatible'</code>, permits a classical session only when a
+            peer advertises no post-quantum material. Identity signatures remain classical Ed25519
+            and X25519.
             The protection is against harvest-now-decrypt-later, not against a quantum adversary
             forging identities.
           </dd>
@@ -355,22 +334,18 @@ const outOfScope = [
         <div>
           <dt>There is no key escrow, so device loss is real</dt>
           <dd>
-            Nothing recoverable is held on a server. Transferring state to new hardware requires the
-            old device to still be available; a lost device means re-registering, and contacts see a
-            safety-number change. Decide your recovery story before launch, not after.
+            Nothing recoverable is held on a server. Transferring state to new hardware requires
+            the old device. A lost device means re-registering, and contacts see a safety-number
+            change.
           </dd>
         </div>
         <div>
           <dt>Not Signal Messenger, and not wire-compatible with it</dt>
           <dd>
-            An independent implementation of the published Signal Protocol specifications. Not
-            affiliated with or endorsed by Signal Messenger LLC or Signal Technology Foundation. The
-            cryptographic core follows the Signal Protocol specification — same key agreement, same
-            ratchet, in many places byte-identical — but the encoding is deliberately our own.
-            Messages, identities, and sessions do not cross between the two, and safety numbers
-            shown here will never match the ones a Signal Messenger client displays. Every
-            deliberate difference, and what it costs, is documented in{' '}
-            <a href={`${DOCS}/docs/DEVIATIONS.md`}>DEVIATIONS</a>.
+            Messages, identities, and sessions do not cross between this SDK and Signal Messenger.
+            Safety numbers shown here never match the ones a Signal Messenger client displays.{' '}
+            <a href={`${DOCS}/docs/DEVIATIONS.md`}>DEVIATIONS</a> lists every difference and what it
+            costs.
           </dd>
         </div>
       </dl>
@@ -381,19 +356,29 @@ const outOfScope = [
     <div class="container stack">
       <div class="band-head">
         <h2>Read the primary sources</h2>
+        {/* Was 34 words in one sentence, and it opened by announcing its own
+            audience to that audience. Two of its three clauses said the same
+            thing. The precedence rule is the part worth keeping, and it is
+            what licenses every cut on this page. */}
         <p class="measure">
-          For the platform or security engineer who has been handed this SDK and a questionnaire:
-          this page is a summary, these are the documents it summarises, and the documents win any
-          disagreement with it.
+          These are the maintained documents. Where one disagrees with this page, the document is
+          right.
         </p>
       </div>
       <ul class="rows rows-single">
-        <li><a href={`${DOCS}/docs/SECURITY.md`}>Security model and threat model</a></li>
+        <li><a href={`${DOCS}/docs/SECURITY.md`}>Threat model</a></li>
         <li><a href={`${DOCS}/docs/PROTOCOL_POLICY.md`}>Protocol policy and post-quantum modes</a></li>
-        <li><a href={`${DOCS}/ARCHITECTURE.md`}>Architecture and layer model</a></li>
+        <li><a href={`${DOCS}/ARCHITECTURE.md`}>Architecture</a></li>
         <li><a href={`${DOCS}/docs/E2EE.md`}>How the encryption works</a></li>
-        <li><a href={docs.deviations}>DEVIATIONS &mdash; every difference, and what it costs</a></li>
-        <li><a href={docs.assurance}>Assurance &mdash; what runs, what is published, and why</a></li>
+        <li><a href={docs.deviations}>DEVIATIONS</a></li>
+        {/* Both this entry and the figures band's link to the same file used to
+            carry the sentence "what runs, what is not published, and why". A
+            link label is a promise about a destination, and the footer already
+            sets one short name per destination; this list now uses those names
+            and lets the documents describe themselves. */}
+        <li>
+          <a href={docs.assurance}>Assurance</a>
+        </li>
         <li><a href={docs.thirdParty}>Third-party notices</a></li>
         <li><a href={`${DOCS}/SECURITY.md`}>Reporting a vulnerability</a></li>
         <li><a href={docs.license}>LICENSE</a></li>
@@ -418,15 +403,14 @@ const outOfScope = [
   <section class="band">
     <div class="container measure stack">
       <h2>Take this to whoever signs it off</h2>
+      {/* The paragraph that opened here restated the band directly above it —
+          "this page is a summary, these are the documents it summarises" —
+          nineteen lines later and with a semicolon. The second paragraph
+          closed on "That is a conversation rather than a checkout, and it
+          starts with a meeting", which is the button underneath it. */}
       <p>
-        This page is the summary; the documents above are the evidence. Between them they carry the
-        pinned specification revisions, the dependency and test figures, and the current audit
-        status, each dated where it is measured.
-      </p>
-      <p>
-        If you need more than documents, enterprise and OEM agreements include a scoped security
-        review, service levels, and negotiated portfolio or redistribution rights. That is a
-        conversation rather than a checkout, and it starts with a meeting.
+        Enterprise and OEM agreements include a scoped security review, service levels, and
+        negotiated portfolio or redistribution rights.
       </p>
       <div class="actions">
         <a class="oe-button" href="https://console.open-e2ee.dev/contact?plan=enterprise">
@@ -440,18 +424,20 @@ const outOfScope = [
         /evaluate linked /licensing and /legal/terms inline, and folding it left
         the reviewer who has to answer "what may we ship this under" with two
         buttons that both assume the answer is already agreed. /licensing rather
-        than /pricing because the question at this point is which licence
+        than /pricing because the question at this point is which license
         governs, not what a tier costs — and /licensing carries the /legal/terms
         link itself, so this restores the whole path rather than half of it.
       */}
       <p class="text-links">
-        <a href="/licensing">Which licence your product needs</a>
+        <a href="/licensing">Licensing</a>
       </p>
       <p class="muted">
-        A question about the threat model, or an answer you need for a questionnaire — email{' '}
-        <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>. No licence, meeting, or
-        account first. If you are earlier than that,{' '}
-        <a href="/learn">read how E2EE changes your app</a>.
+        Email <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a> with a
+        threat-model question, or an answer you need for a questionnaire. No license, meeting, or
+        account first. If you are earlier than that, read{' '}
+        <a href="/blog/e2ee-changes-your-application-architecture/"
+          >E2EE changes your application architecture</a
+        >.
       </p>
     </div>
   </section>

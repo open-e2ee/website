@@ -14,17 +14,29 @@ import { startupTier, tiers } from '../data/pricing.mjs';
     <div class="container measure">
       <p class="label">Pricing</p>
       <h1>Free under AGPLv3. Priced when you need it closed.</h1>
+      {/*
+        The positive fact first. The lead opened on three negatives — no trial,
+        no feature gate, no usage metering — which are answers to questions the
+        reader has not asked yet. What they arrived for is what the free thing
+        is and when it stops being free, so those are the first and last
+        sentences and the denials sit between them.
+      */}
       <p class="lead">
-        There is no trial, no feature gate, and no usage metering. The complete SDK is available
-        under AGPLv3 today. You buy a commercial license only when your product cannot meet the
-        AGPLv3 obligations.
+        The complete SDK is available under AGPLv3. No trial, no feature gate, no usage metering.
+        Buy a commercial license when your product cannot meet the AGPLv3 obligations.
       </p>
+      {/*
+        One action. The secondary button read "Understand AGPLv3 use" and
+        pointed at /licensing, and the AGPLv3 tier card one screen below
+        carries a link with the same label to the same route. Stripe's pricing
+        hero carries one call to action; Linear and Sentry each carry one and
+        let the tier cards carry the rest.
+      */}
       <div class="actions">
         <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
           <span class="oe-button">Build your first encrypted message</span>
           <span class="cta-sublabel">two clients · no account · no server</span>
         </a>
-        <a class="oe-button oe-button-secondary" href="/licensing">Understand AGPLv3 use</a>
       </div>
     </div>
   </header>
@@ -51,47 +63,41 @@ import { startupTier, tiers } from '../data/pricing.mjs';
           </li>
         ))}
       </ul>
+      {/*
+        Which instrument applies to which tier was stated here in a 29-word
+        parenthetical, again in "How buying works" below, and a third time on
+        /licensing. It is a process step, so "How buying works" owns it and
+        this line owns only the precedence rule. "Not this page" went with it:
+        naming what does not govern adds nothing to naming what does.
+      */}
       <p class="muted measure">
         Taxes may apply. Prices are the annual list prices for the scope named above. Startup
-        renews annually until you cancel before the renewal date. The agreement — the{' '}
-        <a href="/legal/terms">commercial terms</a> you accept at Startup checkout, or a signed
-        order form for Growth and Enterprise — controls the grant, covered products, support,
-        renewal, and post-expiration rights. Not this page.
+        renews annually until you cancel before the renewal date. Your{' '}
+        <a href="/legal/terms">agreement</a> controls the grant, covered products, support,
+        renewal, and post-expiration rights.
       </p>
     </div>
   </section>
 
+  {/*
+    "What a breach looks like afterwards" stood here, and it is gone rather
+    than moved. It asserted that "HIPAA, SOC 2, GDPR, and the rest are
+    satisfied by transport security and encryption at rest", which is the
+    opposite of what docs/positioning.md §5 and /blog/tls-is-not-end-to-end-encryption
+    both say: TLS plus disk encryption does not establish compliance with a
+    complete framework. It escaped `audit-build.mjs` because those patterns
+    match the word "compliant", which the sentence never used.
+
+    The argument it was making is the blog post's, made better: that post
+    links Cal. Civ. Code §1798.82, the FTC Safeguards Rule and GDPR Art.
+    34(3)(a), where this band cited two of them and linked neither. So the
+    band goes and the closing row gains the link to it, which this page did
+    not have at all.
+
+    This band takes the surface the deleted one had, because the two plain
+    bands it left adjacent are what the alternation rule forbids.
+  */}
   <section class="band band-surface">
-    <div class="container measure prose">
-      <h2>What a breach looks like afterwards</h2>
-      <p>
-        The usual reason teams reach for protocol-level encryption is not a regulation. Almost no
-        regulation requires end-to-end encryption; HIPAA, SOC 2, GDPR, and the rest are satisfied by
-        transport security and encryption at rest. Anyone telling you otherwise is selling
-        something.
-      </p>
-      <p>
-        The real argument is what happens on the day your server is breached. If an attacker reaches
-        your database and the message bodies there are ciphertext you cannot decrypt either, the
-        conversation that follows is a different conversation. Several breach-notification regimes
-        treat encrypted data differently from readable data — California&rsquo;s notification statute
-        and Article 34(3)(a) of the GDPR both turn on whether the exposed data was rendered
-        unintelligible.
-      </p>
-      <p>
-        We are not your lawyers and this is not legal advice; whether any specific regime applies to
-        you depends on your data, your jurisdiction, and your facts. But the engineering position is
-        straightforward and worth stating plainly: you cannot disclose what you were never able to
-        read.
-      </p>
-      <p class="honesty">
-        This does not extend to metadata. Your relay still holds who talked to whom and when, and
-        that is disclosable. <a href="/security">The full list is here.</a>
-      </p>
-    </div>
-  </section>
-
-  <section class="band">
     <div class="container">
       <div class="band-head">
         <h2>How buying works</h2>
@@ -100,9 +106,9 @@ import { startupTier, tiers } from '../data/pricing.mjs';
         <div>
           <dt>Startup</dt>
           <dd>
-            Sign in, name the legal entity and the covered product, accept the commercial terms, and
-            complete annual checkout. No call required. Checkout records which version of the terms
-            you accepted, and that version keeps governing your license through renewals.
+            Sign in, name the legal entity and the covered product, accept the commercial terms,
+            and complete annual checkout. Checkout records the terms version you accepted, and that
+            version governs your license through renewals.
           </dd>
         </div>
         <div>
@@ -115,8 +121,8 @@ import { startupTier, tiers } from '../data/pricing.mjs';
         <div>
           <dt>Evaluating</dt>
           <dd>
-            Build the integration under AGPLv3 first. Nothing about the code changes when you buy a
-            license — only the rights do.
+            Build the integration under AGPLv3 first. A commercial license changes what you may
+            ship. The code is the same build.
           </dd>
         </div>
       </dl>
@@ -125,7 +131,7 @@ import { startupTier, tiers } from '../data/pricing.mjs';
         <a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">
           Ask a licensing question
         </a>
-        <a href="/security">Read the security model</a>
+        <a href="/blog/tls-is-not-end-to-end-encryption/">What a relay breach exposes</a>
       </p>
     </div>
   </section>

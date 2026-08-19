@@ -67,7 +67,7 @@ const differentiators: Differentiator[] = [
      * How the braid works — 32 bytes per message, `CHUNK_SIZE` in
      * `spqr/ml-kem-braid/rs/codec.ts` — rode here for a round and came off on
      * the founder's call: it ran the cell to twice the length of its
-     * neighbours, and a deck of seven read at a glance cannot carry one cell
+     * neighbours, and a deck read at a glance cannot carry one cell
      * that explains a mechanism. The two names are what a reader who wants the
      * mechanism searches for.
      *
@@ -96,46 +96,6 @@ const differentiators: Differentiator[] = [
     body: 'PQXDH with ML-KEM-1024 establishes every session, and the Triple Ratchet carries it forward: the Double Ratchet plus the ML-KEM Braid. On without configuration, and failing closed.',
   },
   {
-    /* "Your backend stays yours" was a promise about what we will not do, and
-     * a reader evaluating where this runs wants the other half: what they own,
-     * and which parts of it they can change. The title names the thing rather
-     * than the assurance about it, and the body spends its room on the seams.
-     *
-     * The three are the SDK's own adapter roles, from the installed
-     * ADAPTERS.md: `ISignalProtocolRelayServer`, `ISignalProtocolLocalStore`
-     * and `SignalProtocolRemoteObjectStore`, each with shipped implementations
-     * and each documented as taking "a custom implementation" instead. Three
-     * is a count of interfaces, not of required arguments — storage is the
-     * only one the client demands — so the sentence says they are interfaces
-     * you fill and does not say you must fill all of them.
-     *
-     * "Infrastructure you own" and not "Your infrastructure": the ownership is
-     * the claim, and a possessive at the front of a title is read as an
-     * article. It puts the word a reader is scanning for first, too, which is
-     * what the other six titles do — none of them opens on "your".
-     *
-     * "Nothing phones home" stays. It was the shortest line in the old body
-     * and it is the one an on-premises reader is actually asking about: no
-     * telemetry, no licence check, no egress this package opens on its own.
-     * "We host nothing" is the neighbouring but different fact — no service of
-     * ours is in the path — and the two are worth the words separately.
-     *
-     * The relay is named here as one of the three and argued in the last cell,
-     * which is where what it holds, and the cost of holding it, belong.
-     *
-     * The body wraps to three lines at 1280 and above, which is what its six
-     * neighbours do; four made this one cell look like the deck's exception.
-     * Both facts and all three placements survived the cut. What went was
-     * length that carried nothing: "encrypted" before object storage, which
-     * the batteries cell already claims for attachments, "an adapter from the
-     * package" for "a shipped adapter", and "the cloud you already pay for"
-     * for "your cloud". Measured in the column, not counted in characters —
-     * wrapping is what decides it. */
-    title: 'Infrastructure you own',
-    icon: 'server',
-    body: 'Storage, relay, and object storage are interfaces you fill, with a shipped adapter or one you write, and run on your own hardware, a VPS, or your cloud. We host nothing, and nothing phones home.',
-  },
-  {
     /* The clause here used to be "the work teams usually discover three
        months in". Two fresh readers flagged it independently and both were
        right: "three months" is a statistic, nobody measured it, and there are
@@ -158,7 +118,7 @@ const differentiators: Differentiator[] = [
        this row is the only place that says what is in them. */
     title: 'Batteries included',
     icon: 'battery',
-    body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files all ship in the same package as the one-to-one case. Each is a protocol in its own right.',
+    body: 'Multi-device, groups, sealed sender, safety numbers, encrypted attachments and files ship in the same package as the one-to-one case.',
   },
   {
     /* The title says what the reader can do, not what our claims are like.
@@ -179,126 +139,61 @@ const differentiators: Differentiator[] = [
        assurances. */
     title: 'Published for anyone to review',
     icon: 'search',
-    body: 'The implementation, the protocol profile, the threat model, and the exact list of metadata the relay holds are all public.',
-  },
-  {
-    /* The cell states the licence and hands the reader to /pricing, which
-     * carries all three tiers and their numbers.
-     *
-     * What it may not do is promise a number it does not show. It once read
-     * "at a published price" with no price on the page and none linked from
-     * it, and a fresh reader listed that as one of two go/no-go inputs they
-     * could not get. `tests/site-content.test.mjs` fails the build if the
-     * page promises a published price again, and if the link stops leading to
-     * a page that renders every tier.
-     *
-     * The title is the category and the body is the licence, on the founder's
-     * call. "AGPLv3, or a commercial license" put a licence identifier and a
-     * disjunction in a scanned row of seven, where the reader is sorting the
-     * product into a kind of thing rather than reading terms; the terms are
-     * one line below it and the tiers are one click below that.
-     *
-     * The claim holds without a qualifier: AGPL-3.0-or-later is OSI-approved,
-     * the whole SDK is under it, and docs/messaging.md §5 states it plainly.
-     *
-     * The commercial license belongs in the body, not only behind the link. A
-     * reader who cannot take copyleft has to meet the second option in the
-     * sentence they are already reading: "See the tiers" reads as pricing
-     * detail for the thing just described, so a reader who ruled the product
-     * out at "AGPLv3" has no reason to follow it. Naming it here is also what
-     * makes the link an answer to a question the body has raised.
-     *
-     * The body says a license is available and not what it costs. The numbers
-     * are one click away on /pricing, and this page may not promise a figure it
-     * does not show — the suite fails the build on "at a published price".
-     *
-     * The id does not follow the title. It is a deep link a reader can arrive
-     * on from elsewhere, and both halves of the name are still what the cell
-     * is about.
-     *
-     * Capitals, unlike every other title in the deck, because the page has
-     * already made this one a proper name twice: "Fully Open Source" beside
-     * the OSI mark in the lead, and the band heading three folds down. A third
-     * spelling of the same two words is the split-terminology defect in
-     * miniature. */
-    id: 'agpl-or-commercial',
-    title: 'Open Source',
-    icon: 'law',
-    body: 'The complete SDK is free under AGPLv3 — every feature. A commercial license is available for closed-source products.',
-    link: { href: '/pricing', label: 'See the tiers' },
+    body: 'The implementation, the protocol profile, and the threat model are public, with every deliberate divergence from the specifications documented.',
   },
   /*
-   * The deck's one limit, and it is written as the property that produces it
-   * rather than as a loss. Three fresh readers in two consecutive waves
-   * arrived at that limit unaided and made it their largest gap: one asked
-   * what happens to dispute resolution, fraud review and trust-and-safety; one
-   * wrote that support messages under E2EE cannot be produced under subpoena,
-   * cannot be supervised, and cannot have DLP run over them, and that "the
-   * page never names the tradeoff — not to solve it, not even to acknowledge
-   * it exists." Their shared conclusion was not that the product is wrong. It
-   * is that a page which omits the one cost every evaluator finds in the first
-   * meeting has not met an evaluator yet, and that reading is more expensive
-   * than the cost itself.
+   * The deck's last row carries the two facts a reader deciding where this
+   * runs asks in one breath: what they own, and what the piece of it in the
+   * middle can be made to give up. They were two cells, and the split cost a
+   * scan. The relay is one of the three seams, so the cell that names the
+   * seams is the cell that has to say what the relay holds.
    *
-   * The answer to them was a cell titled "What you give up", with the band's
-   * lead sending readers into it before anything else. The two are not in
-   * conflict with a deck that states value: what the relay holds is the
-   * property the whole product rests on, and what a backend can do with it
-   * follows from that and nothing else. So the cell leads with the property,
-   * and docs/messaging.md §1.2 — the limit is part of the claim, not a
-   * disclaimer under it — is what keeps the rest of the sentence attached.
+   * The three are the SDK's own adapter roles, from the installed
+   * ADAPTERS.md: `ISignalProtocolRelayServer`, `ISignalProtocolLocalStore`
+   * and `SignalProtocolRemoteObjectStore`, each with shipped implementations
+   * and each documented as taking "a custom implementation" instead. Three is
+   * a count of interfaces, not of required arguments. Storage is the only one
+   * the client demands, so the sentence says they are interfaces you fill and
+   * does not say you must fill all of them.
    *
-   * The row named here is the one the demo directly above records, which is
-   * the only reason this page can assert any of it. No regulation is named:
-   * §2 bans "required for HIPAA / GDPR / SOC 2" outright, and the honest form
-   * is the capability a team loses, not a rule someone must obey.
+   * "Infrastructure you own" and not "Your infrastructure": the ownership is
+   * the claim, and a possessive at the front of a title reads as an article.
    *
-   * The last sentence sends the wrong reader away on purpose. The brief
-   * optimises for qualified starts of a ten-minute quickstart, and a team that
-   * needs server-side moderation will discover this either way — the only
-   * variable is whether they discover it here or after the ten minutes, and
-   * only one of those two outcomes is repairable.
+   * "Nothing phones home" is the line an on-premises reader is actually
+   * asking about: no telemetry, no licence check, no egress this package
+   * opens on its own. "We host nothing" is the neighbouring but different
+   * fact, that no service of ours is in the path, and the two are worth the
+   * words separately.
    *
-   * It ended on what to do instead — encrypt in transit and at rest — and on
-   * the device-to-device transfer the third case is built from. Both came off
-   * on the founder's call, in the round that cut every cell to its outcome:
-   * they are the two sentences here that answer "then how do I build it",
-   * which is a question a reader asks after they are convinced rather than in
-   * a deck they are scanning. /learn §1 and §2 take the redesign of search and
-   * moderation much further than a cell can. It does not carry the "encrypt in
-   * transit and at rest instead" advice, and no page does at the moment —
-   * that sentence is off the site rather than moved, and /learn is where it
-   * goes if it comes back. What stays here is the disqualifier itself, which
-   * is a property of the product rather than advice about it.
+   * The limit is written as the property that produces it rather than as a
+   * loss. Three fresh readers in two consecutive waves arrived at it unaided
+   * and made it their largest gap: one asked what happens to dispute
+   * resolution, fraud review and trust-and-safety; one wrote that support
+   * messages under E2EE cannot be produced under subpoena, cannot be
+   * supervised, and cannot have DLP run over them, and that "the page never
+   * names the tradeoff — not to solve it, not even to acknowledge it exists."
+   * Their shared conclusion was not that the product is wrong. It is that a
+   * page which omits the one cost every evaluator finds in the first meeting
+   * has not met an evaluator yet.
    *
-   * What the cell now opens on is the founder's call, and it is the fact the
-   * page was leaving out: a relay is not something the reader has to go and
-   * build. Two ship — `inMemoryRelay()` for development and tests, and a
-   * Convex component the application installs into its own deployment with
-   * `app.use(signalProtocol)` — and anything else implements
-   * `ISignalProtocolRelayServer`.
+   * docs/messaging.md §1.2 — the limit is part of the claim, not a disclaimer
+   * under it — is what keeps the rest of that sentence attached to what the
+   * relay holds. The row named here is the one the demo directly above
+   * records, which is the only reason this page can assert any of it. No
+   * regulation is named: §2 bans "required for HIPAA / GDPR / SOC 2"
+   * outright, and the honest form is the capability a team loses, not a rule
+   * someone must obey.
    *
-   * "Code in the package, not a service" is what that is worth to a reader
-   * deciding where this runs, and it is why the sentence ends on the backend
-   * of their choosing rather than on the two that ship. The licence is not
-   * restated here: the deck already has a cell for it, and a second mention
-   * would read as a condition on the relay rather than the fact about the
-   * whole package that it is.
+   * The last sentence sends the wrong reader away on purpose. A team that
+   * needs server-side moderation will discover this either way, and the only
+   * variable is whether they discover it here or after the ten-minute
+   * quickstart. Only one of those two outcomes is repairable. The
+   * architecture post takes the redesign of search and moderation further
+   * than a cell can.
    *
-   * The title went from "The relay is built in, and you run it" to "A relay
-   * you can run anywhere" on the founder's call. Both halves of the old one
-   * were already in the body's first clause, and a title that summarises the
-   * sentence under it spends the widest row on the deck saying one thing
-   * twice. What replaced it is the offer, and it is a noun phrase rather than
-   * an instruction: the six cells above it name things, and the one that
-   * issued a command read as the odd one out of the seven.
-   *
-   * The cost stays attached to it, because the relay is what produces it.
-   * docs/messaging.md §1.2 puts the limit in the same breath as the
-   * capability, and a cell that offers a relay and stops there would move the
-   * one cost in the deck off the page entirely. Full width is what pays for
-   * both halves: the row is alone on the last line of a two-column grid, so
-   * the span costs no vertical space and buys the body a full measure.
+   * Full width is what pays for both halves: the row is alone on the last
+   * line of a two-column grid, so the span costs no vertical space and buys
+   * the body a full measure.
    *
    * The id does not change with the title. It is the one deep link on this
    * page a reader arrives on from somewhere else, and the cell still holds
@@ -306,10 +201,10 @@ const differentiators: Differentiator[] = [
    */
   {
     id: 'your-relay-holds-ciphertext',
-    title: 'A relay you can run anywhere',
-    icon: 'broadcast',
+    title: 'Infrastructure you own',
+    icon: 'server',
     wide: true,
-    body: 'The relay is code in the package, not a service: in-memory for development, a Convex component for your own deployment, and one interface for any backend you want to put it on. It holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
+    body: 'Storage, relay, and object storage are interfaces you fill. Each has a shipped adapter, or you write your own. Run it on your hardware, a VPS, or your cloud. We host nothing and nothing phones home. The relay holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
   },
 ];
 
@@ -326,9 +221,20 @@ const runtimes = [
 ];
 ---
 
+{/* The site's highest-value string, and it used to be the brand name alone:
+    `title="OpenE2EE"` plus a special case in BaseLayout that suppressed the
+    suffix. It now carries the proposition and the query positioning.md §2
+    names as the thesis, and renders at 52 characters, inside the ~60 a
+    result row shows.
+
+    The description was 204 characters, so a search result cut it at the em
+    dash and the relay sentence was written for nobody. That sentence is the
+    policy-fixed formula from messaging.md §3 and it is now in the visible
+    demo copy, which is where a reader can act on it. What is left is the
+    offer and the four runtimes, at 139. */}
 <BaseLayout
-  title="OpenE2EE"
-  description="Add end-to-end encrypted messaging to a TypeScript app. The Signal Protocol in one npm package for Expo, React Native, browsers, and Node — your relay never needs message plaintext or device private keys."
+  title="End-to-end encryption for TypeScript apps"
+  description="Add end-to-end encrypted messaging to a TypeScript app. The Signal Protocol in one npm package for Expo, React Native, browsers, and Node."
 >
   <section class="hero">
     <div class="container hero-grid">
@@ -424,15 +330,15 @@ const runtimes = [
 
               No sublabel under either button. This page ends on the licence
               rather than on a second ask, so "ten minutes · two clients · no
-              account" is only on the pages a reader reaches after deciding to
-              spend them, /product and /learn. A scroll needs no time promise,
+              account" is only on /product, which a reader reaches after
+              deciding to spend them. A scroll needs no time promise,
               and a third line of small grey type here would stand between the
               offer and the proof. */}
           <a class="cta-primary" href="#demo">
             <span class="oe-button">See Demo</span>
           </a>
           <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/start/quickstart">
-            Quickstart Docs
+            Build your first encrypted message
           </a>
         </div>
         {/* Below the actions, never above them. The hero headline's floor is
@@ -568,9 +474,14 @@ const runtimes = [
               shorter line and it is false: the row two bands down prints
               `senderUserId`, `senderDeviceId` and `serverTimestamp` in the
               clear, so the page would be contradicted by its own evidence
-              before a reader finished scrolling. Stated as a negative about
-              plaintext the claim is exact, and it is the one the whole product
-              rests on.
+              before a reader finished scrolling.
+
+              It is `docs/messaging.md` §3 word for word, which is what that
+              section requires of every place the question "what does the server
+              see" arises. It read "the relay never sees plaintext" for a while,
+              which is shorter and is a paraphrase: it drops the private keys,
+              and "sees" claims about observation what the architecture provides
+              about need.
 
               `tests/site-content.test.mjs` pins the live-demo claim and "against
               the in-memory relay": the claim and its limit belong together, and
@@ -585,7 +496,8 @@ const runtimes = [
               press" defect this band has already paid for once. */}
           <p class="measure">
             <span class="demo-offer-wide">Type a sentence and the installed SDK encrypts it</span><span class="demo-offer-narrow">A scripted conversation plays through the installed SDK</span>{' '}
-            against the in-memory relay. Keys stay on the devices. The relay never sees plaintext.
+            against the in-memory relay. Keys stay on the devices. The relay never needs
+            message plaintext or device private keys.
           </p>
         </Fragment>
       </DemoConsole>
@@ -607,7 +519,7 @@ const runtimes = [
       <div class="band-head">
         {/* "What you get, and what it costs you to find out" for eight rounds.
             The second half priced the reader's attention rather than naming
-            anything the product does, which framed a deck of seven
+            anything the product does, which framed a deck of
             capabilities as a bill. A head with two halves also asks the
             reader to hold a structure before they have read a single cell —
             the rows do that work themselves. So: one clause, and the clause
@@ -618,17 +530,17 @@ const runtimes = [
               to that cell before any other: a reader whose product cannot live
               without server-side moderation left early and cheaply, which is
               worth more than the visit. It cost every other reader the band,
-              though — a deck of seven capabilities that opens by naming the
-              thing it cannot do reads as a warning rather than as an offer.
+              though — a deck of capabilities that opens by naming the thing
+              it cannot do reads as a warning rather than as an offer.
               The disqualifier is still on the page, last in the deck, written
               as the property it follows from. A reader who needs it meets it
               in the cell that names the row the demo above just recorded.
 
               What is left is the count and the tense. Both are load-bearing:
-              seven is what the reader is about to scroll, and "the first time
+              five is what the reader is about to scroll, and "the first time
               you install it" is the claim the deck's own cells keep — nothing
               here is configured on, bought separately, or coming later. */}
-          Seven things that are true the first time you install it.
+          Five things that are true the first time you install it.
         </p>
       </div>
       {/* `rows-iconed` and not `rows`: every other deck on the site is text,
@@ -697,19 +609,27 @@ const runtimes = [
   <section class="band band-surface">
     <div class="container">
       <div class="band-head">
-        {/* Every verb is a use. "Change it" is accurate as a right and is how
-            the free-software definition words it, but on a landing page next to
-            a 0.x version number it reads as an invitation to fix something. */}
-        <h2>Open Source — read, run, share, and build on</h2>
+        {/* The four verbs that used to hang off this heading are the four
+            commits in the drawing below it, where a reader meets them once
+            instead of twice. A head that lists what the band is about to show
+            spends the widest line on the page saying the figure's caption
+            early. */}
+        <h2>Open Source</h2>
         {/* `docs/messaging.md` §4 renders the second option as "commercial
-            license" and nothing else — the tier vocabulary it bans describes a
+            license" and nothing else. The tier vocabulary it bans describes a
             different product shape, one where the free thing is the smaller
             thing. Here the two are the same build, so the sentence says what
             the licence changes instead: what you may ship, never what the code
-            does. */}
+            does.
+
+            The deck above used to carry a cell saying this, which put the
+            licence in front of a reader twice under two headings. It says it
+            here, in the band the heading already promises, and the deck's
+            route to the tiers moved down with it. */}
         <p class="measure">
-          AGPLv3, or a commercial license — the same build either way, every feature in
-          the package, none of it time-limited.
+          The complete SDK is free under AGPLv3, and a commercial license covers
+          closed-source products. The build is the same either way. Every feature is in
+          the package, and none of it is time-limited.
         </p>
       </div>
 
@@ -718,7 +638,15 @@ const runtimes = [
           over the two marks the claim is answerable to, OSI's and the host the
           source sits on. What AGPLv3 asks of the reader's own application is
           not stated here — `/licensing` owns that wording, and the second link
-          is the route to it. */}
+          is the route to it.
+
+          That link carries the destination's one name. The row is the same
+          slot as /security's, /product's and the footer's, and a reader who
+          follows two of them lands on the same page. The tier card in
+          `src/data/pricing.mjs` keeps a longer label: there it is not
+          navigation but the qualification itself, naming the obligation that
+          disqualifies a reader, which is how Qt's licensing comparison writes
+          its free column. */}
       <div class="commitline-band">
         <div class="commitline-pair">
           <CommitLine />
@@ -726,9 +654,28 @@ const runtimes = [
         </div>
 
         <p class="text-links">
-          <a href="https://github.com/open-e2ee/signal-protocol-js">Read the source on GitHub</a>
-          <a href="/licensing">Understand AGPLv3 use</a>
+          <a href="https://github.com/open-e2ee/signal-protocol-js">SDK on GitHub</a>
+          <a href="/licensing">Licensing</a>
+          <a href="/pricing">Pricing</a>
         </p>
+
+        {/*
+          Required, and quoted rather than paraphrased. OSI's guidelines give
+          the sentence verbatim — "include the statement 'The OSI logo
+          trademark is the trademark of Open Source Initiative.'" — and a
+          trademark notice is the one kind of copy on this site with a correct
+          wording that is not ours to improve. It also carries the ®
+          acknowledgement for a mark shown without the logotype the ® is
+          attached to.
+
+          It sits on the page that carries the mark. It used to sit in the
+          footer, which put eleven words of trademark notice on all fifteen
+          pages to satisfy a condition attached to one mark on one of them.
+          `tests/site-content.test.mjs` reads `dist/index.html` and fails the
+          build for the page carrying the mark, so the guard follows the mark
+          rather than the file.
+        */}
+        <p class="legal-note">The OSI logo trademark is the trademark of Open Source Initiative.</p>
       </div>
     </div>
   </section>

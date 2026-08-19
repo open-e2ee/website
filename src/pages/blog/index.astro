@@ -9,6 +9,12 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
   year: 'numeric',
+  /* content.config.ts coerces publishedAt to a UTC midnight Date. Without this,
+   * Intl formats in the build machine's zone and every date west of Greenwich
+   * renders one day early: the shipped cards read "Jul 24, 2026" beside a
+   * datetime attribute of 2026-07-25. The same source built on a UTC runner
+   * printed a different date, so this was also non-deterministic. */
+  timeZone: 'UTC',
 });
 ---
 
@@ -16,14 +22,17 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   title="Engineering journal"
   description="Writing about JavaScript cryptography, protocol implementation, interoperability, and building encrypted applications."
 >
+  {/*
+    One layer under the title, not three. Of eleven developer-infrastructure
+    blog indexes measured, nine carry nothing under the heading and the longest
+    description found is Cloudflare's at eighteen words. The heading itself is a
+    plain label on every one of them — "Cloudflare Blog", "Blog", "Supabase
+    Blog" — so the slogan that stood here is gone with the eyebrow that
+    duplicated it and the description that restated both.
+  */}
   <header class="page-hero">
     <div class="container measure">
-      <p class="label">Engineering journal</p>
-      <h1>Protocol decisions, made inspectable.</h1>
-      <p class="lead">
-        Notes on JavaScript cryptography, implementation profiles, interoperability, testing, and
-        what it actually takes to build an encrypted application.
-      </p>
+      <h1>Engineering journal</h1>
       <p class="text-links">
         <a href="/rss.xml">Subscribe by RSS</a>
       </p>
@@ -33,10 +42,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   <section class="band">
     <div class="container">
       {posts.length === 0 ? (
-        <p class="muted measure">
-          Nothing published yet. The <a href="/learn">architecture guide</a> is the best place to
-          start in the meantime.
-        </p>
+        <p class="muted measure">Nothing published yet.</p>
       ) : (
         <ul class="post-list">
           {posts.map((post) => (

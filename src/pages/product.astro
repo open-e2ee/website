@@ -1,9 +1,5 @@
 ---
-import { Code } from 'astro:components';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SignatureDiagram from '../components/SignatureDiagram.astro';
-import capture from '../data/carrier-capture.json';
-import { codeThemes } from '../lib/code-theme.mjs';
 import { MEASURED_ON, axes, libsignalReadme, notes, projects } from '../lib/comparison.mjs';
 import { maturityLine } from '../lib/sdk.mjs';
 import { startupTier } from '../data/pricing.mjs';
@@ -11,36 +7,40 @@ import { startupTier } from '../data/pricing.mjs';
 /*
  * Every subpath and symbol on this page is copied from the SDK's own public
  * surface. A marketing page that invents an import is a support ticket.
+ *
+ * Three of the six carry no body. `./device`, `./device/provisioning`,
+ * `./groups` and `./sealed-sender` under the heading "Devices and groups" said
+ * everything the sentence above them said, and the same held for Attachments
+ * and files and for Application integration. The three that keep a body say
+ * something the subpaths do not: what the trust object is, which protocols run,
+ * and who the credentials hide membership from.
  */
 const capabilities = [
   {
     title: 'Identity and trust',
-    body: 'One versioned X25519 and Ed25519 composite tuple is the trust object. Safety numbers, rotation, and fail-closed trust mutation once an identity is pinned.',
+    body: 'One versioned X25519 and Ed25519 tuple is the trust object. Safety numbers, rotation, and fail-closed trust mutation after pinning.',
     subpaths: ['./keys', './safety', './profile', './username'],
   },
   {
     title: 'Sessions and messaging',
-    body: 'PQXDH establishment and the Double Ratchet, with post-quantum ratcheting, replay boundaries, skipped-key limits, and bounded state recovery.',
+    body: 'PQXDH and the Double Ratchet, with post-quantum ratcheting, replay boundaries, skipped-key limits, and bounded state recovery.',
     subpaths: ['.', './client', './client/compose', './client/headless'],
   },
   {
     title: 'Devices and groups',
-    body: 'Multi-device fan-out, provisioning and transfer flows, group state, and sealed sender.',
     subpaths: ['./device', './device/provisioning', './groups', './sealed-sender'],
   },
   {
     title: 'Attachments and files',
-    body: 'Encrypted attachments and files with digest verification, retry decisions, and pointer metadata handled by the SDK.',
     subpaths: ['./media', './files'],
   },
   {
     title: 'Application integration',
-    body: 'Lifecycle hooks, blocking, server clock skew handling, and typed errors your application can act on.',
     subpaths: ['./hooks', './blocking', './server-clock', './types'],
   },
   {
     title: 'Anonymous group credentials',
-    body: 'ZK credential primitives, for products whose group membership should not be legible to the server.',
+    body: 'ZK credential primitives, for products whose group membership should not be legible to the relay.',
     subpaths: ['./zk/groups', './zk/credentials'],
   },
 ];
@@ -61,15 +61,19 @@ const trustLinks = [
   { href: '/security', label: 'What the relay can and cannot see' },
   {
     href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/SECURITY.md',
-    label: 'The security model and threat model',
+    label: 'Threat model',
   },
   {
     href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/ARCHITECTURE.md',
-    label: 'Architecture and protocol profile',
+    label: 'Architecture',
+  },
+  {
+    href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/ASSURANCE.md',
+    label: 'Assurance',
   },
   {
     href: 'https://github.com/open-e2ee/signal-protocol-js',
-    label: 'View the SDK on GitHub',
+    label: 'SDK on GitHub',
   },
 ];
 
@@ -118,30 +122,43 @@ const adapters = [
  * that makes claims about other people's projects, and the homepage summary and
  * these bands read the same measurements so neither can drift from the other.
  */
+/* Column order, minus our own column. `notes` covers the four alternatives and
+ * nothing else, so this joins on the note rather than on the project. */
 const byKey = Object.fromEntries(notes.map((note) => [note.key, note]));
-const ordered = projects.map((project) => ({ project, note: byKey[project.key] }));
+const ordered = projects
+  .filter((project) => byKey[project.key])
+  .map((project) => ({ project, note: byKey[project.key] }));
 ---
 
+{/* The description was 178 characters, so a search result dropped the last two
+    features. PQXDH is the post-quantum handshake, so naming it and
+    "post-quantum" in the same list spends characters saying one thing twice.
+    148 now. */}
 <BaseLayout
   title="Signal Protocol SDK"
-  description="Pure TypeScript Signal Protocol for Expo, React Native, browsers, and Node. Post-quantum PQXDH and the Double Ratchet, multi-device, groups, sealed sender, encrypted attachments."
+  description="Pure TypeScript Signal Protocol for Expo, React Native, browsers, and Node. PQXDH, Double Ratchet, multi-device, groups, sealed sender, attachments."
 >
   <header class="page-hero">
     <div class="container measure">
       <p class="label">Signal Protocol SDK</p>
+      {/* This h1 is not free copy. It is the `product-hero` entry in
+          @open-e2ee/design's tagline registry, status `approved` since the founder
+          review of 2026-08-09, and tests/site-content.test.mjs asserts this page is
+          the one surface that carries it. The 2026-08-18 copy pass proposed cutting
+          "actually" here with the site's four other uses of the word. Retiring an
+          approved tagline is a founder call and a design-package change, so the
+          word stays on this line alone. */}
       <h1>The Signal Protocol, where your app actually runs.</h1>
       {/* "No native modules. No prebuild step." was true of the crypto and false of the storage
-          this page documents 100 lines further down: the encrypted Expo store is expo-sqlite with
-          SQLCipher, which Expo Go does not carry. The lead contradicted its own page. Scoped here
-          the way the landing page scopes it — to the protocol code, which really is pure
-          TypeScript — because appending the limit to the unqualified claim was tried twice and
-          read as a contradiction both times. The full reconciliation stays in the storage section,
-          which has room to say that `npx expo prebuild` is not a command the reader types. */}
+          this page documents further down: the encrypted Expo store is expo-sqlite with SQLCipher,
+          which Expo Go does not carry. The words that scope the claim are "the protocol code" and
+          "crypto module", and they do the whole job. The SQLCipher limit was appended here as well,
+          which put the same qualifier on the page twice and made the final sentence 28 words. It is
+          stated once now, in the Composition callout that owns storage. */}
       <p class="lead">
-        Expo, React Native, browsers, and Node from one package. Post-quantum PQXDH and the Double
-        Ratchet, multi-device, groups, sealed sender, encrypted attachments. The protocol code is
-        pure TypeScript with no native crypto module to link — the encrypted Expo store uses
-        SQLCipher, which needs a development build rather than Expo Go.
+        Expo, React Native, browsers, and Node from one package. Post-quantum PQXDH, the Double
+        Ratchet, multi-device, groups, sealed sender, and encrypted attachments. The protocol code is
+        pure TypeScript with no native crypto module to link.
       </p>
       <p class="maturity">{maturityLine}</p>
       <div class="actions">
@@ -150,45 +167,32 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
           <span class="cta-sublabel">ten minutes · two clients · no account</span>
         </a>
         <a class="oe-button oe-button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
-          View the SDK on GitHub
+          SDK on GitHub
         </a>
       </div>
     </div>
   </header>
 
-  <section class="band">
-    <div class="container stack">
-      <div class="band-head">
-        <h2>Two clients, one relay, no account</h2>
-        <p class="measure">
-          The quickstart runs entirely on your machine against the development adapters. This is the
-          whole program.
-        </p>
-      </div>
-      <div class="code-block">
-        <p class="code-filename">quickstart.ts</p>
-        {/* The same theme and the same reasons as the hero excerpt this page
-            is the destination for — a reader who follows "See the whole file"
-            should land on the same program, not a monochrome copy of it. */}
-        <Code
-          code={capture.quickstartCode}
-          lang="ts"
-          themes={codeThemes}
-          defaultColor={false}
-          role="group"
-          aria-label="The quickstart program"
-        />
-      </div>
-      <p class="muted measure">
-        <code>inMemoryStore()</code> and <code>inMemoryRelay()</code> run the real protocol and the
-        real cryptography against simulated infrastructure: no auth, no durability, nothing that
-        outlives the process. Swap them for a real store and relay when the shape of your
-        integration is settled — the client code above does not change.
-      </p>
-    </div>
-  </section>
+  {/*
+    "Two clients, one relay, no account" printed the whole 29-line quickstart
+    here. The homepage code panel ships ten tabbed variants of that same
+    program, including the in-memory pair, with the same identifiers and the
+    same message string, and docs.open-e2ee.dev/start/quickstart owns the
+    runnable file that the hero button already points at. A reader on this page
+    arrived through the panel, or arrived to compare.
 
-  <section class="band band-surface">
+    Its one non-duplicated fact was that the in-memory adapters run the real
+    protocol and the real cryptography against simulated infrastructure. The
+    Composition band lists ./local/store/memory and ./remote/relay/memory, so
+    that fact is stated there.
+
+    The `Code` component, the shared code theme, and the carrier-capture import
+    that fed it left the page with the band.
+  */}
+  {/* Surfaces re-flipped down the page. Three bands left the tree in this pass
+      and the alternation shifted with them; tests/site-content.test.mjs checks
+      it on every page. */}
+  <section class="band">
     <div class="container stack">
       <div class="band-head">
         <h2>What the package covers</h2>
@@ -200,7 +204,7 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
         {capabilities.map((item) => (
           <li>
             <h3>{item.title}</h3>
-            <p>{item.body}</p>
+            {item.body && <p>{item.body}</p>}
             <p class="subpath-list">
               {item.subpaths.map((path) => <code>{path}</code>)}
             </p>
@@ -210,13 +214,17 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
     </div>
   </section>
 
-  <section class="band">
+  <section class="band band-surface">
     <div class="container stack">
       <div class="band-head">
-        <h2>Composition, not configuration</h2>
+        {/* "Composition, not configuration" was an X-not-Y heading that also
+            failed as navigation: a reader scanning for the adapter list could
+            not tell this band held it. The lead's own first clause is the
+            heading, and it names the thing the band lists. */}
+        <h2>Four adapter boundaries you own</h2>
         <p class="measure">
-          Four boundaries are yours. You pass adapters into <code>createSignalProtocolClient</code>;
-          the protocol logic above them never changes, and no credentials ever reach us.
+          You pass adapters into <code>createSignalProtocolClient</code>. The protocol logic
+          above them does not change.
         </p>
       </div>
       <dl class="definition-rows">
@@ -232,25 +240,31 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
           </div>
         ))}
       </dl>
+      {/* The second sentence here ran 57 words listing four stores and the
+          conformance kit. It is four clauses now. "expo-sqlite with SQLCipher"
+          was stated in it and again in the callout four lines below, so this
+          keeps the store name and the callout keeps the consequence.
+
+          "npx expo prebuild is not involved" is gone rather than defended.
+          messaging.md §5 lists native project generation as a requirement of
+          the Expo SQLCipher store, and positioning.md §3 records that Expo
+          build tools can run Prebuild on the reader's behalf. The defensible
+          claim is that the reader does not type the command, which is not worth
+          a clause. */}
       <p class="muted measure">
         The Expo, Node, browser, and bare React Native stores implement{' '}
-        <code>ISignalProtocolLocalStore</code> in full, so groups and multi-device work
-        on any of them. They differ in where the bytes land: the Expo store is{' '}
-        <code>expo-sqlite</code> with SQLCipher, the Node store is an encrypted filesystem under{' '}
-        <code>node:crypto</code> with 0600 permissions, the browser store is IndexedDB scoped
-        to the page&rsquo;s origin, and the bare React Native store writes through a key-value
-        backend you supply and verify with the SDK&rsquo;s exported backend-conformance kit. You
-        can also implement{' '}
-        <code>ISignalProtocolLocalStore</code> or <code>ISignalProtocolRelayServer</code> yourself —
-        they are documented interfaces, not internals.
+        <code>ISignalProtocolLocalStore</code> in full, so groups and multi-device work on any of
+        them. They differ in where the bytes land. Expo uses{' '}
+        <code>expo-sqlite</code> with SQLCipher, and Node an encrypted filesystem under{' '}
+        <code>node:crypto</code> with 0600 permissions. The browser uses IndexedDB scoped to the
+        page&rsquo;s origin, and bare React Native a key-value backend you supply.{' '}
+        <code>ISignalProtocolLocalStore</code> and <code>ISignalProtocolRelayServer</code> are
+        documented interfaces, so you can write your own.
       </p>
       <div class="callout measure">
         <p>
-          One caveat worth knowing before you plan a sprint: the encrypted local store uses{' '}
-          <code>expo-sqlite</code> with SQLCipher, and SQLCipher requires a development build — it
-          is not available in Expo Go. There is no native module of ours to link and{' '}
-          <code>npx expo prebuild</code> is not involved, but you do need a dev build rather than
-          the Expo Go sandbox.
+          The Expo store needs a development build, because SQLCipher is not available in Expo Go.
+          There is no native module of ours to link.
         </p>
       </div>
       <p class="text-links">
@@ -264,34 +278,30 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container stack">
-      <div class="band-head">
-        <h2>Where your data actually sits</h2>
-        <p class="measure">
-          Plaintext and private keys never leave a device outline. Your relay carries sealed
-          envelopes, and those envelopes still have addresses on them.
-        </p>
-      </div>
-      <div class="diagram">
-        <SignatureDiagram />
-      </div>
-      <p class="text-links">
-        <a href="/security">See exactly what the relay stores</a>
-        <a href="/learn">Learn how E2EE changes your app</a>
-      </p>
-    </div>
-  </section>
+  {/*
+    "Where your data actually sits" stood here and rendered
+    src/components/SignatureDiagram.astro, which /security also renders. Not a
+    similar band: the same component, under a paraphrase of the same sentence.
 
+    messaging.md §3 requires the fixed relay formula everywhere the question
+    "what does the server see" arises. This band raised that question and the
+    page carried the formula zero times, while /security opens with it verbatim
+    and draws the same picture underneath. Cutting the band resolves both ends:
+    the question stops being asked on the wrong page, and the reader meets the
+    formula where it is stated. "Check the work" below already links /security
+    as "What the relay can and cannot see".
+  */}
   <section class="band" id="how-it-compares">
     <div class="container stack">
       <div class="band-head">
         <h2>How it compares</h2>
+        {/* "That is the gap." was a rhetorical closer, and the clause before it
+            paraphrased the blockquote printed four lines below. The quotation is
+            the evidence, so it makes that half of the point in the
+            maintainers' own words. */}
         <p class="measure">
-          libsignal is excellent, actively maintained, and the most scrutinised Signal Protocol
-          code there is. It is also a native Node addon that does not run in a browser, in Expo, or
-          in React Native, and its maintainers say plainly that use outside Signal is not something
-          they support. That is the gap.
+          libsignal is the most scrutinized Signal Protocol code there is, and it is actively
+          maintained. It is also a Node native addon with no browser, Expo, or React Native build.
         </p>
         {/* Both sentences, not the famous one on its own. The first is the
             licence answer and the second is the roadmap answer, and a reader
@@ -322,9 +332,8 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
             `.band-head` caps at 62ch and is unaffected. */}
         <p class="muted measure">
           Read from the GitHub API, the npm registry API, and the published package tarballs on
-          {' '}{MEASURED_ON}. Dates are the ones those APIs returned. The axes are the ones this
-          SDK was built to change, so the table is not a quality ranking — and the column for our
-          own package is the one column nobody independent measured.
+          {' '}{MEASURED_ON}. Dates are the ones those APIs returned. The axes are the ones this SDK
+          was built to change, not a quality ranking. Nobody independent measured our own column.
         </p>
       </div>
       <div class="table-scroll">
@@ -353,51 +362,50 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
           </tbody>
         </table>
       </div>
+      {/* Three spellings of "licence" against a table row headed "Commercial
+          license offered", and the note quoted that row back as "no commercial
+          licence offered" where the cell reads "Not needed — MIT".
+          messaging.md §4 approves "commercial license". "A licence row is not a
+          scorecard either" was an invented contrast whose "either" pointed at
+          the note above it. */}
       <p class="muted measure">
-        A licence row is not a scorecard either. <code>ts-mls</code> is MIT, which already permits
-        proprietary use, so &ldquo;no commercial licence offered&rdquo; costs its users nothing.
-        Ours is AGPLv3 with a commercial licence available, which is a cost to some
-        readers and the reason the row is there.
+        <code>ts-mls</code> is MIT, which already permits proprietary use, so that row costs its
+        users nothing. This SDK is AGPLv3 with a commercial license available, which is a real cost
+        to some readers.
       </p>
-    </div>
-  </section>
+      {/*
+        "What each one is actually for" was a band of its own here: five
+        definition rows of 50 to 91 words, 39 percent of the page's prose, each
+        re-describing in sentences what a cell of the table above states. The
+        libsignal body alone repeated five cells. The entry for this SDK
+        restated the hero and printed the audit formula a second time, 300 words
+        before "Check the work" prints it again.
 
-  <section class="band band-surface">
-    <div class="container stack">
-      <div class="band-head">
-        <h2>What each one is actually for</h2>
-        <p class="measure">
-          A table flattens the thing a table is worst at: what a project is good at. Two of the five
-          below end with a recommendation that is not this SDK.
-        </p>
-        <p class="muted measure">
-          {/* The explicit space is load-bearing, the same way it is in the
-              homepage band that summarises these projects: Astro collapses the
-              newline between a text node and a following inline element, and
-              this rendered as "the top of`src/lib/comparison.mjs`". */}
-          Take none of it on our word. Every project links to its repository, every date
-          came from a public API, and the commands that read them are in the comment at the top of{' '}
-          <code>src/lib/comparison.mjs</code>.
-        </p>
-      </div>
+        The verdicts are what the table cannot carry, and two of the four send
+        the reader somewhere else, so they sit under the rows they follow from.
+        There is no verdict for our own column because the table is the case
+        for it.
+      */}
       <dl class="definition-rows">
         {ordered.map(({ project, note }) => (
           <div>
             <dt>
-              {note.heading} —{' '}
-              {project.ours ? (
-                <code>{project.name}</code>
-              ) : (
-                <a href={project.href}><code>{project.name}</code></a>
-              )}
+              {note.heading} &mdash;{' '}
+              <a href={project.href}><code>{project.name}</code></a>
             </dt>
-            <dd>
-              <p>{note.body}</p>
-              <p class="verdict">{note.verdict}</p>
-            </dd>
+            <dd>{note.verdict}</dd>
           </div>
         ))}
       </dl>
+      <p class="muted measure">
+        {/* The explicit space is load-bearing, the same way it is in the
+            homepage band that summarises these projects: Astro collapses the
+            newline between a text node and a following inline element, and
+            this rendered as "the top of`src/lib/comparison.mjs`". */}
+        Every project links to its repository, and every date came from a public API. The commands
+        are in the comment at the top of{' '}
+        <code>src/lib/comparison.mjs</code>.
+      </p>
       <p class="text-links">
         <a href="https://github.com/open-e2ee/signal-protocol-js#how-it-compares">
           The shorter table in the SDK README
@@ -406,11 +414,7 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
     </div>
   </section>
 
-  {/* Plain band, not band-surface. The comparison arrived as two bands rather
-      than the one summary paragraph that used to link to /compare, so the
-      alternation down this page shifted by one and this section absorbs it.
-      tests/site-content.test.mjs checks the alternation on every page. */}
-  <section class="band">
+  <section class="band band-surface">
     <div class="container measure stack">
       <h2>Licensing</h2>
       <p>
@@ -419,8 +423,8 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
         {startupTier.period}.
       </p>
       <p class="text-links">
-        <a href="/pricing">License for closed source</a>
-        <a href="/licensing">Understand AGPLv3 use</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/licensing">Licensing</a>
       </p>
     </div>
   </section>
@@ -430,7 +434,7 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
       reader who has just read a page of capability claims, which is the page
       it belongs on now — /security states the same assurance sentence inside
       its published limits, at the length that page has room for. */}
-  <section class="band band-surface">
+  <section class="band">
     <div class="container">
       <div class="band-head">
         <h2>Check the work</h2>
@@ -440,11 +444,16 @@ const ordered = projects.map((project) => ({ project, note: byKey[project.key] }
             never separate, and no future firm engagement is promised in any
             tense. The band whose subject is what a reader can check is the last
             place the site should round up. */}
+        {/* The expansion used to end "— so every claim on this page has
+            something you can read behind it", which is a rhetorical conclusion
+            in the place messaging.md §7 puts the one pointer a security
+            reviewer needs. ASSURANCE.md was unreachable from the band whose
+            subject is what a reader can check; it is the fifth link now. */}
         <p class="measure">
-          Reviewed continuously by adversarial AI agents; not audited by any independent firm.
-          Every change passes an adversarial AI review before it merges, and recurring
-          whole-codebase AI audit passes run against the engineering repository — so every claim
-          on this page has something you can read behind it.
+          Reviewed continuously by adversarial AI agents; not audited by any independent firm. Every
+          change passes an adversarial AI review before it merges, and recurring whole-codebase AI
+          audit passes run against the engineering repository. The assurance summary states what
+          that covers and what it does not.
         </p>
       </div>
       <ul class="rows rows-single">

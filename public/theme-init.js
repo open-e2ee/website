@@ -17,7 +17,7 @@
  * answer `prefers-color-scheme`, which is the system's answer and not this
  * site's: a reader who chooses dark under a light system got a cream status bar
  * above a dark header, and on a phone that reads as a gap at the top of the
- * page rather than as a colour. Both tags are set to the same value, so
+ * page rather than as a color. Both tags are set to the same value, so
  * whichever one the browser matches is the one the page is painted in.
  *
  * The two hexes are `--oe-canvas` from the design tokens, restated because this

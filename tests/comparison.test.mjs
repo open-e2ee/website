@@ -56,10 +56,17 @@ test('keeps every row the same width as the header', async () => {
   }
 });
 
-test('writes one note per project and marks exactly one as ours', async () => {
+test('writes one note per alternative and none for ours', async () => {
+  /* The notes used to cover all five columns, and the fifth restated the
+   * /product hero. A note for our own column is the page arguing with the
+   * table it just printed, so the set is now exactly the alternatives, and
+   * this asserts that rather than a count. */
   assert.deepEqual(
     notes.map((note) => note.key).sort(),
-    projects.map((project) => project.key).sort(),
+    projects
+      .filter((project) => !project.ours)
+      .map((project) => project.key)
+      .sort(),
   );
   assert.equal(projects.filter((project) => project.ours).length, 1);
 
@@ -67,7 +74,7 @@ test('writes one note per project and marks exactly one as ours', async () => {
     assert.match(project.href, /^https:\/\//, `${project.name} must link somewhere`);
   }
   for (const note of notes) {
-    assert.ok(note.heading && note.body && note.verdict, `${note.key} is missing prose`);
+    assert.ok(note.heading && note.verdict, `${note.key} is missing prose`);
   }
 });
 

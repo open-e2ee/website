@@ -24,8 +24,14 @@ export const tiers = [
     price: 'Free',
     period: null,
     body: 'The complete SDK, for products that can meet the AGPLv3 obligations. No feature is held back and nothing is time-limited.',
-    detail:
-      'You run your own infrastructure, you keep your own keys, and your source obligations are the license text rather than anything we decide later.',
+    /* The qualification trigger, not a benefit line. This read "You run your
+     * own infrastructure, you keep your own keys...", which /index and /product
+     * already say and which reads on a pricing page as a cost the buyer did not
+     * ask about. What a buyer needs in the free column is the specific
+     * obligation that disqualifies them, which is how Qt's licensing comparison
+     * writes its own free column. positioning.md §3 makes this exact friction
+     * the qualification funnel, and /licensing carried the sentence alone. */
+    detail: 'AGPLv3 reaches applications offered over a network, not only distributed binaries.',
     cta: { href: '/licensing', label: 'Understand AGPLv3 use', secondary: true },
   },
   {
@@ -46,8 +52,9 @@ export const tiers = [
     price: '$20,000',
     period: 'per year',
     body: 'Commercial rights with a configurable product scope, plus implementation support while you integrate.',
+    /* "integration support" is the body sentence one line above. */
     detail:
-      'Contract-defined component scope, configurable product count, integration support. Quote and signed order form.',
+      'Contract-defined component scope. Configurable product count. Quote and signed order form.',
     cta: {
       href: 'https://console.open-e2ee.dev/contact?plan=growth',
       label: 'Schedule a meeting',
@@ -59,8 +66,9 @@ export const tiers = [
     price: '$50,000+',
     period: 'per year',
     body: 'Negotiated portfolio or redistribution rights, security review, and service levels.',
-    detail:
-      'Contract-defined component scope, portfolio or OEM rights, security review and SLA. MSA or signed order form.',
+    /* "security review" and "portfolio or OEM rights" are both the body
+     * sentence one line above. */
+    detail: 'Contract-defined component scope. MSA or signed order form.',
     cta: {
       href: 'https://console.open-e2ee.dev/contact?plan=enterprise',
       label: 'Plan a security review',
