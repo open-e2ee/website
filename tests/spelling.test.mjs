@@ -2,6 +2,14 @@ import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {
+  ALLOWED,
+  PATTERN,
+  QUOTATIONS,
+  REJECTED,
+  SOURCE_ONLY,
+  SPELLING,
+} from '../scripts/spelling-table.mjs';
 
 /*
  * House spelling in the source, which the build audit cannot reach.
@@ -9,53 +17,20 @@ import assert from 'node:assert/strict';
  * `scripts/audit-build.mjs` reads `dist`. It guards what a page shows a reader
  * and nothing else. Comments, test prose, and identifiers never render.
  *
- * The source held about 450 British forms while every built page passed. Among
- * them were 95 `colour`, 81 `licence`, 41 `centre`, and the diagram geometry
- * `centreOf`, `holeCentreY`, and `emittedColours`. This test guards the half
- * the audit cannot see. It uses the same word list, so the two cannot drift
- * apart.
- *
- * The families are the ones that shipped somewhere in the org, not a general
- * list. `artefact`, `judgement`, `acknowledgement`, and `sceptic` come from
- * this repository. The rest match `SPELLING` in the audit and
- * `test/naming.test.ts` in the console.
- *
- * `centre` and `grey` are bounded on both ends because the audit shares this
- * list and reads minified output. Minification makes word-shaped collisions
- * that never appear in source. `centRetryRequests` reads as `centre` under a
- * case-insensitive scan, exactly as `analyses` reads as `analyse`.
+ * Both tables and both bite lists live in `scripts/spelling-table.mjs`, which
+ * explains every entry. That file is the only one either scan skips, and the
+ * agreement test below is what keeps the two tables from drifting.
  */
-const PATTERN =
-  /colour|licence|defence|offence|pretence|behaviour|honour|candour|flavour|favour|neighbour|rumour|endeavour|artefact|acknowledgement|judgement|sceptic|\bprogrammes?\b|\b(?:centre|centred|centres)\b|\b(?:grey|greys|greyscale)\b|\banalys(?:e|ed|ing)\b|(?:labell|modell|signall|travell)(?:ed|ing|er|ers)\b|(?:generalis|characteris|organis|recognis|standardis|prioritis|scrutinis|summaris|normalis|serialis|authoris|optimis|catalogu|stylis)(?:e|ed|es|ing|ation|ations)/i;
 
 /*
- * Both spelling tables list the words they reject, so both must skip
- * themselves. This file spells out `colour` and `mislabelled` to prove the
- * pattern catches them, and `scripts/audit-build.mjs` does the same. That file
- * also names the copy that once shipped past it.
+ * `scripts/spelling-table.mjs` lists the words it rejects, so the scan skips
+ * it. Nothing else here is exempt for that reason.
  *
  * `.gauntlet-workbench.md` is a round-by-round log of a finished exercise. It
- * records what the exercise tried. This project does not maintain it as text.
+ * records what the exercise tried, including verbatim quotations from its
+ * reviewers. This project does not maintain it as text.
  */
-const EXCLUDED = new Set([
-  'tests/spelling.test.mjs',
-  'scripts/audit-build.mjs',
-  '.gauntlet-workbench.md',
-]);
-
-/*
- * Copy this page dropped, quoted back so nobody restores it. Respelling a
- * quotation makes the record false. In `product.astro` it also deletes the
- * subject. That comment counts three spellings of one word. Flatten them to
- * `license` and it counts three identical strings. Empty this list and the
- * test goes red on both files, which is what keeps the list from going stale.
- */
-const QUOTATIONS = [
-  'Three spellings of "licence"',
-  'licence offered" where the cell',
-  '"A licence row is not a',
-  'these are the documents it summarises"',
-];
+const EXCLUDED = new Set(['scripts/spelling-table.mjs', '.gauntlet-workbench.md']);
 
 const SCANNED = /\.(astro|ts|mjs|js|md|css)$/;
 
@@ -77,66 +52,37 @@ test('the source carries no British spelling', async () => {
 });
 
 test('the pattern separates British forms from American look-alikes', () => {
-  for (const rejected of [
-    'colour',
-    'recolour',
-    'grey',
-    'greyscale',
-    'centre',
-    'centred',
-    'licence',
-    'candour',
-    'travelling',
-    'labelled',
-    'mislabelled',
-    'unlabelled',
-    'remodelled',
-    'organise',
-    'recognised',
-    'characterisation',
-    'artefact',
-    'judgement',
-    'acknowledgement',
-    'sceptical',
-    'programme',
-    'analyse',
-  ]) {
+  for (const rejected of REJECTED) {
     assert.ok(PATTERN.test(rejected), `${rejected} should be rejected`);
   }
-
-  /*
-   * `centRetryRequests` is the collision minification produced in `run.js`.
-   * `analyses` is the American plural noun. The doubled-l family needs its
-   * closing boundary and only that. The trailing `\b` excludes the ARIA
-   * attribute `aria-labelledby`. A leading one would buy nothing and would let
-   * every prefixed form through. The -mme family stops at the plural because
-   * `programmed` is the American past tense of `program`.
-   */
-  for (const allowed of [
-    'color',
-    'gray',
-    'grayscale',
-    'center',
-    'license',
-    'organization',
-    'recognized',
-    'characteristics',
-    'generalist',
-    'optimistic',
-    'artifact',
-    'judgment',
-    'acknowledgment',
-    'skeptical',
-    'program',
-    'programmer',
-    'programmed',
-    'analyses',
-    'analysis',
-    'labeled',
-    'traveled',
-    'aria-labelledby',
-    'centRetryRequests',
-  ]) {
+  for (const allowed of ALLOWED) {
     assert.equal(PATTERN.test(allowed), false, `${allowed} should be allowed`);
+  }
+});
+
+/*
+ * The two tables agree, which is the claim this file used to make in a comment
+ * and nothing enforced. They are not one literal: the built-output table is
+ * bounded at the front because it reads minified scripts, and the source table
+ * is not. `SOURCE_ONLY` names every word where that difference shows, so the
+ * difference stays a decision rather than a drift.
+ */
+test('the two tables agree on every rejected word', () => {
+  const caughtByAudit = (word) => SPELLING.some((rule) => rule.test(word));
+
+  for (const rejected of REJECTED) {
+    if (SOURCE_ONLY.includes(rejected)) {
+      assert.equal(
+        caughtByAudit(rejected),
+        false,
+        `${rejected} is listed as source-only, so the built-output table must not catch it`,
+      );
+      continue;
+    }
+    assert.ok(caughtByAudit(rejected), `the built-output table does not catch "${rejected}"`);
+  }
+
+  for (const allowed of ALLOWED) {
+    assert.equal(caughtByAudit(allowed), false, `${allowed} should be allowed by both tables`);
   }
 });
