@@ -12,6 +12,7 @@ import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { readSdkSurface, SDK_PACKAGE, suggest } from './sdk-surface.mjs';
+import { SPELLING } from './spelling-table.mjs';
 
 const DIST = resolve(process.argv[2] ?? 'dist');
 const HERE = dirname(new URL(import.meta.url).pathname);
@@ -115,62 +116,16 @@ const TERMINOLOGY = [
  * rule about this site's copy alone.
  *
  * docs/messaging.md §4 mandates "commercial license", the legal pages and the
- * package metadata are American, and the site shipped both halves anyway —
- * /security rendered "Which licence your product needs" directly above a
+ * package metadata are American, and the site shipped both halves anyway. The
+ * /security page rendered "Which licence your product needs" directly above a
  * footer that says "license", inside one viewport. CLAUDE.md names split
  * terminology as a defect this project has already paid for once.
  *
- * These run over the built scripts as well as the pages, like every other
- * prose rule here, so a word inside a bundled dependency would fail a build
- * over text no reader sees. Measured rather than assumed: across every built
- * script today the only matches were this project's own files, and they are
- * fixed. A dependency that trips it later should be allowlisted here, loudly,
- * rather than dropping the guard.
- *
- * The families are the ones that actually shipped, not a general list: -our,
- * -ise, -ogue, -mme, -ce, and the doubled l. A copy pass found "programme" in
- * the FIPS row, "scrutinised" on /product, "catalogues" and "prioritises" in
- * one article, "flavoured" in another, and "travelling" and "labelled" inside
- * SVG `<desc>` text that only a screen reader reads.
- *
- * `tests/spelling.test.mjs` holds the same families for the source, which this
- * file cannot reach because it reads `dist`. The later entries here came from
- * that pass: artefact, judgement, acknowledgement, sceptic, centre, grey,
- * candour, and the rest of the -ise verbs. Add to both lists or to neither.
- *
- * "artefact" is the one pair here whose British form is also correct inside
- * standards prose. Nothing on the site quotes such prose today, which is what
- * makes the rule safe. Quote a standard that spells it "artefact" and exempt
- * that quotation rather than rewriting it.
- *
- * "centre" and "grey" are bounded on both ends because this runs over minified
- * scripts. Concatenation there makes word-shaped collisions that never appear
- * in source. Unbounded, `centRetryRequests` reads as "centre". It is the same
- * trap as `analyses` reading as "analyse".
- *
- * Two exclusions are deliberate. "cancelled" is not here because the SDK ships
- * `Cancelled` as a media-attachment error code, and a guard that fails a build
- * over a dependency's identifier gets dropped rather than fixed. `analyses` is
- * not in the -ise pattern because it is also the American plural noun.
- * `aria-labelledby` is safe without an exception: the word boundary after
- * "labelled" does not hold inside it. That trailing boundary is the whole
- * exclusion, so the doubled-l family carries no leading one. A leading `\b`
- * passes "mislabelled" and "unlabelled", and both shipped here. The -mme
- * family stops at the plural for the same reason. "programmed" is the American
- * past tense of "program", not a British form.
+ * `SPELLING` and the source-side `PATTERN` both live in
+ * `scripts/spelling-table.mjs`, which is the one file either scan skips. That
+ * file explains every entry and every boundary, and `tests/spelling.test.mjs`
+ * proves the two tables agree.
  */
-const SPELLING = [
-  /\b(?:licence|defence|offence|pretence)(?:s|d)?\b/i,
-  /\b(?:behaviour|colour|flavour|favour|honour|candour|neighbour|endeavour|rumour|valour)(?:s|ed|al|ing|able)?\b/i,
-  /\b(?:catalogu|organis|prioritis|recognis|scrutinis|summaris|generalis|characteris|standardis|normalis|serialis|authoris|optimis|stylis)(?:e|es|ed|ing|ation|ations)\b/i,
-  /\b(?:artefact|judgement|acknowledgement)s?\b/i,
-  /\bsceptic(?:al|ism|s)?\b/i,
-  /\b(?:centre|centred|centres)\b/i,
-  /\b(?:grey|greys|greyscale)\b/i,
-  /\banalys(?:e|ed|ing)\b/i,
-  /\bprogrammes?\b/i,
-  /(?:labell|modell|signall|travell)(?:ed|ing|er|ers)\b/i,
-];
 
 const AUDIT_NEGATIONS = [/not audited by any independent firm/i, /no independent firm has audited/i];
 const AUDIT_MENTION =
