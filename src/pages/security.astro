@@ -296,12 +296,13 @@ const notHidden = [
           </dd>
         </div>
         <div>
-          <dt>Not a validated cryptographic module</dt>
+          <dt>Standardized algorithms, no module validation</dt>
           <dd>
-            Pure-JavaScript cryptography is not FIPS 140-validated, and no part of this SDK is
-            offered as a validated module. PQXDH uses FIPS 203 ML-KEM-1024. Braid mode uses a
-            modified derivation, so no FIPS conformance claim holds there either. If your program
-            requires a validated module, this SDK does not meet it.
+            PQXDH uses ML-KEM-1024 as standardized in FIPS 203. Braid mode changes the
+            encapsulation-key commitment, so no FIPS 203 conformance claim holds there.
+            Validation is a separate question: pure-JavaScript cryptography is not
+            FIPS 140-validated. If your program requires a validated module, this SDK does not
+            meet it.
           </dd>
         </div>
         <div>

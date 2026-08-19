@@ -191,18 +191,15 @@ const AI_REVIEW_MENTION = /\badversarial AI\b|\bAI (?:review|audit|agents?)\b/i;
 
 /*
  * FIPS, on the same principle as "audited": what must be qualified is the
- * claim, not the letters.
+ * claim, not the letters. docs/messaging.md section 8 governs this rule and
+ * carries the reasoning. What follows is only its mechanical half.
  *
- * This began as a flat ban on the word, which was the safe rule while nothing
- * on the site had cause to say it. Two things now do. `FIPS 203` is simply the
- * name of the NIST publication that standardises ML-KEM, and it appears in the
- * pinned-specification table. And a security reviewer's own checklist asks the
- * validation question directly — the verbal identity requires the honest
- * answer, which cannot be given by a page forbidden to say the word.
- *
- * So: the publication numbers are free, and any other mention must sit on a
- * page that also states the SDK is not validated. A compliance claim still
- * fails, which is the thing the ban was protecting.
+ * The publication numbers are free. `FIPS 203` names the NIST publication that
+ * standardizes ML-KEM, and the site has cause to say it. Any other mention must
+ * sit on a page that also states the SDK is not FIPS 140-validated — the answer
+ * a security reviewer's checklist asks for, and the one a page forbidden to say
+ * the word could never give. A compliance claim still fails, which is what the
+ * qualification protects.
  */
 const FIPS_PUBLICATION = /\bFIPS\s*20[345]\b/gi;
 const FIPS_MENTION = /\bFIPS\b/i;
