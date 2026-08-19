@@ -11,7 +11,7 @@
  * `:root.dark .battery-mark {`. The first trap made a per-mark margin check
  * read the shared rule it was meant to be independent of. The second was worse:
  * an assertion that the light canvas takes a step on the verify ramp was being
- * satisfied by the dark rule two blocks below it, so reverting the light colour
+ * satisfied by the dark rule two blocks below it, so reverting the light color
  * outright failed nothing. Both were found by mutation and neither was
  * visible by reading the assertion.
  *
@@ -19,7 +19,7 @@
  * knowledge lives here instead. Ordering is the other half of it: matching the
  * first occurrence in file order happens to be correct while the light rule
  * precedes the dark one, and stops being correct the day somebody moves a
- * block. Equality on a normalised selector does not care.
+ * block. Equality on a normalized selector does not care.
  *
  * Comments are stripped first — several comments in this stylesheet contain
  * braces, and a naive matcher swallows them into whichever selector precedes
@@ -93,7 +93,7 @@ const walk = (css, out) => {
 
 const rulesIn = (css) => walk(css.replace(/\/\*[\s\S]*?\*\//g, ''), []);
 
-/* Every rule in the stylesheet, selectors normalised to one line. Rules inside
+/* Every rule in the stylesheet, selectors normalized to one line. Rules inside
    `@media` blocks are included, at their own selector. */
 export const cssRules = rulesIn;
 

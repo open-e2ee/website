@@ -107,7 +107,7 @@ export const STEPS: readonly Step[] = [
  * chose, and that is deliberate: a presentation duration is not a measurement
  * and may not travel in the same envelope as one. If transit is ever given an
  * artificial duration so it can be watched, it belongs to the playback layer
- * and is labelled a prop where it is shown.
+ * and is labeled a prop where it is shown.
  */
 export type Measures = Readonly<Record<string, number>>;
 
@@ -115,7 +115,7 @@ export type Measures = Readonly<Record<string, number>>;
  * What the ML-KEM braid reported about one send or one receive.
  *
  * The braid spreads a key agreement across many messages: each message carries
- * one erasure-coded chunk, and an epoch closes once enough chunks have travelled
+ * one erasure-coded chunk, and an epoch closes once enough chunks have traveled
  * both ways. Nothing outside the braid's own state machine can observe that, so
  * `onBraidProgress` is the only source for these counts and this is a record of
  * what it said rather than anything this page worked out.
@@ -163,9 +163,9 @@ export interface BraidReport {
 export interface TraceEvent {
   readonly step: Step;
   readonly actor: Actor;
-  /** Which device sent, when a step is about something travelling. */
+  /** Which device sent, when a step is about something traveling. */
   readonly from?: Actor;
-  /** Which device it is travelling to. */
+  /** Which device it is traveling to. */
   readonly to?: Actor;
   /** `performance.now()` when this became true. Real, and possibly unordered. */
   readonly atMs: number;
@@ -193,7 +193,7 @@ export interface TraceEvent {
  *
  * This is the whole of what the playback layer is allowed to know. It carries
  * what the drawing needs — which step, whose it is, and which way anything is
- * travelling — and nothing that could be mistaken for a measurement or scaled
+ * traveling — and nothing that could be mistaken for a measurement or scaled
  * by a speed control.
  *
  * `from`/`to` are what became of the old figure's `direction()`. That was a
@@ -234,7 +234,7 @@ export function createTrace(): Trace {
          lists that can fall out of step, and this one is cheap: a complete run
          is a handful of events.
          `from`/`to` are omitted rather than set to `undefined` when a step is
-         not about something travelling, so that the keys a cue has are the
+         not about something traveling, so that the keys a cue has are the
          facts it carries — which is what makes "a cue holds no number" a thing
          a test can check by enumeration. */
       return events.map(({ step, actor, from, to }) => ({

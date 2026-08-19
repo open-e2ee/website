@@ -21,7 +21,7 @@ docs to Matrix clients; academia owns the theory and stops at the RFC. Nobody's
 KPI covers application architecture, which is why the gap has persisted five
 years.
 
-Two consequences for how we prioritise:
+Two consequences for how we prioritize:
 
 1. **Items 1–4 are things the SDK has to solve in code anyway.** Writing them up
    is not a content-marketing tax on the roadmap; it *is* the roadmap,
@@ -101,7 +101,7 @@ be the argument that sends people to it.
 ### R8 — Testing E2EE: test vectors, ratchet desync fuzzing, cross-version compatibility
 
 - **Target query:** "test end to end encryption", "double ratchet test vectors", "e2ee integration testing"
-- **Evidence of demand:** zero content exists. Matrix's undecryptable-message meta-issue catalogues [**over 70 distinct causes**](https://github.com/element-hq/element-meta/issues/245) and notes that debugging generally needs logs from both sender and receiver; one gateway logged [a burst of 479 "Bad MAC" exceptions](https://github.com/openclaw/openclaw/issues/14146) while silently delivering nothing.
+- **Evidence of demand:** zero content exists. Matrix's undecryptable-message meta-issue catalogs [**over 70 distinct causes**](https://github.com/element-hq/element-meta/issues/245) and notes that debugging generally needs logs from both sender and receiver; one gateway logged [a burst of 479 "Bad MAC" exceptions](https://github.com/openclaw/openclaw/issues/14146) while silently delivering nothing.
 - **Why it matters disproportionately:** this is the **highest-credibility piece an SDK vendor can publish.** It is the one that makes a reviewer believe the rest.
 - **Format:** `operate/testing` + article, with our actual test-vector fixtures linked.
 
@@ -120,7 +120,7 @@ be the argument that sends people to it.
 ### R11 — Every E2EE tutorial on the internet, reviewed
 
 - **Target query:** "e2ee tutorial", "how to build end to end encryption" (intercepts the *bad* results)
-- **Evidence of demand:** every top-ranking tutorial was fetched and read for the dossier, and every one is either vendor lock-in to a dying SDK, static-key ECDH mislabelled as Signal Protocol-grade, not actually E2EE, or conceptually correct with no code. Named specifics: a still-ranking dev.to post using **raw unauthenticated Diffie-Hellman**; another shipping a shared AES key in `NEXT_PUBLIC_KEY`; a tutorial **updated January 2026** calling the archived-since-2021 library "the official JavaScript implementation."
+- **Evidence of demand:** every top-ranking tutorial was fetched and read for the dossier, and every one is either vendor lock-in to a dying SDK, static-key ECDH mislabeled as Signal Protocol-grade, not actually E2EE, or conceptually correct with no code. Named specifics: a still-ranking dev.to post using **raw unauthenticated Diffie-Hellman**; another shipping a shared AES key in `NEXT_PUBLIC_KEY`; a tutorial **updated January 2026** calling the archived-since-2021 library "the official JavaScript implementation."
 - **Why it works:** establishes authority by demonstrating judgment rather than asserting expertise. Pair with an **`awesome-e2ee`** repo, since awesome-cryptography (7,040 stars, active) has **no section for E2EE, secure messaging, Signal Protocol, or MLS** and the one existing `awesome-end-to-end-encryption` repo has 0 stars and died in March 2023.
 - **Care required:** this piece names other people's work as dangerous. Critique the code, never the author; link the exact line; offer the correction. Legal read before publishing.
 
@@ -164,4 +164,4 @@ look like a spammer. Rules we hold ourselves to, from the dossier: answer the
 question **in the answer itself**, link only where the guide adds necessary
 depth, disclose affiliation every time, never post automatically, and never
 treat these threads as an acquisition channel. Drafts live in
-`docs/reddit-drafts.md` and are gated on founder authorisation.
+`docs/reddit-drafts.md` and are gated on founder authorization.

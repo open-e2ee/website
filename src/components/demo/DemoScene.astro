@@ -139,11 +139,11 @@ const SIDES = ['a', 'b'] as const;
 /*
  * What the relay keeps for one account, in the order a message meets it.
  *
- * The rack is organised by account rather than by kind of thing: a section per
+ * The rack is organized by account rather than by kind of thing: a section per
  * device, holding that device's prekeys and that device's mailbox. That is what
  * a relay's storage actually looks like — `fetchPreKeyBundle` is asked for one
  * account's material and spends that account's one-time keys, and a mailbox
- * belongs to the recipient it queues for. Organised the other way, by kind, the
+ * belongs to the recipient it queues for. Organized the other way, by kind, the
  * relay read as a pool with a pile of prekeys and a box of messages, and the
  * two facts the drawing exists to show — publishing fills *your own* section,
  * sending to a peer spends the *peer's* — had no shape to land on.
@@ -261,7 +261,7 @@ const STEP_LIST = STEPS.join(' ');
         <section class="demo-scene-column demo-scene-relay" aria-label="Relay">
           {/*
             The network, drawn. One thin rule from each phone to the rack, and
-            nothing else: no head, no dash and no colour of its own. The
+            nothing else: no head, no dash and no color of its own. The
             grammar's own arrows are 2 px of carrier stroke and deliberately
             unremarkable, because the cargo is what carries the motion — and the
             cargo here is the envelope that flies over these lines. A dash would
@@ -653,7 +653,7 @@ const STEP_LIST = STEPS.join(' ');
     leaving the wheel is what ties the wheel to the message — the wheel stopped
     being an odometer and became the thing the locks answer to.
 
-    One traveller per keyhole, addressed by the same `lock` name, so each key
+    One traveler per keyhole, addressed by the same `lock` name, so each key
     lands on its own hole and turns it. Filled, because a message key is a
     secret and every secret in this scene is drawn solid. They never cross the
     gap between columns: the sender's flight ends at the message while it is
@@ -711,7 +711,7 @@ const STEP_LIST = STEPS.join(' ');
     */}
     <span class="demo-envelope-chunk" data-scene-envelope-chunk hidden></span>
     {/*
-      The lock rail: the message's two keyholes, drawn in the surface colour on
+      The lock rail: the message's two keyholes, drawn in the surface color on
       the ciphertext fill so the pair inverts with the theme together. Each
       keyhole turns a quarter when its key lands — `data-locked` is the state,
       the rotation is the animation — and turns back when the receiver's key
@@ -753,7 +753,7 @@ const STEP_LIST = STEPS.join(' ');
      * the devices' width the relay was a third peer: a box the same size as
      * the things either side of it, which is exactly what it is not — it is
      * the infrastructure between two people, and it holds nothing either of
-     * them would recognise as theirs.
+     * them would recognize as theirs.
      *
      * The columns are fixed widths and `space-between` pushes them to the
      * band's edges, so all of the spare width becomes distance between a
@@ -770,12 +770,12 @@ const STEP_LIST = STEPS.join(' ');
      */
     --demo-device-width: 300px;
     --demo-relay-width: 232px;
-    /* What a traveller glows: light. A glow is a light source, so it does not
+    /* What a traveler glows: light. A glow is a light source, so it does not
        flip with the theme — surface here and foreground under `.dark` are the
        same warm white. Not the accent: the accent already inks every busy bay,
        bar and glyph, and a scene where the stores, the wires *and* the flyers
        all shout the same blue has no *watch this* left. */
-    --demo-traveller-halo: var(--oe-surface);
+    --demo-traveler-halo: var(--oe-surface);
     /* A dormant channel. Connected but idle, a wire rests in a pale wash of
        the accent — the traffic ink at a whisper — so open-and-quiet and
        carrying-something read as two states of one blue rather than two
@@ -795,7 +795,7 @@ const STEP_LIST = STEPS.join(' ');
   /* The same warm white — `--oe-surface` goes near-black under `.dark`, and a
      halo that followed it would read as a shadow. */
   :global(:root.dark) .demo-scene {
-    --demo-traveller-halo: var(--oe-foreground);
+    --demo-traveler-halo: var(--oe-foreground);
   }
 
   .demo-scene-column {
@@ -952,7 +952,7 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   /* The indicator dot, red until the device reports itself ready. The two
-     colours are literals rather than tokens because the palette has no
+     colors are literals rather than tokens because the palette has no
      semantic pair for up/down — both are mid-tone so they read on the light
      and the dark surface alike. */
   .demo-phone-state::before {
@@ -1085,7 +1085,7 @@ const STEP_LIST = STEPS.join(' ');
 
   /* A ready Send is the next act on offer — the quiet halo, not the calls
      to action's double ring: two of these sit on screen at once for the
-     rest of the run, and at full shout they would drown the travellers the
+     rest of the run, and at full shout they would drown the travelers the
      scene is asking the reader to watch. */
   .demo-phone-send:not(:disabled) {
     box-shadow: 0 0 8px color-mix(in srgb, var(--oe-accent) 45%, transparent);
@@ -1099,7 +1099,7 @@ const STEP_LIST = STEPS.join(' ');
 
   /* ----------------------------------------------------------- key store --- */
 
-  /* The rack's grammar on the device's side: casing colour, the 2px border,
+  /* The rack's grammar on the device's side: casing color, the 2px border,
      the squared radius. Rows divided by the hairline the phone divides its
      screen with, so the panel reads as one instrument with three gauges
      rather than three captions that happen to be stacked. */
@@ -1189,7 +1189,7 @@ const STEP_LIST = STEPS.join(' ');
   /* The store wears the traffic ink while its device is writing it: the same
      accent everything working in this scene lights — track edged and glowing
      like a busy bay, glyph, fill, label and count all in the ink, the label
-     at full strength because a dimmed accent reads as a different colour.
+     at full strength because a dimmed accent reads as a different color.
      `scene-view.ts` sets and clears `data-busy` with the generating cues,
      the bundle shelf's word for the same fact. */
   .demo-device-keys[data-busy='true'] .demo-device-keys-track {
@@ -1273,7 +1273,7 @@ const STEP_LIST = STEPS.join(' ');
     visibility: visible;
   }
 
-  /* The flanking gears sit at the module's edges, where a centred tip would
+  /* The flanking gears sit at the module's edges, where a centered tip would
      run past the casing: theirs hang from the edge they sit on instead. */
   .demo-ratchet-gear:first-child .demo-ratchet-tip {
     left: 0;
@@ -1345,7 +1345,7 @@ const STEP_LIST = STEPS.join(' ');
 
   /* Turned by `scene-view.ts` through a rotation that only ever grows, so the
      transition is always in one direction. `view-box` puts the origin in the
-     SVG's own units, which is where the wheel's centre is written. A literal
+     SVG's own units, which is where the wheel's center is written. A literal
      duration and not the slow token: the token's 280ms reads as a twitch on a
      60° click, and this is the one motion in the scene meant to be watched
      tooth by tooth. The global reduced-motion rule still zeroes it. */
@@ -1603,16 +1603,16 @@ const STEP_LIST = STEPS.join(' ');
     display: flex;
     pointer-events: none;
     /* Zero rotation, because a key is a key at every point of the route — the
-       property's default turns the traveller to face along the path, which
+       property's default turns the traveler to face along the path, which
        lays it on its side for the vertical legs. */
     offset-rotate: 0deg;
     offset-distance: 0%;
   }
 
   /*
-   * `display: flex` on the three travellers above and below beats the `hidden`
+   * `display: flex` on the three travelers above and below beats the `hidden`
    * attribute's own `display: none`, so without this rule every parked
-   * traveller renders — six key outlines stacked at the scene's origin, read
+   * traveler renders — six key outlines stacked at the scene's origin, read
    * as one dark key that never leaves the corner of device A. The attribute is
    * how `scene-view.ts` parks them, so the attribute has to win.
    */
@@ -1647,8 +1647,8 @@ const STEP_LIST = STEPS.join(' ');
     /* The tight pair reads as a rim, the wide one as the glow — the halo
        rims the key so the moving thing itself reads lit, not just a haze
        around it. */
-    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
-      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+    filter: drop-shadow(0 0 1px var(--demo-traveler-halo))
+      drop-shadow(0 0 1px var(--demo-traveler-halo)) drop-shadow(0 0 4px var(--demo-traveler-halo));
   }
 
   /*
@@ -1727,15 +1727,15 @@ const STEP_LIST = STEPS.join(' ');
        delivery. The factor is sized against the step's dwell in
        `playback.ts`: 2.8s of crossing inside a 3.2s hold, leaving the
        landing its beat to be absorbed into the wheel. And not the
-       travellers' `ease-out`, whose fast phase is the start: on this route
+       travelers' `ease-out`, whose fast phase is the start: on this route
        the start is the rack and the wire — the very stretch being slowed —
        and ease-out spent the added time hovering over the phone instead.
        `ease-in-out` leaves the shelf gently and settles into the wheel. The
        glow is the burst's, for the burst's reason: light marks exactly the
        material that is moving. */
     transition: offset-distance calc(var(--demo-flight-ms, 700ms) * 1.75) ease-in-out;
-    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
-      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+    filter: drop-shadow(0 0 1px var(--demo-traveler-halo))
+      drop-shadow(0 0 1px var(--demo-traveler-halo)) drop-shadow(0 0 4px var(--demo-traveler-halo));
   }
 
   /* The same silhouette the shelves draw, inked the same way: open, because it
@@ -1770,8 +1770,8 @@ const STEP_LIST = STEPS.join(' ');
 
   .demo-message-key[data-flying='true'] {
     transition: transform var(--demo-flight-ms, 700ms) ease-out;
-    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
-      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+    filter: drop-shadow(0 0 1px var(--demo-traveler-halo))
+      drop-shadow(0 0 1px var(--demo-traveler-halo)) drop-shadow(0 0 4px var(--demo-traveler-halo));
   }
 
   /* The post-quantum key sets off well behind the classical one, so the
@@ -1832,7 +1832,7 @@ const STEP_LIST = STEPS.join(' ');
   .demo-relay-link {
     position: absolute;
     /* The 2px rule this used to be sat with its top at 2.4rem; the tube is
-       centred on the same line so the geometry the anchors measure holds. */
+       centered on the same line so the geometry the anchors measure holds. */
     top: calc(2.4rem - 2.5px);
     height: 7px;
     /* The traffic pulse below sweeps in from beyond either end; clipped here
@@ -1890,7 +1890,7 @@ const STEP_LIST = STEPS.join(' ');
    *
    * The accent, because the accent is what this page paints *information in
    * motion* with — it is the ink on the Send button and the sender's own
-   * bubbles — and it is blue on both themes. The glow is the travellers' own
+   * bubbles — and it is blue on both themes. The glow is the travelers' own
    * bloom, worn by the wire that carries them.
    */
   .demo-relay-link[data-active='true'] {
@@ -1900,12 +1900,12 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   /*
-   * The traffic itself, drawn on the lit wire: a short run of the travellers'
+   * The traffic itself, drawn on the lit wire: a short run of the travelers'
    * own light sweeping along the link in the direction the cue's material is
    * going. The accent above says which wire is serving the step; the sweep is
    * what says something is passing *through* it — a socket carrying data
    * rather than a socket switched on. It runs on the flight clock, one sweep
-   * per crossing, and in the travellers' own halo ink so the wire's moving
+   * per crossing, and in the travelers' own halo ink so the wire's moving
    * light and the flying material read as one thing. A gradient with no hard
    * stops, deliberately: hard segments would read as dashes, and a dashed
    * rule in this system is the trust boundary.
@@ -1915,7 +1915,7 @@ const STEP_LIST = STEPS.join(' ');
     position: absolute;
     inset: 0 auto 0 0;
     width: 25%;
-    background: linear-gradient(90deg, transparent, var(--demo-traveller-halo), transparent);
+    background: linear-gradient(90deg, transparent, var(--demo-traveler-halo), transparent);
     opacity: 0;
   }
 
@@ -1954,8 +1954,8 @@ const STEP_LIST = STEPS.join(' ');
 
   /*
    * The wire's name, in the gear names' own small mono — the scene's
-   * annotation voice. It hangs just above its wire, centred over the same
-   * span the wire's ends are pinned to, and stays out of the travellers'
+   * annotation voice. It hangs just above its wire, centered over the same
+   * span the wire's ends are pinned to, and stays out of the travelers'
    * lane below the wire.
    */
   .demo-relay-link-label {
@@ -2024,8 +2024,8 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   /*
-   * The rack is drawn as the phones are drawn: the same casing colour, the
-   * same 2px border ink, a screen-coloured panel per unit inside. One
+   * The rack is drawn as the phones are drawn: the same casing color, the
+   * same 2px border ink, a screen-colored panel per unit inside. One
    * hardware grammar for every machine in the scene — the devices are
    * abstract phones, this is the same abstraction of a relay. It used to
    * carry a darker outline of its own, which made the one box that is mere
@@ -2091,7 +2091,7 @@ const STEP_LIST = STEPS.join(' ');
      they hold, so the rack reads "alice: prekeys, mailbox" — the shape of the
      relay's own storage — rather than "prekeys: alice's and bob's".
 
-     Drawn as a rack unit: a screen-coloured panel in the casing, the exact
+     Drawn as a rack unit: a screen-colored panel in the casing, the exact
      treatment a phone gives its screen, because an account is the part of the
      relay one device sees. */
   .demo-relay-account {
@@ -2183,7 +2183,7 @@ const STEP_LIST = STEPS.join(' ');
   }
 
   /* The mailbox is where the envelope comes to rest, and the envelope is drawn
-     over the rack rather than inside it, centred on this bay's *body* — the
+     over the rack rather than inside it, centered on this bay's *body* — the
      part below the caption — so the resting message sits in the box without
      covering the word that names it. Cut to the default shelf height it landed
      across the shelf above and the rack's own edge, which reads as a message
@@ -2197,9 +2197,9 @@ const STEP_LIST = STEPS.join(' ');
 
   /* The body takes the bay's height below the caption, because it is the
      envelope's resting anchor (`anchorFor` in `scene-view.ts`): the envelope
-     centres on it, and a body that hugged its one caption line would sit
+     centers on it, and a body that hugged its one caption line would sit
      just under the label and hand the envelope right back to it. Its own
-     content centres both ways, so "empty" sits in the middle of the box it
+     content centers both ways, so "empty" sits in the middle of the box it
      describes. */
   .demo-relay-slot[data-scene-slot='mailbox'] .demo-relay-slot-body {
     flex: 1;
@@ -2254,7 +2254,7 @@ const STEP_LIST = STEPS.join(' ');
        the scale is a variable the CSS below owns, so the two can be animated
        together without either one having to know the other's value. */
     transform: translate(0, 0) scale(var(--demo-envelope-scale, 1));
-    /* The two steps that cross the gap ride `offset-path`, the travellers'
+    /* The two steps that cross the gap ride `offset-path`, the travelers'
        mechanism: the message moves on the network's drawn edge, not on a
        diagonal through the trust boundary. The tile stays upright through the
        corners, and 0% is its resting state — the release is the only distance
@@ -2291,7 +2291,7 @@ const STEP_LIST = STEPS.join(' ');
    * the landing's `transitionend`. The accent rather than the keys' white
    * halo: a white border has nothing to contrast with — it melts into the
    * pale canvas in light and the tile's own pale body in dark, where the
-   * keys' rim lights their dark glyphs — so the edge has to take a colour
+   * keys' rim lights their dark glyphs — so the edge has to take a color
    * to read at all, and the accent is the ink this scene already uses for
    * *serving the step*. Border and box-shadow rather than a drop-shadow
    * filter, because the tile is a box and its edge is already the drawn
@@ -2481,7 +2481,7 @@ const STEP_LIST = STEPS.join(' ');
       color var(--oe-duration-normal) ease;
   }
 
-  /* Sealed: the payload is the ciphertext fill with the surface colour on top.
+  /* Sealed: the payload is the ciphertext fill with the surface color on top.
      Both tokens invert with the theme, so the sealed face stays legible on
      either. */
   .demo-envelope[data-sealed='true'] .demo-envelope-payload {
@@ -2529,7 +2529,7 @@ const STEP_LIST = STEPS.join(' ');
 
   /* ---------------------------------------------------- reduced motion ------
    *
-   * Most of the behaviour here is `global.css`'s, not this file's: it zeroes
+   * Most of the behavior here is `global.css`'s, not this file's: it zeroes
    * every transition duration on the page with `!important`, so under
    * `prefers-reduced-motion` the envelope is placed at each anchor rather than
    * gliding to it, the wheel jumps to its new angle, and the three bars jump to
@@ -2543,11 +2543,11 @@ const STEP_LIST = STEPS.join(' ');
    * to read the decrypted sentence is information rather than motion.
    *
    * The one rule below exists because that asymmetry cuts the other way for
-   * the publish burst and the message key. These travellers exist only to be
+   * the publish burst and the message key. These travelers exist only to be
    * watched crossing: with the durations zeroed they would flash at their
    * destinations for a frame, which is a worse animation than the one being
    * suppressed. The bars, counts and the envelope's own seal carry the whole
-   * of the fact, so the travellers are simply not drawn. The spent key needs
+   * of the fact, so the travelers are simply not drawn. The spent key needs
    * nothing: its start state is a position, so the blanket rule lands it on
    * the wheel on the frame the step arrives — and the near-zero snap still
    * counts as a transition, so the landing's absorption follows a frame later

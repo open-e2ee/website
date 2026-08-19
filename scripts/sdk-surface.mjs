@@ -169,7 +169,7 @@ export async function readSdkSurface() {
 
 /*
  * Suggestion, not fuzzy matching. Every one of the four shipped mistakes was
- * a real export with the token "Protocol" removed, so the normalisation that
+ * a real export with the token "Protocol" removed, so the normalization that
  * explains them is exactly that one — plus case, which costs nothing.
  */
 export function suggest(name, candidates) {

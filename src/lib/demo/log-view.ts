@@ -35,7 +35,7 @@ function excerpt(text: string, max = 60): string {
  * `run.ts` actually appends — not a description of what a step generically
  * means, which is how a summary quietly stops matching the recording.
  */
-export function summarise(event: TraceEvent): string {
+export function summarize(event: TraceEvent): string {
   const measures = event.measures ?? {};
 
   switch (event.step) {
@@ -148,7 +148,7 @@ export function formatEvent(event: TraceEvent, startedAtMs: number): LogRow {
     at: (event.atMs - startedAtMs).toFixed(1),
     step: event.step,
     actor: event.actor,
-    summary: summarise(event),
+    summary: summarize(event),
     ...(event.measures === undefined ? {} : { measures: event.measures }),
   };
 }

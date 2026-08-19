@@ -2,7 +2,7 @@
  * The commercial tiers, single-sourced.
  *
  * They lived in `pricing.astro` and nowhere else, so the landing page could
- * only refer to them in the abstract: its licence cell said "at a published
+ * only refer to them in the abstract: its license cell said "at a published
  * price" while /pricing carried $5,000, and a fresh reader called that out —
  * the word "published" promises a number the page never showed. Two surfaces
  * quoting one price from two places is the same drift the carrier panel was
@@ -81,13 +81,13 @@ const startup = tiers.find((tier) => tier.name === 'Startup');
 
 /*
  * Thrown at build rather than typed as optional. Three surfaces print this
- * tier's price — the landing page's licence cell, /product's licensing band,
+ * tier's price — the landing page's license cell, /product's licensing band,
  * and /pricing's own meta description — and the failure mode worth designing
  * for is someone renaming the entry tier here and every one of them quietly
  * rendering "from undefined per year" to visitors. A build that stops is the
  * cheapest possible version of that mistake.
  *
- * There were four until /evaluate folded into /security; its licence answer
+ * There were four until /evaluate folded into /security; its license answer
  * was one of the near-verbatim restatements that died with the page. The
  * message deliberately carries no count, because the one it used to carry was
  * stale within a single pull request — a number in a diagnostic goes out of

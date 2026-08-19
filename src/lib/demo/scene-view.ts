@@ -1,7 +1,7 @@
 /*
  * What the scene does with a cue.
  *
- * `DemoScene.astro` owns every shape and every colour; this module owns where
+ * `DemoScene.astro` owns every shape and every color; this module owns where
  * things are and when they change: markup is built once at build time, and the
  * browser only ever renames a state or moves a node it was handed.
  *
@@ -386,21 +386,21 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   root.dataset.named = 'true';
 
   /**
-   * Where an element has to be translated to sit centred over an anchor, in the
+   * Where an element has to be translated to sit centered over an anchor, in the
    * scene's own coordinates.
    *
    * Both rectangles are read in the same frame, so a page that has scrolled
    * or a column that has reflowed since the last cue lands correctly rather than
    * accumulating drift from a remembered position.
    */
-  function centreOn(element: HTMLElement, anchor: Element): { x: number; y: number } {
+  function centerOn(element: HTMLElement, anchor: Element): { x: number; y: number } {
     const scene = root.getBoundingClientRect();
     const target = anchor.getBoundingClientRect();
     /*
      * The element's own box is its layout size, not its client rect: the rect
      * is measured through the current transform, and a seal that fires while
      * the previous message's fold still has the envelope at landing scale
-     * would centre the shrunken box and draw the full-size tile low and to
+     * would center the shrunken box and draw the full-size tile low and to
      * the right of every anchor for the rest of the flight.
      */
     return {
@@ -409,8 +409,8 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     };
   }
 
-  /** An anchor's centre point, in the scene's own coordinates. */
-  function centreOf(anchor: Element): { x: number; y: number } {
+  /** An anchor's center point, in the scene's own coordinates. */
+  function centerOf(anchor: Element): { x: number; y: number } {
     const scene = root.getBoundingClientRect();
     const box = anchor.getBoundingClientRect();
     return {
@@ -425,16 +425,16 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
    * legs rather than a diagonal, because the link is the one edge in the scene
    * that is not a trust boundary and material moves on it, not across the gap.
    *
-   * The points are centres and the path is in the scene's coordinates, which
-   * are also each traveller's own: the travellers are absolutely positioned at
-   * the scene's origin, and `offset-anchor` defaults to the element's centre,
+   * The points are centers and the path is in the scene's coordinates, which
+   * are also each traveler's own: the travelers are absolutely positioned at
+   * the scene's origin, and `offset-anchor` defaults to the element's center,
    * so a path point puts the middle of the key on the wire. All three anchors
-   * are measured in the same frame, `centreOn`'s rule.
+   * are measured in the same frame, `centerOn`'s rule.
    */
   function wirePath(from: Element, to: Element, side: Side): string {
-    const a = centreOf(from);
-    const b = centreOf(to);
-    const wire = centreOf(link(side)).y;
+    const a = centerOf(from);
+    const b = centerOf(to);
+    const wire = centerOf(link(side)).y;
     return `path("M ${a.x} ${a.y} L ${a.x} ${wire} L ${b.x} ${wire} L ${b.x} ${b.y}")`;
   }
 
@@ -447,7 +447,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
    * have nothing to put it out.
    */
   function moveTo(anchor: HTMLElement): boolean {
-    const { x, y } = centreOn(envelope, anchor);
+    const { x, y } = centerOn(envelope, anchor);
     /*
      * Scale is a variable the stylesheet owns and position is a number this
      * function measures, and they compose in one transform because the browser
@@ -495,7 +495,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   }
 
   /**
-   * Send the envelope across the gap on the wire, the travellers' idiom: the
+   * Send the envelope across the gap on the wire, the travelers' idiom: the
    * message moves on the network's one drawn edge, not on a diagonal through
    * the trust boundary. The route is written while the envelope rests at its
    * start and the release is a single write of the distance, the spent key's
@@ -509,7 +509,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     envelope.style.transform = 'translate(0px, 0px) scale(var(--demo-envelope-scale, 1))';
     envelope.style.removeProperty('offset-distance');
     envelope.style.setProperty('offset-path', wirePath(from, to, side));
-    crossingDest = centreOn(envelope, to);
+    crossingDest = centerOn(envelope, to);
     void envelope.offsetWidth;
     envelope.dataset.flying = 'true';
     /* The glow rides exactly the move: armed by the release, dropped by the
@@ -526,7 +526,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
 
   /**
    * A morph between the tile and a bubble's box, on the shared
-   * freeze-and-release (`box-morph.ts`). Corners rather than centres,
+   * freeze-and-release (`box-morph.ts`). Corners rather than centers,
    * because the far end of a morph is another element's box, not an anchor
    * to hover over: the envelope is absolutely positioned at the scene's
    * origin, so translating by a rect's offset puts the tile's corner
@@ -648,7 +648,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     return keyGlyphTemplate.content.cloneNode(true);
   }
 
-  /* The landing puts the envelope's travelling glow out. Both properties,
+  /* The landing puts the envelope's traveling glow out. Both properties,
      because the tile makes two kinds of move: wire crossings ride
      `offset-distance` and in-column glides ride `transform`. An interrupted
      flight never fires this — `settleCrossing` clears the flag on the next
@@ -669,7 +669,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     envelope.dataset.crossing = 'false';
   });
 
-  /* The travelling prekey is stamped once, at mount, rather than built and
+  /* The traveling prekey is stamped once, at mount, rather than built and
      thrown away per crossing. It is one key and it makes one journey per
      session, so there is nothing for a rebuild to keep in step — and a node that
      exists from mount has a box to be measured against on the frame it is
@@ -780,11 +780,11 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   }
 
   /*
-   * The publish burst's travellers, stamped once at mount like the spent key
+   * The publish burst's travelers, stamped once at mount like the spent key
    * and for its reasons: they exist from the frame the scene does, so they have
    * boxes to be measured against on the frame they are wanted, and each is the
    * component's one key drawing rather than a second one. `data-burst` is the
-   * clump the stylesheet files each traveller into, fixed per element because
+   * clump the stylesheet files each traveler into, fixed per element because
    * the burst's shape is the burst's, not a fact about any particular publish.
    * A pool per device, because the two registration lanes may both be telling
    * their stories at once: a shared pool handed one device's burst to the
@@ -798,8 +798,8 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     flyers[side].forEach((flyer, index) => {
       flyer.append(keyGlyph());
       flyer.dataset.burst = String(index);
-      /* Each traveller leaves the scene the moment its flight lands. The reel
-         pauses on the publish cue until the visitor sends, so a traveller that
+      /* Each traveler leaves the scene the moment its flight lands. The reel
+         pauses on the publish cue until the visitor sends, so a traveler that
          waited for the next cue would stand glowing on the shelf's anchor for
          the whole pause — five keys drawn over one. The shelf's bar and count
          already hold what was delivered. */
@@ -813,7 +813,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     });
 
   /* One key beside each bar, saying what the bar is an amount of. Stamped at
-     mount: these anchors are also where every travelling key sets off from or
+     mount: these anchors are also where every traveling key sets off from or
      lands, so a store's glyph and its journeys are one drawing. */
   for (const side of SIDES) keyAnchor(side).append(keyGlyph());
 
@@ -1105,7 +1105,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
   /**
    * Send a burst of keys from this device's key glyph to its shelf's.
    *
-   * One journey, five travellers: the burst sets off from the one key beside
+   * One journey, five travelers: the burst sets off from the one key beside
    * the device's bar and lands on the one key beside the shelf's, because those
    * two glyphs are what stand for the stores — a reader tracks material leaving
    * the place that says *private keys* and arriving at the place the relay
@@ -1113,7 +1113,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
    * the spent key's mechanism in the other direction, so the crossing survives
    * any width.
    *
-   * The positions are all this function decides. How long a traveller takes,
+   * The positions are all this function decides. How long a traveler takes,
    * which leave together, and the glow that carries the eye are the
    * stylesheet's — `data-burst` was filed at mount and never changes. This
    * module owns where a thing is and when it moves, which is the same line the
@@ -1121,7 +1121,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
    *
    * Unhidden before anything is measured: a `hidden` element has no box, and a
    * journey measured from one is a journey from the scene's corner. The route
-   * is written first and the travellers rest at its start — `offset-distance`
+   * is written first and the travelers rest at its start — `offset-distance`
    * 0% is the resting state — and the forced read between the writes is what
    * commits that placement, so the release runs the wire rather than jumping
    * to the shelf.
@@ -1143,7 +1143,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
 
   /**
    * Take the burst off the scene, which is every cue but the one that
-   * publishes. A traveller left standing would sit over the shelf for the rest
+   * publishes. A traveler left standing would sit over the shelf for the rest
    * of the run, drawing material that is both delivered and still in the air —
    * the spent key's rule, applied to five. Scoped like the traffic setters: a
    * registration lane's cue parks only its own device's burst, because the
@@ -1322,36 +1322,36 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       messageKeys[kind].dataset.flying = 'false';
       messageKeys[kind].hidden = false;
     }
-    const envAt = centreOn(envelope, anchor);
+    const envAt = centerOn(envelope, anchor);
     /* The rect may be caught mid-fold at the previous message's landing scale,
        which shrinks every distance measured through it — the same contamination
-       `centreOn` guards against. The ratio of layout size to rect size is that
+       `centerOn` guards against. The ratio of layout size to rect size is that
        scale, and dividing it back out turns each hole's rect offset into a
-       layout offset. About the centre, because that is the transform origin:
-       the centre is the one point the scale does not move. */
+       layout offset. About the center, because that is the transform origin:
+       the center is the one point the scale does not move. */
     const envBox = envelope.getBoundingClientRect();
     const envScaleX = envBox.width / envelope.offsetWidth;
     const envScaleY = envBox.height / envelope.offsetHeight;
-    /* Each key sets off from the wheel of its own family — the labelled wheel
+    /* Each key sets off from the wheel of its own family — the labeled wheel
        is the key's provenance, and launching both from one point would spend
        the legend the captions just paid for. */
     for (const kind of LOCK_KINDS) {
       const key = messageKeys[kind];
-      const start = centreOn(key, feeder(side, kind));
+      const start = centerOn(key, feeder(side, kind));
       key.style.transform = `translate(${start.x}px, ${start.y}px)`;
     }
     void root.offsetWidth;
     for (const kind of LOCK_KINDS) {
       const key = messageKeys[kind];
       const hole = keyhole(kind).getBoundingClientRect();
-      const holeCentreX =
+      const holeCenterX =
         envelope.offsetWidth / 2 +
         (hole.left + hole.width / 2 - (envBox.left + envBox.width / 2)) / envScaleX;
-      const holeCentreY =
+      const holeCenterY =
         envelope.offsetHeight / 2 +
         (hole.top + hole.height / 2 - (envBox.top + envBox.height / 2)) / envScaleY;
-      const x = envAt.x + holeCentreX - key.offsetWidth / 2;
-      const y = envAt.y + holeCentreY - key.offsetHeight / 2;
+      const x = envAt.x + holeCenterX - key.offsetWidth / 2;
+      const y = envAt.y + holeCenterY - key.offsetHeight / 2;
       key.dataset.landLocked = String(locked);
       key.dataset.flying = 'true';
       key.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
@@ -1408,7 +1408,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       /* The publishing device is the one whose burst flies, and the recording
          named it: the actor of a publish step is the device that published.
          Not `senderOf`, which answers a question about a message — on a step
-         with nothing travelling between devices it falls back to a side, and
+         with nothing traveling between devices it falls back to a side, and
          the fallback would send device A's burst across on both publishes.
          Every other cue takes the burst off the scene, the spent key's rule:
          a flight belongs to the step that launched it. */
@@ -1430,7 +1430,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
        * Both devices come off the cue's own `from` and `to`, which this step
        * always carries — it is recorded as the initiator agreeing a key *with*
        * the responder. So neither `senderOf` nor `recipientOf` reaches its
-       * fallback here, which matters: on a step with nothing travelling between
+       * fallback here, which matters: on a step with nothing traveling between
        * devices the fallback answers for both sides and would send a key off
        * whichever shelf it happened to pick.
        *
@@ -1481,7 +1481,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
         const state = deviceState(registering);
         state.textContent = 'online';
         /* The word and the dot are one fact written twice — the text for the
-           reader, the attribute for the stylesheet's colour — so they change
+           reader, the attribute for the stylesheet's color — so they change
            in the same statement or the dot lies. */
         state.dataset.online = 'true';
       }
@@ -1601,7 +1601,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       } else {
         envelope.dataset.flying = 'true';
         /* An in-column glide is still the tile underway, so it carries the
-           travelling glow, and the landing's `transitionend` puts it out.
+           traveling glow, and the landing's `transitionend` puts it out.
            Only when it *is* a glide: a cue whose anchor is where the tile
            already rests — the relay dwell after the flight that landed
            there — moves nothing, and a resting tile does not glow. */

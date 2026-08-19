@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CODE_SNIPPETS } from '../src/lib/demo/code-snippets.ts';
-import { formatEvent, matches, summarise } from '../src/lib/demo/log-view.ts';
+import { formatEvent, matches, summarize } from '../src/lib/demo/log-view.ts';
 import { STEPS } from '../src/lib/demo/trace.ts';
 
 /** An `encrypted` event, shaped the way `run.ts`'s `exchange()` really appends one. */
@@ -59,18 +59,18 @@ test('matches: a query that matches nothing returns false', () => {
   assert.equal(matches(row, 'nonexistent-xyz'), false);
 });
 
-test('summarise reads the real detail and measures shapes run.ts records', () => {
-  const summary = summarise(encryptedEvent());
+test('summarize reads the real detail and measures shapes run.ts records', () => {
+  const summary = summarize(encryptedEvent());
   assert.match(summary, /Dinner at 7/);
   assert.match(summary, /12\.3/);
 });
 
-test('summarise does not throw when a nullable detail is absent', () => {
+test('summarize does not throw when a nullable detail is absent', () => {
   /* `session-established`'s `selection` is nullable in the trace itself — the
      callback it is read from may simply not fire — and a summary that assumed
      otherwise would throw on exactly the run worth seeing. */
   assert.doesNotThrow(() =>
-    summarise({
+    summarize({
       step: 'session-established',
       actor: 'a',
       from: 'a',
@@ -100,7 +100,7 @@ test('the key-agreement line names the ratchet as well as the handshake', () => 
     detail: { selection },
   });
 
-  const triple = summarise(
+  const triple = summarize(
     established({ usedPQXDH: true, usedClassicalFallback: false, usedTripleRatchet: true }),
   );
   assert.match(triple, /PQXDH/);
@@ -108,14 +108,14 @@ test('the key-agreement line names the ratchet as well as the handshake', () => 
 
   /* The other answer is printed as readily. A line that could only ever say
      "triple" would be a claim wearing a reading's clothes. */
-  const double = summarise(
+  const double = summarize(
     established({ usedPQXDH: true, usedClassicalFallback: false, usedTripleRatchet: false }),
   );
   assert.match(double, /double ratchet/);
 
   /* Said nothing is not the same as said no: an event with no opinion about the
      ratchet leaves the line quiet rather than captioning it "double". */
-  const quiet = summarise(established({ usedPQXDH: true, usedClassicalFallback: false }));
+  const quiet = summarize(established({ usedPQXDH: true, usedClassicalFallback: false }));
   assert.doesNotMatch(quiet, /ratchet/);
 });
 

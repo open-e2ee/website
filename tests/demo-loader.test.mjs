@@ -5,7 +5,7 @@
  *
  * The failed state is the one worth testing hardest. Invariant 6 says a broken
  * live demo must never render as a broken page — the recorded capture panel
- * stays put. A page can only honour that if the loader tells it the truth about
+ * stays put. A page can only honor that if the loader tells it the truth about
  * a chunk that never came, which means a rejected import has to end somewhere
  * observable rather than in an unhandled rejection.
  *

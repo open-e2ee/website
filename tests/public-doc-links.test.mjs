@@ -1,6 +1,6 @@
 /*
  * The build audit's check on links into the public repository, held to the
- * behaviours it is claimed to have.
+ * behaviors it is claimed to have.
  *
  * A scenario shipped a link to `docs/DEVICE_LIFECYCLE.md`, which lives in the
  * internal repository and is not on the export allowlist, so the URL was a 404

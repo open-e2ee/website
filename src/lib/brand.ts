@@ -10,7 +10,7 @@ export const geometry = tokens.geometry;
 
 export type MarkVariant = 'full' | 'optical';
 
-/** Variant selection by size is a rule, not a judgement call. */
+/** Variant selection by size is a rule, not a judgment call. */
 export function variantForSize(size: number): MarkVariant {
   if (size < geometry.minimumSize) {
     throw new RangeError(

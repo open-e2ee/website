@@ -3,8 +3,8 @@
  * The demo a phone gets: the same conversation, with everything else removed.
  *
  * Under 60rem the console's drawing does not survive — three columns of
- * travellers, readings and controls have no honest single-column form, and the
- * old fallback that amputated the travellers taught less than it showed. So
+ * travelers, readings and controls have no honest single-column form, and the
+ * old fallback that amputated the travelers taught less than it showed. So
  * the narrow screen gets its own composition, built around the one claim:
  * sentences on the phones, ciphertext and addressing on the relay. The rack sits
  * on top, holding one mailbox over each device it belongs to; the two phones
@@ -221,7 +221,7 @@ const LOCKS = [
             </span>
           </p>
           <div class="demo-mobile-ratchet">
-            {/* The ratchet head is the derivation count alone, centred over
+            {/* The ratchet head is the derivation count alone, centered over
                 the train it totals. The selection label stays on the wide
                 console — the reel runs one protocol, so a label here would
                 name the only choice on offer. */}
@@ -297,14 +297,14 @@ const LOCKS = [
     ))
   }
 
-  {/* The traveller — the wide scene's tile, whole: the metadata band the
+  {/* The traveler — the wide scene's tile, whole: the metadata band the
       relay may read, the lock rail, and the payload that closes under it.
       The envelope is sealed on the sender's own screen, so both faces play
       here — open, the sentence on the device's surface; sealed, the
       ciphertext fill wearing the size in its corner — and the addressing
       band stays through both, because what the relay can and cannot read is
       exactly the point. Crossings ride `offset-path` along the drawn
-      network, the wide travellers' idiom; rests are measured transform.
+      network, the wide travelers' idiom; rests are measured transform.
       Hidden between messages and never drawn under
       `prefers-reduced-motion`. */}
   <div class="demo-mobile-envelope" data-mobile-envelope data-sealed="false" hidden>
@@ -401,7 +401,7 @@ const LOCKS = [
       to be: the no-JS reader keeps this line and the recorded capture below.
 
       "Carries ciphertext and addressing" and not "sees only ciphertext". The
-      figure under this line draws the addressing band on the travelling
+      figure under this line draws the addressing band on the traveling
       envelope and keeps it through both faces, so the shorter claim is one the
       drawing directly above it disproves. */}
   <figcaption class="demo-mobile-caption" data-mobile-caption aria-live="polite">
@@ -512,7 +512,7 @@ const LOCKS = [
     const envelopeTo = need('[data-mobile-envelope-to]');
     const links = perSide('data-mobile-link');
     /* The chip's own key glyph, because it is the journeys' endpoint: the
-       chip's centre sits between the glyph and its count, and a burst aimed
+       chip's center sits between the glyph and its count, and a burst aimed
        there lands beside the key it is stocking rather than on it. */
     const bundleGlyphs: Record<MobileSide, SVGElement> = {
       a: need<SVGElement>('[data-mobile-bundle="a"] .demo-key-glyph'),
@@ -698,19 +698,19 @@ const LOCKS = [
       keyCounts[side].textContent = String(count);
     }
 
-    /* Where a box's centre sits in the figure's own coordinates — every
-       traveller here is placed against `root`, so a rect measured mid-scroll
+    /* Where a box's center sits in the figure's own coordinates — every
+       traveler here is placed against `root`, so a rect measured mid-scroll
        still lands where the eye sees the box. */
-    const centreAt = (box: DOMRect, home: DOMRect) =>
+    const centerAt = (box: DOMRect, home: DOMRect) =>
       `translate(${box.left + box.width / 2 - home.left}px, ${
         box.top + box.height / 2 - home.top
       }px) translate(-50%, -50%)`;
 
-    /* A box's centre point in the same coordinates, for the routes: the
-       travellers are absolute at the figure's origin and `offset-anchor`
-       defaults to the element's centre, so a path point puts the middle of
-       the traveller on the wire. */
-    const centreOf = (box: Element, home: DOMRect) => {
+    /* A box's center point in the same coordinates, for the routes: the
+       travelers are absolute at the figure's origin and `offset-anchor`
+       defaults to the element's center, so a path point puts the middle of
+       the traveler on the wire. */
+    const centerOf = (box: Element, home: DOMRect) => {
       const rect = box.getBoundingClientRect();
       return {
         x: Math.round(rect.left + rect.width / 2 - home.left),
@@ -729,11 +729,11 @@ const LOCKS = [
      */
     function wireRoute(from: Element, to: Element, side: MobileSide): string {
       const home = root.getBoundingClientRect();
-      const a = centreOf(from, home);
-      const b = centreOf(to, home);
+      const a = centerOf(from, home);
+      const b = centerOf(to, home);
       /* Only the wire's x is taken, and a collapsed unregistered wire keeps
-         its column's x — `scaleY(0)` folds height, not the centre line. */
-      const w = centreOf(links[side], home).x;
+         its column's x — `scaleY(0)` folds height, not the center line. */
+      const w = centerOf(links[side], home).x;
       return `path("M ${a.x} ${a.y} L ${w} ${a.y} L ${w} ${b.y} L ${b.x} ${b.y}")`;
     }
 
@@ -753,7 +753,7 @@ const LOCKS = [
      * The crossing, on the network's own drawn edge: the route is written
      * while the envelope rests at its start, the forced read commits that
      * placement, and the release is a single write of the distance — the
-     * wide `rideWire`. Under reduced motion the traveller is simply not
+     * wide `rideWire`. Under reduced motion the traveler is simply not
      * drawn: it exists only to be watched moving, and the slab and bubble
      * carry the whole fact.
      */
@@ -793,7 +793,7 @@ const LOCKS = [
       envelope.style.transitionDuration = '0s';
       envelope.style.removeProperty('offset-path');
       envelope.style.removeProperty('offset-distance');
-      envelope.style.transform = centreAt(at.getBoundingClientRect(), home);
+      envelope.style.transform = centerAt(at.getBoundingClientRect(), home);
     }
 
     /*
@@ -802,12 +802,12 @@ const LOCKS = [
      * alone: freeze the outgoing box, swap the faces, and let the box
      * travel to the incoming one. The open tile visibly contracts into the
      * chip the relay sees, and the chip grows back into the tile at the
-     * unseal; the centre-anchored placement holds it in place while it
+     * unseal; the center-anchored placement holds it in place while it
      * resizes, and `overflow: hidden` clips the face that is leaving.
      * Inline, because width and height are auto in every resting state —
      * `settleReface` hands the box back to the stylesheet, and the flight
      * and placement writers call it first so a swap cut short can never
-     * leave a frozen size on a traveller.
+     * leave a frozen size on a traveler.
      */
     function reface(swap: () => void) {
       const before = envelope.getBoundingClientRect();
@@ -871,8 +871,8 @@ const LOCKS = [
       envelope.style.transitionDuration = '0s';
       freezeAndRelease(
         envelope,
-        { transform: centreAt(from, home), width: from.width, height: from.height },
-        { transform: centreAt(to, home), width: to.width, height: to.height },
+        { transform: centerAt(from, home), width: from.width, height: from.height },
+        { transform: centerAt(to, home), width: to.width, height: to.height },
         () => envelope.style.setProperty('transition-duration', 'var(--oe-duration-slow, 400ms)'),
       );
     }
@@ -956,13 +956,13 @@ const LOCKS = [
         key.dataset.landLocked = String(locked);
         key.style.transitionDuration = '0s';
         key.style.transitionDelay = '0s';
-        key.style.transform = centreAt(departure, home);
+        key.style.transform = centerAt(departure, home);
         requestAnimationFrame(() =>
           requestAnimationFrame(() => {
             key.dataset.flying = 'true';
             key.style.transitionDuration = `${flight}ms`;
             key.style.transitionDelay = kind === 'pq' ? `${Math.round(flight * 0.35)}ms` : '0s';
-            key.style.transform = centreAt(arrival, home);
+            key.style.transform = centerAt(arrival, home);
           }),
         );
       }
@@ -1248,7 +1248,7 @@ const LOCKS = [
           break;
         case 'register':
           /* The word and the dot are one fact written twice — the text for
-             the reader, the attribute for the stylesheet's colour — so they
+             the reader, the attribute for the stylesheet's color — so they
              change in the same statement or the dot lies. */
           states[frame.side].textContent = 'online';
           states[frame.side].dataset.online = 'true';
@@ -1307,7 +1307,7 @@ const LOCKS = [
           /* The family wheels advance only when the conversation changed
              direction — the wide `stepped`. This script alternates, so every
              send steps both families; the guard is the honesty, not an
-             optimisation. */
+             optimization. */
           if (lastSealedBy !== frame.side) {
             clickFeeder(frame.side, 'ec');
             clickFeeder(frame.side, 'pq');
@@ -1465,7 +1465,7 @@ const LOCKS = [
   /* Two phones share the bottom row — a screen narrow enough for this figure
      still has width for a pair of devices — and the rack and the caption span
      both columns, the rack above the devices its mailboxes serve. Capped and
-     centred so a mid-width window gets two phones, not two slabs of empty
+     centered so a mid-width window gets two phones, not two slabs of empty
      screen.
 
      `minmax(0, 1fr)` and not bare `1fr`, because a bare `1fr` track is
@@ -1490,14 +1490,14 @@ const LOCKS = [
     }
   }
 
-  /* What a traveller glows: light — the wide scene's halo, not the accent,
+  /* What a traveler glows: light — the wide scene's halo, not the accent,
      for its reason: the accent already inks every busy store and wheel, and
      a scene where the machinery *and* the flyers all shout the same blue has
      no *watch this* left. Surface here and foreground under `.dark` are the
      same warm white; a glow is a light source, so it does not flip with the
      theme. */
   .demo-mobile {
-    --demo-traveller-halo: var(--oe-surface);
+    --demo-traveler-halo: var(--oe-surface);
     /* The wires' resting ink, the wide scene's token: not the carrier stroke,
        because standing infrastructure is not a drawn edge of a machine, and
        the dormant wash keeps the conduit in the blue family it lights up in. */
@@ -1505,7 +1505,7 @@ const LOCKS = [
   }
 
   :global(:root.dark) .demo-mobile {
-    --demo-traveller-halo: var(--oe-foreground);
+    --demo-traveler-halo: var(--oe-foreground);
   }
 
   .demo-mobile-relay,
@@ -1546,7 +1546,7 @@ const LOCKS = [
     position: relative;
   }
 
-  /* A dimensionless point, not a box: `centreAt` puts the envelope's centre
+  /* A dimensionless point, not a box: `centerAt` puts the envelope's center
      on this spot, so the offset is half the open face's height plus the gap
      wanted under its bottom edge. */
   .demo-mobile-envelope-rest {
@@ -1814,7 +1814,7 @@ const LOCKS = [
 
   /* ------------------------------------------------------- the ratchet --- */
 
-  /* The head is the derivation count alone, centred over the train whose
+  /* The head is the derivation count alone, centered over the train whose
      turns it totals. */
   .demo-mobile-ratchet-head {
     margin: 0;
@@ -2003,7 +2003,7 @@ const LOCKS = [
   /* --------------------------------------------------------- the wires --- */
 
   /* The network's own row: the same two columns as the figure, one conduit
-     centred over each phone. The row itself is flat — the visible run of
+     centered over each phone. The row itself is flat — the visible run of
      wire is exactly the grid's two row gaps, which the tubes reach through
      so each conduit plugs flush into the rack above and its phone below
      rather than floating between them. Any taller and the network reads as
@@ -2062,7 +2062,7 @@ const LOCKS = [
     box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
   }
 
-  /* The traffic itself: a short run of the travellers' own light sweeping
+  /* The traffic itself: a short run of the travelers' own light sweeping
      along the tube in the direction the frame's material is going. A
      gradient with no hard stops, deliberately — hard segments would read as
      dashes. */
@@ -2071,7 +2071,7 @@ const LOCKS = [
     position: absolute;
     inset: 0 0 auto 0;
     height: 25%;
-    background: linear-gradient(180deg, transparent, var(--demo-traveller-halo), transparent);
+    background: linear-gradient(180deg, transparent, var(--demo-traveler-halo), transparent);
     opacity: 0;
   }
 
@@ -2200,7 +2200,7 @@ const LOCKS = [
     gap: var(--oe-space-3);
   }
 
-  /* The wide account's own panel: a screen-coloured box on the rack's casing
+  /* The wide account's own panel: a screen-colored box on the rack's casing
      with a drawn edge, so each mailbox is a bordered unit of the rack rather
      than loose rows on it. */
   .demo-mobile-account {
@@ -2302,7 +2302,7 @@ const LOCKS = [
   .demo-mobile-slabs {
     display: flex;
     align-items: center;
-    /* Centred, not stacked from the left: the bay holds one row at a time,
+    /* Centered, not stacked from the left: the bay holds one row at a time,
        and a lone slab parked in a corner reads as a queue with a gap. */
     justify-content: center;
     flex-wrap: wrap;
@@ -2450,7 +2450,7 @@ const LOCKS = [
   }
 
   /* The payload, the wide tile's two faces: the sentence on the device's own
-     raised surface while open, the ciphertext fill with the surface colour
+     raised surface while open, the ciphertext fill with the surface color
      on top once sealed — what the relay sees. Both tokens invert with the
      theme, so the sealed face stays legible on either. */
   .demo-mobile-envelope-payload {
@@ -2572,11 +2572,11 @@ const LOCKS = [
   /* The wide flyers' glow, confined to flight: the tight pair reads as a
      rim, the wide one as the halo, so the moving thing itself reads lit. */
   .demo-mobile-flying-key[data-flying='true'] {
-    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
-      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+    filter: drop-shadow(0 0 1px var(--demo-traveler-halo))
+      drop-shadow(0 0 1px var(--demo-traveler-halo)) drop-shadow(0 0 4px var(--demo-traveler-halo));
   }
 
-  /* The message keys: the same measured-transform travellers, filled because
+  /* The message keys: the same measured-transform travelers, filled because
      a message key is a secret. Above the envelope, because a key lands *on*
      the tile it is locking. */
   .demo-mobile-message-key {
@@ -2604,8 +2604,8 @@ const LOCKS = [
   }
 
   .demo-mobile-message-key[data-flying='true'] {
-    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
-      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+    filter: drop-shadow(0 0 1px var(--demo-traveler-halo))
+      drop-shadow(0 0 1px var(--demo-traveler-halo)) drop-shadow(0 0 4px var(--demo-traveler-halo));
   }
 
   /* The spent prekey: outlined like the burst it came up in, on the slower
@@ -2638,8 +2638,8 @@ const LOCKS = [
   }
 
   .demo-mobile-spent-key[data-flying='true'] {
-    filter: drop-shadow(0 0 1px var(--demo-traveller-halo))
-      drop-shadow(0 0 1px var(--demo-traveller-halo)) drop-shadow(0 0 4px var(--demo-traveller-halo));
+    filter: drop-shadow(0 0 1px var(--demo-traveler-halo))
+      drop-shadow(0 0 1px var(--demo-traveler-halo)) drop-shadow(0 0 4px var(--demo-traveler-halo));
   }
 
   .demo-mobile-caption {

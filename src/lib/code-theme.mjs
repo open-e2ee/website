@@ -1,5 +1,5 @@
 /*
- * Syntax colours for the code the site shows: VS Code's own, unmodified.
+ * Syntax colors for the code the site shows: VS Code's own, unmodified.
  *
  * This file used to build a five-role theme out of the OpenE2EE palette —
  * comment, punctuation, keyword, string, and bold function names, all drawn
@@ -7,32 +7,32 @@
  * with it. That was internally coherent and it answered the wrong question.
  * A snippet on a landing page is not a piece of the site's artwork; it is a
  * sample of the reader's own editor, and the reader is a TypeScript developer
- * who has one. Colouring `const` in our brass rather than the blue they see
+ * who has one. Coloring `const` in our brass rather than the blue they see
  * every day makes them decode the panel before they can read the program.
  * Recognition is the feature. A stock theme buys it for free.
  *
  * Light+ and Dark+ are the ones to take, and the reason is recognition
  * rather than contrast. VS Code 1.114 moved its own factory default to the
  * 2026 themes, built on GitHub's Primer palette — so "the current default"
- * and "the thing developers recognise" have come apart, and this panel wants
+ * and "the thing developers recognize" have come apart, and this panel wants
  * the second. Light+ and Dark+ are what a decade of screenshots, tutorials
  * and StackOverflow answers have looked like. Shiki 4.3.1 does not bundle the
  * 2026 themes at all, so the live alternative was `github-light-default` and
  * `github-dark-default`, which approximate the same palette.
  *
  * Contrast did not decide it, and the earlier draft of this comment claiming
- * otherwise was measuring the GitHub colours against our old warm surface
+ * otherwise was measuring the GitHub colors against our old warm surface
  * instead of against their own. Taken with their own backgrounds, as this
  * change takes Light+/Dark+ with theirs, every candidate clears AA on both
  * snippets: Light+ bottoms at 4.60 and Dark+ at 5.00, against 4.55 and 6.15
  * for the GitHub pair. That is a tie in light and a loss in dark. The tests
  * below therefore guard the floor rather than the choice — they would have
- * passed either theme, and the choice above is a judgement about what a
+ * passed either theme, and the choice above is a judgment about what a
  * TypeScript developer's eye already knows.
  *
  * One candidate did fail, and it is the one the blog was already using:
  * `github-dark` prints comments at 3.05 on its own background. Every article
- * on this site has been shipping a sub-AA comment colour.
+ * on this site has been shipping a sub-AA comment color.
  *
  * Naming them rather than inlining them is deliberate: shiki resolves these
  * from `@shikijs/themes`, so a highlighter upgrade brings VS Code's own
@@ -65,7 +65,7 @@ export const codeThemes = {
  * The editor's own paper, which code on this site wears instead of `--oe-code`.
  *
  * Light+ against our warm `#f4f1eb` printed numeric literals at 4.08 — the
- * one AA failure in either snippet — and `#ffffff` takes the same colour to
+ * one AA failure in either snippet — and `#ffffff` takes the same color to
  * 4.60. Adopting the theme's background is therefore not decoration; it is
  * the thing that makes the theme legible. It also costs less separation than
  * it looks: `#ffffff` on our canvas measures 1.07 where `--oe-code` measured
@@ -106,7 +106,7 @@ export const codeSurfaces = {
  * which turns out to be the more faithful quotation — Ghostty is a native
  * window that inherits the desktop's furniture and draws none of its own, and
  * its cursor belongs to a live shell session rather than to a command printed
- * on a page. The prompt glyph's colour comes from the user's shell rather than
+ * on a page. The prompt glyph's color comes from the user's shell rather than
  * from the terminal, so it is ours by the same logic.
  *
  * They are dimmed steps of one neutral, at 5.65 and 3.05 on the fill — AA for

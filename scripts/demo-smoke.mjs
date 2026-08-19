@@ -263,14 +263,14 @@ function keygenCounts(figure) {
  * The relay keeps public prekeys and undelivered rows for each account
  * separately, and the drawing says so with a slot per account. Addressed by the
  * pair the drawing itself is keyed on, so a slot that went missing, lost its
- * side, or was labelled with the other device's name cannot be read as the one
+ * side, or was labeled with the other device's name cannot be read as the one
  * that was asked for — it is simply not found, which is the failure.
  */
 const SCENE_SLOT = (kind, side) => `[data-scene-slot="${kind}"][data-scene-side="${side}"]`;
 const SCENE_SLOT_BODY = (kind, side) =>
   `[data-scene-slot-body="${kind}"][data-scene-side="${side}"]`;
 
-/* The name the slot is labelled with, which `scene-view.ts` stamps at mount
+/* The name the slot is labeled with, which `scene-view.ts` stamps at mount
    from the same session the device columns take their names from. A label read
    here and held against the device's own name is the whole of "this shelf
    belongs to that account".
@@ -591,7 +591,7 @@ function findProbe(haystack) {
 }
 
 /**
- * Every request `find` recognises, named by where in it the text was and in
+ * Every request `find` recognizes, named by where in it the text was and in
  * what form. The URL, the body and the headers are all searched: a page that
  * put the plaintext in a query string or a custom header has leaked it just as
  * thoroughly as one that posted it.
@@ -2695,9 +2695,9 @@ function checkPrekeySpend(pass) {
  * asks the drawing four questions about them.
  *
  * The labels are held against the names the console gave the two devices, which
- * is the same pair the device columns are titled from. A slot labelled from the
+ * is the same pair the device columns are titled from. A slot labeled from the
  * markup would pass a check against a fixed string and would go on passing
- * after the names changed; a slot labelled with the *other* device's name is
+ * after the names changed; a slot labeled with the *other* device's name is
  * the failure this exists for, and it is only visible against the names.
  *
  * The counts are held against what each device says it holds, less whatever the
@@ -2746,7 +2746,7 @@ function checkRelayShelves(pass, spend) {
       }
       if (slot.label !== named) {
         throw new Red(
-          `the relay's ${kind} slot for device ${side} is labelled ${JSON.stringify(slot.label)} ` +
+          `the relay's ${kind} slot for device ${side} is labeled ${JSON.stringify(slot.label)} ` +
             `and that device is called ${JSON.stringify(named)}. The labels are stamped from the ` +
             `session the run booted, so a slot wearing another name — or none — is a shelf ` +
             `pointing at the wrong account.`,
@@ -3015,7 +3015,7 @@ function generationSaid(pass, names) {
  * Then where the envelope came to rest, because the lighting and the drawing
  * are separate: the slot's state is an attribute the drawing writes and the
  * envelope's position is a transform it computes from measured rectangles, and
- * either can be right while the other is wrong. The envelope's centre has to be
+ * either can be right while the other is wrong. The envelope's center has to be
  * inside the mailbox it is addressed to.
  */
 function checkStoredMailbox(pass) {
@@ -3041,7 +3041,7 @@ function checkStoredMailbox(pass) {
   if (!addressed || !owner) {
     throw new Red(
       `the envelope the relay stored says it is addressed to ` +
-        `${JSON.stringify(addressed || '(nothing)')} and neither mailbox is labelled that: ` +
+        `${JSON.stringify(addressed || '(nothing)')} and neither mailbox is labeled that: ` +
         `${JSON.stringify(mailbox.a.label)} and ${JSON.stringify(mailbox.b.label)}. The address ` +
         `and the labels are written from the same session, so they cannot name different devices.`,
     );
@@ -3077,19 +3077,19 @@ function checkStoredMailbox(pass) {
         `cannot be compared`,
     );
   }
-  const centre = {
+  const center = {
     x: rest.envelope.left + rest.envelope.width / 2,
     y: rest.envelope.top + rest.envelope.height / 2,
   };
   const inside =
-    centre.x >= target.left &&
-    centre.x <= target.left + target.width &&
-    centre.y >= target.top &&
-    centre.y <= target.top + target.height;
+    center.x >= target.left &&
+    center.x <= target.left + target.width &&
+    center.y >= target.top &&
+    center.y <= target.top + target.height;
   if (!inside) {
     throw new Red(
       `the stored envelope came to rest away from the mailbox it is addressed to. It is for ` +
-        `${addressed}, and its centre is at (${centre.x.toFixed(1)}, ${centre.y.toFixed(1)}) ` +
+        `${addressed}, and its center is at (${center.x.toFixed(1)}, ${center.y.toFixed(1)}) ` +
         `while that mailbox occupies ${target.left.toFixed(1)}–` +
         `${(target.left + target.width).toFixed(1)} across and ${target.top.toFixed(1)}–` +
         `${(target.top + target.height).toFixed(1)} down.\n` +
@@ -3148,7 +3148,7 @@ function checkSceneMoves(first, second) {
    * One turn per key, and never a turn back: the ratchet is one-way, so the two
    * numbers are the same number and the equality is the whole property. A wheel
    * that wrapped, or that reset on a long conversation, would draw a key nobody
-   * derived and would fail here rather than being modelled around.
+   * derived and would fail here rather than being modeled around.
    */
   for (const side of ['a', 'b']) {
     const turns = second.scene?.[side]?.turns;

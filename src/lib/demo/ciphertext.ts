@@ -8,7 +8,7 @@
  *
  * ---------------------------------------------------------------- peeling ---
  *
- * `envelope.ciphertext` is base64 of base64. The SDK serialises the encrypted
+ * `envelope.ciphertext` is base64 of base64. The SDK serializes the encrypted
  * message to a base64 document and the relay row carries that document base64
  * encoded again, so a single `atob` returns 2,649 bytes of *base64 characters*
  * — and a byte count taken from those measures the encoding rather than the

@@ -156,13 +156,13 @@ code {
  * the box with the bottom of the font's descent, so a glyph with no descender
  * floats down into the space one would have used. What "aligned with the text"
  * actually looked like was the 🔋 these marks replaced. At the lead's 19.43px
- * that emoji spanned 20px above the baseline and 5px below, putting its centre
+ * that emoji spanned 20px above the baseline and 5px below, putting its center
  * 7.5px up — a third of a pixel off the middle of the cap band, which reaches
  * 14.04px. So the target is 7.5/19.43 = 0.386em above the baseline, and a box
  * of height S has its bottom edge 0.386em - S/2 from it. The calc() is what
  * keeps that true when one mark is resized; three hand-set offsets would not
- * survive the next change to the sizes below. All three paths are centred in
- * their own viewBox, so centring the box centres the ink.
+ * survive the next change to the sizes below. All three paths are centered in
+ * their own viewBox, so centring the box centers the ink.
  *
  * HOW MUCH AIR each one carries had to be settled before any of the sizes below
  * meant anything, and it was measured rather than assumed. The keyhole and the
@@ -185,13 +185,13 @@ code {
  * the box with the bottom of the font's descent, so a glyph with no descender
  * floats down into the space one would have used. What "aligned with the text"
  * actually looked like was the 🔋 these marks replaced. At the lead's 19.43px
- * that emoji spanned 20px above the baseline and 5px below, putting its centre
+ * that emoji spanned 20px above the baseline and 5px below, putting its center
  * 7.5px up — a third of a pixel off the middle of the cap band, which reaches
  * 14.04px. So the target is 7.5/19.43 = 0.386em above the baseline, and a box
  * of height S has its bottom edge 0.386em - S/2 from it. The calc() is what
  * keeps that true when one mark is resized; three hand-set offsets would not
- * survive the next change to the sizes below. All three marks are centred in
- * their own viewBox, so centring the box centres the ink.
+ * survive the next change to the sizes below. All three marks are centered in
+ * their own viewBox, so centring the box centers the ink.
  *
  * HOW BIG started as a rule and is now a rule with a correction on it. Equal
  * boxes do not read as equal marks: to a first approximation what the eye
@@ -201,7 +201,7 @@ code {
  *
  * The rule put the TypeScript tile at 0.941em — it inks 99.8%, everything but
  * its four rounded corners — and it was set at 0.95 and looked visibly the small
- * one. The correction is the interesting part, because it generalises: the
+ * one. The correction is the interesting part, because it generalizes: the
  * primary logo is a *figure on a field*, white letters printed on a blue tile,
  * and the reader sizes the figure. The letterform is half the tile's height, so
  * at 0.95em its caps came out at 0.48em against the lead's own 0.72em cap band.
@@ -222,8 +222,8 @@ code {
  * than a trailing space so it applies to both edges of all three at once —
  * before the fix the gaps ran 4.9px, 4.9px and 11.2px for the same markup.
  *
- * GREEN, and only this one. The two marks beside it are locked to brand colour
- * by a licence or by nominative use; this one is ours, so it can carry meaning,
+ * GREEN, and only this one. The two marks beside it are locked to brand color
+ * by a license or by nominative use; this one is ours, so it can carry meaning,
  * and it takes the green this site uses where something is settled rather than
  * promised — which is the claim "batteries included" makes.
  *
@@ -244,7 +244,7 @@ code {
  *
  * The cap in `tests/site-content.test.mjs` is the other half of the keyhole's
  * size. A mark at badge scale reads as certification, and OSI certifies
- * licences rather than products — the "no implied endorsement" condition,
+ * licenses rather than products — the "no implied endorsement" condition,
  * expressed as a number.
  */
 .osi-mark,
@@ -381,7 +381,7 @@ a:hover {
 
 /* `--oe-band-background` is what this band is painted with, published so that
    something sticking to the top of it can be opaque against it without naming
-   a colour of its own. The demo stage's mobile figure is the caller; a stacked
+   a color of its own. The demo stage's mobile figure is the caller; a stacked
    figure with a transparent background has the panel scrolling through it. */
 .band {
   --oe-band-background: var(--oe-background);
@@ -403,8 +403,8 @@ a:hover {
 }
 
 /*
- * `.measure` caps a line of text. `.container` centres a box. Composed on one
- * element they cap the container's own box and then centre that — so a page
+ * `.measure` caps a line of text. `.container` centers a box. Composed on one
+ * element they cap the container's own box and then center that — so a page
  * hero started a quarter of the way across the page while the wordmark above it
  * and every band below it started at the gutter. Five pages read as if the top
  * of them belonged to a different site.
@@ -614,11 +614,11 @@ a:hover {
  *
  * My own pick off that ladder was 1.5em, on the grounds that 1.75 made the mark
  * heavier than the "Console" link beside it. That is recorded here as a
- * judgement that was overruled rather than deleted, because it was a judgement
+ * judgment that was overruled rather than deleted, because it was a judgment
  * about balance and the founder's is about emphasis: these are the controls
  * that lead to the source and to the reader's own eyes, the page's whole
  * argument is that the source is the product, and a mark that outweighs its
- * neighbour is the point rather than the cost. Weight was never the constraint
+ * neighbor is the point rather than the cost. Weight was never the constraint
  * — no measurement said 1.75 was wrong, and none says 2 is; the header row is
  * 64px and the row's own height never moved as the mark climbed, so the ceiling
  * here is taste, and the taste that owns it is not mine.
@@ -672,7 +672,7 @@ a:hover {
 }
 
 /*
- * The trigger takes `.oe-icon-button` in the markup, so its size, its colour
+ * The trigger takes `.oe-icon-button` in the markup, so its size, its color
  * and its hover are the same rules the theme switch beside it runs. What is
  * left here is the two things a `<summary>` needs and a `<button>` does not:
  * the disclosure triangle, which two engines draw differently and neither
@@ -862,7 +862,7 @@ a:hover {
  * variants, whose import line is 91 characters, still scrolled 46px inside it.
  *
  * Nothing in a two-column hero can fix that, because the copy and the code
- * were bidding for the same 1132px. Centred, they are not: the copy is capped
+ * were bidding for the same 1132px. Centered, they are not: the copy is capped
  * at its own measure and the panel takes the container's full width, the same
  * 1132px the carrier recording under it takes. The React Native variants
  * stopped scrolling — the first width on this page that has ever held all ten
@@ -930,7 +930,7 @@ a:hover {
 }
 
 /*
- * Centred text, at every width.
+ * Centered text, at every width.
  *
  * This was `@media (min-width: 44rem)` until this round, and the paragraph that
  * put it there argued that centring is a width dividend a phone cannot pay: the
@@ -948,7 +948,7 @@ a:hover {
  * page by the time it was being cited.
  *
  * The principle was over-applied. Not centring *running text* is real
- * typographic guidance, and it is about the return sweep: a centred paragraph
+ * typographic guidance, and it is about the return sweep: a centered paragraph
  * starts every line at a different x. Nothing left in this column is running
  * text. The h1 is a large display heading at three or four lines on a phone,
  * the lead is a badge row, `.actions` is two buttons, and the strip is seven
@@ -957,18 +957,18 @@ a:hover {
  *
  * Checked against the three sites the brief names as the craft bar, by reading
  * the responsive alignment off each hero: Resend is `text-center md:text-left`
- * — centred on a phone, left from 768 up, the exact inverse of what stood here.
- * Liveblocks is `items-center text-center` with no breakpoint prefix, centred
+ * — centered on a phone, left from 768 up, the exact inverse of what stood here.
+ * Liveblocks is `items-center text-center` with no breakpoint prefix, centered
  * everywhere. Supabase declares no alignment at all and is left everywhere. Two
- * of the three centre on a phone, and none of the three switches left-to-centre
+ * of the three center on a phone, and none of the three switches left-to-center
  * as the viewport grows. Resend's switch has a structural reason this hero does
  * not have: its hero becomes a two-column flex row at `md`, so its copy turns
  * into a left-hand column. This hero is one column at every width.
  *
  * What is given up is the left rhythm with the two panels below, which stay
- * full-bleed to the gutter while the copy centres. That is a real cost and it
+ * full-bleed to the gutter while the copy centers. That is a real cost and it
  * is a layout preference rather than a readability one — Liveblocks has the
- * same arrangement and centres anyway. The founder's call is that it is worth
+ * same arrangement and centers anyway. The founder's call is that it is worth
  * it. Do not restore the query on the strength of the first paragraph above;
  * its line counts do not describe this lead.
  *
@@ -976,20 +976,20 @@ a:hover {
  * code was 13.5px and the two shared an edge. The panel is the container's full
  * width now, so at 1280 and up it overhangs this column by 182px on each side —
  * the copy is a reading measure and the panel is a screenshot, and they stopped
- * being the same size two rounds ago. Symmetric overhang on a centred hero
+ * being the same size two rounds ago. Symmetric overhang on a centered hero
  * reads as one column with a wider panel in it rather than as two misaligned
  * blocks, and the alternative is to cap the evidence at the width of a
  * paragraph. The cap stays at 48rem because it is a reading measure: 70rem of
- * centred lead is not a paragraph anybody finishes.
+ * centered lead is not a paragraph anybody finishes.
  *
  * `.lead` gives its own cap up to it, and the reason is line count rather than
  * width: its 56ch sets 685px, and the difference between that and the full 768
- * is a line of centred body copy the reader does not have to walk back to the
+ * is a line of centered body copy the reader does not have to walk back to the
  * left edge for.
  *
  * There were two capped children here. The other was `.maturity`, which moved
  * to the foot of the hero and was then cut from this page — it was not part of
- * the offer, and it was costing this column three lines of centred mono
+ * the offer, and it was costing this column three lines of centered mono
  * directly above the button.
  */
 .hero-copy {
@@ -1008,7 +1008,7 @@ a:hover {
 
 /* `.actions` and `.cta-primary` are the shared pair, used again at the foot of
    this page and on two other pages, and they stay left-aligned there. Only the
-   hero copy is centred, so only the hero copy re-aligns them. */
+   hero copy is centered, so only the hero copy re-aligns them. */
 .hero-copy .actions {
   justify-content: center;
 }
@@ -1023,12 +1023,12 @@ a:hover {
    `align-items: flex-start` would win and the centring would silently do
    nothing.
 
-   Three axes, and they are different things. The first centres the heading over
+   Three axes, and they are different things. The first centers the heading over
    the marks it heads: without it the heading stays flush-left above a row far
-   wider than itself, which on a centred page reads as a stray indent. The
-   second centres the clusters against each other once the row wraps. The third
+   wider than itself, which on a centered page reads as a stray indent. The
+   second centers the clusters against each other once the row wraps. The third
    is only visible on a phone — each cluster wraps internally there, and without
-   it the leftover name starts a flush-left second line under a centred first
+   it the leftover name starts a flush-left second line under a centered first
    one. At 390 that name is "Node.js", alone under Expo/React/Browser. */
 .hero-grid > .platform-strip {
   align-items: center;
@@ -1042,7 +1042,7 @@ a:hover {
 /*
  * The platform strip under the hero's actions.
  *
- * Sized and coloured to sit below the offer rather than beside it. The marks
+ * Sized and colored to sit below the offer rather than beside it. The marks
  * are 34px at the widths this argument was made at, the names 16px, the heading
  * 13px; a phone takes the same pair down together, and the clamps that do it
  * are on `.platform-strip`. The legibility floor is 18 — below it the Convex
@@ -1052,11 +1052,11 @@ a:hover {
  *
  * The floor is about the mark being read as a mark, and it binds where the
  * marks are the loudest thing on the row. On a phone they are not: the button
- * is full width above them and the mark's job there is to be recognised beside
+ * is full width above them and the mark's job there is to be recognized beside
  * a name that is already spelling it out. That is what buys the 20px small end.
  *
  * They were 40 and 18, which put the marks within 4px of the 44px button and
- * left colour as the only thing separating them — one muted hue at 7.08 against
+ * left color as the only thing separating them — one muted hue at 7.08 against
  * a filled accent, and nothing else. 34 and 16 restore size as a second
  * separator: 10px of difference rather than 4, a row 817px wide instead of 912,
  * and a strip 6px shorter. That the button stays the loudest element above the
@@ -1069,9 +1069,9 @@ a:hover {
  * its mark stops reading as a label on it.
  *
  * `currentColor` on the paths and `--oe-muted` on the item is what keeps this
- * a compatibility list. Brand colour is the visual grammar of a partner wall,
+ * a compatibility list. Brand color is the visual grammar of a partner wall,
  * and it would also put seven unrelated hues under a headline whose whole job
- * is to be the loudest thing above the fold. One colour, the page's own.
+ * is to be the loudest thing above the fold. One color, the page's own.
  *
  * The heading sits above the marks rather than inline before them. Inline it
  * was the first thing in the row and read as part of the list — one more item
@@ -1126,7 +1126,7 @@ a:hover {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   /* Ranked below the names by size, case, and letterspacing rather than by
-     colour, per the header of this file. `--oe-subtle` is the tempting token
+     color, per the header of this file. `--oe-subtle` is the tempting token
      and it is forbidden for text: it is `--oe-border-control`'s value, held to
      3:1, and it measures 3.93 on the light canvas. `muted` is 6.12 light and
      7.08 dark. */
@@ -1190,7 +1190,7 @@ a:hover {
  * its own rather than at an authored break. `balance` from the global heading
  * rule is what that wants. Capped below the global h1 maximum so a sentence
  * this long stays at two or three lines: at the global 60px it sets three
- * lines and 216px of headline inside the centred measure before the reader
+ * lines and 216px of headline inside the centered measure before the reader
  * reaches the first claim, and it set four in the column this used to share
  * with the demo.
  *
@@ -1226,7 +1226,7 @@ a:hover {
  * This used to be justified by an extra cap that pulled the headline to
  * 2.375rem at the same breakpoint, because in the old two-column hero the
  * headline's measure stopped at the 470px left column and 42px set four lines
- * there. Centred, the headline has 704px and sets two, so the cap is gone —
+ * there. Centered, the headline has 704px and sets two, so the cap is gone —
  * but its partner is not, because 42 against 36 was never the healthy ratio.
  * It was only the smaller half of the problem.
  *
@@ -1331,7 +1331,7 @@ a:hover {
  * not have to change, and the margin was measured rather than trusted — 59px
  * of slack on the longest line at the narrowest width that does not wrap.
  *
- * The ceiling is a judgement and the floor is not. 18px keeps genuine slack —
+ * The ceiling is a judgment and the floor is not. 18px keeps genuine slack —
  * the full 1132px panel would carry 21.1px — and sits under the lead's 20px,
  * so the evidence does not outweigh the sentence that frames it. The floor is
  * arithmetic: at 48rem the panel is 720px and the largest size that still fits
@@ -1393,7 +1393,7 @@ a:hover {
  * panes: with a boundary in the gap the two are no longer siblings in that
  * selector's sense, so the plain rule is not drawn and this one is. That is
  * deliberate — the boundary is the divider at these two joins, and drawing
- * both would put a grey line and a gold line 2px apart.
+ * both would put a gray line and a gold line 2px apart.
  *
  * `--oe-diagram-boundary-dash: 2 6` is an SVG dasharray and cannot be handed
  * to `border-style: dashed`, whose dash length is the browser's business. So
@@ -1429,7 +1429,7 @@ a:hover {
   );
 }
 
-/* The same fill the SVG boundary labels carry, so the word is the same colour
+/* The same fill the SVG boundary labels carry, so the word is the same color
    on the panel as it is inside a blog-post diagram. */
 .carrier-boundary-label {
   color: var(--oe-sealed);
@@ -1556,7 +1556,7 @@ a:hover {
  *
  * `align-items: baseline` on the first row would sit the control's text on the
  * heading's baseline and put the button's box above the heading's cap height.
- * Centred against the heading's first line is what reads as "on the line".
+ * Centered against the heading's first line is what reads as "on the line".
  */
 .demo-console-head {
   display: grid;
@@ -2061,9 +2061,9 @@ a:hover {
  * each one sitting wherever its own row's text starts.
  *
  * `align-items: start` and not `center`: the icons are read against the
- * headings, and one centred on a two-line body drifts below the heading it
+ * headings, and one centered on a two-line body drifts below the heading it
  * belongs to as soon as one cell runs longer than another. The top padding
- * lands the icon's optical centre on the heading's x-height instead of on its
+ * lands the icon's optical center on the heading's x-height instead of on its
  * cap line, which is where a flush-top square sits.
  *
  * `--oe-muted` and not the foreground: the heading names the row and the icon
@@ -2106,7 +2106,7 @@ a:hover {
 /*
  * One cell in the band answers on another page, and its link needs to read as
  * a continuation of the sentence above rather than as a sibling of the body
- * text. Margin only — colour, underline and focus ring all come from the
+ * text. Margin only — color, underline and focus ring all come from the
  * global link rules, because a link that styles itself is a link that will
  * eventually disagree with the rest of the page about what a link looks like.
  */
@@ -2171,7 +2171,7 @@ a:hover {
  *
  * Geometry in local rem rather than the spacing scale. The scale prices reading
  * rhythm — the distance from a heading to its paragraph — and this is a drawing,
- * where a rail has to land on the centre of a node to the pixel. The diagram CSS
+ * where a rail has to land on the center of a node to the pixel. The diagram CSS
  * further up works the same way for the same reason.
  */
 .commitline {
@@ -2219,7 +2219,7 @@ a:hover {
   left: calc(var(--commitline-node) / 2 - var(--commitline-rail) / 2);
   width: var(--commitline-rail);
   height: 100%;
-  /* `--oe-border` is the colour of a container edge and is all but invisible
+  /* `--oe-border` is the color of a container edge and is all but invisible
      against the dark canvas. This is a drawn line and has to carry at reading
      distance. */
   background: var(--oe-muted);
@@ -2235,10 +2235,10 @@ a:hover {
 
 /*
  * Solid rather than a ring. A ring needs an opaque interior for the rail to pass
- * behind instead of through, and the only colour that could fill it is whichever
+ * behind instead of through, and the only color that could fill it is whichever
  * surface the band happens to sit on — a value this rule would have to guess and
  * then keep guessing right through every band reshuffle above it. A filled dot
- * occludes the rail by being the rail's own colour family, and owes nothing to
+ * occludes the rail by being the rail's own color family, and owes nothing to
  * its background.
  */
 .commitline-node {
@@ -2295,7 +2295,7 @@ a:hover {
    * applies it. Authoring the empty state in the markup instead would ship a
    * blank band to every reader whose JavaScript never ran.
    *
-   * Nothing here animates opacity or colour. A rail grows, a dot lands, a word
+   * Nothing here animates opacity or color. A rail grows, a dot lands, a word
    * is written out — every step is geometry, and every step is still present in
    * the finished state a reduced-motion reader gets.
    */
@@ -2380,7 +2380,7 @@ a:hover {
 }
 
 /* Both columns are sized to their figures rather than sharing the container, and
-   the pair is centred in it. A second column taking the whole remainder would
+   the pair is centered in it. A second column taking the whole remainder would
    push the mark near two thirds across a band this wide, which puts a screen's
    worth of air between two figures that are meant to be read as a pair; sizing
    both to their contents keeps them together and leaves the slack outside the
@@ -2392,9 +2392,9 @@ a:hover {
    viewport shrinks the column instead of overflowing the band.
 
    The mark's column is its own `max-width` and not a round number above it. A
-   wider track centres the two tracks but not the two drawings: the mark sits at
+   wider track centers the two tracks but not the two drawings: the mark sits at
    the left of its track, so every pixel the track has spare lands on the right
-   of the composition and the ink reads off-centre by that much. */
+   of the composition and the ink reads off-center by that much. */
 @media (min-width: 48rem) {
   .commitline-pair {
     grid-template-columns: minmax(0, max-content) minmax(0, 34rem);
@@ -2414,7 +2414,7 @@ a:hover {
  * than it is tall and its symbol is a sixth of its width, so the symbol — and
  * with it the bracket stem the field has to resolve — is set by how wide this
  * box gets. At 20rem the stem fell to 5px and our own mark read as a dotted
- * line beside two solid ones. 34rem still leaves the pair centred inside the
+ * line beside two solid ones. 34rem still leaves the pair centered inside the
  * band at every width the two columns hold.
  */
 .starfield {
@@ -2479,7 +2479,7 @@ a:hover {
  * The comparison's per-project rows end on the sentence a reader decides on,
  * and two of the five send them to somebody else's project. The paragraph
  * above it is evidence and stays muted; the conclusion takes the foreground
- * colour and a line of space so it is not read as more evidence.
+ * color and a line of space so it is not read as more evidence.
  */
 .definition-rows dd .verdict {
   margin-block-start: var(--oe-space-3);
@@ -2686,7 +2686,7 @@ table.data td {
   --oe-editor: var(--oe-editor-dark);
   --oe-editor-foreground: var(--oe-editor-dark-foreground);
 
-  /* The syntax colours are pinned too, but they cannot be pinned from here:
+  /* The syntax colors are pinned too, but they cannot be pinned from here:
      shiki writes its palette onto the spans, so a property declared on this
      element has nothing to read. That pin is a selector, further down, next to
      the two rules it has to outweigh. */
@@ -2697,7 +2697,7 @@ table.data td {
    * This is the copy of our palette that the block above this section says it
    * does not make, and the exception needs stating rather than hiding. The
    * panel now has one appearance while the page has two, so every site-owned
-   * colour printed on it — the filename, the adapter labels, the select, the
+   * color printed on it — the filename, the adapter labels, the select, the
    * copy glyph, the note under the program — has to stop tracking the page or
    * go unreadable: light `--oe-muted` is #615d57, which measures 1.6 on this
    * surface. The design package exposes no mode-independent alias to point at,
@@ -2720,7 +2720,7 @@ table.data td {
    * under them.
    *
    * Plain `--oe-muted` is 6.12 on this paper, and at that strength a column of
-   * numerals competes with the syntax colours beside it — the gutter reads as
+   * numerals competes with the syntax colors beside it — the gutter reads as
    * part of the program rather than as the ruler down its side. The palette has
    * no gentler step to reach for: the next one down is paper-500, which is
    * `--oe-subtle` and `--oe-border-control` at 3.97, under AA and already
@@ -2931,14 +2931,14 @@ table.data td {
  * the page a reader can operate — so it should not be the one thing that
  * breaks when a script fails. The native element brings keyboard support,
  * touch pickers, and the platform's own focus ring for free, and the only
- * thing given up is control of the popup's colours, which no reader is here
+ * thing given up is control of the popup's colors, which no reader is here
  * for. `font: inherit` is what stops Safari and Firefox shrinking it.
  */
 /*
  * The design package's focus ring enumerates `a, button, summary, input,
  * [tabindex]` and does not include `select`, so this control fell back to
  * Chrome's own ring — measured `auto 1px rgb(153, 200, 255)`, which is a
- * different colour, a different width and a different offset from every other
+ * different color, a different width and a different offset from every other
  * focusable thing on the page. The site's own ring is restated here in the
  * same shape as `components.css` writes it, rather than the package being
  * edited: it is a pinned tarball, and this repository does not own it. Worth
@@ -2991,7 +2991,7 @@ table.data td {
  *
  * The values are Ghostty's own defaults, from `src/config/Config.zig`:
  * `background = #282C34`, `foreground = #FFFFFF`, and `window-padding-x/y =
- * 2`. Both colours apply in both modes, because Ghostty ships no light theme
+ * 2`. Both colors apply in both modes, because Ghostty ships no light theme
  * — a shell that turned white with the page would be a shell nobody runs.
  * White on the fill measures 14.00. The padding is the one default not
  * copied: 2pt is right for a window you resize and wrong for a panel on a
@@ -3022,7 +3022,7 @@ table.data td {
 .terminal-line {
   display: flex;
   /*
-   * Centred, not `baseline`, which is the right rule for a row of text and the
+   * Centered, not `baseline`, which is the right rule for a row of text and the
    * wrong one for this row: the copy button is 24px of drawing with no text in
    * it, so the browser synthesises its baseline at its bottom margin edge and
    * hangs the command off that. Every phone size the fit term below solves to
@@ -3142,7 +3142,7 @@ table.data td {
  *
  * 500 is the second half of drawing attention to this line, and it is the half
  * that costs nothing. The command is already `#ffffff` on Ghostty's `#282c34`,
- * which is the most contrast there is — colour had no room left to move in, so
+ * which is the most contrast there is — color had no room left to move in, so
  * emphasis had to come from size and weight. Measured on a canvas at 18px, the
  * 500 axis lays down 14.4% more ink than 400, which is visible; 600 lays down
  * 20.9% and reads as a heading rather than as something typed.
@@ -3227,7 +3227,7 @@ table.data td {
 /*
  * The tick replaces the clipboard only once the write resolves, so the state
  * shown is one the browser confirmed rather than one the click assumed. It is
- * a change of shape, not of colour, and the button's name changes with it —
+ * a change of shape, not of color, and the button's name changes with it —
  * the confirmation survives both a monochrome display and a screen reader.
  */
 .copy-icon-done,
@@ -3246,7 +3246,7 @@ table.data td {
  * It sits on the editor surface rather than inside the shell, so it cannot
  * wear the shell's steps: `--oe-shell-prompt` is #9da5b4, which measures 2.48
  * on white — the least readable thing in the panel, and its only control. It
- * takes the site's own colours instead, both of which the contrast test holds
+ * takes the site's own colors instead, both of which the contrast test holds
  * against this surface.
  *
  * It has to sit *after* `.copy-button`, and this is not a stylistic
@@ -3351,7 +3351,7 @@ table.data td {
  * mode since the day the blog shipped: dark text on white, inside a page that
  * is otherwise near-black. `.astro-code` is Shiki's own class and is on the
  * `<pre>` in both places, which makes it the honest hook. The panel styling
- * stays scoped; only the colour choice is site-wide.
+ * stays scoped; only the color choice is site-wide.
  *
  * `.code-block pre` above is (0,1,1) and beats a bare `.astro-code`, so the
  * `<pre>` element itself keeps `--oe-editor-foreground`. That is the same
@@ -3509,7 +3509,7 @@ table.data td {
  * reads, so the numbers cannot reach the clipboard. `user-select: none` covers
  * the other path — a reader dragging across the panel by hand.
  *
- * The colour is the site's own, not the editor's, because Light+ and Dark+ do
+ * The color is the site's own, not the editor's, because Light+ and Dark+ do
  * not carry one: both leave `editorLineNumber.foreground` to VS Code's base
  * theme, which shiki does not bundle, so there is no value here to quote.
  * Restating VS Code's default from memory would be a claim this repository
@@ -3669,7 +3669,7 @@ table.data td {
    * relationship expressed as two independent clamps holds only where both
    * clamps are what is running. A media query that overrides one side is not
    * visible to the arithmetic on the other, and the test that swept those
-   * clamps passed while the page was wrong, because it was modelling the
+   * clamps passed while the page was wrong, because it was modeling the
    * declarations instead of the cascade. The test now checks this pairing
    * directly.
    *
@@ -3846,8 +3846,8 @@ table.data td {
  *
  * `color` is set here and it matters. `.prose pre` never declared one, which
  * was survivable while `shikiConfig` had no `defaultColor` and Shiki baked a
- * literal colour onto every span. Turning `defaultColor: false` on stops it
- * doing that, so a `<pre>` with no colour of its own would render every
+ * literal color onto every span. Turning `defaultColor: false` on stops it
+ * doing that, so a `<pre>` with no color of its own would render every
  * unhighlighted block in the body foreground on the editor's paper — black on
  * black in dark mode. This is the fallback the custom properties fall back to.
  */
@@ -4142,7 +4142,7 @@ table.data td {
 
 /*
  * The chevron, drawn from two borders so it needs no asset and inherits the
- * text colour. `aria-hidden`: the state it shows is already on the `<details>`,
+ * text color. `aria-hidden`: the state it shows is already on the `<details>`,
  * and assistive technology announces that natively.
  */
 .scenario-marker {
@@ -4329,7 +4329,7 @@ table.data td {
 }
 
 /*
- * The receiving device's own log, printed rather than summarised.
+ * The receiving device's own log, printed rather than summarized.
  *
  * It scrolls inside its own box in both directions. Vertically because a run
  * produces about twenty records and the page below them is worth reaching;

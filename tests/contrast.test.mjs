@@ -3,7 +3,7 @@
  *
  * The design system re-derives every ratio it publishes, but it can only check
  * pairs it knows about: foreground on canvas, code-foreground on code, each
- * chip on its own surface. A site composes new ones — a metadata colour on the
+ * chip on its own surface. A site composes new ones — a metadata color on the
  * code surface, a cipher dump on the sunken pane — and nothing upstream has
  * ever measured those. This file measures them here, against the same token
  * file the stylesheet reads, so a palette change or a token swap fails the
@@ -59,7 +59,7 @@ const composed = [
   ['footer link', 'link', 'surface', 4.5],
 ];
 
-test('meets AA on every colour pair the site composes itself', () => {
+test('meets AA on every color pair the site composes itself', () => {
   for (const [name, foreground, background, floor] of composed) {
     for (const theme of ['light', 'dark']) {
       const palette = tokens.semantic[theme];
@@ -79,7 +79,7 @@ test('meets AA on every colour pair the site composes itself', () => {
  *
  * The code panel wears VS Code's paper and the install line wears Ghostty's
  * window, and both are the point rather than an accident: a developer should
- * recognise the applications. But the text on them is still ours — the
+ * recognize the applications. But the text on them is still ours — the
  * filename header is `--oe-muted`, the copy control is drawn from the shell
  * steps — and no upstream contrast test has any reason to have measured those
  * pairs. `src/lib/code-theme.mjs` is the source for both sides, so a theme
@@ -88,7 +88,7 @@ test('meets AA on every colour pair the site composes itself', () => {
  * Most rows below take no `mode`, because most of these surfaces do not change
  * with the page. Ghostty ships no light theme; the code panel now pins Dark+ in
  * both modes, and pins the four site tokens printed on it along with the paper —
- * so a row that read `tokens.semantic[mode].muted` would be measuring a colour
+ * so a row that read `tokens.semantic[mode].muted` would be measuring a color
  * `.code-block` overrides, and would pass on light #615d57 while the page paints
  * dark #a19c95. Naming `.dark` is what keeps the row measuring the page.
  *
@@ -116,7 +116,7 @@ const foreign = [
    *
    * `--oe-code-gutter` is `--oe-muted` mixed 78% toward the editor surface
    * under it, so that a column of numerals stops competing with the syntax
-   * colours beside it. That mix is the reason this row cannot just name a
+   * colors beside it. That mix is the reason this row cannot just name a
    * token: the value is composed in the stylesheet, and the whole point of
    * composing it is to spend contrast, so it is exactly the kind of value that
    * needs a floor holding it up. Re-derived here from the same two tokens the
@@ -138,9 +138,9 @@ const foreign = [
    * 4.55, 81% = 4.48, 78% = 4.25, 74% = 3.97. 82% was the last AA step and the
    * page shipped there; the owner was shown the ladder with the AA line marked
    * and chose 78%, one stop past it, because at the floor the numbers still
-   * read as part of the program. That is a judgement they are entitled to make
+   * read as part of the program. That is a judgment they are entitled to make
    * and this file is not the place to relitigate it — but it is the place to
-   * make sure it stays a judgement rather than becoming a slope, which is what
+   * make sure it stays a judgment rather than becoming a slope, which is what
    * the 3 below does — though not tightly, and that is worth being honest
    * about rather than leaving a reader to assume the floor is close. 74% and
    * 70% pass at 3.97 and 3.70, and so do 64% and 60% at 3.33 and 3.10; 59% is
@@ -189,11 +189,11 @@ test('meets AA where the site puts its own text on a borrowed surface', () => {
 test('measures the gutter mix the stylesheet actually paints', async () => {
   const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
 
-  /* The row above re-derives the gutter colour from two tokens and a 0.78
+  /* The row above re-derives the gutter color from two tokens and a 0.78
    * weight, which is only a measurement of the page while that weight is the
    * one the page uses. Nothing otherwise connects them: someone dimming the
    * numbers by hand would edit the percentage here and leave a green suite
-   * measuring a colour the site no longer paints. So the number is read back
+   * measuring a color the site no longer paints. So the number is read back
    * out of the CSS rather than trusted.
    *
    * The operands are checked too. A mix toward `--oe-border` or away from
@@ -272,12 +272,12 @@ test('keeps text off the token the palette only guarantees for borders', async (
 });
 
 /*
- * The battery in the lead is the one mark on this site whose colour is a choice
- * rather than a licence condition, so it is the one whose colour this file has
+ * The battery in the lead is the one mark on this site whose color is a choice
+ * rather than a license condition, so it is the one whose color this file has
  * to defend.
  *
  * It is a graphic that carries meaning — green is the site's "settled rather
- * than promised" colour, standing in for what "batteries included" claims — so
+ * than promised" color, standing in for what "batteries included" claims — so
  * WCAG 1.4.11 asks 3:1 against the canvas behind it, not the 4.5:1 the text
  * pairs above are held to.
  *
@@ -302,7 +302,7 @@ test('keeps the lead’s battery legible as a graphic on both canvases', async (
    * the light one happens to come first in the file, which is a property of
    * where somebody put a block rather than of what this is measuring. The same
    * regex in `site-content.test.mjs` did read the dark rule, and passed while
-   * the light colour was reverted outright. */
+   * the light color was reverted outright. */
   const light = ruleFor(css, '.battery-mark').match(/color:\s*var\(--([\w-]+)\)/)?.[1];
   const dark = ruleFor(css, ':root.dark .battery-mark').match(/color:\s*var\(--([\w-]+)\)/)?.[1];
   assert.ok(light && dark, 'the battery should take a token on each canvas');

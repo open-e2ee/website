@@ -85,7 +85,7 @@ test('states an axis this SDK loses', async () => {
    * If that changes, the fix is a different losing axis, not deleting this. */
   const ourColumn = projects.findIndex((project) => project.ours);
   const lost = axes.filter((row) => /^No\b/.test(row.cells[ourColumn]));
-  assert.ok(lost.length > 0, 'every axis favours us, which no honest comparison does');
+  assert.ok(lost.length > 0, 'every axis favors us, which no honest comparison does');
 });
 
 test('sends the reader to somebody else where that is the right answer', async () => {
@@ -142,7 +142,7 @@ test('keeps the comparison reachable now that it has no route of its own', async
 
   /* The section id is the whole reachability story: it is the redirect target
    * for the retired route, and the page holding it is a nav item on every page
-   * of the site. The homepage used to summarise the matrix and link this id,
+   * of the site. The homepage used to summarize the matrix and link this id,
    * which is what made it reachable without the nav; that band was cut, so the
    * nav item is now the only standing route in and this test holds it. */
   assert.match(product, /id="how-it-compares"/);
