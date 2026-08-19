@@ -728,7 +728,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
    * 1 with a new identity key — so the second registration of an account the
    * relay already knows leaves the two disagreeing, and `syncToServer` fails
    * with `INITIALIZATION_FAILED`. That is the relay refusing an identity change
-   * it did not authorise, which is correct of it: it is the same refusal the
+   * it did not authorize, which is correct of it: it is the same refusal the
    * reinstall scenario exists to provoke.
    *
    * No devices come up here. Bringing a device up is the reader's own act —
@@ -1024,7 +1024,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
 
     /* `atMs` is when the relay's subscriber really fired, and in memory that is
        *before* `encrypted` above: the relay accepts the envelope inside the
-       send call, so the acknowledgement we timed to is necessarily later. The
+       send call, so the acknowledgment we timed to is necessarily later. The
        list stays in protocol order and the timestamps stay real, which means
        the two disagree here. That is a true fact about an in-memory relay and
        `trace.ts` says why it is recorded rather than smoothed. */

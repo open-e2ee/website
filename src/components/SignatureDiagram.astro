@@ -71,7 +71,7 @@ const STACK = {
   relayY: 330,
   relaySize: 110,
   labelX: 238,
-  centre: 180,
+  center: 180,
 };
 ---
 
@@ -105,7 +105,7 @@ const STACK = {
         stroke-width={4}
       />
       {/* Solid, not the plaintext stroke at 0.28. design/DESIGN.md rule 2:
-          "Alpha is not a lighter colour, it is a claim that something is
+          "Alpha is not a lighter color, it is a claim that something is
           partly readable" — and these bars stand for content that is wholly
           readable. docs/diagram-grammar.md names this exact swap, and the
           token ships in the pinned package. The composite also measured
@@ -179,9 +179,9 @@ const STACK = {
     transform={`translate(${RELAY_X} ${RELAY_Y}) scale(${RELAY_SIZE / 512})`}
   />
   {/*
-    Centred under the mark rather than started at its left edge, which is where
+    Centered under the mark rather than started at its left edge, which is where
     the device and envelope labels start: naming the object runs this label past
-    the second envelope's own label, and the mark is a symbol with a centre
+    the second envelope's own label, and the mark is a symbol with a center
     rather than a box with a left edge.
   */}
   <text x={RELAY_X + RELAY_SIZE / 2} y={262} text-anchor="middle" class="diagram-label">
@@ -271,17 +271,17 @@ const STACK = {
   <text x={STACK.labelX} y={STACK.envelopeA + 30} class="diagram-label">{LABELS.sealed}</text>
   <text x={STACK.labelX} y={STACK.envelopeA + 50} class="diagram-tick-label">{LABELS.metadata}</text>
 
-  <use href="#sd-arrow-stacked" transform={`translate(${STACK.centre} ${STACK.arrowA}) rotate(90) scale(${SCALE})`} />
+  <use href="#sd-arrow-stacked" transform={`translate(${STACK.center} ${STACK.arrowA}) rotate(90) scale(${SCALE})`} />
 
   <use
     href="#sd-mark-stacked"
     transform={`translate(${STACK.relayX} ${STACK.relayY}) scale(${STACK.relaySize / 512})`}
   />
-  <text x={STACK.centre} y={STACK.relayY + 136} text-anchor="middle" class="diagram-label">
+  <text x={STACK.center} y={STACK.relayY + 136} text-anchor="middle" class="diagram-label">
     {LABELS.relay}
   </text>
 
-  <use href="#sd-arrow-stacked" transform={`translate(${STACK.centre} ${STACK.arrowB}) rotate(90) scale(${SCALE})`} />
+  <use href="#sd-arrow-stacked" transform={`translate(${STACK.center} ${STACK.arrowB}) rotate(90) scale(${SCALE})`} />
 
   <use
     href="#sd-envelope-stacked"

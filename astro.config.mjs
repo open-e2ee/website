@@ -30,7 +30,7 @@ export default defineConfig({
      spread rather than restated so the two can never drift apart.
 
      `defaultColor: false` is what makes the switch work. Without it Shiki
-     picks the light palette at build time and writes it as a literal colour,
+     picks the light palette at build time and writes it as a literal color,
      which is why every blog code block rendered dark-on-white inside a
      near-black page: there was no `--shiki-dark` for the theme class to
      choose. With it, both palettes ship as custom properties and `global.css`

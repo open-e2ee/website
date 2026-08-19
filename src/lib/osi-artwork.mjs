@@ -4,13 +4,13 @@
  * The path lives here rather than in `OsiMark.astro` because two places draw
  * it now: that component, at text size in the landing page's lead, and the
  * star field in the closing band. A logo transcribed twice is a logo that
- * drifts, and drift is the one failure mode a trademark licence has no
+ * drifts, and drift is the one failure mode a trademark license has no
  * tolerance for. `OsiMark.astro` carries the conditions this artwork is drawn
  * under and why this shape rather than the outline variant; read that file
  * before changing anything here.
  *
- * The palette is not a choice. OSI's licence says never stray from it, so the
- * two colours are named constants rather than tokens: `--oe-muted` would be
+ * The palette is not a choice. OSI's license says never stray from it, so the
+ * two colors are named constants rather than tokens: `--oe-muted` would be
  * the violation, not the fix.
  */
 

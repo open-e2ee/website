@@ -673,11 +673,11 @@ test('the ratchet each wheel is captioned with is the one the SDK selected', asy
  * The fields on a scene cue whose number is a count of things rather than a
  * measurement: how many notches a ratchet has turned, how many key bundles the
  * relay is holding for each device, how many key shapes a device has, how many
- * chunks of a post-quantum key have travelled. Bounded by the real protocol
+ * chunks of a post-quantum key have traveled. Bounded by the real protocol
  * state, but not by anything small — a published-key count can run into the
  * hundreds, the same order of magnitude as a byte count — so telling a count
  * from a measurement by its size would not hold. It has to be told by which
- * field it travelled on, which is what this list is for.
+ * field it traveled on, which is what this list is for.
  *
  * `braid` and `keygen` are on the list and are also pinned against the
  * recording separately, further down and further up. Being a count buys them
@@ -1147,7 +1147,7 @@ test('no two frames in a row draw the same thing', async () => {
 /*
  * The braid's counts, held against the braid.
  *
- * The relay column draws how much of a post-quantum key has travelled, and
+ * The relay column draws how much of a post-quantum key has traveled, and
  * marks the point a device says it produced the epoch secret. Neither is
  * something this page can work out. A braid chunk is visible only inside the
  * braid's own state machine, so `onBraidProgress` is the only source, and a

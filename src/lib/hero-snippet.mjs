@@ -18,7 +18,7 @@
  * The panel used to show one client called `signal`, which cost four renamed
  * lines and a reworded comment, and `tests/site-content.test.mjs` had to
  * license exactly that rename to keep checking anything. Showing both devices
- * gave the licence back — `alice` and `bob` are the recording's own names, so
+ * gave the license back — `alice` and `bob` are the recording's own names, so
  * the test undoes nothing before it looks a line up.
  *
  * What that check means: every import line, the relay construction, both
@@ -64,7 +64,7 @@ const PACKAGE = capture.packageName;
  * leaves the other half of that to imagination. Two clients and one relay is
  * the whole shape in nine lines.
  *
- * The two blocks are labelled as devices, and the label is doing real work
+ * The two blocks are labeled as devices, and the label is doing real work
  * rather than decorating. With the in-memory store the listing runs exactly as
  * written, both devices in one process, which is what the recording did. With
  * the four device stores it does not: `indexedDbStore()` takes no arguments
@@ -369,7 +369,7 @@ const PANEL_COLUMNS = 108;
  * Only Convex takes that branch today, and only because its construction line
  * is the longest in the file at 54 characters. Above it rather than below is
  * deliberate: `const convex = …` sits on the line before, and a comment about
- * what a relay does would be answering for its neighbour.
+ * what a relay does would be answering for its neighbor.
  */
 const withTrailingComment = (code, comment) => {
   const lines = code.split('\n');
@@ -412,7 +412,7 @@ export const buildSnippet = (storageId, relayId) => {
     /* The relay's comment rides on the last line of its construction, not the
        first. Convex builds a client before it builds a relay, and a comment
        about what a relay does, sitting on the line that makes a Convex client,
-       would be describing its neighbour. */
+       would be describing its neighbor. */
     ...withTrailingComment(relay.setup, relayComment),
     '',
     `const alice = await createSignalProtocolClient({ ${ALICE_COMMENT}`,

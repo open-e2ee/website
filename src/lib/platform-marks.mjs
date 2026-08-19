@@ -13,9 +13,9 @@
  *
  * CC0 covers copyright in the file, not trademark in the mark. These are shown
  * to state where the SDK runs and what it plugs into, which is nominative use:
- * each is rendered monochrome in the page's own muted colour rather than in
- * brand colour, at uniform size, with no vendor's name claimed as a partner or
- * endorser. `hex` is deliberately not carried across — a strip in brand colours
+ * each is rendered monochrome in the page's own muted color rather than in
+ * brand color, at uniform size, with no vendor's name claimed as a partner or
+ * endorser. `hex` is deliberately not carried across — a strip in brand colors
  * is the visual grammar of a partner wall, and this is a compatibility list.
  *
  * Two entries have no official mark and are drawn here instead:

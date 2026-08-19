@@ -100,7 +100,7 @@ const NOTES = {
     'Client timestamp set by the sender before encryption, used for retry matching and receipt correlation. Protocol-level.',
   serverTimestamp: 'Assigned by the relay on accept. Real relays assign this too.',
   clientMessageId:
-    'Sender-generated send id, a UUID, so a retry after an unknown result is recognised as the same send rather than stored twice. Set before encryption, and the relay must be able to read it to deduplicate — including under sealed sender, where it is the one field that is not anonymous.',
+    'Sender-generated send id, a UUID, so a retry after an unknown result is recognized as the same send rather than stored twice. Set before encryption, and the relay must be able to read it to deduplicate — including under sealed sender, where it is the one field that is not anonymous.',
   id: 'Relay-assigned envelope id. The msg-N form is the in-memory relay counting sends; a production relay assigns its own id format.',
   recipientRegistrationId:
     'Recipient device registration id, sent so the relay/recipient can detect a device reinstall. Present only on prekey_bundle envelopes. Protocol-level.',

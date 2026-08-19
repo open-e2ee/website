@@ -1,7 +1,7 @@
 /*
  * Every claim this site makes about somebody else's project.
  *
- * One module, because the matrix appears on /product and is summarised on the
+ * One module, because the matrix appears on /product and is summarized on the
  * homepage, and a claim about a competitor that says one thing on one page and
  * another on the next is the kind of mistake that is read as dishonesty rather
  * than as drift.

@@ -83,7 +83,7 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
    * /compare folding into /product and /demo folding into the homepage. This
    * is a floor on the walk finding the site, not a count anyone maintains for
    * its own sake — but it is exactly met, so it reds the moment a route is
-   * dropped without being accounted for here. That is the intended behaviour
+   * dropped without being accounted for here. That is the intended behavior
    * and the reason it is not slack. */
   assert.ok(pages.length >= 14, `expected the full site in dist/, found ${pages.length} pages`);
 
@@ -117,9 +117,9 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
   /* The homepage makes it nowhere. The promise argues for spending the ten
    * minutes, so it belongs under a button a reader reaches after the evidence;
    * the landing page's own closing ask was cut by the founder, and it now ends
-   * on the licence with no second offer, so the reader who has decided meets
+   * on the license with no second offer, so the reader who has decided meets
    * the promise on /product. Under the hero button it would be a
-   * third line of small grey type between the offer and the proof.
+   * third line of small gray type between the offer and the proof.
    *
    * Read off the built page and not the source: `flat()` keeps comments, and
    * the comment over the hero actions quotes this exact sublabel in order to
@@ -340,7 +340,7 @@ test('offers every adapter as a real, complete, copyable program', () => {
   /* Ten variants, five stores by two relays, and the reason they are all
    * pre-rendered is in HeroSnippet.astro: `script-src 'self'` leaves no room
    * for a runtime highlighter, so a combination that did not exist at build
-   * time could never be coloured. This test is what stops that fan-out
+   * time could never be colored. This test is what stops that fan-out
    * becoming ten chances to ship a wrong import. */
   assert.equal(snippetVariants.length, storageOptions.length * relayOptions.length);
   assert.equal(snippetVariants.length, 10);
@@ -434,7 +434,7 @@ test('gives the panel a focus ring the design system does not supply', async () 
 
   /* `components.css` scopes its ring to `:where(a, button, summary, input,
    * [tabindex])`. `select` is not in that list, so the adapter controls fell
-   * back to the browser's own ring — a different colour, width and offset
+   * back to the browser's own ring — a different color, width and offset
    * from every other focusable thing on the page. Measured before the fix:
    * `auto 1px rgb(153, 200, 255)`. */
   const rule = css.match(/\.code-select select:focus-visible \{[^}]*\}/)?.[0];
@@ -446,7 +446,7 @@ test('lets the panel copy control outrank the shell one it shares a class with',
   const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
 
   /* Both buttons carry `.copy-button`; only one is in a terminal. `.code-copy`
-   * re-colours the other for the editor surface, and both selectors are
+   * re-colors the other for the editor surface, and both selectors are
    * (0,1,0) — so the cascade decides on source order alone, and written in
    * the wrong order every declaration is dropped without warning.
    *
@@ -457,7 +457,7 @@ test('lets the panel copy control outrank the shell one it shares a class with',
    * reaches the element. This assertion is the missing half. */
   assert.ok(
     css.indexOf('.code-copy {') > css.lastIndexOf('.copy-button:hover'),
-    '.code-copy must come after .copy-button, or its colours are silently dropped',
+    '.code-copy must come after .copy-button, or its colors are silently dropped',
   );
 });
 
@@ -649,7 +649,7 @@ test('keeps the recorded carrier row on the page, wherever it sits', async () =>
    * sentence above the panel now describes a round trip in the reader's tab,
    * which is not a thing that was captured. The recording's caption states
    * where it came from, one line under the recording, which is the assertion
-   * in "does not overstate the one artefact that exists to not be
+   * in "does not overstate the one artifact that exists to not be
    * overstated". */
   assert.match(index, /<DemoConsole>/);
   assert.match(live, /<CarrierPanel \/>/);
@@ -1182,7 +1182,7 @@ test('keeps the example’s settings on one row, and shortens the writing to hol
   );
 });
 
-test('centres the hero at the phone’s width as well as the desktop’s', async () => {
+test('centers the hero at the phone’s width as well as the desktop’s', async () => {
   const raw = await read('../src/styles/global.css');
   const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -1196,7 +1196,7 @@ test('centres the hero at the phone’s width as well as the desktop’s', async
 
   /* The children do not inherit `text-align` — `.actions` and `.cta-primary`
    * are flex containers and the strip is a grid sibling — so each is asserted
-   * rather than assumed. Centred copy above flush-left buttons is the failure
+   * rather than assumed. Centered copy above flush-left buttons is the failure
    * this catches, and it looks like a bug rather than a choice. */
   assert.match(ruleFor(css, '.hero-copy .actions'), /justify-content:\s*center/);
   assert.match(ruleFor(css, '.hero-copy .cta-primary'), /align-items:\s*center/);
@@ -1212,7 +1212,7 @@ test('centres the hero at the phone’s width as well as the desktop’s', async
 
   /* Both levels of the strip's nested list. The inner one is only visible on a
    * phone, where each cluster wraps and the leftover name would otherwise start
-   * a flush-left row under a centred one. */
+   * a flush-left row under a centered one. */
   assert.match(
     ruleFor(css, '.hero-grid .platform-marks, .hero-grid .platform-cluster > ul'),
     /justify-content:\s*center/,
@@ -1233,7 +1233,7 @@ test('does not name a code block after an affordance it does not have', async ()
    * equals clientWidth every time. Narrow widths switch to `pre-wrap`, where
    * scrolling is impossible by construction, and the comment justifying the
    * old name had it backwards — it claimed the narrow screen was the scrolling
-   * one. A name is for identifying the region; behaviour that depends on the
+   * one. A name is for identifying the region; behavior that depends on the
    * viewport and the recorded snippet's longest line does not belong in it. */
   for (const source of ['../src/components/HeroSnippet.astro', '../src/pages/product.astro']) {
     const text = await flat(source);
@@ -1303,7 +1303,7 @@ test('ships the license for the icon set it copied', async () => {
   /* The second copy is the one that will drift. `Icon.astro` draws a fixed set
    * of chrome and has not changed in months; the deck icons are on a page
    * under revision, and a new cell arrives with a new icon and no reason for
-   * anyone to remember a licence file. So the list is derived from the
+   * anyone to remember a license file. So the list is derived from the
    * component rather than written out here: a name the union declares and the
    * notice does not name fails this test at the name that is missing. */
   const declared = [...deckIcon.matchAll(/^ {2}\| '([a-z-]+)';?$/gm)].map((m) => m[1]);
@@ -1345,7 +1345,7 @@ test('reaches the security review pack from the product page and the footer', as
   /* Both build their links from a data array now, so the path is quoted
    * rather than written as an attribute. The "Check the work" band holding
    * them spent time at the foot of the homepage and moved to /product when the
-   * landing page was cut back to the demo, the feature deck, and the licence;
+   * landing page was cut back to the demo, the feature deck, and the license;
    * it answers "prove it" for a reader who has just read a page of capability
    * claims, which is the page it is on.
    *
@@ -1462,11 +1462,11 @@ test('sends the folded demo route at a section the homepage still has', async ()
 test('leaves the reviewer a path to the license the review is for', async () => {
   /* /evaluate linked /licensing and /legal/terms inline. Folding it left this
    * page closing on an enterprise meeting and a quickstart, both of which
-   * assume the licence question is already settled — and the reader who gets
+   * assume the license question is already settled — and the reader who gets
    * to the end of the threat model is usually the person it is not settled for.
    *
    * /licensing rather than /pricing: the question at that point is which
-   * licence governs, not what a tier costs, and /licensing carries the
+   * license governs, not what a tier costs, and /licensing carries the
    * /legal/terms link itself, so one link restores the whole path.
    *
    * Matched as a whole anchor, label included, rather than on the href alone.
@@ -1666,7 +1666,7 @@ test('renders a phone at the phone’s own width, so overflow is visible', async
   assert.doesNotMatch(viewport, /user-scalable\s*=\s*no|maximum-scale/);
 });
 
-test('paints the phone’s status bar the colour of the page under it', async () => {
+test('paints the phone’s status bar the color of the page under it', async () => {
   const [layout, init, tokens] = await Promise.all([
     flat('../src/layouts/BaseLayout.astro'),
     read('../public/theme-init.js'),
@@ -1702,7 +1702,7 @@ test('paints the phone’s status bar the colour of the page under it', async ()
   /* The metas answer the *system* preference and this site has its own switch,
      so a reader who chooses dark under a light system would get a cream strip
      above a dark header — which on an iPhone reads as a gap at the top of the
-     page rather than as a colour. Both writers exist to close that: the
+     page rather than as a color. Both writers exist to close that: the
      resolver rewrites the tags before first paint, and the switch rewrites
      them again on every press. Either one alone leaves a case wrong. */
   assert.match(init, /meta\[name="theme-color"\]/);
@@ -1781,7 +1781,7 @@ test('gives every article its own share card, falling back to the site card', as
   assert.match(layout, /image=\{image\}/);
 });
 
-test('closes the page on what the licence hands over, not on forking it', async () => {
+test('closes the page on what the license hands over, not on forking it', async () => {
   const [graph, index, css] = await Promise.all([
     read('../src/components/CommitLine.astro'),
     read('../src/pages/index.astro'),
@@ -1793,7 +1793,7 @@ test('closes the page on what the licence hands over, not on forking it', async 
    * 0.x version number it reads as an invitation to fix something, and a landing
    * page that asks for repairs is selling a different product.
    *
-   * The four labels are the only place the page names what the licence hands
+   * The four labels are the only place the page names what the license hands
    * over. The heading listed the same four verbs and now does not, so the
    * drawing carries them alone and this list is what keeps them on the page. */
   const grants = graph.match(/^const GRANTS = \[(.+)\];$/m);
@@ -1806,7 +1806,7 @@ test('closes the page on what the licence hands over, not on forking it', async 
 
   /* The shape carries the claim, and two shapes available to a commit graph say
    * something this band must not. A branch peeling off makes taking your own copy
-   * the point of the licence; a branch merging back draws a contributor base the
+   * the point of the license; a branch merging back draws a contributor base the
    * project does not have and implies it is waiting on help. Neither the drawing
    * nor its stylesheet may grow one.
    *
@@ -1861,14 +1861,14 @@ test('closes the page on what the licence hands over, not on forking it', async 
 
   /* The graph is not hidden from assistive technology, and that is load-bearing
    * now rather than incidental. Its four labels are the only text on the page
-   * that names what the licence hands over: hiding them would leave a screen
-   * reader with a heading, a licence sentence, and nothing about the grant. It
+   * that names what the license hands over: hiding them would leave a screen
+   * reader with a heading, a license sentence, and nothing about the grant. It
    * was `aria-hidden` while the heading listed the same four verbs, which is the
    * only condition under which hiding it cost nothing. */
   assert.match(drawing, /<div class="commitline" data-commitline>/);
   assert.doesNotMatch(drawing, /aria-hidden/);
 
-  /* The band states neither licence's terms and routes to the page that owns
+  /* The band states neither license's terms and routes to the page that owns
    * them, so the route has to survive. `/licensing` carries what AGPLv3 asks
    * of the reader's own application; a band that hands over four things and
    * links nowhere would leave a developer to learn it from a lawyer.
@@ -1881,7 +1881,7 @@ test('closes the page on what the licence hands over, not on forking it', async 
   assert.match(index, /<a href="https:\/\/github\.com\/open-e2ee\/signal-protocol-js">/);
 
   /* `docs/messaging.md` §4: the tier vocabulary is banned as a rendering of
-   * "commercial license", and a band that names both licences is where it would
+   * "commercial license", and a band that names both licenses is where it would
    * turn up. Comments are stripped for the same reason as above — the one over
    * this band's lead names the banned phrase in order to rule it out. */
   const band = index
@@ -1890,28 +1890,28 @@ test('closes the page on what the licence hands over, not on forking it', async 
   assert.doesNotMatch(band, /paid tier|enterprise edition|pro version/i);
 
   /* The graph makes no claim about encryption, so it carries none of the diagram
-   * grammar. A slab or a carrier bracket turning up here would be a licence
+   * grammar. A slab or a carrier bracket turning up here would be a license
    * statement drifting into saying something about the protocol. */
   assert.doesNotMatch(drawing, /--oe-diagram-|class="diagram/);
 
-  /* Order: the graph, the field beside it, then the route to the licence terms.
+  /* Order: the graph, the field beside it, then the route to the license terms.
    * One ordered match rather than compared offsets — `indexOf` returns -1 for a
    * part that is gone, and -1 is less than every real offset, so a deleted link
    * would satisfy a comparison that reads as an order check.
    *
    * This ran to a fourth part, `class="closing"`, a repeat of the hero's action
-   * under a rule. The founder cut it, so the licence is the last thing on the
+   * under a rule. The founder cut it, so the license is the last thing on the
    * page and there is no second ask after it. That is asserted rather than
    * assumed: a restored closing block would land inside this band. */
   assert.match(
     band,
     /<CommitLine \/>[\s\S]+<StarfieldMark \/>[\s\S]+href="\/licensing"/,
-    'the graph, the mark and the licence link are no longer in that order',
+    'the graph, the mark and the license link are no longer in that order',
   );
   assert.doesNotMatch(
     index,
     /class="closing"/,
-    'the page ends on a second action again rather than on the licence',
+    'the page ends on a second action again rather than on the license',
   );
 
   /* The two figures share a row, and the graph is the one that leads. Source
@@ -2073,19 +2073,19 @@ test('draws three marks from the real artwork and puts every light back', async 
   assert.doesNotMatch(source, /--oe-duration/);
 
   /*
-   * Neither colour is baked into a light. Both resolve differently in the two
+   * Neither color is baked into a light. Both resolve differently in the two
    * themes and the switch in the header can flip with this band on screen, so a
-   * light carries only whether it is an accent one and the colours are re-read
-   * when the theme attribute changes. A `colour` on the light would paint the
+   * light carries only whether it is an accent one and the colors are re-read
+   * when the theme attribute changes. A `color` on the light would paint the
    * field in the old palette until the next resize.
    *
    * All three marks light in the page's own ink, which is also the condition
    * DESIGN.md's exception states: payload, carrier and wordmark alike. OSI's
    * mark keeps its published palette in the page's lead, where it is the
-   * licence condition `OsiMark.astro` sets out; here it does not, which that
+   * license condition `OsiMark.astro` sets out; here it does not, which that
    * file records as a breach rather than as a policy.
    */
-  assert.match(mark, /const readColours = \(\) => \{/);
+  assert.match(mark, /const readColors = \(\) => \{/);
   assert.match(mark, /attributeFilter: \['class'\]/);
   assert.match(mark, /context\.fillStyle = light\.accent \? accent : ink;/);
   assert.doesNotMatch(composition, /OSI_BODY|OSI_EDGE\b/, 'a mark in the field carries a palette of its own');
@@ -2108,7 +2108,7 @@ test('draws three marks from the real artwork and puts every light back', async 
   assert.match(source, /aria-hidden="true"/);
 
   /* It says nothing about encryption, so it carries none of the diagram grammar.
-   * A slab or a carrier bracket here would be a licence band drifting into a
+   * A slab or a carrier bracket here would be a license band drifting into a
    * claim about the protocol. */
   assert.doesNotMatch(source, /--oe-diagram-|class="diagram/);
 });
@@ -2346,8 +2346,8 @@ test('gives the security page something to do at the end of it', async () => {
 test('keeps a narrowed container on the same left edge as everything else', async () => {
   const css = await read('../src/styles/global.css');
 
-  /* `.container` centres its box and `.measure` narrows it, so composing them
-   * centred a narrow box: five page heroes started a quarter of the way across
+  /* `.container` centers its box and `.measure` narrows it, so composing them
+   * centered a narrow box: five page heroes started a quarter of the way across
    * the page while the wordmark above and the bands below started at the
    * gutter. The container has to keep the left edge it would have had. */
   assert.match(
@@ -2393,7 +2393,7 @@ test('steps the headings down under a headline that cannot climb', async () => {
    *
    * This used to also pin `.hero h1` to 2.375rem inside the same block, because
    * the headline shared a row with the demo and 42px set four lines in the
-   * 470px column it had. The hero is one centred column now and the cap is
+   * 470px column it had. The hero is one centered column now and the cap is
    * gone; the compensation is not, because 42-against-36 was the smaller half
    * of the problem and it survived the cap's removal. */
   assert.match(css, /\n\.hero h1 \{\s*font-size: clamp\(2\.0625rem, 1\.15rem \+ 3\.1vw, 2\.625rem\);/);
@@ -2537,7 +2537,7 @@ test('spends only spacing steps the scale actually has', async () => {
   assert.deepEqual(missing, [], `spacing steps that do not exist: ${missing.join(', ')}`);
 });
 
-test('never sets text in the border colour', async () => {
+test('never sets text in the border color', async () => {
   const css = await read('../src/styles/global.css');
 
   /* `--oe-subtle` is `--oe-border-control` under another name, and the design
@@ -2565,7 +2565,7 @@ const ratio = (a, b) => {
 };
 
 /*
- * Every colour the two shipped snippets actually emit, per theme.
+ * Every color the two shipped snippets actually emit, per theme.
  *
  * The old version of this measured the theme's declared roles, which was the
  * right shape for a theme we wrote: it had five, we chose all five, and
@@ -2582,7 +2582,7 @@ const ratio = (a, b) => {
  * change to the recorded capture that introduces a token type the page has
  * not shown before.
  */
-const emittedColours = async (code, themeId) => {
+const emittedColors = async (code, themeId) => {
   const { createHighlighter } = await import('shiki');
   const highlighter = await createHighlighter({ themes: [themeId], langs: ['ts'] });
   const { tokens: lines } = highlighter.codeToTokens(code, { lang: 'ts', theme: themeId });
@@ -2605,7 +2605,7 @@ const shippedSnippets = [
 ];
 
 test('uses the editor themes the reader already has, at their own values', async () => {
-  /* Named rather than inlined, so shiki owns the colours and an upgrade
+  /* Named rather than inlined, so shiki owns the colors and an upgrade
    * carries VS Code's own corrections in. `light-plus` and `dark-plus` are
    * the originals — the thing a decade of screenshots and tutorials has meant
    * by "the default". */
@@ -2646,7 +2646,7 @@ test('pins the quoted panel to one appearance, palette included', async () => {
   assert.ok(block.startsWith('.code-block {'), '.code-block rule not found — the anchor has drifted');
 
   /* The panel wears Dark+ in both page modes, so it is not enough to pin the
-   * paper: every site-owned colour printed on it has to stop tracking the page
+   * paper: every site-owned color printed on it has to stop tracking the page
    * or go unreadable — light `--oe-muted` is #615d57 and measures 1.6 here.
    * `tests/contrast.test.mjs` measures those pairs against the dark palette;
    * this is the half that proves the stylesheet actually uses the dark palette,
@@ -2667,7 +2667,7 @@ test('pins the quoted panel to one appearance, palette included', async () => {
     );
   }
 
-  /* And the paper. Only the paper — the syntax colours are pinned by a selector
+  /* And the paper. Only the paper — the syntax colors are pinned by a selector
    * further down, and the version of this assertion that expected to find them
    * here is what shipped a hero panel with no highlighting in it at all. Shiki
    * writes its palette onto the spans, so `--oe-shiki: var(--shiki-dark)` on
@@ -2686,7 +2686,7 @@ test('pins the quoted panel to one appearance, palette included', async () => {
    * default, then the dark page, then the pin. The `:root` on the last one
    * selects nothing extra and is load-bearing anyway — it takes the pin to
    * (0,3,2) against the dark rule's (0,3,1), so it wins by weight rather than
-   * by the two rules happening to name the same colour today. */
+   * by the two rules happening to name the same color today. */
   assert.match(css, /\n\.astro-code,\n\.astro-code span \{\n  color: var\(--shiki-light\);\n\}/);
   assert.match(
     css,
@@ -2704,7 +2704,7 @@ test('pins the quoted panel to one appearance, palette included', async () => {
   assert.doesNotMatch(css, /\.prose pre \{[^}]*--oe-editor:/);
 });
 
-test('never reads a shiki colour anywhere but the element shiki wrote it on', async () => {
+test('never reads a shiki color anywhere but the element shiki wrote it on', async () => {
   /*
    * The general form of the defect above, guarded once for the whole file.
    *
@@ -2719,13 +2719,13 @@ test('never reads a shiki colour anywhere but the element shiki wrote it on', as
    * the property is not defined and computes to the guaranteed-invalid value.
    * That value inherits and it is silent — the stylesheet parses, the rule
    * matches, `astro check` is clean, the build audit passes, and the page
-   * paints one flat foreground where the syntax colours should be.
+   * paints one flat foreground where the syntax colors should be.
    *
    * It cost a full round to find, and nothing in the 119 tests around this one
    * could see it: the theme test checks `@shikijs/themes`, the contrast test
    * checks the token maths, and both were measuring values that were correct
    * and never reached a pixel. So the assertion is on the shape rather than on
-   * any particular rule — put a shiki colour in a custom property again, in any
+   * any particular rule — put a shiki color in a custom property again, in any
    * selector, and this fails.
    */
   const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
@@ -2737,7 +2737,7 @@ test('never reads a shiki colour anywhere but the element shiki wrote it on', as
   assert.deepEqual(
     offenders,
     [],
-    'a shiki colour is being read into a custom property, which resolves where it is declared, ' +
+    'a shiki color is being read into a custom property, which resolves where it is declared, ' +
       'not where it is used — it will compute to the invalid value and paint nothing',
   );
 
@@ -2752,7 +2752,7 @@ test('never reads a shiki colour anywhere but the element shiki wrote it on', as
   );
 });
 
-test('keeps every syntax colour readable on the surface it is printed on', async () => {
+test('keeps every syntax color readable on the surface it is printed on', async () => {
   /* Code is body text at 13.5px and below, so every token owes 4.5:1,
    * comments included: the one comment in the hero snippet is the page's
    * central claim.
@@ -2767,38 +2767,38 @@ test('keeps every syntax colour readable on the surface it is printed on', async
   for (const [label, code] of shippedSnippets) {
     for (const [mode, id] of Object.entries(codeThemes)) {
       const background = codeSurfaces[mode].background;
-      const colours = await emittedColours(code, id);
+      const colors = await emittedColors(code, id);
 
       /* A snippet that stopped being highlighted would emit nothing and pass
        * an empty loop silently. Six is the count both snippets clear today. */
-      assert.ok(colours.size >= 6, `${label}/${mode}: only ${colours.size} colours emitted`);
+      assert.ok(colors.size >= 6, `${label}/${mode}: only ${colors.size} colors emitted`);
 
-      for (const [colour, sample] of colours) {
-        const measured = ratio(colour, background);
+      for (const [color, sample] of colors) {
+        const measured = ratio(color, background);
         assert.ok(
           measured >= 4.5,
-          `${label}/${mode}: ${colour} (${sample}) measures ${measured.toFixed(2)}:1 on ${background}`,
+          `${label}/${mode}: ${color} (${sample}) measures ${measured.toFixed(2)}:1 on ${background}`,
         );
       }
     }
   }
 });
 
-test('does not colour code with the action colour', async () => {
+test('does not color code with the action color', async () => {
   /* DESIGN.md reserves `ultra` for links, focus, and the accent, one per view,
-   * and the hero already spends it on the primary button. Link-coloured text
+   * and the hero already spends it on the primary button. Link-colored text
    * inside a panel where nothing is clickable competes with the one control
    * the fold exists for.
    *
    * Both themes do print a saturated blue on keywords — `#0000ff` in Light+,
    * `#569cd6` in Dark+ — and that is the acknowledged cost of looking like
    * the reader's editor. Neither is a step on the ramp, so the palette's
-   * actual rule holds: no code token is ever the same colour as a link. */
+   * actual rule holds: no code token is ever the same color as a link. */
   const ultra = Object.values(tokens.primitives.color.ultra).map((v) => v.toLowerCase());
   for (const [label, code] of shippedSnippets) {
     for (const [mode, id] of Object.entries(codeThemes)) {
-      for (const colour of (await emittedColours(code, id)).keys()) {
-        assert.ok(!ultra.includes(colour), `${label}/${mode}: ${colour} is an ultra step`);
+      for (const color of (await emittedColors(code, id)).keys()) {
+        assert.ok(!ultra.includes(color), `${label}/${mode}: ${color} is an ultra step`);
       }
     }
   }
@@ -2808,7 +2808,7 @@ test('dresses the install command as a terminal, in both modes', async () => {
   const css = await read('../src/styles/global.css');
 
   /* Ghostty's defaults, from `src/config/Config.zig`. The point of the panel
-   * is that a reader recognises the application, so a value invented here
+   * is that a reader recognizes the application, so a value invented here
    * would defeat it. `prompt` and `control` are ours and documented as ours in
    * `src/lib/code-theme.mjs`; they are checked for the same reason, which is
    * that the comments quoting their contrast ratios have to stay true. */
@@ -3047,13 +3047,13 @@ test('sets the install command a step above the code it sits over', async () => 
    * at desktop where the text is the tallest item. The smaller the command, the
    * further it rode from the middle of the panel it is the only thing in.
    *
-   * Asserted as "not baseline" as well as "centre", because this row keeps a
+   * Asserted as "not baseline" as well as "center", because this row keeps a
    * flex rule either way and the failure is a value, not a missing property. */
   const terminalRow = ruleIn(stripped, '\\.terminal-line');
   assert.match(
     terminalRow,
     /align-items:\s*center/,
-    'the terminal row does not centre its items; at a phone’s font size the command sits at the top of the panel',
+    'the terminal row does not center its items; at a phone’s font size the command sits at the top of the panel',
   );
   assert.doesNotMatch(
     terminalRow,
@@ -3070,7 +3070,7 @@ test('sets the install command a step above the code it sits over', async () => 
     'the narrow-viewport override of this pair is gone, or a second one appeared unreviewed',
   );
 
-  /* The second signal, and the one with no layout cost. Colour had nowhere left
+  /* The second signal, and the one with no layout cost. Color had nowhere left
    * to go — the command is already #ffffff on Ghostty's #282c34 — so emphasis
    * is size plus weight. The face is monospace, so 500 measured 453.59px
    * against 400's 453.61px on the same string: no width, wrap point or fit
@@ -3364,7 +3364,7 @@ test('quotes no number it did not measure', async () => {
   );
 });
 
-test('does not overstate the one artefact that exists to not be overstated', async () => {
+test('does not overstate the one artifact that exists to not be overstated', async () => {
   const [panel, index, dist] = await Promise.all([
     flat('../src/components/CarrierPanel.astro'),
     flat('../src/pages/index.astro'),
@@ -3751,8 +3751,8 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
 });
 
 /*
- * The OSI keyhole is drawn under a trademark licence with conditions, and this
- * is the half of the licence that lives outside the component drawing it.
+ * The OSI keyhole is drawn under a trademark license with conditions, and this
+ * is the half of the license that lives outside the component drawing it.
  *
  * `src/components/OsiMark.astro` keeps the mark, its link, and its artwork
  * decision together. Three obligations it cannot hold on its own: the
@@ -3763,7 +3763,7 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
  * certification badge is in the stylesheet.
  *
  * Nothing in the build would notice any of them leaving. A footer edit that
- * tidies a legal paragraph, or a band edit that drops the licence name for
+ * tidies a legal paragraph, or a band edit that drops the license name for
  * length, turns a licensed use into an unlicensed one and every page still
  * renders. So the test runs the other way round: it is conditional on the mark
  * being present, and it fails the build for the page that carries the mark
@@ -3803,24 +3803,24 @@ test('carries what the OSI mark is licensed on, wherever the mark is', async () 
 
   /* The permission itself. The GNU Affero General Public License version 3 is
    * on OSI's approved list; the mark is allowed here because the page says the
-   * SDK is under it. Matched on the licence rather than on any one sentence,
+   * SDK is under it. Matched on the license rather than on any one sentence,
    * because four different sentences on this page have carried it and any of
    * them discharges this. Both renderings satisfy the condition and both are
    * matched: `docs/messaging.md` §4 makes AGPLv3 the prose form and leaves the
-   * SPDX identifier in place where a licence field or a legal clause names it,
-   * and OSI's condition is about the licence, not about its spelling. */
+   * SPDX identifier in place where a license field or a legal clause names it,
+   * and OSI's condition is about the license, not about its spelling. */
   assert.match(
     built,
     /AGPLv3|AGPL-3\.0/,
-    'the OSI mark is permitted only on a page that promotes an OSI-approved licence',
+    'the OSI mark is permitted only on a page that promotes an OSI-approved license',
   );
 
   /* The palette is a condition — "never stray from the color palette" — so the
-   * mark's own colours are literals rather than tokens, and this is the guard
+   * mark's own colors are literals rather than tokens, and this is the guard
    * against a well-meant sweep replacing them with `currentColor` or
    * `--oe-muted` the way every other mark on this site is drawn. The closing
    * band's star field draws this same artwork and does exactly that, at the
-   * founder's direction, so the lead is now the only instance that honours the
+   * founder's direction, so the lead is now the only instance that honors the
    * condition and the only one this guard can hold. It reads the module the
    * artwork moved to, and then that the component draws from it — either half
    * alone would pass with the mark painted from something else. */
@@ -3828,7 +3828,7 @@ test('carries what the OSI mark is licensed on, wherever the mark is', async () 
     readFile(new URL('../src/lib/osi-artwork.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../src/components/OsiMark.astro', import.meta.url), 'utf8'),
   ]);
-  assert.match(artwork, /OSI_BODY = '#3DA639'/i, 'the OSI mark must be drawn in an OSI palette colour');
+  assert.match(artwork, /OSI_BODY = '#3DA639'/i, 'the OSI mark must be drawn in an OSI palette color');
   assert.match(artwork, /OSI_EDGE = '#1E531D'/i, 'the OSI mark must keep its palette outline');
   assert.match(mark, /fill=\{OSI_BODY\}/, 'the mark in the lead no longer takes the OSI palette');
   assert.match(mark, /stroke=\{OSI_EDGE\}/, 'the mark in the lead no longer takes the OSI outline');
@@ -3847,7 +3847,7 @@ test('carries what the OSI mark is licensed on, wherever the mark is', async () 
 
   /* "Do not imply sponsorship or endorsement by OSI." The mark is one glyph at
    * text size; at badge scale it would read as certification, and OSI certifies
-   * licences rather than products. The rule is the sizing in `global.css`, and
+   * licenses rather than products. The rule is the sizing in `global.css`, and
    * this is the tripwire on it. */
   const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
   /* `[^}]*` and not `[\s\S]*?`, which is what this was written as first and
@@ -3872,10 +3872,10 @@ test('carries what the OSI mark is licensed on, wherever the mark is', async () 
  * repository can actually break.
  *
  * <https://www.typescriptlang.org/branding/> publishes guidelines rather than a
- * licence, and most of what they ask is about naming and lockups — a build
+ * license, and most of what they ask is about naming and lockups — a build
  * cannot check that a product name does not imply endorsement. Two of them it
  * can. "The 'TS' in the logo is white, not transparent by default" tells the
- * primary mark apart from the single-colour alternative that has the letters cut
+ * primary mark apart from the single-color alternative that has the letters cut
  * out, and "modify the shape of the logos when used" is on the Please Don't
  * list.
  *
@@ -3919,11 +3919,11 @@ test('draws the TypeScript logo the way its branding page publishes it', async (
 
   /* The regression this site invites: every other mark it draws is monochrome in
    * `currentColor` or `--oe-muted`, and a sweep that makes this one match would
-   * both recolour a logo and put the letters back to transparent. */
+   * both recolor a logo and put the letters back to transparent. */
   assert.doesNotMatch(
     mark,
     /fill="(currentColor|var\([^)]*\)|none)"/,
-    'the TypeScript logo may not be recoloured to a token or hollowed out',
+    'the TypeScript logo may not be recolored to a token or hollowed out',
   );
 
   /* And the same, one layer up, where a stylesheet could undo it without
@@ -3949,7 +3949,7 @@ test('draws the TypeScript logo the way its branding page publishes it', async (
 
 /*
  * The battery is green, and green here is a claim rather than a decoration: it
- * is the colour this site uses where something is settled rather than promised,
+ * is the color this site uses where something is settled rather than promised,
  * which is what "batteries included" asserts.
  *
  * Both canvases have to be checked, because the two are supplied differently.
@@ -3961,8 +3961,8 @@ test('draws the TypeScript logo the way its branding page publishes it', async (
  */
 test('keeps the battery green on both canvases', async () => {
   const mark = await read('../src/components/BatteryMark.astro');
-  assert.match(mark, /fill="currentColor"/, 'the battery must inherit its colour to stay theme-aware');
-  assert.doesNotMatch(mark, /fill="#/, 'a literal colour in the battery breaks one of the two themes');
+  assert.match(mark, /fill="currentColor"/, 'the battery must inherit its color to stay theme-aware');
+  assert.doesNotMatch(mark, /fill="#/, 'a literal color in the battery breaks one of the two themes');
 
   const css = await read('../src/styles/global.css');
 
@@ -3970,10 +3970,10 @@ test('keeps the battery green on both canvases', async () => {
    * `--oe-verified`. The semantic token is tuned for a run of small text and
    * this is a filled glyph: too pale on dark at its `verify-300`, heavier than
    * it needs to be on light at its `verify-700`. Matching the ramp shape rather
-   * than one exact step is deliberate — which step is a judgement that has
+   * than one exact step is deliberate — which step is a judgment that has
    * already moved once per canvas, and pinning it here would make this test the
    * thing that has to be edited to record a decision it does not own. What it
-   * owns is that the colour stays on the ramp, which is what keeps it a green
+   * owns is that the color stays on the ramp, which is what keeps it a green
    * this palette contains rather than one somebody picked.
    *
    * Both sides go through `ruleFor`, and that is not tidying. Written as
@@ -4174,8 +4174,8 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
 
   /* Four fresh readers read "Pricing" and "Console" in the nav against
    * "nothing phones home" and "no account" in the body, and every one of them
-   * concluded a hosted service was being hidden. It is a licence, not hosting,
-   * and /pricing says so — but a reader forms the judgement in the first
+   * concluded a hosted service was being hidden. It is a license, not hosting,
+   * and /pricing says so — but a reader forms the judgment in the first
    * viewport and never gets there. The claim has to hold on both pages or the
    * landing page is inventing a commercial model.
    *
@@ -4208,7 +4208,7 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
 
   /* The sentence that creates the debt now links to the page that prices it.
    * Three readers were told three times that a closed-source product owes a
-   * licence fee and never once what it costs; one made it their largest gap on
+   * license fee and never once what it costs; one made it their largest gap on
    * the page, because "at a published price" asserts the price is public in
    * the same breath as not showing it. The numbers exist — this asserts they
    * do, so the link cannot come to point at a page that stopped saying them. */
@@ -4218,9 +4218,9 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
   );
 });
 
-test('names the licence AGPLv3 wherever the site is not quoting an identifier', async () => {
+test('names the license AGPLv3 wherever the site is not quoting an identifier', async () => {
   /* `docs/messaging.md` §4: AGPLv3 is the prose rendering. The bare word is
-   * what the rule is against — it names a licence family rather than a version,
+   * what the rule is against — it names a license family rather than a version,
    * and the family has three versions with different obligations.
    *
    * The SPDX identifier is not prose and passes: `AGPL-3.0-or-later` is what
@@ -4229,7 +4229,7 @@ test('names the licence AGPLv3 wherever the site is not quoting an identifier', 
    * So this matches the word with no version after it, in either rendering.
    *
    * /legal is excluded because a contract defines its own terms. The commercial
-   * terms name the licence in full — "Affero General Public License, version 3
+   * terms name the license in full — "Affero General Public License, version 3
    * or later (AGPL-3.0-or-later)" — and then use the short form the way a
    * defined term is used. Rewriting a defined term to match a marketing rule is
    * an edit to an instrument, and this project keeps executed instruments as
@@ -4258,7 +4258,7 @@ test('names the licence AGPLv3 wherever the site is not quoting an identifier', 
     }
   }
 
-  assert.deepEqual(offenders, [], `the licence is named without its version:\n${offenders.join('\n')}`);
+  assert.deepEqual(offenders, [], `the license is named without its version:\n${offenders.join('\n')}`);
 });
 
 /* A test here — "points at the documentation it says it has" — pinned the
@@ -4324,7 +4324,7 @@ test('grades exactly the runtimes the SDK marks experimental, and no others', as
    * place the two vocabularies meet: `web` is the site's "browser" (lower-case,
    * because the word now sits mid-sentence on the cleared side), and
    * `react-native` is the bare one, which is why Expo is separate rather than a
-   * flavour of it. `mock` is a development adapter and is not a platform the
+   * favor of it. `mock` is a development adapter and is not a platform the
    * page grades at all. */
   const pageWord = { expo: 'Expo', node: 'Node', web: 'browser', 'react-native': 'React Native' };
   const graded = Object.keys(pageWord);
@@ -4491,7 +4491,7 @@ async function demoSources() {
   return sources;
 }
 
-/** Every line of `sources` a pattern matches, labelled for the failure message. */
+/** Every line of `sources` a pattern matches, labeled for the failure message. */
 async function linesMatching(sources, pattern, keep = () => true) {
   const found = [];
   for (const [label, url] of sources) {
@@ -4677,7 +4677,7 @@ test('keeps the space on both sides of every inline code span', async () => {
    * screen.
    *
    * It has now happened five times in three files. The homepage band that
-   * summarises the alternatives carries a comment about the first, /product
+   * summarizes the alternatives carries a comment about the first, /product
    * shipped two in its storage paragraph, the comparison fold wrote a fourth on
    * its way in, and the privacy notice shipped the fifth. `{' '}` at the end of
    * the line is the fix in both directions.
@@ -4686,7 +4686,7 @@ test('keeps the space on both sides of every inline code span', async () => {
    * claimed the closing tag was safe and cited privacy.astro as the proof. The
    * file has both forms: one span sits inline with a literal space around it,
    * the other ends its line, and only the second collapses. Reading the first
-   * and generalising from it declared a defect impossible while the site served
+   * and generalizing from it declared a defect impossible while the site served
    * it.
    *
    * Source-based on purpose. `.github/workflows/ci.yml` runs the suite before

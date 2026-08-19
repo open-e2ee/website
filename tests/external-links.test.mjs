@@ -15,7 +15,7 @@ const anchor = (html) => rewrite(html);
 
 test('sends off-site links to a new tab, and leaves our own pages alone', () => {
   assert.match(anchor('<a href="https://github.com/open-e2ee">SDK</a>'), /target="_blank"/);
-  /* Different host, same organisation: the reader still keeps the page they
+  /* Different host, same organization: the reader still keeps the page they
    * were reading, which is the whole point of the rule. */
   assert.match(anchor('<a href="https://docs.open-e2ee.dev">Docs</a>'), /target="_blank"/);
   assert.match(anchor('<a href="https://console.open-e2ee.dev">Console</a>'), /target="_blank"/);
@@ -42,9 +42,9 @@ test('leaves a hand-off protocol where it is', () => {
 test('says that the link opens a new tab, in whichever way the link is named', () => {
   /* An icon-only link's `aria-label` is its entire accessible name, so text
    * appended inside it is never announced. The label has to carry the hint. */
-  const labelled = anchor('<a href="https://github.com/x" aria-label="The SDK on GitHub"><svg/></a>');
-  assert.match(labelled, /aria-label="The SDK on GitHub \(opens in a new tab\)"/);
-  assert.doesNotMatch(labelled, /visually-hidden/);
+  const labeled = anchor('<a href="https://github.com/x" aria-label="The SDK on GitHub"><svg/></a>');
+  assert.match(labeled, /aria-label="The SDK on GitHub \(opens in a new tab\)"/);
+  assert.doesNotMatch(labeled, /visually-hidden/);
 
   const worded = anchor('<a href="https://github.com/x">Read the source</a>');
   assert.match(worded, /Read the source<span class="oe-visually-hidden"> \(opens in a new tab\)<\/span>/);

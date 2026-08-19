@@ -191,13 +191,13 @@ const field = marks.map((mark) => {
     let accent = '';
 
     /*
-     * Both colours resolve differently in the two themes, and the switch in the
+     * Both colors resolve differently in the two themes, and the switch in the
      * header can flip while this band is on screen. They are therefore read from
      * the element and held, never baked into a light — a light carries only
      * whether it is an accent one. Reading them per light per frame would be a
      * layout read sixty times a second for a decoration.
      */
-    const readColours = () => {
+    const readColors = () => {
       const styles = getComputedStyle(root);
       ink = styles.color;
       accent = styles.getPropertyValue('--oe-accent').trim() || ink;
@@ -233,7 +233,7 @@ const field = marks.map((mark) => {
       canvas.width = Math.round(box.width * ratio);
       canvas.height = Math.round(box.height * ratio);
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      readColours();
+      readColors();
 
       grid = Math.max(1, box.width * GRID_SHARE);
       reach = box.width * REACH_SHARE;
@@ -512,12 +512,12 @@ const field = marks.map((mark) => {
         /*
          * The switch in the header puts `dark` on <html>, so a reader can change
          * the palette with this band on screen. Repainting is enough — the
-         * lights hold no colour of the page's own, and their homes did not move.
+         * lights hold no color of the page's own, and their homes did not move.
          * Redrawing directly rather than through `run()` keeps a stopped loop
          * stopped.
          */
         new MutationObserver(() => {
-          readColours();
+          readColors();
           if (!frame) draw();
         }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 

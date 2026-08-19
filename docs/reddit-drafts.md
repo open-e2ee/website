@@ -110,7 +110,7 @@ theoretical. Whatever you build, put a counter and an alert on it.
 
 **One more thing nobody mentions:** `expo-crypto` will not get you there. It has
 digests, random bytes and AES-GCM, but no ECDH, no HKDF, no X25519, no Ed25519 —
-no key agreement of any kind, and key agreement is the operation at the centre of
+no key agreement of any kind, and key agreement is the operation at the center of
 both X3DH and the Double Ratchet.
 
 If it is useful, we wrote all of the above up with working Expo code here:

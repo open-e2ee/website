@@ -14,8 +14,8 @@
  *                   and the rule now states the exception, its conditions, and
  *                   what yields to it while the field is moving. Read that
  *                   section, not this summary, before changing the composition.
- *   OSI's keyhole   Its trademark licence: never alter or add elements to the
- *                   logo, and never stray from the colour palette. The site's
+ *   OSI's keyhole   Its trademark license: never alter or add elements to the
+ *                   logo, and never stray from the color palette. The site's
  *                   answer to "no implied endorsement" has been that the
  *                   keyhole appears once, at text size, never at badge scale.
  *                   All three go here — this instance takes the page's ink.
@@ -50,7 +50,7 @@ const read = (specifier) => readFileSync(new URL(import.meta.resolve(specifier))
  * parameters, and a wrong `arm` would be a wrong logo that still drew. Reading
  * the shipped file means the field follows the lockup if the lockup changes.
  *
- * The mono variant is the one that takes a colour from its context. It carries
+ * The mono variant is the one that takes a color from its context. It carries
  * the symbol as three paths inside one transformed group — the two brackets and
  * the payload — and the wordmark as live text, which is what the package ships
  * and says it ships. `DESIGN.md` has a standing TODO to outline it; until that
@@ -90,7 +90,7 @@ if (!githubPath) {
 
 /*
  * Placement. Every mark is laid out in the composition's own units: `width` and
- * a centre line `cx` across, a top edge `y` down. A mark's own artwork keeps
+ * a center line `cx` across, a top edge `y` down. A mark's own artwork keeps
  * its proportions, and `height` gives a row a common box so two marks of
  * different shapes sit level rather than hanging from their own top edges.
  *
@@ -152,7 +152,7 @@ export const marks = [
     viewBox: OSI_VIEW_BOX,
     /* The edge is artwork rather than decoration, so the silhouette is drawn
        filled *and* stroked. It takes the page's ink here like everything else
-       in the field, which is the part of OSI's licence this instance breaks. */
+       in the field, which is the part of OSI's license this instance breaks. */
     pieces: [{ kind: 'paths', paths: [OSI_PATH], strokeWidth: OSI_EDGE_WIDTH }],
     cx: 35,
     y: 27,

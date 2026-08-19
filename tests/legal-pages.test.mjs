@@ -100,7 +100,7 @@ test('discloses annual renewal and protects accepted versions from retroactive r
   assert.match(terms, /remains governed by the version recorded at checkout/i);
 });
 
-test('grants the licence over the package that is actually published', async () => {
+test('grants the license over the package that is actually published', async () => {
   const terms = await flat('../src/components/CommercialTerms.astro');
   assert.match(terms, /@open-e2ee\/signal-protocol-sdk/);
   /* The pre-launch draft named a package that was never published. */

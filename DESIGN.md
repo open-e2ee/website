@@ -16,7 +16,7 @@ The authoritative OpenE2EE design contract lives in
 site's own components. The compatibility layer that once mapped unprefixed
 variables onto shared tokens — `src/styles/design-system.css` — has been
 removed: every declaration uses semantic `--oe-*` variables directly, and no
-mode-specific colour is written literally, because the theme contract in
+mode-specific color is written literally, because the theme contract in
 `@open-e2ee/design` owns light and dark. The one exception is the pair of
 `<meta name="theme-color">` values in `BaseLayout.astro`, which the browser
 requires as literals.

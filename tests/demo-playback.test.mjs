@@ -229,7 +229,7 @@ test('the scene holds no clock of its own', async () => {
 
      Read out of the source because there is nothing to call: a clock that is
      never armed by the paths a test drives is exactly the one that gets past a
-     behavioural test. */
+     behavioral test. */
   for (const timer of ['setTimeout', 'setInterval', 'requestAnimationFrame']) {
     assert.equal(
       source.includes(timer),

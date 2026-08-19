@@ -144,7 +144,7 @@ export type DemoEvent =
   | { type: 'message-sent'; text: string; result: SendResult; encryptMs: number }
   /**
    * The relay stored a row. This can arrive before `message-sent`: the relay
-   * accepts the envelope inside the send call, so the acknowledgement it
+   * accepts the envelope inside the send call, so the acknowledgment it
    * returns is necessarily later. The order is reported as it happens rather
    * than rearranged into the tidier story.
    */

@@ -6,12 +6,12 @@
  * size as inline width and height — commit the freeze with a forced read,
  * arm whatever keys the transition, and write the target box, so position,
  * width and height cross in one transition and the tile *reshapes* between
- * two boxes instead of jumping or travelling as a scaled copy of itself.
+ * two boxes instead of jumping or traveling as a scaled copy of itself.
  * Two copies of that idiom are two idioms waiting to drift, so the
  * freeze-and-release lives here and both scenes call it.
  *
  * This module owns the idiom and nothing else. Which transform anchors the
- * box (the wide scene's corner, the mobile figure's centre), what arms the
+ * box (the wide scene's corner, the mobile figure's center), what arms the
  * transition (a data attribute the stylesheet keys, an inline duration),
  * and what a finished morph settles into are the calling scene's to own —
  * the seam is the mechanism, not the choreography.
