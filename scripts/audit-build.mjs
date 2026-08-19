@@ -138,6 +138,11 @@ const TERMINOLOGY = [
  * that pass: artefact, judgement, acknowledgement, sceptic, centre, grey,
  * candour, and the rest of the -ise verbs. Add to both lists or to neither.
  *
+ * "artefact" is the one pair here whose British form is also correct inside
+ * standards prose. Nothing on the site quotes such prose today, which is what
+ * makes the rule safe. Quote a standard that spells it "artefact" and exempt
+ * that quotation rather than rewriting it.
+ *
  * "centre" and "grey" are bounded on both ends because this runs over minified
  * scripts. Concatenation there makes word-shaped collisions that never appear
  * in source. Unbounded, `centRetryRequests` reads as "centre". It is the same

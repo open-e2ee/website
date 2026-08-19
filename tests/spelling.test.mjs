@@ -29,12 +29,19 @@ const PATTERN =
   /colour|licence|defence|offence|pretence|behaviour|honour|candour|flavour|favour|neighbour|rumour|endeavour|artefact|acknowledgement|judgement|sceptic|\bprogrammes?\b|\b(?:centre|centred|centres)\b|\b(?:grey|greys|greyscale)\b|\banalys(?:e|ed|ing)\b|(?:labell|modell|signall|travell)(?:ed|ing|er|ers)\b|(?:generalis|characteris|organis|recognis|standardis|prioritis|scrutinis|summaris|normalis|serialis|authoris|optimis|catalogu|stylis)(?:e|ed|es|ing|ation|ations)/i;
 
 /*
- * `scripts/audit-build.mjs` holds the same words as its own pattern table. It
- * also names the copy that once shipped past it. `.gauntlet-workbench.md` is a
- * round-by-round log of a finished exercise. It records what the exercise
- * tried. This project does not maintain it as text.
+ * Both spelling tables list the words they reject, so both must skip
+ * themselves. This file spells out `colour` and `mislabelled` to prove the
+ * pattern catches them, and `scripts/audit-build.mjs` does the same. That file
+ * also names the copy that once shipped past it.
+ *
+ * `.gauntlet-workbench.md` is a round-by-round log of a finished exercise. It
+ * records what the exercise tried. This project does not maintain it as text.
  */
-const EXCLUDED = new Set(['scripts/audit-build.mjs', '.gauntlet-workbench.md']);
+const EXCLUDED = new Set([
+  'tests/spelling.test.mjs',
+  'scripts/audit-build.mjs',
+  '.gauntlet-workbench.md',
+]);
 
 /*
  * Copy this page dropped, quoted back so nobody restores it. Respelling a
