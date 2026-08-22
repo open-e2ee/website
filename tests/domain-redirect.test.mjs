@@ -18,6 +18,13 @@ const aliases = [
   "www.opene2ee.dev",
 ];
 
+const canaryAliases = [
+  "signal-protocol.dev",
+  "www.signal-protocol.dev",
+  "docs.signal-protocol.dev",
+  "console.signal-protocol.dev",
+];
+
 /*
  * The configs are .jsonc and do carry comments, so they cannot go straight to
  * JSON.parse. Strings are matched first in the alternation below, which is what
@@ -39,6 +46,29 @@ test("keeps canonical and redirect Worker host assignments disjoint", () => {
   assert.deepEqual(canonicalHosts, ["open-e2ee.dev"]);
   assert.deepEqual(redirectHosts, aliases);
   assert.equal(redirectHosts.includes("open-e2ee.dev"), false);
+});
+
+test("stages the redirect Worker without claiming a hostname", () => {
+  const production = wranglerConfig("wrangler.redirect.jsonc");
+  const stage = wranglerConfig("wrangler.redirect.stage.jsonc");
+
+  assert.equal(stage.name, `${production.name}-stage`);
+  assert.equal(stage.main, production.main);
+  assert.deepEqual(stage.routes, []);
+  assert.equal(stage.workers_dev, false);
+});
+
+test("limits canary activation to the four canary hostnames", () => {
+  const production = wranglerConfig("wrangler.redirect.jsonc");
+  const canary = wranglerConfig("wrangler.redirect.canary.jsonc");
+  const canaryHosts = canary.routes.map((route) => route.pattern);
+
+  assert.equal(canary.name, production.name);
+  assert.equal(canary.main, production.main);
+  assert.deepEqual(canaryHosts, canaryAliases);
+  assert.equal(canary.routes.every((route) => route.custom_domain === true), true);
+  assert.equal(canaryHosts.every((host) => aliases.includes(host)), true);
+  assert.equal(canaryHosts.includes("open-e2ee.dev"), false);
 });
 
 test("redirects every configured alias to the canonical domain", () => {

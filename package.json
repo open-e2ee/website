@@ -19,9 +19,11 @@
     "blog:cards": "node scripts/generate-blog-cards.mjs",
     "blog:cards:check": "node scripts/generate-blog-cards.mjs --check",
     "deploy": "npm run build && wrangler deploy",
-    "deploy:dry-run": "npm run build && wrangler deploy --dry-run",
-    "deploy:redirect": "npm test && wrangler deploy --config wrangler.redirect.jsonc",
-    "deploy:redirect:dry-run": "npm test && wrangler deploy --config wrangler.redirect.jsonc --dry-run"
+    "deploy:dry-run": "npm run build && wrangler deploy --env=\"\" --dry-run",
+    "deploy:redirect": "npm test && wrangler deploy --config wrangler.redirect.jsonc --env=\"\"",
+    "deploy:redirect:dry-run": "npm test && wrangler deploy --config wrangler.redirect.jsonc --env=\"\" --dry-run",
+    "deploy:redirect:stage:dry-run": "npm test && wrangler deploy --config wrangler.redirect.stage.jsonc --env=\"\" --dry-run",
+    "deploy:redirect:canary:dry-run": "npm test && wrangler deploy --config wrangler.redirect.canary.jsonc --env=\"\" --dry-run"
   },
   "dependencies": {
     "@astrojs/mdx": "7.0.3",

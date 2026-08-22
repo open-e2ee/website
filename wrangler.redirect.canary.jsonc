@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "open-e2ee-domain-redirect",
+  "main": "./src/workers/domain-redirect.ts",
+  "compatibility_date": "2026-07-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "signal-protocol.dev",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.signal-protocol.dev",
+      "custom_domain": true
+    },
+    {
+      "pattern": "docs.signal-protocol.dev",
+      "custom_domain": true
+    },
+    {
+      "pattern": "console.signal-protocol.dev",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

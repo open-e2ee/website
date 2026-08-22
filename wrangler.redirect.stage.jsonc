@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "open-e2ee-domain-redirect-stage",
+  "main": "./src/workers/domain-redirect.ts",
+  "compatibility_date": "2026-07-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "routes": [],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}
