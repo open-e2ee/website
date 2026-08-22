@@ -1,0 +1,55 @@
+name: Deploy redirect migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Target-account redirect operation
+        required: true
+        type: choice
+        options:
+          - stage
+          - activate-canary
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-redirect-migration
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: ${{ inputs.operation }} redirect Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: cloudflare-migration
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install from the committed lockfile
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Stage Worker without public routes
+        if: inputs.operation == 'stage'
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config wrangler.redirect.stage.jsonc --env=""
+
+      - name: Activate canary custom domains
+        if: inputs.operation == 'activate-canary'
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config wrangler.redirect.canary.jsonc --env=""
