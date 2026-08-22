@@ -25,6 +25,8 @@ const canaryAliases = [
   "console.signal-protocol.dev",
 ];
 
+const canonicalAliases = ["www.open-e2ee.dev", ...canaryAliases];
+
 /*
  * The configs are .jsonc and do carry comments, so they cannot go straight to
  * JSON.parse. Strings are matched first in the alternation below, which is what
@@ -37,6 +39,10 @@ function wranglerConfig(name) {
     (match, string) => string ?? "",
   );
   return JSON.parse(withoutComments);
+}
+
+function workflow(name) {
+  return readFileSync(new URL(`../.github/workflows/${name}`, import.meta.url), "utf8");
 }
 
 test("keeps canonical and redirect Worker host assignments disjoint", () => {
@@ -58,6 +64,13 @@ test("stages the redirect Worker without claiming a hostname", () => {
   assert.equal(stage.workers_dev, false);
 });
 
+test("stages the canonical website without changing traffic or configuration", () => {
+  const migration = workflow("deploy-redirect-migration.yml");
+
+  assert.match(migration, /command: versions upload --config wrangler\.jsonc --env=""/);
+  assert.doesNotMatch(migration, /wrangler\.website\.stage/);
+});
+
 test("limits canary activation to the four canary hostnames", () => {
   const production = wranglerConfig("wrangler.redirect.jsonc");
   const canary = wranglerConfig("wrangler.redirect.canary.jsonc");
@@ -69,6 +82,19 @@ test("limits canary activation to the four canary hostnames", () => {
   assert.equal(canary.routes.every((route) => route.custom_domain === true), true);
   assert.equal(canaryHosts.every((host) => aliases.includes(host)), true);
   assert.equal(canaryHosts.includes("open-e2ee.dev"), false);
+});
+
+test("limits canonical activation to the canonical alias and canary hostnames", () => {
+  const production = wranglerConfig("wrangler.redirect.jsonc");
+  const canonical = wranglerConfig("wrangler.redirect.canonical.jsonc");
+  const canonicalHosts = canonical.routes.map((route) => route.pattern);
+
+  assert.equal(canonical.name, production.name);
+  assert.equal(canonical.main, production.main);
+  assert.deepEqual(canonicalHosts, canonicalAliases);
+  assert.equal(canonical.routes.every((route) => route.custom_domain === true), true);
+  assert.equal(canonicalHosts.every((host) => aliases.includes(host)), true);
+  assert.equal(canonicalHosts.includes("open-e2ee.dev"), false);
 });
 
 test("redirects every configured alias to the canonical domain", () => {
