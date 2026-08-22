@@ -241,7 +241,7 @@ retrofitting it, and retrofitting recovery into a shipped E2EE app is genuinely
 painful.
 
 If you want the SDK we work on, it is `@open-e2ee/signal-protocol-sdk` — pure
-TypeScript, runs in browser/Node/Expo, PQXDH by default. It is `0.1.x` and its
+TypeScript, runs in browser/Node/Expo, PQXDH by default. It is `0.4.x` and its
 public APIs may change before 1.0, it is reviewed continuously by adversarial
 AI agents, and it is not audited by any independent firm. Do not take my word for any of the above just because I build
 one of these.
