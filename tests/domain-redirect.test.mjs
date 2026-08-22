@@ -52,7 +52,7 @@ test("stages the redirect Worker without claiming a hostname", () => {
   const production = wranglerConfig("wrangler.redirect.jsonc");
   const stage = wranglerConfig("wrangler.redirect.stage.jsonc");
 
-  assert.equal(stage.name, production.name);
+  assert.equal(stage.name, `${production.name}-stage`);
   assert.equal(stage.main, production.main);
   assert.deepEqual(stage.routes, []);
   assert.equal(stage.workers_dev, false);
