@@ -41,6 +41,10 @@ function wranglerConfig(name) {
   return JSON.parse(withoutComments);
 }
 
+function workflow(name) {
+  return readFileSync(new URL(`../.github/workflows/${name}`, import.meta.url), "utf8");
+}
+
 test("keeps canonical and redirect Worker host assignments disjoint", () => {
   const canonicalHosts = wranglerConfig("wrangler.jsonc").routes.map((route) => route.pattern);
   const redirectHosts = wranglerConfig("wrangler.redirect.jsonc").routes.map((route) => route.pattern);
@@ -60,20 +64,11 @@ test("stages the redirect Worker without claiming a hostname", () => {
   assert.equal(stage.workers_dev, false);
 });
 
-test("stages the canonical website without claiming its hostname", () => {
-  const production = wranglerConfig("wrangler.jsonc");
-  const stage = wranglerConfig("wrangler.website.stage.jsonc");
+test("stages the canonical website without changing traffic or configuration", () => {
+  const migration = workflow("deploy-redirect-migration.yml");
 
-  assert.equal(stage.name, production.name);
-  assert.equal(stage.main, production.main);
-  assert.equal(stage.compatibility_date, production.compatibility_date);
-  assert.deepEqual(stage.compatibility_flags, production.compatibility_flags);
-  assert.deepEqual(stage.assets, production.assets);
-  assert.deepEqual(stage.analytics_engine_datasets, production.analytics_engine_datasets);
-  assert.deepEqual(stage.observability, production.observability);
-  assert.deepEqual(stage.routes, []);
-  assert.equal(stage.workers_dev, false);
-  assert.equal(stage.preview_urls, false);
+  assert.match(migration, /command: versions upload --config wrangler\.jsonc --env=""/);
+  assert.doesNotMatch(migration, /wrangler\.website\.stage/);
 });
 
 test("limits canary activation to the four canary hostnames", () => {
