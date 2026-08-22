@@ -66,8 +66,11 @@ test("stages the canonical website without claiming its hostname", () => {
 
   assert.equal(stage.name, production.name);
   assert.equal(stage.main, production.main);
+  assert.equal(stage.compatibility_date, production.compatibility_date);
+  assert.deepEqual(stage.compatibility_flags, production.compatibility_flags);
   assert.deepEqual(stage.assets, production.assets);
   assert.deepEqual(stage.analytics_engine_datasets, production.analytics_engine_datasets);
+  assert.deepEqual(stage.observability, production.observability);
   assert.deepEqual(stage.routes, []);
   assert.equal(stage.workers_dev, false);
   assert.equal(stage.preview_urls, false);
