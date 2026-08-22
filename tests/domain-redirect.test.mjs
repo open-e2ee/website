@@ -64,11 +64,23 @@ test("stages the redirect Worker without claiming a hostname", () => {
   assert.equal(stage.workers_dev, false);
 });
 
-test("stages the canonical website without changing traffic or configuration", () => {
+test("stages the canonical website under an isolated Worker name with no routes", () => {
   const migration = workflow("deploy-redirect-migration.yml");
+  const production = wranglerConfig("wrangler.jsonc");
+  const stage = wranglerConfig("wrangler.website.stage.jsonc");
 
-  assert.match(migration, /command: versions upload --config wrangler\.jsonc --env=""/);
-  assert.doesNotMatch(migration, /wrangler\.website\.stage/);
+  assert.match(migration, /command: deploy --config wrangler\.website\.stage\.jsonc --env=""/);
+  assert.equal(stage.name, `${production.name}-stage`);
+  assert.notEqual(stage.name, production.name);
+  assert.equal(stage.main, production.main);
+  assert.equal(stage.compatibility_date, production.compatibility_date);
+  assert.deepEqual(stage.compatibility_flags, production.compatibility_flags);
+  assert.deepEqual(stage.assets, production.assets);
+  assert.deepEqual(stage.analytics_engine_datasets, production.analytics_engine_datasets);
+  assert.deepEqual(stage.observability, production.observability);
+  assert.deepEqual(stage.routes, []);
+  assert.equal(stage.workers_dev, false);
+  assert.equal(stage.preview_urls, false);
 });
 
 test("limits canary activation to the four canary hostnames", () => {
