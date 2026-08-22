@@ -109,6 +109,14 @@ test("limits canonical activation to the canonical alias and canary hostnames", 
   assert.equal(canonicalHosts.includes("open-e2ee.dev"), false);
 });
 
+test("activates the complete redirect set only through the final migration operation", () => {
+  const migration = workflow("deploy-redirect-migration.yml");
+
+  assert.match(migration, /- activate-final/);
+  assert.match(migration, /if: inputs\.operation == 'activate-final'/);
+  assert.match(migration, /command: deploy --config wrangler\.redirect\.jsonc --env=""/);
+});
+
 test("redirects every configured alias to the canonical domain", () => {
   assert.deepEqual([...REDIRECT_HOSTS], aliases);
 
