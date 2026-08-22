@@ -12,6 +12,7 @@ on:
           - activate-canary
           - stage-canonical
           - activate-canonical
+          - activate-final
 
 permissions:
   contents: read
@@ -82,3 +83,11 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --config wrangler.redirect.canonical.jsonc --env=""
+
+      - name: Activate all migrated redirects
+        if: inputs.operation == 'activate-final'
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config wrangler.redirect.jsonc --env=""
