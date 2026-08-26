@@ -1,0 +1,77 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { virgilSecurityComparison as facts } from '../../data/virgil-security-comparison.mjs';
+
+const responsibilityRows = [
+  ['Client cryptography', 'Virgil E3Kit SDKs', 'OpenE2EE Signal Protocol SDK'],
+  ['Public-key services', 'Virgil Cloud', 'OpenE2EE Relay protocol services'],
+  ['User authentication', 'Customer backend; customer issues Virgil JWTs', 'Customer identity provider or device-owned identity; Relay verifies configured proof'],
+  ['Message transport', 'Customer supplies', 'OpenE2EE Relay'],
+  ['Encrypted device mailboxes', 'Customer supplies', 'OpenE2EE Relay'],
+  ['Group fan-out', 'Customer messaging infrastructure', 'OpenE2EE Relay'],
+  ['Push wakes', 'Customer supplies', 'OpenE2EE Relay'],
+  ['Encrypted attachments', 'Customer stores encrypted files', 'OpenE2EE Relay private attachment storage'],
+  ['Lifecycle and exact usage', 'Customer application infrastructure', 'OpenE2EE Relay'],
+  ['Infrastructure operations', 'Customer messaging stack plus Virgil services', 'Customer application backend plus OpenE2EE Relay'],
+];
+---
+
+<BaseLayout
+  title="OpenE2EE Relay and Virgil Security"
+  description="A factual architecture and pricing-scope comparison of OpenE2EE Relay and Virgil Security E3Kit."
+  canonical="/compare/virgil-security"
+>
+  <header class="page-hero">
+    <div class="container measure">
+      <p class="label">Architecture comparison</p>
+      <h1>OpenE2EE Relay and Virgil Security solve different parts of an encrypted application.</h1>
+      <p class="lead">Virgil E3Kit adds client encryption and managed key services to existing messaging infrastructure. OpenE2EE Relay combines the OpenE2EE Signal Protocol SDK path with managed encrypted delivery infrastructure.</p>
+      <p class="muted">Last verified: {facts.verifiedAt} · Review owner: {facts.reviewOwner}</p>
+    </div>
+  </header>
+
+  <section class="band">
+    <div class="container">
+      <div class="band-head"><h2>Responsibility matrix</h2></div>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Product responsibility comparison">
+        <table class="data"><thead><tr><th scope="col">Responsibility</th><th scope="col">Virgil E3Kit path</th><th scope="col">OpenE2EE Relay path</th></tr></thead><tbody>{responsibilityRows.map((row) => <tr><th scope="row">{row[0]}</th><td>{row[1]}</td><td>{row[2]}</td></tr>)}</tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container">
+      <div class="band-head"><h2>Public price bands use different meters</h2></div>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Virgil Security public price bands">
+        <table class="data"><caption>Virgil Security Encrypted Communication</caption><thead><tr><th scope="col">Registered-user band</th><th scope="col">Listed vendor price</th></tr></thead><tbody>{facts.virgilBands.map((row) => <tr><th scope="row">{row[0]}</th><td>{row[1]}</td></tr>)}</tbody></table>
+      </div>
+      <p class="measure">Virgil's page lists both “251–5K” and “5K–100K.” At exactly 5,000 registered users, the displayed result is therefore about $95 to $99 unless Virgil clarifies which band controls.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Sticker price examples">
+        <table class="data"><caption>Sticker-price examples</caption><thead><tr><th scope="col">User count</th><th scope="col">Virgil listed vendor fee</th><th scope="col">OpenE2EE Relay fee</th><th scope="col">Qualification</th></tr></thead><tbody>{facts.stickerPrices.map((row) => <tr><th scope="row">{row[0]}</th><td>{row[1]}</td><td>{row[2]}</td><td>{row[3]}</td></tr>)}</tbody></table>
+      </div>
+      <p class="muted measure">Fairness note: Virgil counts registered users. OpenE2EE counts monthly active accounts and includes managed delivery capacity. Each fee excludes different customer-owned infrastructure.</p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container">
+      <div class="band-head"><h2>Compare the complete application stack</h2></div>
+      <dl class="definition-rows">
+        <div><dt>Virgil path</dt><dd>Virgil vendor fee + customer messaging backend + encrypted storage + push + operations + engineering.</dd></div>
+        <div><dt>OpenE2EE path</dt><dd>OpenE2EE Relay fee + the customer's application backend.</dd></div>
+      </dl>
+      <p>Virgil's public offering has a larger free registered-user allowance, SDKs for multiple platforms, mature managed key services, unlimited registered devices in its public plan, and enterprise support options. OpenE2EE offers a TypeScript-first Signal Protocol SDK and a managed delivery layer on one integrated path.</p>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container">
+      <div class="band-head"><h2>Choose based on architecture</h2></div>
+      <dl class="definition-rows">
+        <div><dt>Virgil E3Kit</dt><dd>A fit when a team owns its messaging infrastructure and wants Virgil client encryption and managed key services.</dd></div>
+        <div><dt>OpenE2EE Relay</dt><dd>A fit when a TypeScript team wants a managed Signal-protocol delivery path and does not want to build and operate the Relay layer.</dd></div>
+      </dl>
+      <p class="text-links">{facts.sources.map((source) => <a href={source.href}>{source.label}</a>)}<a href="/relay/pricing">OpenE2EE Relay pricing</a></p>
+    </div>
+  </section>
+</BaseLayout>

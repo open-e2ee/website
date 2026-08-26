@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { relayMeterDefinitions, relayOverages, relayPlans } from '../../data/relay-pricing.mjs';
+---
+
+<BaseLayout
+  title="OpenE2EE Relay pricing"
+  description="OpenE2EE Relay plans from free Managed Development and Free production through Starter, Growth, Business, and Enterprise."
+  canonical="/relay/pricing"
+>
+  <header class="page-hero">
+    <div class="container measure">
+      <p class="label">OpenE2EE Relay pricing</p>
+      <h1>Every Relay feature. Capacity that grows with the application.</h1>
+      <p class="lead">Groups, attachments, sealed sender, multi-device delivery, and push are available across tiers. Plans differ by capacity, support, service terms, and approved operational controls.</p>
+    </div>
+  </header>
+
+  <section class="band">
+    <div class="container">
+      <div class="table-scroll" tabindex="0" role="region" aria-label="OpenE2EE Relay plans">
+        <table class="data" itemscope itemtype="https://schema.org/Product">
+          <caption class="oe-visually-hidden" itemprop="name">OpenE2EE Relay plans and monthly limits</caption>
+          <thead><tr><th scope="col">Plan</th><th scope="col">Monthly price</th><th scope="col">Relay MAU</th><th scope="col">Delivery units</th><th scope="col">Attachment operations</th><th scope="col">Exact live storage</th></tr></thead>
+          <tbody>{relayPlans.map((plan) => <tr data-plan-id={plan.id} itemprop={plan.monthlyPriceUsd === null ? undefined : 'offers'} itemscope={plan.monthlyPriceUsd === null ? undefined : true} itemtype={plan.monthlyPriceUsd === null ? undefined : 'https://schema.org/Offer'}><th scope="row">{plan.name}<small>{plan.detail}</small></th><td>{plan.monthlyPriceUsd === null ? plan.price : <><meta itemprop="priceCurrency" content="USD" /><meta itemprop="price" content={String(plan.monthlyPriceUsd)} />{plan.price}</>}</td><td>{plan.relayMau}</td><td>{plan.deliveryUnits}</td><td>{plan.attachmentOperations}</td><td>{plan.storage}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="muted measure">Paid prices are monthly. Taxes can apply. Production ciphertext retains for at most 30 days. The direct encrypted-envelope limit is 256 KiB. A mailbox holds at most 3,000 messages and can reach its project storage cap first.</p>
+    </div>
+  </section>
+
+  <section class="band band-surface">
+    <div class="container">
+      <div class="band-head"><h2>Exact meters</h2></div>
+      <dl class="definition-rows">{relayMeterDefinitions.map((meter) => <div><dt>{meter.name}</dt><dd>{meter.definition}</dd></div>)}</dl>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="container">
+      <div class="band-head"><h2>Optional paid overage</h2></div>
+      <dl class="definition-rows">
+        <div><dt>Delivery</dt><dd>{relayOverages.delivery}</dd></div>
+        <div><dt>Storage</dt><dd>{relayOverages.storage}</dd></div>
+        <div><dt>Relay MAU</dt><dd>{relayOverages.relayMau}</dd></div>
+        <div><dt>Attachment operations</dt><dd>{relayOverages.attachmentOperations}</dd></div>
+      </dl>
+      <p class="measure">Overage is off until an organization administrator accepts the rate and sets a monthly spend limit. Reaching that limit stops new billable work but preserves pull, acknowledgment, deletion, revocation, recovery, and mailbox draining.</p>
+      <p class="text-links"><a href="https://console.open-e2ee.dev">Start Managed Development</a><a href="/relay">What Relay operates</a><a href="/compare/virgil-security">Compare with Virgil Security</a></p>
+    </div>
+  </section>
+</BaseLayout>

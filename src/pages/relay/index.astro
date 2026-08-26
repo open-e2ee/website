@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="OpenE2EE Relay"
+  description="Managed encrypted delivery infrastructure for the OpenE2EE Signal Protocol SDK, with device mailboxes, groups, attachments, push wakes, and exact lifecycle controls."
+  canonical="/relay"
+>
+  <header class="page-hero">
+    <div class="container measure">
+      <p class="label">OpenE2EE Relay</p>
+      <h1>The managed delivery path for the OpenE2EE Signal Protocol SDK.</h1>
+      <p class="lead">Use the SDK on each device. OpenE2EE Relay operates encrypted device mailboxes, delivery and pull, group fan-out, private attachment storage, push wakes, and exact lifecycle controls.</p>
+      <p>The relay never needs message plaintext or device private keys. It does see the routing, timing, size, quota, and abuse metadata needed to operate the service.</p>
+      <div class="actions">
+        <a class="cta-primary" href="https://console.open-e2ee.dev">
+          <span class="oe-button">Open the Console</span>
+          <span class="cta-sublabel">Managed Development · no card</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <section class="band band-surface">
+    <div class="container">
+      <div class="band-head"><h2>What Relay operates</h2></div>
+      <dl class="definition-rows">
+        <div><dt>Delivery</dt><dd>Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.</dd></div>
+        <div><dt>Groups and files</dt><dd>Bounded group fan-out and private encrypted attachment storage. Customer application servers do not need to become message infrastructure.</dd></div>
+        <div><dt>Operations</dt><dd>Push wakes, exact usage, quotas, lifecycle controls, recovery drills, and an operator plane.</dd></div>
+        <div><dt>Your application</dt><dd>Authentication choice, product directory and social graph, user experience, moderation policy, recovery policy, and application data.</dd></div>
+      </dl>
+      <p class="text-links"><a href="/relay/pricing">Review Relay pricing</a><a href="/compare/virgil-security">Compare architecture with Virgil Security</a><a href="/licensing">Review self-hosted licensing</a></p>
+    </div>
+  </section>
+</BaseLayout>

@@ -16,6 +16,7 @@
     "brand:check": "oe-design check public/brand",
     "capture:record": "node scripts/record-carrier-capture.mjs",
     "demo:smoke": "node scripts/demo-smoke.mjs",
+    "visual:relay": "node scripts/relay-pages-visual.mjs",
     "blog:cards": "node scripts/generate-blog-cards.mjs",
     "blog:cards:check": "node scripts/generate-blog-cards.mjs --check",
     "deploy": "npm run build && wrangler deploy",
