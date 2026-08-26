@@ -1,0 +1,49 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Subprocessors"
+  description="Service providers used to operate OpenE2EE Relay, the console, billing, and support."
+  canonical="/legal/subprocessors"
+>
+  <article>
+    <header class="article-header">
+      <div class="container article-column">
+        <a class="back-link" href="/legal">Legal</a>
+        <h1>Subprocessor List</h1>
+        <p class="lead">Providers that process customer information for OpenE2EE services.</p>
+        <p class="article-meta"><span>Last updated August 26, 2026</span><span>Owner: OpenE2EE operations</span></p>
+      </div>
+    </header>
+    <div class="container article-column">
+      <div class="prose">
+        <div class="table-wrap" role="region" aria-label="Subprocessor list" tabindex="0">
+          <table>
+            <thead><tr><th>Provider</th><th>Purpose</th><th>Data boundary</th></tr></thead>
+            <tbody>
+              <tr><td>Cloudflare</td><td>Relay compute, encrypted storage, delivery state, security, DNS, and public website</td><td>Encrypted payloads, public key material, opaque routing and usage state, and request metadata</td></tr>
+              <tr><td>Vercel</td><td>Console and documentation hosting</td><td>Console requests, authentication session data, and project administration</td></tr>
+              <tr><td>WorkOS</td><td>Console authentication and organization identity</td><td>Account, organization, and authentication data</td></tr>
+              <tr><td>Stripe</td><td>Payments, subscriptions, tax, invoices, and billing portal</td><td>Billing identity, payment status, subscription data, and Relay aggregate usage mapped inside Console</td></tr>
+              <tr><td>Expo, Apple, Google, and browser push services</td><td>Data-only device wake delivery</td><td>Provider token, project routing, and opaque wake payload; no message plaintext</td></tr>
+              <tr><td>Better Stack</td><td>Availability monitoring and public status</td><td>Probe results, endpoint status, and sanitized operational metadata</td></tr>
+              <tr><td>Google Workspace</td><td>Business email and support communications</td><td>Contact details and communication content</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          OpenE2EE does not give these providers message plaintext, device private keys, ratchet
+          state, or attachment keys. Some providers can process network metadata that their role
+          inherently requires. The <a href="/legal/privacy">Privacy Notice</a> describes the complete
+          boundary.
+        </p>
+        <p>
+          We will update this list before adding a subprocessor that handles a new material category
+          of customer data. Send questions to{' '}
+          <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>.
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

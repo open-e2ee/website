@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Relay Beta Limits"
+  description="Current launch limits and service commitments for the OpenE2EE Relay beta."
+  canonical="/legal/relay-beta-limits"
+>
+  <article>
+    <header class="article-header">
+      <div class="container article-column">
+        <a class="back-link" href="/legal">Legal</a>
+        <h1>OpenE2EE Relay Beta Service Limits</h1>
+        <p class="lead">The launch boundary for capacity, support, and service commitments.</p>
+        <p class="article-meta"><span>Effective August 26, 2026</span><span>Version 2026-08-26</span></p>
+      </div>
+    </header>
+    <div class="container article-column">
+      <div class="prose">
+        <h2>Service status</h2>
+        <p>
+          Relay remains a beta until OpenE2EE announces general availability. Managed Development
+          and Free production have no service-level agreement. Paid beta support and operational
+          controls are those shown in the order. No uptime credit, response-time commitment, data
+          residency promise, BAA, or production recovery objective applies unless a signed order
+          form states it.
+        </p>
+
+        <h2>Plan and protocol limits</h2>
+        <p>
+          The current plan capacities and exact meter definitions are at{' '}
+          <a href="/relay/pricing">Relay pricing</a>. All plans support the same Relay protocol
+          capabilities. A plan does not unlock or remove groups, attachments, sealed sender,
+          multi-device delivery, or push wakes.
+        </p>
+        <ul>
+          <li>Direct encrypted envelope: 256 KiB maximum.</li>
+          <li>Mailbox: 3,000 accepted messages maximum.</li>
+          <li>Group encrypted body: 96 KiB plus a 512-byte prefix.</li>
+          <li>Group delivery: up to 5,000 destination devices in 100-destination fan-out pages.</li>
+          <li>Attachment upload URL: 15 minutes maximum.</li>
+          <li>Completed attachment retention: 30 days maximum.</li>
+        </ul>
+
+        <h2>Capacity and change control</h2>
+        <p>
+          A hard cap rejects new work without changing already accepted encrypted content. OpenE2EE
+          can reduce abusive or unsafe traffic, repair a service incident, or change pre-release
+          limits with reasonable notice when practicable. A material paid-plan change applies under
+          the accepted service terms and recorded order.
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

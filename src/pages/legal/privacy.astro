@@ -15,7 +15,7 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
         <h1>Privacy Notice</h1>
         <p class="lead">
           This notice explains how OpenE2EE handles personal information across the website,
-          documentation, console, licensing, billing, and communications.
+          documentation, console, OpenE2EE Relay, licensing, billing, and communications.
         </p>
         <p class="article-meta">
           <span>Effective {privacyEffectiveDate}</span>
@@ -29,9 +29,9 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
         <aside class="callout" aria-label="Encryption boundary">
           <p class="label">Encryption boundary</p>
           <p>
-            The OpenE2EE Signal Protocol SDK is designed to run in your environment. OpenE2EE does not receive your
-            application’s plaintext messages, private cryptographic keys, or protocol state through
-            the SDK by default.
+            The OpenE2EE Signal Protocol SDK runs cryptography on your devices. OpenE2EE Relay
+            processes customer-encrypted content and delivery state, but OpenE2EE does not receive
+            message plaintext, device private keys, ratchet state, or attachment keys.
           </p>
         </aside>
 
@@ -54,13 +54,14 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
         <p>
           OpenE2EE LLC (“OpenE2EE,” “we,” “us,” or “our”) is responsible for personal information
           covered by this notice. It applies to <code>open-e2ee.dev</code>, the OpenE2EE
-          documentation and console, commercial licensing and billing, support and sales
-          communications, and related security operations.
+          documentation and console, OpenE2EE Relay, commercial licensing and billing, support and
+          sales communications, and related security operations.
         </p>
         <p>
           This notice does not govern information processed solely inside software that you operate.
-          When a customer uses the SDK in its own product, that customer determines its own data
-          practices and is responsible for its notices.
+          When a customer uses the SDK in its own product, that customer determines its application
+          data practices and is responsible for its notices. For Managed Relay, OpenE2EE processes
+          the service data described below on that customer’s instructions.
         </p>
 
         <h2 id="collect">2. Information we collect</h2>
@@ -81,8 +82,9 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
         <h3>Information from connected services</h3>
         <ul>
           <li>
-            <strong>GitHub:</strong> when you sign in, GitHub provides an account identifier and
-            available profile information such as username, display name, email, and avatar.
+            <strong>WorkOS:</strong> when you sign in, WorkOS provides an account identifier,
+            authentication events, organization information, and available profile information such
+            as name and email.
           </li>
           <li>
             <strong>Stripe:</strong> Stripe provides customer, subscription, invoice,
@@ -95,20 +97,50 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           </li>
         </ul>
 
+        <h3>Managed Relay information</h3>
+        <ul>
+          <li>
+            customer-encrypted envelopes, shared encrypted group bodies, and encrypted attachment
+            bytes;
+          </li>
+          <li>
+            public key material and signed public certificates needed for device registration and
+            authenticated or sealed-sender delivery;
+          </li>
+          <li>
+            opaque project, account, device, mailbox, operation, routing, usage, lifecycle,
+            recovery, and deletion identifiers and state;
+          </li>
+          <li>
+            push-provider tokens and opaque data-only wake requests, without message plaintext; and
+          </li>
+          <li>
+            exact aggregate usage, plan, spend-limit, billing, reconciliation, security, and audit
+            records needed to operate the service.
+          </li>
+        </ul>
+        <p>
+          Relay does not need message plaintext, device private keys, ratchet state, attachment
+          keys, decrypted attachment content, or a server-side social graph. Network providers can
+          process the request metadata inherent in carrying traffic.
+        </p>
+
         <h3>Technical information</h3>
         <p>
           Our hosting and security providers may process IP address, request time, URL, referring
-          page, browser and device information, authentication and session events, error
-          information, and security signals. The console uses signed, secure cookies needed for
-          authentication, request integrity, and account access. The marketing site additionally
-          records a small set of anonymous events with no identifier attached, described in full in
+          page, browser and device information, authentication and session events, request size and
+          timing, error information, and security signals. Relay also processes bounded operational
+          telemetry, such as delivery state, queue lag, retry, capacity, and lifecycle outcomes. The
+          console uses signed, secure cookies needed for authentication, request integrity, and
+          account access. The marketing site additionally records a small set of anonymous events
+          with no identifier attached, described in full in{' '}
           <a href="#cookies">Cookies and analytics</a>.
         </p>
 
         <h2 id="use">3. How and why we use information</h2>
         <p>We use personal information to:</p>
         <ul>
-          <li>authenticate users and operate the website, documentation, console, and billing portal;</li>
+          <li>authenticate users and operate the website, documentation, console, Relay, and billing portal;</li>
           <li>create, fulfill, document, renew, support, and enforce commercial licenses;</li>
           <li>process payments, invoices, taxes, cancellations, and accounting records;</li>
           <li>answer support, sales, licensing, privacy, and security communications;</li>
@@ -127,10 +159,13 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
         <p>We disclose information only as reasonably necessary to:</p>
         <ul>
           <li>
-            <strong>Service providers:</strong> Cloudflare for the public site, DNS, TLS, and
-            security; Vercel for the console and documentation; GitHub for authentication; Stripe
-            for payments, subscriptions, tax information, and the billing portal; and Google
-            Workspace for business email.
+            <strong>Service providers:</strong> Cloudflare for Relay, encrypted storage, the public
+            site, DNS, TLS, and security; Vercel for the console and documentation; WorkOS for
+            authentication and organization identity; Stripe for payments, subscriptions, tax
+            information, and the billing portal; Expo, Apple, Google, and browser push services for
+            data-only device wakes; Better Stack for availability monitoring and public status; and
+            Google Workspace for business email. The current list is at{' '}
+            <a href="/legal/subprocessors">Subprocessors</a>.
           </li>
           <li>
             <strong>Professional advisers:</strong> accountants, lawyers, insurers, auditors, and
@@ -189,7 +224,7 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
         </p>
         <p>
           The console uses essential authentication, security, and session cookies. Cloudflare,
-          Vercel, GitHub, and Stripe may use their own necessary security or service cookies when
+          Vercel, WorkOS, and Stripe may use their own necessary security or service cookies when
           you interact with their infrastructure or hosted pages.
         </p>
         <p>
@@ -209,6 +244,19 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
             connected-provider records;
           </li>
           <li>
+            Relay ciphertext follows the project retention setting: Managed Development uses 24
+            hours by default and permits no more than seven days, while production permits no more
+            than 30 days;
+          </li>
+          <li>
+            incomplete attachment uploads expire after 24 hours and completed attachments have a
+            30-day maximum retention;
+          </li>
+          <li>
+            opaque usage, billing, reconciliation, security, recovery, and deletion records follow
+            their documented retry, accounting, audit, and legal periods after payload deletion;
+          </li>
+          <li>
             license, subscription, invoice, and transaction records may be kept for the relationship
             and up to seven years afterward for accounting, tax, audit, and dispute purposes;
           </li>
@@ -221,6 +269,10 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
             operational and provider settings, unless needed to investigate an incident.
           </li>
         </ul>
+        <p>
+          The <a href="/legal/relay-retention">Relay Retention Statement</a> explains account and
+          project deletion, recipient mailbox boundaries, group state, and lifecycle backstops.
+        </p>
         <p>
           We use administrative, technical, and organizational safeguards appropriate to the nature
           of the information, including encrypted transport, restricted credentials, least-privilege
@@ -306,7 +358,7 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           identifier, and no IP-address record.
         </p>
         <p>
-          <strong>Version {privacyVersion}:</strong> an event was removed. The failure scenarios
+          <strong>Version 2026-08-16:</strong> an event was removed. The failure scenarios
           left the site, and the message that recorded one — <code>scenario_opened /</code> followed
           by the name of the scenario — is no longer sent at all. The site now records ten things
           rather than eleven, and no event carries a scenario name. The name of a
@@ -314,6 +366,13 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           choice is now the one event on this site that carries a second word at all. Nothing was
           added, no category of information is new, and nothing already collected is affected:
           still no cookie, no storage, no identifier, and no IP-address record.
+        </p>
+        <p>
+          <strong>Version {privacyVersion}:</strong> OpenE2EE Relay was added to the service scope.
+          This version identifies the encrypted content, public key material, opaque routing and
+          usage state, push tokens, providers, and retention boundaries that managed delivery
+          requires. It also corrects the console authentication provider from GitHub to WorkOS. The
+          anonymous website measurement did not change.
         </p>
         <p>
           For privacy questions or requests, email{' '}
