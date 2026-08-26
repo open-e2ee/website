@@ -194,15 +194,11 @@ test('sends only the events the collector accepts', async () => {
 });
 
 test('keeps active website events identical to the versioned launch catalog', async () => {
-  const catalog = JSON.parse(await read('../../docs/relay/proof/managed-relay/event-catalog.json'));
-  const websiteEvents = catalog.events
-    .filter((event) => event.owner === 'Website')
-    .map((event) => event.name)
-    .sort();
+  const catalog = JSON.parse(await read('../src/data/measurement-catalog.json'));
 
   assert.equal(catalog.version, 'relay-funnel-v1');
   assert.equal(catalog.cliTelemetry, false);
-  assert.deepEqual(websiteEvents, [...EVENTS].sort());
+  assert.deepEqual(catalog.websiteEvents, [...EVENTS].sort());
 });
 
 /*
