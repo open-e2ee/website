@@ -16,8 +16,10 @@ or defensive aliases that permanently redirect to `https://open-e2ee.dev`.
 `docs.signal-protocol.dev` and `console.signal-protocol.dev` redirect to the
 matching `docs.open-e2ee.dev` and `console.open-e2ee.dev` hosts.
 
-Hosted relay, object-storage, and control-plane products are deliberately out
-of scope for this repository and the current launch.
+The website presents OpenE2EE Relay as a separate managed delivery product.
+Relay runtime, object storage, commercial authority, and operator state stay in
+their owning private repositories and services; this repository owns only the
+public product, pricing, comparison, and funnel pages.
 
 ## Development
 
