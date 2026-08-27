@@ -30,7 +30,7 @@ for (const [name, mutate, expected] of [
     (value) => {
       value.extra = true;
     },
-    "manifest keys must match schema version 1",
+    "manifest keys must match schema version 2",
   ],
   [
     "short source revision",
@@ -38,6 +38,27 @@ for (const [name, mutate, expected] of [
       value.sources.repositories.cli = "abc123";
     },
     "must be a full commit digest",
+  ],
+  [
+    "unknown pull-request lifecycle state",
+    (value) => {
+      value.sources.pullRequests.sdk.state = "CLOSED";
+    },
+    "must have an OPEN or MERGED lifecycle state",
+  ],
+  [
+    "merge commit on an open pull request",
+    (value) => {
+      value.sources.pullRequests.sdk.mergeCommit = "b".repeat(40);
+    },
+    "OPEN source must not have a merge commit",
+  ],
+  [
+    "missing merged pull-request commit",
+    (value) => {
+      value.sources.pullRequests.console.mergeCommit = null;
+    },
+    "MERGED source must have a full merge commit",
   ],
   [
     "missing package",
@@ -124,12 +145,19 @@ function fixture() {
   const integrity = `sha512-${"A".repeat(86)}==`;
   const digest = "b".repeat(64);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     releaseId: "open-e2ee-relay-public-beta-v1",
     createdAt: "2026-08-27T00:00:00.000Z",
     sources: {
       pullRequests: Object.fromEntries(
-        RELEASE_SOURCE_NAMES.pullRequests.map((name) => [name, sha]),
+        RELEASE_SOURCE_NAMES.pullRequests.map((name) => [
+          name,
+          {
+            head: sha,
+            mergeCommit: name === "console" ? "b".repeat(40) : null,
+            state: name === "console" ? "MERGED" : "OPEN",
+          },
+        ]),
       ),
       repositories: Object.fromEntries(
         RELEASE_SOURCE_NAMES.repositories.map((name) => [name, sha]),

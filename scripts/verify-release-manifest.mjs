@@ -74,9 +74,9 @@ export function validateReleaseManifest(value) {
       "packages",
       "artifacts",
     ]),
-    "manifest keys must match schema version 1",
+    "manifest keys must match schema version 2",
   );
-  expect(value.schemaVersion === 1, "schemaVersion must be 1");
+  expect(value.schemaVersion === 2, "schemaVersion must be 2");
   expect(
     value.releaseId === "open-e2ee-relay-public-beta-v1",
     "releaseId must name the public beta release",
@@ -91,18 +91,48 @@ export function validateReleaseManifest(value) {
     exactKeys(value.sources, ["pullRequests", "repositories"]),
     "sources must contain exact pull-request and repository groups",
   );
-  for (const [group, names] of Object.entries(RELEASE_SOURCE_NAMES)) {
-    const entries = value.sources?.[group];
+  const pullRequests = value.sources?.pullRequests;
+  expect(
+    exactKeys(pullRequests, RELEASE_SOURCE_NAMES.pullRequests),
+    "sources.pullRequests must have the exact roster",
+  );
+  for (const name of RELEASE_SOURCE_NAMES.pullRequests) {
+    const source = pullRequests?.[name];
     expect(
-      exactKeys(entries, names),
-      `sources.${group} must have the exact roster`,
+      exactKeys(source, ["head", "mergeCommit", "state"]),
+      `sources.pullRequests.${name} must have the exact keys`,
     );
-    for (const name of names) {
+    expect(
+      /^[a-f0-9]{40}$/.test(source?.head ?? ""),
+      `sources.pullRequests.${name}.head must be a full commit digest`,
+    );
+    expect(
+      ["OPEN", "MERGED"].includes(source?.state),
+      `sources.pullRequests.${name} must have an OPEN or MERGED lifecycle state`,
+    );
+    if (source?.state === "OPEN") {
       expect(
-        /^[a-f0-9]{40}$/.test(entries?.[name] ?? ""),
-        `sources.${group}.${name} must be a full commit digest`,
+        source.mergeCommit === null,
+        `sources.pullRequests.${name} OPEN source must not have a merge commit`,
+      );
+    } else if (source?.state === "MERGED") {
+      expect(
+        /^[a-f0-9]{40}$/.test(source.mergeCommit ?? ""),
+        `sources.pullRequests.${name} MERGED source must have a full merge commit`,
       );
     }
+  }
+
+  const repositories = value.sources?.repositories;
+  expect(
+    exactKeys(repositories, RELEASE_SOURCE_NAMES.repositories),
+    "sources.repositories must have the exact roster",
+  );
+  for (const name of RELEASE_SOURCE_NAMES.repositories) {
+    expect(
+      /^[a-f0-9]{40}$/.test(repositories?.[name] ?? ""),
+      `sources.repositories.${name} must be a full commit digest`,
+    );
   }
 
   expect(
