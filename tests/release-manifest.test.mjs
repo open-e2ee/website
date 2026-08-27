@@ -54,6 +54,13 @@ for (const [name, mutate, expected] of [
     "must be version 1.0.0",
   ],
   [
+    "short package integrity",
+    (value) => {
+      value.packages["@open-e2ee/cli"].integrity = `sha512-${"A".repeat(84)}`;
+    },
+    "must have SHA-512 registry integrity",
+  ],
+  [
     "missing artifact",
     (value) => {
       delete value.artifacts["cli-sbom.cdx.json"];

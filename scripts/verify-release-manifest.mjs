@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -116,7 +117,7 @@ export function validateReleaseManifest(value) {
     );
     expect(entry?.version === "1.0.0", `package ${name} must be version 1.0.0`);
     expect(
-      /^sha512-[A-Za-z0-9+/]+={0,2}$/.test(entry?.integrity ?? ""),
+      isSha512Integrity(entry?.integrity),
       `package ${name} must have SHA-512 registry integrity`,
     );
   }
@@ -154,6 +155,16 @@ function isCanonicalTime(value) {
     Number.isFinite(milliseconds) &&
     new Date(milliseconds).toISOString() === value
   );
+}
+
+function isSha512Integrity(value) {
+  if (typeof value !== "string" || !value.startsWith("sha512-")) {
+    return false;
+  }
+  const encoded = value.slice("sha512-".length);
+  if (!/^[A-Za-z0-9+/]{86}==$/.test(encoded)) return false;
+  const digest = Buffer.from(encoded, "base64");
+  return digest.length === 64 && digest.toString("base64") === encoded;
 }
 
 function containsProhibitedKey(value) {
