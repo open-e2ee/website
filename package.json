@@ -42,10 +42,10 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
-    "@open-e2ee/signal-protocol-sdk": "^0.4.0",
+    "@open-e2ee/signal-protocol-sdk": "^1.0.0",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "typescript": "^6.0.3",
-    "wrangler": "4.111.0"
+    "wrangler": "4.126.0"
   },
   "engines": {
     "node": ">=22"

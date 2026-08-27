@@ -23,9 +23,8 @@ export const sdkVersion = sdkManifest.version;
 export const sdkLine = sdkVersion.split('.').slice(0, 2).concat('x').join('.');
 
 /**
- * The canonical maturity sentence from `docs/messaging.md` §4 — the version
- * number itself plus the before-1.0 caveat, with no stage adjective standing in
- * for either. Composed here so /product, /security, the comparison matrix, and
- * the journal cannot state four different versions of it.
+ * The canonical maturity statement from `docs/messaging.md` §4: the release
+ * line, with no stage adjective. Composed here so /product, /security, the
+ * comparison matrix, and the journal cannot state different versions.
  */
-export const maturityLine = `${sdkLine} — public APIs and persisted formats may change before 1.0.`;
+export const maturityLine = sdkLine;

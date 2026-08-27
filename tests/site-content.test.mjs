@@ -134,12 +134,12 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
   assert.doesNotMatch(dist, /cta-sublabel/);
 });
 
-test('states maturity as the version plus the before-1.0 caveat, with no stage adjective', async () => {
-  /* messaging.md §4: the maturity claim is the version number itself plus the
-   * before-1.0 caveat. No stage adjective may stand in for it. The pages that
-   * grade the release — /product and /security — carry the canonical line;
-   * the homepage carries no maturity line at all, but the negative binds it
-   * too, so one cannot reappear there unstated. */
+test('states maturity as the release line, with no stage adjective', async () => {
+  /* messaging.md §4: the maturity claim is the release line itself. No stage
+   * adjective may stand in for it. The pages that grade the release — /product
+   * and /security — carry the canonical line; the homepage carries no maturity
+   * line at all, but the negative binds it too, so one cannot reappear there
+   * unstated. */
   const [index, product, security] = await Promise.all([
     flat('../src/pages/index.astro'),
     flat('../src/pages/product.astro'),
@@ -172,14 +172,7 @@ test('states maturity as the version plus the before-1.0 caveat, with no stage a
   );
   if (!builtIndex || !builtProduct || !builtSecurity) return skipUnbuilt('dist/');
   assert.doesNotMatch(builtIndex, /\d+\.\d+\.x — public APIs/);
-  /* The wording is pinned separately from its presence. `maturityLine` is
-   * composed, so asserting only that the built page contains it would pass on
-   * any sentence the module happened to build — including one that had lost the
-   * caveat and kept the number. */
-  assert.equal(
-    maturityLine,
-    `${sdkLine} — public APIs and persisted formats may change before 1.0.`,
-  );
+  assert.equal(maturityLine, sdkLine);
   for (const page of [builtProduct, builtSecurity]) {
     assert.ok(page.includes(maturityLine), `built page does not state "${maturityLine}"`);
   }
