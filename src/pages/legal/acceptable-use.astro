@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Acceptable Use"
+  description="Acceptable use requirements for OpenE2EE Relay and OpenE2EE services."
+  canonical="/legal/acceptable-use"
+>
+  <article>
+    <header class="article-header">
+      <div class="container article-column">
+        <a class="back-link" href="/legal">Legal</a>
+        <h1>Acceptable Use Policy</h1>
+        <p class="lead">Use OpenE2EE services lawfully and without harming people or systems.</p>
+        <p class="article-meta"><span>Effective August 26, 2026</span><span>Version 2026-08-26</span></p>
+      </div>
+    </header>
+    <div class="container article-column">
+      <div class="prose">
+        <h2>Prohibited activity</h2>
+        <p>You may not use OpenE2EE Relay or another OpenE2EE service to:</p>
+        <ul>
+          <li>violate law, sanctions, export controls, or another person’s rights;</li>
+          <li>send spam, malware, phishing, abusive automation, or unsolicited bulk traffic;</li>
+          <li>exploit, threaten, harass, defraud, or facilitate serious physical harm;</li>
+          <li>store or distribute unlawful content, including child sexual abuse material;</li>
+          <li>probe, disrupt, overload, bypass, or gain unauthorized access to a service or account;</li>
+          <li>hide the origin of prohibited traffic or evade a limit, suspension, or security control; or</li>
+          <li>use another customer’s credentials, project, data, or capacity without authorization.</li>
+        </ul>
+
+        <h2>Customer controls</h2>
+        <p>
+          You must secure project credentials, authenticate users, enforce application access,
+          respond to abuse reports, and keep contact information current. Encryption does not remove
+          your responsibility for activity that your application enables.
+        </p>
+
+        <h2>Enforcement</h2>
+        <p>
+          OpenE2EE may reject traffic, rate-limit a project, preserve relevant evidence, or suspend
+          service when reasonably necessary to stop harm, protect the service, or comply with law.
+          Where safe and lawful, we will give notice and a reasonable opportunity to cure. We may
+          terminate severe or repeated violations without a cure period.
+        </p>
+
+        <h2>Reports</h2>
+        <p>
+          Report suspected abuse to <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>.
+          Include the affected project or public endpoint, relevant times, and enough detail to
+          investigate. Do not send message plaintext or private cryptographic material unless we ask
+          for it through a protected channel.
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

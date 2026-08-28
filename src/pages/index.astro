@@ -160,10 +160,9 @@ const differentiators: Differentiator[] = [
    * the claim, and a possessive at the front of a title reads as an article.
    *
    * "Nothing phones home" is the line an on-premises reader is actually
-   * asking about: no telemetry, no license check, no egress this package
-   * opens on its own. "We host nothing" is the neighboring but different
-   * fact, that no service of ours is in the path, and the two are worth the
-   * words separately.
+   * asking about: no telemetry, no license check, and no egress this package
+   * opens on its own. The managed Relay option is a separate deployment choice,
+   * so this self-hosting row must not imply that OpenE2EE has no hosted product.
    *
    * The limit is written as the property that produces it rather than as a
    * loss. Three fresh readers in two consecutive waves arrived at it unaided
@@ -204,7 +203,7 @@ const differentiators: Differentiator[] = [
     title: 'Infrastructure you own',
     icon: 'server',
     wide: true,
-    body: 'Storage, relay, and object storage are interfaces you fill. Each has a shipped adapter, or you write your own. Run it on your hardware, a VPS, or your cloud. We host nothing and nothing phones home. The relay holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
+    body: 'Storage, relay, and object storage are interfaces you fill. Each has a shipped adapter, or you write your own. Self-host them on your hardware, a VPS, or your cloud; the SDK itself does not phone home. Or use OpenE2EE Relay for managed encrypted delivery. A self-hosted relay holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
   },
 ];
 

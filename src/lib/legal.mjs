@@ -14,6 +14,16 @@ export const commercialTermsPath = '/legal/terms/2026-07-23';
 export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
 
 /*
+ * Managed Relay has a separate service agreement from the self-hosted SDK
+ * commercial license. Keep its accepted version at a permanent URL so a later
+ * service-terms update cannot rewrite an existing order.
+ */
+export const relayTermsVersion = 'relay-2026-08-26';
+export const relayTermsEffectiveDate = 'August 26, 2026';
+export const relayTermsPath = '/legal/relay-terms/2026-08-26';
+export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
+
+/*
  * The privacy notice is versioned by date. Two versions were published on
  * 2026-08-07: the first added the home page demo's event, and the second added
  * the scenario event, which at that time fired on `/demo`. Reusing the bare
@@ -53,5 +63,5 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * August 7, and why the removal and the notice ship in one commit here rather
  * than one leading the other.
  */
-export const privacyVersion = '2026-08-16';
-export const privacyEffectiveDate = 'August 16, 2026';
+export const privacyVersion = '2026-08-26';
+export const privacyEffectiveDate = 'August 26, 2026';

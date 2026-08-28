@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Relay Retention"
+  description="Retention and deletion boundaries for encrypted OpenE2EE Relay data."
+  canonical="/legal/relay-retention"
+>
+  <article>
+    <header class="article-header">
+      <div class="container article-column">
+        <a class="back-link" href="/legal">Legal</a>
+        <h1>OpenE2EE Relay Retention Statement</h1>
+        <p class="lead">What Relay keeps, for how long, and what deletion can and cannot recall.</p>
+        <p class="article-meta"><span>Effective August 26, 2026</span><span>Version 2026-08-26</span></p>
+      </div>
+    </header>
+    <div class="container article-column">
+      <div class="prose">
+        <h2>Encrypted delivery content</h2>
+        <ul>
+          <li>Managed Development uses 24-hour retention by default and permits no more than seven days.</li>
+          <li>Production projects can select a shorter period, up to a 30-day maximum.</li>
+          <li>Mailbox expiry removes unacknowledged ciphertext at the configured boundary.</li>
+          <li>A mailbox can hold no more than 3,000 accepted messages.</li>
+        </ul>
+
+        <h2>Attachments</h2>
+        <ul>
+          <li>An upload authorization is valid for no more than 15 minutes.</li>
+          <li>An incomplete upload expires after 24 hours.</li>
+          <li>A completed attachment has a 30-day maximum retention.</li>
+          <li>Relay deletes bytes directly on the owning expiry or deletion transition. Storage lifecycle rules are a cleanup backstop and may run later.</li>
+        </ul>
+
+        <h2>Inactive development projects</h2>
+        <p>
+          A Managed Development project can be suspended after 30 inactive days. The console shows
+          the state and the available recovery or deletion action.
+        </p>
+
+        <h2>Usage, billing, security, and recovery records</h2>
+        <p>
+          Exact current usage remains in concept-owned service state. Closed-period aggregate usage,
+          billing reconciliation, and narrow security or deletion fences can remain after encrypted
+          payload deletion. These records use opaque identifiers and do not contain message content,
+          account social graphs, provider subjects, device proofs, or protocol private material.
+          OpenE2EE keeps each category only for its documented retry, reconciliation, security,
+          accounting, legal, and restore period.
+        </p>
+
+        <h2>Deletion boundary</h2>
+        <p>
+          Account deletion removes that account’s inbound mailbox and account-owned objects. It does
+          not recall a sent envelope from another recipient’s mailbox. Leaving a group revokes future
+          access but does not erase shared ciphertext only because one member left. Project deletion
+          fences new work, drains accepted work, purges project-owned state, and then verifies the
+          deletion generation before completion.
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

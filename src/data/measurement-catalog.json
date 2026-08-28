@@ -1,0 +1,16 @@
+{
+  "version": "relay-funnel-v1",
+  "cliTelemetry": false,
+  "websiteEvents": [
+    "demo_run",
+    "enterprise_contact",
+    "github_open",
+    "guide_finish",
+    "install_copy",
+    "pricing_view",
+    "quickstart_open",
+    "runtime_select",
+    "security_view",
+    "signup_start"
+  ]
+}

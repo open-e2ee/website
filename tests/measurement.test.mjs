@@ -193,6 +193,14 @@ test('sends only the events the collector accepts', async () => {
   }
 });
 
+test('keeps active website events identical to the versioned launch catalog', async () => {
+  const catalog = JSON.parse(await read('../src/data/measurement-catalog.json'));
+
+  assert.equal(catalog.version, 'relay-funnel-v1');
+  assert.equal(catalog.cliTelemetry, false);
+  assert.deepEqual(catalog.websiteEvents, [...EVENTS].sort());
+});
+
 /*
  * The demo is the only measured thing on the site that has a reader's own words
  * in front of it, so the shape of its call is worth pinning rather than trusting

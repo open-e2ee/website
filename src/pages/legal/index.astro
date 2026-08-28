@@ -6,6 +6,9 @@ import {
   commercialTermsVersion,
   privacyEffectiveDate,
   privacyVersion,
+  relayTermsEffectiveDate,
+  relayTermsPath,
+  relayTermsVersion,
 } from '../../lib/legal.mjs';
 ---
 
@@ -19,9 +22,8 @@ import {
       <p class="label">Legal</p>
       <h1>Policies and agreements.</h1>
       <p class="lead">
-        Two documents govern using OpenE2EE: the terms you accept, and what we do with the
-        information you hand us. Both are versioned and dated, and the version a Startup order
-        accepted stays published at its own permanent URL.
+        Versioned terms govern the OpenE2EE product you choose. The privacy and service policies
+        explain the managed data boundary. Each accepted agreement remains at a permanent URL.
       </p>
     </div>
   </header>
@@ -41,6 +43,15 @@ import {
           </p>
         </li>
         <li>
+          <p class="label">Managed service agreement</p>
+          <h3><a href="/legal/relay-terms">OpenE2EE Relay Service Terms</a></h3>
+          <p>
+            The project-scoped managed service, capacity, billing, narrow commercial SDK license,
+            data, suspension, and beta-support contract.
+          </p>
+          <p class="label row-meta">Effective {relayTermsEffectiveDate} · {relayTermsVersion}</p>
+        </li>
+        <li>
           <p class="label">Data practices</p>
           <h3><a href="/legal/privacy">Privacy Notice</a></h3>
           <p>
@@ -55,6 +66,23 @@ import {
           <p>
             The immutable copy of the terms recorded at checkout. Existing orders stay bound to the
             version they accepted, so each published version keeps its own address.
+          </p>
+        </li>
+        <li>
+          <p class="label">Relay policies</p>
+          <h3><a href="/legal/acceptable-use">Acceptable Use Policy</a></h3>
+          <p>
+            Service safety and enforcement, plus the current{' '}
+            <a href="/legal/subprocessors">subprocessor list</a>,{' '}
+            <a href="/legal/relay-retention">retention statement</a>, and{' '}
+            <a href="/legal/relay-beta-limits">beta limits</a>.
+          </p>
+        </li>
+        <li>
+          <p class="label">Relay version history</p>
+          <h3><a href={relayTermsPath}>Pinned Relay terms {relayTermsVersion}</a></h3>
+          <p>
+            The permanent copy recorded when a Relay project accepts this service agreement.
           </p>
         </li>
         <li>

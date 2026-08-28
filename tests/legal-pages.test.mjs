@@ -7,6 +7,9 @@ import {
   commercialTermsVersion,
   privacyEffectiveDate,
   privacyVersion,
+  relayTermsPath,
+  relayTermsUrl,
+  relayTermsVersion,
 } from '../src/lib/legal.mjs';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -16,7 +19,10 @@ test('pins the first Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-07-23');
   assert.equal(commercialTermsPath, '/legal/terms/2026-07-23');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-07-23');
-  assert.equal(privacyVersion, '2026-08-16');
+  assert.equal(privacyVersion, '2026-08-26');
+  assert.equal(relayTermsVersion, 'relay-2026-08-26');
+  assert.equal(relayTermsPath, '/legal/relay-terms/2026-08-26');
+  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-08-26');
 });
 
 /*
@@ -42,11 +48,13 @@ test('keeps the privacy effective date on the day its version names', () => {
   assert.equal(privacyEffectiveDate, named);
 });
 
-test('publishes a legal index and canonical current, versioned, and privacy routes', async () => {
-  const [legalIndex, currentTerms, versionedTerms, privacy] = await Promise.all([
+test('publishes canonical current, versioned, privacy, and Relay policy routes', async () => {
+  const [legalIndex, currentTerms, versionedTerms, relayTerms, relayVersion, privacy] = await Promise.all([
     read('../src/pages/legal/index.astro'),
     read('../src/pages/legal/terms.astro'),
     read('../src/pages/legal/terms/2026-07-23.astro'),
+    read('../src/pages/legal/relay-terms.astro'),
+    read('../src/pages/legal/relay-terms/2026-08-26.astro'),
     read('../src/pages/legal/privacy.astro'),
   ]);
 
@@ -56,6 +64,14 @@ test('publishes a legal index and canonical current, versioned, and privacy rout
   assert.match(currentTerms, /CommercialTerms/);
   assert.match(currentTerms, /canonical="\/legal\/terms"/);
   assert.match(versionedTerms, /canonical="\/legal\/terms\/2026-07-23"/);
+  assert.match(legalIndex, /href="\/legal\/relay-terms"/);
+  assert.match(legalIndex, /href="\/legal\/acceptable-use"/);
+  assert.match(legalIndex, /href="\/legal\/subprocessors"/);
+  assert.match(legalIndex, /href="\/legal\/relay-retention"/);
+  assert.match(legalIndex, /href="\/legal\/relay-beta-limits"/);
+  assert.match(relayTerms, /ManagedRelayTerms/);
+  assert.match(relayTerms, /canonical="\/legal\/relay-terms"/);
+  assert.match(relayVersion, /canonical="\/legal\/relay-terms\/2026-08-26"/);
   assert.match(privacy, /Privacy Notice/);
   assert.match(privacy, /canonical="\/legal\/privacy"/);
 });
@@ -91,6 +107,7 @@ test('makes privacy and terms available from the site footer', async () => {
   assert.match(footer, /href="\/legal"/);
   assert.match(footer, /href="\/legal\/privacy"/);
   assert.match(footer, /href="\/legal\/terms"/);
+  assert.match(footer, /href="\/legal\/relay-terms"/);
   assert.match(footer, /OpenE2EE LLC and OpenE2EE contributors/);
 });
 
@@ -152,22 +169,50 @@ test('keeps the privacy version history truthful about when each event arrived',
   );
 });
 
-test('describes the implemented providers and the self-operated SDK boundary', async () => {
+test('describes the implemented providers and managed Relay boundary', async () => {
   const privacy = await flat('../src/pages/legal/privacy.astro');
-  for (const provider of ['Cloudflare', 'Vercel', 'GitHub', 'Stripe', 'Google Workspace']) {
+  for (const provider of ['Cloudflare', 'Vercel', 'WorkOS', 'Stripe', 'Better Stack', 'Google Workspace']) {
     assert.match(privacy, new RegExp(provider));
   }
-  assert.match(privacy, /does not receive your application’s plaintext messages/i);
+  assert.match(privacy, /does not receive message plaintext/i);
+  assert.match(privacy, /customer-encrypted envelopes/i);
   assert.match(privacy, /We do not sell personal information/i);
 });
 
-test('reaches the terms from the pages that sell against them', async () => {
-  const [pricing, licensing] = await Promise.all([
+test('publishes the exact Relay legal and lifecycle boundary', async () => {
+  const [terms, acceptableUse, subprocessors, retention, beta] = await Promise.all([
+    flat('../src/components/ManagedRelayTerms20260826.astro'),
+    flat('../src/pages/legal/acceptable-use.astro'),
+    flat('../src/pages/legal/subprocessors.astro'),
+    flat('../src/pages/legal/relay-retention.astro'),
+    flat('../src/pages/legal/relay-beta-limits.astro'),
+  ]);
+
+  assert.match(terms, /limited, non-exclusive, non-transferable, non-sublicensable commercial license/i);
+  assert.match(terms, /grants no self-hosting right/i);
+  assert.match(terms, /ends when the project is deleted or 30 days after/i);
+  assert.match(acceptableUse, /spam, malware, phishing/i);
+  for (const provider of ['Cloudflare', 'Vercel', 'WorkOS', 'Stripe', 'Better Stack']) {
+    assert.match(subprocessors, new RegExp(provider));
+  }
+  assert.match(retention, /24-hour retention by default/i);
+  assert.match(retention, /30-day maximum retention/i);
+  assert.match(beta, /Direct encrypted envelope: 256 KiB maximum/i);
+  assert.match(beta, /Group encrypted body: 96 KiB plus a 512-byte prefix/i);
+});
+
+test('reaches each agreement from the pages that sell against it', async () => {
+  const [pricing, relayPricing, relay, licensing] = await Promise.all([
     flat('../src/pages/pricing.astro'),
+    flat('../src/pages/relay/pricing.astro'),
+    flat('../src/pages/relay/index.astro'),
     flat('../src/pages/licensing.astro'),
   ]);
 
   assert.match(pricing, /href="\/legal\/terms"/);
+  assert.match(pricing, /href="\/legal\/relay-terms"/);
+  assert.match(relayPricing, /href="\/legal\/relay-terms"/);
+  assert.match(relay, /href="\/legal\/relay-terms"/);
   assert.match(pricing, /renews annually until you cancel/i);
   assert.match(licensing, /href="\/legal\/terms"/);
   /* Was /signed order form/. Which instrument closes which tier is a purchase

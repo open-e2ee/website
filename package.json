@@ -16,6 +16,8 @@
     "brand:check": "oe-design check public/brand",
     "capture:record": "node scripts/record-carrier-capture.mjs",
     "demo:smoke": "node scripts/demo-smoke.mjs",
+    "release:manifest:verify": "node scripts/verify-release-manifest.mjs",
+    "visual:relay": "node scripts/relay-pages-visual.mjs",
     "blog:cards": "node scripts/generate-blog-cards.mjs",
     "blog:cards:check": "node scripts/generate-blog-cards.mjs --check",
     "deploy": "npm run build && wrangler deploy",
@@ -40,10 +42,10 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
-    "@open-e2ee/signal-protocol-sdk": "^0.4.0",
+    "@open-e2ee/signal-protocol-sdk": "^1.0.0",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "typescript": "^6.0.3",
-    "wrangler": "4.111.0"
+    "wrangler": "4.126.0"
   },
   "engines": {
     "node": ">=22"

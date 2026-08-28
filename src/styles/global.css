@@ -2579,6 +2579,17 @@ table.data tbody th {
   font-weight: 500;
 }
 
+table.data th small {
+  display: block;
+  margin-top: var(--oe-space-2);
+  max-width: 32ch;
+  color: var(--oe-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
 table.data td {
   color: var(--oe-muted);
 }

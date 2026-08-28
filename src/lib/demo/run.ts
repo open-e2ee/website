@@ -505,7 +505,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
    */
   let handoffMark: string | null = null;
 
-  /* Wrap the relay methods a send can hand its envelope to. All three, because
+  /* Wrap the relay methods a send can hand its envelope to. Both, because
      which one the SDK picks is the sealed-sender setting's business, not
      ours. */
   function instrumentRelay(target: InMemorySignalProtocolRelayServer): void {
@@ -519,7 +519,6 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       };
     };
     target.send = wrap(target.send.bind(target));
-    target.sendUnidentified = wrap(target.sendUnidentified.bind(target));
     target.sendMultiRecipientUnidentified = wrap(target.sendMultiRecipientUnidentified.bind(target));
   }
 

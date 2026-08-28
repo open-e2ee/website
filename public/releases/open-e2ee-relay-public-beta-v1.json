@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 2,
+  "releaseId": "open-e2ee-relay-public-beta-v1",
+  "createdAt": "2026-08-28T20:00:00.000Z",
+  "sources": {
+    "pullRequests": {
+      "sdk": {
+        "reviewedHead": "8a8d76093b64905462d14bed7daaba29045bf8d9",
+        "mergeCommit": "82bfffed826f2c241af6bd9318123b38b10f2100",
+        "state": "MERGED"
+      },
+      "website": {
+        "reviewedHead": "3ec8046021cb424eb082285bea2f58e04a4c323d",
+        "mergeCommit": null,
+        "state": "OPEN"
+      },
+      "console": {
+        "reviewedHead": "12f0288718b4b624488109d11505b4bf0e410550",
+        "mergeCommit": "2d9ac8014bed4aa55485dbb1a5d68bfca1dc1aa3",
+        "state": "MERGED"
+      }
+    },
+    "repositories": {
+      "relay": "3489664a0b590987bc5c9f7771d1b3da975425af",
+      "sdkInternal": "82bfffed826f2c241af6bd9318123b38b10f2100",
+      "sdkPublic": "18f3979994aeeb8c207ba0667d0f9ccc9a163847",
+      "cli": "bb5f82557a138b95cce4e6ec776aaa45c075736b",
+      "design": "5d017820ced8e21ea2915a0debd55b813beab053"
+    }
+  },
+  "packages": {
+    "@open-e2ee/signal-protocol-sdk": {
+      "version": "1.0.0",
+      "integrity": "sha512-AlTpi7ed3phzJSMtea5YT/uosoXbPEjiFDVyDylwwKNYxc9z/eQXtsOcmJXNZ4ROzuDxzsHMcW3HBJwdA2tWZg=="
+    },
+    "@open-e2ee/cli": {
+      "version": "1.0.0",
+      "integrity": "sha512-P8EnK/JGcHjlMlE4C1CQAY6WE+WshvF4HqpK5QQT2gHNujIjgXmSVKZECd9qNcqnvgcUBiA2T7O8JvN6fwWmSw=="
+    },
+    "create-oe": {
+      "version": "1.0.0",
+      "integrity": "sha512-cgWx3516zTSvaBMNLek8g6a2r6lpL0cPFdwh4OOKCehhE3pjBalaoOJz5CXNXGvvNxccjmvsjKvExAL0vw2uIA=="
+    },
+    "@open-e2ee/cli-darwin-arm64": {
+      "version": "1.0.0",
+      "integrity": "sha512-0olCbgM+PVppXeOY9fMczeeUdF7hFo54/X2mS4RNMC22Z+Q0748o8HUnjoNtiF6EcIAchpjJWlL0kQatb6GNUQ=="
+    },
+    "@open-e2ee/cli-darwin-x64": {
+      "version": "1.0.0",
+      "integrity": "sha512-2+b7TY220dSBg5NtxdmhAqFPEcS0kgucwaGSNIzWA3cPDJfw1XkwxIxre0cXFGqGgczf/Hhj+5MY10u4R5vTow=="
+    },
+    "@open-e2ee/cli-linux-arm64": {
+      "version": "1.0.0",
+      "integrity": "sha512-1LtkHvyBxFxyptjuH3murZoi17db0KLMoUXEpTBMYk9zFJ58DE1ljelhxd2r4WMhicET2RUW6uiGFwbJprG79w=="
+    },
+    "@open-e2ee/cli-linux-x64": {
+      "version": "1.0.0",
+      "integrity": "sha512-nBn/S2JWGllvyILQT4NDMO9aweQZDUtMSE3sKXK9yU0b2IGhD87KxjLPzFdHqISb1VM30DeTLKvwG0V1WNi2dw=="
+    },
+    "@open-e2ee/cli-win32-arm64": {
+      "version": "1.0.0",
+      "integrity": "sha512-TXih+ITEkQDgnncuBci6zu4xk329Y1f0mdAk8+0xzEHsd0DtuqjrSEpiANYu4hmc0R1oY6mkFwFJtKngXACC0g=="
+    },
+    "@open-e2ee/cli-win32-x64": {
+      "version": "1.0.0",
+      "integrity": "sha512-03BfPgycU+ZUmIIW2TT9ifZRma5dbFvWm+0VMdqDnF8GQeWCCLXVGvcvD6dJNhmbbXE+FJjXkEstiGzjRBAvog=="
+    }
+  },
+  "artifacts": {
+    "sdk-sbom.cdx.json": {
+      "sha256": "b866011875125c65e7db7ab2e46cb9809ef988b6a8f38fdef96695360d7d8498"
+    },
+    "cli-sbom.cdx.json": {
+      "sha256": "73a4d6ec84e2f0a9765164d83b24408767e9b3fb15eb058e09687e0abb47d2f8"
+    },
+    "checksums.txt": {
+      "sha256": "4589146905e3322aca8d85db8a2f8909a04919c17e5f6d0e666cd95013207385"
+    },
+    "oe_1.0.0_darwin_arm64.tar.gz": {
+      "sha256": "f95f2bf0fda625590ab1014be6e44ef6d72fb1a359ce7dc06e6862a8360bcecd"
+    },
+    "oe_1.0.0_darwin_amd64.tar.gz": {
+      "sha256": "7089fd65d29f1988dbc3c1b9df2e5d4674587c75b333ca36268702c91821b8d7"
+    },
+    "oe_1.0.0_linux_arm64.tar.gz": {
+      "sha256": "1e9487e54d1c5acbcbb9932ec80de59582eed1d4af7b6d222b44f5db71be0f78"
+    },
+    "oe_1.0.0_linux_amd64.tar.gz": {
+      "sha256": "1bf27b9fd1f4aab4dfaa6c27d0944b5a06fb10838fa644cb64143e8c792f899b"
+    },
+    "oe_1.0.0_windows_arm64.tar.gz": {
+      "sha256": "cfa708f758336f5f984a2603fc8bd98533d25a5eff699e4d33bb7019286db472"
+    },
+    "oe_1.0.0_windows_amd64.tar.gz": {
+      "sha256": "5b0a235cef0347f0a34c91963a19ee2dd290117885d96eacfc93f47de3fdd240"
+    }
+  }
+}

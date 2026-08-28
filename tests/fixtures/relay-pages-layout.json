@@ -1,0 +1,98 @@
+{
+  "mobile:/relay/pricing/": {
+    "documentWidth": 390,
+    "h1": {
+      "height": 117.1,
+      "left": 16,
+      "right": 374,
+      "width": 358
+    },
+    "tables": [
+      {
+        "clientWidth": 358,
+        "overflowX": "auto",
+        "scrollWidth": 552,
+        "tabIndex": 0
+      }
+    ],
+    "viewportWidth": 390
+  },
+  "mobile:/compare/virgil-security/": {
+    "documentWidth": 390,
+    "h1": {
+      "height": 195.2,
+      "left": 16,
+      "right": 374,
+      "width": 358
+    },
+    "tables": [
+      {
+        "clientWidth": 358,
+        "overflowX": "auto",
+        "scrollWidth": 512,
+        "tabIndex": 0
+      },
+      {
+        "clientWidth": 358,
+        "overflowX": "auto",
+        "scrollWidth": 512,
+        "tabIndex": 0
+      },
+      {
+        "clientWidth": 358,
+        "overflowX": "auto",
+        "scrollWidth": 512,
+        "tabIndex": 0
+      }
+    ],
+    "viewportWidth": 390
+  },
+  "desktop:/relay/pricing/": {
+    "documentWidth": 1440,
+    "h1": {
+      "height": 201.6,
+      "left": 154,
+      "right": 771.7,
+      "width": 617.7
+    },
+    "tables": [
+      {
+        "clientWidth": 1132,
+        "overflowX": "auto",
+        "scrollWidth": 1132,
+        "tabIndex": 0
+      }
+    ],
+    "viewportWidth": 1440
+  },
+  "desktop:/compare/virgil-security/": {
+    "documentWidth": 1440,
+    "h1": {
+      "height": 335.9,
+      "left": 154,
+      "right": 771.7,
+      "width": 617.7
+    },
+    "tables": [
+      {
+        "clientWidth": 1132,
+        "overflowX": "auto",
+        "scrollWidth": 1132,
+        "tabIndex": 0
+      },
+      {
+        "clientWidth": 1132,
+        "overflowX": "auto",
+        "scrollWidth": 1132,
+        "tabIndex": 0
+      },
+      {
+        "clientWidth": 1132,
+        "overflowX": "auto",
+        "scrollWidth": 1132,
+        "tabIndex": 0
+      }
+    ],
+    "viewportWidth": 1440
+  }
+}

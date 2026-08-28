@@ -1,138 +1,53 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-
-/* Single-sourced so the landing page can quote the entry price without
- * risking drift. See src/data/pricing.mjs. */
+import { relayPlans } from '../data/relay-pricing.mjs';
 import { startupTier, tiers } from '../data/pricing.mjs';
+
+const starter = relayPlans.find((plan) => plan.id === 'relay_starter_v1');
+if (!starter) throw new Error('The Relay catalog has no Starter plan.');
 ---
 
 <BaseLayout
   title="Pricing"
-  description={`The complete SDK is free under AGPLv3. Commercial production rights for proprietary products start at ${startupTier.price} ${startupTier.period}.`}
+  description={`Choose managed OpenE2EE Relay capacity or a self-hosted OpenE2EE Signal Protocol SDK commercial license from ${startupTier.price} per year.`}
+  canonical="/pricing"
 >
   <header class="page-hero">
     <div class="container measure">
       <p class="label">Pricing</p>
-      <h1>Free under AGPLv3. Priced when you need it closed.</h1>
-      {/*
-        The positive fact first. The lead opened on three negatives — no trial,
-        no feature gate, no usage metering — which are answers to questions the
-        reader has not asked yet. What they arrived for is what the free thing
-        is and when it stops being free, so those are the first and last
-        sentences and the denials sit between them.
-      */}
-      <p class="lead">
-        The complete SDK is available under AGPLv3. No trial, no feature gate, no usage metering.
-        Buy a commercial license when your product cannot meet the AGPLv3 obligations.
-      </p>
-      {/*
-        One action. The secondary button read "Understand AGPLv3 use" and
-        pointed at /licensing, and the AGPLv3 tier card one screen below
-        carries a link with the same label to the same route. Stripe's pricing
-        hero carries one call to action; Linear and Sentry each carry one and
-        let the tier cards carry the rest.
-      */}
-      <div class="actions">
-        <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
-          <span class="oe-button">Build your first encrypted message</span>
-          <span class="cta-sublabel">two clients · no account · no server</span>
-        </a>
-      </div>
+      <h1>Choose who operates the encrypted delivery layer.</h1>
+      <p class="lead">OpenE2EE Relay is the managed delivery product. Self-hosted licensing covers a proprietary application that operates its own infrastructure. These are separate products with separate meters and rights.</p>
+      <p>Free under AGPLv3. Commercial self-hosting starts at {startupTier.price} per year.</p>
     </div>
   </header>
 
   <section class="band">
     <div class="container">
       <ul class="tiers">
+        <li class="tier">
+          <div class="tier-name"><h2>OpenE2EE Relay</h2><p class="tier-price">Free<span>then {starter.price} per month</span></p></div>
+          <div class="tier-body"><p>Managed encrypted delivery for the OpenE2EE Signal Protocol SDK. Includes development and Free production, encrypted device mailboxes, group fan-out, private attachment storage, push wakes, exact usage, and lifecycle controls.</p><p class="muted">Plans use Relay MAU, destination-device delivery units, attachment operations, and exact live encrypted storage.</p><p class="text-links"><a href="/relay/pricing">Review Relay plans</a><a href="/relay">What Relay operates</a></p></div>
+        </li>
         {tiers.map((tier) => (
           <li class="tier">
-            <div class="tier-name">
-              <h2>{tier.name}</h2>
-              <p class="tier-price">
-                {tier.price}
-                {tier.period && <span>{tier.period}</span>}
-              </p>
-            </div>
-            <div class="tier-body">
-              <p>{tier.body}</p>
-              <p class="muted">{tier.detail}</p>
-              <p class="text-links">
-                <a href={tier.cta.href}>{tier.cta.label}</a>
-              </p>
-            </div>
+            <div class="tier-name"><h2>{tier.name}</h2><p class="tier-price">{tier.price}{tier.period && <span>{tier.period}</span>}</p></div>
+            <div class="tier-body"><p>{tier.body}</p><p class="muted">{tier.detail}</p><p class="text-links"><a href={tier.cta.href}>{tier.cta.label}</a></p></div>
           </li>
         ))}
       </ul>
-      {/*
-        Which instrument applies to which tier was stated here in a 29-word
-        parenthetical, again in "How buying works" below, and a third time on
-        /licensing. It is a process step, so "How buying works" owns it and
-        this line owns only the precedence rule. "Not this page" went with it:
-        naming what does not govern adds nothing to naming what does.
-      */}
-      <p class="muted measure">
-        Taxes may apply. Prices are the annual list prices for the scope named above. Startup
-        renews annually until you cancel before the renewal date. Your{' '}
-        <a href="/legal/terms">agreement</a> controls the grant, covered products, support,
-        renewal, and post-expiration rights.
-      </p>
+      <p class="muted measure">A managed Relay subscription does not grant general self-hosting rights. The <a href="/legal/relay-terms">Relay service terms</a> control that project. A Startup commercial license renews annually until you cancel before the renewal date. Taxes may apply. The <a href="/legal/terms">self-hosted agreement</a> controls that grant, covered products, support, renewal, and post-expiration rights.</p>
     </div>
   </section>
 
-  {/*
-    "What a breach looks like afterwards" stood here, and it is gone rather
-    than moved. It asserted that "HIPAA, SOC 2, GDPR, and the rest are
-    satisfied by transport security and encryption at rest", which is the
-    opposite of what docs/positioning.md §5 and /blog/tls-is-not-end-to-end-encryption
-    both say: TLS plus disk encryption does not establish compliance with a
-    complete framework. It escaped `audit-build.mjs` because those patterns
-    match the word "compliant", which the sentence never used.
-
-    The argument it was making is the blog post's, made better: that post
-    links Cal. Civ. Code §1798.82, the FTC Safeguards Rule and GDPR Art.
-    34(3)(a), where this band cited two of them and linked neither. So the
-    band goes and the closing row gains the link to it, which this page did
-    not have at all.
-
-    This band takes the surface the deleted one had, because the two plain
-    bands it left adjacent are what the alternation rule forbids.
-  */}
   <section class="band band-surface">
     <div class="container">
-      <div class="band-head">
-        <h2>How buying works</h2>
-      </div>
+      <div class="band-head"><h2>How buying works</h2></div>
       <dl class="definition-rows">
-        <div>
-          <dt>Startup</dt>
-          <dd>
-            Sign in, name the legal entity and the covered product, accept the commercial terms,
-            and complete annual checkout. Checkout records the terms version you accepted, and that
-            version governs your license through renewals.
-          </dd>
-        </div>
-        <div>
-          <dt>Growth and Enterprise</dt>
-          <dd>
-            Portfolio rights, redistribution, integration support, security review, and service
-            levels need scoping first. A short meeting, then a signed order form.
-          </dd>
-        </div>
-        <div>
-          <dt>Evaluating</dt>
-          <dd>
-            Build the integration under AGPLv3 first. A commercial license changes what you may
-            ship. The code is the same build.
-          </dd>
-        </div>
+        <div><dt>Managed Relay</dt><dd>Start with no-card development. Production activation uses a separate managed project, exact limits, and the plan selected in Console.</dd></div>
+        <div><dt>Startup license</dt><dd>Sign in, name the legal entity and covered product, accept the commercial terms, and complete annual checkout.</dd></div>
+        <div><dt>Growth and Enterprise license</dt><dd>Portfolio rights, redistribution, integration support, security review, and service levels need a signed order form.</dd></div>
       </dl>
-      <p class="text-links">
-        <a href="/legal/terms">Review Startup terms</a>
-        <a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">
-          Ask a licensing question
-        </a>
-        <a href="/blog/tls-is-not-end-to-end-encryption/">What a relay breach exposes</a>
-      </p>
+      <p class="text-links"><a href="/relay/pricing">Review Relay limits</a><a href="/licensing">Compare self-hosted rights</a><a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">Ask a licensing question</a></p>
     </div>
   </section>
 </BaseLayout>
