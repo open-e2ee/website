@@ -99,12 +99,12 @@ export function validateReleaseManifest(value) {
   for (const name of RELEASE_SOURCE_NAMES.pullRequests) {
     const source = pullRequests?.[name];
     expect(
-      exactKeys(source, ["head", "mergeCommit", "state"]),
+      exactKeys(source, ["reviewedHead", "mergeCommit", "state"]),
       `sources.pullRequests.${name} must have the exact keys`,
     );
     expect(
-      /^[a-f0-9]{40}$/.test(source?.head ?? ""),
-      `sources.pullRequests.${name}.head must be a full commit digest`,
+      /^[a-f0-9]{40}$/.test(source?.reviewedHead ?? ""),
+      `sources.pullRequests.${name}.reviewedHead must be a full commit digest`,
     );
     expect(
       ["OPEN", "MERGED"].includes(source?.state),

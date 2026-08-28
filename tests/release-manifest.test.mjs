@@ -35,7 +35,7 @@ for (const [name, mutate, expected] of [
   [
     "short source revision",
     (value) => {
-      value.sources.repositories.cli = "abc123";
+      value.sources.pullRequests.website.reviewedHead = "abc123";
     },
     "must be a full commit digest",
   ],
@@ -153,7 +153,7 @@ function fixture() {
         RELEASE_SOURCE_NAMES.pullRequests.map((name) => [
           name,
           {
-            head: sha,
+            reviewedHead: sha,
             mergeCommit: name === "console" ? "b".repeat(40) : null,
             state: name === "console" ? "MERGED" : "OPEN",
           },
