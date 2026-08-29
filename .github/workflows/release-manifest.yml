@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - public/releases/open-e2ee-relay-public-beta-v1.json
+  workflow_dispatch:
 
 permissions:
   contents: read
