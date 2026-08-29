@@ -112,7 +112,8 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
             recovery, and deletion identifiers and state;
           </li>
           <li>
-            push-provider tokens and opaque data-only wake requests, without message plaintext; and
+            push-provider tokens and generic best-effort wake requests, which may include a generic
+            encrypted-message alert but no message plaintext; and
           </li>
           <li>
             exact aggregate usage, plan, spend-limit, billing, reconciliation, security, and audit
@@ -163,7 +164,7 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
             site, DNS, TLS, and security; Vercel for the console and documentation; WorkOS for
             authentication and organization identity; Stripe for payments, subscriptions, tax
             information, and the billing portal; Expo, Apple, Google, and browser push services for
-            data-only device wakes; Better Stack for availability monitoring and public status; and
+            best-effort device wakes; Better Stack for availability monitoring and public status; and
             Google Workspace for business email. The current list is at{' '}
             <a href="/legal/subprocessors">Subprocessors</a>.
           </li>
