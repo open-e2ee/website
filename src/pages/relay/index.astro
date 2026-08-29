@@ -34,4 +34,26 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <p class="text-links"><a href="/relay/pricing">Review Relay pricing</a><a href="/legal/relay-terms">Relay service terms</a><a href="/compare/virgil-security">Compare architecture with Virgil Security</a><a href="/licensing">Review self-hosted licensing</a></p>
     </div>
   </section>
+
+  <section class="band">
+    <div class="container stack">
+      <div class="band-head">
+        <h2>One connection for each environment</h2>
+        <p class="measure">
+          <code>oe dev</code> writes the Managed Development connection. <code>oe deploy</code>{' '}
+          writes the production connection. Both use <code>OPEN_E2EE_RELAY_URL</code>, so the
+          application source does not change.
+        </p>
+      </div>
+      <p class="measure">
+        The connection URL is public configuration, not a credential. The SDK resolves the exact
+        environment and project binding from that URL. You do not select a Relay hostname or pair
+        it with a second key.
+      </p>
+      <p class="text-links">
+        <a href="https://docs.open-e2ee.dev/relay">Read the Relay quickstart</a>
+        <a href="https://console.open-e2ee.dev">Open the Console</a>
+      </p>
+    </div>
+  </section>
 </BaseLayout>

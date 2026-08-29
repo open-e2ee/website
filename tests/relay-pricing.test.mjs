@@ -49,6 +49,9 @@ test('publishes canonical Relay routes with accessible responsive tables', async
   const pricing = await source('src/pages/relay/pricing.astro');
   const comparison = await source('src/pages/compare/virgil-security.astro');
   assert.match(relay, /canonical="\/relay"/);
+  assert.match(relay, /OPEN_E2EE_RELAY_URL/);
+  assert.match(relay, /public configuration, not a credential/i);
+  assert.match(relay, /do not select a Relay hostname or pair/i);
   assert.match(pricing, /canonical="\/relay\/pricing"/);
   assert.match(comparison, /canonical="\/compare\/virgil-security"/);
   for (const page of [pricing, comparison]) {
