@@ -4,7 +4,8 @@
     "@open-e2ee/signal-protocol-sdk surface. Everything else in an inline",
     "<code> span must exist in the SDK, so an invented symbol fails the build.",
     "Add an entry only when the word is genuinely someone else's API, a",
-    "platform constant, or a file or table name — never to silence a symbol",
+    "platform constant, another OpenE2EE tool contract, or a file or table",
+    "name — never to silence a symbol",
     "that was supposed to be ours. Say whose it is."
   ],
   "allow": [
@@ -15,7 +16,8 @@
     "AFTER_FIRST_UNLOCK",
     "THIS_DEVICE_ONLY",
     "AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY",
-    "UNNotificationServiceExtension"
+    "UNNotificationServiceExtension",
+    "OPEN_E2EE_RELAY_URL"
   ],
   "$provenance": {
     "randomUUID": "Web Crypto API, and expo-crypto's re-export of it",
@@ -25,6 +27,7 @@
     "AFTER_FIRST_UNLOCK": "expo-secure-store keychain accessibility constant",
     "THIS_DEVICE_ONLY": "expo-secure-store keychain accessibility constant",
     "AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY": "expo-secure-store; the value the SDK's vault pins in SIGNAL_PROTOCOL_SECURE_STORE_OPTIONS",
-    "UNNotificationServiceExtension": "Apple UserNotifications framework"
+    "UNNotificationServiceExtension": "Apple UserNotifications framework",
+    "OPEN_E2EE_RELAY_URL": "OpenE2EE CLI generated public deployment configuration"
   }
 }
