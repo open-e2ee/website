@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "releaseId": "open-e2ee-relay-public-beta-v1",
-  "createdAt": "2026-08-28T20:00:00.000Z",
+  "createdAt": "2026-08-29T02:08:36.000Z",
   "sources": {
     "pullRequests": {
       "sdk": {
@@ -21,7 +21,7 @@
       }
     },
     "repositories": {
-      "relay": "3489664a0b590987bc5c9f7771d1b3da975425af",
+      "relay": "8ea7445af256771a6643059aa88342b4ecf9202b",
       "sdkInternal": "82bfffed826f2c241af6bd9318123b38b10f2100",
       "sdkPublic": "18f3979994aeeb8c207ba0667d0f9ccc9a163847",
       "cli": "bb5f82557a138b95cce4e6ec776aaa45c075736b",
