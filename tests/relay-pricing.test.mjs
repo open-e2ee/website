@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { relayMeterDefinitions, relayOverages, relayPlans } from '../src/data/relay-pricing.mjs';
+import { relayDevelopmentEnvironment, relayMeterDefinitions, relayOverages, relayPlans } from '../src/data/relay-pricing.mjs';
 import { virgilSecurityComparison } from '../src/data/virgil-security-comparison.mjs';
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -17,7 +17,6 @@ test('publishes the exact approved Relay catalog from one data module', () => {
       storage,
     })),
     [
-      { id: 'relay_development_v1', price: '$0', relayMau: '25 test accounts', deliveryUnits: '25,000', attachmentOperations: '25,000', storage: '250 MB' },
       { id: 'relay_free_v1', price: '$0', relayMau: '100', deliveryUnits: '100,000', attachmentOperations: '100,000', storage: '1 GB' },
       { id: 'relay_starter_v1', price: '$99', relayMau: '1,000', deliveryUnits: '500,000', attachmentOperations: '500,000', storage: '10 GB' },
       { id: 'relay_growth_v1', price: '$299', relayMau: '5,000', deliveryUnits: '2,500,000', attachmentOperations: '2,500,000', storage: '50 GB' },
@@ -25,6 +24,13 @@ test('publishes the exact approved Relay catalog from one data module', () => {
       { id: 'relay_enterprise_v1', price: 'Custom', relayMau: 'Negotiated', deliveryUnits: 'Negotiated', attachmentOperations: 'Negotiated', storage: 'Negotiated' },
     ],
   );
+  assert.deepEqual(relayDevelopmentEnvironment, {
+    relayMau: '25 test accounts',
+    deliveryUnits: '25,000',
+    attachmentOperations: '25,000',
+    storage: '250 MB',
+    detail: 'Created automatically for each project. It uses isolated state and credentials, 24-hour default retention, a seven-day retention maximum, and suspension after 30 inactive days.',
+  });
   assert.equal(relayMeterDefinitions.length, 4);
   assert.equal(relayOverages.delivery, '$55 per million delivery units');
   assert.equal(relayOverages.storage, '$0.50 per GB-month of exact live encrypted storage');
