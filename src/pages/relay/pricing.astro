@@ -1,11 +1,11 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { relayMeterDefinitions, relayOverages, relayPlans } from '../../data/relay-pricing.mjs';
+import { relayDevelopmentEnvironment, relayMeterDefinitions, relayOverages, relayPlans } from '../../data/relay-pricing.mjs';
 ---
 
 <BaseLayout
   title="OpenE2EE Relay pricing"
-  description="OpenE2EE Relay plans from free Managed Development and Free production through Starter, Growth, Business, and Enterprise."
+  description="OpenE2EE Relay production plans from Free through Starter, Growth, Business, and Enterprise, with an automatic Development environment for every project."
   canonical="/relay/pricing"
 >
   <header class="page-hero">
@@ -15,6 +15,20 @@ import { relayMeterDefinitions, relayOverages, relayPlans } from '../../data/rel
       <p class="lead">Groups, attachments, sealed sender, multi-device delivery, and push are available across tiers. Plans differ by capacity, support, service terms, and approved operational controls.</p>
     </div>
   </header>
+
+  <section class="band band-surface">
+    <div class="container">
+      <div class="band-head"><h2>Development environment included</h2></div>
+      <p class="measure">Every project gets an automatic hosted Development environment. It is separate from the production plan and uses isolated state, credentials, limits, and lifecycle controls.</p>
+      <dl class="definition-rows">
+        <div><dt>Relay MAU</dt><dd>{relayDevelopmentEnvironment.relayMau}</dd></div>
+        <div><dt>Delivery units</dt><dd>{relayDevelopmentEnvironment.deliveryUnits} per month</dd></div>
+        <div><dt>Attachment operations</dt><dd>{relayDevelopmentEnvironment.attachmentOperations} per month</dd></div>
+        <div><dt>Exact live storage</dt><dd>{relayDevelopmentEnvironment.storage}</dd></div>
+      </dl>
+      <p class="muted measure">{relayDevelopmentEnvironment.detail}</p>
+    </div>
+  </section>
 
   <section class="band">
     <div class="container">
@@ -46,7 +60,7 @@ import { relayMeterDefinitions, relayOverages, relayPlans } from '../../data/rel
         <div><dt>Attachment operations</dt><dd>{relayOverages.attachmentOperations}</dd></div>
       </dl>
       <p class="measure">Overage is off until an organization administrator accepts the rate and sets a monthly spend limit. Reaching that limit stops new billable work but preserves pull, acknowledgment, deletion, revocation, recovery, and mailbox draining.</p>
-      <p class="text-links"><a href="https://console.open-e2ee.dev">Start Managed Development</a><a href="/relay">What Relay operates</a><a href="/legal/relay-terms">Relay service terms</a><a href="/compare/virgil-security">Compare with Virgil Security</a></p>
+      <p class="text-links"><a href="https://console.open-e2ee.dev">Create a project</a><a href="/relay">What Relay operates</a><a href="/legal/relay-terms">Relay service terms</a><a href="/compare/virgil-security">Compare with Virgil Security</a></p>
     </div>
   </section>
 </BaseLayout>

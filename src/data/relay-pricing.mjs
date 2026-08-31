@@ -5,18 +5,15 @@
  * contract and Relay's `managedRelayPlanTargets`. Prices are owner-approved;
  * publication still belongs to REL1.
  */
+export const relayDevelopmentEnvironment = {
+  relayMau: '25 test accounts',
+  deliveryUnits: '25,000',
+  attachmentOperations: '25,000',
+  storage: '250 MB',
+  detail: 'Created automatically for each project. It uses isolated state and credentials, 24-hour default retention, a seven-day retention maximum, and suspension after 30 inactive days.',
+};
+
 export const relayPlans = [
-  {
-    id: 'relay_development_v1',
-    name: 'Managed Development',
-    monthlyPriceUsd: 0,
-    price: '$0',
-    relayMau: '25 test accounts',
-    deliveryUnits: '25,000',
-    attachmentOperations: '25,000',
-    storage: '250 MB',
-    detail: 'One sandbox per project. 24-hour default retention, seven-day maximum retention, and suspension after 30 inactive days.',
-  },
   {
     id: 'relay_free_v1',
     name: 'Free production',
