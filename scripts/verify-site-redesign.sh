@@ -214,7 +214,11 @@ sr_v24() {
   pinned="$(node -e "const p=require('./package.json');const v=p.dependencies['@open-e2ee/design']||'';const m=v.match(/v[0-9.]+/);process.stdout.write(m?m[0]:'')")"
   baseline="$(cat "$BASELINE/design-pin.txt")"
   [ -n "$pinned" ] && [ "$pinned" != "$baseline" ] || return 1
-  test -f node_modules/@open-e2ee/design/dist/css/roles.css || return 1
+  # Resolve roles.css the way the stylesheet imports it, through the package
+  # export map. The tarball ships the distribution under packages/design/dist,
+  # and a literal path into node_modules would break on the next layout change
+  # while the import kept working.
+  node -e "require.resolve('@open-e2ee/design/roles.css')" || return 1
   npm ls @open-e2ee/design
 }
 
