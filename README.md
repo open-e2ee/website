@@ -27,7 +27,12 @@ public product, pricing, comparison, and funnel pages.
 npm install
 npm run dev
 npm run build
+bash scripts/verify-site-redesign.sh
 ```
+
+`scripts/verify-site-redesign.sh` holds the twenty-five conditions of the UI
+redesign website contract. CI runs it on every pull request. It reports each
+condition and exits non-zero while any one fails.
 
 ## Brand source
 

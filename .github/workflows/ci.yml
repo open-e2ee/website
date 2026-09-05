@@ -50,3 +50,5 @@ jobs:
       - run: npm run demo:smoke
 
       - run: npm run deploy:redirect:dry-run
+
+      - run: bash scripts/verify-site-redesign.sh
