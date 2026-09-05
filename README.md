@@ -31,8 +31,13 @@ bash scripts/verify-site-redesign.sh
 ```
 
 `scripts/verify-site-redesign.sh` holds the twenty-five conditions of the UI
-redesign website contract. CI runs it on every pull request. It reports each
-condition and exits non-zero while any one fails.
+redesign website contract. With no argument it reports each condition and exits
+non-zero while any one fails.
+
+CI runs it with `--ratchet` on every pull request. That mode compares the
+pass count against `scripts/redesign-baseline/passing.txt` and fails on any
+difference, so an open condition does not block unrelated work. A change
+that turns a condition green records the new count in the same commit.
 
 ## Brand source
 

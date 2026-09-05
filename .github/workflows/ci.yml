@@ -51,4 +51,8 @@ jobs:
 
       - run: npm run deploy:redirect:dry-run
 
-      - run: bash scripts/verify-site-redesign.sh
+      # The UI redesign contract. --ratchet compares the pass count with
+      # scripts/redesign-baseline/passing.txt and fails on any difference, so
+      # the conditions still open do not block unrelated work, and a change
+      # that turns one green has to record the new count.
+      - run: bash scripts/verify-site-redesign.sh --ratchet
