@@ -1,24 +1,22 @@
 #!/usr/bin/env bash
 #
-# The website verifier for the UI redesign plan.
-# Twenty-five conditions, SR-V01 through SR-V25. Each one names its owning task.
-# The schedule is docs/plans/proof/ui-redesign/verifier-schedule.md in the
-# workspace. This script is the executable copy: add and drop nothing here
-# without changing the schedule in the same pull request.
+# The website verifier. Twenty-five conditions, SR-V01 through SR-V25.
+# Each one names the UI redesign task that added it. That plan completed on
+# 2026-09-06 and moved to archive/ui-redesign-2026-09-06/ in the workspace,
+# where proof/verifier-schedule.md records what each condition holds. This
+# script is the standing contract now: add and drop nothing here without
+# stating the reason in the pull request that changes it.
 #
-# Every condition guards on the artifact its owning task produces, so the whole
-# set is red until that task lands. A condition that could pass before its task
-# ran would prove nothing. That includes the preservation conditions: the demos,
-# the content security policy, and the self-hosted fonts are asserted inside the
-# rewritten stylesheet, not inside the one this plan replaces.
+# Every condition guards on the artifact its task shipped, so a condition that
+# passes without that artifact proves nothing. That includes the preservation
+# conditions: the demos, the content security policy, and the self-hosted fonts
+# are asserted inside the shipped stylesheet.
 #
 # Two modes. With no argument the script exits non-zero while any condition
-# fails, which is what a task uses to capture its fail-before evidence and to
-# prove its own conditions green. With --ratchet it compares the pass count
+# fails, and it names every failure. With --ratchet it compares the pass count
 # against the number recorded in scripts/redesign-baseline/passing.txt and
-# fails on any difference. CI runs the second mode, so a red condition set does
-# not block unrelated work, and a task that turns conditions green must record
-# the new count in the same commit. The count only ever rises.
+# fails on any difference. CI runs the second mode, so a change that turns a
+# passing condition red fails the pull request.
 
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
