@@ -18,6 +18,7 @@
     "demo:css:check": "node scripts/audit-demo-stylesheet.mjs",
     "demo:smoke": "node scripts/demo-smoke.mjs",
     "release:manifest:verify": "node scripts/verify-release-manifest.mjs",
+    "motion:reduced": "node scripts/measure-reduced-motion.mjs",
     "visual:relay": "node scripts/relay-pages-visual.mjs",
     "blog:cards": "node scripts/generate-blog-cards.mjs",
     "blog:cards:check": "node scripts/generate-blog-cards.mjs --check",

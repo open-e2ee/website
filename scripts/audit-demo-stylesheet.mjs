@@ -20,9 +20,13 @@
  * class is indistinguishable from a script hook, so it never enters the set and
  * such a test can never fail. The roll is what a deleted rule shows up in.
  *
- * Rule 2 exempts the shared layer. `.label` and `.measure` are page-wide
- * primitives that both a demo note and a legal index write in, and the chrome
- * is free to specialize one. What it may not do is hold a rule the demo needs.
+ * Rule 2 exempts the shared layer, which is where a page-wide primitive both a
+ * drawing and a page write in belongs, and which the chrome is free to
+ * specialize. What the chrome may not do is hold a rule the demo needs.
+ *
+ * The reading measure was such a primitive and is no longer one. `MEASURE` in
+ * src/lib/recipes.ts caps a line as a utility, the demo's two notes write it,
+ * and the demo stylesheet no longer restates it as `.measure`.
  *
  * Two other places define a class, and both sit outside this boundary: the
  * design package, which is pinned and generated and which neither stylesheet

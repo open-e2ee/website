@@ -200,14 +200,6 @@
 
 /* ---------------------------------------------------- the demo console --- */
 
-/* The band the homepage gives the demo: its one paragraph of lead, then the
-   console. Not `.stack`, whose `align-items: flex-start` would shrink the
-   console to its content width instead of letting it take the band.
-
-   The band itself is a flex item of `.container.stack`, so the same
-   `flex-start` acts on it from above. Without the stretch, the band sits at
-   its content width, and that width changes the moment a run starts and the
-   scene fills — the whole console widens under the reader's press. */
 /*
  * The demo console: the drawing, a transport under it, and three columns.
  *
@@ -225,16 +217,19 @@
   display: flex;
   flex-direction: column;
   gap: var(--oe-space-6);
-  /* `.stack` starts its children at their content width. Every other band's
-     exhibit is a full-width box, and this one has to be too or the scene sets
-     its own width from the widest device in it. */
+  /* The band wraps the console in `CONTAINER STACK`, and `STACK`'s
+     `items-start` starts its children at their content width. Every other
+     band's exhibit is a full-width box, and this one has to be too, or the
+     scene sets its own width from the widest device in it. That width then
+     changes the moment a run starts and the scene fills, and the console
+     widens under the reader's press. */
   align-self: stretch;
 }
 
 /*
  * The band's head, with Demo Settings in the corner of it.
  *
- * A grid and not the column `.band-head` is, because the control belongs on
+ * A grid and not the column `BAND_HEAD` builds, because the control belongs on
  * the heading's line and the paragraph belongs under the heading — three boxes
  * in two rows, which is one grid and no wrapper. The heading and the paragraph
  * keep the 62ch of every other band head; the control goes to the container's
@@ -251,7 +246,7 @@
   column-gap: var(--oe-space-4);
   row-gap: var(--oe-space-3);
   /* The console's own `gap` is 1.5rem and every other band head clears 3rem —
-     `.stack`'s 1rem plus `.band-head`'s 2rem. The difference, so this band's
+     `STACK`'s 1rem plus `BAND_HEAD`'s 2rem. The difference, so this band's
      head stands off its exhibit by the same distance as the rest. */
   margin-bottom: var(--oe-space-6);
 }
@@ -538,16 +533,6 @@
   color: var(--oe-muted);
 }
 
-/*
- * The reading measure, on the two notes under the console. The `100%` term
- * keeps the note from pushing the console sideways; the token term caps the
- * line. `MEASURE` in src/lib/recipes.ts is the same cap for a page surface,
- * where a utility can express it.
- */
-.measure {
-  max-width: min(100%, var(--oe-content-measure));
-}
-
 /* One line of reserved height. The region is empty on arrival and fills on the
    first action, and without a floor the columns below it would step down the
    page the first time the console said anything. */
@@ -576,7 +561,7 @@
 
 /*
  * Diagrams take the full measure of their band. `align-self` matters because
- * `.stack` is a flex column with `align-items: flex-start`, which would
+ * `STACK` is a flex column with `items-start`, which would
  * otherwise shrink the figure to the SVG's min-width.
  */
 .diagram {

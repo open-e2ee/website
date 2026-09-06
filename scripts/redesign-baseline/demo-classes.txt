@@ -36,7 +36,6 @@ diagram-boundary-label
 diagram-label
 diagram-tick-label
 label
-measure
 signature-diagram
 signature-diagram-stacked
 starfield

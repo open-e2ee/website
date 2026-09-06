@@ -1,4 +1,5 @@
 ---
+import { MEASURE } from '../../lib/recipes';
 import CarrierPanel from '../CarrierPanel.astro';
 import DemoLog from './DemoLog.astro';
 import DemoMobile from './DemoMobile.astro';
@@ -279,7 +280,7 @@ const TOGGLES = [
     under each device are not latency, because the relay runs in this tab. No
     number here contains a network, and nothing on the page simulates one.
   */}
-  <p class="demo-console-note measure">
+  <p class:list={['demo-console-note', MEASURE]}>
     Recorded at full speed and replayed at reading pace. Every number comes from that run.
     The relay is in this tab, so no timing includes a network.
   </p>
@@ -297,7 +298,7 @@ const TOGGLES = [
   */}
   <div class="demo-console-recorded" data-console-recorded>
     <noscript>
-      <p class="demo-console-note measure">
+      <p class:list={['demo-console-note', MEASURE]}>
         The live demo needs JavaScript, which is off here. What follows is a recording of a
         round trip, not one running in your browser. Every value in it came off a real
         envelope.
