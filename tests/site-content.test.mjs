@@ -17,6 +17,7 @@ import { checks, dependencies, reporting, specifications } from '../src/lib/assu
 import { codeSurfaces, codeThemes, shellSurface } from '../src/lib/code-theme.mjs';
 import { maturityLine, sdkLine, sdkVersion } from '../src/lib/sdk.mjs';
 import { cssRules, ruleFor } from './css-rules.mjs';
+import { declaration } from './navigation-source.mjs';
 import {
   buildSnippet,
   defaultVariant,
@@ -120,13 +121,15 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
 });
 
 test('makes the same ten-minute promise everywhere it makes one', async () => {
-  const [product, footer] = await Promise.all([
+  const [product, groups] = await Promise.all([
     flat('../src/pages/product.astro'),
-    flat('../src/components/Footer.astro'),
+    declaration('footerGroups'),
   ]);
 
   assert.match(product, /ten minutes · two clients · no account/);
-  assert.match(footer, /Ten-minute quickstart/);
+  /* UIR5.2 moved the footer's link data into src/lib/site-navigation.ts. The
+     component renders the array; the promise is in the array. */
+  assert.match(groups, /Ten-minute quickstart/);
 
   /* The homepage makes it nowhere. The promise argues for spending the ten
    * minutes, so it belongs under a button a reader reaches after the evidence;
@@ -760,8 +763,7 @@ test('lands the demo fragment on the exhibit, not on the paragraph above it', as
 
   /* The links that lead there. Both are the reader asking for the exhibit. */
   assert.match(index, /<a class="cta-primary" href="#demo">/);
-  const header = await read('../src/components/Header.astro');
-  assert.match(header, /href: '\/#demo'/);
+  assert.match(await declaration('headerNavigation'), /href: '\/#demo'/);
 
   /* And the one rule that stands it clear of the sticky header. This is not a
      legal-page detail: scoping it away would park the scene under the header
@@ -1346,9 +1348,9 @@ test('answers “what does the relay see” in the fixed wording', async () => {
 });
 
 test('reaches the security review pack from the product page and the footer', async () => {
-  const [product, footer] = await Promise.all([
+  const [product, groups] = await Promise.all([
     flat('../src/pages/product.astro'),
-    flat('../src/components/Footer.astro'),
+    declaration('footerGroups'),
   ]);
 
   /* Both build their links from a data array now, so the path is quoted
@@ -1365,15 +1367,15 @@ test('reaches the security review pack from the product page and the footer', as
    * reachable from each surface exactly once — a second entry pointing at the
    * same page under the other name is the defect this replaced. */
   assert.match(product, /href: '\/security'/);
-  assert.match(footer, /href: '\/security'/);
-  assert.match(footer, /label: 'Security model'/);
+  assert.match(groups, /href: '\/security'/);
+  assert.match(groups, /label: 'Security model'/);
 
   /* Absence is asserted against the link data, not the raw source. Both files
    * carry a comment naming /evaluate to record why the second entry went, and
    * a guard that forbade the word outright would forbid explaining itself —
    * the same reason the relay-formula guards on this page read the rendered
    * output rather than the file. */
-  for (const source of [product, footer]) {
+  for (const source of [product, groups]) {
     const hrefs = [...source.matchAll(/href: '([^']+)'/g)].map((match) => match[1]);
     assert.ok(!hrefs.includes('/evaluate'), 'a link still points at the folded page');
     assert.equal(

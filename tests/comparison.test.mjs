@@ -15,6 +15,7 @@
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { declaration } from './navigation-source.mjs';
 import { MEASURED_ON, axes, libsignalReadme, notes, projects } from '../src/lib/comparison.mjs';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -135,7 +136,7 @@ test('keeps the matrix in one place', async () => {
 
 test('keeps the comparison reachable now that it has no route of its own', async () => {
   const [header, product, redirects] = await Promise.all([
-    flat('../src/components/Header.astro'),
+    declaration('headerNavigation'),
     flat('../src/pages/product.astro'),
     read('../public/_redirects'),
   ]);
@@ -144,7 +145,11 @@ test('keeps the comparison reachable now that it has no route of its own', async
    * for the retired route, and the page holding it is a nav item on every page
    * of the site. The homepage used to summarize the matrix and link this id,
    * which is what made it reachable without the nav; that band was cut, so the
-   * nav item is now the only standing route in and this test holds it. */
+   * nav item is now the only standing route in and this test holds it.
+   *
+   * `header` is the header array alone. UIR5.2 put the header and the footer in
+   * one module, and the footer names /compare/virgil-security, so the negative
+   * below is only true of the array it is asked of. */
   assert.match(product, /id="how-it-compares"/);
   assert.match(header, /href: '\/product'/);
 

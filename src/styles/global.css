@@ -628,39 +628,31 @@ a:hover {
   display: none;
 }
 
-.mobile-nav {
+.nav-sheet {
   display: none;
+  position: relative;
 }
 
 /*
- * The trigger takes `.oe-icon-button` in the markup, so its size, its color
- * and its hover are the same rules the theme switch beside it runs. What is
- * left here is the two things a `<summary>` needs and a `<button>` does not:
- * the disclosure triangle, which two engines draw differently and neither
- * draws usefully next to an icon.
+ * Bars closed, cross open: one control, and it always draws what the next press
+ * does. Both icons ship, and the trigger's own state chooses between them, so
+ * the control is never an empty box while a module loads.
  */
-.mobile-nav summary {
-  list-style: none;
-}
-
-.mobile-nav summary::-webkit-details-marker {
+.nav-sheet .nav-sheet-icon-close,
+.nav-sheet [aria-expanded='true'] .nav-sheet-icon-open {
   display: none;
 }
 
-/* Bars closed, cross open: one control, and it always draws what the next
-   press does. Both icons ship, and this chooses — an icon swapped in script
-   would be an empty control until the module ran, and `<details>` needs no
-   script at all. */
-.mobile-nav .mobile-nav-icon-close,
-.mobile-nav[open] .mobile-nav-icon-open {
-  display: none;
-}
-
-.mobile-nav[open] .mobile-nav-icon-close {
+.nav-sheet [aria-expanded='true'] .nav-sheet-icon-close {
   display: block;
 }
 
-.mobile-nav nav {
+/*
+ * The panel hangs from the trigger, which is the last control in the row, so it
+ * spans the gutters rather than the trigger's own width. `hidden` is what the
+ * script sets, and a flex container ignores it without this.
+ */
+.nav-sheet nav {
   position: absolute;
   right: var(--oe-space-4);
   left: var(--oe-space-4);
@@ -672,14 +664,18 @@ a:hover {
   box-shadow: var(--oe-shadow-md);
 }
 
-.mobile-nav nav a {
+.nav-sheet nav[hidden] {
+  display: none;
+}
+
+.nav-sheet nav a {
   padding: var(--oe-space-3) var(--oe-space-4);
   text-decoration: none;
   color: var(--oe-foreground);
   border-bottom: 1px solid var(--oe-border);
 }
 
-.mobile-nav nav a:last-child {
+.nav-sheet nav a:last-child {
   border-bottom: 0;
 }
 
@@ -689,7 +685,7 @@ a:hover {
     display: none;
   }
 
-  .mobile-nav {
+  .nav-sheet {
     display: block;
   }
 

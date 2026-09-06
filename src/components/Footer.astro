@@ -1,49 +1,8 @@
 ---
 import Lockup from './Lockup.astro';
+import { footerGroups } from '../lib/site-navigation';
 
 const year = new Date().getUTCFullYear();
-
-const groups = [
-  {
-    heading: 'Product',
-    links: [
-      { href: '/product', label: 'Signal Protocol SDK' },
-      { href: '/relay', label: 'OpenE2EE Relay' },
-      /* "Demo in your browser" pointed at /demo and is gone with the route.
-         The scenarios are a homepage section now, and a footer link to a
-         fragment of the page the logo above already links to is the kind of
-         entry a footer accumulates rather than earns. */
-      /* One entry, not two. This sat above a "Security review pack" link to
-         /evaluate until that page folded into this one, and a footer column
-         listing the same destination twice under two names is worse than the
-         split it replaced. */
-      { href: '/security', label: 'Security model' },
-      { href: '/pricing', label: 'Pricing' },
-      { href: '/compare/virgil-security', label: 'Compare with Virgil Security' },
-      { href: '/licensing', label: 'Licensing' },
-      { href: 'mailto:licensing@open-e2ee.dev', label: 'Ask a licensing question' },
-    ],
-  },
-  {
-    heading: 'Build',
-    links: [
-      { href: 'https://docs.open-e2ee.dev/start/quickstart', label: 'Ten-minute quickstart' },
-      { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
-      { href: 'https://github.com/open-e2ee/signal-protocol-js', label: 'SDK on GitHub' },
-      { href: 'https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/SECURITY.md', label: 'Threat model' },
-    ],
-  },
-  {
-    heading: 'Learn',
-    links: [
-      {
-        href: '/blog/e2ee-changes-your-application-architecture/',
-        label: 'E2EE changes your application architecture',
-      },
-      { href: '/blog', label: 'Blog' },
-    ],
-  },
-];
 ---
 
 <footer class="site-footer">
@@ -77,7 +36,7 @@ const groups = [
         */}
         <p>End-to-end encryption for TypeScript applications. AGPLv3, or a commercial license.</p>
       </div>
-      {groups.map((group) => (
+      {footerGroups.map((group) => (
         <div>
           <h2>{group.heading}</h2>
           <nav aria-label={group.heading}>
