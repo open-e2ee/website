@@ -143,10 +143,21 @@ sr_v12() {
 
 # --- UIR6.2, the article layout ------------------------------------------------------
 
+# The condition is that the column resolves from the token, so each line below
+# holds one part of that: the token exists in the installed design package, the
+# grid track is that token, the stylesheet computes no width of its own, and the
+# blog layout is on that grid rather than on the recipe wrapper it replaced. The
+# first form of this check grepped for `--oe-measure`, which is not a token this
+# project has, so it could report only red and would have reported green on a
+# mention in a comment.
 sr_v13() {
   test -f src/styles/article.css || return 1
-  grep -qE '--oe-measure' src/styles/article.css &&
-    ! grep -qE 'max-width:\s*calc\(' src/styles/article.css
+  grep -q -- '--oe-prose-measure:' node_modules/@open-e2ee/design/packages/design/dist/css/tokens.css || return 1
+  grep -qE 'grid-template-columns:' src/styles/article.css || return 1
+  grep -qE 'minmax\(0, var\(--oe-prose-measure\)\) \[text-end\]' src/styles/article.css || return 1
+  grep -qE 'max-width:[[:space:]]*calc\(' src/styles/article.css && return 1
+  grep -q 'class="oe-article"' src/layouts/BlogPostLayout.astro || return 1
+  ! grep -qE 'ARTICLE_COLUMN|max-w-\[calc\(' src/layouts/BlogPostLayout.astro
 }
 
 sr_v14() {

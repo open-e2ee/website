@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { byPublication } from '../../lib/article.mjs';
 import {
   BAND,
   CONTAINER,
@@ -27,9 +28,14 @@ const POST_LINK =
   '[&_p]:col-start-2 [&_p]:mt-2 [&_p]:max-w-[64ch] [&_p]:text-text-3 ' +
   'max-[44rem]:[&_h2]:col-start-1 max-[44rem]:[&_p]:col-start-1';
 
-const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
-  (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf(),
-);
+/*
+ * One ordering, shared with the article's previous and next links through
+ * src/lib/article.mjs. Every post on this journal carries the same publication
+ * date, so a sort on the date alone leaves the order to whatever the loader
+ * returns, and the index and the article can disagree about which post is
+ * older.
+ */
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(byPublication);
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',

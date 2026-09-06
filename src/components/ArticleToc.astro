@@ -1,0 +1,98 @@
+---
+/*
+ * The sections of an article, and which one the reader is in.
+ *
+ * The headings come from Astro's `render()`, so this list is the article's own
+ * structure rather than a second copy of it typed into the front matter. Only
+ * `h2` is listed: these articles carry six to eight of them, and a two-level
+ * contents in a 14rem rail is a paragraph, not a map.
+ *
+ * `src/styles/article.css` decides where it sits. Above 80rem it is a sticky
+ * rail in the leading gutter; under that it is the first furniture in the
+ * column. One element either way, because two would put the same links in the
+ * accessibility tree twice.
+ */
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+}
+
+const { headings } = Astro.props;
+const sections = headings.filter((heading) => heading.depth === 2);
+---
+
+{
+  sections.length > 0 && (
+    <nav class="oe-article-toc" aria-label="On this page" data-article-toc>
+      <p class="oe-article-toc-label">On this page</p>
+      <ol>
+        {sections.map((section) => (
+          <li>
+            <a href={`#${section.slug}`} data-article-toc-link={section.slug}>
+              {section.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+<script>
+  /*
+   * The reading position.
+   *
+   * The list is complete and every link works before this runs, so a reader
+   * with no JavaScript loses the highlight and keeps the contents. That is the
+   * order round that degrades; marking the position in the markup and moving
+   * it here would ship a contents list whose highlight is stuck on the first
+   * section.
+   *
+   * A heading counts as "reached" while it is in the top fifth of the
+   * viewport, which is what the negative bottom margin buys. Several headings
+   * can satisfy that at once on a short section, so the earliest one in
+   * document order wins; when none does — mid-section, which is most of the
+   * time — the last answer stands rather than the highlight blinking off.
+   */
+  const nav = document.querySelector<HTMLElement>('[data-article-toc]');
+  const links = new Map<string, HTMLAnchorElement>();
+  for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-article-toc-link]')) {
+    links.set(link.dataset.articleTocLink!, link);
+  }
+
+  const headings = [...links.keys()]
+    .map((slug) => document.getElementById(slug))
+    .filter((heading): heading is HTMLElement => heading !== null);
+
+  if (nav && headings.length > 0) {
+    const reached = new Set<string>();
+
+    const mark = () => {
+      const active = headings.find((heading) => reached.has(heading.id));
+      if (!active) return;
+      for (const [slug, link] of links) {
+        if (slug === active.id) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) reached.add(entry.target.id);
+          else reached.delete(entry.target.id);
+        }
+        mark();
+      },
+      { rootMargin: '0px 0px -80% 0px' },
+    );
+
+    for (const heading of headings) observer.observe(heading);
+  }
+</script>

@@ -1,20 +1,41 @@
 ---
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { neighbors, readingMinutes } from '../../lib/article.mjs';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog', ({ data }) => !data.draft);
-  return posts.map((post) => ({ params: { id: post.id }, props: { post } }));
+  /*
+   * The neighbors are computed here rather than in the layout, because the
+   * layout renders one article and this is the only place that holds all of
+   * them. `neighbors` sorts, so the order does not depend on what the loader
+   * returns — every article on this journal carries the same publication date,
+   * which leaves the date alone unable to decide it.
+   */
+  return posts.map((post) => ({
+    params: { id: post.id },
+    props: { post, ...neighbors(posts, post.id) },
+  }));
 }
 
 interface Props {
   post: CollectionEntry<'blog'>;
+  next?: CollectionEntry<'blog'>;
+  previous?: CollectionEntry<'blog'>;
 }
 
-const { post } = Astro.props;
-const { Content } = await render(post);
+const { next, post, previous } = Astro.props;
+const { Content, headings } = await render(post);
+const card = (entry?: CollectionEntry<'blog'>) =>
+  entry && { id: entry.id, title: entry.data.title };
 ---
 
-<BlogPostLayout {...post.data}>
+<BlogPostLayout
+  {...post.data}
+  headings={headings}
+  readingMinutes={readingMinutes(post.body ?? '')}
+  next={card(next)}
+  previous={card(previous)}
+>
   <Content />
 </BlogPostLayout>

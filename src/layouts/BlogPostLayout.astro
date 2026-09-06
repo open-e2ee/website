@@ -1,16 +1,19 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import ArticleToc from '../components/ArticleToc.astro';
 import { maturityLine } from '../lib/sdk.mjs';
-import {
-  ARTICLE_COLUMN,
-  ARTICLE_HEADER,
-  ARTICLE_META,
-  BACK_LINK,
-  CONTAINER,
-  LABEL,
-  LEAD,
-  MATURITY,
-} from '../lib/recipes';
+import { BACK_LINK, LABEL, LEAD, MATURITY } from '../lib/recipes';
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Neighbor {
+  id: string;
+  title: string;
+}
 
 interface Props {
   title: string;
@@ -20,9 +23,25 @@ interface Props {
   author: string;
   tags: string[];
   image?: string;
+  headings: Heading[];
+  readingMinutes: number;
+  next?: Neighbor;
+  previous?: Neighbor;
 }
 
-const { title, description, publishedAt, updatedAt, author, tags, image } = Astro.props;
+const {
+  author,
+  description,
+  headings,
+  image,
+  next,
+  previous,
+  publishedAt,
+  readingMinutes,
+  tags,
+  title,
+  updatedAt,
+} = Astro.props;
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   day: 'numeric',
@@ -50,24 +69,55 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   modifiedTime={updatedAt}
   author={author}
 >
-  <article>
-    <header class={ARTICLE_HEADER}>
-      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
-        <a class={BACK_LINK} href="/blog">Engineering journal</a>
-        <p class={LABEL}>{tags.join(' · ')}</p>
-        <h1>{title}</h1>
-        <p class={LEAD}>{description}</p>
-        <p class={ARTICLE_META}>
-          <span>{author}</span>
-          <time datetime={publishedAt.toISOString()}>{dateFormatter.format(publishedAt)}</time>
-          {updatedAt && <span>Updated {dateFormatter.format(updatedAt)}</span>}
-        </p>
-      </div>
+  {/*
+    One grid for the whole article, so the header, the contents, the prose, and
+    the furniture sit on the same column rather than each carrying its own
+    wrapper and its own idea of the measure. src/styles/article.css names the
+    lines.
+  */}
+  <article class="oe-article">
+    <header class="oe-article-header">
+      <a class={BACK_LINK} href="/blog">Engineering journal</a>
+      <p class={LABEL}>{tags.join(' · ')}</p>
+      <h1>{title}</h1>
+      <p class={LEAD}>{description}</p>
+      <p class="oe-article-meta">
+        <span>{author}</span>
+        <time datetime={publishedAt.toISOString()}>{dateFormatter.format(publishedAt)}</time>
+        {updatedAt && <span>Updated {dateFormatter.format(updatedAt)}</span>}
+        <span>{readingMinutes} min read</span>
+      </p>
     </header>
-    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
-      <div class="prose">
-        <slot />
-      </div>
+
+    <ArticleToc headings={headings} />
+
+    <div class="prose">
+      <slot />
+    </div>
+
+    <footer class="oe-article-footer">
+      {
+        (previous || next) && (
+          <nav class="oe-article-neighbors" aria-label="More from the journal">
+            {previous && (
+              <div class="oe-article-neighbor">
+                <a href={`/blog/${previous.id}/`}>
+                  <span class="oe-article-neighbor-label">Older</span>
+                  <span class="oe-article-neighbor-title">{previous.title}</span>
+                </a>
+              </div>
+            )}
+            {next && (
+              <div class="oe-article-neighbor oe-article-neighbor-next">
+                <a href={`/blog/${next.id}/`}>
+                  <span class="oe-article-neighbor-label">Newer</span>
+                  <span class="oe-article-neighbor-title">{next.title}</span>
+                </a>
+              </div>
+            )}
+          </nav>
+        )
+      }
       {/*
         A standing disclosure, rendered once per post rather than typed into
         post bodies. It was in two of the three: the Expo post closed on a
@@ -84,6 +134,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
         <code>@open-e2ee/signal-protocol-sdk</code> {maturityLine} Reviewed continuously by
         adversarial AI agents; not audited by any independent firm.
       </p>
-    </div>
+    </footer>
   </article>
 </BaseLayout>

@@ -18,11 +18,11 @@ import { codeSurfaces, shellSurface } from '../src/lib/code-theme.mjs';
 import { ruleFor } from './css-rules.mjs';
 
 /*
- * The site's hand-written CSS, in five files: the element base, the quarantined
- * demo and diagram drawings, the code panels, the long-form prose, and the
- * rules more than one of them draws from. A measurement of one rule reads the
- * file that owns it. An invariant over every rule reads all five, or a later
- * split moves a wearer out of its reach.
+ * The site's hand-written CSS, in six files: the element base, the quarantined
+ * demo and diagram drawings, the code panels, the long-form prose, the article
+ * column that places it, and the rules more than one of them draws from. A
+ * measurement of one rule reads the file that owns it. An invariant over every
+ * rule reads all six, or a later split moves a wearer out of its reach.
  */
 const STYLESHEETS = [
   '../src/styles/global.css',
@@ -30,6 +30,7 @@ const STYLESHEETS = [
   '../src/styles/shared.css',
   '../src/styles/code.css',
   '../src/styles/prose.css',
+  '../src/styles/article.css',
 ];
 
 const stylesheets = async () =>

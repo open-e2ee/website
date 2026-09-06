@@ -16,6 +16,16 @@
  *
  * `data-table-scroll` is the hook scripts/relay-pages-visual.mjs measures each
  * region through.
+ *
+ * `contain: paint` is what makes the box keep its promise. A `<table>` wider
+ * than a scroll container still widens the document in Chrome: measured on
+ * /product at a 320 px viewport, the region held its own 751 px of table and
+ * the page scrolled 385 px sideways anyway, with nothing painted out there.
+ * `overflow-x: hidden` and `overflow-x: clip` on this box both left it at 385;
+ * `contain: paint` took it to zero. The declaration states what the region
+ * already claims — nothing inside it paints or lays out beyond it — so the
+ * document stops inheriting a width no reader can see.
+ * scripts/measure-overflow.mjs holds the measurement.
  */
 interface Props {
   /** What the table holds. Announced when focus enters the region. */
@@ -25,6 +35,6 @@ interface Props {
 const { label } = Astro.props;
 ---
 
-<div class="min-w-0 max-w-full overflow-x-auto" tabindex="0" role="region" aria-label={label} data-table-scroll>
+<div class="min-w-0 max-w-full overflow-x-auto [contain:paint]" tabindex="0" role="region" aria-label={label} data-table-scroll>
   <slot />
 </div>
