@@ -1,6 +1,6 @@
 {
   "package": "@open-e2ee/design",
-  "version": "0.10.0",
+  "version": "0.12.0",
   "mark": "carrier",
   "variants": {
     "rule": "Use the optical variant from 16 to 31 px and the full mark from 32 px. Do not reproduce the mark below 16 px.",
@@ -152,7 +152,7 @@
       }
     ]
   },
-  "sha256": "b84dc42321ca8b9deddb522aab250e66f62b2f878293445a1ce61e9930db4e47",
+  "sha256": "57c1434c17e05a93dd2ceb81b1b73d6d746ea9378ad1804bbc217adbbe76d84a",
   "files": [
     "lockup/open-e2ee-lockup-horizontal-dark.svg",
     "lockup/open-e2ee-lockup-horizontal-light.svg",

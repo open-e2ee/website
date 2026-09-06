@@ -772,8 +772,16 @@ test('lands the demo fragment on the exhibit, not on the paragraph above it', as
 
   /* And the one rule that stands it clear of the sticky header. This is not a
      legal-page detail: scoping it away would park the scene under the header
-     on every press of Demo, with nothing else in the stylesheet to catch it. */
-  assert.match(ruleFor(css, ':target'), /scroll-margin-top:\s*calc\(4rem \+ var\(--oe-space-6\)\)/);
+     on every press of Demo, with nothing else in the stylesheet to catch it.
+
+     The offset reads `--oe-chrome-header-height`, which is the header's own
+     measure rather than a second copy of it. The height that token carries is
+     asserted in tests/cohesion.test.mjs; here what matters is that the rule
+     tracks the header instead of restating it. */
+  assert.match(
+    ruleFor(css, ':target'),
+    /scroll-margin-top:\s*calc\(var\(--oe-chrome-header-height\) \+ var\(--oe-space-6\)\)/,
+  );
 });
 
 test('says what the phone’s first reading measured, and breaks its row cleanly', async () => {
@@ -2484,8 +2492,21 @@ test('steps the headings down under a headline that cannot climb', async () => {
    * re-capping the global clamp would flatten six healthy pages to correct one.
    * The bare `h2` rule keeps its ceiling, and the bare `h1` keeps the ceiling
    * the hero is held back from. */
-  assert.match(css, /\n  h2 \{\s*font-size: clamp\(1\.625rem, 1\.25rem \+ 1\.6vw, 2\.25rem\);/);
-  assert.match(css, /\n  h1 \{\s*font-size: clamp\(2\.125rem, 1\.35rem \+ 3\.4vw, 3\.75rem\);/);
+  assert.match(css, /\n  h2 \{\s*font-size: var\(--oe-chrome-section-size\);/);
+  assert.match(css, /\n  h1 \{\s*font-size: var\(--oe-chrome-title-size\);/);
+
+  /* The two ceilings the paragraph above reasons about are now in the shared
+     chrome layer, so they are read from the installed package rather than from
+     this stylesheet. Asserting the rule alone would leave the whole argument
+     resting on a value this repository no longer states: a chrome release that
+     raised the h2 ceiling to 2.5rem would flatten the ramp against the hero's
+     2.625rem and nothing here would notice. */
+  const chrome = await readFile(
+    new URL('../node_modules/@open-e2ee/design/packages/design/dist/css/tokens.css', import.meta.url),
+    'utf8',
+  );
+  assert.match(chrome, /--oe-chrome-section-size: clamp\(1\.625rem, 1\.25rem \+ 1\.6vw, 2\.25rem\);/);
+  assert.match(chrome, /--oe-chrome-title-size: clamp\(2\.125rem, 1\.35rem \+ 3\.4vw, 3\.75rem\);/);
 });
 
 test('enlarges the hero code without enlarging code that has no room', async () => {

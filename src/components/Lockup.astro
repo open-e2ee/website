@@ -20,7 +20,7 @@ const { product, size = 30, class: className } = Astro.props;
     size: S / wordmarkFontSize = 128 / 109.76 per brand/generated/manifest.json. */}
 <span
   class:list={[
-    'inline-flex items-center gap-[0.437em] text-xl leading-none text-text-1',
+    'inline-flex items-center gap-[0.437em] text-[length:var(--oe-chrome-lockup-size)] leading-none text-text-1',
     '[&_.oe-mark]:h-[1.166em] [&_.oe-mark]:w-[1.166em] [&_.oe-mark]:flex-none',
     product && 'flex-col items-start gap-[0.4em]',
     className,
