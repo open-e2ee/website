@@ -538,16 +538,6 @@
   color: var(--oe-muted);
 }
 
-/*
- * The reading measure, on the two notes under the console. The `100%` term
- * keeps the note from pushing the console sideways; the token term caps the
- * line. `MEASURE` in src/lib/recipes.ts is the same cap for a page surface,
- * where a utility can express it.
- */
-.measure {
-  max-width: min(100%, var(--oe-content-measure));
-}
-
 /* One line of reserved height. The region is empty on arrival and fills on the
    first action, and without a floor the columns below it would step down the
    page the first time the console said anything. */

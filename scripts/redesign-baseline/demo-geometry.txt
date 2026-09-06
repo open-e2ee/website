@@ -1,0 +1,43 @@
+The geometry the demo drawing keeps, and the thresholds scripts/demo-smoke.mjs
+reads.
+
+The smoke run takes every number below from this file. An edit here changes
+what that run accepts. So this record is not a copy of the thresholds. It is
+the thresholds.
+
+Three faults stop the run before Chrome starts. The script meets a name it does
+not know. The script cannot find a name it needs. A recorded value is not a
+finite number.
+
+This record holds them rather than the harness, because this plan rewrites the
+page chrome around the drawing. A number inside the harness is a number a
+chrome rewrite never has to look at.
+
+braid-size-factor = 1.3
+
+  How far apart the two braid settings put the first envelope.
+
+  With the braid off the ML-KEM material rides whole in the message that agrees
+  the session. With the braid on the same material is spread a chunk at a time.
+  The first envelope is therefore the larger of the two. It is larger by about
+  the size of the key it is no longer carrying. Measured on 2026-08-16 at
+  3.1 KB against 1.9 KB, which is 1.63 times apart. The sizes are
+  deterministic, so this floor guards against a framing change and not against
+  sampling noise.
+
+braid-steady-ratio = 1.1
+
+  How much a box in the relay column may change between the two settings.
+
+  The envelope rides the wire at one size whatever it carries. The larger
+  message is therefore drawn on the same box as the smaller one. A tenth is the
+  allowance for the text inside a box reflowing it. A byte figure gains a digit,
+  or a chunk strip appears. Nothing in a constant-size drawing moves further
+  than that.
+
+braid-min-width-px = 2
+
+  The narrowest box the drawing check divides.
+
+  An element under a pixel wide in one run is noise. Dividing one would
+  manufacture an enormous ratio out of nothing.

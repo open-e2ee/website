@@ -61,7 +61,7 @@
  * policy under test is the policy that ships.
  */
 
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -364,26 +364,64 @@ const ROW_NOTE = ENVELOPE_SIZE;
  * How far apart the two settings put the envelope, and how steady the drawing
  * of it stays.
  *
- * With the braid off the ML-KEM material rides whole in the message that agrees
- * the session; with it on the same material is spread a chunk at a time, so
- * that first envelope is the smaller of the two by roughly the size of the key
- * it is no longer carrying. Measured at 3.1 KB against 1.9 KB, 1.63× apart.
- * The sizes are deterministic — fixed key lengths and a fixed sentence — so the
- * floor is not guarding against sampling noise; 1.3 is set where the setting
- * remains unmistakable if the SDK's framing shifts a little around it.
+ * The three numbers and the reason for each are in
+ * scripts/redesign-baseline/demo-geometry.txt, and this harness reads them from
+ * there. They moved out of this file when the redesign started rewriting the
+ * page chrome around the drawing: a threshold inside a harness is a threshold a
+ * hand moving the chrome never has to look at, and the record is the one place
+ * either hand meets them. `scripts/verify-site-redesign.sh` names that record
+ * as SR-V18's artifact, so this run is what makes it load-bearing rather than
+ * a file sitting beside one.
  *
- * The width of the transit is the other half, and it is a claim in the other
- * direction: the envelope rides the wire at one size whatever it carries, so
- * the bigger message is drawn on the same box as the smaller. A tenth is the
- * allowance for the text inside it reflowing a box — a byte figure gaining a
- * digit, a chunk strip appearing — and nothing in a constant-size drawing
- * moves further than that. Sub-pixel boxes are passed over rather than
- * divided: an element a fraction of a pixel wide in one run is noise, and it
- * would otherwise manufacture an enormous ratio out of nothing.
+ * Read strictly, and read before Chrome starts. A missing name, a name this
+ * harness does not know, or a value that is not a finite number stops the run
+ * here. A harness that fell back to a default instead would measure the drawing
+ * against a number nobody recorded, and report that as a pass.
  */
-const BRAID_SIZE_FACTOR = 1.3;
-const BRAID_STEADY_RATIO = 1.1;
-const BRAID_MIN_WIDTH_PX = 2;
+const GEOMETRY_RECORD = join(ROOT, 'scripts', 'redesign-baseline', 'demo-geometry.txt');
+const GEOMETRY_ENTRY = /^([a-z][a-z0-9-]*) = (\S+)$/;
+const GEOMETRY_NAMES = ['braid-size-factor', 'braid-steady-ratio', 'braid-min-width-px'];
+
+function recordedGeometry() {
+  if (!existsSync(GEOMETRY_RECORD)) {
+    throw new Infra(
+      `no ${GEOMETRY_RECORD}. The drawing thresholds are recorded there and this harness has ` +
+        `none of its own.`,
+    );
+  }
+  const found = new Map();
+  for (const line of readFileSync(GEOMETRY_RECORD, 'utf8').split('\n')) {
+    const entry = GEOMETRY_ENTRY.exec(line);
+    if (!entry) continue;
+    const [, name, printed] = entry;
+    if (!GEOMETRY_NAMES.includes(name)) {
+      throw new Infra(
+        `${GEOMETRY_RECORD} records ${name}, which this harness does not read. A name that ` +
+          `nothing reads is a threshold someone believes is in force.`,
+      );
+    }
+    const value = Number(printed);
+    if (!Number.isFinite(value)) {
+      throw new Infra(`${GEOMETRY_RECORD} records ${name} as ${printed}, which is not a number`);
+    }
+    found.set(name, value);
+  }
+  const missing = GEOMETRY_NAMES.filter((name) => !found.has(name));
+  if (missing.length > 0) {
+    throw new Infra(
+      `${GEOMETRY_RECORD} records none of: ${missing.join(', ')}. Each is written as ` +
+        `"<name> = <number>" on a line of its own.`,
+    );
+  }
+  return found;
+}
+
+/* Bound in `main`, not here: a throw at module scope escapes the one handler
+   this file has, and the run would report a recorded threshold it cannot read
+   as a stack trace rather than as the infrastructure fault it is. */
+let BRAID_SIZE_FACTOR;
+let BRAID_STEADY_RATIO;
+let BRAID_MIN_WIDTH_PX;
 
 const NONCE = randomUUID().slice(0, 8);
 const PROBE = `Smoke probe ${NONCE}: dinner at 7, table by the window.`;
@@ -3457,6 +3495,11 @@ function checkBraidProgress(pass) {
 // --------------------------------------------------------------------- the run
 
 async function main() {
+  const geometry = recordedGeometry();
+  BRAID_SIZE_FACTOR = geometry.get('braid-size-factor');
+  BRAID_STEADY_RATIO = geometry.get('braid-steady-ratio');
+  BRAID_MIN_WIDTH_PX = geometry.get('braid-min-width-px');
+
   if (!existsSync(DIST)) {
     throw new Infra(`no dist/ to serve. Run \`npm run build\` first.`);
   }
