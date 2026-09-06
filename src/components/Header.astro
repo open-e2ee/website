@@ -2,106 +2,104 @@
 import Icon from './Icon.astro';
 import Lockup from './Lockup.astro';
 import ThemeToggle from './ThemeToggle.astro';
+import {
+  consoleUrl,
+  currentNavigation,
+  headerNavigation,
+  repositoryUrl,
+} from '../lib/site-navigation';
 
 const path = Astro.url.pathname;
-
-/*
- * Five items: Product, Demo, Docs, Pricing, Blog. Five is the mode of the
- * 35-site developer-infrastructure corpus this nav was measured against, and
- * every label here is one the category already uses — Pricing on 33 of 35,
- * Product on 20, Docs on 20, Blog on 7 among single-product pre-scale
- * companies. Nobody has to learn this site's vocabulary before navigating it.
- *
- * Learn and Security are not here, and no site in that corpus carries either
- * word at top level — not even the eleven whose whole product is security.
- * That reader arrives on a sent link or lands on /product; the header is not
- * how they get there. /security keeps its footer entry and its in-body link
- * from /product. /learn is gone as a route: the architecture argument it made
- * is the blog post it was competing with for the same phrase, and
- * `public/_redirects` sends the URL there.
- *
- * There is no Compare slot. It held one, directly after Product, because "why
- * not libsignal" is the first question anyone asks. The question is real; the
- * route was not. A reader asks it while they are weighing this package, which
- * is what /product is for, so the nav item interrupted the one comparison it
- * existed to serve — and one product's claims split across two routes is two
- * surfaces to keep true. The table and the five project notes are now the two
- * bands under "How it compares" on /product, and `public/_redirects` keeps
- * `/compare` pointing at them.
- *
- * Demo is a fragment and not a route. The running thing belongs directly under
- * the code that describes it, so it is a homepage band rather than a page of
- * its own — but a reader who arrives on /security or /pricing has no way back
- * to the one piece of evidence that executes, and "scroll the homepage" is not
- * a route. The item points at the band, which is why `current()` never marks
- * it: it names a place on a page, and the page it is on may be any of them.
- * `public/_redirects` keeps the retired `/demo` route pointing at the
- * scenarios, one band below.
- */
-const links = [
-  { href: '/product', label: 'Product' },
-  { href: '/#demo', label: 'Demo' },
-  { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
-  { href: '/pricing', label: 'Pricing' },
-  { href: '/blog', label: 'Blog' },
-];
-
-/*
- * The repository is a nav item on eight of the 35 sites in the corpus and the
- * mark is how it is recognized, so it leaves the word list and joins the
- * actions as an icon — at every width. Seven of those eight render the star
- * count as the label rather than a bare icon, which is a change this header
- * has not made yet. It used to be a desktop-only icon with
- * a word inside the narrow screen's menu, on the argument that a narrow header
- * has no room for a row of icons. The menu's own trigger is an icon now, so
- * the row exists either way, and the source is the page's whole argument: it
- * should not be the one action a phone has to open a panel to find. The word
- * leaves the menu with it, because two links to one place in one header is a
- * reader wondering what the difference is.
- */
-const repository = 'https://github.com/open-e2ee/signal-protocol-js';
-
-/* The destination is the console. Calling the link "Sign in" described the
- * doorway rather than the room, and named the one step a reader has to take
- * before they get anything. */
-const consoleUrl = 'https://console.open-e2ee.dev';
-
-const current = (href: string) =>
-  href.startsWith('/') && (path === href || path.startsWith(`${href}/`)) ? 'page' : undefined;
 ---
 
 <header class="site-header">
   <div class="container header-inner">
     <a class="brand-link" href="/" aria-label="OpenE2EE home"><Lockup /></a>
     <nav class="site-nav" aria-label="Primary">
-      {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
+      {headerNavigation.map((link) => (
+        <a href={link.href} aria-current={currentNavigation(link.href, path)}>{link.label}</a>
+      ))}
     </nav>
     <div class="header-actions">
-      <a class="oe-icon-link" href={repository} aria-label="SDK on GitHub">
+      <a class="oe-icon-link" href={repositoryUrl} aria-label="SDK on GitHub">
         <Icon name="github" />
       </a>
       <ThemeToggle />
       <a class="text-link desktop-only" href={consoleUrl}>Console</a>
       {/*
-        The menu's trigger, drawn rather than spelled: at this width it stands
-        in a row of icon controls — the mark and the theme toggle — and the one
-        word among them was the odd thing in it. The bars are the universal
-        drawing for this panel, and the same set's cross replaces them while it
-        is open, so the control always shows what pressing it does next. The
-        name stays real text for anything that reads names rather than shapes,
-        the way the theme toggle carries its own.
+        The phone's copy of the navigation, and the console's sheet is the
+        pattern: a button that owns `aria-expanded`, a panel it names, Escape to
+        close with focus back on the trigger, and a press outside to dismiss.
+        `<details>` stood here and needed no script, which the sheet does; the
+        trade is the two behaviors a disclosure element cannot express, and the
+        footer below carries every destination in this panel except the demo,
+        which sits on the page the mark already links to.
+
+        The trigger is drawn rather than spelled: at this width it stands in a
+        row of icon controls — the mark and the theme toggle — and the one word
+        among them was the odd thing in it. The bars are the universal drawing
+        for this panel, and the same set's cross replaces them while it is open,
+        so the control always shows what pressing it does next. The name stays
+        real text for anything that reads names rather than shapes, the way the
+        theme toggle carries its own.
       */}
-      <details class="mobile-nav">
-        <summary class="oe-icon-button">
-          <Icon name="menu" class="mobile-nav-icon mobile-nav-icon-open" />
-          <Icon name="close" class="mobile-nav-icon mobile-nav-icon-close" />
+      <div class="nav-sheet" data-nav-sheet>
+        <button
+          class="oe-icon-button"
+          type="button"
+          aria-controls="site-navigation-sheet"
+          aria-expanded="false"
+          data-nav-sheet-trigger
+        >
+          <Icon name="menu" class="nav-sheet-icon nav-sheet-icon-open" />
+          <Icon name="close" class="nav-sheet-icon nav-sheet-icon-close" />
           <span class="oe-visually-hidden">Menu</span>
-        </summary>
-        <nav aria-label="Site">
-          {links.map((link) => <a href={link.href} aria-current={current(link.href)}>{link.label}</a>)}
+        </button>
+        <nav aria-label="Site" hidden id="site-navigation-sheet">
+          {headerNavigation.map((link) => (
+            <a href={link.href} aria-current={currentNavigation(link.href, path)}>{link.label}</a>
+          ))}
           <a href={consoleUrl}>Console</a>
         </nav>
-      </details>
+      </div>
     </div>
   </div>
 </header>
+
+<script>
+  /*
+   * The sheet's open state, and nothing else. The panel is in the page at every
+   * width; the stylesheet decides which width shows the trigger, so a desktop
+   * reader never reaches this.
+   *
+   * Escape closes and returns focus to the trigger, because a reader who
+   * dismisses a panel with the keyboard has nowhere else to land. A pointer
+   * press outside the root closes without stealing the press, so the link the
+   * reader was actually aiming at still receives it.
+   */
+  const root = document.querySelector<HTMLElement>('[data-nav-sheet]');
+  const trigger = root?.querySelector<HTMLButtonElement>('[data-nav-sheet-trigger]');
+  const panel = root?.querySelector<HTMLElement>('nav');
+
+  if (root && trigger && panel) {
+    const setOpen = (open: boolean) => {
+      trigger.setAttribute('aria-expanded', String(open));
+      panel.hidden = !open;
+    };
+
+    trigger.addEventListener('click', () => {
+      setOpen(trigger.getAttribute('aria-expanded') !== 'true');
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (event.target instanceof Node && !root.contains(event.target)) setOpen(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (trigger.getAttribute('aria-expanded') !== 'true') return;
+      setOpen(false);
+      trigger.focus();
+    });
+  }
+</script>
