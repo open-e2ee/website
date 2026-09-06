@@ -199,9 +199,23 @@ sr_v19() {
 
 # --- UIR6.3, the copy pass ---------------------------------------------------------------
 
+# The inventory is a list of fixed strings, and grep -f over an empty list
+# matches nothing, so the count is asserted rather than assumed: a check whose
+# input can be empty passes on any input. The recorded inventory holds three
+# phrases, and a smaller one is a dropped condition rather than a green.
+#
+# The sweep reads .ts and .mjs as well, because demo copy on this site lives in
+# src/lib as well as in the components. The first form of this check read
+# .astro, .mdx and .md only, so it could not see the reel caption in
+# src/lib/demo/mobile-reel.ts at all.
 sr_v20() {
-  test -f "$BASELINE/mechanism-phrases.txt" || return 1
-  ! grep -rn -F -f "$BASELINE/mechanism-phrases.txt" --include='*.astro' --include='*.mdx' --include='*.md' src
+  local phrases="$BASELINE/mechanism-phrases.txt"
+  test -f "$phrases" || return 1
+  local recorded
+  recorded="$(grep -c '[^[:space:]]' "$phrases")" || return 1
+  [ "$recorded" -ge 3 ] || return 1
+  ! grep -rn -F -f "$phrases" --include='*.astro' --include='*.mdx' --include='*.md' \
+    --include='*.ts' --include='*.mjs' src
 }
 
 sr_v21() {

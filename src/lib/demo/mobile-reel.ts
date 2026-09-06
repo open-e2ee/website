@@ -191,7 +191,7 @@ export function buildMobileReel(
   const frames: MobileFrame[] = [
     {
       kind: 'reset',
-      caption: 'A real run, recorded in this tab and replayed at reading pace.',
+      caption: 'A real run between two phones.',
     },
   ];
   const published = new Set<MobileSide>();
