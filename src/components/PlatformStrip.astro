@@ -19,6 +19,26 @@
  */
 import { platformMarks } from '../lib/platform-marks.mjs';
 
+/* The hero is the only caller, and it owns the distance between the strip and
+   the panel below it. That is the one thing the caller passes; the strip owns
+   everything else, alignment included. */
+interface Props {
+  readonly class?: string;
+}
+
+const { class: className } = Astro.props;
+
+/* One row of marks and names, sized from four custom properties so the mark,
+   the name, the gap between entries and the gap inside an entry all scale off
+   the same viewport term. */
+/* Both lists take the same row. The cluster gap equals the entry gap, so a row
+   of seven reads as one row; the nesting only becomes visible when the row runs
+   out of width, and then it decides where the break lands. The clusters wrap
+   internally as well, so the narrowest phone gets four short rows rather than
+   two long ones scrolling off the edge. */
+const ROW =
+  'm-0 flex list-none flex-wrap items-center justify-center gap-y-2 gap-x-[var(--platform-gap)] p-0';
+
 /* Marks are referenced rather than looked up by a string id, so a typo is a
    build error instead of an empty <path> nobody notices.
 
@@ -42,35 +62,76 @@ const clusters = [
 ];
 ---
 
-<div class="platform-strip">
-  <p class="platform-label">Built for</p>
-  <ul class="platform-marks">
+<div
+  class:list={[
+    'flex w-full flex-col items-center gap-2',
+    '[--platform-mark-size:clamp(20px,5.6vw,34px)]',
+    '[--platform-name-size:clamp(0.75rem,3.4vw,1rem)]',
+    '[--platform-gap:clamp(0.5rem,2.6vw,1rem)]',
+    '[--platform-entry-gap:clamp(0.25rem,1.6vw,0.5rem)]',
+    className,
+  ]}
+>
+  {/* Third-tier and not `--oe-subtle`, which is the tempting token and is
+      forbidden for text: it carries `--oe-border-control`'s value, held to 3:1,
+      and it measures 3.93 on the light canvas. Third-tier is 6.12 light and
+      7.08 dark. */}
+  {/* Named by `data-platform-label`. The class list is utilities now, so the
+      heading has no name in it, and what the heading says is a claim the site
+      holds to an allowlist — see `tests/site-content.test.mjs`, which reads the
+      word through this attribute. */}
+  <p class="m-0 text-[0.8125rem] tracking-[0.04em] text-text-3 uppercase" data-platform-label>
+    Built for
+  </p>
+  <ul class={ROW}>
     {
-      clusters.map((cluster) => (
-        <li class="platform-cluster">
-          <ul>
-            {cluster.map((mark) => (
-              <li>
-                {/* aria-hidden because the visible name beside it is already the
-                    accessible name; announcing both would read every entry
-                    twice. */}
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  {/* Narrowed here rather than typed in the data module: the
-                      marks are plain JS, so `fillRule` widens to `string` and
-                      SVGAttributes will not take it. The comparison is also the
-                      only thing standing between a mistyped rule and a mark that
-                      silently fills its own counters. */}
-                  <path
-                    fill-rule={mark.fillRule === 'evenodd' ? 'evenodd' : 'nonzero'}
-                    d={mark.path}
-                  />
-                </svg>
-                <span>{mark.label}</span>
-              </li>
-            ))}
-          </ul>
-        </li>
-      ))
+      clusters.map((cluster) => {
+        /* A flex item that is itself a flex container. `display: contents`
+           would be fewer boxes and it is the wrong tool: it takes list
+           semantics off the element in more than one shipping engine, and here
+           it would also dissolve the very box that makes the cluster a wrap
+           unit. */
+        return (
+          <li class="flex">
+            <ul class={ROW}>
+              {cluster.map((mark) => {
+                /* The name never wraps away from its own mark. Every entry is
+                   one word now — "React Native" and "Cloudflare R2" were the
+                   two that were not — so this guards the remaining break the
+                   text could take on its own, which is "Node.js" at the dot.
+                   The list wraps between entries instead, which is the only
+                   place a break means anything.
+
+                   The mark is `aria-hidden` because the visible name beside it
+                   is already the accessible name; announcing both would read
+                   every entry twice.
+
+                   `fillRule` is narrowed here rather than typed in the data
+                   module: the marks are plain JS, so it widens to `string` and
+                   SVGAttributes will not take it. The comparison is also the
+                   only thing standing between a mistyped rule and a mark that
+                   silently fills its own counters. */
+                return (
+                  <li class="inline-flex items-center gap-[var(--platform-entry-gap)] text-[length:var(--platform-name-size)] whitespace-nowrap text-text-3">
+                    <svg
+                      class="h-[var(--platform-mark-size)] w-[var(--platform-mark-size)] flex-none fill-current"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path
+                        fill-rule={mark.fillRule === 'evenodd' ? 'evenodd' : 'nonzero'}
+                        d={mark.path}
+                      />
+                    </svg>
+                    <span>{mark.label}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </li>
+        );
+      })
     }
   </ul>
 </div>

@@ -2,6 +2,47 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { relayPlans } from '../data/relay-pricing.mjs';
 import { startupTier, tiers } from '../data/pricing.mjs';
+import {
+  BAND,
+  BAND_HEAD,
+  BAND_SURFACE,
+  CONTAINER,
+  CONTAINER_MEASURE,
+  DEFINITION_ROWS,
+  LABEL,
+  LEAD,
+  MEASURE,
+  PAGE_HERO,
+  TEXT_LINKS,
+} from '../lib/recipes';
+
+/*
+ * Tiers are ruled rows: one price, one paragraph, one action. Never cards.
+ *
+ * The name column holds a heading and a price, the body column holds the
+ * paragraphs. Below 58rem the two stack.
+ */
+const TIERS = 'm-0 list-none p-0';
+
+const TIER =
+  'grid grid-cols-[minmax(11rem,1fr)_minmax(0,2fr)] items-start gap-6 border-t border-border-1 py-8 ' +
+  'max-[58rem]:grid-cols-1 max-[58rem]:gap-4';
+
+const TIER_NAME = 'flex flex-col gap-2';
+
+/*
+ * The period rides in a span after the figure, in the third tier and at the
+ * body weight, so the price is one line the eye reads as a price and a
+ * qualifier rather than as two values.
+ */
+const TIER_PRICE =
+  'font-[family-name:var(--oe-metadata-font-family)] text-base font-medium ' +
+  'tracking-[var(--oe-metadata-tracking)] text-text-1 ' +
+  "[&>span]:font-normal [&>span]:text-text-3 [&>span]:before:content-['_']";
+
+const TIER_BODY =
+  'max-w-[58ch] text-text-3 [&>*+*]:mt-3 ' +
+  '[&_ul]:mt-3 [&_ul]:mr-0 [&_ul]:mb-0 [&_ul]:pl-[1.1em] [&_li]:my-1';
 
 const starter = relayPlans.find((plan) => plan.id === 'relay_starter_v1');
 if (!starter) throw new Error('The Relay catalog has no Starter plan.');
@@ -12,42 +53,42 @@ if (!starter) throw new Error('The Relay catalog has no Starter plan.');
   description={`Choose managed OpenE2EE Relay capacity or a self-hosted OpenE2EE Signal Protocol SDK commercial license from ${startupTier.price} per year.`}
   canonical="/pricing"
 >
-  <header class="page-hero">
-    <div class="container measure">
-      <p class="label">Pricing</p>
+  <header class={PAGE_HERO}>
+    <div class={CONTAINER_MEASURE}>
+      <p class={LABEL}>Pricing</p>
       <h1>Choose who operates the encrypted delivery layer.</h1>
-      <p class="lead">OpenE2EE Relay is the managed delivery product. Self-hosted licensing covers a proprietary application that operates its own infrastructure. These are separate products with separate meters and rights.</p>
+      <p class={LEAD}>OpenE2EE Relay is the managed delivery product. Self-hosted licensing covers a proprietary application that operates its own infrastructure. These are separate products with separate meters and rights.</p>
       <p>Free under AGPLv3. Commercial self-hosting starts at {startupTier.price} per year.</p>
     </div>
   </header>
 
-  <section class="band">
-    <div class="container">
-      <ul class="tiers">
-        <li class="tier">
-          <div class="tier-name"><h2>OpenE2EE Relay</h2><p class="tier-price">Free<span>then {starter.price} per month</span></p></div>
-          <div class="tier-body"><p>Managed encrypted delivery for the OpenE2EE Signal Protocol SDK. Includes development and Free production, encrypted device mailboxes, group fan-out, private attachment storage, push wakes, exact usage, and lifecycle controls.</p><p class="muted">Plans use Relay MAU, destination-device delivery units, attachment operations, and exact live encrypted storage.</p><p class="text-links"><a href="/relay/pricing">Review Relay plans</a><a href="/relay">What Relay operates</a></p></div>
+  <section class={BAND}>
+    <div class={CONTAINER}>
+      <ul class={TIERS}>
+        <li class={TIER}>
+          <div class={TIER_NAME}><h2>OpenE2EE Relay</h2><p class={TIER_PRICE}>Free<span>then {starter.price} per month</span></p></div>
+          <div class={TIER_BODY}><p>Managed encrypted delivery for the OpenE2EE Signal Protocol SDK. Includes development and Free production, encrypted device mailboxes, group fan-out, private attachment storage, push wakes, exact usage, and lifecycle controls.</p><p class="text-text-3">Plans use Relay MAU, destination-device delivery units, attachment operations, and exact live encrypted storage.</p><p class={TEXT_LINKS}><a href="/relay/pricing">Review Relay plans</a><a href="/relay">What Relay operates</a></p></div>
         </li>
         {tiers.map((tier) => (
-          <li class="tier">
-            <div class="tier-name"><h2>{tier.name}</h2><p class="tier-price">{tier.price}{tier.period && <span>{tier.period}</span>}</p></div>
-            <div class="tier-body"><p>{tier.body}</p><p class="muted">{tier.detail}</p><p class="text-links"><a href={tier.cta.href}>{tier.cta.label}</a></p></div>
+          <li class={TIER}>
+            <div class={TIER_NAME}><h2>{tier.name}</h2><p class={TIER_PRICE}>{tier.price}{tier.period && <span>{tier.period}</span>}</p></div>
+            <div class={TIER_BODY}><p>{tier.body}</p><p class="text-text-3">{tier.detail}</p><p class={TEXT_LINKS}><a href={tier.cta.href}>{tier.cta.label}</a></p></div>
           </li>
         ))}
       </ul>
-      <p class="muted measure">A managed Relay subscription does not grant general self-hosting rights. The <a href="/legal/relay-terms">Relay service terms</a> control that project. A Startup commercial license renews annually until you cancel before the renewal date. Taxes may apply. The <a href="/legal/terms">self-hosted agreement</a> controls that grant, covered products, support, renewal, and post-expiration rights.</p>
+      <p class:list={['text-text-3', MEASURE]}>A managed Relay subscription does not grant general self-hosting rights. The <a href="/legal/relay-terms">Relay service terms</a> control that project. A Startup commercial license renews annually until you cancel before the renewal date. Taxes may apply. The <a href="/legal/terms">self-hosted agreement</a> controls that grant, covered products, support, renewal, and post-expiration rights.</p>
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container">
-      <div class="band-head"><h2>How buying works</h2></div>
-      <dl class="definition-rows">
+  <section class:list={[BAND, BAND_SURFACE]}>
+    <div class={CONTAINER}>
+      <div class={BAND_HEAD}><h2>How buying works</h2></div>
+      <dl class={DEFINITION_ROWS}>
         <div><dt>Managed Relay</dt><dd>Start with no-card development. Production activation uses a separate managed project, exact limits, and the plan selected in Console.</dd></div>
         <div><dt>Startup license</dt><dd>Sign in, name the legal entity and covered product, accept the commercial terms, and complete annual checkout.</dd></div>
         <div><dt>Growth and Enterprise license</dt><dd>Portfolio rights, redistribution, integration support, security review, and service levels need a signed order form.</dd></div>
       </dl>
-      <p class="text-links"><a href="/relay/pricing">Review Relay limits</a><a href="/licensing">Compare self-hosted rights</a><a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">Ask a licensing question</a></p>
+      <p class={TEXT_LINKS}><a href="/relay/pricing">Review Relay limits</a><a href="/licensing">Compare self-hosted rights</a><a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">Ask a licensing question</a></p>
     </div>
   </section>
 </BaseLayout>

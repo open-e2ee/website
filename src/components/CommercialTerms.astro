@@ -11,6 +11,19 @@ import {
   commercialTermsPath,
   commercialTermsVersion,
 } from '../lib/legal.mjs';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CALLOUT,
+  CONTAINER,
+  LABEL,
+  LEAD,
+  LEGAL_NOTICE,
+  LEGAL_PIN,
+  LEGAL_TOC,
+} from '../lib/recipes';
 
 interface Props {
   canonical: string;
@@ -25,29 +38,29 @@ const { canonical } = Astro.props;
   canonical={canonical}
 >
   <article>
-    <header class="article-header">
-      <div class="container article-column">
-        <a class="back-link" href="/legal">Legal</a>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/legal">Legal</a>
         <h1>Terms of Service and Startup Commercial License Terms</h1>
-        <p class="lead">
+        <p class={LEAD}>
           These Terms govern the OpenE2EE website, documentation, console, and each self-service
           Startup commercial license order.
         </p>
-        <p class="article-meta">
+        <p class={ARTICLE_META}>
           <span>Effective {commercialTermsEffectiveDate}</span>
           <span>Version {commercialTermsVersion}</span>
         </p>
-        <p class="legal-pin">
+        <p class={LEGAL_PIN}>
           Startup checkout records the version you accept. The immutable copy of this one is
           published at <a href={commercialTermsPath}><code>{commercialTermsPath}</code></a>.
         </p>
       </div>
     </header>
 
-    <div class="container article-column">
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
       <div class="prose">
-        <aside class="callout" aria-label="Agreement summary">
-          <p class="label">Startup order summary</p>
+        <aside class={CALLOUT} aria-label="Agreement summary">
+          <p class={LABEL}>Startup order summary</p>
           <p>
             One named legal entity receives annual proprietary production rights for one named
             product using <code>@open-e2ee/signal-protocol-sdk</code>. The current list price is
@@ -55,8 +68,8 @@ const { canonical } = Astro.props;
           </p>
         </aside>
 
-        <nav class="legal-toc" aria-label="Terms contents">
-          <p class="label">Contents</p>
+        <nav class={LEGAL_TOC} aria-label="Terms contents">
+          <p class={LABEL}>Contents</p>
           <ol>
             <li><a href="#agreement">Agreement and authority</a></li>
             <li><a href="#website">Website and open-source materials</a></li>
@@ -205,7 +218,7 @@ const { canonical } = Astro.props;
 
         <h2 id="warranties">7. Disclaimers and liability</h2>
         <h3>7.1 Disclaimer</h3>
-        <p class="legal-notice">
+        <p class={LEGAL_NOTICE}>
           TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE SERVICES AND LICENSED COMPONENT ARE PROVIDED
           “AS IS” AND “AS AVAILABLE.” OPENE2EE DISCLAIMS ALL EXPRESS, IMPLIED, AND STATUTORY
           WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE,
@@ -214,13 +227,13 @@ const { canonical } = Astro.props;
         </p>
 
         <h3>7.2 Limitation of liability</h3>
-        <p class="legal-notice">
+        <p class={LEGAL_NOTICE}>
           TO THE MAXIMUM EXTENT PERMITTED BY LAW, NEITHER PARTY WILL BE LIABLE FOR INDIRECT,
           INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES, OR FOR LOST PROFITS,
           REVENUE, DATA, GOODWILL, OR BUSINESS INTERRUPTION, ARISING FROM THIS AGREEMENT EVEN IF
           ADVISED OF THE POSSIBILITY.
         </p>
-        <p class="legal-notice">
+        <p class={LEGAL_NOTICE}>
           EACH PARTY’S TOTAL AGGREGATE LIABILITY ARISING FROM THIS AGREEMENT WILL NOT EXCEED THE
           FEES PAID OR PAYABLE UNDER THE APPLICABLE STARTUP ORDER DURING THE 12 MONTHS BEFORE THE
           EVENT GIVING RISE TO LIABILITY. THESE LIMITS DO NOT APPLY TO CUSTOMER’S PAYMENT

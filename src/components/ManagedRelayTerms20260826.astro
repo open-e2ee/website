@@ -5,6 +5,19 @@ import {
   relayTermsPath,
   relayTermsVersion,
 } from '../lib/legal.mjs';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CALLOUT,
+  CONTAINER,
+  LABEL,
+  LEAD,
+  LEGAL_NOTICE,
+  LEGAL_PIN,
+  LEGAL_TOC,
+} from '../lib/recipes';
 
 interface Props {
   canonical: string;
@@ -19,36 +32,36 @@ const { canonical } = Astro.props;
   canonical={canonical}
 >
   <article>
-    <header class="article-header">
-      <div class="container article-column">
-        <a class="back-link" href="/legal">Legal</a>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/legal">Legal</a>
         <h1>OpenE2EE Relay Service Terms</h1>
-        <p class="lead">
+        <p class={LEAD}>
           These Terms govern a project's Development and production OpenE2EE Relay environments.
         </p>
-        <p class="article-meta">
+        <p class={ARTICLE_META}>
           <span>Effective {relayTermsEffectiveDate}</span>
           <span>Version {relayTermsVersion}</span>
         </p>
-        <p class="legal-pin">
+        <p class={LEGAL_PIN}>
           Relay activation records the version you accept. The permanent copy of this version is at{' '}
           <a href={relayTermsPath}><code>{relayTermsPath}</code></a>.
         </p>
       </div>
     </header>
 
-    <div class="container article-column">
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
       <div class="prose">
-        <aside class="callout" aria-label="Service boundary">
-          <p class="label">Service boundary</p>
+        <aside class={CALLOUT} aria-label="Service boundary">
+          <p class={LABEL}>Service boundary</p>
           <p>
             Relay carries customer-encrypted content and operates delivery infrastructure. It does
             not receive message plaintext, device private keys, ratchet state, or attachment keys.
           </p>
         </aside>
 
-        <nav class="legal-toc" aria-label="Relay terms contents">
-          <p class="label">Contents</p>
+        <nav class={LEGAL_TOC} aria-label="Relay terms contents">
+          <p class={LABEL}>Contents</p>
           <ol>
             <li><a href="#agreement">Agreement and project scope</a></li>
             <li><a href="#service">Service and customer responsibilities</a></li>
@@ -166,13 +179,13 @@ const { canonical } = Astro.props;
         </p>
 
         <h2 id="liability">8. Disclaimers and liability</h2>
-        <p class="legal-notice">
+        <p class={LEGAL_NOTICE}>
           TO THE MAXIMUM EXTENT PERMITTED BY LAW, RELAY IS PROVIDED “AS IS” AND “AS AVAILABLE.”
           OPENE2EE DISCLAIMS IMPLIED WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR
           PURPOSE, TITLE, NON-INFRINGEMENT, AND ANY WARRANTY THAT THE SERVICE IS ERROR-FREE,
           UNINTERRUPTED, OR SUITABLE FOR A PARTICULAR THREAT MODEL.
         </p>
-        <p class="legal-notice">
+        <p class={LEGAL_NOTICE}>
           TO THE MAXIMUM EXTENT PERMITTED BY LAW, NEITHER PARTY IS LIABLE FOR INDIRECT, INCIDENTAL,
           SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES, OR LOST PROFITS, REVENUE, DATA,
           GOODWILL, OR BUSINESS INTERRUPTION. EACH PARTY’S TOTAL AGGREGATE LIABILITY UNDER THESE

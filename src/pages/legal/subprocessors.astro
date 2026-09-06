@@ -1,5 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CONTAINER,
+  LEAD,
+} from '../../lib/recipes';
 ---
 
 <BaseLayout
@@ -8,15 +16,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   canonical="/legal/subprocessors"
 >
   <article>
-    <header class="article-header">
-      <div class="container article-column">
-        <a class="back-link" href="/legal">Legal</a>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/legal">Legal</a>
         <h1>Subprocessor List</h1>
-        <p class="lead">Providers that process customer information for OpenE2EE services.</p>
-        <p class="article-meta"><span>Last updated August 26, 2026</span><span>Owner: OpenE2EE operations</span></p>
+        <p class={LEAD}>Providers that process customer information for OpenE2EE services.</p>
+        <p class={ARTICLE_META}><span>Last updated August 26, 2026</span><span>Owner: OpenE2EE operations</span></p>
       </div>
     </header>
-    <div class="container article-column">
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
       <div class="prose">
         <div class="table-wrap" role="region" aria-label="Subprocessor list" tabindex="0">
           <table>

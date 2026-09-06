@@ -1,6 +1,31 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  BAND,
+  CONTAINER,
+  CONTAINER_MEASURE,
+  MEASURE,
+  PAGE_HERO,
+  TEXT_LINKS,
+} from '../../lib/recipes';
+
+/*
+ * The index of posts. A ruled row per post, the date in its own column beside
+ * the title and the description, and the whole row is the link.
+ */
+const POST_LIST = 'm-0 list-none p-0 [&>li]:border-t [&>li]:border-border-1';
+
+const POST_LINK =
+  'grid grid-cols-[minmax(7rem,9rem)_minmax(0,1fr)] gap-x-6 gap-y-0 py-8 text-[inherit] no-underline ' +
+  'max-[44rem]:grid-cols-1 max-[44rem]:gap-2 ' +
+  'hover:[&_h2]:underline hover:[&_h2]:[text-underline-offset:0.2em] ' +
+  '[&_time]:pt-[0.4rem] [&_time]:font-[family-name:var(--oe-metadata-font-family)] ' +
+  '[&_time]:text-[length:var(--oe-metadata-size)] [&_time]:font-medium ' +
+  '[&_time]:tracking-[var(--oe-metadata-tracking)] [&_time]:text-text-3 ' +
+  '[&_h2]:col-start-2 [&_h2]:text-[1.375rem] [&_h2]:tracking-[var(--oe-heading-tracking-text)] ' +
+  '[&_p]:col-start-2 [&_p]:mt-2 [&_p]:max-w-[64ch] [&_p]:text-text-3 ' +
+  'max-[44rem]:[&_h2]:col-start-1 max-[44rem]:[&_p]:col-start-1';
 
 const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf(),
@@ -30,24 +55,24 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     Blog" — so the slogan that stood here is gone with the eyebrow that
     duplicated it and the description that restated both.
   */}
-  <header class="page-hero">
-    <div class="container measure">
+  <header class={PAGE_HERO}>
+    <div class={CONTAINER_MEASURE}>
       <h1>Engineering journal</h1>
-      <p class="text-links">
+      <p class={TEXT_LINKS}>
         <a href="/rss.xml">Subscribe by RSS</a>
       </p>
     </div>
   </header>
 
-  <section class="band">
-    <div class="container">
+  <section class={BAND}>
+    <div class={CONTAINER}>
       {posts.length === 0 ? (
-        <p class="muted measure">Nothing published yet.</p>
+        <p class:list={['text-text-3', MEASURE]}>Nothing published yet.</p>
       ) : (
-        <ul class="post-list">
+        <ul class={POST_LIST}>
           {posts.map((post) => (
             <li>
-              <a class="post-link" href={`/blog/${post.id}/`}>
+              <a class={POST_LINK} href={`/blog/${post.id}/`}>
                 <time datetime={post.data.publishedAt.toISOString()}>
                   {dateFormatter.format(post.data.publishedAt)}
                 </time>

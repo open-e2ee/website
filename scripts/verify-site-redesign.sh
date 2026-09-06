@@ -115,20 +115,20 @@ sr_v08() {
 
 # --- UIR5.3, the page chrome ------------------------------------------------------
 
+# A page reaches the chrome through whatever component it renders, so the audit
+# resolves the import graph. A grep for the two names reads neither the graph
+# nor the difference between a rendered element and a word in a comment.
 sr_v09() {
   have_chrome || return 1
-  local page missing=0
-  while read -r page; do
-    grep -q 'PageChrome\|BaseLayout' "$page" || missing=1
-  done < <(find src/pages -name '*.astro')
-  [ "$missing" -eq 0 ]
+  node scripts/audit-page-chrome.mjs --pages
 }
 
+# The rules sit indented inside `@layer base`, where a line-anchored pattern
+# reads the indentation instead of the selector, and `table.data` is a class
+# rule that starts with a letter. The audit reads each selector at its depth.
 sr_v10() {
   have_chrome || return 1
-  local n
-  n="$(grep -cE '^\.[a-z]' "$CSS")"
-  [ "$n" -eq 0 ]
+  node scripts/audit-page-chrome.mjs --stylesheet
 }
 
 sr_v11() {

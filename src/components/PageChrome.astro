@@ -1,0 +1,30 @@
+---
+/*
+ * The frame every page renders inside: the skip link, the header, the main
+ * region, and the footer.
+ *
+ * `BaseLayout.astro` owns the document and its metadata. This owns what the
+ * reader sees around the page, so a surface that reaches the site through a
+ * layout of its own — a blog post, a legal terms component — still renders one
+ * frame rather than a copy of one. `scripts/audit-page-chrome.mjs` holds every
+ * page to it.
+ */
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+---
+
+<a
+  class="absolute top-0 -left-[9999px] z-20 border border-border-3 bg-ground-raised px-4 py-3 text-text-1 focus:top-4 focus:left-4"
+  href="#main-content">Skip to content</a
+>
+{/* Deferred and external: nothing here should compete with the page, and
+    the CSP is script-src 'self' with no 'unsafe-inline'. */}
+<script src="/measure.js" defer></script>
+<Header />
+{/* `tabindex="-1"` is what makes the skip link land. Without it the URL
+    fragment moves the scroll position but not the focus ring, so the next
+    Tab resumes in the header the link was pressed to escape. */}
+<main id="main-content" tabindex="-1">
+  <slot />
+</main>
+<Footer />

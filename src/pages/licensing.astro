@@ -1,14 +1,25 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import {
+  BAND,
+  BAND_SURFACE,
+  CONTAINER,
+  CONTAINER_MEASURE,
+  DEFINITION_ROWS,
+  LABEL,
+  LEAD,
+  PAGE_HERO,
+  TEXT_LINKS,
+} from '../lib/recipes';
 ---
 
 <BaseLayout
   title="Licensing"
   description="The OpenE2EE Signal Protocol SDK is available under AGPLv3, or under a commercial license for proprietary products."
 >
-  <header class="page-hero">
-    <div class="container measure">
-      <p class="label">Licensing</p>
+  <header class={PAGE_HERO}>
+    <div class={CONTAINER_MEASURE}>
+      <p class={LABEL}>Licensing</p>
       {/*
         The heading names the two paths instead of counting them. A reader
         arrives here from four different link labels and needs to see the two
@@ -22,15 +33,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         once, at the top.
       */}
       <h1>AGPLv3, or a commercial license.</h1>
-      <p class="lead">
+      <p class={LEAD}>
         This page summarizes the two paths. The license text and your agreement control.
       </p>
     </div>
   </header>
 
-  <section class="band">
-    <div class="container">
-      <dl class="definition-rows">
+  <section class={BAND}>
+    <div class={CONTAINER}>
+      <dl class={DEFINITION_ROWS}>
         <div>
           <dt>AGPLv3</dt>
           <dd>
@@ -50,8 +61,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container measure prose">
+  <section class:list={[BAND, BAND_SURFACE]}>
+    <div class={`${CONTAINER_MEASURE} prose`}>
       {/*
         Three paragraphs, 111 words, down to one. The first was the only one
         carrying a fact this page owns, and even it enumerated the five governed
@@ -76,7 +87,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         Where this page and your <a href="/legal/terms">agreement</a> differ, the agreement
         controls.
       </p>
-      <p class="text-links">
+      <p class={TEXT_LINKS}>
         <a href="/pricing">Pricing</a>
         <a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">
           Ask a licensing question

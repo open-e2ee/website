@@ -1,5 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CONTAINER,
+  LEAD,
+} from '../../lib/recipes';
 ---
 
 <BaseLayout
@@ -8,15 +16,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   canonical="/legal/acceptable-use"
 >
   <article>
-    <header class="article-header">
-      <div class="container article-column">
-        <a class="back-link" href="/legal">Legal</a>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/legal">Legal</a>
         <h1>Acceptable Use Policy</h1>
-        <p class="lead">Use OpenE2EE services lawfully and without harming people or systems.</p>
-        <p class="article-meta"><span>Effective August 26, 2026</span><span>Version 2026-08-26</span></p>
+        <p class={LEAD}>Use OpenE2EE services lawfully and without harming people or systems.</p>
+        <p class={ARTICLE_META}><span>Effective August 26, 2026</span><span>Version 2026-08-26</span></p>
       </div>
     </header>
-    <div class="container article-column">
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
       <div class="prose">
         <h2>Prohibited activity</h2>
         <p>You may not use OpenE2EE Relay or another OpenE2EE service to:</p>

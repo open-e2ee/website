@@ -15,10 +15,25 @@ interface Props {
 const { product, size = 30, class: className } = Astro.props;
 ---
 
-<span class:list={['lockup', { 'lockup-product': product }, className]}>
+{/* `symbolGap / wordmarkFontSize` is 48 / 109.76 in the design manifest, and
+    the mark's contract ratio is of the symbol height S rather than of the font
+    size: S / wordmarkFontSize = 128 / 109.76 per brand/generated/manifest.json. */}
+<span
+  class:list={[
+    'inline-flex items-center gap-[0.437em] text-xl leading-none text-text-1',
+    '[&_.oe-mark]:h-[1.166em] [&_.oe-mark]:w-[1.166em] [&_.oe-mark]:flex-none',
+    product && 'flex-col items-start gap-[0.4em]',
+    className,
+  ]}
+>
   <span style="display: inline-flex; align-items: center; gap: 0.375em;">
     <Mark size={size} />
     <span class="oe-wordmark"><span>Open</span><span>E2EE</span></span>
   </span>
-  {product && <span class="product-line">{product}</span>}
+  {product && (
+    <span
+      class="font-[family-name:var(--oe-heading-font-family)] text-[0.62em] font-medium tracking-[0.01em] text-text-3"
+      >{product}</span
+    >
+  )}
 </span>

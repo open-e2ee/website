@@ -1,0 +1,30 @@
+---
+/*
+ * A data table that is wider than the column it sits in.
+ *
+ * The box scrolls sideways, which makes it a region a reader can be inside
+ * without a pointer: it needs a tab stop, a role, and a name, or the rows past
+ * the right edge are reachable by mouse alone. The three attributes and the
+ * recipe are one thing, so they are declared once here rather than repeated at
+ * each table — repeated, two of the five call sites carried the recipe and
+ * neither of the other two attributes.
+ *
+ * `min-w-[32rem]` on `DATA_TABLE` is what gives the box something to scroll:
+ * a table that shrinks to a phone stops being readable long before it stops
+ * fitting. `tabindex="0"` on a box that cannot overflow is a tab stop that does
+ * nothing, so the two halves are only an accessible table together.
+ *
+ * `data-table-scroll` is the hook scripts/relay-pages-visual.mjs measures each
+ * region through.
+ */
+interface Props {
+  /** What the table holds. Announced when focus enters the region. */
+  label: string;
+}
+
+const { label } = Astro.props;
+---
+
+<div class="min-w-0 max-w-full overflow-x-auto" tabindex="0" role="region" aria-label={label} data-table-scroll>
+  <slot />
+</div>

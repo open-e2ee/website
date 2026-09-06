@@ -60,6 +60,20 @@
 }
 
 /*
+ * The caption over each pane. Mono is for values: packages, versions,
+ * identifiers, fingerprints, fields, and the two names this panel puts over
+ * the same message on the device and in the relay's row.
+ */
+.label {
+  display: block;
+  font-family: var(--oe-metadata-font-family);
+  font-weight: var(--oe-metadata-weight);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+}
+
+/*
  * The trust boundary, as a row between two panes rather than a hairline.
  *
  * It replaces `.carrier-pane + .carrier-pane`'s border by standing between the
@@ -524,6 +538,16 @@
   color: var(--oe-muted);
 }
 
+/*
+ * The reading measure, on the two notes under the console. The `100%` term
+ * keeps the note from pushing the console sideways; the token term caps the
+ * line. `MEASURE` in src/lib/recipes.ts is the same cap for a page surface,
+ * where a utility can express it.
+ */
+.measure {
+  max-width: min(100%, var(--oe-content-measure));
+}
+
 /* One line of reserved height. The region is empty on arrival and fills on the
    first action, and without a floor the columns below it would step down the
    page the first time the console said anything. */
@@ -566,33 +590,6 @@
   display: block;
   width: 100%;
   height: auto;
-}
-
-/* A scenario's own figure sits between a heading and the list that reads it
-   out, so it carries the space of a paragraph rather than of a band. It also
-   takes the full width of the scenario body — which is the width the prose
-   beside it cannot use, being capped at the reading measure. */
-.scenario-figure {
-  margin-block: var(--oe-space-3) var(--oe-space-4);
-}
-
-/*
- * The two labels swap weight here, and only here.
- *
- * In a blog-post diagram the `.diagram-label`s name the parts — device, relay,
- * ciphertext — so they are what the reader is meant to read, and the tick
- * labels annotate them. This figure is the other way round: `0` and
- * `1,986 bytes` are the ruler's ends, scaffolding for the one mark that is the
- * whole subject. At the shared sizes the scaffolding was set two points larger
- * than the subject and won the page, which is a hierarchy this drawing cannot
- * afford — the mark is already the thinnest thing in it.
- */
-.scenario-figure .diagram-label {
-  font-size: 11px;
-}
-
-.scenario-figure .diagram-tick-label {
-  font-size: 13px;
 }
 
 /* The wide composition stops being readable before it stops fitting, so it
@@ -933,12 +930,4 @@
    were measured against does not collapse underneath them. */
 .starfield[data-starlit] .starfield-mark {
   visibility: hidden;
-}
-
-/* The disclosure marker turns as a scenario opens. Under reduced motion it is
-   already where it is going. */
-@media (prefers-reduced-motion: reduce) {
-  .scenario-marker {
-    transition: none;
-  }
 }

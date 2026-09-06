@@ -61,8 +61,27 @@ test('publishes canonical Relay routes with accessible responsive tables', async
   assert.match(pricing, /canonical="\/relay\/pricing"/);
   assert.match(comparison, /canonical="\/compare\/virgil-security"/);
   for (const page of [pricing, comparison]) {
-    assert.match(page, /class="table-scroll" tabindex="0" role="region"/);
+    /* Every wide table goes through the one component that carries the
+       accessibility contract, and each one names what it holds. Written out at
+       the table, two of the five call sites carried the scroll recipe and
+       neither of the attributes that let a keyboard reader reach what scrolls
+       past the right edge. */
+    assert.match(page, /<TableScroll label="[^"]+">/);
+    assert.doesNotMatch(page, /<div class=\{TABLE_SCROLL\}/, 'a table dresses its own scroll box');
     assert.match(page, /<th scope="col">/);
     assert.match(page, /<th scope="row">/);
   }
+
+  /* And that the component is the whole contract. A focusable box that cannot
+     overflow is a tab stop that does nothing, and a region with no name is one
+     a reader enters without being told what it is, so the four are asserted
+     together in the file that writes them together. */
+  const region = await source('src/components/TableScroll.astro');
+  const box = region.match(/<div class="([^"]*)"([^>]*)>/);
+  assert.ok(box, 'the region no longer dresses one box');
+  assert.match(box[1], /\boverflow-x-auto\b/, 'the region has nothing to scroll');
+  assert.match(box[2], /\stabindex="0"/, 'a keyboard cannot reach what scrolls');
+  assert.match(box[2], /\srole="region"/);
+  assert.match(box[2], /\saria-label=\{label\}/);
+  assert.match(box[2], /\sdata-table-scroll\b/, 'scripts/relay-pages-visual.mjs measures no region');
 });

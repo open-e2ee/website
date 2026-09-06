@@ -1,6 +1,16 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import { maturityLine } from '../lib/sdk.mjs';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CONTAINER,
+  LABEL,
+  LEAD,
+  MATURITY,
+} from '../lib/recipes';
 
 interface Props {
   title: string;
@@ -41,20 +51,20 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   author={author}
 >
   <article>
-    <header class="article-header">
-      <div class="container article-column">
-        <a class="back-link" href="/blog">Engineering journal</a>
-        <p class="label">{tags.join(' · ')}</p>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/blog">Engineering journal</a>
+        <p class={LABEL}>{tags.join(' · ')}</p>
         <h1>{title}</h1>
-        <p class="lead">{description}</p>
-        <p class="article-meta">
+        <p class={LEAD}>{description}</p>
+        <p class={ARTICLE_META}>
           <span>{author}</span>
           <time datetime={publishedAt.toISOString()}>{dateFormatter.format(publishedAt)}</time>
           {updatedAt && <span>Updated {dateFormatter.format(updatedAt)}</span>}
         </p>
       </div>
     </header>
-    <div class="container article-column">
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
       <div class="prose">
         <slot />
       </div>
@@ -70,7 +80,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
         The version composes from src/lib/sdk.mjs. A typed literal here would go
         stale on the next release and tests/site-content.test.mjs forbids one.
       */}
-      <p class="maturity">
+      <p class={MATURITY}>
         <code>@open-e2ee/signal-protocol-sdk</code> {maturityLine} Reviewed continuously by
         adversarial AI agents; not audited by any independent firm.
       </p>

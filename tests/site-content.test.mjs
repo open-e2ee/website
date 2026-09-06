@@ -34,18 +34,22 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
 
 /*
- * The site's hand-written CSS. UIR5.1 split it in three: the page chrome, the
- * quarantined demo and diagram drawings, and the rules both draw from. A guard
- * that measures a rule reads the file that owns it. A guard that forbids a rule
- * reads all three, because the rule is as wrong in one file as in another.
- * scripts/audit-demo-stylesheet.mjs holds the boundary itself.
+ * The site's hand-written CSS, in five files: the element base, the quarantined
+ * demo and diagram drawings, the code panels, the long-form prose, and the rules
+ * more than one of them draws from. A guard that measures a rule reads the file
+ * that owns it. A guard that forbids a rule reads all five, because the rule is
+ * as wrong in one file as in another. scripts/audit-demo-stylesheet.mjs holds
+ * the demo boundary itself.
  */
-const stylesheets = async () =>
-  (
-    await Promise.all(
-      ['../src/styles/global.css', '../src/styles/demo.css', '../src/styles/shared.css'].map(read),
-    )
-  ).join('\n');
+const STYLESHEETS = [
+  '../src/styles/global.css',
+  '../src/styles/demo.css',
+  '../src/styles/shared.css',
+  '../src/styles/code.css',
+  '../src/styles/prose.css',
+];
+
+const stylesheets = async () => (await Promise.all(STYLESHEETS.map(read))).join('\n');
 
 /*
  * Build-output assertions skip when dist/ is absent, so `npm test` still runs
@@ -169,7 +173,7 @@ test('states maturity as the release line, with no stage adjective', async () =>
    * composes it from a module the build does not reach renders nothing at all.
    * Asserting a literal here could only ever catch the second. */
   for (const page of [product, security]) {
-    assert.match(page, /<p class="maturity">\{maturityLine\}<\/p>/);
+    assert.match(page, /<p class=\{MATURITY\}>\{maturityLine\}<\/p>/);
     assert.match(page, /import \{ maturityLine \} from '\.\.\/lib\/sdk\.mjs';/);
   }
   /* The lookahead exempts version identifiers: a prerelease suffix inside a
@@ -424,7 +428,7 @@ test('offers every adapter as a real, complete, copyable program', () => {
 test('keeps the nine unselected variants out of the page and out of the tab order', async () => {
   const [component, css] = await Promise.all([
     flat('../src/components/HeroSnippet.astro'),
-    readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8'),
+    readFile(new URL('../src/styles/code.css', import.meta.url), 'utf8'),
   ]);
 
   /* Ten programs are in the document and nine are `hidden`. The attribute is
@@ -440,7 +444,7 @@ test('keeps the nine unselected variants out of the page and out of the tab orde
 });
 
 test('gives the panel a focus ring the design system does not supply', async () => {
-  const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles/code.css', import.meta.url), 'utf8');
 
   /* `components.css` scopes its ring to `:where(a, button, summary, input,
    * [tabindex])`. `select` is not in that list, so the adapter controls fell
@@ -453,7 +457,7 @@ test('gives the panel a focus ring the design system does not supply', async () 
 });
 
 test('lets the panel copy control outrank the shell one it shares a class with', async () => {
-  const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles/code.css', import.meta.url), 'utf8');
 
   /* Both buttons carry `.copy-button`; only one is in a terminal. `.code-copy`
    * re-colors the other for the editor surface, and both selectors are
@@ -762,7 +766,7 @@ test('lands the demo fragment on the exhibit, not on the paragraph above it', as
   assert.match(exhibit, /<DemoMobile /);
 
   /* The links that lead there. Both are the reader asking for the exhibit. */
-  assert.match(index, /<a class="cta-primary" href="#demo">/);
+  assert.match(index, /<a class:list=\{\[CTA_PRIMARY[^\]]*\]\} href="#demo">/);
   assert.match(await declaration('headerNavigation'), /href: '\/#demo'/);
 
   /* And the one rule that stands it clear of the sticky header. This is not a
@@ -864,7 +868,7 @@ test('gives the install command a control, and measures the one it declared', as
 test('keeps the prompt glyph out of what the reader pastes', async () => {
   const [snippet, css] = await Promise.all([
     flat('../src/components/HeroSnippet.astro'),
-    read('../src/styles/global.css'),
+    read('../src/styles/code.css'),
   ]);
 
   /* The `$` earns the terminal its look and carries nothing a reader needs, so
@@ -968,7 +972,7 @@ test('never makes a control its own announcer', async () => {
 test('shows the example on a phone rather than offering it', async () => {
   const [snippet, raw] = await Promise.all([
     flat('../src/components/HeroSnippet.astro'),
-    read('../src/styles/global.css'),
+    read('../src/styles/code.css'),
   ]);
   /* Comments stripped, because the prose below still names the retired element
    * on purpose — a source-side match would otherwise pass on the paragraph
@@ -984,10 +988,10 @@ test('shows the example on a phone rather than offering it', async () => {
   assert.doesNotMatch(snippet, /<details/, 'the example is behind a disclosure again');
   assert.doesNotMatch(snippet, /<summary/, 'the example is behind a disclosure again');
   assert.doesNotMatch(snippet, /demo-disclosure/);
-  /* All three stylesheets: a rule for a demo class comes back into
+  /* Every stylesheet: a rule for a demo class comes back into
      src/styles/demo.css, which is where the audit would put it. */
   assert.doesNotMatch(await stylesheets(), /demo-disclosure/);
-  assert.match(snippet, /<div class="code-block hero-snippet">/);
+  assert.match(snippet, /<div class="code-block hero-snippet[^"]*">/);
 
   /* Nothing script-driven decides whether the panel shows, so nothing in the
    * component asks the breakpoint. The size rules do, in CSS, where a page
@@ -998,7 +1002,7 @@ test('shows the example on a phone rather than offering it', async () => {
    * disclosure and is its own decision: a reader on a phone meets the one line
    * they can act on before the ten they cannot. */
   assert.ok(
-    snippet.indexOf('class="terminal"') < snippet.indexOf('class="code-block hero-snippet"'),
+    snippet.indexOf('class="terminal"') < snippet.indexOf('class="code-block hero-snippet'),
     'the install command no longer comes before the example',
   );
 
@@ -1090,7 +1094,7 @@ test('shows the example on a phone rather than offering it', async () => {
 
 test('puts the example’s copy control in the code’s corner, not among the settings', async () => {
   const component = await read('../src/components/HeroSnippet.astro');
-  const raw = await read('../src/styles/global.css');
+  const raw = await read('../src/styles/code.css');
   const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
 
   /* The toolbar configures the example; the copy button does not configure
@@ -1139,7 +1143,7 @@ test('puts the example’s copy control in the code’s corner, not among the se
 });
 
 test('keeps the example’s settings on one row, and shortens the writing to hold it', async () => {
-  const raw = await read('../src/styles/global.css');
+  const raw = await read('../src/styles/code.css');
   const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
 
   /* The row never becomes two. It used to stack the comboboxes under the
@@ -1154,10 +1158,17 @@ test('keeps the example’s settings on one row, and shortens the writing to hol
   assert.equal(stacked.length, 0, 'a rule puts the comboboxes on a line of their own again');
 
   /* Both rungs ask the panel, not the viewport. The toolbar has to fit the box
-     it is drawn in, and `.hero-demo` is a container, so a `@media` rule here
-     would be measuring the wrong thing — it is right only while the hero's own
-     padding and track never move. */
-  assert.match(ruleFor(css, '.hero-demo'), /container-type:\s*inline-size/);
+     it is drawn in, so a `@media` rule here would be measuring the wrong thing —
+     it is right only while the hero's own padding and track never move.
+     `HERO_DEMO` in the homepage is the box, and the container it declares is
+     what makes every `@container` in this file resolve against the panel. Read
+     there rather than assumed: a container query with no container above it
+     does not throw, it silently resolves against the viewport. */
+  assert.match(
+    await read('../src/pages/index.astro'),
+    /const HERO_DEMO = '[^']*\[container-type:inline-size\]/,
+    'the hero panel is no longer a query container, so both rungs measure the viewport',
+  );
 
   /* Rung one: the qualifiers. "Device Store" and "Relay Server" cost the row
      104.2px over "Store" and "Relay", which the panel has from 34.5rem up. */
@@ -1194,49 +1205,68 @@ test('keeps the example’s settings on one row, and shortens the writing to hol
 });
 
 test('centers the hero at the phone’s width as well as the desktop’s', async () => {
-  const raw = await read('../src/styles/global.css');
-  const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
+  const [index, recipes, strip] = await Promise.all([
+    read('../src/pages/index.astro'),
+    read('../src/lib/recipes.ts'),
+    read('../src/components/PlatformStrip.astro'),
+  ]);
 
-  /* `ruleFor` rather than a match on the file, and it is the whole gate: it
-   * throws on two rules with this selector, and re-introducing the breakpoint
-   * means a second `.hero-copy` declaring `align-items` inside a query. The
-   * mutation that proves it is the rule this round deleted, put back. */
-  const copy = ruleFor(css, '.hero-copy');
-  assert.match(copy, /text-align:\s*center/, 'the hero copy is left-aligned again');
-  assert.match(copy, /align-items:\s*center/);
+  /* The hero column, which is centered at every width. There was a breakpoint
+   * that left-aligned it below the two-column split, and the split is gone. */
+  const copy = index.match(/const HERO_COPY =\s*('[^']*'|`[^`]*`);/)?.[1];
+  assert.ok(copy, 'the hero copy no longer has a recipe of its own');
+  assert.match(copy, /\btext-center\b/, 'the hero copy is left-aligned again');
+  assert.match(copy, /\bitems-center\b/);
 
-  /* The children do not inherit `text-align` — `.actions` and `.cta-primary`
-   * are flex containers and the strip is a grid sibling — so each is asserted
-   * rather than assumed. Centered copy above flush-left buttons is the failure
-   * this catches, and it looks like a bug rather than a choice. */
-  assert.match(ruleFor(css, '.hero-copy .actions'), /justify-content:\s*center/);
-  assert.match(ruleFor(css, '.hero-copy .cta-primary'), /align-items:\s*center/);
-
-  /* Not `ruleFor`: this selector carries two rules on purpose — the margin that
-     pulls the strip toward the panel it captions is a separate concern with its
-     own gate below. Picked by what it declares, as that gate does. */
-  const strip = cssRules(css).filter(
-    (rule) => rule.selector === '.hero-grid > .platform-strip' && /align-items:/.test(rule.body),
-  );
-  assert.equal(strip.length, 1, `${strip.length} rules align the strip; it is decided once`);
-  assert.match(strip[0].body, /align-items:\s*center/);
-
-  /* Both levels of the strip's nested list. The inner one is only visible on a
-   * phone, where each cluster wraps and the leftover name would otherwise start
-   * a flush-left row under a centered one. */
+  /* The children do not inherit `text-align` — the action row and the primary
+   * call to action are flex containers, and the strip is a grid sibling — so
+   * each is centered where it is written. Centered copy above flush-left
+   * buttons is the failure this catches, and it looks like a bug rather than a
+   * choice.
+   *
+   * Both callers override a recipe that starts them at `items-start`, and that
+   * is the part worth writing down. Two utilities setting one property resolve
+   * by the order Tailwind emits them, not by the order of the `class:list`, so
+   * the call to action carries the important suffix. Without it the recipe wins
+   * about half the time and nothing in the markup says which half. */
+  assert.match(index, /class:list=\{\[ACTIONS, 'justify-center'\]\}/);
+  assert.match(index, /class:list=\{\[CTA_PRIMARY, 'items-center!'\]\}/);
   assert.match(
-    ruleFor(css, '.hero-grid .platform-marks, .hero-grid .platform-cluster > ul'),
-    /justify-content:\s*center/,
+    recipes,
+    /export const ACTIONS = '[^']*\bitems-start\b/,
+    'the action row no longer starts at items-start, so the hero override is now the only thing setting it',
+  );
+  assert.match(
+    recipes,
+    /export const CTA_PRIMARY = '[^']*\bitems-start\b/,
+    'the call to action no longer starts at items-start, so its important suffix in the hero is unexplained',
   );
 
-  /* Nothing may turn it off further down. Each of these appears exactly once,
-   * so a later override — inside a query or not — fails here. */
-  for (const selector of ['.hero-copy', '.hero-copy .actions', '.hero-grid > .platform-strip']) {
-    const carrying = cssRules(css).filter(
-      (rule) => rule.selector === selector && /align-items:|justify-content:|text-align:/.test(rule.body),
-    );
-    assert.equal(carrying.length, 1, `${carrying.length} rules align \`${selector}\`; it is decided once`);
-  }
+  /* The strip centers itself rather than being centered by its caller. It has
+   * one caller, so a prop for it would be a setting with one possible value,
+   * and the hero passes it the one thing the hero owns — the distance down to
+   * the panel it captions. */
+  assert.match(strip, /'flex w-full flex-col items-center gap-2'/);
+  assert.match(index, /<PlatformStrip class=\{HERO_STRIP\} \/>/);
+
+  /* Both levels of the strip's nested list take one row recipe. The inner one
+   * is only visible on a phone, where each cluster wraps and the leftover name
+   * would otherwise start a flush-left row under a centered one. One constant
+   * for both is what makes that impossible rather than merely true today. */
+  const row = strip.match(/const ROW =\s*('[^']*'|`[^`]*`);/)?.[1];
+  assert.ok(row, 'the strip rows no longer share one recipe');
+  assert.match(row, /\bjustify-center\b/);
+  assert.equal(
+    (strip.match(/class=\{ROW\}/g) ?? []).length,
+    2,
+    'the two levels of the strip no longer take the same row',
+  );
+
+  /* And nothing re-decides any of it further down. A second utility for the
+   * same property is how "centered" decays back into a breakpoint: it does not
+   * fail loudly, it wins or loses on generated-sheet order. */
+  assert.doesNotMatch(copy, /\b(?:items-start|items-end|text-left|text-right)\b/);
+  assert.doesNotMatch(row, /\b(?:justify-start|justify-end|justify-between)\b/);
 });
 
 test('does not name a code block after an affordance it does not have', async () => {
@@ -2361,19 +2391,29 @@ test('gives the security page something to do at the end of it', async () => {
 });
 
 test('keeps a narrowed container on the same left edge as everything else', async () => {
-  const css = await read('../src/styles/shared.css');
+  const recipes = await read('../src/lib/recipes.ts');
+  const measured = recipes.match(/export const CONTAINER_MEASURE = `([^`]*)`;/)?.[1];
+  assert.ok(measured, 'CONTAINER_MEASURE is no longer one template string');
 
-  /* `.container` centers its box and `.measure` narrows it, so composing them
-   * centered a narrow box: five page heroes started a quarter of the way across
-   * the page while the wordmark above and the bands below started at the
-   * gutter. The container has to keep the left edge it would have had. */
-  assert.match(
-    css,
-    /\.container\.measure \{\s*margin-inline: max\(0px, \(100% - var\(--oe-content-wide\)\) \/ 2\) auto;\s*\}/,
-  );
+  /* The container centers its box and the measure narrows it, so composed
+   * naively they center a narrow box: five page heroes started a quarter of the
+   * way across the page while the wordmark above and the bands below started at
+   * the gutter. The recipe restates the edge the container would have had. */
+  assert.match(measured, /\bms-\[max\(0px,calc\(\(100%-73\.75rem\)\/2\)\)\]/);
+  assert.match(measured, /\bme-auto\b/);
+
+  /* And restates it in a property nothing else in the recipe sets. `mx-auto`
+   * and an arbitrary `mx-[…]` both set `margin-inline`; two utilities on one
+   * property resolve by the order of the generated sheet, where `.mx-auto` is
+   * written last, so the restated edge lost to the centering it replaces and
+   * the recipe rendered exactly the defect it names. */
+  assert.doesNotMatch(measured, /(?:^|\s)-?mx-/, 'the recipe sets margin-inline twice');
+  assert.doesNotMatch(measured, /\$\{CONTAINER\}/, 'the recipe composes the centering back in');
+
   /* The cap is in `ch`, which resolves against the font of whatever carries it.
-   * Moving it to the children stops it capping a 60px heading at all. */
-  assert.doesNotMatch(await stylesheets(), /\.container\.measure > \*/);
+   * Pushing it to the children stops it capping a 60px heading at all. */
+  const cap = recipes.match(/export const MEASURE = '([^']*)';/)?.[1];
+  assert.match(cap ?? '', /^max-w-\[min\(100%,var\(--oe-content-measure\)\)\]!$/);
 });
 
 test('lets the diagram switch compositions outrank the rule that sizes them', async () => {
@@ -2397,6 +2437,7 @@ test('lets the diagram switch compositions outrank the rule that sizes them', as
 });
 
 test('steps the headings down under a headline that cannot climb', async () => {
+  const index = await read('../src/pages/index.astro');
   const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
 
   /* Two declarations that are only correct together. The hero headline stops at
@@ -2409,31 +2450,45 @@ test('steps the headings down under a headline that cannot climb', async () => {
    *
    * They therefore have to move together: raise the hero's h1 ceiling and this
    * step-down is over-correction, drop the ceiling further and it is not enough.
-   *
-   * This used to also pin `.hero h1` to 2.375rem inside the same block, because
-   * the headline shared a row with the demo and 42px set four lines in the
-   * 470px column it had. The hero is one centered column now and the cap is
-   * gone; the compensation is not, because 42-against-36 was the smaller half
-   * of the problem and it survived the cap's removal. */
-  assert.match(css, /\n\.hero h1 \{\s*font-size: clamp\(2\.0625rem, 1\.15rem \+ 3\.1vw, 2\.625rem\);/);
-  const blocks = [...css.matchAll(/@media \(min-width: 74rem\) \{([\s\S]*?)\n\}/g)].map((m) => m[1]);
-  const block = blocks.find((body) => /\.hero ~ \.band h2\s*\{/.test(body));
-  assert.ok(block, 'no 74rem block steps the section headings down any more');
-  assert.match(block, /\.hero ~ \.band h2 \{\s*font-size: 1\.75rem;/);
+   * Both are written in the page that breaks the ramp, one line apart, which is
+   * the whole of why they are asserted in one test. */
+  assert.match(
+    index,
+    /const HERO_HEADLINE = '\[&_h1\]:text-\[clamp\(2\.0625rem,1\.15rem\+3\.1vw,2\.625rem\)\]';/,
+  );
+  assert.match(index, /const HERO_RAMP = 'min-\[74rem\]:\[&_h2\]:text-\[1\.75rem\]';/);
 
-  /* And that nothing re-caps the headline somewhere else at the same width.
-   * The assertion above would still pass with a second rule overriding it. */
-  assert.doesNotMatch(css, /\.hero h1 \{\s*font-size: 2\./);
+  /* And that both reach the page. A constant nothing writes onto an element is
+   * a declaration that never runs, and Tailwind will not even emit the class
+   * for it — which is the failure mode this file has had before, and it reads
+   * exactly like a correct definition. */
+  assert.match(index, /<section class:list=\{\[HERO, HERO_HEADLINE\]\}>/);
+  assert.ok(
+    (index.match(/HERO_RAMP\]?\}/g) ?? []).length >= 3,
+    'the step-down no longer reaches every band under the headline',
+  );
+
+  /* And that nothing re-caps the headline somewhere else at the same width. A
+   * second `text-[…]` on the hero section would settle on generated-sheet
+   * order, and the assertion above would still read correctly. */
+  const heroSection = index.slice(index.indexOf('  <section class:list={[HERO'));
+  assert.doesNotMatch(
+    heroSection.slice(0, heroSection.indexOf('</section>')),
+    /<h1 class/,
+    'the headline sets its own size, so the ceiling above it decides nothing',
+  );
 
   /* Scoped, and it stays scoped. Measured at 1440px every other page runs its
    * 60px h1 against the same 36px h2 for a ratio of 1.67, which is right;
    * re-capping the global clamp would flatten six healthy pages to correct one.
-   * The bare `h2` rule keeps its ceiling. */
-  assert.match(css, /\nh2 \{\s*font-size: clamp\(1\.625rem, 1\.25rem \+ 1\.6vw, 2\.25rem\);/);
+   * The bare `h2` rule keeps its ceiling, and the bare `h1` keeps the ceiling
+   * the hero is held back from. */
+  assert.match(css, /\n  h2 \{\s*font-size: clamp\(1\.625rem, 1\.25rem \+ 1\.6vw, 2\.25rem\);/);
+  assert.match(css, /\n  h1 \{\s*font-size: clamp\(2\.125rem, 1\.35rem \+ 3\.4vw, 3\.75rem\);/);
 });
 
 test('enlarges the hero code without enlarging code that has no room', async () => {
-  const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
+  const css = (await read('../src/styles/code.css')).replace(/\/\*[\s\S]*?\*\//g, '');
 
   /* The hero panel is the page's primary evidence and is read rather than
    * skimmed, so it sets its own size. Every other panel keeps the token.
@@ -2460,7 +2515,10 @@ test('enlarges the hero code without enlarging code that has no room', async () 
    * every line overruns, at every width, and the declaration above still reads
    * exactly as it does now. So the container is asserted next to the unit that
    * needs it. */
-  assert.match(css, /\.hero-demo \{[^}]*container-type: inline-size;/);
+  assert.match(
+    await read('../src/pages/index.astro'),
+    /const HERO_DEMO = '[^']*\[container-type:inline-size\]/,
+  );
 
   /* 1.8 is a fit constraint rather than a taste, and the margin in it is thin
    * enough to be worth writing down. The longest of the ten variants is 91
@@ -2497,8 +2555,16 @@ test('enlarges the hero code without enlarging code that has no room', async () 
    * for a size that fits. Leaving it in the list would mean re-deriving the
    * 1.89 ceiling every time the row's fit term is touched, which is a false
    * coupling: nothing about the code panel's arithmetic changes. */
+  /* Sorted, and that is not tidying away a property. What this census asks is
+     which rates compete for the panel's width, and a rate is the same
+     competitor wherever in the file it is written — the two swapped places when
+     the code rules moved into their own stylesheet, and nothing about the
+     arithmetic changed. Sorting is what keeps this measuring the rates rather
+     than the order somebody put two blocks in. */
   assert.deepEqual(
-    [...css.replace(/100cqi/g, '').matchAll(/([\d.]+)cqi/g)].map((m) => Number(m[1])),
+    [...css.replace(/100cqi/g, '').matchAll(/([\d.]+)cqi/g)]
+      .map((m) => Number(m[1]))
+      .sort((a, b) => a - b),
     [1.8, 2],
     'a cqi length moved or a third appeared; re-derive against the 1.89 ceiling before changing this',
   );
@@ -2564,7 +2630,7 @@ test('never sets text in the border color', async () => {
    * maturity caveat and the terms under the primary button: the two places
    * the page states its own limits were the two hardest on it to read.
    *
-   * Over all three stylesheets, because the invariant is about text on this
+   * Over all five stylesheets, because the invariant is about text on this
    * site rather than about one file. */
   assert.doesNotMatch(await stylesheets(), /color: var\(--oe-subtle\)/);
 });
@@ -2647,8 +2713,13 @@ test('uses the editor themes the reader already has, at their own values', async
    * because two rules want it — `:root.dark`, where a snippet inside an article
    * follows the page, and `.code-block`, where the quoted panel keeps one
    * appearance in both modes. `:root.dark` and `.code-block` both point at the
-   * names, so the hexes appear exactly once each and in this order. */
-  const css = await read('../src/styles/global.css');
+   * names, so the hexes appear exactly once each and in this order.
+   *
+   * `shared.css` and not the code stylesheet, because those two consumers now
+   * live in two files: `.code-block` is in src/styles/code.css and `.prose pre`
+   * is in src/styles/prose.css. A value two stylesheets read is a value neither
+   * of them owns. */
+  const css = await read('../src/styles/shared.css');
   const declared = [...css.matchAll(/--oe-editor(?:-dark)?(?:-foreground)?:\s*(#[0-9a-f]{6});/g)].map(
     (m) => m[1],
   );
@@ -2661,7 +2732,7 @@ test('uses the editor themes the reader already has, at their own values', async
 });
 
 test('pins the quoted panel to one appearance, palette included', async () => {
-  const css = await read('../src/styles/global.css');
+  const css = await read('../src/styles/code.css');
   const block = css.slice(css.indexOf('.code-block {'), css.indexOf('\n}', css.indexOf('.code-block {')));
   assert.ok(block.startsWith('.code-block {'), '.code-block rule not found — the anchor has drifted');
 
@@ -2748,7 +2819,7 @@ test('never reads a shiki color anywhere but the element shiki wrote it on', asy
    * any particular rule — put a shiki color in a custom property again, in any
    * selector, and this fails.
    */
-  const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
+  const css = (await read('../src/styles/code.css')).replace(/\/\*[\s\S]*?\*\//g, '');
 
   const offenders = [...css.matchAll(/([\w-]+)\s*:\s*([^;{}]*var\(\s*--shiki-[^;{}]*)/g)]
     .filter((m) => m[1].startsWith('--'))
@@ -2825,24 +2896,37 @@ test('does not color code with the action color', async () => {
 });
 
 test('dresses the install command as a terminal, in both modes', async () => {
-  const css = await read('../src/styles/global.css');
+  const [css, tokens] = await Promise.all([
+    read('../src/styles/code.css'),
+    read('../src/styles/shared.css'),
+  ]);
 
   /* Ghostty's defaults, from `src/config/Config.zig`. The point of the panel
    * is that a reader recognizes the application, so a value invented here
    * would defeat it. `prompt` and `control` are ours and documented as ours in
    * `src/lib/code-theme.mjs`; they are checked for the same reason, which is
-   * that the comments quoting their contrast ratios have to stay true. */
+   * that the comments quoting their contrast ratios have to stay true.
+   *
+   * Declared in src/styles/shared.css and drawn in src/styles/code.css. The
+   * four values are the terminal's, not the palette's, so they are named where
+   * every stylesheet can read a name rather than a hex. */
   for (const [role, value] of Object.entries(shellSurface)) {
     const property = role === 'background' ? '--oe-shell' : `--oe-shell-${role}`;
-    assert.match(css, new RegExp(`${property}:\\s*${value};`), `${property} is not ${value}`);
+    assert.match(tokens, new RegExp(`${property}:\\s*${value};`), `${property} is not ${value}`);
   }
 
   /* One declaration each, in `:root`, and none of them repeated under
    * `:root.dark`. Ghostty ships `theme: ?Theme = null` and has no light
    * variant, so a shell that changed with the page would be a shell nobody
    * runs — and the light-mode reader is exactly who needs the surface change
-   * to tell the terminal from the editor. */
-  const darkBlocks = [...css.matchAll(/:root\.dark\s*\{([^}]*)\}/g)].map((m) => m[1]);
+   * to tell the terminal from the editor.
+   *
+   * Every stylesheet, and not only the one that declares them: a dark override
+   * written anywhere reaches the same element, and the file it is written in is
+   * the one thing about it that does not matter. */
+  const darkBlocks = [...(await stylesheets()).matchAll(/:root\.dark\s*\{([^}]*)\}/g)].map(
+    (m) => m[1],
+  );
   assert.ok(darkBlocks.length > 0, 'expected a :root.dark block to search');
   for (const block of darkBlocks) assert.doesNotMatch(block, /--oe-shell/);
 
@@ -2877,7 +2961,7 @@ test('dresses the install command as a terminal, in both modes', async () => {
  * goes flat.
  */
 test('sets the install command a step above the code it sits over', async () => {
-  const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
+  const css = (await read('../src/styles/code.css')).replace(/\/\*[\s\S]*?\*\//g, '');
 
   /* The clamp is the *preference* term now, not the whole declaration: the
      command's size is `min(preference, fit)`, where the second term solves the
@@ -2966,8 +3050,10 @@ test('sets the install command a step above the code it sits over', async () => 
    * of these two must set one on the other, and the command must be larger there
    * as well. Both values are flat inside these blocks, so the comparison needs
    * no arithmetic and takes nothing on trust. */
-  const source = await read('../src/styles/global.css');
-  const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '');
+  /* The same file the sweep read, and the same stripped copy of it. Both rules
+     and every query that overrides either one moved into src/styles/code.css
+     together, so a second read here would only be a second name for `css`. */
+  const stripped = css;
   const blocks = [...stripped.matchAll(/@media([^{]+)\{/g)].map((match) => {
     /* Brace-counted rather than `[^}]*`, because these blocks contain rules and
      * a non-greedy body match would stop at the first nested `}`. */
@@ -3526,7 +3612,7 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
   const icons = index.match(/icon: '[a-z-]+',/g) ?? [];
   assert.equal(icons.length, cells.length, `${icons.length} icons for ${cells.length} cells`);
   assert.match(index, /<DeckIcon name=\{item\.icon\} \/>/);
-  assert.match(index, /<ul class="rows rows-iconed">/);
+  assert.match(index, /<ul class:list=\{\[ROWS, ROWS_ICONED\]\}>/);
 
   /* The cost cell spans both columns, which is the only reason its body has
    * room to lead with the relay and still carry the limit. Three things have
@@ -3536,9 +3622,9 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
    * a narrow strip of text beside half an empty grid line, and nothing else on
    * the page would fail. */
   assert.match(index, /wide: true,/);
-  assert.match(index, /class=\{item\.wide \? 'row-wide' : undefined\}/);
-  const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
-  assert.match(css, /\.rows > \.row-wide \{\n {2}grid-column: 1 \/ -1;/);
+  assert.match(index, /class=\{item\.wide \? ROW_WIDE : undefined\}/);
+  const recipes = await read('../src/lib/recipes.ts');
+  assert.match(recipes, /export const ROW_WIDE = 'col-span-full';/);
 
   /* An assertion here pinned the lead sentence "Not a hosted chat service,
    * and more than TLS". The lead stopped carrying that sentence when it became
@@ -3947,11 +4033,16 @@ test('draws the TypeScript logo the way its branding page publishes it', async (
   );
 
   /* And the same, one layer up, where a stylesheet could undo it without
-   * touching the component. */
-  const css = await read('../src/styles/global.css');
+   * touching the component.
+   *
+   * Every stylesheet, and on the attribute rather than on a class: the mark is
+   * dressed in utilities now and `data-mark` is the only name a selector can
+   * reach it by. A `fill` written against that attribute anywhere on the site
+   * repaints the logo, and which of the five files it is written in is the one
+   * thing about it that does not matter. */
   assert.doesNotMatch(
-    css,
-    /\.ts-mark[^{]*\{[^}]*fill:/,
+    await stylesheets(),
+    /\[data-mark[^{]*\{[^}]*fill:/,
     'a stylesheet is overriding the TypeScript logo’s fills',
   );
 
@@ -3961,7 +4052,7 @@ test('draws the TypeScript logo the way its branding page publishes it', async (
     () => null,
   );
   if (!built) return skipUnbuilt('dist/index.html');
-  const rendered = built.match(/<span class="ts-mark">[\s\S]*?<\/span>/)?.[0];
+  const rendered = built.match(/<span[^>]*data-mark="typescript"[^>]*>[\s\S]*?<\/span>/)?.[0];
   assert.ok(rendered, 'the TypeScript mark is not on the built page');
   assert.match(rendered, /fill="#fff"/i, 'the built page draws the "TS" as a hole');
   assert.match(rendered, /fill="#3178c6"/i, 'the built page lost the official blue');
@@ -3984,8 +4075,6 @@ test('keeps the battery green on both canvases', async () => {
   assert.match(mark, /fill="currentColor"/, 'the battery must inherit its color to stay theme-aware');
   assert.doesNotMatch(mark, /fill="#/, 'a literal color in the battery breaks one of the two themes');
 
-  const css = await read('../src/styles/global.css');
-
   /* Both canvases name a step on the verify ramp, and neither takes
    * `--oe-verified`. The semantic token is tuned for a run of small text and
    * this is a filled glyph: too pale on dark at its `verify-300`, heavier than
@@ -3996,20 +4085,21 @@ test('keeps the battery green on both canvases', async () => {
    * owns is that the color stays on the ramp, which is what keeps it a green
    * this palette contains rather than one somebody picked.
    *
-   * Both sides go through `ruleFor`, and that is not tidying. Written as
-   * `/\.battery-mark \{[^}]*color: var\(--oe-color-verify-\d+\)/` the light
-   * assertion is satisfied by the *dark* rule, because that selector ends in
-   * ".battery-mark {" as well. Mutation-tested: with the light rule reverted to
-   * `--oe-verified` outright, that regex still matched — on
-   * `:root.dark .battery-mark`. The gate below fails on the same mutation. */
+   * Both colors are utilities on the component now, and the trap the rule pair
+   * carried has moved with them rather than gone: `text-[var(…)]` is a prefix of
+   * `dark:text-[var(…)]`, so a light pattern written without a left boundary
+   * reads the dark utility and passes on a mutation of the light one. The
+   * boundary before `text-[` is what `dark:` cannot satisfy. */
+  const light = mark.match(/(?:^|[\s'"])text-\[var\(--([\w-]+)\)\]/)?.[1];
+  const dark = mark.match(/dark:text-\[var\(--([\w-]+)\)\]/)?.[1];
   assert.match(
-    ruleFor(css, '.battery-mark'),
-    /color:\s*var\(--oe-color-verify-\d+\)/,
+    light ?? '',
+    /^oe-color-verify-\d+$/,
     'the light-canvas battery should take a step on the verify ramp',
   );
   assert.match(
-    ruleFor(css, ':root.dark .battery-mark'),
-    /color:\s*var\(--oe-color-verify-\d+\)/,
+    dark ?? '',
+    /^oe-color-verify-\d+$/,
     'the battery needs its own dark-canvas green — the token’s dark value reads as mint',
   );
 
@@ -4036,27 +4126,32 @@ test('keeps the battery green on both canvases', async () => {
  * bug.
  */
 test('spaces the three marks in the lead identically', async () => {
-  const css = await read('../src/styles/global.css');
+  /* One export, and the margin is in it. The grouped selector the three marks
+     shared is gone; `INLINE_MARK` is what replaced it, and a module the three
+     import is a stronger form of the same guarantee than a selector that
+     happened to list all three names. */
+  const shared = await read('../src/lib/inline-marks.ts');
+  assert.match(
+    shared,
+    /export const INLINE_MARK = '[^']*\bmx-\[[^\]]+\]/,
+    'the marks’ spacing should be set once, for all three',
+  );
 
-  /* Parsed into rules rather than matched by name — see `./css-rules.mjs`,
-   * which owns why. This test is where that trap was first found: the grouped
-   * selector ends ".battery-mark {" too, so the per-mark check below read the
-   * very declaration it was meant to be independent of, and passed. */
-  const rules = cssRules(css);
+  /* And not quietly re-split per mark afterwards. A margin utility on one of
+     them is how "uniform" decays back into three numbers.
 
-  const shared = rules.find((r) => r.selector === '.osi-mark, .ts-mark, .battery-mark');
-  assert.ok(shared, 'the three marks should still share one rule — the grouped selector is gone');
-  assert.match(shared.body, /margin-inline:/, 'the marks’ spacing should be set once, for all three');
-
-  /* And not quietly re-split per mark afterwards. A `margin` on one of them is
-   * how "uniform" decays back into three numbers. */
-  for (const name of ['osi', 'ts', 'battery']) {
-    const own = rules.filter((r) => r.selector === `.${name}-mark`);
-    assert.equal(own.length, 1, `.${name}-mark should have exactly one rule of its own`);
+     `class:list` and not the whole file: every one of the three carries prose
+     above it that names the margin and quotes the pixels it replaced, and a
+     search of the source reads those sentences as declarations. */
+  for (const name of ['OsiMark', 'TypeScriptMark', 'BatteryMark']) {
+    const source = await read(`../src/components/${name}.astro`);
+    assert.match(source, /\bINLINE_MARK\b/, `${name} no longer takes the shared inline margin`);
+    const list = source.match(/class:list=\{\[[\s\S]*?\]\}/)?.[0];
+    assert.ok(list, `${name} no longer dresses its box with a class list`);
     assert.doesNotMatch(
-      own[0].body,
-      /margin/,
-      `.${name}-mark sets its own margin — the three have drifted apart`,
+      list,
+      /(?:^|[\s'"])-?m[xylrtbse]?-/,
+      `${name} sets its own margin — the three have drifted apart`,
     );
   }
 
@@ -4068,7 +4163,7 @@ test('spaces the three marks in the lead identically', async () => {
     () => null,
   );
   if (!built) return skipUnbuilt('dist/index.html');
-  const battery = built.match(/<span class="battery-mark">[\s\S]*?<\/span>/)?.[0];
+  const battery = built.match(/<span[^>]*data-mark="battery"[^>]*>[\s\S]*?<\/span>/)?.[0];
   assert.ok(battery, 'the battery mark is not on the built page');
   const view = battery.match(/viewBox="([^"]+)"/)?.[1].split(/\s+/).map(Number);
   assert.ok(view, 'the battery needs a viewBox');
@@ -4089,32 +4184,41 @@ test('spaces the three marks in the lead identically', async () => {
  * name `--hero-grid-gap`, and the point is that they cannot drift apart.
  */
 test('binds the platform strip to the panel it captions', async () => {
-  const css = await read('../src/styles/global.css');
+  /* Both halves are constants in the page that lays the grid out, and the page
+     is where they belong: the gap and the cancellation of it are one decision,
+     and the strip is a caption of this hero and of no other. */
+  const index = await read('../src/pages/index.astro');
 
-  const grid = ruleFor(css, '.hero-grid');
-  const gap = grid.match(/--hero-grid-gap:\s*([^;]+);/)?.[1].trim();
+  const grid = index.match(/const HERO_GRID =\s*'([^']*)';/)?.[1];
+  assert.ok(grid, 'the hero grid is no longer laid out by a named constant');
+  const gap = grid.match(/\[--hero-grid-gap:([^\]]+)\]/)?.[1].trim();
   assert.ok(gap, 'the hero grid gap is no longer named, so nothing can subtract it');
   assert.match(
     grid,
-    /gap:\s*var\(--hero-grid-gap\)/,
+    /\bgap-\[var\(--hero-grid-gap\)\]/,
     'the grid stopped using the variable it declares — the strip now cancels a gap that is not there',
   );
 
-  /* Two rules carry this selector — this one, and the strip's centring a few
-   * lines above it — so it is picked by what it declares rather than by
-   * `ruleFor`, which
-   * refuses an ambiguous selector on purpose. Exactly one of them may set the
-   * pull: a second would mean the distance is being decided in two places. */
-  const strips = cssRules(css).filter(
-    (rule) => rule.selector === '.hero-grid > .platform-strip' && /margin-bottom:/.test(rule.body),
+  /* One constant carries the pull, and one element takes it. A second of either
+     would mean the distance is being decided in two places. */
+  const pulls = [...index.matchAll(/mb-\[calc\(([^\]]+)\)\]/g)];
+  assert.equal(
+    pulls.length,
+    1,
+    `${pulls.length} declarations pull the strip toward the panel; it should be decided once`,
+  );
+  assert.match(
+    index,
+    /const HERO_STRIP =\s*'[^']*mb-\[calc\(/,
+    'the pull is no longer the strip’s own constant, so it can be applied to something else',
   );
   assert.equal(
-    strips.length,
+    (index.match(/<PlatformStrip class=\{HERO_STRIP\} \/>/g) ?? []).length,
     1,
-    `${strips.length} rules pull the strip toward the panel; it should be decided once`,
+    'the hero no longer hands the strip the constant that binds it to the panel',
   );
 
-  const pull = strips[0].body.match(/margin-bottom:\s*calc\(([^;]+)\);/)?.[1];
+  const pull = pulls[0]?.[1];
   assert.ok(
     pull,
     'the strip no longer pulls itself toward the demo — it sits equidistant between the ' +
@@ -4425,7 +4529,7 @@ test('shows a generic bucket for S3 only while there is no AWS client to name', 
      about the other party: it says what the adapters were written against,
      where "Works with" said something about the two of them together. */
   const strip = await read('../src/components/PlatformStrip.astro');
-  const heading = strip.match(/class="platform-label">([^<]*)</)?.[1];
+  const heading = strip.match(/data-platform-label>\s*([^<]*?)\s*</)?.[1];
   assert.ok(heading, 'the strip no longer has a heading over the marks');
   assert.match(
     heading,
@@ -4438,8 +4542,11 @@ test('shows a generic bucket for S3 only while there is no AWS client to name', 
 });
 
 test('takes the platform row down to two rows on a phone by sizing it, not by hiding it', async () => {
-  const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
-  const strip = ruleFor(css, '.platform-strip');
+  /* The strip's own file. Every one of these declarations is a utility on the
+     element it sizes now, and the four properties are declared on the root of
+     the component rather than in a stylesheet — so the file is read whole and
+     each declaration is looked for where the markup writes it. */
+  const strip = await read('../src/components/PlatformStrip.astro');
 
   /* Seven entries at the desktop's mark and name sizes need 413px for the four
      runtimes alone, against 358px of page at 390 — a wrap inside the first
@@ -4457,29 +4564,40 @@ test('takes the platform row down to two rows on a phone by sizing it, not by hi
   ]) {
     assert.match(
       strip,
-      new RegExp(`${property}:\\s*clamp\\([^;]*vw[^;]*\\)`),
+      new RegExp(`\\[${property}:clamp\\([^\\]]*vw[^\\]]*\\)\\]`),
       `${property} no longer scales with the viewport, so the row is one size at every width again`,
     );
   }
 
-  /* And the three places that spend them. A declaration that goes back to a
+  /* And the four places that spend them. A declaration that goes back to a
      literal is the whole failure: nothing breaks, the row just wraps again on
      the devices the clamps were added for. */
-  assert.match(ruleFor(css, '.platform-marks svg'), /width: var\(--platform-mark-size\)/);
-  assert.match(ruleFor(css, '.platform-marks svg'), /height: var\(--platform-mark-size\)/);
-  const entry = ruleFor(css, '.platform-cluster > ul > li');
-  assert.match(entry, /font-size: var\(--platform-name-size\)/);
-  assert.match(entry, /gap: var\(--platform-entry-gap\)/);
-  assert.match(
-    ruleFor(css, '.platform-marks, .platform-cluster > ul'),
-    /gap: var\(--oe-space-2\) var\(--platform-gap\)/,
+  assert.match(strip, /\bw-\[var\(--platform-mark-size\)\]/);
+  assert.match(strip, /\bh-\[var\(--platform-mark-size\)\]/);
+  assert.match(strip, /\btext-\[length:var\(--platform-name-size\)\]/);
+  assert.match(strip, /\bgap-\[var\(--platform-entry-gap\)\]/);
+
+  /* The row gap is the one of the four that both lists spend, so it is written
+     once, in `ROW`, and the constant is used by the outer list of clusters and
+     by each cluster's own list. Two uses is the assertion: one would mean a
+     list had been re-dressed by hand and could drift. */
+  assert.match(strip, /const ROW =\s*'[^']*\bgap-x-\[var\(--platform-gap\)\]/);
+  assert.equal(
+    (strip.match(/class=\{ROW\}/g) ?? []).length,
+    2,
+    'the two lists in the strip no longer share one row recipe',
   );
 
   /* The names stay. Dropping them is the other way to make the row fit and it
      turns a compatibility list into a partner wall — the labels are what carry
      the precision the marks cannot, and the test above this one holds the
      heading over them to the same standard. */
-  assert.doesNotMatch(css, /\.platform-cluster > ul > li span \{[^}]*display:\s*none/);
+  assert.match(strip, /<span>\{mark\.label\}<\/span>/);
+  assert.doesNotMatch(
+    strip,
+    /<span class[^>]*>\{mark\.label\}/,
+    'the entry name now carries a class of its own, which is where it gets hidden',
+  );
 });
 
 /*
@@ -4661,12 +4779,15 @@ test('alternates the band surface down every page', async () => {
     const source = await readFile(new URL(name, dir), 'utf8');
 
     /* Any attribute order: the homepage's folded-demo section carries an `id`
-       before its class. `band-head` is an inner heading, not a band, and is
-       excluded by matching the class as a whole token. */
-    const bands = [...source.matchAll(/<section\b[^>]*?\bclass="([^"]*)"/g)]
-      .map((match) => match[1].split(/\s+/))
-      .filter((classes) => classes.includes('band'))
-      .map((classes) => classes.includes('band-surface'));
+       before its class. A band is named by the recipe it takes, and the two
+       forms are `class={BAND}` for a plain one and `class:list={[BAND, ...]}`
+       for one that adds to it, so both are read and the surface is whichever
+       of them names `BAND_SURFACE`. `BAND_HEAD` is an inner heading, not a
+       band, and is excluded by matching the constant as a whole word. */
+    const bands = [...source.matchAll(/<section\b[^>]*?\bclass(?::list)?=\{([^}]*)\}/g)]
+      .map((match) => match[1].split(/[[\],\s]+/).filter(Boolean))
+      .filter((names) => names.includes('BAND'))
+      .map((names) => names.includes('BAND_SURFACE'));
 
     for (let i = 1; i < bands.length; i += 1) {
       assert.notEqual(

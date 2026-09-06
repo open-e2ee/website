@@ -3,6 +3,51 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { MEASURED_ON, axes, libsignalReadme, notes, projects } from '../lib/comparison.mjs';
 import { maturityLine } from '../lib/sdk.mjs';
 import { startupTier } from '../data/pricing.mjs';
+import TableScroll from '../components/TableScroll.astro';
+import {
+  ACTIONS,
+  BAND,
+  BAND_HEAD,
+  BAND_SURFACE,
+  CALLOUT,
+  CONTAINER,
+  CONTAINER_MEASURE,
+  CTA_PRIMARY,
+  CTA_SUBLABEL,
+  DATA_TABLE,
+  DEFINITION_ROWS,
+  LABEL,
+  LEAD,
+  MATURITY,
+  MEASURE,
+  PAGE_HERO,
+  ROWS,
+  ROWS_SINGLE,
+  STACK,
+  TEXT_LINKS,
+} from '../lib/recipes';
+
+/*
+ * A pull quote. The prose face at its pull-quote weight and optical size, set
+ * against a 48ch measure so the sentence reads as a quotation rather than as
+ * another paragraph of the page.
+ */
+const QUOTE =
+  'm-0 max-w-[48ch] ' +
+  '[&>blockquote]:m-0 [&>blockquote]:font-[family-name:var(--oe-prose-font-family)] ' +
+  '[&>blockquote]:font-[var(--oe-prose-pull-quote-weight)] ' +
+  '[&>blockquote]:[font-variation-settings:"opsz"_var(--oe-prose-pull-quote-optical-size)] ' +
+  '[&>blockquote]:text-[clamp(1.25rem,1.05rem+0.9vw,1.625rem)] [&>blockquote]:leading-[1.35] ' +
+  '[&>figcaption]:mt-4 [&>figcaption]:text-sm [&>figcaption]:text-text-3';
+
+/*
+ * Import subpaths. Set in the metadata face because they are values the reader
+ * will copy, not prose.
+ */
+const SUBPATH_LIST =
+  'mt-3 flex flex-wrap gap-x-4 gap-y-2 ' +
+  '[&>code]:text-[length:var(--oe-metadata-size)] ' +
+  '[&>code]:tracking-[var(--oe-metadata-tracking)] [&>code]:text-text-3';
 
 /*
  * Every subpath and symbol on this page is copied from the SDK's own public
@@ -138,9 +183,9 @@ const ordered = projects
   title="Signal Protocol SDK"
   description="Pure TypeScript Signal Protocol for Expo, React Native, browsers, and Node. PQXDH, Double Ratchet, multi-device, groups, sealed sender, attachments."
 >
-  <header class="page-hero">
-    <div class="container measure">
-      <p class="label">Signal Protocol SDK</p>
+  <header class={PAGE_HERO}>
+    <div class={CONTAINER_MEASURE}>
+      <p class={LABEL}>Signal Protocol SDK</p>
       {/* This h1 is not free copy. It is the `product-hero` entry in
           @open-e2ee/design's tagline registry, status `approved` since the founder
           review of 2026-08-09, and tests/site-content.test.mjs asserts this page is
@@ -155,16 +200,16 @@ const ordered = projects
           "crypto module", and they do the whole job. The SQLCipher limit was appended here as well,
           which put the same qualifier on the page twice and made the final sentence 28 words. It is
           stated once now, in the Composition callout that owns storage. */}
-      <p class="lead">
+      <p class={LEAD}>
         Expo, React Native, browsers, and Node from one package. Post-quantum PQXDH, the Double
         Ratchet, multi-device, groups, sealed sender, and encrypted attachments. The protocol code is
         pure TypeScript with no native crypto module to link.
       </p>
-      <p class="maturity">{maturityLine}</p>
-      <div class="actions">
-        <a class="cta-primary" href="https://docs.open-e2ee.dev/start/quickstart">
+      <p class={MATURITY}>{maturityLine}</p>
+      <div class={ACTIONS}>
+        <a class={CTA_PRIMARY} href="https://docs.open-e2ee.dev/start/quickstart">
           <span class="oe-button">Build your first encrypted message</span>
-          <span class="cta-sublabel">ten minutes · two clients · no account</span>
+          <span class={CTA_SUBLABEL}>ten minutes · two clients · no account</span>
         </a>
         <a class="oe-button oe-button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
           SDK on GitHub
@@ -195,20 +240,20 @@ const ordered = projects
   {/* Surfaces re-flipped down the page. Three bands left the tree in this pass
       and the alternation shifted with them; tests/site-content.test.mjs checks
       it on every page. */}
-  <section class="band">
-    <div class="container stack">
-      <div class="band-head">
+  <section class={BAND}>
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
         <h2>What the package covers</h2>
-        <p class="measure">
+        <p class={MEASURE}>
           One coherent API surface, imported by subpath so your bundle only carries what you use.
         </p>
       </div>
-      <ul class="rows">
+      <ul class={ROWS}>
         {capabilities.map((item) => (
           <li>
             <h3>{item.title}</h3>
             {item.body && <p>{item.body}</p>}
-            <p class="subpath-list">
+            <p class={SUBPATH_LIST}>
               {item.subpaths.map((path) => <code>{path}</code>)}
             </p>
           </li>
@@ -217,26 +262,26 @@ const ordered = projects
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container stack">
-      <div class="band-head">
+  <section class:list={[BAND, BAND_SURFACE]}>
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
         {/* "Composition, not configuration" was an X-not-Y heading that also
             failed as navigation: a reader scanning for the adapter list could
             not tell this band held it. The lead's own first clause is the
             heading, and it names the thing the band lists. */}
         <h2>Four adapter boundaries you own</h2>
-        <p class="measure">
+        <p class={MEASURE}>
           You pass adapters into <code>createSignalProtocolClient</code>. The protocol logic
           above them does not change.
         </p>
       </div>
-      <dl class="definition-rows">
+      <dl class={DEFINITION_ROWS}>
         {adapters.map((adapter) => (
           <div>
             <dt>{adapter.role}</dt>
             <dd>
               {adapter.body}
-              <span class="subpath-list">
+              <span class={SUBPATH_LIST}>
                 {adapter.options.map((path) => <code>{path}</code>)}
               </span>
             </dd>
@@ -254,7 +299,7 @@ const ordered = projects
           build tools can run Prebuild on the reader's behalf. The defensible
           claim is that the reader does not type the command, which is not worth
           a clause. */}
-      <p class="muted measure">
+      <p class:list={['text-text-3', MEASURE]}>
         The Expo, Node, browser, and bare React Native stores implement{' '}
         <code>ISignalProtocolLocalStore</code> in full, so groups and multi-device work on any of
         them. They differ in where the bytes land. Expo uses{' '}
@@ -264,13 +309,13 @@ const ordered = projects
         <code>ISignalProtocolLocalStore</code> and <code>ISignalProtocolRelayServer</code> are
         documented interfaces, so you can write your own.
       </p>
-      <div class="callout measure">
+      <div class:list={[CALLOUT, MEASURE]}>
         <p>
           The Expo store needs a development build, because SQLCipher is not available in Expo Go.
           There is no native module of ours to link.
         </p>
       </div>
-      <p class="text-links">
+      <p class={TEXT_LINKS}>
         <a href="https://github.com/open-e2ee/signal-protocol-js/blob/main/ADAPTERS.md">
           Adapter reference
         </a>
@@ -294,15 +339,15 @@ const ordered = projects
     formula where it is stated. "Check the work" below already links /security
     as "What the relay can and cannot see".
   */}
-  <section class="band" id="how-it-compares">
-    <div class="container stack">
-      <div class="band-head">
+  <section class={BAND} id="how-it-compares">
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
         <h2>How it compares</h2>
         {/* "That is the gap." was a rhetorical closer, and the clause before it
             paraphrased the blockquote printed four lines below. The quotation is
             the evidence, so it makes that half of the point in the
             maintainers' own words. */}
-        <p class="measure">
+        <p class={MEASURE}>
           libsignal is the most scrutinized Signal Protocol code there is, and it is actively
           maintained. It is also a Node native addon with no browser, Expo, or React Native build.
         </p>
@@ -311,36 +356,23 @@ const ordered = projects
             planning a year of work needs the second one. src/lib/comparison.mjs
             keeps them as separate fields for the homepage, which has room for
             one. */}
-        <figure class="quote">
+        <figure class={QUOTE}>
           <blockquote>{libsignalReadme.quote} {libsignalReadme.continuation}</blockquote>
           <figcaption>
             <a href={libsignalReadme.href}>{libsignalReadme.attribution}</a>
           </figcaption>
         </figure>
-        {/* Inside the band head, where /compare had it, and not a direct child
-            of `.stack`. `.stack > *` sets `max-width: 100%` at the same
-            specificity as `.measure` and is written after it, so a bare
-            `.measure` paragraph parked directly in a stack was capped by
-            nothing — eight elements rendered that way, three on the home page,
-            three here, two on /security, until `.stack > .measure` in
-            global.css restored the cap at child specificity. That eight was
-            counted by computed max-width rather than by shape. Counting by
-            shape gives ten, and both of the two extra are `callout measure`
-            children of a stack — one here, one on /security. `.callout`
-            capped them at the same 68ch all along, so the fix moved them by
-            nothing. An element that is itself `container measure stack` was
-            capped correctly throughout, because both rules only reach
-            children, but that fact accounts for none of the gap: all three of
-            those on this site are band children, never stack children.
-            `.band-head` caps at 62ch and is unaffected. */}
-        <p class="muted measure">
+        {/* In the band head rather than beside the table: the provenance of
+            the figures, which a reader checks once, sits with the heading that
+            introduces them. */}
+        <p class:list={['text-text-3', MEASURE]}>
           Read from the GitHub API, the npm registry API, and the published package tarballs on
           {' '}{MEASURED_ON}. Dates are the ones those APIs returned. The axes are the ones this SDK
           was built to change, not a quality ranking. Nobody independent measured our own column.
         </p>
       </div>
-      <div class="table-scroll">
-        <table class="data">
+      <TableScroll label="How the SDK compares">
+        <table class={DATA_TABLE}>
           <thead>
             <tr>
               <th scope="col">&nbsp;</th>
@@ -364,14 +396,14 @@ const ordered = projects
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScroll>
       {/* Three spellings of "licence" against a table row headed "Commercial
           license offered", and the note quoted that row back as "no commercial
           licence offered" where the cell reads "Not needed — MIT".
           messaging.md §4 approves "commercial license". "A licence row is not a
           scorecard either" was an invented contrast whose "either" pointed at
           the note above it. */}
-      <p class="muted measure">
+      <p class:list={['text-text-3', MEASURE]}>
         <code>ts-mls</code> is MIT, which already permits proprietary use, so that row costs its
         users nothing. This SDK is AGPLv3 with a commercial license available, which is a real cost
         to some readers.
@@ -389,7 +421,7 @@ const ordered = projects
         There is no verdict for our own column because the table is the case
         for it.
       */}
-      <dl class="definition-rows">
+      <dl class={DEFINITION_ROWS}>
         {ordered.map(({ project, note }) => (
           <div>
             <dt>
@@ -400,7 +432,7 @@ const ordered = projects
           </div>
         ))}
       </dl>
-      <p class="muted measure">
+      <p class:list={['text-text-3', MEASURE]}>
         {/* The explicit space is load-bearing, the same way it is in the
             homepage band that summarizes these projects: Astro collapses the
             newline between a text node and a following inline element, and
@@ -409,7 +441,7 @@ const ordered = projects
         are in the comment at the top of{' '}
         <code>src/lib/comparison.mjs</code>.
       </p>
-      <p class="text-links">
+      <p class={TEXT_LINKS}>
         <a href="https://github.com/open-e2ee/signal-protocol-js#how-it-compares">
           The shorter table in the SDK README
         </a>
@@ -417,15 +449,15 @@ const ordered = projects
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container measure stack">
+  <section class:list={[BAND, BAND_SURFACE]}>
+    <div class:list={[CONTAINER_MEASURE, STACK]}>
       <h2>Licensing</h2>
       <p>
         The complete SDK is available under AGPLv3. Proprietary products purchase annual
         commercial production rights at a published price, starting at {startupTier.price}{' '}
         {startupTier.period}.
       </p>
-      <p class="text-links">
+      <p class={TEXT_LINKS}>
         <a href="/pricing">Pricing</a>
         <a href="/licensing">Licensing</a>
       </p>
@@ -437,9 +469,9 @@ const ordered = projects
       reader who has just read a page of capability claims, which is the page
       it belongs on now — /security states the same assurance sentence inside
       its published limits, at the length that page has room for. */}
-  <section class="band">
-    <div class="container">
-      <div class="band-head">
+  <section class={BAND}>
+    <div class={CONTAINER}>
+      <div class={BAND_HEAD}>
         <h2>Check the work</h2>
         {/* The promise of a firm review was retired on 2026-08-09, when
             adversarial AI review became the assurance approach. docs/messaging.md
@@ -452,14 +484,14 @@ const ordered = projects
             in the place messaging.md §7 puts the one pointer a security
             reviewer needs. ASSURANCE.md was unreachable from the band whose
             subject is what a reader can check; it is the fifth link now. */}
-        <p class="measure">
+        <p class={MEASURE}>
           Reviewed continuously by adversarial AI agents; not audited by any independent firm. Every
           change passes an adversarial AI review before it merges, and recurring whole-codebase AI
           audit passes run against the engineering repository. The assurance summary states what
           that covers and what it does not.
         </p>
       </div>
-      <ul class="rows rows-single">
+      <ul class={ROWS_SINGLE}>
         {trustLinks.map((link) => (
           <li><a href={link.href}>{link.label}</a></li>
         ))}

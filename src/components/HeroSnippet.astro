@@ -1,5 +1,8 @@
 ---
 import { Code } from 'astro:components';
+
+/* This component is the only owner of src/styles/code.css. */
+import '../styles/code.css';
 import Icon from './Icon.astro';
 import { codeThemes } from '../lib/code-theme.mjs';
 import {
@@ -97,7 +100,7 @@ import {
   </p>
 </div>
 
-<div class="code-block hero-snippet">
+<div class="code-block hero-snippet w-full">
   {/*
     The editor's tab strip, which is where the page's central claim stops being
     a sentence and becomes something a reader can operate. "Your backend stays

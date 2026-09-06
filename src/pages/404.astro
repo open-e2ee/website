@@ -1,5 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import {
+  CONTAINER_MEASURE,
+  LABEL,
+  LEAD,
+  PAGE_HERO,
+  TEXT_LINKS,
+} from '../lib/recipes';
 ---
 
 {/*
@@ -10,12 +17,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   to work. Vercel, Stripe and Cloudflare all ship a single home link or none.
 */}
 <BaseLayout title="Page not found" description="This page does not exist.">
-  <header class="page-hero">
-    <div class="container measure">
-      <p class="label">404</p>
+  <header class={PAGE_HERO}>
+    <div class={CONTAINER_MEASURE}>
+      <p class={LABEL}>404</p>
       <h1>Page not found.</h1>
-      <p class="lead">The page moved, or the address is incomplete.</p>
-      <p class="text-links">
+      <p class={LEAD}>The page moved, or the address is incomplete.</p>
+      <p class={TEXT_LINKS}>
         <a href="/">Home</a>
       </p>
     </div>

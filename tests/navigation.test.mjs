@@ -45,14 +45,29 @@ async function builtPages() {
   return entries.filter((entry) => entry.endsWith('index.html')).sort();
 }
 
-/** The hrefs inside one element, in the order the page carries them. */
-function hrefsIn(html, opening) {
-  const start = html.indexOf(opening);
-  assert.ok(start >= 0, `the page no longer renders ${opening}`);
+/*
+ * The hrefs inside one of the two navigations, in the order the page carries
+ * them.
+ *
+ * Found by its accessible name and not by a class. Both renderings are dressed
+ * in utilities now, so neither carries a name in its class attribute, and the
+ * name a reader of a screen reader hears is the one thing about either that is
+ * not a style. The attribute sits after `class` in the built tag, so the opening
+ * tag is matched rather than prefixed.
+ */
+function hrefsIn(html, label) {
+  const opening = new RegExp(`<nav[^>]*aria-label="${label}"[^>]*>`);
+  const found = html.match(opening);
+  assert.ok(found, `the page no longer renders a <nav> named "${label}"`);
+  const start = found.index;
   const end = html.indexOf('</nav>', start);
-  assert.ok(end > start, `${opening} is no longer a closed element`);
+  assert.ok(end > start, `the "${label}" navigation is no longer a closed element`);
   const block = html.slice(start, end);
-  return [...block.matchAll(/<a href="([^"]+)"/g)].map((match) => match[1]);
+
+  /* `<a [^>]*href` and not `<a href`: every link in both renderings opens with a
+     class list now, and the narrower pattern matched nothing at all — which
+     returned two empty sets that agreed with each other. */
+  return [...block.matchAll(/<a [^>]*href="([^"]+)"/g)].map((match) => match[1]);
 }
 
 test('renders one link set at both widths on every built page', async () => {
@@ -62,8 +77,8 @@ test('renders one link set at both widths on every built page', async () => {
 
   for (const page of pages) {
     const html = await read(`../dist/${page}`);
-    const row = hrefsIn(html, '<nav class="site-nav"');
-    const sheet = hrefsIn(html, '<nav aria-label="Site"');
+    const row = hrefsIn(html, 'Primary');
+    const sheet = hrefsIn(html, 'Site');
 
     /* The sheet carries one destination the row does not: at this width the
        console link leaves the action row, because a row of icons plus a word
@@ -91,7 +106,7 @@ test('marks the page being read in both renderings, and never marks a fragment',
   /* One rendering marking the current page and the other not is the drift a
      shared array does not by itself prevent: the marker is computed per link. */
   assert.equal(
-    (product.match(/<a href="\/product" aria-current="page">/g) ?? []).length,
+    (product.match(/<a [^>]*href="\/product" aria-current="page">/g) ?? []).length,
     2,
     'the row and the sheet disagree about which page is being read',
   );
@@ -99,7 +114,11 @@ test('marks the page being read in both renderings, and never marks a fragment',
   /* The demo is a band on the homepage, so its item names a place on a page
      rather than a page. Marking it would mark it on the page it points into. */
   const home = await read('../dist/index.html');
-  assert.ok(!home.includes('<a href="/#demo" aria-current='), 'the demo item claims to be a page');
+  assert.doesNotMatch(
+    home,
+    /<a [^>]*href="\/#demo"[^>]*aria-current=/,
+    'the demo item claims to be a page',
+  );
 });
 
 test('builds both renderings from the one array', async () => {
@@ -125,7 +144,28 @@ test('gives the sheet the console pattern: a named panel, closed to begin with',
      technology could be told what the control operates. */
   assert.match(header, /aria-controls="site-navigation-sheet"/);
   assert.match(header, /aria-expanded="false"/);
-  assert.match(header, /<nav aria-label="Site" hidden id="site-navigation-sheet">/);
+
+  /* The panel's three attributes, read off its own opening tag rather than as a
+     fixed string. The tag opens with a class list now, so a literal would be
+     asserting the order the utilities happen to be written in. `hidden` is the
+     closed-to-begin-with half: a sheet that ships open covers the page for every
+     reader whose script has not run yet. */
+  const sheet = header.match(/<nav [^>]*aria-label="Site"[^>]*>/)?.[0];
+  assert.ok(sheet, 'the sheet is no longer a <nav> named "Site"');
+
+  /* The class list comes off before the attributes are read. The sheet dresses
+     itself with `[&[hidden]]:hidden`, which is the utility that makes a flex
+     container honor the attribute — and a `\bhidden\b` over the whole tag reads
+     that utility and passes with the attribute deleted. Mutation-tested: with
+     `hidden` removed from the tag, the loose pattern still matched, inside the
+     class. */
+  const attributes = sheet.replace(/\sclass="[^"]*"/, ' ');
+  assert.match(attributes, /\shidden[\s>]/, 'the sheet ships open');
+  assert.match(
+    attributes,
+    /id="site-navigation-sheet"/,
+    'the trigger names a panel that is not there',
+  );
   assert.doesNotMatch(header, /<details/, 'the disclosure element is back');
 
   /* Escape closes and returns focus to the trigger, and a press outside closes

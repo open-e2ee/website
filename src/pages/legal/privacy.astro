@@ -1,6 +1,17 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CALLOUT,
+  CONTAINER,
+  LABEL,
+  LEAD,
+  LEGAL_TOC,
+} from '../../lib/recipes';
 ---
 
 <BaseLayout
@@ -9,25 +20,25 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
   canonical="/legal/privacy"
 >
   <article>
-    <header class="article-header">
-      <div class="container article-column">
-        <a class="back-link" href="/legal">Legal</a>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/legal">Legal</a>
         <h1>Privacy Notice</h1>
-        <p class="lead">
+        <p class={LEAD}>
           This notice explains how OpenE2EE handles personal information across the website,
           documentation, console, OpenE2EE Relay, licensing, billing, and communications.
         </p>
-        <p class="article-meta">
+        <p class={ARTICLE_META}>
           <span>Effective {privacyEffectiveDate}</span>
           <span>Version {privacyVersion}</span>
         </p>
       </div>
     </header>
 
-    <div class="container article-column">
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
       <div class="prose">
-        <aside class="callout" aria-label="Encryption boundary">
-          <p class="label">Encryption boundary</p>
+        <aside class={CALLOUT} aria-label="Encryption boundary">
+          <p class={LABEL}>Encryption boundary</p>
           <p>
             The OpenE2EE Signal Protocol SDK runs cryptography on your devices. OpenE2EE Relay
             processes customer-encrypted content and delivery state, but OpenE2EE does not receive
@@ -35,8 +46,8 @@ import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
           </p>
         </aside>
 
-        <nav class="legal-toc" aria-label="Privacy contents">
-          <p class="label">Contents</p>
+        <nav class={LEGAL_TOC} aria-label="Privacy contents">
+          <p class={LABEL}>Contents</p>
           <ol>
             <li><a href="#scope">Scope and controller</a></li>
             <li><a href="#collect">Information we collect</a></li>
