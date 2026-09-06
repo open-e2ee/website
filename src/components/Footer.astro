@@ -6,7 +6,9 @@ import { footerGroups } from '../lib/site-navigation';
 const year = new Date().getUTCFullYear();
 ---
 
-<footer class="border-t border-border-1 bg-ground-panel pt-12 pb-8">
+<footer
+  class="border-t border-border-1 bg-ground-panel pt-[var(--oe-chrome-footer-padding-block-start)] pb-[var(--oe-chrome-footer-padding-block-end)]"
+>
   <div class={CONTAINER}>
     <div
       class="grid grid-cols-[minmax(15rem,1.3fr)_repeat(3,minmax(8rem,1fr))] gap-8 max-[62rem]:grid-cols-2 max-[34rem]:grid-cols-1"

@@ -226,14 +226,50 @@ sr_v21() {
 
 # --- UIR6.4, cross-surface cohesion --------------------------------------------------------
 
-sr_v22() {
+# The reporter is pinned. `node --test` prints TAP when stdout is not a
+# terminal and the spec reporter when it is, so an unpinned run reads `ok 1 -`
+# here and a check mark in a terminal.
+cohesion_tap() {
   test -f tests/cohesion.test.mjs || return 1
-  node --test tests/cohesion.test.mjs
+  node --test --test-reporter=tap tests/cohesion.test.mjs
 }
 
+# One named test reported ok. `grep -F` on the name alone would match the
+# `not ok` line for the same test, so the whole line is anchored.
+cohesion_ok() {
+  printf '%s\n' "$2" | grep -qE "^ok [0-9]+ - $1\$"
+}
+
+# The condition names six measures. The first form of this check ran the file
+# and read its exit code, so a tests/cohesion.test.mjs holding one trivial test
+# satisfied it: what it bound was the file's existence, not the six measures.
+# Each measure now has a test of its own, and every name must report ok. The
+# count is asserted as well, because a renamed or deleted test would otherwise
+# take its measure out of the condition without turning anything red.
+sr_v22() {
+  local tap
+  tap="$(cohesion_tap)" || return 1
+  local name
+  for name in \
+    'the header height is one shared token and no host literal' \
+    'the footer padding is one shared pair of tokens and no host literal' \
+    'the theme control is the shared module on every host' \
+    'the focus ring is the one rule the shared role layer carries' \
+    'the type scale is four shared tokens and no host literal' \
+    'the spacing base is the shared scale and no host scale' \
+    'the lockup renders at the one shared size'; do
+    cohesion_ok "$name" "$tap" || return 1
+  done
+  printf '%s\n' "$tap" | grep -qE '^# pass 8$' || return 1
+  printf '%s\n' "$tap" | grep -qE '^# fail 0$'
+}
+
+# The first form grepped the file for the literal `oe-theme`, which the header
+# comment of the same file contains. It could report only green.
 sr_v23() {
-  test -f tests/cohesion.test.mjs || return 1
-  grep -q "oe-theme" tests/cohesion.test.mjs && node --test tests/cohesion.test.mjs
+  local tap
+  tap="$(cohesion_tap)" || return 1
+  cohesion_ok 'one theme choice persists under the shared key' "$tap"
 }
 
 # --- UIR1.5, the design pin ------------------------------------------------------------------
