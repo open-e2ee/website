@@ -1,11 +1,13 @@
 ---
 /* The chrome first: it imports src/styles/shared.css, which the drawings in
    src/styles/demo.css and the editorial column in src/styles/prose.css also
-   draw from. src/styles/code.css is not here — src/components/HeroSnippet.astro
+   draw from. src/styles/article.css places that column and the furniture
+   around it. src/styles/code.css is not here — src/components/HeroSnippet.astro
    owns it and imports it. */
 import '../styles/global.css';
 import '../styles/demo.css';
 import '../styles/prose.css';
+import '../styles/article.css';
 import PageChrome from '../components/PageChrome.astro';
 
 /*

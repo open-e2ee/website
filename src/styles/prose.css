@@ -11,6 +11,19 @@
  */
 
 /*
+ * The reading size, named because a second element has to be set in it.
+ *
+ * `--oe-prose-measure` is 68ch, and `ch` is a measurement of the font of
+ * whichever element reads it. src/styles/article.css sizes the article's text
+ * column from that token, so the column and the sentences it holds have to be
+ * set in the same face at the same size or the column is 68 characters of a
+ * font nothing on the page is printed in.
+ */
+:root {
+  --oe-prose-size: 1.1875rem;
+}
+
+/*
  * Serif means we are explaining; sans means we are operating. Editorial pages
  * switch families so a reader knows which kind of page they are on before
  * reading a word.
@@ -18,7 +31,7 @@
 .prose {
   font-family: var(--oe-prose-font-family);
   font-weight: var(--oe-prose-weight);
-  font-size: 1.1875rem;
+  font-size: var(--oe-prose-size);
   line-height: var(--oe-prose-line-height);
   max-width: var(--oe-prose-measure);
   color: var(--oe-foreground);
@@ -48,11 +61,21 @@
   margin-top: var(--oe-space-2);
 }
 
+/*
+ * `overflow-wrap` is the reason a package name does not push the page sideways.
+ * An inline code span holds an identifier with no space in it — a package name,
+ * an import path, a method chain — and a word the browser will not break sets
+ * the line box's minimum width. At 320 px that width is wider than the phone,
+ * and the whole article slides under the reader's thumb. `break-word` breaks
+ * such a word only where it would otherwise overflow, so ordinary code spans
+ * read unchanged.
+ */
 .prose code {
   font-family: var(--oe-code-font-family);
   font-size: var(--oe-code-inline-size);
   background: var(--oe-code);
   padding: 0.1em 0.3em;
+  overflow-wrap: break-word;
 }
 
 /*
@@ -104,4 +127,18 @@
 
 .prose img {
   height: auto;
+}
+
+/*
+ * A table is a record. It has as many columns as the record has fields, and
+ * narrowing it to a phone stops it being readable long before it stops being
+ * wide, so it scrolls inside its own box rather than widening the document.
+ * `display: block` is what makes the box scrollable: `overflow` on a table box
+ * alone does not clip it. src/styles/article.css places the box; this decides
+ * how it behaves in any column that renders Markdown.
+ */
+.prose table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
 }

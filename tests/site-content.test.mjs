@@ -34,12 +34,12 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
 
 /*
- * The site's hand-written CSS, in five files: the element base, the quarantined
- * demo and diagram drawings, the code panels, the long-form prose, and the rules
- * more than one of them draws from. A guard that measures a rule reads the file
- * that owns it. A guard that forbids a rule reads all five, because the rule is
- * as wrong in one file as in another. scripts/audit-demo-stylesheet.mjs holds
- * the demo boundary itself.
+ * The site's hand-written CSS, in six files: the element base, the quarantined
+ * demo and diagram drawings, the code panels, the long-form prose, the article
+ * column that places it, and the rules more than one of them draws from. A
+ * guard that measures a rule reads the file that owns it. A guard that forbids
+ * a rule reads all six, because the rule is as wrong in one file as in another.
+ * scripts/audit-demo-stylesheet.mjs holds the demo boundary itself.
  */
 const STYLESHEETS = [
   '../src/styles/global.css',
@@ -47,6 +47,7 @@ const STYLESHEETS = [
   '../src/styles/shared.css',
   '../src/styles/code.css',
   '../src/styles/prose.css',
+  '../src/styles/article.css',
 ];
 
 const stylesheets = async () => (await Promise.all(STYLESHEETS.map(read))).join('\n');

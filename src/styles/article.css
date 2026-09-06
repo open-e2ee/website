@@ -1,0 +1,289 @@
+/*
+ * The article column.
+ *
+ * An article is one measure of prose with things beside it: a table of
+ * contents, the furniture that says when it was written and what comes next,
+ * and the occasional figure or code block that needs more room than a sentence
+ * does. `src/styles/prose.css` dresses the sentences. This file decides where
+ * the column sits and what is allowed to leave it.
+ *
+ * The column is `--oe-prose-measure`, read from the design package. It was
+ * `calc(32rem + var(--oe-space-6) * 2)` on a wrapper, which rendered 512px of
+ * text against a token that says 68ch, so every article read about twenty
+ * characters a line narrower than the one measure the design package states.
+ * Nothing here computes a width from a number: the token is the column.
+ *
+ * A grid rather than a centered block, because three things want three
+ * different widths on the same page. The named lines say which:
+ *
+ *   full-start │ text-start │ text-end │ full-end
+ *              └── the rail ┴─ the prose ┴─ the far gutter
+ *
+ * Everything sits in `text` unless it asks otherwise. The table of contents
+ * takes the leading gutter at the width where that gutter can hold it. A
+ * figure, a code block, or a table takes `wide`, which is the measure plus a
+ * step of token space on each side and never more than the viewport.
+ */
+
+/*
+ * The breakout width, registered so that it is a length rather than a piece of
+ * text pasted into every element that reads it. See the rule that uses it.
+ */
+@property --oe-article-wide {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
+.oe-article {
+  /* The gutter is the smallest space between the column and the viewport edge.
+     It is a floor on the leading and trailing tracks, not their size. */
+  --oe-article-gutter: var(--oe-space-6);
+
+  --oe-article-rail: 14rem;
+
+  /*
+   * The measure is 68ch, and `ch` is a measurement of the font of the element
+   * that reads it. The grid is set in the reading face at the reading size, so
+   * the track and the sentences inside it are 68 of the same character. Read
+   * in Public Sans at the body size the same token is 616 px rather than 732,
+   * which is 57 characters of the font the article is actually printed in.
+   *
+   * Every piece of furniture below states its own family and its own size, so
+   * this reaches the prose and stops.
+   */
+  font-family: var(--oe-prose-font-family);
+  font-size: var(--oe-prose-size);
+
+  /* How far out of the measure a figure, a code block, or a table may reach.
+     Registered above, so this resolves here and travels as a length. */
+  --oe-article-wide: calc(var(--oe-prose-measure) + var(--oe-space-16) * 2);
+
+  display: grid;
+  grid-template-columns:
+    [full-start] minmax(var(--oe-article-gutter), 1fr)
+    [text-start] minmax(0, var(--oe-prose-measure)) [text-end]
+    minmax(var(--oe-article-gutter), 1fr) [full-end];
+}
+
+.oe-article > * {
+  grid-column: text;
+}
+
+/*
+ * The prose lays its own children in the article's tracks.
+ *
+ * `subgrid` is what makes a figure four paragraphs into the body reach past
+ * the measure without leaving `.prose`, which is the element every rule in
+ * prose.css hangs from. The alternative is a negative margin computed against
+ * the column, which is the calculation this file exists to remove.
+ */
+.oe-article > .prose {
+  grid-column: full;
+  display: grid;
+  grid-template-columns: subgrid;
+  max-width: none;
+}
+
+.oe-article > .prose > * {
+  grid-column: text;
+}
+
+/* ── What leaves the measure ────────────────────────────────────────────────
+   A figure, a code block, and a table are read by looking rather than by
+   reading a line at a time, so the measure is not their constraint. They take
+   the `wide` track pair, which is a step of token space on each side of the
+   column and nothing at the widths where there is no room for it.
+
+   The width comes from `--oe-article-wide`, and `@property` is why it is the
+   same width on all four. An unregistered custom property is substituted as
+   text, so a measure written in `ch` resolves against whichever element reads
+   it: measured, the one expression was 732 px on a paragraph and 679 px on a
+   `<pre>`, which is a breakout narrower than the column it breaks out of.
+   Registering it as a `<length>` computes it once, on the article.
+
+   The gutter is subtracted rather than crossed. A code block that runs to both
+   edges of a phone has no margin to hold it, and the border on `.prose pre`
+   then draws against the side of the screen. */
+
+.oe-article > .prose > figure,
+.oe-article > .prose > pre,
+.oe-article > .prose > table,
+.oe-article > .prose > .oe-article-wide {
+  grid-column: full;
+  inline-size: min(100% - var(--oe-article-gutter) * 2, var(--oe-article-wide));
+  margin-inline: auto;
+}
+
+/* ── The table of contents ──────────────────────────────────────────────────
+   Below the width where the leading gutter can hold the rail, the contents
+   read as the first piece of furniture in the column: a short list under a
+   rule, at the article's own measure. */
+
+.oe-article-toc {
+  margin-bottom: var(--oe-space-12);
+  border-top: 1px solid var(--oe-border-1);
+  padding-top: var(--oe-space-4);
+  font-family: var(--oe-font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.oe-article-toc-label {
+  margin: 0 0 var(--oe-space-3);
+  color: var(--oe-text-3);
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  font-weight: var(--oe-metadata-weight);
+  letter-spacing: var(--oe-metadata-tracking);
+  text-transform: uppercase;
+}
+
+.oe-article-toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.oe-article-toc li + li {
+  margin-top: var(--oe-space-2);
+}
+
+.oe-article-toc a {
+  color: var(--oe-text-3);
+  text-decoration: none;
+}
+
+.oe-article-toc a:hover {
+  color: var(--oe-foreground);
+  text-decoration: underline;
+}
+
+/* The reading position. `aria-current` carries it, so the state a sighted
+   reader sees and the state a screen reader announces are the same attribute
+   rather than a class beside one. */
+.oe-article-toc a[aria-current='true'] {
+  color: var(--oe-foreground);
+}
+
+/*
+ * The rail.
+ *
+ * 80rem is the width at which the leading gutter is wider than the rail plus
+ * its own gutter: the measure is 68ch, and what is left over at 80rem is
+ * larger than `--oe-article-rail` by more than `--oe-article-gutter`. Under
+ * that width the rail would either overlap the column or squeeze it, and the
+ * contents read better as furniture than as a cramped margin note.
+ */
+@media (min-width: 80rem) {
+  .oe-article > .oe-article-toc {
+    grid-column: full-start / text-start;
+    justify-self: end;
+    align-self: start;
+    position: sticky;
+    top: var(--oe-space-12);
+    inline-size: var(--oe-article-rail);
+    margin-inline-end: var(--oe-space-8);
+    margin-bottom: 0;
+    /* A long contents list scrolls inside the rail rather than running past
+       the bottom of the viewport with no way to reach the end of it. */
+    max-block-size: calc(100vh - var(--oe-space-24));
+    overflow-y: auto;
+  }
+}
+
+/* ── The furniture ──────────────────────────────────────────────────────────
+   Public Sans on everything outside the prose, so the serif says "this is the
+   article" and nothing else on the page borrows it. The dense values — the
+   date, the reading time, the tags — keep the site's metadata face, which is
+   mono, because DESIGN.md gives mono to values. */
+
+.oe-article-header,
+.oe-article-footer {
+  font-family: var(--oe-font-sans);
+}
+
+.oe-article-header {
+  padding-top: clamp(2.5rem, 2rem + 3vw, 4rem);
+  padding-bottom: var(--oe-space-8);
+}
+
+.oe-article-header h1 {
+  margin: var(--oe-space-4) 0;
+  font-size: clamp(1.875rem, 1.25rem + 2vw, 2.625rem);
+}
+
+.oe-article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--oe-space-3);
+  margin-top: var(--oe-space-6);
+  border-top: 1px solid var(--oe-border-1);
+  padding-top: var(--oe-space-4);
+  color: var(--oe-text-3);
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  font-weight: var(--oe-metadata-weight);
+  letter-spacing: var(--oe-metadata-tracking);
+}
+
+.oe-article-footer {
+  margin-top: var(--oe-space-16);
+}
+
+/*
+ * Where to go next.
+ *
+ * Two cells, the older article and the newer one. At the end of the list there
+ * is one, and it keeps its side: a reader who learns that the newer article is
+ * on the right does not have to relearn it on the last page.
+ */
+.oe-article-neighbors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--oe-space-6);
+  border-top: 1px solid var(--oe-border-1);
+  padding-top: var(--oe-space-6);
+}
+
+.oe-article-neighbor-next {
+  grid-column: 2;
+  text-align: end;
+}
+
+.oe-article-neighbor a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.oe-article-neighbor a:hover .oe-article-neighbor-title {
+  text-decoration: underline;
+}
+
+.oe-article-neighbor-label {
+  display: block;
+  color: var(--oe-text-3);
+  font-family: var(--oe-metadata-font-family);
+  font-size: var(--oe-metadata-size);
+  font-weight: var(--oe-metadata-weight);
+  letter-spacing: var(--oe-metadata-tracking);
+  text-transform: uppercase;
+}
+
+.oe-article-neighbor-title {
+  display: block;
+  margin-top: var(--oe-space-2);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 34rem) {
+  .oe-article-neighbors {
+    grid-template-columns: 1fr;
+  }
+
+  .oe-article-neighbor-next {
+    grid-column: 1;
+    text-align: start;
+  }
+}
