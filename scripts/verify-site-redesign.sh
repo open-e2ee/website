@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 #
-# The website verifier. Twenty-five conditions, SR-V01 through SR-V25.
+# The website verifier. Thirty-nine conditions, SR-V01 through SR-V39.
 # Each one names the UI redesign task that added it. That plan completed on
 # 2026-09-06 and moved to archive/ui-redesign-2026-09-06/ in the workspace,
 # where proof/verifier-schedule.md records what each condition holds. This
 # script is the standing contract now: add and drop nothing here without
 # stating the reason in the pull request that changes it.
+#
+# SR-V26 through SR-V39 belong to docs/plans/funnel-redesign-plan.html, which
+# is active. They start red and turn green as FR2 through FR17 land.
 #
 # Every condition guards on the artifact its task shipped, so a condition that
 # passes without that artifact proves nothing. That includes the preservation
@@ -285,6 +288,127 @@ sr_v24() {
   npm ls @open-e2ee/design
 }
 
+# --- FR2 through FR10, the funnel and product redesign ---------------------------
+#
+# docs/plans/funnel-redesign-plan.html owns these. Each one guards on the
+# artifact its task ships, so it cannot pass before that task lands.
+
+PRICING=src/pages/pricing.astro
+RELAY_PAGE=src/pages/relay/index.astro
+HOME=src/pages/index.astro
+ARTICLE_CSS=src/styles/article.css
+DIAGRAMS=src/components/diagrams
+
+# FR2. The five Relay plan names come from the pricing data module, so the
+# check reads that module rather than a list written twice.
+sr_v26() {
+  test -f "$PRICING" || return 1
+  test -f tests/pricing-page.test.mjs || return 1
+  node --test --test-reporter=tap tests/pricing-page.test.mjs
+}
+
+# FR2. A tier without its own action is a row, not an offer. The count comes
+# from the built page, because an Astro component can drop a control.
+sr_v27() {
+  test -d dist || return 1
+  test -f scripts/check-pricing-actions.mjs || return 1
+  node scripts/check-pricing-actions.mjs dist
+}
+
+# FR3. The homepage leads with the Relay, offers a free start, and sets no
+# emoji. An emoji here reads as a different type system than the rest of the
+# site uses.
+sr_v28() {
+  test -f "$HOME" || return 1
+  test -f tests/home-funnel.test.mjs || return 1
+  node --test --test-reporter=tap tests/home-funnel.test.mjs
+}
+
+# FR4. The start action has to reach both header surfaces. A desktop-only
+# control hides the funnel from every phone reader.
+sr_v29() {
+  have_nav || return 1
+  grep -q 'startAction' "$NAV" || return 1
+  node --test --test-reporter=tap tests/navigation.test.mjs
+}
+
+# FR5. The flagship page needs a product drawing and a free start. The figure
+# count comes from the built page.
+sr_v30() {
+  test -f "$RELAY_PAGE" || return 1
+  test -f tests/relay-page.test.mjs || return 1
+  node --test --test-reporter=tap tests/relay-page.test.mjs
+}
+
+# FR6. The rail overlapped every wide element by 32 px at three widths. This
+# reads the recorded geometry, because the defect is a rendered rectangle and
+# no source string states it.
+sr_v31() {
+  test -f "$ARTICLE_CSS" || return 1
+  test -f tests/article-rail-clearance.test.mjs || return 1
+  node --test --test-reporter=tap tests/article-rail-clearance.test.mjs
+}
+
+# FR7. A post that names no next step ends the funnel. The check reads the
+# built posts, so a layout that drops the band fails.
+sr_v32() {
+  test -d dist || return 1
+  test -f scripts/check-blog-funnel.mjs || return 1
+  node scripts/check-blog-funnel.mjs dist
+}
+
+# FR8. One relay form across the five diagrams. The grammar file names the
+# form, and the check asserts every diagram composes it.
+sr_v33() {
+  test -d "$DIAGRAMS" || return 1
+  test -f "$BASELINE/diagram-relay-form.txt" || return 1
+  node --test --test-reporter=tap tests/diagram-grammar.test.mjs
+}
+
+# FR8. No arrow may cross a box that it neither starts at nor ends at, and no
+# rule may intersect the box of a text element. Both are rendered geometry.
+sr_v34() {
+  test -d "$DIAGRAMS" || return 1
+  test -f tests/diagram-geometry.test.mjs || return 1
+  node --test --test-reporter=tap tests/diagram-geometry.test.mjs
+}
+
+# FR9. The mark measured 1.6 times the cap height beside the wordmark, and the
+# lockup had the same clear space as the gap between two navigation words.
+sr_v35() {
+  test -f tests/lockup-fit.test.mjs || return 1
+  node --test --test-reporter=tap tests/lockup-fit.test.mjs
+}
+
+# FR10. Six ramps ship in the design package and the site rendered almost none
+# of them. The check counts the ramps the built stylesheet references.
+sr_v36() {
+  test -d dist || return 1
+  test -f scripts/check-ramp-coverage.mjs || return 1
+  node scripts/check-ramp-coverage.mjs dist
+}
+
+# FR17. The three hosts share one presentation. The measures are the body size,
+# the line height, the rule weight, the control radius, and the control height.
+# A shared value that each host writes for itself is not shared, so the check
+# asserts the role layer answers them.
+sr_v37() {
+  grep -q -- '--oe-control-height' node_modules/@open-e2ee/design/packages/design/dist/css/roles.css || return 1
+  grep -q -- '--oe-rule-weight' node_modules/@open-e2ee/design/packages/design/dist/css/roles.css
+}
+
+sr_v38() {
+  test -f tests/host-presentation.test.mjs || return 1
+  node --test --test-reporter=tap tests/host-presentation.test.mjs
+}
+
+# FR16. The dark grounds may not read brown. Saturation is the measure, because
+# a neutral at this lightness is invisible to a hue reading alone.
+sr_v39() {
+  test -f scripts/check-ground-neutrality.mjs || return 1
+  node scripts/check-ground-neutrality.mjs
+}
+
 # --- self-assertions -------------------------------------------------------------------------
 
 self_ci() { grep -q 'verify-site-redesign.sh' .github/workflows/ci.yml; }
@@ -324,6 +448,20 @@ check SR-V22 'UIR6.4  The six chrome measures match across the three hosts' sr_v
 check SR-V23 'UIR6.4  One theme choice persists under the shared key' sr_v23
 check SR-V24 'UIR1.5  The website pins the new design tag' sr_v24
 check SR-V25 'UIR5.1  The demo stylesheet needs no class the chrome defines' sr_v25
+check SR-V26 'FR2  The pricing page leads with the five Relay tiers' sr_v26
+check SR-V27 'FR2  Every Relay tier carries its own action, and licensing follows' sr_v27
+check SR-V28 'FR3  The homepage leads with the Relay and a free start' sr_v28
+check SR-V29 'FR4  The header carries a start action at every width' sr_v29
+check SR-V30 'FR5  The relay page carries a figure and a free start' sr_v30
+check SR-V31 'FR6  No wide element overlaps the article rail' sr_v31
+check SR-V32 'FR7  Every post carries a path into the product' sr_v32
+check SR-V33 'FR8  One relay form appears in all five diagrams' sr_v33
+check SR-V34 'FR8  No arrow crosses a box it does not touch' sr_v34
+check SR-V35 'FR9  The mark fits the cap height and the clear space holds' sr_v35
+check SR-V36 'FR10  The built site references four or more ramps' sr_v36
+check SR-V37 'FR17  The role layer answers the shared presentation measures' sr_v37
+check SR-V38 'FR17  The website reads the shared presentation measures' sr_v38
+check SR-V39 'FR16  No dark ground exceeds four percent saturation' sr_v39
 
 printf 'Summary: %d passed, %d failed\n' "$passed" "$failed"
 
