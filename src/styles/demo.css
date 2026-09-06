@@ -8,8 +8,8 @@
  * none of them. scripts/audit-demo-stylesheet.mjs holds the boundary.
  *
  * The rules arrived from src/styles/global.css unchanged. The ranges are
- * recorded in docs/plans/proof/ui-redesign/uir5-1.md, and
- * scripts/redesign-baseline/demo-css.txt is the line-for-line record.
+ * recorded in archive/ui-redesign-2026-09-06/proof/uir5-1.md in the workspace,
+ * and scripts/redesign-baseline/demo-css.txt is the line-for-line record.
  *
  * src/styles/shared.css is not imported here. src/styles/global.css imports it
  * once, and src/layouts/BaseLayout.astro loads that stylesheet first.
