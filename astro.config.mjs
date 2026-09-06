@@ -3,6 +3,7 @@ import mdx from '@astrojs/mdx';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import tailwindcss from '@tailwindcss/vite';
 import externalLinks from './scripts/external-links.mjs';
 import { codeThemes } from './src/lib/code-theme.mjs';
 
@@ -20,7 +21,7 @@ export default defineConfig({
        not a secure context, so `crypto.subtle` does not exist there and the
        SDK cannot encrypt. Opt-in because the cert is untrusted (one browser
        warning per device) and plain-http localhost covers everything else. */
-    plugins: process.env.DEV_SSL ? [basicSsl()] : [],
+    plugins: [tailwindcss(), ...(process.env.DEV_SSL ? [basicSsl()] : [])],
   },
   /* externalLinks runs last: it rewrites emitted HTML, so it has to see the
      output every other integration has finished producing. */

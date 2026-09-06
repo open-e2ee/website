@@ -49,9 +49,13 @@ have_chrome() { test -f "$CHROME"; }
 
 # --- UIR5.1, Tailwind and the quarantine ---------------------------------------
 
+# The import alone is not the load. A file can import the plugin and never
+# register it, which reads as Tailwind arriving and ships a page without it, so
+# the registration in the plugin list is what this asks for.
 sr_v01() {
   have_demo_css || return 1
-  grep -q '@tailwindcss/vite' astro.config.mjs &&
+  grep -q "from '@tailwindcss/vite'" astro.config.mjs &&
+    grep -qE 'plugins: \[[^]]*tailwindcss\(\)' astro.config.mjs &&
     grep -q 'roles.css' "$CSS"
 }
 

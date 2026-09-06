@@ -17,6 +17,21 @@ import tokens from '@open-e2ee/design/tokens' with { type: 'json' };
 import { codeSurfaces, shellSurface } from '../src/lib/code-theme.mjs';
 import { ruleFor } from './css-rules.mjs';
 
+/*
+ * The site's hand-written CSS, in three files since UIR5.1: the page chrome,
+ * the quarantined demo and diagram drawings, and the rules both draw from. A
+ * measurement of one rule reads the file that owns it. An invariant over every
+ * rule reads all three, or the split moves a wearer out of its reach.
+ */
+const stylesheets = async () =>
+  (
+    await Promise.all(
+      ['../src/styles/global.css', '../src/styles/demo.css', '../src/styles/shared.css'].map(
+        (path) => readFile(new URL(path, import.meta.url), 'utf8'),
+      ),
+    )
+  ).join('\n');
+
 const channels = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
 const toLinear = (v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
 const luminance = (hex) => {
@@ -233,7 +248,7 @@ test('measures the gutter mix the stylesheet actually paints', async () => {
 });
 
 test('keeps text off the token the palette only guarantees for borders', async () => {
-  const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
+  const css = await stylesheets();
 
   /* `subtle` doubles as `border-control` in light mode, and the design system
    * asserts it against the canvas at a floor of 3 — the non-text threshold.
