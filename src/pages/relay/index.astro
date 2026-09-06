@@ -1,5 +1,22 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  ACTIONS,
+  BAND,
+  BAND_HEAD,
+  BAND_SURFACE,
+  CONTAINER,
+  CONTAINER_MEASURE,
+  CTA_PRIMARY,
+  CTA_SUBLABEL,
+  DEFINITION_ROWS,
+  LABEL,
+  LEAD,
+  MEASURE,
+  PAGE_HERO,
+  STACK,
+  TEXT_LINKS,
+} from '../../lib/recipes';
 ---
 
 <BaseLayout
@@ -7,50 +24,50 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   description="Managed encrypted delivery infrastructure for the OpenE2EE Signal Protocol SDK, with device mailboxes, groups, attachments, push wakes, and exact lifecycle controls."
   canonical="/relay"
 >
-  <header class="page-hero">
-    <div class="container measure">
-      <p class="label">OpenE2EE Relay</p>
+  <header class={PAGE_HERO}>
+    <div class={CONTAINER_MEASURE}>
+      <p class={LABEL}>OpenE2EE Relay</p>
       <h1>The managed delivery path for the OpenE2EE Signal Protocol SDK.</h1>
-      <p class="lead">Use the SDK on each device. OpenE2EE Relay operates encrypted device mailboxes, delivery and pull, group fan-out, private attachment storage, push wakes, and exact lifecycle controls.</p>
+      <p class={LEAD}>Use the SDK on each device. OpenE2EE Relay operates encrypted device mailboxes, delivery and pull, group fan-out, private attachment storage, push wakes, and exact lifecycle controls.</p>
       <p>The relay never needs message plaintext or device private keys. It does see the routing, timing, size, quota, and abuse metadata needed to operate the service.</p>
-      <div class="actions">
-        <a class="cta-primary" href="https://console.open-e2ee.dev">
+      <div class={ACTIONS}>
+        <a class={CTA_PRIMARY} href="https://console.open-e2ee.dev">
           <span class="oe-button">Open the Console</span>
-          <span class="cta-sublabel">Development environment · no card</span>
+          <span class={CTA_SUBLABEL}>Development environment · no card</span>
         </a>
       </div>
     </div>
   </header>
 
-  <section class="band band-surface">
-    <div class="container">
-      <div class="band-head"><h2>What Relay operates</h2></div>
-      <dl class="definition-rows">
+  <section class:list={[BAND, BAND_SURFACE]}>
+    <div class={CONTAINER}>
+      <div class={BAND_HEAD}><h2>What Relay operates</h2></div>
+      <dl class={DEFINITION_ROWS}>
         <div><dt>Delivery</dt><dd>Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.</dd></div>
         <div><dt>Groups and files</dt><dd>Bounded group fan-out and private encrypted attachment storage. Customer application servers do not need to become message infrastructure.</dd></div>
         <div><dt>Operations</dt><dd>Push wakes, exact usage, quotas, lifecycle controls, recovery drills, and an operator plane.</dd></div>
         <div><dt>Your application</dt><dd>Authentication choice, product directory and social graph, user experience, moderation policy, recovery policy, and application data.</dd></div>
       </dl>
-      <p class="text-links"><a href="/relay/pricing">Review Relay pricing</a><a href="/legal/relay-terms">Relay service terms</a><a href="/compare/virgil-security">Compare architecture with Virgil Security</a><a href="/licensing">Review self-hosted licensing</a></p>
+      <p class={TEXT_LINKS}><a href="/relay/pricing">Review Relay pricing</a><a href="/legal/relay-terms">Relay service terms</a><a href="/compare/virgil-security">Compare architecture with Virgil Security</a><a href="/licensing">Review self-hosted licensing</a></p>
     </div>
   </section>
 
-  <section class="band">
-    <div class="container stack">
-      <div class="band-head">
+  <section class={BAND}>
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
         <h2>One connection for each environment</h2>
-        <p class="measure">
+        <p class={MEASURE}>
           <code>oe dev</code> writes the Development connection. <code>oe deploy</code>{' '}
           writes the production connection. Both use <code>OPEN_E2EE_RELAY_URL</code>, so the
           application source does not change.
         </p>
       </div>
-      <p class="measure">
+      <p class={MEASURE}>
         The connection URL is public configuration, not a credential. The SDK resolves the exact
         environment and project binding from that URL. You do not select a Relay hostname or pair
         it with a second key.
       </p>
-      <p class="text-links">
+      <p class={TEXT_LINKS}>
         <a href="https://docs.open-e2ee.dev/relay">Read the Relay quickstart</a>
         <a href="https://console.open-e2ee.dev">Open the Console</a>
       </p>

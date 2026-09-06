@@ -1,5 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CONTAINER,
+  LEAD,
+} from '../../lib/recipes';
 ---
 
 <BaseLayout
@@ -8,15 +16,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   canonical="/legal/relay-retention"
 >
   <article>
-    <header class="article-header">
-      <div class="container article-column">
-        <a class="back-link" href="/legal">Legal</a>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/legal">Legal</a>
         <h1>OpenE2EE Relay Retention Statement</h1>
-        <p class="lead">What Relay keeps, for how long, and what deletion can and cannot recall.</p>
-        <p class="article-meta"><span>Effective August 26, 2026</span><span>Version 2026-08-26</span></p>
+        <p class={LEAD}>What Relay keeps, for how long, and what deletion can and cannot recall.</p>
+        <p class={ARTICLE_META}><span>Effective August 26, 2026</span><span>Version 2026-08-26</span></p>
       </div>
     </header>
-    <div class="container article-column">
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
       <div class="prose">
         <h2>Encrypted delivery content</h2>
         <ul>

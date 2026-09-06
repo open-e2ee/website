@@ -2,6 +2,7 @@
 import Icon from './Icon.astro';
 import Lockup from './Lockup.astro';
 import ThemeToggle from './ThemeToggle.astro';
+import { CONTAINER, QUIET_LINK } from '../lib/recipes';
 import {
   consoleUrl,
   currentNavigation,
@@ -12,20 +13,40 @@ import {
 const path = Astro.url.pathname;
 ---
 
-<header class="site-header">
-  <div class="container header-inner">
-    <a class="brand-link" href="/" aria-label="OpenE2EE home"><Lockup /></a>
-    <nav class="site-nav" aria-label="Primary">
+<header class="sticky top-0 z-10 border-b border-border-1 bg-ground-canvas">
+  <div
+    class:list={[
+      CONTAINER,
+      'flex min-h-16 items-center gap-6 max-[62rem]:justify-between max-[62rem]:gap-3',
+    ]}
+  >
+    <a class="inline-flex text-[inherit] no-underline" href="/" aria-label="OpenE2EE home"><Lockup /></a>
+    {/* The row of words, and the sheet below carries the same set at phone
+        width. 62rem is where the words stop fitting beside the actions. */}
+    <nav class="me-auto flex gap-6 text-[0.9375rem] max-[62rem]:hidden" aria-label="Primary">
       {headerNavigation.map((link) => (
-        <a href={link.href} aria-current={currentNavigation(link.href, path)}>{link.label}</a>
+        <a
+          class:list={[
+            QUIET_LINK,
+            'aria-[current=page]:text-text-1 aria-[current=page]:underline aria-[current=page]:underline-offset-[0.35em]',
+          ]}
+          href={link.href}
+          aria-current={currentNavigation(link.href, path)}>{link.label}</a>
       ))}
     </nav>
-    <div class="header-actions">
+    {/* `--oe-icon-size` is 2em on this row and nowhere else. `.oe-icon` is
+        1em so an icon takes the size of the text beside it, which is right in
+        a sentence and wrong here: none of these three has text beside it, and
+        at the header's 15px they were the smallest things in the row they are
+        the actions of. 2em is 30px, 75% of the 40px control box, and the
+        tallest thing in the row. The override sits on the row rather than on
+        the token, so it is these three instances that change. */}
+    <div class="flex items-center gap-4 text-[0.9375rem] [--oe-icon-size:2em]">
       <a class="oe-icon-link" href={repositoryUrl} aria-label="SDK on GitHub">
         <Icon name="github" />
       </a>
       <ThemeToggle />
-      <a class="text-link desktop-only" href={consoleUrl}>Console</a>
+      <a class:list={[QUIET_LINK, 'max-[62rem]:hidden']} href={consoleUrl}>Console</a>
       {/*
         The phone's copy of the navigation, and the console's sheet is the
         pattern: a button that owns `aria-expanded`, a panel it names, Escape to
@@ -43,7 +64,7 @@ const path = Astro.url.pathname;
         real text for anything that reads names rather than shapes, the way the
         theme toggle carries its own.
       */}
-      <div class="nav-sheet" data-nav-sheet>
+      <div class="relative hidden max-[62rem]:block" data-nav-sheet>
         <button
           class="oe-icon-button"
           type="button"
@@ -51,15 +72,33 @@ const path = Astro.url.pathname;
           aria-expanded="false"
           data-nav-sheet-trigger
         >
-          <Icon name="menu" class="nav-sheet-icon nav-sheet-icon-open" />
-          <Icon name="close" class="nav-sheet-icon nav-sheet-icon-close" />
+          {/* Bars closed, cross open: one control, and it always draws what
+              the next press does. Both icons ship, and the trigger's own
+              state chooses between them, so the control is never an empty
+              box while a module loads. */}
+          <Icon name="menu" class="[[aria-expanded=true]_&]:hidden" />
+          <Icon name="close" class="hidden [[aria-expanded=true]_&]:block" />
           <span class="oe-visually-hidden">Menu</span>
         </button>
-        <nav aria-label="Site" hidden id="site-navigation-sheet">
+        {/* The panel hangs from the trigger, which is the last control in the
+            row, so it spans the gutters rather than the width of the trigger.
+            `hidden` is what the script sets, and a flex container ignores it
+            without the attribute selector. */}
+        <nav
+          class="absolute right-4 left-4 mt-2 flex flex-col border border-border-3 bg-ground-raised shadow-[var(--oe-shadow-md)] [&[hidden]]:hidden"
+          aria-label="Site"
+          hidden
+          id="site-navigation-sheet"
+        >
           {headerNavigation.map((link) => (
-            <a href={link.href} aria-current={currentNavigation(link.href, path)}>{link.label}</a>
+            <a
+              class="border-b border-border-1 px-4 py-3 text-text-1 no-underline last:border-b-0"
+              href={link.href}
+              aria-current={currentNavigation(link.href, path)}>{link.label}</a>
           ))}
-          <a href={consoleUrl}>Console</a>
+          <a
+            class="border-b border-border-1 px-4 py-3 text-text-1 no-underline last:border-b-0"
+            href={consoleUrl}>Console</a>
         </nav>
       </div>
     </div>

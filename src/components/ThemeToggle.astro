@@ -36,9 +36,17 @@ import Icon from './Icon.astro';
 ---
 
 <button class="oe-icon-button" type="button" data-theme-toggle>
-  <Icon name="desktop" class="theme-icon theme-icon-system" />
-  <Icon name="sun" class="theme-icon theme-icon-light" />
-  <Icon name="moon" class="theme-icon theme-icon-dark" />
+  {/* One of three, chosen by the preference `theme-init.js` publishes on
+      <html> before first paint. The monitor is what the markup shows with no
+      attribute set, so the control still says something with JavaScript
+      unavailable — which is also the case where the preference can only be
+      system. */}
+  <Icon
+    name="desktop"
+    class="block [:root[data-theme-preference=dark]_&]:hidden [:root[data-theme-preference=light]_&]:hidden"
+  />
+  <Icon name="sun" class="hidden [:root[data-theme-preference=light]_&]:block" />
+  <Icon name="moon" class="hidden [:root[data-theme-preference=dark]_&]:block" />
   <span class="oe-visually-hidden">Color theme: <span data-theme-label>system</span></span>
 </button>
 <span class="oe-visually-hidden" role="status" data-theme-status></span>

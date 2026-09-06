@@ -1,15 +1,18 @@
 ---
 import Lockup from './Lockup.astro';
+import { CONTAINER, METADATA, QUIET_LINK } from '../lib/recipes';
 import { footerGroups } from '../lib/site-navigation';
 
 const year = new Date().getUTCFullYear();
 ---
 
-<footer class="site-footer">
-  <div class="container">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <a class="brand-link" href="/"><Lockup /></a>
+<footer class="border-t border-border-1 bg-ground-panel pt-12 pb-8">
+  <div class={CONTAINER}>
+    <div
+      class="grid grid-cols-[minmax(15rem,1.3fr)_repeat(3,minmax(8rem,1fr))] gap-8 max-[62rem]:grid-cols-2 max-[34rem]:grid-cols-1"
+    >
+      <div>
+        <a class="inline-flex text-[inherit] no-underline" href="/"><Lockup /></a>
         {/*
           The footer carried "Opaque to the relay. Open to inspection." and,
           under it, "Brand language is provisional — taglines are proposed,
@@ -34,23 +37,31 @@ const year = new Date().getUTCFullYear();
           page now carries the annotation itself, scoped to the one page that
           needs it. See `src/pages/product.astro`.
         */}
-        <p>End-to-end encryption for TypeScript applications. AGPLv3, or a commercial license.</p>
+        <p class="mt-4 max-w-[36ch] text-base text-text-3">
+          End-to-end encryption for TypeScript applications. AGPLv3, or a commercial license.
+        </p>
       </div>
       {footerGroups.map((group) => (
         <div>
-          <h2>{group.heading}</h2>
-          <nav aria-label={group.heading}>
-            {group.links.map((link) => <a href={link.href}>{link.label}</a>)}
+          <h2 class:list={[METADATA, 'mb-4 text-text-3']}>{group.heading}</h2>
+          <nav class="flex flex-col gap-2 text-[0.9375rem]" aria-label={group.heading}>
+            {group.links.map((link) => (
+              <a class={QUIET_LINK} href={link.href}>{link.label}</a>
+            ))}
           </nav>
         </div>
       ))}
     </div>
-    <div class="footer-legal">
-      <nav aria-label="Legal">
-        <a href="/legal">Legal</a>
-        <a href="/legal/privacy">Privacy</a>
-        <a href="/legal/terms">Terms</a>
-        <a href="/legal/relay-terms">Relay terms</a>
+    {/* The legal bar is where a reader goes looking for these four, so they
+        sit beside the copyright rather than inside the columns above. */}
+    <div
+      class="mt-12 flex flex-wrap gap-x-8 gap-y-3 border-t border-border-1 pt-6 text-sm text-text-3"
+    >
+      <nav class="flex flex-wrap gap-4" aria-label="Legal">
+        <a class={QUIET_LINK} href="/legal">Legal</a>
+        <a class={QUIET_LINK} href="/legal/privacy">Privacy</a>
+        <a class={QUIET_LINK} href="/legal/terms">Terms</a>
+        <a class={QUIET_LINK} href="/legal/relay-terms">Relay terms</a>
       </nav>
       <p>© {year} OpenE2EE LLC and OpenE2EE contributors.</p>
       <p>

@@ -44,11 +44,12 @@
  * between the mark and the word after it, on top of the word space. The other
  * two marks paint to all four edges of their own boxes, so the battery was the
  * only one of the three carrying built-in padding. Cropping is what lets one
- * margin in `global.css` apply to all three and mean the same thing.
+ * inline margin in `src/lib/inline-marks.ts` apply to all three and mean the
+ * same thing.
  *
  * `currentColor`, unlike the two marks beside it. Those are locked to brand
  * color by a trademark license or by what nominative use allows. This one is
- * ours and is free to mean something, so `global.css` points it at the green
+ * ours and is free to mean something, so it is painted with the green
  * this site uses where something is settled rather than promised, which is the
  * claim "batteries included" makes. Drawing in `currentColor` rather than in
  * the hex is what lets one drawing take a light and a dark value with nothing
@@ -57,14 +58,28 @@
  * aria-hidden, and not a link. "Batteries" is the noun the sentence beside it
  * already uses, so announcing the glyph would only repeat the line.
  *
- * Size and alignment live in `global.css` with the other two, because the three
- * are set against each other rather than one at a time.
+ * Size and alignment live in `src/lib/inline-marks.ts` with the other two,
+ * because the three are set against each other rather than one at a time.
  */
 import BatteryGlyph from './BatteryGlyph.astro';
+import { INLINE_MARK, INLINE_MARK_SVG } from '../lib/inline-marks';
 ---
 
-<span class="battery-mark">
-  <svg viewBox="6 2 12 20" aria-hidden="true" focusable="false" fill="currentColor">
+<span
+  class:list={[
+    INLINE_MARK,
+    '[--oe-mark-size:1.08em] [--oe-mark-aspect:0.6]',
+    'text-[var(--oe-color-verify-600)] dark:text-[var(--oe-color-verify-500)]',
+  ]}
+  data-mark="battery"
+>
+  <svg
+    class={INLINE_MARK_SVG}
+    viewBox="6 2 12 20"
+    aria-hidden="true"
+    focusable="false"
+    fill="currentColor"
+  >
     <BatteryGlyph />
   </svg>
 </span>

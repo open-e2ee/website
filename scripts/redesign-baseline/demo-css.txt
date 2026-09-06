@@ -542,33 +542,6 @@
   height: auto;
 }
 
-/* A scenario's own figure sits between a heading and the list that reads it
-   out, so it carries the space of a paragraph rather than of a band. It also
-   takes the full width of the scenario body — which is the width the prose
-   beside it cannot use, being capped at the reading measure. */
-.scenario-figure {
-  margin-block: var(--oe-space-3) var(--oe-space-4);
-}
-
-/*
- * The two labels swap weight here, and only here.
- *
- * In a blog-post diagram the `.diagram-label`s name the parts — device, relay,
- * ciphertext — so they are what the reader is meant to read, and the tick
- * labels annotate them. This figure is the other way round: `0` and
- * `1,986 bytes` are the ruler's ends, scaffolding for the one mark that is the
- * whole subject. At the shared sizes the scaffolding was set two points larger
- * than the subject and won the page, which is a hierarchy this drawing cannot
- * afford — the mark is already the thinnest thing in it.
- */
-.scenario-figure .diagram-label {
-  font-size: 11px;
-}
-
-.scenario-figure .diagram-tick-label {
-  font-size: 13px;
-}
-
 /* The wide composition stops being readable before it stops fitting, so it
    holds a floor and scrolls under it. The stacked one is drawn for the narrow
    column and never needs the scroll — see `SignatureDiagram.astro`.
@@ -908,7 +881,3 @@
 .starfield[data-starlit] .starfield-mark {
   visibility: hidden;
 }
-@media (prefers-reduced-motion: reduce) {
-  .scenario-marker {
-    transition: none;
-  }

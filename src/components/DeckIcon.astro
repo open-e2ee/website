@@ -73,12 +73,24 @@ if (!isBattery && !paths) {
 }
 ---
 
+{/* Third-tier and not the first: the heading names the row and the icon repeats
+    it, so the icon carries the weight of the body copy it sits beside rather
+    than competing with the words that do the work.
+
+    The top padding lands the icon's optical center on the heading's x-height
+    instead of on its cap line, which is where a flush-top square sits.
+
+    Below 30rem the deck is already one row per line, so the icon column is
+    competing with the body copy for the whole viewport rather than for half of
+    it. The box narrows; the drawing keeps its size, because an Octicon master
+    is drawn for one scale and a 24-unit drawing put under 24 device pixels
+    loses the half-pixel details first. */}
 {/* One viewBox for all five, including the battery, which is drawn on the same
     24-unit grid but paints a tall narrow glyph inside it. `xMidYMid meet` is
     the default, so it centers at its own proportions instead of stretching to
     the square, and it lines up with the four that fill the box. */}
 <svg
-  class="deck-icon"
+  class="h-8 w-8 pt-[0.15rem] text-text-3 max-[30rem]:h-7 max-[30rem]:w-7"
   viewBox="0 0 24 24"
   fill="currentColor"
   aria-hidden="true"

@@ -1,10 +1,12 @@
 ---
 /* The chrome first: it imports src/styles/shared.css, which the drawings in
-   src/styles/demo.css also draw from. */
+   src/styles/demo.css and the editorial column in src/styles/prose.css also
+   draw from. src/styles/code.css is not here — src/components/HeroSnippet.astro
+   owns it and imports it. */
 import '../styles/global.css';
 import '../styles/demo.css';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
+import '../styles/prose.css';
+import PageChrome from '../components/PageChrome.astro';
 
 /*
  * The one face that is on every page, in every heading, from the first paint.
@@ -131,17 +133,8 @@ const imageUrl = new URL(image, Astro.site);
     <title>{siteTitle}</title>
   </head>
   <body>
-    <a class="skip-link" href="#main-content">Skip to content</a>
-    {/* Deferred and external: nothing here should compete with the page, and
-        the CSP is script-src 'self' with no 'unsafe-inline'. */}
-    <script src="/measure.js" defer></script>
-    <Header />
-    {/* `tabindex="-1"` is what makes the skip link land. Without it the URL
-        fragment moves the scroll position but not the focus ring, so the next
-        Tab resumes in the header the link was pressed to escape. */}
-    <main id="main-content" tabindex="-1">
+    <PageChrome>
       <slot />
-    </main>
-    <Footer />
+    </PageChrome>
   </body>
 </html>

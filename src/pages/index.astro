@@ -11,6 +11,145 @@ import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
 import TypeScriptMark from '../components/TypeScriptMark.astro';
+import {
+  ACTIONS,
+  BAND,
+  BAND_HEAD,
+  BAND_SURFACE,
+  CONTAINER,
+  CTA_PRIMARY,
+  LEAD,
+  MEASURE,
+  ROW_WIDE,
+  ROWS,
+  STACK,
+  TEXT_LINKS,
+} from '../lib/recipes';
+
+/*
+ * The hero, down the middle at every width.
+ *
+ * The page was two columns above 74rem — copy on the left, demo on the right —
+ * and the split is what set the code's size. The longest line of the program
+ * the selector builds is 91 characters and comes verbatim from the capture, so
+ * it cannot be shortened to suit a column. Centered, the copy is capped at its
+ * own measure and the panel takes the container's full width, the same box the
+ * carrier recording under it takes.
+ *
+ * `justify-items: center` rather than a cap on the grid, because the children
+ * want different widths: the copy wants a reading measure, the panel wants the
+ * program, and the strip wants the container. The one that caps itself does it
+ * on its own class.
+ *
+ * The gap is named so the strip can subtract it. A second copy of the clamp is
+ * a second thing to keep in step, and the two are only correct together.
+ */
+const HERO = 'pt-10 pb-[clamp(3rem,2rem+4vw,5rem)]';
+
+const HERO_GRID =
+  'grid justify-items-center gap-[var(--hero-grid-gap)] [--hero-grid-gap:clamp(2rem,1rem+4vw,4rem)]';
+
+/*
+ * Centered text, at every width.
+ *
+ * Nothing in this column is running text: the h1 is display type, the lead is a
+ * badge row, the actions are two buttons, and the strip is seven marks.
+ * Centring short display type is ordinary, and the return-sweep argument that
+ * forbids centered paragraphs does not reach any of the four.
+ *
+ * 48rem is the cap, and it is a reading measure. The panel below is the
+ * container's full width, so at 1280 and up it overhangs this column by 182px
+ * on each side. Symmetric overhang on a centered hero reads as one column with a
+ * wider panel in it.
+ *
+ * The lead gives its own 56ch cap up to this one, and the reason is line count
+ * rather than width: 56ch sets 685px, and the difference to the full 768 is a
+ * line of centered body copy the reader does not have to walk back for.
+ */
+const HERO_COPY = 'flex w-full max-w-[48rem] flex-col items-center gap-6 text-center';
+
+/*
+ * The strip is the panel's caption, and the grid could not say so. One `gap`
+ * put the same distance at every boundary, so the four children read as four
+ * unrelated blocks. 16px flat rather than a fraction of the gap: a fraction
+ * holds one ratio at every width, and at 390 a third of the gap is 10.7px
+ * against the strip's own 8px internals, where the strip stops being a unit
+ * before it starts being a caption.
+ *
+ * Subtracted from the gap rather than replacing it, because `row-gap` is not
+ * per-child, and it cannot drift from the gap it cancels: both sides are the
+ * same variable.
+ */
+const HERO_STRIP = 'mb-[calc(var(--oe-space-4)-var(--hero-grid-gap))]';
+
+/*
+ * The panel, at the width the page already uses for recorded evidence.
+ *
+ * A container query rather than a viewport one: the code has to fit the panel,
+ * and the panel is the container's content box, which is the viewport less
+ * padding that changes at breakpoints. A viewport formula would be right at one
+ * width and drifting at the others. `src/styles/code.css` writes the size.
+ *
+ * A grid item defaults to `min-width: auto`, which would let 91 characters of
+ * unwrappable code widen the hero past the viewport rather than scroll inside
+ * the panel.
+ */
+const HERO_DEMO = 'flex w-full min-w-0 flex-col gap-3 [container-type:inline-size]';
+
+/*
+ * The headline's own ceiling, which no other h1 on the site carries.
+ *
+ * The global h1 clamp goes to 3.75rem. This sentence is 57 characters, so at
+ * 60px it sets three lines and the hero opens with a wall. 2.625rem holds it to
+ * two lines at every width the page is read at, and the floor and the slope are
+ * the global clamp's own, narrowed to that ceiling.
+ *
+ * The variant is written on the section rather than on the `h1` element because
+ * the ceiling and the step-down under it in HERO_RAMP are one decision, and a
+ * class on the element would separate the two halves of it.
+ */
+const HERO_HEADLINE = '[&_h1]:text-[clamp(2.0625rem,1.15rem+3.1vw,2.625rem)]';
+
+/*
+ * The ramp under the headline, which this page breaks and no other page does.
+ *
+ * The hero headline stops climbing at 42px — it has to, or a 57-character
+ * sentence sets three lines — while the global h2 clamp keeps going to 36px.
+ * From 74rem up, where both are pinned to their maxima, the page reads as a
+ * flat stack of equally loud voices at a ratio of 1.17. The same two headings
+ * are 1.30 apart at 390px, so the defect belongs to width alone.
+ *
+ * Every other page runs 60 against 36, a ratio of 1.67, because none of them
+ * holds its h1 down. Re-capping the global h2 would fix this page by flattening
+ * six healthy ones.
+ */
+const HERO_RAMP = 'min-[74rem]:[&_h2]:text-[1.75rem]';
+
+/*
+ * The deck with an icon column. The icons line up down the band as one column
+ * rather than each one sitting where its own row's text starts.
+ *
+ * `items-start` and not `center`: the icons are read against the headings, and
+ * one centered on a two-line body drifts below the heading it belongs to as soon
+ * as one cell runs longer than another.
+ *
+ * Below 30rem the rows are already one per line, so the icon column is
+ * competing with the body copy for the whole viewport rather than for half of
+ * it. The column narrows and the gap closes; `DeckIcon.astro` keeps the drawing
+ * at a scale an Octicon master is drawn for.
+ */
+const ROWS_ICONED =
+  '[&>li]:grid [&>li]:grid-cols-[2rem_minmax(0,1fr)] [&>li]:items-start [&>li]:gap-x-4 ' +
+  'max-[30rem]:[&>li]:grid-cols-[1.75rem_minmax(0,1fr)] max-[30rem]:[&>li]:gap-x-3';
+
+/*
+ * Runtime shortcuts under the feature band. Set in the metadata face so they
+ * read as a signpost beside the rows rather than as a second call to action.
+ */
+const PLATFORM_LINKS =
+  'flex flex-wrap items-baseline gap-3 font-[family-name:var(--oe-metadata-font-family)] ' +
+  'text-[length:var(--oe-metadata-size)] font-medium tracking-[var(--oe-metadata-tracking)] ' +
+  '[&>span]:text-text-3';
 
 /* Annotated rather than inferred: a bare array literal widens `icon` to
  * `string`, and the point of naming the icons is that a typo is a build error
@@ -235,9 +374,9 @@ const runtimes = [
   title="End-to-end encryption for TypeScript apps"
   description="Add end-to-end encrypted messaging to a TypeScript app. The Signal Protocol in one npm package for Expo, React Native, browsers, and Node."
 >
-  <section class="hero">
-    <div class="container hero-grid">
-      <div class="hero-copy">
+  <section class:list={[HERO, HERO_HEADLINE]}>
+    <div class:list={[CONTAINER, HERO_GRID]}>
+      <div class={HERO_COPY}>
         {/* "Add …" rather than naming the thing. The noun phrase described a
             category and left the reader to work out their own relationship to
             it; the verb states the job, and the job is the reason anyone is
@@ -245,7 +384,7 @@ const runtimes = [
             headline and the meta description into the same words, which they
             were not before. */}
         <h1>
-          Add <span class="keep-together">end-to-end</span> encrypted messaging to your TypeScript
+          Add <span class="whitespace-nowrap">end-to-end</span> encrypted messaging to your TypeScript
           app.
         </h1>
         {/* "Pure TypeScript" is the widest form of a scoped claim, and it is
@@ -307,7 +446,7 @@ const runtimes = [
             `src/components/OsiMark.astro` for the conditions, and for why that
             artwork is the solid mark rather than the outline one that shipped
             for a round and read as a smudge at this size. */}
-        <p class="lead">
+        <p class:list={[LEAD, 'max-w-none!']}>
           {/* Keep each mark and the words around it on one line. Astro deletes
               the whitespace between a text run and an inline element, so
               wrapping this paragraph at a tag boundary silently joins a
@@ -318,7 +457,7 @@ const runtimes = [
           <OsiMark /> Fully Open Source. <TypeScriptMark /> Pure TypeScript.{' '}
           <BatteryMark /> Batteries included.
         </p>
-        <div class="actions">
+        <div class:list={[ACTIONS, 'justify-center']}>
           {/* Two actions, founder-set labels. The primary is the demo, not the
               quickstart: it scrolls to `#demo`, which is the exhibit itself
               and not the band around it, so the reader arrives at the running
@@ -333,7 +472,7 @@ const runtimes = [
               deciding to spend them. A scroll needs no time promise,
               and a third line of small gray type here would stand between the
               offer and the proof. */}
-          <a class="cta-primary" href="#demo">
+          <a class:list={[CTA_PRIMARY, 'items-center!']} href="#demo">
             <span class="oe-button">See Demo</span>
           </a>
           <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/start/quickstart">
@@ -365,7 +504,7 @@ const runtimes = [
           own labels, and the S3 qualification is carried by the heading
           plus the entry's name — see `src/lib/platform-marks.mjs`. Both are
           test-pinned to the installed SDK. */}
-      <PlatformStrip />
+      <PlatformStrip class={HERO_STRIP} />
 
       {/* The code panel sits under the offer now, rather than beside the copy
           in a second column, and it closes the hero.
@@ -384,7 +523,7 @@ const runtimes = [
           two-column layout answered that for free by putting the panel level
           with the headline, and a single column only keeps it if the panel
           follows the offer directly. */}
-      <div class="hero-demo">
+      <div class={HERO_DEMO}>
         <HeroSnippet />
         {/* The caption, the "Not in this example, and yours to supply"
             disclosure list, and the objections group that followed — the two
@@ -409,8 +548,8 @@ const runtimes = [
     written where the id is, and `public/_redirects` sends /demo to the same
     fragment.
   */}
-  <section class="band band-surface">
-    <div class="container stack">
+  <section class:list={[BAND, BAND_SURFACE, HERO_RAMP]}>
+    <div class:list={[CONTAINER, STACK]}>
       {/*
         The demo is one exhibit across the page rather than a panel beside a
         figure, and the band's head is inside it: the console hangs Demo
@@ -493,7 +632,7 @@ const runtimes = [
               into, so the sentence swaps its middle for what that reader
               actually gets. An offer that cannot be taken is the "nothing to
               press" defect this band has already paid for once. */}
-          <p class="measure">
+          <p class={MEASURE}>
             <span class="demo-offer-wide">Type a sentence and the installed SDK encrypts it</span><span class="demo-offer-narrow">A scripted conversation plays through the installed SDK</span>{' '}
             against the in-memory relay. Keys stay on the devices. The relay never needs
             message plaintext or device private keys.
@@ -513,9 +652,9 @@ const runtimes = [
     </div>
   </section>
 
-  <section class="band">
-    <div class="container">
-      <div class="band-head">
+  <section class:list={[BAND, HERO_RAMP]}>
+    <div class={CONTAINER}>
+      <div class={BAND_HEAD}>
         {/* "What you get, and what it costs you to find out" for eight rounds.
             The second half priced the reader's attention rather than naming
             anything the product does, which framed a deck of
@@ -524,7 +663,7 @@ const runtimes = [
             the rows do that work themselves. So: one clause, and the clause
             is the offer. */}
         <h2>What ships in the box<BoxMark /></h2>
-        <p class="measure">
+        <p class={MEASURE}>
           {/* The lead used to open on the deck's one limit and send the reader
               to that cell before any other: a reader whose product cannot live
               without server-side moderation left early and cheaply, which is
@@ -547,18 +686,18 @@ const runtimes = [
           rather than its content. The icon carries no accessible name —
           `DeckIcon.astro` argues that where they are drawn — so the row reads
           exactly as it did before to anything that is not looking at it. */}
-      <ul class="rows rows-iconed">
+      <ul class:list={[ROWS, ROWS_ICONED]}>
         {differentiators.map((item) => (
-          <li id={item.id} class={item.wide ? 'row-wide' : undefined}>
+          <li id={item.id} class={item.wide ? ROW_WIDE : undefined}>
             <DeckIcon name={item.icon} />
-            <div class="row-body">
-              <h3>{item.title}</h3>
-              <p>{item.body}</p>
+            <div>
+              <h3 class="mb-2">{item.title}</h3>
+              <p class:list={['text-text-3', !item.wide && 'max-w-[54ch]']}>{item.body}</p>
               {/* Only the license cell carries one. A row of links here would
                   flatten the band into a nav list; one link, on the one cell
                   whose answer lives on another page, reads as a continuation. */}
               {item.link && (
-                <p class="row-link">
+                <p class="mt-2">
                   <a href={item.link.href}>{item.link.label}</a>
                 </p>
               )}
@@ -566,7 +705,7 @@ const runtimes = [
           </li>
         ))}
       </ul>
-      <p class="platform-links">
+      <p class={PLATFORM_LINKS}>
         <span>Start where you are:</span>
         {runtimes.map((runtime) => <a href={runtime.href}>{runtime.label}</a>)}
       </p>
@@ -575,7 +714,7 @@ const runtimes = [
           has one side; the maturity test derives both sides from that file,
           so a store the SDK newly marks fails the build instead of drifting
           into a page that quietly keeps grading it the old way. */}
-      <p class="muted measure">
+      <p class:list={['text-text-3', MEASURE]}>
         The Expo, Node, browser, and bare React Native stores implement the storage interface
         in full.{' '}
         <a href="/product">What each store holds</a>.
@@ -605,9 +744,9 @@ const runtimes = [
       draws it at badge scale anyway, at the founder's direction and in the
       page's own ink rather than OSI's; that file records the breach and what
       survives it. */}
-  <section class="band band-surface">
-    <div class="container">
-      <div class="band-head">
+  <section class:list={[BAND, BAND_SURFACE, HERO_RAMP]}>
+    <div class={CONTAINER}>
+      <div class={BAND_HEAD}>
         {/* The four verbs that used to hang off this heading are the four
             commits in the drawing below it, where a reader meets them once
             instead of twice. A head that lists what the band is about to show
@@ -625,7 +764,7 @@ const runtimes = [
             license in front of a reader twice under two headings. It says it
             here, in the band the heading already promises, and the deck's
             route to the tiers moved down with it. */}
-        <p class="measure">
+        <p class={MEASURE}>
           The complete SDK is free under AGPLv3, and a commercial license covers
           closed-source products. The build is the same either way. Every feature is in
           the package, and none of it is time-limited.
@@ -652,7 +791,7 @@ const runtimes = [
           <StarfieldMark />
         </div>
 
-        <p class="text-links">
+        <p class={TEXT_LINKS}>
           <a href="https://github.com/open-e2ee/signal-protocol-js">SDK on GitHub</a>
           <a href="/licensing">Licensing</a>
           <a href="/pricing">Pricing</a>
@@ -674,7 +813,7 @@ const runtimes = [
           build for the page carrying the mark, so the guard follows the mark
           rather than the file.
         */}
-        <p class="legal-note">The OSI logo trademark is the trademark of Open Source Initiative.</p>
+        <p class="text-sm leading-[1.55] text-text-3">The OSI logo trademark is the trademark of Open Source Initiative.</p>
       </div>
     </div>
   </section>

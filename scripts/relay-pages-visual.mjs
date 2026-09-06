@@ -82,7 +82,7 @@ async function main() {
         const result = await cdp.send('Runtime.evaluate', {
           expression: `(() => {
             const h1 = document.querySelector('h1').getBoundingClientRect();
-            const tables = [...document.querySelectorAll('.table-scroll')].map((region) => ({
+            const tables = [...document.querySelectorAll('[data-table-scroll]')].map((region) => ({
               clientWidth: region.clientWidth,
               overflowX: getComputedStyle(region).overflowX,
               scrollWidth: region.scrollWidth,

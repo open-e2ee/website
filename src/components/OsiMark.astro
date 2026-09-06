@@ -11,7 +11,7 @@
  *   Promote OSI-approved licenses  the AGPLv3 cell in the feature band
  *   No disparagement               nothing on this site is about OSI
  *   No implied endorsement         one glyph at text size, never at badge
- *                                  scale — see `.osi-mark` in global.css
+ *                                  scale — see `src/lib/inline-marks.ts`
  *   ® and an attribution statement the footer, on every page, verbatim
  *   Follow the logo guidelines     the artwork and palette below
  *
@@ -81,14 +81,25 @@
  * waive.
  */
 import { OSI_BODY, OSI_EDGE, OSI_EDGE_WIDTH, OSI_PATH, OSI_VIEW_BOX } from '../lib/osi-artwork.mjs';
+import { INLINE_MARK, INLINE_MARK_SVG } from '../lib/inline-marks';
 ---
 
 {/* aria-hidden on the drawing because the visible words beside it already name
     it, and the link needs an accessible name of its own. The build rewrite in
     `scripts/external-links.mjs` appends "(opens in a new tab)" to this label —
     text appended inside an icon-only link is never announced. */}
-<a class="osi-mark" href="https://opensource.org" aria-label="Open Source Initiative">
-  <svg viewBox={OSI_VIEW_BOX} aria-hidden="true" focusable="false">
+<a
+  class:list={[INLINE_MARK, '[--oe-mark-size:1.15em]']}
+  data-mark="osi"
+  href="https://opensource.org"
+  aria-label="Open Source Initiative"
+>
+  <svg
+    class={INLINE_MARK_SVG}
+    viewBox={OSI_VIEW_BOX}
+    aria-hidden="true"
+    focusable="false"
+  >
     <path
       d={OSI_PATH}
       fill={OSI_BODY}

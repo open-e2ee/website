@@ -18,17 +18,24 @@ import { codeSurfaces, shellSurface } from '../src/lib/code-theme.mjs';
 import { ruleFor } from './css-rules.mjs';
 
 /*
- * The site's hand-written CSS, in three files since UIR5.1: the page chrome,
- * the quarantined demo and diagram drawings, and the rules both draw from. A
- * measurement of one rule reads the file that owns it. An invariant over every
- * rule reads all three, or the split moves a wearer out of its reach.
+ * The site's hand-written CSS, in five files: the element base, the quarantined
+ * demo and diagram drawings, the code panels, the long-form prose, and the
+ * rules more than one of them draws from. A measurement of one rule reads the
+ * file that owns it. An invariant over every rule reads all five, or a later
+ * split moves a wearer out of its reach.
  */
+const STYLESHEETS = [
+  '../src/styles/global.css',
+  '../src/styles/demo.css',
+  '../src/styles/shared.css',
+  '../src/styles/code.css',
+  '../src/styles/prose.css',
+];
+
 const stylesheets = async () =>
   (
     await Promise.all(
-      ['../src/styles/global.css', '../src/styles/demo.css', '../src/styles/shared.css'].map(
-        (path) => readFile(new URL(path, import.meta.url), 'utf8'),
-      ),
+      STYLESHEETS.map((path) => readFile(new URL(path, import.meta.url), 'utf8')),
     )
   ).join('\n');
 
@@ -202,7 +209,7 @@ test('meets AA where the site puts its own text on a borrowed surface', () => {
 });
 
 test('measures the gutter mix the stylesheet actually paints', async () => {
-  const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles/code.css', import.meta.url), 'utf8');
 
   /* The row above re-derives the gutter color from two tokens and a 0.78
    * weight, which is only a measurement of the page while that weight is the
@@ -305,21 +312,21 @@ test('keeps text off the token the palette only guarantees for borders', async (
  * that justifies it is checked rather than asserted in a comment.
  */
 test('keeps the lead’s battery legible as a graphic on both canvases', async () => {
-  const css = await readFile(new URL('../src/styles/global.css', import.meta.url), 'utf8');
+  const mark = await readFile(new URL('../src/components/BatteryMark.astro', import.meta.url), 'utf8');
 
-  /* Read out of the stylesheet rather than hard-coded, so this measures what
-   * the page paints. A hard-coded pair would still pass after someone changed
-   * the rule, which is the vacuous-gate failure this file has had before.
+  /* Read out of the component rather than hard-coded, so this measures what the
+   * page paints. A hard-coded pair would still pass after someone changed the
+   * drawing, which is the vacuous-gate failure this file has had before.
    *
-   * Through `ruleFor` rather than a regex on the whole file, because
-   * `/\.battery-mark \{[^}]*color: …/` also matches inside
-   * `:root.dark .battery-mark { … }`. Here it read the right rule only because
-   * the light one happens to come first in the file, which is a property of
-   * where somebody put a block rather than of what this is measuring. The same
-   * regex in `site-content.test.mjs` did read the dark rule, and passed while
-   * the light color was reverted outright. */
-  const light = ruleFor(css, '.battery-mark').match(/color:\s*var\(--([\w-]+)\)/)?.[1];
-  const dark = ruleFor(css, ':root.dark .battery-mark').match(/color:\s*var\(--([\w-]+)\)/)?.[1];
+   * The two canvases used to be two stylesheet rules, and the trap then was that
+   * `.battery-mark {` also ends the dark selector, so a regex over the file read
+   * whichever rule came first. They are one class list now, and the trap is the
+   * mirror image: `text-[…]` is a prefix of `dark:text-[…]`, so a pattern that
+   * does not pin the start of the utility matches the dark value for the light
+   * canvas. Each side is therefore anchored — the light one on a boundary that
+   * `dark:` cannot satisfy. */
+  const light = mark.match(/(?:^|[\s'"])text-\[var\(--([\w-]+)\)\]/)?.[1];
+  const dark = mark.match(/dark:text-\[var\(--([\w-]+)\)\]/)?.[1];
   assert.ok(light && dark, 'the battery should take a token on each canvas');
 
   /* `--oe-verified` is semantic and lives under `tokens.semantic`; the ramp

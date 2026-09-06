@@ -10,6 +10,28 @@ import {
   specifications,
 } from '../lib/assurance.mjs';
 import { maturityLine } from '../lib/sdk.mjs';
+import TableScroll from '../components/TableScroll.astro';
+import {
+  ACTIONS,
+  BAND,
+  BAND_HEAD,
+  BAND_SURFACE,
+  CALLOUT,
+  CONTAINER,
+  CONTAINER_MEASURE,
+  DATA_TABLE,
+  DEFINITION_ROWS,
+  FIGURE_ROWS,
+  LABEL,
+  LEAD,
+  MATURITY,
+  MEASURE,
+  PAGE_HERO,
+  ROWS,
+  ROWS_SINGLE,
+  STACK,
+  TEXT_LINKS,
+} from '../lib/recipes';
 
 const DOCS = 'https://github.com/open-e2ee/signal-protocol-js/blob/main';
 
@@ -73,18 +95,18 @@ const notHidden = [
   title="Security model"
   description="What a relay adapter receives field by field, what sealed sender does not hide, the threat model boundary, and the published limits."
 >
-  <header class="page-hero">
-    <div class="container measure">
-      <p class="label">Security model</p>
+  <header class={PAGE_HERO}>
+    <div class={CONTAINER_MEASURE}>
+      <p class={LABEL}>Security model</p>
       {/* "written down" comments on the existence of the page to a reader who
           is on it. What the heading has to do is name the question the page
           answers, which is the question the lead under it answers verbatim. */}
       <h1>What your relay can see</h1>
-      <p class="lead">
+      <p class={LEAD}>
         The relay never needs message plaintext or device private keys. It does need routing
         metadata.
       </p>
-      <p class="maturity">{maturityLine}</p>
+      <p class={MATURITY}>{maturityLine}</p>
     </div>
   </header>
 
@@ -99,11 +121,11 @@ const notHidden = [
     The intro's own second clause went the same way: "it does not empty the
     envelope" rebutted a claim no reader arrived with.
   */}
-  <section class="band">
-    <div class="container stack">
-      <div class="band-head">
+  <section class={BAND}>
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
         <h2>The delivery envelope, field by field</h2>
-        <p class="measure">
+        <p class={MEASURE}>
           Plaintext and long-term private keys exist only inside a device. This is what a relay
           adapter receives. Sealed sender omits two of these fields.
         </p>
@@ -111,8 +133,8 @@ const notHidden = [
       <div class="diagram">
         <SignatureDiagram />
       </div>
-      <div class="table-scroll">
-        <table class="data">
+      <TableScroll label="The delivery envelope, field by field">
+        <table class={DATA_TABLE}>
           <thead>
             <tr>
               <th scope="col">Field</th>
@@ -132,8 +154,8 @@ const notHidden = [
             ))}
           </tbody>
         </table>
-      </div>
-      <p class="muted measure">
+      </TableScroll>
+      <p class:list={['text-text-3', MEASURE]}>
         Some fields appear only in context: <code>recipientRegistrationId</code> accompanies the
         initial handshake envelope, and <code>contentHint</code>, <code>ephemeral</code>, and{' '}
         <code>urgent</code> are optional delivery hints. Your relay also assigns its own message id
@@ -142,9 +164,9 @@ const notHidden = [
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container stack">
-      <div class="band-head">
+  <section class:list={[BAND, BAND_SURFACE]}>
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
         <h2>What sealed sender does not hide</h2>
         {/* The intro hard-coded the row count and closed on "because a security
             page that only lists wins is marketing", which is the page
@@ -152,11 +174,11 @@ const notHidden = [
             messaging.md §2 bans "anonymous" and "untraceable" applied to
             sealed sender, so the sentence that replaces it states the
             negation the rows then support. */}
-        <p class="measure">
+        <p class={MEASURE}>
           Sealed sender omits the sender fields. It does not make a sender anonymous.
         </p>
       </div>
-      <ul class="rows">
+      <ul class={ROWS}>
         {notHidden.map((item) => (
           <li>
             <h3>{item.title}</h3>
@@ -184,17 +206,17 @@ const notHidden = [
     this page exists to make and the one thing here that is not the title of a
     linked section.
   */}
-  <section class="band">
-    <div class="container stack">
-      <div class="band-head">
+  <section class={BAND}>
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
         <h2>Threat model boundary</h2>
-        <p class="measure">
+        <p class={MEASURE}>
           An attacker in full control of your relay can serve stale or hostile responses and observe
           every routing field above. Once trust is pinned, an identity substitution that would reach
           plaintext fails closed.
         </p>
       </div>
-      <div class="callout measure">
+      <div class:list={[CALLOUT, MEASURE]}>
         <p>
           First contact is trust on first use. A relay that is hostile from the first message can
           substitute an identity before trust is pinned. A safety-number comparison closes that gap.
@@ -202,24 +224,24 @@ const notHidden = [
           rotation is explicitly accepted.
         </p>
       </div>
-      <p class="text-links">
+      <p class={TEXT_LINKS}>
         <a href={docs.securityModel}>Threat model</a>
       </p>
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container stack">
-      <div class="band-head">
+  <section class:list={[BAND, BAND_SURFACE]}>
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
         <h2>What there is to check</h2>
         {/* "Everything above is a claim" undercut the four bands before it, and
             the tail was an aphorism — "because an undated number stops being
             evidence the moment it ages" — on a band whose headline figure was
             24 days old when it was written. The figures carry their own dates,
             so the intro only has to say that they do. */}
-        <p class="measure">Each figure carries the date it was measured.</p>
+        <p class={MEASURE}>Each figure carries the date it was measured.</p>
       </div>
-      <dl class="figure-rows">
+      <dl class={FIGURE_ROWS}>
         <div>
           <dt>{checks.assertions}</dt>
           <dd>
@@ -260,7 +282,7 @@ const notHidden = [
         clause gave the reason to cut it: "in the terms used elsewhere on this
         site" is a vocabulary reconciliation, which is a documentation job.
       */}
-      <p class="text-links">
+      <p class={TEXT_LINKS}>
         <a href={docs.assurance}>Assurance</a>
       </p>
     </div>
@@ -279,12 +301,12 @@ const notHidden = [
     the figure reads its length, and the test suite asserts every row still
     carries a pinned revision.
   */}
-  <section class="band">
-    <div class="container stack">
-      <div class="band-head">
+  <section class={BAND}>
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
         <h2>Published limits</h2>
       </div>
-      <dl class="definition-rows">
+      <dl class={DEFINITION_ROWS}>
         <div>
           <dt>Not audited by any independent firm</dt>
           <dd>
@@ -353,20 +375,20 @@ const notHidden = [
     </div>
   </section>
 
-  <section class="band band-surface">
-    <div class="container stack">
-      <div class="band-head">
+  <section class:list={[BAND, BAND_SURFACE]}>
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
         <h2>Read the primary sources</h2>
         {/* Was 34 words in one sentence, and it opened by announcing its own
             audience to that audience. Two of its three clauses said the same
             thing. The precedence rule is the part worth keeping, and it is
             what licenses every cut on this page. */}
-        <p class="measure">
+        <p class={MEASURE}>
           These are the maintained documents. Where one disagrees with this page, the document is
           right.
         </p>
       </div>
-      <ul class="rows rows-single">
+      <ul class={ROWS_SINGLE}>
         <li><a href={`${DOCS}/docs/SECURITY.md`}>Threat model</a></li>
         <li><a href={`${DOCS}/docs/PROTOCOL_POLICY.md`}>Protocol policy and post-quantum modes</a></li>
         <li><a href={`${DOCS}/ARCHITECTURE.md`}>Architecture</a></li>
@@ -401,8 +423,8 @@ const notHidden = [
     of documents entirely — a scoped review under an enterprise agreement — and
     that is the action here now.
   */}
-  <section class="band">
-    <div class="container measure stack">
+  <section class={BAND}>
+    <div class:list={[CONTAINER_MEASURE, STACK]}>
       <h2>Take this to whoever signs it off</h2>
       {/* The paragraph that opened here restated the band directly above it —
           "this page is a summary, these are the documents it summarises" —
@@ -413,7 +435,7 @@ const notHidden = [
         Enterprise and OEM agreements include a scoped security review, service levels, and
         negotiated portfolio or redistribution rights.
       </p>
-      <div class="actions">
+      <div class={ACTIONS}>
         <a class="oe-button" href="https://console.open-e2ee.dev/contact?plan=enterprise">
           Plan a security review
         </a>
@@ -429,10 +451,10 @@ const notHidden = [
         governs, not what a tier costs — and /licensing carries the /legal/terms
         link itself, so this restores the whole path rather than half of it.
       */}
-      <p class="text-links">
+      <p class={TEXT_LINKS}>
         <a href="/licensing">Licensing</a>
       </p>
-      <p class="muted">
+      <p class="text-text-3">
         Email <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a> with a
         threat-model question, or an answer you need for a questionnaire. No license, meeting, or
         account first. If you are earlier than that, read{' '}
