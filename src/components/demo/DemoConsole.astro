@@ -275,17 +275,6 @@ const TOGGLES = [
   <DemoLog />
 
   {/*
-    Each sentence answers one misreading. The first: the drawing is a replay,
-    and the run behind every figure went at full speed. The second: the timings
-    under each device are not latency, because the relay runs in this tab. No
-    number here contains a network, and nothing on the page simulates one.
-  */}
-  <p class:list={['demo-console-note', MEASURE]}>
-    Recorded at full speed and replayed at reading pace. Every number comes from that run.
-    The relay is in this tab, so no timing includes a network.
-  </p>
-
-  {/*
     The recorded capture: server-rendered, visible on arrival, hidden by the
     script once the console can actually be pressed, and restored if the run
     could not be brought up.
