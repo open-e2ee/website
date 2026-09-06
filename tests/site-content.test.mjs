@@ -33,6 +33,20 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
 
 /*
+ * The site's hand-written CSS. UIR5.1 split it in three: the page chrome, the
+ * quarantined demo and diagram drawings, and the rules both draw from. A guard
+ * that measures a rule reads the file that owns it. A guard that forbids a rule
+ * reads all three, because the rule is as wrong in one file as in another.
+ * scripts/audit-demo-stylesheet.mjs holds the boundary itself.
+ */
+const stylesheets = async () =>
+  (
+    await Promise.all(
+      ['../src/styles/global.css', '../src/styles/demo.css', '../src/styles/shared.css'].map(read),
+    )
+  ).join('\n');
+
+/*
  * Build-output assertions skip when dist/ is absent, so `npm test` still runs
  * on an unbuilt tree locally. In CI the workflow builds before it tests, so an
  * absent page there means the ordering regressed — and a plain skip would hide
@@ -659,7 +673,7 @@ test('keeps the recorded carrier row on the page, wherever it sits', async () =>
 test('stands the demo’s settings in the band’s corner, on the heading’s line', async () => {
   const console_ = await read('../src/components/demo/DemoConsole.astro');
   const index = await read('../src/pages/index.astro');
-  const raw = await read('../src/styles/global.css');
+  const raw = await read('../src/styles/demo.css');
   const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
 
   /* "Demo Settings" and not "Settings". The control used to stand over the
@@ -968,7 +982,9 @@ test('shows the example on a phone rather than offering it', async () => {
   assert.doesNotMatch(snippet, /<details/, 'the example is behind a disclosure again');
   assert.doesNotMatch(snippet, /<summary/, 'the example is behind a disclosure again');
   assert.doesNotMatch(snippet, /demo-disclosure/);
-  assert.doesNotMatch(css, /demo-disclosure/);
+  /* All three stylesheets: a rule for a demo class comes back into
+     src/styles/demo.css, which is where the audit would put it. */
+  assert.doesNotMatch(await stylesheets(), /demo-disclosure/);
   assert.match(snippet, /<div class="code-block hero-snippet">/);
 
   /* Nothing script-driven decides whether the panel shows, so nothing in the
@@ -1778,7 +1794,7 @@ test('closes the page on what the license hands over, not on forking it', async 
   const [graph, index, css] = await Promise.all([
     read('../src/components/CommitLine.astro'),
     read('../src/pages/index.astro'),
-    read('../src/styles/global.css'),
+    read('../src/styles/demo.css'),
   ]);
 
   /* Four commits, and every verb a use. The free-software definition says
@@ -1813,11 +1829,17 @@ test('closes the page on what the license hands over, not on forking it', async 
   assert.doesNotMatch(drawing, /fork|branch|merge|elbow|contribut|patch|change it/i);
 
   /* The stylesheet block, bounded by its first rule and the next unrelated one.
-   * Everything asserted below is about this block and nothing else. */
-  const block = css
-    .slice(css.indexOf('.commitline {'), css.indexOf('.definition-rows {'))
-    .replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.ok(block.length > 0, 'the commit graph no longer has a block in the stylesheet');
+   * Everything asserted below is about this block and nothing else. Both bounds
+   * are asserted: `indexOf` answers -1 for an anchor that moved, and a slice
+   * taken to -1 is the rest of the file, which reads as a much larger block
+   * rather than as a missing one. */
+  const start = css.indexOf('.commitline {');
+  const end = css.indexOf('.starfield {');
+  assert.ok(
+    start >= 0 && end > start,
+    'the commit graph no longer has a block in the stylesheet',
+  );
+  const block = css.slice(start, end).replace(/\/\*[\s\S]*?\*\//g, '');
   assert.doesNotMatch(block, /elbow|branch|fork/i);
 
   /*
@@ -1932,7 +1954,7 @@ test('draws three marks from the real artwork and puts every light back', async 
   const [mark, marks, css] = await Promise.all([
     read('../src/components/StarfieldMark.astro'),
     read('../src/lib/starfield-marks.mjs'),
-    read('../src/styles/global.css'),
+    read('../src/styles/demo.css'),
   ]);
   const source = mark.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
   const composition = marks.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -2337,7 +2359,7 @@ test('gives the security page something to do at the end of it', async () => {
 });
 
 test('keeps a narrowed container on the same left edge as everything else', async () => {
-  const css = await read('../src/styles/global.css');
+  const css = await read('../src/styles/shared.css');
 
   /* `.container` centers its box and `.measure` narrows it, so composing them
    * centered a narrow box: five page heroes started a quarter of the way across
@@ -2349,12 +2371,14 @@ test('keeps a narrowed container on the same left edge as everything else', asyn
   );
   /* The cap is in `ch`, which resolves against the font of whatever carries it.
    * Moving it to the children stops it capping a 60px heading at all. */
-  assert.doesNotMatch(css, /\.container\.measure > \*/);
+  assert.doesNotMatch(await stylesheets(), /\.container\.measure > \*/);
 });
 
 test('lets the diagram switch compositions outrank the rule that sizes them', async () => {
-  /* Comments stripped first: the one below quotes the selector it forbids. */
-  const css = (await read('../src/styles/global.css')).replace(/\/\*[\s\S]*?\*\//g, '');
+  /* Comments stripped first: the one below quotes the selector it forbids. All
+     three stylesheets, because a rule that loses the cascade loses it wherever
+     it is written. */
+  const css = (await stylesheets()).replace(/\/\*[\s\S]*?\*\//g, '');
 
   /* `.diagram svg { display: block }` is (0,1,1). A media query adds no
    * specificity, so `.signature-diagram { display: none }` at (0,1,0) lost the
@@ -2531,15 +2555,16 @@ test('spends only spacing steps the scale actually has', async () => {
 });
 
 test('never sets text in the border color', async () => {
-  const css = await read('../src/styles/global.css');
-
   /* `--oe-subtle` is `--oe-border-control` under another name, and the design
    * system holds it to 3:1 — a line's threshold, not a word's. It reaches
    * 3.41–4.60 across the six surfaces, so it fails 4.5:1 on six of the eight
    * surface-and-mode pairs. Sixteen rules had it as `color`, among them the
    * maturity caveat and the terms under the primary button: the two places
-   * the page states its own limits were the two hardest on it to read. */
-  assert.doesNotMatch(css, /color: var\(--oe-subtle\)/);
+   * the page states its own limits were the two hardest on it to read.
+   *
+   * Over all three stylesheets, because the invariant is about text on this
+   * site rather than about one file. */
+  assert.doesNotMatch(await stylesheets(), /color: var\(--oe-subtle\)/);
 });
 
 /* Relative luminance, then the WCAG ratio. Small enough to inline, and the

@@ -1,0 +1,70 @@
+/*
+ * The rules the chrome and the demo both draw from.
+ *
+ * Neither stylesheet owns these. `.label` sets the metadata face that the
+ * carrier panel and the legal index both write in. `.measure` caps a line of
+ * text on forty page surfaces and on two notes under the demo console. The
+ * forced-colors rule draws a border on four things that a high-contrast
+ * palette would otherwise flatten into the page.
+ *
+ * A rule here has to be named by both src/styles/global.css and
+ * src/styles/demo.css. scripts/audit-demo-stylesheet.mjs holds that line: a
+ * rule only one of them needs belongs in that one.
+ */
+
+/* Mono is for values: packages, versions, identifiers, fingerprints, fields. */
+.label {
+  display: block;
+  font-family: var(--oe-metadata-font-family);
+  font-weight: var(--oe-metadata-weight);
+  font-size: var(--oe-metadata-size);
+  letter-spacing: var(--oe-metadata-tracking);
+  color: var(--oe-muted);
+}
+
+.measure {
+  max-width: var(--oe-content-measure);
+}
+
+/*
+ * `.measure` caps a line of text. `.container` centers a box. Composed on one
+ * element they cap the container's own box and then center that — so a page
+ * hero started a quarter of the way across the page while the wordmark above it
+ * and every band below it started at the gutter. Five pages read as if the top
+ * of them belonged to a different site.
+ *
+ * The width stays exactly as `.measure` sets it; only the left edge moves, to
+ * the one the container would have had. The value is the container's own auto
+ * margin written out: nothing either side of 73.75rem, and the gutter below it.
+ *
+ * The cap has to stay on the container rather than move to its children. It is
+ * in `ch`, and `ch` is resolved against the font of the element carrying it —
+ * on a 60px heading, 68ch is wider than any screen, so a per-child cap silently
+ * stops capping the one line that most needs it.
+ */
+.container.measure {
+  margin-inline: max(0px, (100% - var(--oe-content-wide)) / 2) auto;
+}
+
+/*
+ * `.measure` is written before `.stack > *` and ties it on specificity, so a
+ * `.measure` child of a stack lost its cap to the `max-width: 100%` above and
+ * rendered at the full container width — measured, eight paragraphs across /,
+ * /product and /security. Restated at child specificity with the overflow
+ * guard folded in: the `100%` term keeps a wide child from pushing the page
+ * sideways, the token term restores the reading measure. `callout measure`
+ * stack children land exactly where they already were — the token is `68ch`
+ * resolved against the child's own font, which is what `.callout` sets.
+ */
+.stack > .measure {
+  max-width: min(100%, var(--oe-content-measure));
+}
+
+@media (forced-colors: active) {
+  .oe-button,
+  .carrier-panel,
+  .callout,
+  .code-block {
+    border: 1px solid CanvasText;
+  }
+}
