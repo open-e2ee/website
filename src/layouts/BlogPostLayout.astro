@@ -1,6 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import ArticleToc from '../components/ArticleToc.astro';
+import NextStep from '../components/NextStep.astro';
 import { maturityLine } from '../lib/sdk.mjs';
 import { BACK_LINK, LABEL, LEAD, MATURITY } from '../lib/recipes';
 
@@ -96,6 +97,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     </div>
 
     <footer class="oe-article-footer">
+      <div class="mb-12"><NextStep /></div>
       {
         (previous || next) && (
           <nav class="oe-article-neighbors" aria-label="More from the journal">

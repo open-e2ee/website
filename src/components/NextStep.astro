@@ -1,0 +1,36 @@
+---
+/*
+ * The end of a reading page, and the one thing to do next.
+ *
+ * A post used to end on the older and newer links and the standing disclosure.
+ * Both send the reader further into the journal, so a reader who arrived from a
+ * search and read to the end left the funnel at the bottom of the page.
+ * Measured on the built site before this: zero console links inside `<article>`
+ * on all three posts, and none in a row of the index.
+ *
+ * On a post it stands before the neighbors. A reader who has finished the
+ * article is at the moment the offer is about; the older and newer links are
+ * what to read instead, and they belong after the thing to do.
+ *
+ * The destination is `startAction`, the declaration the header already renders,
+ * so this file names no URL of its own. The words are the ones `/relay`
+ * carries.
+ */
+import { ACTIONS, CTA_PRIMARY, CTA_SUBLABEL, LABEL, NEXT_STEP } from '../lib/recipes';
+import { startAction } from '../lib/site-navigation';
+---
+
+<aside class={NEXT_STEP} aria-label="Start with OpenE2EE Relay">
+  <p class={LABEL}>Start building</p>
+  <p class="m-0 text-text-1">
+    OpenE2EE Relay is the delivery half of an end-to-end encrypted application.
+    The SDK runs on each device and reaches Relay through one connection URL.
+  </p>
+  <div class={ACTIONS}>
+    <a class={CTA_PRIMARY} href={startAction.href} data-next-step>
+      <span class="oe-button">{startAction.label}</span>
+      <span class={CTA_SUBLABEL}>Development environment · no card</span>
+    </a>
+    <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the Relay quickstart</a>
+  </div>
+</aside>
