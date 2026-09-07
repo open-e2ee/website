@@ -20,6 +20,7 @@
     "release:manifest:verify": "node scripts/verify-release-manifest.mjs",
     "motion:reduced": "node scripts/measure-reduced-motion.mjs",
     "visual:relay": "node scripts/relay-pages-visual.mjs",
+    "rail:clearance": "node scripts/measure-rail-clearance.mjs --widths 1280,1440,1680",
     "blog:cards": "node scripts/generate-blog-cards.mjs",
     "blog:cards:check": "node scripts/generate-blog-cards.mjs --check",
     "deploy": "npm run build && wrangler deploy",
