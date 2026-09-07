@@ -1,86 +1,62 @@
 ---
 /*
- * Recovery without escrow. The key is drawn inside a device outline and never
- * anywhere else, which is the whole argument: the relay in the middle has no
- * arrow to the empty device because there is no path from it.
+ * Recovery without escrow: the key exists in one place, and no path runs from
+ * the relay to a device that does not already hold it.
+ *
+ * The arrow used to say the opposite of that. It started at 235 — in the canvas
+ * between the old device and the relay, at neither of them — and carried its
+ * whole width over the relay box below it, which is the shape a reader follows
+ * as a path through the relay. Measured before the change: a 245-unit shaft
+ * from 235 to 480, over a relay box spanning 280 to 440.
+ *
+ * The relay moves above the pair instead, so the transfer is a short arrow in
+ * the gutter between the two devices and reaches nothing else. What the drawing
+ * now argues is the asymmetry: an arrow runs from the old device up into the
+ * relay, and no arrow comes back down to the new one.
  */
 
-const bars = [
-  { y: 118, width: 150 },
-  { y: 140, width: 170 },
-  { y: 162, width: 120 },
-];
+import { PLAINTEXT_STROKE, deviceOutline, keySilhouettePath } from '@open-e2ee/design/diagram';
+import { arrow, relayContainer } from '../../lib/relay-form.mjs';
 
-const SHEAR = 8;
+const RELAY = { x: 230, y: 30, width: 260, height: 112 };
+const OLD_DEVICE = { x: 20, y: 200, width: 280, height: 130 };
+const NEW_DEVICE = { x: 420, y: 200, width: 280, height: 130 };
+const KEY = { x: 40, y: 286, width: 52, height: 30 };
 ---
 
-<svg viewBox="0 0 720 290" role="img" aria-labelledby="noback-title noback-desc">
+<svg viewBox="0 0 720 360" role="img" aria-labelledby="noback-title noback-desc">
   <title id="noback-title">Moving to a new device without any server-held key</title>
   <desc id="noback-desc">
-    An outlined old device holding readable content and a private key. In the middle, an outlined
-    relay containing sealed slabs and no key. On the right, an empty outlined new device. The only
-    arrow runs directly from the old device to the new one, over the relay rather than through it.
+    Above, an outlined relay container holding two sealed slabs, each with metadata ticks along its
+    top edge, and no key. Below it, two outlined devices side by side: the old one holds readable
+    content and a filled private key, and the new one is empty. One arrow runs from the old device
+    up into the relay, carrying sealed envelopes. One arrow runs across the gutter from the old
+    device to the new one. No arrow runs from the relay to the new device, because there is no path
+    from it.
   </desc>
 
-  <g>
-    <rect
-      x={20}
-      y={96}
-      width={200}
-      height={133}
-      fill="none"
-      stroke="var(--oe-diagram-plaintext-stroke)"
-      stroke-width={4}
-    />
-    {bars.map((bar) => (
-      <rect
-        x={40}
-        y={bar.y}
-        width={bar.width}
-        height={9}
-        fill="var(--oe-diagram-plaintext-stroke)"
-        opacity={0.28}
-      />
-    ))}
-    <path d="M40 190 H72 L80 198 V214 H40 Z" fill="var(--oe-diagram-plaintext-stroke)" />
-    <text x={20} y={262} class="diagram-label">old device · holds the key</text>
-  </g>
+  <Fragment set:html={relayContainer(RELAY)} />
+  {/* Clear of the shaft that rises into the box. The label started at the
+      box's own left edge, and the arrow enters the underside at x=250, so
+      the shaft and its head stood inside the first two characters of it. */}
+  <text x={RELAY.x + 42} y={164} class="diagram-label">relay · sealed envelopes, no keys</text>
 
-  <g>
-    <text x={235} y={56} class="diagram-tick-label">device to device, while both still exist</text>
-    <rect x={235} y={69} width={245} height={2} fill="var(--oe-diagram-carrier-stroke)" />
-    <path d="M480 63 L490 70 L480 77 Z" fill="var(--oe-diagram-carrier-stroke)" />
-  </g>
+  <Fragment set:html={deviceOutline(OLD_DEVICE)} />
+  <path d={keySilhouettePath(KEY)} fill={PLAINTEXT_STROKE} />
+  <text x={OLD_DEVICE.x} y={348} class="diagram-label">old device · holds the key</text>
 
-  <g>
-    <rect
-      x={280}
-      y={96}
-      width={160}
-      height={133}
-      fill="none"
-      stroke="var(--oe-diagram-plaintext-stroke)"
-      stroke-width={4}
-    />
-    {[302, 370].map((x) => (
-      <path
-        d={`M${x + SHEAR} 120 L${x + 48 + SHEAR} 120 L${x + 48} 205 L${x} 205 Z`}
-        fill="var(--oe-diagram-ciphertext-fill)"
-      />
-    ))}
-    <text x={280} y={262} class="diagram-label">relay · no keys</text>
-  </g>
+  {/* Empty, and drawn with the same construction as the device beside it so the
+      emptiness is the only difference between them. */}
+  <Fragment set:html={deviceOutline({ ...NEW_DEVICE, bars: 0 })} />
+  <text x={NEW_DEVICE.x} y={348} class="diagram-label">new device · starts empty</text>
 
-  <g>
-    <rect
-      x={500}
-      y={96}
-      width={200}
-      height={133}
-      fill="none"
-      stroke="var(--oe-diagram-plaintext-stroke)"
-      stroke-width={4}
-    />
-    <text x={500} y={262} class="diagram-label">new device · starts empty</text>
-  </g>
+  {/* Up into the relay from inside the old device's own column, so the arrow
+      starts at the device it leaves and ends at the container it reaches. */}
+  <Fragment set:html={arrow({ x: 250, y: 196, length: 40, direction: 'up' })} />
+
+  {/* Across the gutter, from one device edge to the other. Both ends land
+      within the boxes they name, and the shaft reaches nothing between them:
+      there is nothing between them. */}
+  <text x={360} y={246} text-anchor="middle" class="diagram-tick-label">device to device</text>
+  <Fragment set:html={arrow({ x: 308, y: 265, length: 96 })} />
 </svg>
