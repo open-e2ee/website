@@ -1,7 +1,8 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { byPublication } from '../../lib/article.mjs';
+import NextStep from '../../components/NextStep.astro';
+import { byPublication, readingMinutes } from '../../lib/article.mjs';
 import {
   BAND,
   CONTAINER,
@@ -27,6 +28,23 @@ const POST_LINK =
   '[&_h2]:col-start-2 [&_h2]:text-[1.375rem] [&_h2]:tracking-[var(--oe-heading-tracking-text)] ' +
   '[&_p]:col-start-2 [&_p]:mt-2 [&_p]:max-w-[64ch] [&_p]:text-text-3 ' +
   'max-[44rem]:[&_h2]:col-start-1 max-[44rem]:[&_p]:col-start-1';
+
+/*
+ * What a row costs and what it is about.
+ *
+ * The rows carried a date, a title, and a description. A reader choosing
+ * between three long essays had nothing to choose on: no length, and no
+ * subject beyond the sentence they were already reading. Both values are
+ * already on the post page, and both were absent here.
+ *
+ * A `<span>` rather than a second paragraph. `POST_LINK` dresses every `p` in
+ * the row as the description, so a second one would arrive at the description's
+ * size, color, and measure.
+ */
+const POST_META =
+  'col-start-2 mt-3 flex flex-wrap gap-3 font-[family-name:var(--oe-metadata-font-family)] ' +
+  'text-[length:var(--oe-metadata-size)] font-[var(--oe-metadata-weight)] ' +
+  'tracking-[var(--oe-metadata-tracking)] text-text-3 max-[44rem]:col-start-1';
 
 /*
  * One ordering, shared with the article's previous and next links through
@@ -84,11 +102,19 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
                 </time>
                 <h2>{post.data.title}</h2>
                 <p>{post.data.description}</p>
+                <span class={POST_META}>
+                  <span>{readingMinutes(post.body ?? '')} min read</span>
+                  {post.data.tags[0] && <span>{post.data.tags[0]}</span>}
+                </span>
               </a>
             </li>
           ))}
         </ul>
       )}
+      {/* The journal is three posts long, so the index ended at 918 px on a
+          1390 px page and handed the rest to the site footer. The offer closes
+          it, and it is the same offer the end of a post carries. */}
+      <div class="mt-12"><NextStep /></div>
     </div>
   </section>
 </BaseLayout>

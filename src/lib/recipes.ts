@@ -136,6 +136,20 @@ export const CTA_SUBLABEL = `${METADATA} text-text-3`;
 
 export const TEXT_LINKS = 'flex flex-wrap gap-4 text-[0.9375rem]';
 
+/*
+ * The offer at the end of a reading page.
+ *
+ * A panel, not another ruled row. A post already ends in furniture — the older
+ * and newer links, the standing disclosure — and an offer drawn as one more
+ * rule reads as one more thing to skip. The same panel closes the journal
+ * index, which had three rows and then 471 px of chrome.
+ *
+ * `rule` rather than the border pair it wraps: the site draws every hairline
+ * at one weight and one color through the published utility.
+ */
+export const NEXT_STEP =
+  'flex w-full max-w-[58ch] flex-col items-start gap-4 rule bg-ground-panel px-8 py-7 max-[34rem]:px-6';
+
 /* ---------------------------------------------------------------- rows --- */
 
 /*
