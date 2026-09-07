@@ -58,12 +58,17 @@
     scroll-behavior: smooth;
   }
 
+  /*
+   * The size and the leading are shared presentation measures. The website,
+   * the console, and the documentation body read one answer, so a change to
+   * the density reaches all three rather than one.
+   */
   body {
     background: var(--oe-canvas);
     color: var(--oe-foreground);
     font-family: var(--oe-font-sans);
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: var(--oe-body-size);
+    line-height: var(--oe-body-leading);
     font-synthesis-weight: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;

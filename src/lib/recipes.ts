@@ -67,7 +67,7 @@ export const CONTAINER_MEASURE = `w-full px-6 max-[34rem]:px-4 ${MEASURE} ms-[ma
 /* --------------------------------------------------------------- bands --- */
 
 /* A horizontal rule of a section, with the space that separates two of them. */
-export const BAND = 'border-t border-border-1 py-[clamp(3rem,2rem+4vw,5.5rem)]';
+export const BAND = 'rule-t py-[clamp(3rem,2rem+4vw,5.5rem)]';
 
 /* A band that steps back from the canvas onto the panel ground. */
 export const BAND_SURFACE = 'bg-ground-panel';
@@ -110,7 +110,7 @@ export const LEAD =
  * above so it reads as a qualification of the block rather than as its last
  * sentence.
  */
-export const MATURITY = `w-full max-w-[58ch] border-t border-border-1 pt-3 ${METADATA} text-text-3`;
+export const MATURITY = `w-full max-w-[58ch] rule-t pt-3 ${METADATA} text-text-3`;
 
 /* A navigation link that darkens under the pointer rather than moving. */
 export const QUIET_LINK = 'text-text-3 no-underline hover:text-text-1';
@@ -151,12 +151,12 @@ export const TEXT_LINKS = 'flex flex-wrap gap-4 text-[0.9375rem]';
  */
 export const ROWS =
   'grid list-none grid-cols-2 gap-x-[clamp(2rem,1rem+3vw,4rem)] gap-y-0 p-0 max-[48rem]:grid-cols-1 ' +
-  '[&>li]:border-t [&>li]:border-border-1 [&>li]:py-6 ' +
+  '[&>li]:rule-t [&>li]:py-6 ' +
   '[&>li>h3]:mb-2 [&>li>p]:max-w-[54ch] [&>li>p]:text-text-3 [&>li>p:first-child]:mb-2';
 
 export const ROWS_SINGLE =
   'grid list-none grid-cols-1 gap-y-0 p-0 ' +
-  '[&>li]:border-t [&>li]:border-border-1 [&>li]:py-6 ' +
+  '[&>li]:rule-t [&>li]:py-6 ' +
   '[&>li>h3]:mb-2 [&>li>p]:max-w-[54ch] [&>li>p]:text-text-3 [&>li>p:first-child]:mb-2';
 
 /*
@@ -178,8 +178,8 @@ export const ROW_WIDE = 'col-span-full';
  */
 export const DATA_TABLE =
   'w-full min-w-[32rem] border-collapse text-[0.9375rem] ' +
-  '[&_th]:border-b [&_th]:border-border-1 [&_th]:pt-3 [&_th]:pr-4 [&_th]:pb-3 [&_th]:text-left [&_th]:align-top ' +
-  '[&_td]:border-b [&_td]:border-border-1 [&_td]:pt-3 [&_td]:pr-4 [&_td]:pb-3 [&_td]:text-left [&_td]:align-top [&_td]:text-text-3 ' +
+  '[&_th]:rule-b [&_th]:pt-3 [&_th]:pr-4 [&_th]:pb-3 [&_th]:text-left [&_th]:align-top ' +
+  '[&_td]:rule-b [&_td]:pt-3 [&_td]:pr-4 [&_td]:pb-3 [&_td]:text-left [&_td]:align-top [&_td]:text-text-3 ' +
   '[&_thead_th]:border-b-border-3 [&_thead_th]:font-[family-name:var(--oe-metadata-font-family)] [&_thead_th]:text-[length:var(--oe-metadata-size)] [&_thead_th]:font-medium [&_thead_th]:tracking-[var(--oe-metadata-tracking)] [&_thead_th]:text-text-3 ' +
   '[&_tbody_th]:font-medium ' +
   '[&_th_small]:mt-2 [&_th_small]:block [&_th_small]:max-w-[32ch] [&_th_small]:text-[0.8rem] [&_th_small]:leading-[1.4] [&_th_small]:font-normal [&_th_small]:text-text-3';
@@ -194,8 +194,8 @@ export const DATA_TABLE =
  */
 export const DEFINITION_ROWS =
   'm-0 grid grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)] gap-0 max-[44rem]:grid-cols-1 [&>div]:contents ' +
-  '[&_dt]:border-t [&_dt]:border-border-1 [&_dt]:py-4 [&_dt]:text-text-1 [&_dt]:[overflow-wrap:anywhere] [&_dt]:font-[family-name:var(--oe-metadata-font-family)] [&_dt]:text-[length:var(--oe-metadata-size)] [&_dt]:font-medium [&_dt]:tracking-[var(--oe-metadata-tracking)] ' +
-  '[&_dd]:m-0 [&_dd]:border-t [&_dd]:border-border-1 [&_dd]:py-4 [&_dd]:text-text-3 max-[44rem]:[&_dd]:border-t-0 max-[44rem]:[&_dd]:pt-0';
+  '[&_dt]:rule-t [&_dt]:py-4 [&_dt]:text-text-1 [&_dt]:[overflow-wrap:anywhere] [&_dt]:font-[family-name:var(--oe-metadata-font-family)] [&_dt]:text-[length:var(--oe-metadata-size)] [&_dt]:font-medium [&_dt]:tracking-[var(--oe-metadata-tracking)] ' +
+  '[&_dd]:m-0 [&_dd]:rule-t [&_dd]:py-4 [&_dd]:text-text-3 max-[44rem]:[&_dd]:border-t-0 max-[44rem]:[&_dd]:pt-0';
 
 /*
  * Evidence rows: one figure, one sentence saying what it counts. The same deck
@@ -204,8 +204,8 @@ export const DEFINITION_ROWS =
  */
 export const FIGURE_ROWS =
   'm-0 grid grid-cols-[minmax(8rem,12rem)_minmax(0,1fr)] gap-0 max-[44rem]:grid-cols-1 [&>div]:contents ' +
-  '[&_dt]:border-t [&_dt]:border-border-1 [&_dt]:py-4 [&_dt]:text-text-1 [&_dt]:font-[family-name:var(--oe-heading-font-family)] [&_dt]:text-[1.75rem] [&_dt]:leading-[1.1] [&_dt]:font-[var(--oe-heading-weight)] [&_dt]:tracking-[var(--oe-heading-tracking-display)] [&_dt]:tabular-nums ' +
-  '[&_dd]:m-0 [&_dd]:border-t [&_dd]:border-border-1 [&_dd]:py-4 [&_dd]:text-text-3 max-[44rem]:[&_dd]:border-t-0 max-[44rem]:[&_dd]:pt-0';
+  '[&_dt]:rule-t [&_dt]:py-4 [&_dt]:text-text-1 [&_dt]:font-[family-name:var(--oe-heading-font-family)] [&_dt]:text-[1.75rem] [&_dt]:leading-[1.1] [&_dt]:font-[var(--oe-heading-weight)] [&_dt]:tracking-[var(--oe-heading-tracking-display)] [&_dt]:tabular-nums ' +
+  '[&_dd]:m-0 [&_dd]:rule-t [&_dd]:py-4 [&_dd]:text-text-3 max-[44rem]:[&_dd]:border-t-0 max-[44rem]:[&_dd]:pt-0';
 
 export const VERDICT = 'mt-3 text-text-1';
 
@@ -220,7 +220,7 @@ export const VERDICT = 'mt-3 text-text-1';
 export const LEGAL_PIN = 'mt-4 text-[0.9375rem] leading-[1.55] text-text-3';
 
 export const LEGAL_TOC =
-  'border-y border-border-1 py-4 [&>ol]:m-0 [&>ol]:font-[family-name:var(--oe-font-sans)] [&>ol]:text-[0.9375rem] [&>ol]:leading-[1.5] [&>ol]:text-text-3';
+  'rule-y py-4 [&>ol]:m-0 [&>ol]:font-[family-name:var(--oe-font-sans)] [&>ol]:text-[0.9375rem] [&>ol]:leading-[1.5] [&>ol]:text-text-3';
 
 /*
  * Disclaimers and liability limits are capitalized because that is what makes
@@ -242,13 +242,18 @@ export const ARTICLE_COLUMN =
 export const ARTICLE_HEADER =
   'pt-[clamp(2.5rem,2rem+3vw,4rem)] pb-8 [&>h1]:my-4 [&>h1]:text-[clamp(1.875rem,1.25rem+2vw,2.625rem)]';
 
-export const ARTICLE_META = `mt-6 flex flex-wrap gap-3 border-t border-border-1 pt-4 ${METADATA} text-text-3`;
+export const ARTICLE_META = `mt-6 flex flex-wrap gap-3 rule-t pt-4 ${METADATA} text-text-3`;
 
 export const BACK_LINK = 'text-sm no-underline hover:underline';
 
 /*
  * A note the reader must not miss, ruled on the leading edge in the color this
  * site uses where something is settled rather than promised.
+ *
+ * This is the one hairline here that the rule utility cannot draw. Tailwind
+ * emits an arbitrary-value utility such as border-l-[3px] before a custom
+ * utility, so the rule shorthand would land last and erase the leading edge.
+ * The border utilities keep this drawing.
  */
 export const CALLOUT =
   'max-w-[68ch] border border-border-1 border-l-[3px] border-l-[var(--oe-sealed)] bg-ground-panel px-6 py-4 [&_p]:text-text-3';
