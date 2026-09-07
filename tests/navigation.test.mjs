@@ -80,10 +80,11 @@ test('renders one link set at both widths on every built page', async () => {
     const row = hrefsIn(html, 'Primary');
     const sheet = hrefsIn(html, 'Site');
 
-    /* The sheet carries one destination the row does not: at this width the
-       console link leaves the action row, because a row of icons plus a word
-       is the odd thing the sheet exists to absorb. It is the last entry, and
-       everything before it is the row itself, in order. */
+    /* The sheet carries two destinations the row does not: at this width both
+       console entries leave the action row, because a row of icons plus a word
+       plus a filled control is what the sheet exists to absorb. They are the
+       last two entries, sign in then start, and everything before them is the
+       row itself, in order. */
     assert.deepEqual(
       sheet.slice(0, row.length),
       row,
@@ -91,10 +92,13 @@ test('renders one link set at both widths on every built page', async () => {
     );
     assert.equal(
       sheet.length,
-      row.length + 1,
-      `${page} adds more than the console link to the sheet`,
+      row.length + 2,
+      `${page} adds more than the two console entries to the sheet`,
     );
-    assert.equal(sheet.at(-1), 'https://console.open-e2ee.dev');
+    assert.deepEqual(sheet.slice(row.length), [
+      'https://console.open-e2ee.dev',
+      'https://console.open-e2ee.dev/products/relay/new',
+    ]);
   }
 });
 
@@ -168,6 +172,22 @@ test('gives the sheet the console pattern: a named panel, closed to begin with',
   );
   assert.doesNotMatch(header, /<details/, 'the disclosure element is back');
 
+  /* The panel spans the page, so it has to resolve against the header. The
+     header is `sticky`, which is a positioned value and therefore a containing
+     block. A position on the trigger's own wrapper takes that job instead, and
+     the wrapper is the width of one 40px control: `left-4 right-4` inside it
+     drew an 8px column with seven rows of navigation wrapped one character to
+     a line. Measured at a 375px viewport, 8px wide before this rule and 343px
+     after. */
+  assert.match(sheet, /\btop-full\b/, 'the panel no longer hangs from the header');
+  const wrapper = header.match(/<div [^>]*data-nav-sheet>/)?.[0];
+  assert.ok(wrapper, 'the sheet root is no longer marked');
+  assert.doesNotMatch(
+    wrapper,
+    /\b(relative|absolute|fixed|sticky)\b/,
+    'the 40px trigger wrapper is the panel\'s containing block again',
+  );
+
   /* Escape closes and returns focus to the trigger, and a press outside closes
      without stealing the press. Both are behaviors the element it replaced had
      for free, and a sheet that drops them is a worse control than the one it
@@ -204,4 +224,71 @@ test('declares every header and footer destination in one module', async () => {
      component is a group the module cannot be asked about. */
   assert.match(footer, /footerGroups\.map\(/);
   assert.doesNotMatch(footer, /heading: '/, 'the footer declares a group of its own');
+});
+
+test('carries a start action in both header surfaces', async () => {
+  /*
+   * The word `Console` was the whole of account creation on this site. It sat
+   * in the utility strip, 16 pixels from a theme toggle, dressed as a quiet
+   * link, and no part of it said that a reader could begin there. At phone
+   * width it was one row in a sheet that has to be opened first.
+   *
+   * A header start action is the one control on the site that is always in
+   * reach, so both renderings carry it, and both draw it as a control rather
+   * than as a word among words.
+   */
+  const startAction = await declaration('startAction');
+  assert.match(startAction, /href: 'https:\/\/console\.open-e2ee\.dev\//);
+  assert.match(startAction, /label: 'Start free'/);
+
+  /* The returning reader keeps a route. Promoting the console entry to a start
+     points it at the route that creates a project, which is the wrong room for
+     someone who already has one, and the footer carries no console entry to
+     fall back on. */
+  const signIn = await declaration('consoleUrl');
+  assert.match(signIn, /'https:\/\/console\.open-e2ee\.dev'/);
+
+  const pages = await builtPages();
+  if (!pages) return skipUnbuilt('dist/');
+
+  for (const page of pages) {
+    const html = await read(`../dist/${page}`);
+
+    /* Two of it, one per rendering. A start action in the sheet alone is a
+       start a laptop never sees, and one in the row alone is a start a phone
+       never sees — and neither absence is visible at the other width. */
+    const starts = html.match(/<a [^>]*data-start-action[^>]*>/g) ?? [];
+    assert.equal(
+      starts.length,
+      2,
+      `${page} draws ${starts.length} start actions; the row and the sheet want one each`,
+    );
+    for (const start of starts) {
+      assert.match(start, /class="[^"]*\boe-button\b/, 'the start is drawn as a word, not a control');
+      assert.match(start, /href="https:\/\/console\.open-e2ee\.dev\//);
+    }
+
+    /* Which of the two a reader sees is the wrapper's decision, never the
+       control's own. `.oe-button` sets its own `display`, and the design
+       stylesheet loads after the utilities, so a breakpoint utility on the
+       button loses the cascade and the desktop start renders on a phone as
+       well. Measured with the utility on the anchor: two starts on screen at
+       375px, the row copy drawn 60x52 beside the menu trigger. */
+    for (const control of [...starts, ...(html.match(/<a [^>]*data-sign-in[^>]*>/g) ?? [])]) {
+      assert.doesNotMatch(
+        control,
+        /\b(?:max|min)-\[/,
+        `${page} sets a breakpoint on a console control rather than on its wrapper`,
+      );
+    }
+
+    /* Sign in stays beside it in both, and stays quiet: two filled controls
+       state no order, and the one this header is drawn to state is that a
+       reader with no account presses the other one. */
+    const signIns = html.match(/<a [^>]*data-sign-in[^>]*>/g) ?? [];
+    assert.equal(signIns.length, 2, `${page} draws ${signIns.length} sign-in links, not two`);
+    for (const link of signIns) {
+      assert.doesNotMatch(link, /\boe-button\b/, 'sign in is drawn as a control beside the start');
+    }
+  }
 });

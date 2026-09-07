@@ -1324,15 +1324,32 @@ test('names every icon-only control it puts in the header', async () => {
   assert.match(icon, /focusable="false"/);
 });
 
-test('sends the reader to the console rather than to a doorway', async () => {
-  const header = await flat('../src/components/Header.astro');
+test('names the offer and the doorway, and never the room', async () => {
+  const [header, navigation] = await Promise.all([
+    flat('../src/components/Header.astro'),
+    flat('../src/lib/site-navigation.ts'),
+  ]);
 
-  /* "Sign in" named the step, not the destination, and it was the only nav
-   * item that described work rather than a place. */
-  assert.match(header, />Console</);
-  /* Link text only — the comment above the constant has to be free to say
-   * what the label used to be and why it stopped being that. */
-  assert.doesNotMatch(header, />\s*Sign in\s*</i);
+  /* `Console` was the whole of account creation on this site: one quiet word
+   * beside a theme toggle, naming the room a reader arrives in rather than the
+   * thing they can do. The header now carries an offer and, beside it, the
+   * route a reader with an account already has. */
+  assert.doesNotMatch(header, />\s*Console\s*</, 'the header names the room again');
+
+  /* The offer's words live with the destination, so the two renderings of the
+   * header cannot disagree about either. Link text only — the comment above
+   * each constant has to stay free to say what the label used to be. */
+  assert.equal(
+    (header.match(/\{startAction\.label\}/g) ?? []).length,
+    2,
+    'one of the two renderings spells the offer for itself',
+  );
+  assert.match(navigation, /label: 'Start free'/);
+
+  /* The doorway keeps the step for its name, which is what it is: the start
+   * beside it names the room twice over, so this one is useful as the verb a
+   * returning reader is looking for. */
+  assert.match(header, />\s*Sign in\s*</);
 });
 
 test('ships the license for the icon set it copied', async () => {
