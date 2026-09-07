@@ -97,7 +97,7 @@ test('renders one link set at both widths on every built page', async () => {
     );
     assert.deepEqual(sheet.slice(row.length), [
       'https://console.open-e2ee.dev',
-      'https://console.open-e2ee.dev/products/relay/new',
+      'https://console.open-e2ee.dev/relay/new',
     ]);
   }
 });
@@ -291,4 +291,52 @@ test('carries a start action in both header surfaces', async () => {
       assert.doesNotMatch(link, /\boe-button\b/, 'sign in is drawn as a control beside the start');
     }
   }
+});
+
+/*
+ * One module owns the console route this site starts a reader on.
+ *
+ * A console route move made this a live defect once: five source files each
+ * wrote `https://console.open-e2ee.dev/products/relay/new`, the console retired
+ * that route, and every start control on the site pointed at a 404. Reading the
+ * built pages could not catch it, because the markup was exactly what the
+ * source asked for. This reads the source instead.
+ *
+ * It watches the Relay routes alone. A bare origin survives any route move, and
+ * the console's other addresses are named in `src/data/pricing.mjs` and on
+ * `/security`, which this guard does not yet reach.
+ */
+test('only site-navigation writes the console Relay route', async () => {
+  const owner = 'src/lib/site-navigation.ts';
+  const root = new URL('../src/', import.meta.url);
+  const offenders = [];
+
+  const walk = async (directory) => {
+    for (const entry of await readdir(new URL(directory, root), {
+      withFileTypes: true,
+    })) {
+      const path = `${directory}${entry.name}`;
+      if (entry.isDirectory()) {
+        await walk(`${path}/`);
+        continue;
+      }
+      if (!/\.(astro|mjs|ts)$/.test(entry.name)) continue;
+      if (`src/${path}` === owner) continue;
+      const text = await readFile(new URL(path, root), 'utf8');
+      /* A comment may name the route; a line of code may not. */
+      const stripped = text
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*(?:\/\/|\*).*$/gm, '');
+      if (/console\.open-e2ee\.dev\/[a-z/]*relay/.test(stripped)) {
+        offenders.push(`src/${path}`);
+      }
+    }
+  };
+  await walk('');
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `${offenders.join(', ')} writes the console Relay route that ${owner} owns`,
+  );
 });

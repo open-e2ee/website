@@ -59,7 +59,7 @@ test('carries a free start, and names the price of starting', async () => {
      on /pricing already open, so this page opens it too. */
   const actions = [...html.matchAll(/<a [^>]*href="([^"]+)"[^>]*>/g)].map((match) => match[1]);
   assert.ok(
-    actions.some((href) => href.startsWith('https://console.open-e2ee.dev/products/relay/new')),
+    actions.some((href) => href.startsWith('https://console.open-e2ee.dev/relay/new')),
     'the page offers no route that creates a project',
   );
 
