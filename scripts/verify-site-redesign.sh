@@ -380,8 +380,10 @@ sr_v35() {
   node --test --test-reporter=tap tests/lockup-fit.test.mjs
 }
 
-# FR10. Six ramps ship in the design package and the site rendered almost none
-# of them. The check counts the ramps the built stylesheet references.
+# FR10. Six ramps ship in the design package and the built site reached four of
+# them: information and failure had no color at all. The check reads the built
+# stylesheet and holds every ramp to a declaration that paints with it. Four of
+# six was already true before the work, so a threshold below six asserts nothing.
 sr_v36() {
   test -d dist || return 1
   test -f scripts/check-ramp-coverage.mjs || return 1
@@ -473,7 +475,7 @@ check SR-V32 'FR7  Every post carries a path into the product' sr_v32
 check SR-V33 'FR8  One relay form appears in all five diagrams' sr_v33
 check SR-V34 'FR8  No arrow crosses a box it does not touch' sr_v34
 check SR-V35 'FR9  The mark fits the cap height and the clear space holds' sr_v35
-check SR-V36 'FR10  The built site references four or more ramps' sr_v36
+check SR-V36 'FR10  The built site paints with every one of the six ramps' sr_v36
 check SR-V37 'FR17  The role layer answers the shared presentation measures' sr_v37
 check SR-V38 'FR17  The website reads the shared presentation measures' sr_v38
 check SR-V39 'FR16  No dark ground exceeds four percent saturation' sr_v39

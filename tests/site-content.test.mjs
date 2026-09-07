@@ -794,6 +794,56 @@ test('lands the demo fragment on the exhibit, not on the paragraph above it', as
     /scroll-margin-top:\s*calc\(var\(--oe-chrome-header-height\) \+ var\(--oe-space-6\)\)/,
   );
 });
+test('draws the demo status line in the kind of thing it is saying', async () => {
+  const console_ = await read('../src/components/demo/DemoConsole.astro');
+  const mobile = await read('../src/components/demo/DemoMobile.astro');
+  const demo = await read('../src/styles/demo.css');
+
+  /* This is the page's one live region, and it reported a failure in the same
+     gray as an ordinary narration. A reader who presses a button and gets a
+     failure had to read the sentence to learn that anything went wrong. */
+  assert.match(
+    ruleFor(demo, ".demo-console-status[data-state='failed']"),
+    /color:\s*var\(--oe-danger\)/,
+  );
+  assert.match(
+    ruleFor(demo, '.demo-console-status[data-state]'),
+    /border-inline-start:\s*3px solid var\(--oe-info\)/,
+  );
+
+  /* The two writers. `say` narrates and `fail` reports, and the state travels
+     on the element rather than in the sentence. */
+  assert.match(console_, /const say = \(text: string\) => \{[\s\S]*?dataset\.state = 'note'/);
+  assert.match(console_, /const fail = \(text: string\) => \{[\s\S]*?dataset\.state = 'failed'/);
+
+  /* An empty sentence carries no state. The line arrives empty and Reset
+     empties it again; a state left behind draws a marked edge beside nothing. */
+  assert.match(console_, /else delete status\.dataset\.state;/);
+
+  /* The two things that can go wrong, each reported in the failing voice. A
+     call site moved back to `say` is the defect this whole rule exists for,
+     and it is invisible in a screenshot of a run that worked. */
+  assert.match(console_, /fail\(`\$\{what\} did not finish:/);
+  assert.match(
+    console_.slice(console_.indexOf('if (!window.isSecureContext)')),
+    /^[\s\S]{0,200}fail\(/,
+    'the console tells the reader it cannot encrypt in its narrating voice',
+  );
+
+  /* The phone says the same thing the same way. Its caption is centered, so it
+     has no leading edge to name the kind on and takes the color instead. */
+  assert.match(mobile, /const fail = \(text: string\) => \{[\s\S]*?dataset\.state = 'failed'/);
+  assert.match(mobile, /const narrate = \(text: string\) => \{[\s\S]*?delete caption\.dataset\.state/);
+  assert.match(
+    ruleFor(mobile, ".demo-mobile-caption[data-state='failed']"),
+    /color:\s*var\(--oe-danger\)/,
+  );
+  assert.match(
+    mobile.slice(mobile.indexOf('if (!window.isSecureContext)')),
+    /^[\s\S]{0,200}fail\(/,
+    'the phone tells the reader it cannot encrypt in its narrating voice',
+  );
+});
 
 test('says what the phone’s first reading measured, and breaks its row cleanly', async () => {
   const mobile = await read('../src/components/demo/DemoMobile.astro');

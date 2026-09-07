@@ -547,6 +547,35 @@
 }
 
 /*
+ * The line's two voices, drawn on the leading edge.
+ *
+ * This is the page's one live region, and it carried a report of what the demo
+ * had just done and a report of what it could not do in the same gray as the
+ * caption beside it. A reader who presses a button and gets a failure has to
+ * read the sentence to learn that anything went wrong.
+ *
+ * The edge names the kind and the sentence keeps its own color, which is the
+ * drawing `CALLOUT` in src/lib/recipes.ts already uses for a note that must not
+ * be missed. A failure takes the color into the sentence as well: it is the
+ * only thing on this page a reader can be stuck behind, and an edge alone
+ * leaves the difference to a strip three pixels wide.
+ *
+ * The two states are the roles `--oe-info` and `--oe-danger`, so the ramps the
+ * design package holds for information and for failure reach the page here
+ * rather than only in its stylesheet. The edge is absent when the line is
+ * empty, which is how it arrives and what Reset returns it to.
+ */
+.demo-console-status[data-state] {
+  border-inline-start: 3px solid var(--oe-info);
+  padding-inline-start: var(--oe-space-3);
+}
+
+.demo-console-status[data-state='failed'] {
+  border-inline-start-color: var(--oe-danger);
+  color: var(--oe-danger);
+}
+
+/*
  * The recorded capture, which is what the console shows before its script runs
  * and again if the run could not be brought up. It carries its own panel
  * styling; all this owes it is the gap that separates it from the columns.
