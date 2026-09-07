@@ -76,9 +76,36 @@ export const headerNavigation: readonly NavigationLink[] = [
  */
 export const repositoryUrl = 'https://github.com/open-e2ee/signal-protocol-js';
 
-/* The destination is the console. Calling the link "Sign in" described the
- * doorway rather than the room, and named the one step a reader has to take
- * before they get anything. */
+/*
+ * The start, and the one control this site keeps in reach at every width.
+ *
+ * Account creation was the word `Console`, set as a quiet link in the utility
+ * strip 16 pixels from a theme toggle, and at phone width it was one row in a
+ * sheet a reader has to open first. Nothing about either said a reader could
+ * begin there.
+ *
+ * The destination is the route that creates a project, because a Relay plan is
+ * activated inside a project and the project is what the route makes. The
+ * homepage hero and every self-service column on /pricing open the same route.
+ */
+export const startAction: NavigationLink = {
+  href: 'https://console.open-e2ee.dev/products/relay/new',
+  label: 'Start free',
+};
+
+/*
+ * The returning reader's route, and it stays a word beside the control above.
+ *
+ * This entry was the only way into the console, and calling it "Sign in"
+ * described the doorway rather than the room. With a start beside it the room
+ * is named twice, so the doorway is the useful half: the start opens project
+ * creation, which is the wrong room for a reader who already has a project,
+ * and no footer group carries a console entry to fall back on.
+ *
+ * Quiet rather than filled. Two filled controls state no order, and the order
+ * this row exists to state is that a reader with no account presses the other
+ * one.
+ */
 export const consoleUrl = 'https://console.open-e2ee.dev';
 
 /*

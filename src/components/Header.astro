@@ -8,6 +8,7 @@ import {
   currentNavigation,
   headerNavigation,
   repositoryUrl,
+  startAction,
 } from '../lib/site-navigation';
 
 const path = Astro.url.pathname;
@@ -46,7 +47,25 @@ const path = Astro.url.pathname;
         <Icon name="github" />
       </a>
       <ThemeToggle />
-      <a class:list={[QUIET_LINK, 'max-[62rem]:hidden']} href={consoleUrl}>Console</a>
+      {/* The doorway, then the start. The pair leaves the row below 62rem,
+          where the sheet carries it: a filled control among a mark, a toggle,
+          and a menu trigger is one thing too many for a phone's top bar, and
+          the sheet is what that width has instead.
+
+          The breakpoint sits on this wrapper rather than on the two anchors.
+          `.oe-button` sets its own `display` and the design stylesheet loads
+          after the utilities, so `max-[62rem]:hidden` on the button itself
+          loses the cascade and the control renders at every width. Measured:
+          with the utility on the anchor, the start drew 60x52 at 375px.
+
+          The start is `oe-button-small`, which is the 40px control box the
+          three icon controls beside it already stand in. The full-size button
+          is 44px in a 64px header and reads as a form control that has landed
+          in the chrome. */}
+      <div class="flex items-center gap-4 max-[62rem]:hidden">
+        <a class={QUIET_LINK} href={consoleUrl} data-sign-in>Sign in</a>
+        <a class="oe-button oe-button-small" href={startAction.href} data-start-action>{startAction.label}</a>
+      </div>
       {/*
         The phone's copy of the navigation, and the console's sheet is the
         pattern: a button that owns `aria-expanded`, a panel it names, Escape to
@@ -64,7 +83,7 @@ const path = Astro.url.pathname;
         real text for anything that reads names rather than shapes, the way the
         theme toggle carries its own.
       */}
-      <div class="relative hidden max-[62rem]:block" data-nav-sheet>
+      <div class="hidden max-[62rem]:block" data-nav-sheet>
         <button
           class="oe-icon-button"
           type="button"
@@ -80,12 +99,19 @@ const path = Astro.url.pathname;
           <Icon name="close" class="hidden [[aria-expanded=true]_&]:block" />
           <span class="oe-visually-hidden">Menu</span>
         </button>
-        {/* The panel hangs from the trigger, which is the last control in the
-            row, so it spans the gutters rather than the width of the trigger.
+        {/* The panel spans the gutters, so it resolves against the header and
+            not against the trigger. The trigger's own wrapper is 40px wide,
+            and `left-4 right-4` inside it made the panel 8px of column with
+            seven rows of navigation wrapped one character at a time. The
+            header is `sticky`, which is a positioned value, so removing
+            `relative` from the wrapper hands the panel the width of the page.
+            Measured: 8px before, 343px at a 375px viewport after.
+
+            `top-full` replaces the offset the trigger used to supply.
             `hidden` is what the script sets, and a flex container ignores it
             without the attribute selector. */}
         <nav
-          class="absolute right-4 left-4 mt-2 flex flex-col border border-border-3 bg-ground-raised shadow-[var(--oe-shadow-md)] [&[hidden]]:hidden"
+          class="absolute top-full right-4 left-4 mt-2 flex flex-col border border-border-3 bg-ground-raised shadow-[var(--oe-shadow-md)] [&[hidden]]:hidden"
           aria-label="Site"
           hidden
           id="site-navigation-sheet"
@@ -97,8 +123,21 @@ const path = Astro.url.pathname;
               aria-current={currentNavigation(link.href, path)}>{link.label}</a>
           ))}
           <a
-            class="rule-b px-4 py-3 text-text-1 no-underline last:border-b-0"
-            href={consoleUrl}>Console</a>
+            class="rule-b px-4 py-3 text-text-1 no-underline"
+            href={consoleUrl}
+            data-sign-in>Sign in</a>
+          {/* The start closes the sheet, drawn rather than listed. Every row
+              above it is a destination and this one is the offer, so it takes
+              the shape the rest of the site gives an offer instead of becoming
+              the last of eight identical rows. Full width because the sheet
+              spans the gutters and a control floated in a panel this narrow
+              reads as an accident. */}
+          <div class="p-4">
+            <a
+              class="oe-button oe-button-full"
+              href={startAction.href}
+              data-start-action>{startAction.label}</a>
+          </div>
         </nav>
       </div>
     </div>
