@@ -766,8 +766,19 @@ test('lands the demo fragment on the exhibit, not on the paragraph above it', as
   assert.match(exhibit, /<div class="demo-console-stage">/);
   assert.match(exhibit, /<DemoMobile /);
 
-  /* The links that lead there. Both are the reader asking for the exhibit. */
-  assert.match(index, /<a class:list=\{\[CTA_PRIMARY[^\]]*\]\} href="#demo">/);
+  /* The links that lead there. Both are the reader asking for the exhibit.
+
+     On the homepage the demo is the secondary action. The primary opens a
+     Relay project, because a page that sells a managed product and offers no
+     route into it is a brochure. The demo is still an action a reader can
+     take from the first screen, and the assertion here holds it to that: an
+     `oe-button` in the hero's action row, pointing at the fragment. */
+  const heroActions = index.slice(index.indexOf('data-actions="hero"'));
+  assert.match(
+    heroActions.slice(0, heroActions.indexOf('</div>')),
+    /<a class="oe-button oe-button-secondary" href="#demo">/,
+    'the hero no longer offers the demo',
+  );
   assert.match(await declaration('headerNavigation'), /href: '\/#demo'/);
 
   /* And the one rule that stands it clear of the sticky header. This is not a
@@ -3656,60 +3667,61 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
    * the pin is gone rather than repointed: the copy it protected had already
    * left the page. */
 
-  /* And it stays short enough to be read standing up. The lead used to open by
-   * listing four runtimes and close by naming who owns the store and the
-   * relay; both are still on the page, in the runtime links and the drops
-   * list, where a reader who wants them is already looking for them. In the
-   * lead they cost the two clauses that do the positioning work — the
-   * alternative the reader would otherwise take, and the boundary — a screen
-   * before either was earned. The cap is a guard against the paragraph growing
-   * back, not a style rule, so it is set a little above whatever the lead
-   * currently is rather than at it: 292 characters, then 175 under a cap of
-   * 220, now 144 under this one. Tightening it with each cut is what stops the
-   * guard from becoming decorative.
+  /* And both hero paragraphs stay short enough to be read standing up.
    *
-   * The count is taken on the text and not on the source, which is a change
-   * from the numbers above: they were markup, and so was the cap. That worked
-   * only while the markup was three `<span>` wrappers, and it has failed twice
-   * for the same reason. Written `&rsquo;` an apostrophe is six characters of
-   * source and one character of reading, which checked a 175-character lead as
-   * 181 and left the number in this comment disagreeing with the number the
-   * assertion used. Then an inline SVG arrived — the OSI keyhole is one path of
-   * about 1.5kB — and the source length went to 1605 for a paragraph that takes
-   * under four seconds to read. A guard that fires on a glyph is not measuring
-   * the thing this comment says it measures.
+   * The hero sets two of them. `data-hero-lead` states the product, and
+   * `data-hero-marks` carries the three credentials under the actions. This
+   * guard reads the built page through those two hooks, and it fails when
+   * either paragraph is absent. It selected `<p class="lead">` until the lead
+   * recipe became utility classes; from then on it matched nothing and every
+   * assertion below ran against an undefined string. A guard that reads a
+   * class name the build no longer emits is not a weaker guard, it is no
+   * guard.
    *
-   * So markup comes out first, the same way `scripts/audit-build.mjs` does it
-   * for the banned-phrase scan, and the cap is re-set in the new unit: 55
-   * characters of reading under a cap of 90. The old figures are not comparable
-   * and are left above as history rather than as a series.
+   * The cap is a guard against a paragraph growing back, not a style rule, so
+   * each cap sits a little above what its paragraph currently is rather than
+   * at it: the lead reads 150 characters under a cap of 175, and the marks
+   * line reads 55 under a cap of 90. Tightening a cap with each cut is what
+   * stops it from becoming decorative.
    *
-   * The paragraph now carries three inline SVGs and 2895 characters of source
-   * for those 55 of reading, which is the case for the unit change stated as a
-   * ratio: any wrapper this paragraph is given counts against a source-length
-   * cap and none of it counts against a reader. It was 2414 two rounds ago and
-   * 2857 one round ago; the 443 came from a logo being drawn correctly and the
-   * 38 from a battery growing a charge bolt. Both are visible at 19px and
-   * neither is a word.
+   * The count is taken on the text and not on the source. Written `&rsquo;`
+   * an apostrophe is six characters of source and one character of reading,
+   * and each mark is an inline SVG, so the marks line is about 3.6kB of source
+   * for its 55 characters of reading. A cap on the source fires on a glyph
+   * rather than on a word.
    *
    * The entity check stays on the decoded text for the reason it was added,
-   * and the runtime-name check moves to the source instead: a runtime named in
-   * an `alt` or an `aria-label` is still the lead naming a runtime, and
-   * stripping tags is exactly what would hide it. */
+   * and the runtime-name check reads the source instead: a runtime named in an
+   * `alt` or an `aria-label` is still the lead naming a runtime, and stripping
+   * tags is exactly what would hide it. */
   const leadPage = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
     () => null,
   );
   if (!leadPage) skipUnbuilt('dist/index.html');
-  const leadSource = leadPage?.match(/<p class="lead">([\s\S]*?)<\/p>/)?.[1];
-  const lead = leadSource
-    ?.replace(/<[^>]+>/g, '')
-    .replace(/&rsquo;/g, '’')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (lead) {
+  if (leadPage) {
+    /** The inner markup of one hero paragraph, selected by its data hook. */
+    const heroParagraph = (hook) => {
+      const found = leadPage.match(new RegExp(`<p class="[^"]*" ${hook}>([\\s\\S]*?)</p>`))?.[1];
+      assert.ok(found, `the hero sets no ${hook} paragraph, so this guard reads nothing`);
+      return found;
+    };
+
+    const reading = (source) =>
+      source
+        .replace(/<[^>]+>/g, '')
+        .replace(/&rsquo;/g, '’')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const leadSource = heroParagraph('data-hero-lead');
+    const lead = reading(leadSource);
     assert.doesNotMatch(lead, /&[a-z]+;/, 'an entity the length check would count as its source');
-    assert.ok(lead.length <= 90, `the lead is ${lead.length} characters:\n${lead}`);
+    assert.ok(lead.length <= 175, `the lead is ${lead.length} characters:\n${lead}`);
     assert.doesNotMatch(leadSource, /Expo|React Native|browsers|Node/);
+
+    const markSource = heroParagraph('data-hero-marks');
+    const marks = reading(markSource);
+    assert.ok(marks.length <= 90, `the marks line is ${marks.length} characters:\n${marks}`);
 
     /* A word with no space between it and the glyph after it is what a dropped
      * newline looks like on the page. Astro collapses whitespace between two
@@ -3717,11 +3729,11 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
      * wrapping this paragraph at a tag boundary silently joins a sentence to
      * the mark that follows. It rendered "Pure TypeScript.🔋" once.
      *
-     * There is no emoji left in the lead — all three marks are drawings now —
+     * There is no emoji left in the marks line — all three are drawings now —
      * so this one guards the next emoji rather than anything currently here.
      * The check below is the one that covers the marks that are. */
     assert.doesNotMatch(
-      lead,
+      marks,
       /[.\w][\p{Extended_Pictographic}]/u,
       'a mark is jammed against the word before it — an explicit {\' \'} is missing',
     );
@@ -3740,18 +3752,22 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
      *
      * So this runs on the source with each mark replaced by a sentinel, which
      * keeps the position the stripping threw away and checks both of its edges.
-     * The count is asserted first: if a class name changes, the replacements
-     * stop firing and every adjacency check below silently passes. */
-    const SENTINEL = '';
-    const marked = leadSource
-      .replace(/<a class="osi-mark"[\s\S]*?<\/a>/g, SENTINEL)
-      .replace(/<span class="ts-mark"[\s\S]*?<\/span>/g, SENTINEL)
-      .replace(/<span class="battery-mark"[\s\S]*?<\/span>/g, SENTINEL)
+     * The marks are selected by their `data-mark` attribute rather than by a
+     * class: a class here is a string of utilities that any spacing change
+     * rewrites, and this check named three classes the build had already
+     * stopped emitting. The count is asserted first: if a hook changes, the
+     * replacements stop firing and every adjacency check below silently
+     * passes. */
+    const SENTINEL = '\x01';
+    const marked = markSource
+      .replace(/<a class="[^"]*" data-mark="osi"[\s\S]*?<\/a>/g, SENTINEL)
+      .replace(/<span class="[^"]*" data-mark="typescript"[\s\S]*?<\/span>/g, SENTINEL)
+      .replace(/<span class="[^"]*" data-mark="battery"[\s\S]*?<\/span>/g, SENTINEL)
       .replace(/\s+/g, ' ');
     assert.equal(
       marked.split(SENTINEL).length - 1,
       3,
-      'the lead should carry three marks — a class name changed and this check went blind',
+      'the line should carry three marks — a hook changed and this check went blind',
     );
     assert.doesNotMatch(
       marked,
@@ -3764,27 +3780,24 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
      *
      * docs/messaging.md §5 approves "pure TypeScript protocol code". The
      * unqualified form is false one level down — the encrypted Expo store is
-     * expo-sqlite with SQLCipher and needs a development build — so the lead
+     * expo-sqlite with SQLCipher and needs a development build — so the hero
      * may use the short form only while the page names the subject the
      * adjective is approved of. That is a condition on the phrase, not a
-     * requirement to use it: a lead that drops the phrase owes nothing, and
+     * requirement to use it: a hero that drops the phrase owes nothing, and
      * this used to pin one exact sentence and would have failed the next two
-     * times the lead was rewritten while the claim it guards stayed true.
+     * times the copy was rewritten while the claim it guards stayed true.
      *
      * What the condition is has moved once. It was the storage exception —
      * "needs a development build rather than Expo Go" — for as long as the
      * runtime cell carried that clause, and the founder cut the clause on
      * 2026-08-16. The scoping is the part §5 actually approves and the part
      * that survived, so the guard follows it rather than following a sentence
-     * off the page; the exception itself is on /product and pinned there.
-     *
-     * The scoping is checked on the built page, in the block below. */
-    if (/pure TypeScript/i.test(lead)) {
-      const built = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
+     * off the page; the exception itself is on /product and pinned there. */
+    if (/pure TypeScript/i.test(marks)) {
       assert.match(
-        built,
+        leadPage,
         /protocol code is pure TypeScript with no native crypto module/,
-        'the lead claims pure TypeScript and the page no longer scopes the claim',
+        'the hero claims pure TypeScript and the page no longer scopes the claim',
       );
     }
   }
