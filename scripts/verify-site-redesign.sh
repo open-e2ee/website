@@ -7,8 +7,10 @@
 # script is the standing contract now: add and drop nothing here without
 # stating the reason in the pull request that changes it.
 #
-# SR-V26 through SR-V39 belong to docs/plans/funnel-redesign-plan.html, which
-# is active. They start red and turn green as FR2 through FR17 land.
+# SR-V26 through SR-V39 name the funnel and product redesign task that added
+# each one. That plan completed on 2026-09-07 and moved to
+# archive/funnel-redesign-2026-09-07/ in the workspace, where the plan's
+# verifier table records what each condition holds.
 #
 # Every condition guards on the artifact its task shipped, so a condition that
 # passes without that artifact proves nothing. That includes the preservation
@@ -290,8 +292,10 @@ sr_v24() {
 
 # --- FR2 through FR10, the funnel and product redesign ---------------------------
 #
-# docs/plans/funnel-redesign-plan.html owns these. Each one guards on the
-# artifact its task ships, so it cannot pass before that task lands.
+# The funnel and product redesign added these. Its archive is
+# archive/funnel-redesign-2026-09-07/ in the workspace. Each one guards on
+# the artifact its task shipped, so a condition that passes without that
+# artifact proves nothing.
 
 PRICING=src/pages/pricing.astro
 RELAY_PAGE=src/pages/relay/index.astro
