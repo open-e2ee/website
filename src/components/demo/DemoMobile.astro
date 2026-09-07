@@ -451,6 +451,22 @@ const LOCKS = [
       return found;
     };
     const caption = need('[data-mobile-caption]');
+
+    /*
+     * The caption's two voices. `narrate` writes what the figure is playing;
+     * `fail` writes what it could not start, and the style block draws the two
+     * apart. The wide console's status line makes the same distinction with
+     * the same role, so a failure reads the same on either screen.
+     */
+    const narrate = (text: string) => {
+      caption.textContent = text;
+      delete caption.dataset.state;
+    };
+
+    const fail = (text: string) => {
+      caption.textContent = text;
+      caption.dataset.state = 'failed';
+    };
     const curtain = need<HTMLElement>('[data-mobile-curtain]');
     const startButton = need<HTMLButtonElement>('[data-mobile-start]');
     const envelope = need<HTMLDivElement>('[data-mobile-envelope]');
@@ -592,7 +608,7 @@ const LOCKS = [
      */
     const opening = (label: string, sentence: string) => {
       startButton.textContent = label;
-      caption.textContent = sentence;
+      narrate(sentence);
     };
 
     startButton.addEventListener('click', () => void start());
@@ -634,9 +650,9 @@ const LOCKS = [
         curtain.hidden = true;
         step();
       } catch (error) {
-        caption.textContent = `The demo could not start: ${
-          error instanceof Error ? error.message : String(error)
-        }`;
+        fail(
+          `The demo could not start: ${error instanceof Error ? error.message : String(error)}`,
+        );
         /* The press failed, so the button owes the reader both halves of the
            answer: that it failed — the caption's sentence is behind the blur —
            and that pressing again asks again. */
@@ -1173,7 +1189,7 @@ const LOCKS = [
     }
 
     function show(frame: MobileFrame) {
-      caption.textContent = frame.caption;
+      narrate(frame.caption);
       /* No sentence outlives its frame unspoken or dim: the payouts above
          ride transitions, and a tab the browser has clamped can lose one.
          Idempotent when
@@ -1440,8 +1456,9 @@ const LOCKS = [
        stays down over the figure, exactly as it does with no scripts. */
     if (!window.isSecureContext) {
       startButton.textContent = 'Demo needs HTTPS';
-      caption.textContent =
-        'This page is not a secure context, so the browser withholds WebCrypto. Open it over HTTPS to watch the conversation run.';
+      fail(
+        'This page is not a secure context, so the browser withholds WebCrypto. Open it over HTTPS to watch the conversation run.',
+      );
       return;
     }
 
@@ -2649,5 +2666,12 @@ const LOCKS = [
     font-size: 0.8rem;
     line-height: 1.3;
     color: var(--oe-text-muted);
+  }
+
+  /* The line is centered, so it has no leading edge to name the kind on the way
+     the wide console's status line does. The failure takes the color into the
+     sentence instead, in the role that names a failure everywhere else. */
+  .demo-mobile-caption[data-state='failed'] {
+    color: var(--oe-danger);
   }
 </style>

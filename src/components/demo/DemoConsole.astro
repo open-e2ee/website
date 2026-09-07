@@ -546,8 +546,25 @@ const TOGGLES = [
     /** The sender's bubble that has not yet been confirmed at the far device. */
     let awaitingDelivery: HTMLElement | null = null;
 
+    /*
+     * The status line's two voices. `say` narrates what the demo did; `fail`
+     * reports what it could not do, and src/styles/demo.css draws the two
+     * apart. The state travels on the element rather than in the sentence, so
+     * a reader sees which kind arrived before reading it.
+     *
+     * An empty sentence carries no state. The line arrives empty and Reset
+     * empties it again, and a state left behind would draw a marked strip
+     * beside nothing.
+     */
     const say = (text: string) => {
       status.textContent = text;
+      if (text) status.dataset.state = 'note';
+      else delete status.dataset.state;
+    };
+
+    const fail = (text: string) => {
+      status.textContent = text;
+      status.dataset.state = 'failed';
     };
 
     /*
@@ -1182,7 +1199,7 @@ const TOGGLES = [
       try {
         await action();
       } catch (error) {
-        say(`${what} did not finish: ${error instanceof Error ? error.message : String(error)}`);
+        fail(`${what} did not finish: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
         busy = false;
         /* If nothing was ever brought up, the demo could not run and the page
@@ -1341,7 +1358,7 @@ const TOGGLES = [
        the button — where the reader is looking — carries the answer. */
     if (!window.isSecureContext) {
       startButton.textContent = 'Demo needs HTTPS';
-      say(
+      fail(
         'This page is not a secure context, so the browser withholds WebCrypto and nothing ' +
           'here can encrypt. Open the demo over HTTPS or on localhost to run it live.',
       );
