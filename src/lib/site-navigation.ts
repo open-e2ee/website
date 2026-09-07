@@ -89,7 +89,7 @@ export const repositoryUrl = 'https://github.com/open-e2ee/signal-protocol-js';
  * homepage hero and every self-service column on /pricing open the same route.
  */
 export const startAction: NavigationLink = {
-  href: 'https://console.open-e2ee.dev/products/relay/new',
+  href: 'https://console.open-e2ee.dev/relay/new',
   label: 'Start free',
 };
 

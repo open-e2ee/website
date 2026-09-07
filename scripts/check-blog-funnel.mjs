@@ -21,7 +21,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 /** The console route that creates a Relay project, declared in one place. */
-const PROJECT_ROUTE = 'https://console.open-e2ee.dev/products/relay/new';
+const PROJECT_ROUTE = 'https://console.open-e2ee.dev/relay/new';
 
 class Missing extends Error {}
 

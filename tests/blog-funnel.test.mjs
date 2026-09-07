@@ -64,7 +64,7 @@ test('names the destination once, and never in the component', async () => {
   );
 
   const startAction = await declaration('startAction');
-  assert.match(startAction, /href: 'https:\/\/console\.open-e2ee\.dev\/products\/relay\/new'/);
+  assert.match(startAction, /href: 'https:\/\/console\.open-e2ee\.dev\/relay\/new'/);
 });
 
 test('puts the offer before the way back into the journal', async () => {
@@ -112,7 +112,7 @@ test('ships posts that carry the action, and an index that carries the times', a
     const article = articleOf(await read(`../dist/blog/${post}`));
     const actions = article.match(/<a [^>]*data-next-step[^>]*>/g) ?? [];
     assert.equal(actions.length, 1, `${post} carries ${actions.length} end-of-post actions`);
-    assert.match(actions[0], /href="https:\/\/console\.open-e2ee\.dev\/products\/relay\/new"/);
+    assert.match(actions[0], /href="https:\/\/console\.open-e2ee\.dev\/relay\/new"/);
   }
 
   const index = await read('../dist/blog/index.html');

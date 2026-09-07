@@ -2,6 +2,7 @@
 import RelayMailboxes from '../../components/diagrams/RelayMailboxes.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { relayPlans } from '../../data/relay-pricing.mjs';
+import { startAction } from '../../lib/site-navigation';
 import {
   ACTIONS,
   BAND,
@@ -20,7 +21,8 @@ import {
   TEXT_LINKS,
 } from '../../lib/recipes';
 
-const RELAY_PROJECT = 'https://console.open-e2ee.dev/products/relay/new';
+/* The header's start control names this route; the page never writes it twice. */
+const RELAY_PROJECT = startAction.href;
 
 /*
  * Read from the catalog rather than typed. The capacity is a product contract,

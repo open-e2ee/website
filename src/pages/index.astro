@@ -7,6 +7,7 @@ import CommitLine from '../components/CommitLine.astro';
 import DeckIcon from '../components/DeckIcon.astro';
 import type { DeckIconName } from '../components/DeckIcon.astro';
 import StarfieldMark from '../components/StarfieldMark.astro';
+import { startAction } from '../lib/site-navigation';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
@@ -157,7 +158,7 @@ const RELAY_HEADING = 'text-[1.0625rem] leading-tight font-semibold text-text-1'
  * project, and the project is what this route makes; /pricing sends its five
  * plan columns to the same place for the same reason.
  */
-const RELAY_PROJECT = 'https://console.open-e2ee.dev/products/relay/new';
+const RELAY_PROJECT = startAction.href;
 
 /*
  * Read from the catalog rather than typed. The capacity below is a product
