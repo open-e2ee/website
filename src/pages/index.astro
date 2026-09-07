@@ -11,6 +11,7 @@ import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
 import TypeScriptMark from '../components/TypeScriptMark.astro';
+import { relayPlans } from '../data/relay-pricing.mjs';
 import {
   ACTIONS,
   BAND,
@@ -18,6 +19,9 @@ import {
   BAND_SURFACE,
   CONTAINER,
   CTA_PRIMARY,
+  CTA_SUBLABEL,
+  DEFINITION_ROWS,
+  LABEL,
   LEAD,
   MEASURE,
   ROW_WIDE,
@@ -124,6 +128,44 @@ const HERO_HEADLINE = '[&_h1]:text-[clamp(2.0625rem,1.15rem+3.1vw,2.625rem)]';
  * six healthy ones.
  */
 const HERO_RAMP = 'min-[74rem]:[&_h2]:text-[1.75rem]';
+
+/*
+ * The three marks, below the actions rather than on the second line of the
+ * page. They were the lead for several rounds, set at the lead's size, and at
+ * that size three colored glyphs read as emoji against a page that sets none —
+ * which is what the second line cost. What they say is true and is proved
+ * further down: two of them title rows in the deck below, and the third is the
+ * subject of the closing band. So they stay, at body size, as the credentials
+ * under an offer rather than as the offer.
+ */
+const HERO_MARKS = 'text-[0.9375rem] leading-[1.55] text-text-3';
+
+/*
+ * The free start, at the foot of the Relay band.
+ *
+ * The band's own action rather than a second hero: a reader who has read what
+ * Relay operates and what the free plan carries is a different reader from the
+ * one who arrived, and asking them to scroll back up is asking them to decide
+ * twice.
+ */
+const RELAY_START = 'mt-8 flex flex-col items-start gap-3';
+
+const RELAY_HEADING = 'text-[1.0625rem] leading-tight font-semibold text-text-1';
+
+/*
+ * The Console route that creates a project. A plan is activated inside a
+ * project, and the project is what this route makes; /pricing sends its five
+ * plan columns to the same place for the same reason.
+ */
+const RELAY_PROJECT = 'https://console.open-e2ee.dev/products/relay/new';
+
+/*
+ * Read from the catalog rather than typed. The capacity below is a product
+ * contract that is edited by someone who has no reason to open this file, and
+ * a homepage that prints the numbers by hand is correct on the day it ships.
+ */
+const free = relayPlans.find((plan) => plan.id === 'relay_free_v1');
+if (!free) throw new Error('index.astro: the Relay catalog carries no free plan');
 
 /*
  * The deck with an icon column. The icons line up down the band as one column
@@ -446,7 +488,52 @@ const runtimes = [
             `src/components/OsiMark.astro` for the conditions, and for why that
             artwork is the solid mark rather than the outline one that shipped
             for a round and read as a smudge at this size. */}
-        <p class:list={[LEAD, 'max-w-none!']}>
+        {/* The second line of the page, and it now states the product rather
+            than the package. The three marks that stood here are below the
+            actions; what a reader needs before deciding is what OpenE2EE runs
+            for them, which is the half of an encrypted application that costs
+            a team the most to build and the most to keep running.
+
+            Two sentences. The first says where the encryption happens, so the
+            second cannot be read as a hosted chat service; the second says what
+            OpenE2EE operates, in the four nouns a reader would otherwise have
+            to open /relay to find. No boundary claim here: docs/messaging.md
+            publishes the four Relay boundary statements together or not at all,
+            and /relay is where they are together. */}
+        <p class:list={[LEAD, 'max-w-none!']} data-hero-lead>
+          The SDK encrypts on each device. OpenE2EE Relay operates the delivery: encrypted
+          device mailboxes, group fan-out, private attachments, and push wakes.
+        </p>
+        <div class:list={[ACTIONS, 'justify-center']} data-actions="hero">
+          {/* Two actions. The primary now leaves this site: the page sells a
+              managed product, and the shortest path to using it is a project.
+              The demo takes the secondary — it is the proof, and a reader who
+              wants proof before an account is one click from it. `#demo` is on
+              the exhibit itself and not on the band around it, so that click
+              lands on the running scene rather than on the sentence describing
+              it.
+
+              The quickstart lost its button and kept its readers: the deck
+              below carries one quickstart per runtime, under the row that
+              raises the runtime question. The GitHub button is gone from the
+              hero — the repo stays one click away from the closing license
+              band, the footer, and /product, and a third button split the
+              decision this row exists to force.
+
+              No sublabel under either button. This page ends on the license
+              rather than on a second ask, so "ten minutes · two clients · no
+              account" is only on /product, which a reader reaches after
+              deciding to spend them. A scroll needs no time promise,
+              and a third line of small gray type here would stand between the
+              offer and the proof. */}
+          <a class:list={[CTA_PRIMARY, 'items-center!']} href={RELAY_PROJECT}>
+            <span class="oe-button">Start a Relay project</span>
+            <span class={CTA_SUBLABEL}>Free to start · no card</span>
+          </a>
+          <a class="oe-button oe-button-secondary" href="#demo">See the demo</a>
+        </div>
+        {/* The credentials, under the offer. */}
+        <p class={HERO_MARKS} data-hero-marks>
           {/* Keep each mark and the words around it on one line. Astro deletes
               the whitespace between a text run and an inline element, so
               wrapping this paragraph at a tag boundary silently joins a
@@ -457,28 +544,6 @@ const runtimes = [
           <OsiMark /> Fully Open Source. <TypeScriptMark /> Pure TypeScript.{' '}
           <BatteryMark /> Batteries included.
         </p>
-        <div class:list={[ACTIONS, 'justify-center']}>
-          {/* Two actions, founder-set labels. The primary is the demo, not the
-              quickstart: it scrolls to `#demo`, which is the exhibit itself
-              and not the band around it, so the reader arrives at the running
-              scene rather than at the sentence describing it. The
-              GitHub button is gone from the hero — the repo stays one click
-              away from the closing license band, the footer, and /product, and
-              a third button split the decision this row exists to force.
-
-              No sublabel under either button. This page ends on the license
-              rather than on a second ask, so "ten minutes · two clients · no
-              account" is only on /product, which a reader reaches after
-              deciding to spend them. A scroll needs no time promise,
-              and a third line of small gray type here would stand between the
-              offer and the proof. */}
-          <a class:list={[CTA_PRIMARY, 'items-center!']} href="#demo">
-            <span class="oe-button">See Demo</span>
-          </a>
-          <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/start/quickstart">
-            Build your first encrypted message
-          </a>
-        </div>
         {/* Below the actions, never above them. The hero headline's floor is
             33px specifically because at 390px that is the difference between a
             three-line and a four-line headline. At that width the action row's
@@ -536,6 +601,43 @@ const runtimes = [
             split, the quickstart caveat below the feature band grades the
             stores, and /product carries the libsignal facts. */}
       </div>
+    </div>
+  </section>
+
+  {/*
+    The Relay band, between the offer and the proof.
+
+    The page sold the package and mentioned the product once, in the body of
+    the last row of a deck two screens down. A reader who wanted the managed
+    path had to already know it existed. This band is where the offer in the
+    hero is cashed: what Relay operates, what the free plan carries, and the
+    same action the hero opened with.
+
+    Above the demo rather than below it. The demo proves the cryptography, and
+    a reader who has not yet been told what OpenE2EE runs reads it as a library
+    exhibit. Under this band it reads as the thing the delivery carries.
+
+    The canvas ground rather than the panel: the demo band under it is a panel,
+    and two panels in a row erase the boundary the rule is drawn to state.
+  */}
+  <section id="relay" class:list={[BAND, HERO_RAMP]}>
+    <div class={CONTAINER}>
+      <div class={BAND_HEAD}>
+        <p class={LABEL}>OpenE2EE Relay</p>
+        <h2>Managed encrypted delivery</h2>
+        <p class={MEASURE}>Relay is the delivery half of an end-to-end encrypted application. Every plan carries every Relay protocol feature. Plans differ by capacity, support, service terms, and approved operational controls.</p>
+      </div>
+      <dl class={DEFINITION_ROWS}>
+        <div><dt>Delivery</dt><dd>Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.</dd></div>
+        <div><dt>Groups and files</dt><dd>Bounded group fan-out and private encrypted attachment storage, so an application server does not become message infrastructure.</dd></div>
+        <div><dt>Operations</dt><dd>Push wakes, exact usage, quotas, lifecycle controls, recovery drills, and an operator plane.</dd></div>
+      </dl>
+      <div class={RELAY_START} data-actions="relay">
+        <h3 class={RELAY_HEADING}>{free.name}</h3>
+        <p class={MEASURE}>Production traffic at {free.price}: {free.relayMau} Relay MAU, {free.deliveryUnits} delivery units, and {free.storage} exact live storage, under hard caps with no automatic charge. Every project also opens a Development environment, which needs no card.</p>
+        <a class="oe-button" href={RELAY_PROJECT}>Start a Relay project</a>
+      </div>
+      <p class:list={['mt-8', TEXT_LINKS]}><a href="/relay">What Relay operates</a><a href="/pricing">Relay plans and limits</a></p>
     </div>
   </section>
 
