@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { relayPlans } from '../data/relay-pricing.mjs';
 import { startupTier, tiers } from '../data/pricing.mjs';
 import {
+  ACTIONS,
   BAND,
   BAND_HEAD,
   BAND_SURFACE,
@@ -12,83 +13,189 @@ import {
   LABEL,
   LEAD,
   MEASURE,
+  METADATA,
   PAGE_HERO,
   TEXT_LINKS,
 } from '../lib/recipes';
 
 /*
- * Tiers are ruled rows: one price, one paragraph, one action. Never cards.
+ * The Relay plans read across, one column each, which is the shape a reader
+ * arrives already able to scan: name, price, action, then what the price
+ * carries. Five columns hold to 68rem, three to 44rem, and one below that.
  *
- * The name column holds a heading and a price, the body column holds the
- * paragraphs. Below 58rem the two stack.
+ * Every column opens with the same marker line, empty on four of the five, so
+ * the five names sit on one baseline without a filler character.
+ */
+const PLANS =
+  'grid list-none grid-cols-5 gap-x-6 gap-y-0 p-0 ' +
+  'max-[68rem]:grid-cols-3 max-[44rem]:grid-cols-1';
+
+const PLAN = 'flex flex-col items-start gap-3 rule-t py-8';
+
+/*
+ * The four metered plans each carry three capacity lines, so the lists start
+ * and end on the same two baselines across the deck without a grid template.
+ * Enterprise carries none: its price already reads "Negotiated".
+ */
+const PLAN_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] text-text-1';
+
+const PLAN_DETAIL = 'text-[0.9375rem] text-text-3';
+
+/*
+ * Licenses stay ruled rows. They are a separate product with a separate meter,
+ * and the two shapes on one page say so before the headings do.
  */
 const TIERS = 'm-0 list-none p-0';
 
 const TIER =
-  'grid grid-cols-[minmax(11rem,1fr)_minmax(0,2fr)] items-start gap-6 rule-t py-8 ' +
+  'grid grid-cols-[minmax(12rem,1fr)_minmax(0,2fr)] items-start gap-6 rule-t py-8 ' +
   'max-[58rem]:grid-cols-1 max-[58rem]:gap-4';
 
-const TIER_NAME = 'flex flex-col gap-2';
+const TIER_NAME = 'flex flex-col items-start gap-2';
 
 /*
- * The period rides in a span after the figure, in the third tier and at the
- * body weight, so the price is one line the eye reads as a price and a
- * qualifier rather than as two values.
+ * The price is the largest thing in the row, and the name reads as its label.
+ * The page carried the reverse until this rebuild: a heading at the heading
+ * size over a price at the body size, so the one number a reader came for was
+ * the smaller of the two. A pricing page answers the price question first.
  */
+const TIER_HEADING = 'text-[1.0625rem] leading-tight font-semibold text-text-1';
+
 const TIER_PRICE =
-  'font-[family-name:var(--oe-metadata-font-family)] text-base font-medium ' +
-  'tracking-[var(--oe-metadata-tracking)] text-text-1 ' +
-  "[&>span]:font-normal [&>span]:text-text-3 [&>span]:before:content-['_']";
+  'font-[family-name:var(--oe-metadata-font-family)] ' +
+  'text-[clamp(1.875rem,1.5rem+1.2vw,2.5rem)] leading-none font-medium ' +
+  'tracking-[var(--oe-metadata-tracking)] text-text-1';
 
-const TIER_BODY =
-  'max-w-[58ch] text-text-3 [&>*+*]:mt-3 ' +
-  '[&_ul]:mt-3 [&_ul]:mr-0 [&_ul]:mb-0 [&_ul]:pl-[1.1em] [&_li]:my-1';
+const TIER_NOTE = `${METADATA} text-text-3`;
 
-const starter = relayPlans.find((plan) => plan.id === 'relay_starter_v1');
-if (!starter) throw new Error('The Relay catalog has no Starter plan.');
+/* The one plan a reader can take without a decision, marked in the color this
+ * site uses where something is settled rather than promised. The other four
+ * columns carry the same element with no text, so the marker costs the deck one
+ * line and buys every name the same baseline. */
+const PLAN_MARK = `${METADATA} min-h-[1lh] text-[var(--oe-sealed)]`;
+
+const TIER_BODY = 'flex max-w-[58ch] flex-col items-start gap-3 text-text-3';
+
+/*
+ * Every Relay plan gets its own action. The four self-service plans open the
+ * same Console route because a production plan is activated inside a project,
+ * and a project is what the route creates; the plan the reader chose is the
+ * label on the button, not a query string the Console does not read.
+ */
+const RELAY_PROJECT = 'https://console.open-e2ee.dev/products/relay/new';
+
+type TierAction = { href: string; label: string; secondary: boolean };
+
+const RELAY_ACTIONS: Record<string, TierAction> = {
+  relay_free_v1: { href: RELAY_PROJECT, label: 'Start free', secondary: false },
+  relay_starter_v1: { href: RELAY_PROJECT, label: 'Start with Starter', secondary: true },
+  relay_growth_v1: { href: RELAY_PROJECT, label: 'Start with Growth', secondary: true },
+  relay_business_v1: { href: RELAY_PROJECT, label: 'Start with Business', secondary: true },
+  relay_enterprise_v1: {
+    href: 'mailto:licensing@open-e2ee.dev?subject=OpenE2EE%20Relay%20Enterprise%20plan',
+    label: 'Ask about Enterprise',
+    secondary: true,
+  },
+};
+
+/*
+ * Resolved at build rather than rendered as a gap. A plan added to the catalog
+ * with no action here would ship as the one row on the page a reader cannot
+ * act on, and the catalog is edited to match a product contract by someone who
+ * has no reason to open this file.
+ */
+const relayTiers = relayPlans.map((plan) => {
+  const action = RELAY_ACTIONS[plan.id];
+  if (!action) throw new Error(`pricing.astro: no action for Relay plan ${plan.id}`);
+  return { action, plan };
+});
+
+const licenseHeading = (tier: (typeof tiers)[number]) =>
+  /license/i.test(tier.name) ? tier.name : `${tier.name} license`;
 ---
 
 <BaseLayout
   title="Pricing"
-  description={`Choose managed OpenE2EE Relay capacity or a self-hosted OpenE2EE Signal Protocol SDK commercial license from ${startupTier.price} per year.`}
+  description={`OpenE2EE Relay plans from Free production through Starter, Growth, Business, and Enterprise, with SDK commercial licensing from ${startupTier.price} per year.`}
   canonical="/pricing"
 >
   <header class={PAGE_HERO}>
     <div class={CONTAINER_MEASURE}>
       <p class={LABEL}>Pricing</p>
-      <h1>Choose who operates the encrypted delivery layer.</h1>
-      <p class={LEAD}>OpenE2EE Relay is the managed delivery product. Self-hosted licensing covers a proprietary application that operates its own infrastructure. These are separate products with separate meters and rights.</p>
-      <p>Free under AGPLv3. Commercial self-hosting starts at {startupTier.price} per year.</p>
+      <h1>Start free, then pay for the capacity the Relay carries.</h1>
+      <p class={LEAD}>OpenE2EE Relay is the managed delivery product for applications built on the OpenE2EE Signal Protocol SDK. Every plan carries every Relay protocol feature. Plans differ by capacity, support, service terms, and approved operational controls.</p>
+      <p>Every project starts with a Development environment, at no cost and without a card.</p>
     </div>
   </header>
 
-  <section class={BAND}>
+  <section id="relay-plans" class={BAND}>
     <div class={CONTAINER}>
-      <ul class={TIERS}>
-        <li class={TIER}>
-          <div class={TIER_NAME}><h2>OpenE2EE Relay</h2><p class={TIER_PRICE}>Free<span>then {starter.price} per month</span></p></div>
-          <div class={TIER_BODY}><p>Managed encrypted delivery for the OpenE2EE Signal Protocol SDK. Includes development and Free production, encrypted device mailboxes, group fan-out, private attachment storage, push wakes, exact usage, and lifecycle controls.</p><p class="text-text-3">Plans use Relay MAU, destination-device delivery units, attachment operations, and exact live encrypted storage.</p><p class={TEXT_LINKS}><a href="/relay/pricing">Review Relay plans</a><a href="/relay">What Relay operates</a></p></div>
-        </li>
-        {tiers.map((tier) => (
-          <li class={TIER}>
-            <div class={TIER_NAME}><h2>{tier.name}</h2><p class={TIER_PRICE}>{tier.price}{tier.period && <span>{tier.period}</span>}</p></div>
-            <div class={TIER_BODY}><p>{tier.body}</p><p class="text-text-3">{tier.detail}</p><p class={TEXT_LINKS}><a href={tier.cta.href}>{tier.cta.label}</a></p></div>
+      <div class={BAND_HEAD}><h2>OpenE2EE Relay plans</h2></div>
+      <ul class={PLANS}>
+        {relayTiers.map(({ action, plan }) => (
+          <li class={PLAN} data-relay-plan={plan.id}>
+            <p class={PLAN_MARK}>{plan.id === 'relay_free_v1' ? 'Start here' : ''}</p>
+            <h3 class={TIER_HEADING}>{plan.name}</h3>
+            <p class={TIER_PRICE}>{plan.price}</p>
+            <p class={TIER_NOTE}>{plan.monthlyPriceUsd === null ? 'Negotiated' : 'per month'}</p>
+            <a
+              class:list={['oe-button', 'oe-button-full', action.secondary && 'oe-button-secondary']}
+              href={action.href}
+            >{action.label}</a>
+            {plan.monthlyPriceUsd !== null && (
+              <ul class={PLAN_CAPACITY}>
+                <li>{plan.relayMau} Relay MAU</li>
+                <li>{plan.deliveryUnits} delivery units</li>
+                <li>{plan.storage} exact live storage</li>
+              </ul>
+            )}
+            <p class={PLAN_DETAIL}>{plan.detail}</p>
           </li>
         ))}
       </ul>
-      <p class:list={['text-text-3', MEASURE]}>A managed Relay subscription does not grant general self-hosting rights. The <a href="/legal/relay-terms">Relay service terms</a> control that project. A Startup commercial license renews annually until you cancel before the renewal date. Taxes may apply. The <a href="/legal/terms">self-hosted agreement</a> controls that grant, covered products, support, renewal, and post-expiration rights.</p>
+      <p class:list={['mt-8', MEASURE]}>Prefer to operate the delivery layer yourself? The SDK is free under AGPLv3. Self-hosting it inside a proprietary product takes an <a href="#licensing">SDK commercial license</a>, from {startupTier.price} per year, and a managed Relay subscription grants no self-hosting rights.</p>
+      <p class:list={['mt-4 text-text-3', MEASURE]}>Paid prices are monthly and taxes can apply. Optional overage stays off until an organization administrator accepts the rate and sets a spend limit. Production ciphertext retains for at most 30 days. The <a href="/legal/relay-terms">Relay service terms</a> control a managed project.</p>
+      <p class:list={['mt-4', TEXT_LINKS]}><a href="/relay/pricing">Exact limits, meters, and overage</a><a href="/relay">What Relay operates</a></p>
     </div>
   </section>
 
-  <section class:list={[BAND, BAND_SURFACE]}>
+  <section id="licensing" class:list={[BAND, BAND_SURFACE]}>
+    <div class={CONTAINER}>
+      <div class={BAND_HEAD}>
+        <h2>SDK commercial licensing</h2>
+        <p class={MEASURE}>The OpenE2EE Signal Protocol SDK is a separate product from OpenE2EE Relay, with separate rights and no meter. These grants cover a proprietary product that operates its own infrastructure, and each one renews annually.</p>
+      </div>
+      <ul class={TIERS}>
+        {tiers.map((tier) => (
+          <li class={TIER}>
+            <div class={TIER_NAME}>
+              <h3 class={TIER_HEADING}>{licenseHeading(tier)}</h3>
+              <p class={TIER_PRICE}>{tier.price}</p>
+              {tier.period && <p class={TIER_NOTE}>{tier.period}</p>}
+            </div>
+            <div class={TIER_BODY}>
+              <p>{tier.body}</p>
+              <p class={TIER_NOTE}>{tier.detail}</p>
+              <p class={ACTIONS}>
+                <a class:list={['oe-button', tier.cta.secondary && 'oe-button-secondary']} href={tier.cta.href}>{tier.cta.label}</a>
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p class:list={['text-text-3', MEASURE]}>A Startup commercial license renews annually until you cancel before the renewal date. Taxes may apply. The <a href="/legal/terms">self-hosted agreement</a> controls that grant, covered products, support, renewal, and post-expiration rights.</p>
+    </div>
+  </section>
+
+  <section class={BAND}>
     <div class={CONTAINER}>
       <div class={BAND_HEAD}><h2>How buying works</h2></div>
       <dl class={DEFINITION_ROWS}>
-        <div><dt>Managed Relay</dt><dd>Start with no-card development. Production activation uses a separate managed project, exact limits, and the plan selected in Console.</dd></div>
+        <div><dt>Relay plan</dt><dd>Create a project and work in its Development environment without a card. Production activation uses a separate managed project, exact limits, and the plan selected in Console.</dd></div>
         <div><dt>Startup license</dt><dd>Sign in, name the legal entity and covered product, accept the commercial terms, and complete annual checkout.</dd></div>
-        <div><dt>Growth and Enterprise license</dt><dd>Portfolio rights, redistribution, integration support, security review, and service levels need a signed order form.</dd></div>
+        <div><dt>Growth and Enterprise / OEM licenses</dt><dd>Portfolio rights, redistribution, integration support, security review, and service levels need a signed order form.</dd></div>
       </dl>
-      <p class={TEXT_LINKS}><a href="/relay/pricing">Review Relay limits</a><a href="/licensing">Compare self-hosted rights</a><a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">Ask a licensing question</a></p>
+      <p class={TEXT_LINKS}><a href="/licensing">Compare self-hosted rights</a><a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">Ask a licensing question</a></p>
     </div>
   </section>
 </BaseLayout>

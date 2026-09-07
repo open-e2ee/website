@@ -295,7 +295,7 @@ sr_v24() {
 
 PRICING=src/pages/pricing.astro
 RELAY_PAGE=src/pages/relay/index.astro
-HOME=src/pages/index.astro
+HOMEPAGE=src/pages/index.astro
 ARTICLE_CSS=src/styles/article.css
 DIAGRAMS=src/components/diagrams
 
@@ -319,7 +319,7 @@ sr_v27() {
 # emoji. An emoji here reads as a different type system than the rest of the
 # site uses.
 sr_v28() {
-  test -f "$HOME" || return 1
+  test -f "$HOMEPAGE" || return 1
   test -f tests/home-funnel.test.mjs || return 1
   node --test --test-reporter=tap tests/home-funnel.test.mjs
 }
@@ -414,12 +414,27 @@ sr_v39() {
 self_ci() { grep -q 'verify-site-redesign.sh' .github/workflows/ci.yml; }
 self_readme() { grep -q 'verify-site-redesign.sh' README.md; }
 
+# A path variable named for something the shell already exports overwrites it
+# for every child process. `HOME=src/pages/index.astro` reached this file once
+# and turned the four browser conditions red, because headless Chrome cannot
+# start without a home directory. The four failed on load timeouts, which reads
+# exactly like four fired assertions.
+RESERVED_NAMES='HOME|PATH|USER|SHELL|TMPDIR|LANG|LC_ALL|PWD|IFS|TERM|EDITOR'
+self_env() {
+  ! grep -qE "^(${RESERVED_NAMES})=" "$0"
+}
+
 if ! self_ci; then
   echo 'FAIL self  .github/workflows/ci.yml does not run this script' >&2
   exit 2
 fi
 if ! self_readme; then
   echo 'FAIL self  README.md does not name this script' >&2
+  exit 2
+fi
+if ! self_env; then
+  echo 'FAIL self  a variable here shadows one the shell exports:' >&2
+  grep -nE "^(${RESERVED_NAMES})=" "$0" >&2
   exit 2
 fi
 
