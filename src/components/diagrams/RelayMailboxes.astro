@@ -1,0 +1,135 @@
+---
+import {
+  ARROW_STROKE_WIDTH,
+  CIPHERTEXT_FILL,
+  PLAINTEXT_STROKE,
+  boundaryLine,
+  carrierBrackets,
+  deviceOutline,
+  keySilhouettePath,
+  metadataTicks,
+  slabPath,
+} from '@open-e2ee/design/diagram';
+
+/*
+ * What the relay holds, rather than what one message does on its way past it.
+ *
+ * `SignatureDiagram.astro` already draws the journey — device, envelope, mark,
+ * device — and that drawing answers "where does encryption happen". This page
+ * sells the middle of it, so this figure opens the carrier and shows the
+ * interior: one sealed mailbox for each device, and a fan-out to the several
+ * devices one account carries.
+ *
+ * The brackets are the branded form. `DESIGN.md` under "Two relay forms" gives
+ * the branded carrier to a relay that is OpenE2EE's own and the unbranded
+ * container to infrastructure the reader operates, and the subject here is the
+ * managed node.
+ *
+ * Every shape comes from `@open-e2ee/design/diagram`. Six components in this
+ * repository used to carry private copies of `slabPath` and `metadataTicks`,
+ * and they were not identical.
+ */
+
+const SENDER = { x: 20, y: 150, width: 190, height: 140 };
+const SENDER_KEY = { x: 40, y: 245, width: 52, height: 30 };
+
+const SEAL_X = 260;
+const OPEN_X = 860;
+const BOUNDARY = { top: 60, bottom: 400 };
+
+const CARRIER = { x: 380, y: 70, width: 380, height: 300, thickness: 14, arm: 50 };
+
+/* Three mailboxes, upright: ciphertext at rest is what a mailbox holds. The
+   ticks above each one are the routing, timing, size, quota, and abuse metadata
+   the service needs to deliver it, and they are drawn on every sealed form
+   here. A sealed slab with no ticks is a claim this product must not make. */
+const MAILBOX = { y: 165, width: 84, height: 150, ticks: 4 };
+const MAILBOX_X = [419, 528, 637];
+
+/* One account, several devices. The fan-out is the reason a mailbox is per
+   device rather than per account. */
+const RECEIVERS = [
+  { x: 910, y: 90, width: 120, height: 120 },
+  { x: 910, y: 250, width: 120, height: 120 },
+];
+const RECEIVER_KEY = { width: 34, height: 20 };
+
+const ARROWS = [
+  { x: 310, y: 220, length: 40 },
+  { x: 770, y: 150, length: 30 },
+  { x: 770, y: 290, length: 30 },
+];
+---
+
+<svg viewBox="0 0 1040 440" role="img" aria-labelledby="relay-mailboxes-title">
+  <title id="relay-mailboxes-title">
+    What OpenE2EE Relay holds: one sealed mailbox for each device
+  </title>
+  <desc id="relay-mailboxes-desc">
+    On the left, an outlined device with readable content bars and a filled private key. A dotted
+    rule marked seal stands between it and the relay. The relay is a pair of open brackets holding
+    three solid slabs, each carrying metadata ticks along its top edge: one sealed mailbox for each
+    device. A second dotted rule marked open stands between the relay and two more outlined
+    devices, each with its own readable content and its own private key.
+  </desc>
+
+  <Fragment set:html={deviceOutline(SENDER)} />
+  <path d={keySilhouettePath(SENDER_KEY)} fill={PLAINTEXT_STROKE} />
+  <text x={SENDER.x} y={316} class="diagram-label">device · seals</text>
+
+  <text x={SEAL_X} y={48} text-anchor="middle" class="diagram-boundary-label">seal</text>
+  <Fragment set:html={boundaryLine({ x: SEAL_X, ...BOUNDARY })} />
+
+  <text x={OPEN_X} y={48} text-anchor="middle" class="diagram-boundary-label">open</text>
+  <Fragment set:html={boundaryLine({ x: OPEN_X, ...BOUNDARY })} />
+
+  {ARROWS.map((arrow) => (
+    <g fill="var(--oe-diagram-carrier-stroke)">
+      <rect
+        x={arrow.x}
+        y={arrow.y - ARROW_STROKE_WIDTH / 2}
+        width={arrow.length}
+        height={ARROW_STROKE_WIDTH}
+      />
+      <path
+        d={`M${arrow.x + arrow.length} ${arrow.y - 7} L${arrow.x + arrow.length + 12} ${arrow.y} L${arrow.x + arrow.length} ${arrow.y + 7} Z`}
+      />
+    </g>
+  ))}
+
+  <Fragment set:html={carrierBrackets(CARRIER)} />
+  <text x={MAILBOX_X[0]} y={MAILBOX.y - 24} class="diagram-tick-label">metadata</text>
+  {MAILBOX_X.map((x) => (
+    <g>
+      <Fragment set:html={metadataTicks({ x: x + 10, y: MAILBOX.y, count: MAILBOX.ticks })} />
+      <path
+        d={slabPath({ x, y: MAILBOX.y, width: MAILBOX.width, height: MAILBOX.height })}
+        fill={CIPHERTEXT_FILL}
+      />
+    </g>
+  ))}
+  {/* The name and nothing else. The label ran to 510 units at "one sealed
+      mailbox for each device", which carried it out of the brackets, across the
+      open boundary, and into the label of the devices on the far side. The band
+      above the figure already says what the mailboxes are. */}
+  <text x={CARRIER.x} y={396} class="diagram-label">OpenE2EE Relay</text>
+
+  {RECEIVERS.map((receiver) => (
+    <g>
+      <Fragment set:html={deviceOutline({ ...receiver, padding: 16 })} />
+      <path
+        d={keySilhouettePath({
+          x: receiver.x + 16,
+          y: receiver.y + receiver.height - 36,
+          ...RECEIVER_KEY,
+        })}
+        fill={PLAINTEXT_STROKE}
+      />
+    </g>
+  ))}
+  {/* Anchored at the right edge rather than started at the devices' own left,
+      which ran the label past the 1040-unit canvas. Two words rather than four:
+      at "devices · pull and open" the run started at 862 and the open boundary
+      stands at 860, so the first letter sat on the dotted rule. */}
+  <text x={1030} y={396} text-anchor="end" class="diagram-label">devices · pull</text>
+</svg>
