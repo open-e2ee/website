@@ -8,7 +8,7 @@
  *
  * This file asserts the shape the rebuilt page keeps: every plan in the
  * catalog, in catalog order, priced larger than it is named, ahead of a
- * licensing section the top of the page links to.
+ * licensing section the page raises once the plans are read.
  */
 
 import assert from 'node:assert/strict';
@@ -90,15 +90,20 @@ test('the price is larger than the name it prices', () => {
   }
 });
 
-test('the licensing section follows the plans, behind an anchor the top links', () => {
+test('the licensing section follows the plans, raised in context above it', () => {
   const anchor = built.indexOf('href="#licensing"');
   const plans = built.indexOf('id="relay-plans"');
+  const lastPlan = built.indexOf(`data-relay-plan="${relayPlans.at(-1).id}"`);
   const licensing = built.indexOf('id="licensing"');
 
   assert.ok(anchor !== -1, 'the page carries no in-page link to the licensing section');
   assert.ok(licensing !== -1, 'the page carries no licensing section to link to');
-  assert.ok(anchor < plans, 'the licensing link is not at the top of the page');
   assert.ok(plans < licensing, 'the licensing section is not below the Relay plans');
+
+  /* The link is raised where a reader has just read the plans and can weigh
+   * the other way of running the code, not in the hero ahead of them. */
+  assert.ok(lastPlan < anchor, 'the licensing link is raised before the Relay plans are read');
+  assert.ok(anchor < licensing, 'the licensing link is not above the section it points at');
 
   /* Every license tier still prices itself on the page it moved down within,
    * so the move did not quietly become a deletion. */
