@@ -96,15 +96,19 @@ if (!githubPath) {
  *
  * `DESIGN.md` puts one bracket stem of clear space on every side of the mark,
  * `0.125` of its width. The horizontal lockup already carries that margin — the
- * symbol is 128 units tall inside a 160-unit box — so the floor below it is the
- * lockup's own bottom edge, and the check further down fails the build if a
- * later nudge lifts the sources above it.
+ * symbol is 128 units tall, and the wordmark's descender reaches 174.39, inside
+ * a 190.39-unit box — so the floor below it is the lockup's own bottom edge,
+ * and the check further down fails the build if a later nudge lifts the sources
+ * above it. The box is read from the file's viewBox rather than written here,
+ * so a redrawn lockup moves the floor with it.
  *
  * The sources are smaller than our symbol, not merely smaller than the lockup.
  * The lockup spans the field, so it is the larger thing by construction, but
- * the eye compares one glyph with another: the symbol lands at 17 units and the
- * two below it at 15. They are what the band points at; the lockup is whose
- * band it is, and it should not be the smallest drawing in its own band.
+ * the eye compares one glyph with another: the symbol lands at 12.67 units and
+ * the two below it at 11. They are what the band points at; the lockup is whose
+ * band it is, and it should not be the smallest drawing in its own band. The
+ * symbol is a share of the lockup's width, so a wordmark set larger beside it
+ * draws it smaller here, and the sources follow it down.
  */
 export const FIELD_WIDTH = 100;
 export const CARRIER_CLEAR_SPACE = 0.125;
@@ -155,18 +159,18 @@ export const marks = [
        in the field, which is the part of OSI's license this instance breaks. */
     pieces: [{ kind: 'paths', paths: [OSI_PATH], strokeWidth: OSI_EDGE_WIDTH }],
     cx: 35,
-    y: 27,
-    width: 15,
-    height: 15,
+    y: 31,
+    width: 11,
+    height: 11,
   },
   {
     id: 'github',
     viewBox: ICON_VIEW_BOX,
     pieces: [{ kind: 'paths', paths: [githubPath] }],
     cx: 65,
-    y: 27,
-    width: 15,
-    height: 15,
+    y: 31,
+    width: 11,
+    height: 11,
   },
 ];
 
