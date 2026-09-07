@@ -190,6 +190,35 @@
     max-block-size: calc(100vh - var(--oe-space-24));
     overflow-y: auto;
   }
+
+  /*
+   * And what the rail stands over.
+   *
+   * `wide` is the measure plus a step of token space on each side, centered.
+   * The rail is the leading gutter, less a step. Both are drawn from the same
+   * space, so the rail sat over the leading 32 pixels of every figure, code
+   * block, and table on the page — measured at 1280, 1440, and 1680, on three
+   * posts, 36 readings, 32 px on each of them.
+   *
+   * The breakout gives up its leading step and keeps its trailing one. The
+   * prose column does not move, the drawing keeps the width it had, and the
+   * page keeps the balance it was drawn with: only the leading edge changes.
+   * Giving the rail a track of its own was the other way, and it moves the
+   * column on every article whether or not a rail is drawn.
+   *
+   * `:has(> .oe-article-toc)` and not the width alone. `ArticleToc.astro`
+   * renders nothing when a post carries no `h2`, so a post can be read at
+   * 1680 with the whole gutter to itself, and indenting its figures would be
+   * an offset held for a rail that is not there.
+   */
+  .oe-article:has(> .oe-article-toc) > .prose > figure,
+  .oe-article:has(> .oe-article-toc) > .prose > pre,
+  .oe-article:has(> .oe-article-toc) > .prose > table,
+  .oe-article:has(> .oe-article-toc) > .prose > .oe-article-wide {
+    grid-column: text-start / full-end;
+    inline-size: min(100% - var(--oe-article-gutter), var(--oe-article-wide));
+    margin-inline: 0 auto;
+  }
 }
 
 /* ── The furniture ──────────────────────────────────────────────────────────

@@ -79,23 +79,46 @@ test('the breakout width is a registered length, so it is one width', () => {
   assert.match(ruleFor(article, '.oe-article'), /--oe-article-wide:\s*calc\(var\(--oe-prose-measure\)/);
 });
 
-test('a figure, a code block, and a table take one wide track', () => {
+test('a figure, a code block, and a table take the wide track together', () => {
   const wide = cssRules(article).filter((rule) => /var\(--oe-article-wide\)/.test(rule.body));
-  assert.equal(wide.length, 1, 'one rule should place everything that leaves the measure');
 
-  const [rule] = wide;
-  for (const child of ['figure', 'pre', 'table', '.oe-article-wide']) {
-    assert.ok(
-      rule.selector.includes(`.oe-article > .prose > ${child}`),
-      `\`${child}\` should take the wide track with the others`,
-    );
+  /*
+   * Two placements, not one: the breakout centers on the column, and where a
+   * contents rail is drawn it starts at the column instead, because the rail
+   * and the centered breakout are drawn from the same gutter. Both are the
+   * same four children. A rule that placed three of them is the drift this
+   * guard was written for, and there is now one more rule for it to happen in.
+   */
+  assert.equal(wide.length, 2, 'the breakout is placed by a rule that names no set of children');
+
+  for (const rule of wide) {
+    for (const child of ['figure', 'pre', 'table', '.oe-article-wide']) {
+      assert.ok(
+        rule.selector.includes(`> .prose > ${child}`),
+        `\`${child}\` should take the wide track with the others in \`${rule.selector}\``,
+      );
+    }
   }
-  assert.match(rule.body, /grid-column:\s*full/);
+
+  const centered = wide.find((rule) => !rule.selector.includes(':has('));
+  const railed = wide.find((rule) => rule.selector.includes(':has(> .oe-article-toc)'));
+  assert.ok(centered, 'nothing centers the breakout on an article with no rail');
+  assert.ok(railed, 'nothing moves the breakout clear of the rail');
+
+  assert.match(centered.body, /grid-column:\s*full\b/);
   /* The gutter is subtracted rather than crossed: a code block that runs to
      both edges of a phone draws its border against the side of the screen. */
   assert.match(
-    rule.body,
+    centered.body,
     /inline-size:\s*min\(100% - var\(--oe-article-gutter\) \* 2, var\(--oe-article-wide\)\)/,
+  );
+
+  /* The railed one gives up its leading step and keeps its trailing one, so it
+     subtracts one gutter where the centered rule subtracts two. */
+  assert.match(railed.body, /grid-column:\s*text-start\s*\/\s*full-end/);
+  assert.match(
+    railed.body,
+    /inline-size:\s*min\(100% - var\(--oe-article-gutter\), var\(--oe-article-wide\)\)/,
   );
 });
 
