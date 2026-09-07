@@ -151,8 +151,11 @@ test('the lockup renders at the one shared size', async () => {
      beside a token wordmark draws a different lockup at the same size. */
   const manifest = JSON.parse(await installed('packages/design/dist/assets/manifest.json'));
   const ratio = manifest.lockups.symbolSize / manifest.lockups.wordmarkFontSize;
-  assert.equal(ratio.toFixed(3), '1.166');
-  assert.match(lockup, /\[&_\.oe-mark\]:h-\[1\.166em\]/);
+  assert.match(
+    lockup,
+    new RegExp(`\\[&_\\.oe-mark\\]:h-\\[${ratio.toFixed(3)}em\\]`),
+    `the mark is not ${ratio.toFixed(3)}em, the manifest's share of the wordmark size`,
+  );
 });
 
 test('one theme choice persists under the shared key', async () => {

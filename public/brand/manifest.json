@@ -1,6 +1,6 @@
 {
   "package": "@open-e2ee/design",
-  "version": "0.14.1",
+  "version": "0.15.0",
   "mark": "carrier",
   "variants": {
     "rule": "Use the optical variant from 16 to 31 px and the full mark from 32 px. Do not reproduce the mark below 16 px.",
@@ -21,12 +21,12 @@
   "lockups": {
     "rule": "Lockup proportions are derived from the symbol height S and the Public Sans cap height; see DESIGN.md.",
     "symbolSize": 128,
-    "wordmarkCapHeight": 79.36,
-    "wordmarkFontSize": 109.76,
+    "wordmarkCapHeight": 116.36,
+    "wordmarkFontSize": 160.95,
     "symbolGap": 48,
     "stackedGap": 39.68,
-    "productFontSize": 68.05,
-    "productBaselineDrop": 123.01,
+    "productFontSize": 99.79,
+    "productBaselineDrop": 180.36,
     "note": "SVG only, and the wordmark is live text: a lockup needs Public Sans available to render as drawn.",
     "assets": [
       {
@@ -54,64 +54,64 @@
         "lockup": "horizontal",
         "mode": "light",
         "svg": "lockup/open-e2ee-lockup-horizontal-light.svg",
-        "width": 753.09,
-        "height": 160
+        "width": 1010.07,
+        "height": 190.39
       },
       {
         "lockup": "horizontal",
         "mode": "dark",
         "svg": "lockup/open-e2ee-lockup-horizontal-dark.svg",
-        "width": 753.09,
-        "height": 160
+        "width": 1010.07,
+        "height": 190.39
       },
       {
         "lockup": "horizontal",
         "mode": "mono",
         "svg": "lockup/open-e2ee-lockup-horizontal-mono.svg",
-        "width": 753.09,
-        "height": 160
+        "width": 1010.07,
+        "height": 190.39
       },
       {
         "lockup": "stacked",
         "mode": "light",
         "svg": "lockup/open-e2ee-lockup-stacked-light.svg",
-        "width": 577.09,
-        "height": 303.74
+        "width": 834.07,
+        "height": 352.26
       },
       {
         "lockup": "stacked",
         "mode": "dark",
         "svg": "lockup/open-e2ee-lockup-stacked-dark.svg",
-        "width": 577.09,
-        "height": 303.74
+        "width": 834.07,
+        "height": 352.26
       },
       {
         "lockup": "stacked",
         "mode": "mono",
         "svg": "lockup/open-e2ee-lockup-stacked-mono.svg",
-        "width": 577.09,
-        "height": 303.74
+        "width": 834.07,
+        "height": 352.26
       },
       {
         "lockup": "product",
         "mode": "light",
         "svg": "lockup/open-e2ee-lockup-product-light.svg",
-        "width": 753.09,
-        "height": 274
+        "width": 1010.07,
+        "height": 357
       },
       {
         "lockup": "product",
         "mode": "dark",
         "svg": "lockup/open-e2ee-lockup-product-dark.svg",
-        "width": 753.09,
-        "height": 274
+        "width": 1010.07,
+        "height": 357
       },
       {
         "lockup": "product",
         "mode": "mono",
         "svg": "lockup/open-e2ee-lockup-product-mono.svg",
-        "width": 753.09,
-        "height": 274
+        "width": 1010.07,
+        "height": 357
       }
     ]
   },
@@ -152,7 +152,7 @@
       }
     ]
   },
-  "sha256": "97fb617939a6ac581b4b746e3a095ef68dd528983828ba87b1bb5b44ea945458",
+  "sha256": "f412cb0b765d5f64e25dc9f346e22f2b5d4527cbb486336ce472f6acdc71a47f",
   "files": [
     "lockup/open-e2ee-lockup-horizontal-dark.svg",
     "lockup/open-e2ee-lockup-horizontal-light.svg",
