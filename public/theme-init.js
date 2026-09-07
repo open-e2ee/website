@@ -28,7 +28,7 @@
 (() => {
   try {
     var KEY = 'oe-theme';
-    var CANVAS = { light: '#faf7f3', dark: '#0f0e0b' };
+    var CANVAS = { light: '#faf7f3', dark: '#0e0e0e' };
     var stored = function () {
       var v = localStorage.getItem(KEY) || 'system';
       return v === 'light' || v === 'dark' ? v : 'system';

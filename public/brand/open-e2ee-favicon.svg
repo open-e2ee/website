@@ -2,7 +2,7 @@
   <title id="title">OpenE2EE</title>
   <desc id="desc">Two open carrier brackets holding a solid square payload. Small-size optical variant, drawn with thicker stems for favicon scale. The fill follows the active color scheme.</desc>
   <style>
-    :root { --oe-mark: #090806; }
+    :root { --oe-mark: #080808; }
     @media (prefers-color-scheme: dark) {
       :root { --oe-mark: #f4f1eb; }
     }

@@ -2,7 +2,7 @@
   <title id="title">Adaptive OpenE2EE mark</title>
   <desc id="desc">Two open carrier brackets holding a solid square payload. The payload touches neither bracket. The fill follows the active color scheme.</desc>
   <style>
-    :root { --oe-mark: #090806; }
+    :root { --oe-mark: #080808; }
     @media (prefers-color-scheme: dark) {
       :root { --oe-mark: #f4f1eb; }
     }
