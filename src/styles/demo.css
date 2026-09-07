@@ -593,6 +593,20 @@
   display: none;
 }
 
+/*
+ * A drawing that stops being readable before it stops fitting, and has no
+ * second composition drawn for a phone.
+ *
+ * `.diagram svg` is `width: 100%`, so without a floor a wide figure shrinks
+ * instead of scrolling: the relay figure is 1040 viewBox units across and drew
+ * 288 CSS pixels wide at a 320px viewport, which set its 13px labels at about
+ * 3.6 real pixels. The floor hands the overflow to the scroll container the
+ * figure already is.
+ */
+.diagram-wide svg {
+  min-width: 52rem;
+}
+
 @media (max-width: 48rem) {
   .diagram .signature-diagram {
     display: none;
@@ -607,6 +621,15 @@
      still a tab stop. */
   .diagram {
     overflow-x: visible;
+  }
+
+  /* Except the wide one, which has no stacked composition to fall back on:
+     here the scroll is the only thing keeping it legible. This restores what
+     the rule above turns off rather than narrowing that rule, because the
+     range above is copied and `scripts/redesign-baseline/demo-css.txt` holds
+     it line for line. Same specificity, later wins. */
+  .diagram-wide {
+    overflow-x: auto;
   }
 }
 

@@ -1,43 +1,116 @@
 ---
+import RelayMailboxes from '../../components/diagrams/RelayMailboxes.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { relayPlans } from '../../data/relay-pricing.mjs';
 import {
   ACTIONS,
   BAND,
   BAND_HEAD,
   BAND_SURFACE,
   CONTAINER,
-  CONTAINER_MEASURE,
   CTA_PRIMARY,
   CTA_SUBLABEL,
   DEFINITION_ROWS,
   LABEL,
   LEAD,
   MEASURE,
+  METADATA,
   PAGE_HERO,
   STACK,
   TEXT_LINKS,
 } from '../../lib/recipes';
+
+const RELAY_PROJECT = 'https://console.open-e2ee.dev/products/relay/new';
+
+/*
+ * Read from the catalog rather than typed. The capacity is a product contract,
+ * edited to match Relay's own plan targets by someone who has no reason to open
+ * this file, and a page that prints the numbers by hand is correct on the day it
+ * ships.
+ */
+const free = relayPlans.find((plan) => plan.id === 'relay_free_v1');
+if (!free) throw new Error('relay/index.astro: the Relay catalog carries no free plan');
+
+/*
+ * The hero was one measure-wide column, which left the right half of it empty on
+ * every viewport wider than a tablet. The offer takes the measure and the price
+ * of starting takes the space beside it, so a reader decides without a second
+ * page. Below 62rem — the width the header's own row gives up at — the card
+ * falls under the copy rather than squeezing it.
+ */
+const HERO_SPLIT =
+  'grid grid-cols-[minmax(0,1fr)_minmax(0,19rem)] items-start gap-x-12 gap-y-10 max-[62rem]:grid-cols-1';
+const HERO_COPY = 'flex max-w-[min(100%,var(--oe-content-measure))] flex-col items-start gap-4';
+
+/*
+ * The box is drawn with `rule`, the published utility, rather than with the
+ * border pair it wraps: the site draws every hairline at one weight and one
+ * color, and the callout is the only box that cannot use the utility to do it.
+ * `tests/host-presentation.test.mjs` scans raw lines for the pair, so naming it
+ * here would make this note the second offender it counts.
+ */
+const START_CARD = 'flex w-full flex-col items-start gap-3 rule bg-ground-panel px-6 py-5';
+const START_PRICE =
+  'font-[family-name:var(--oe-heading-font-family)] text-[2rem] leading-none font-[var(--oe-heading-weight)] tracking-[var(--oe-heading-tracking-display)] tabular-nums text-text-1';
+const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] text-text-1';
 ---
 
 <BaseLayout
   title="OpenE2EE Relay"
-  description="Managed encrypted delivery infrastructure for the OpenE2EE Signal Protocol SDK, with device mailboxes, groups, attachments, push wakes, and exact lifecycle controls."
+  description="Managed encrypted delivery: device mailboxes, delivery and pull, group fan-out, private attachment storage, push wakes, and exact lifecycle controls. Free to start, with no card."
   canonical="/relay"
 >
   <header class={PAGE_HERO}>
-    <div class={CONTAINER_MEASURE}>
-      <p class={LABEL}>OpenE2EE Relay</p>
-      <h1>The managed delivery path for the OpenE2EE Signal Protocol SDK.</h1>
-      <p class={LEAD}>Use the SDK on each device. OpenE2EE Relay operates encrypted device mailboxes, delivery and pull, group fan-out, private attachment storage, push wakes, and exact lifecycle controls.</p>
-      <p>The relay never needs message plaintext or device private keys. It does see the routing, timing, size, quota, and abuse metadata needed to operate the service.</p>
-      <div class={ACTIONS}>
-        <a class={CTA_PRIMARY} href="https://console.open-e2ee.dev">
-          <span class="oe-button">Open the Console</span>
-          <span class={CTA_SUBLABEL}>Development environment · no card</span>
-        </a>
+    <div class={CONTAINER}>
+      <div class={HERO_SPLIT}>
+        <div class={HERO_COPY}>
+          <p class={LABEL}>Managed delivery</p>
+          <h1>OpenE2EE Relay is the delivery half of an end-to-end encrypted application.</h1>
+          <p class={LEAD}>Relay operates encrypted device mailboxes, delivery and pull, group fan-out, private attachment storage, push wakes, and exact lifecycle controls, so an application server does not become message infrastructure. The SDK runs on each device and reaches Relay through one connection URL.</p>
+          <p>The relay never needs message plaintext or device private keys. It does see the routing, timing, size, quota, and abuse metadata needed to operate the service.</p>
+          {/* Two actions and one order. The primary creates the project, which
+              is the shortest route from this page to a running relay; the
+              secondary is the reading a developer who wants the shape of the
+              API before an account asks for. */}
+          <div class={ACTIONS}>
+            <a class={CTA_PRIMARY} href={RELAY_PROJECT}>
+              <span class="oe-button">Start free</span>
+              <span class={CTA_SUBLABEL}>Development environment · no card</span>
+            </a>
+            <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the quickstart</a>
+          </div>
+        </div>
+        <div class={START_CARD}>
+          <p class={LABEL}>{free.name}</p>
+          <p class={START_PRICE}>{free.price}</p>
+          <ul class={START_CAPACITY}>
+            <li>{free.relayMau} Relay MAU</li>
+            <li>{free.deliveryUnits} delivery units</li>
+            <li>{free.storage} exact live storage</li>
+          </ul>
+          <p class:list={[METADATA, 'text-text-3']}>{free.detail}</p>
+          <p class={TEXT_LINKS}><a href="/pricing#relay-plans">Compare every plan</a></p>
+        </div>
       </div>
     </div>
   </header>
+
+  <section class={BAND}>
+    <div class:list={[CONTAINER, STACK]}>
+      <div class={BAND_HEAD}>
+        <h2>What Relay holds</h2>
+        <p class={MEASURE}>A mailbox for each device, not one for each account. A device that has been offline for a week pulls what it missed, and a device added today receives what is sent from that moment.</p>
+      </div>
+      <figure class="diagram diagram-wide">
+        <RelayMailboxes />
+        <figcaption>
+          The application seals on the device. Relay stores and routes the sealed envelope, and the
+          metadata ticks are what it reads to do that: the account, device, route, timing, size,
+          quota, and abuse metadata delivery needs.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
 
   <section class:list={[BAND, BAND_SURFACE]}>
     <div class={CONTAINER}>
@@ -53,23 +126,24 @@ import {
   </section>
 
   <section class={BAND}>
-    <div class:list={[CONTAINER, STACK]}>
+    <div class={CONTAINER}>
       <div class={BAND_HEAD}>
         <h2>One connection for each environment</h2>
-        <p class={MEASURE}>
-          <code>oe dev</code> writes the Development connection. <code>oe deploy</code>{' '}
-          writes the production connection. Both use <code>OPEN_E2EE_RELAY_URL</code>, so the
-          application source does not change.
-        </p>
+        <p class={MEASURE}>The connection URL is public configuration, not a credential. The SDK resolves the exact environment and project binding from that URL.</p>
       </div>
-      <p class={MEASURE}>
-        The connection URL is public configuration, not a credential. The SDK resolves the exact
-        environment and project binding from that URL. You do not select a Relay hostname or pair
-        it with a second key.
-      </p>
+      {/* The deck rather than two paragraphs. The band answers four separate
+          questions about one variable, and a reader who arrives with the third
+          of them was reading a measure-wide column for the sentence that held
+          it. */}
+      <dl class={DEFINITION_ROWS}>
+        <div><dt>Development</dt><dd>Every project opens one automatically, with isolated state and credentials. <code>oe dev</code> writes its connection.</dd></div>
+        <div><dt>Production</dt><dd><code>oe deploy</code> writes the production connection. Production roots and hard capacity caps, with no automatic charge on the free plan.</dd></div>
+        <div><dt>One variable</dt><dd>Both write <code>OPEN_E2EE_RELAY_URL</code>, so the application source does not change between them.</dd></div>
+        <div><dt>No pairing step</dt><dd>You do not select a Relay hostname or pair it with a second key.</dd></div>
+      </dl>
       <p class={TEXT_LINKS}>
         <a href="https://docs.open-e2ee.dev/relay">Read the Relay quickstart</a>
-        <a href="https://console.open-e2ee.dev">Open the Console</a>
+        <a href={RELAY_PROJECT}>Start a Relay project</a>
       </p>
     </div>
   </section>
