@@ -1,92 +1,54 @@
 ---
 /*
  * The search index moves across the boundary. Routing fields stay queryable on
- * the server side because they are drawn outside the seal; content queries only
- * work inside a device outline.
+ * the relay side because they sit outside the seal; content queries only work
+ * inside a device outline.
+ *
+ * The drawing used to carry an arrow between the two, a 60-unit shaft from 264
+ * to 324 with a head at 334, standing in the canvas between a relay that ends
+ * at 240 and a device that starts at 480. Nothing travels between those two
+ * forms in this figure — it is one message, asked two questions in two places —
+ * so the arrow asserted an exchange the figure does not describe, and it reached
+ * neither of the forms it appeared to join. It is gone. What remains is the one
+ * thing the figure is about: which side of the seal each query runs on.
  */
 
-const bars = [
-  { y: 118, width: 150 },
-  { y: 140, width: 170 },
-  { y: 162, width: 120 },
-];
+import { PLAINTEXT_STROKE, deviceOutline, keySilhouettePath } from '@open-e2ee/design/diagram';
+import { relayContainer } from '../../lib/relay-form.mjs';
 
-const SHEAR = 8;
+const RELAY = { x: 20, y: 96, width: 220, height: 133 };
+const DEVICE = { x: 480, y: 96, width: 220, height: 133 };
+const KEY = { x: 500, y: 188, width: 44, height: 26 };
+const BOUNDARY_X = 360;
 ---
 
 <svg viewBox="0 0 720 290" role="img" aria-labelledby="queries-title queries-desc">
-  <title id="queries-title">Which queries run on the server and which run on the device</title>
+  <title id="queries-title">Which queries run on the relay and which run on the device</title>
   <desc id="queries-desc">
-    On the left, an outlined store of sealed slabs with metadata ticks: recipient and time can still
-    be queried there. A dotted rule marks where the message is opened. On the right, an outlined
-    device with readable content, where content search happens.
+    On the left, an outlined relay container holding three sealed slabs, each with metadata ticks
+    along its top edge: recipient, device, group and time can still be queried there. A dotted rule
+    marked open stands in the canvas between them. On the right, an outlined device holding readable
+    content and a filled private key, where content search happens. No arrow joins the two: it is
+    one message, asked two questions in two places.
   </desc>
 
-  <g>
-    <rect
-      x={20}
-      y={96}
-      width={220}
-      height={133}
-      fill="none"
-      stroke="var(--oe-diagram-plaintext-stroke)"
-      stroke-width={4}
-    />
-    <text x={20} y={82} class="diagram-tick-label">by recipient, device, group, time</text>
-    {[42, 114, 186].map((x) => (
-      <g>
-        {Array.from({ length: 3 }, (_, index) => (
-          <rect x={x + 6 + index * 12} y={106} width={2} height={8} fill="var(--oe-diagram-boundary)" />
-        ))}
-        <path
-          d={`M${x + SHEAR} 122 L${x + 44 + SHEAR} 122 L${x + 44} 205 L${x} 205 Z`}
-          fill="var(--oe-diagram-ciphertext-fill)"
-        />
-      </g>
-    ))}
-    <text x={20} y={262} class="diagram-label">relay · routing fields only</text>
-  </g>
+  <Fragment set:html={relayContainer({ ...RELAY, slabs: 3 })} />
+  <text x={RELAY.x} y={82} class="diagram-tick-label">by recipient, device, group, time</text>
+  <text x={RELAY.x} y={262} class="diagram-label">relay · routing fields only</text>
 
-  <g>
-    <text x={360} y={64} text-anchor="middle" class="diagram-boundary-label">open</text>
-    <line
-      x1={360}
-      y1={76}
-      x2={360}
-      y2={248}
-      stroke="var(--oe-diagram-boundary)"
-      stroke-width={2}
-      stroke-dasharray="2 6"
-    />
-  </g>
+  <text x={BOUNDARY_X} y={64} text-anchor="middle" class="diagram-boundary-label">open</text>
+  <line
+    x1={BOUNDARY_X}
+    y1={76}
+    x2={BOUNDARY_X}
+    y2={248}
+    stroke="var(--oe-diagram-boundary)"
+    stroke-width={2}
+    stroke-dasharray="2 6"
+  />
 
-  <g fill="var(--oe-diagram-carrier-stroke)">
-    <rect x={264} y={161} width={60} height={2} />
-    <path d="M324 155 L334 162 L324 169 Z" />
-  </g>
-
-  <g>
-    <rect
-      x={480}
-      y={96}
-      width={220}
-      height={133}
-      fill="none"
-      stroke="var(--oe-diagram-plaintext-stroke)"
-      stroke-width={4}
-    />
-    <text x={480} y={82} class="diagram-tick-label">by anything in the message</text>
-    {bars.map((bar) => (
-      <rect
-        x={500}
-        y={bar.y}
-        width={bar.width}
-        height={9}
-        fill="var(--oe-diagram-plaintext-stroke)"
-        opacity={0.28}
-      />
-    ))}
-    <path d="M500 190 H532 L540 198 V214 H500 Z" fill="var(--oe-diagram-plaintext-stroke)" />
-    <text x={480} y={262} class="diagram-label">device · your search index</text>
-  </g>
+  <Fragment set:html={deviceOutline(DEVICE)} />
+  <path d={keySilhouettePath(KEY)} fill={PLAINTEXT_STROKE} />
+  <text x={DEVICE.x} y={82} class="diagram-tick-label">by anything in the message</text>
+  <text x={DEVICE.x} y={262} class="diagram-label">device · your search index</text>
 </svg>

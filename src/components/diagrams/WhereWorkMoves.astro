@@ -3,171 +3,135 @@
  * The architecture shift as a relocation, not a deletion. The same three work
  * blocks appear in both rows; only the outline they sit inside changes.
  *
- * The top row has no trust boundary at all, and that absence is the diagram:
- * plaintext reaches the server because nothing stops it. The bottom row gains a
- * seal, the device grows to hold the work, and the middle collapses to the
- * carrier form — brackets around slabs it routes without reading.
+ * The rows used to share no axis. The device was 130 units wide in the top row
+ * and 420 in the bottom one, its box 108 units tall against 140, and the three
+ * work blocks stood at 298, 434 and 570 above and at 48, 184 and 320 below. One
+ * concept drawn at two scales on two grids is a figure a reader cannot compare,
+ * which is the only thing this figure is for.
+ *
+ * Both rows now stand on one pair of columns: the device at 20 and the middle at
+ * 540, each 350 units wide and 150 tall, with the same three 100-unit work
+ * blocks at the same three offsets inside whichever box holds them. What moves
+ * between the rows is the work and the seal, and nothing else moves at all.
  */
 
-const WORK = [
-  { label: 'search' },
-  { label: 'notifications' },
-  { label: 'moderation' },
-];
+import { CONTENT_BAR_FILL, PLAINTEXT_STROKE, contentBarRects, deviceOutline } from '@open-e2ee/design/diagram';
+import { arrow, relayContainer } from '../../lib/relay-form.mjs';
 
-const CHIP = { width: 116, height: 56, gap: 20 };
-const barWidths = [92, 104, 68];
+const WORK = ['search', 'notifications', 'moderation'];
 
-const SERVER = { x: 270, y: 62, width: 420, height: 140 };
-const DEVICE_AFTER = { x: 20, y: 278, width: 420, height: 140 };
+/* The two columns, shared by both rows. */
+const LEFT = { x: 20, width: 350 };
+const RIGHT = { x: 540, width: 350 };
+const BOX_HEIGHT = 150;
 
-const BOUNDARY_X = 486;
-const BRACKET_LEFT = 588;
-const BRACKET_RIGHT = 812;
+const ROW_ONE = 70;
+const ROW_TWO = 300;
 
-function chipX(originX: number, index: number) {
-  return originX + 28 + index * (CHIP.width + CHIP.gap);
-}
+const CHIP = { width: 100, gap: 10, height: 52, inset: 15, top: 30 };
+const BOUNDARY_X = 420;
+
+const chipX = (originX: number, index: number) =>
+  originX + CHIP.inset + index * (CHIP.width + CHIP.gap);
+
+/* Two bars rather than three: a box that also holds the work blocks has one
+   band of room under them, and a bar squeezed against the edge reads as a
+   drawing error rather than as content. */
+const bars = (box: { x: number; width: number }, top: number) =>
+  contentBarRects({ x: box.x + 20, y: top + 100, width: box.width - 40, count: 2 });
 ---
 
-<svg viewBox="0 0 860 480" role="img" aria-labelledby="workmoves-title workmoves-desc">
+<svg viewBox="0 0 910 490" role="img" aria-labelledby="workmoves-title workmoves-desc">
   <title id="workmoves-title">
     Where search, notifications and moderation run before and after end-to-end encryption
   </title>
   <desc id="workmoves-desc">
-    In the top row, a small outlined device sends readable content straight into a large outlined
-    server, with no boundary between them; three outlined work blocks labeled search,
-    notifications and moderation sit inside the server. In the bottom row the same three work
-    blocks sit inside a device that has grown to hold them, a dotted boundary marked seal stands
-    between the device and the middle, and the middle is now a pair of brackets holding two solid
-    slabs with metadata ticks: a relay that routes envelopes rather than a server that reads rows.
+    Two rows on the same two columns. In the top row the device on the left holds readable content
+    and nothing else, an arrow marked plaintext runs from it to the server on the right, and the
+    three work blocks labeled search, notifications and moderation sit inside that server. In the
+    bottom row the same three work blocks sit inside the device, a dotted rule marked seal stands in
+    the canvas between the columns, and the right-hand column is now a relay container holding two
+    sealed slabs with metadata ticks along their top edges. Every box in both rows is the same size
+    and stands in the same place.
   </desc>
 
-  <text x={20} y={38} class="diagram-label">Server-authoritative</text>
+  <text x={LEFT.x} y={42} class="diagram-label">Server-authoritative</text>
 
-  <rect
-    x={20}
-    y={78}
-    width={130}
-    height={108}
-    fill="none"
-    stroke="var(--oe-diagram-plaintext-stroke)"
-    stroke-width={4}
-  />
-  {barWidths.map((width, index) => (
-    <rect
-      x={38}
-      y={98 + index * 20}
-      width={width}
-      height={8}
-      fill="var(--oe-diagram-plaintext-stroke)"
-      opacity={0.28}
-    />
-  ))}
-  <text x={20} y={228} class="diagram-label">device · a cache</text>
+  <Fragment set:html={deviceOutline({ ...LEFT, y: ROW_ONE, height: BOX_HEIGHT })} />
+  <text x={LEFT.x} y={246} class="diagram-label">device · a cache</text>
 
-  <g fill="var(--oe-diagram-carrier-stroke)">
-    <rect x={170} y={131} width={70} height={2} />
-    <path d="M240 125 L250 132 L240 139 Z" />
-  </g>
-  <text x={170} y={116} class="diagram-tick-label">plaintext</text>
+  <text x={LEFT.width + LEFT.x + 10} y={130} class="diagram-tick-label">plaintext</text>
+  <Fragment set:html={arrow({ x: 380, y: 145, length: 140 })} />
 
-  <rect
-    x={SERVER.x}
-    y={SERVER.y}
-    width={SERVER.width}
-    height={SERVER.height}
-    fill="none"
-    stroke="var(--oe-diagram-plaintext-stroke)"
-    stroke-width={4}
-  />
-  {WORK.map((work, index) => (
+  <Fragment set:html={deviceOutline({ ...RIGHT, y: ROW_ONE, height: BOX_HEIGHT, bars: 0 })} />
+  {WORK.map((label, index) => (
     <g>
       <rect
-        x={chipX(SERVER.x, index)}
-        y={SERVER.y + 30}
+        x={chipX(RIGHT.x, index)}
+        y={ROW_ONE + CHIP.top}
         width={CHIP.width}
         height={CHIP.height}
         fill="none"
-        stroke="var(--oe-diagram-plaintext-stroke)"
+        stroke={PLAINTEXT_STROKE}
         stroke-width={3}
       />
       <text
-        x={chipX(SERVER.x, index) + CHIP.width / 2}
-        y={SERVER.y + 64}
+        x={chipX(RIGHT.x, index) + CHIP.width / 2}
+        y={ROW_ONE + CHIP.top + 32}
         text-anchor="middle"
         class="diagram-tick-label"
       >
-        {work.label}
+        {label}
       </text>
     </g>
   ))}
-  <text x={SERVER.x} y={228} class="diagram-label">your server · reads rows, does the work</text>
+  {bars(RIGHT, ROW_ONE).map((bar) => <rect {...bar} fill={CONTENT_BAR_FILL} />)}
+  <text x={RIGHT.x} y={246} class="diagram-label">your server · reads rows, does the work</text>
 
-  <text x={20} y={258} class="diagram-label">Device-authoritative</text>
+  <text x={LEFT.x} y={288} class="diagram-label">Device-authoritative</text>
 
-  <rect
-    x={DEVICE_AFTER.x}
-    y={DEVICE_AFTER.y}
-    width={DEVICE_AFTER.width}
-    height={DEVICE_AFTER.height}
-    fill="none"
-    stroke="var(--oe-diagram-plaintext-stroke)"
-    stroke-width={4}
-  />
-  {WORK.map((work, index) => (
+  <Fragment set:html={deviceOutline({ ...LEFT, y: ROW_TWO, height: BOX_HEIGHT, bars: 0 })} />
+  {WORK.map((label, index) => (
     <g>
       <rect
-        x={chipX(DEVICE_AFTER.x, index)}
-        y={DEVICE_AFTER.y + 30}
+        x={chipX(LEFT.x, index)}
+        y={ROW_TWO + CHIP.top}
         width={CHIP.width}
         height={CHIP.height}
         fill="none"
-        stroke="var(--oe-diagram-plaintext-stroke)"
+        stroke={PLAINTEXT_STROKE}
         stroke-width={3}
       />
       <text
-        x={chipX(DEVICE_AFTER.x, index) + CHIP.width / 2}
-        y={DEVICE_AFTER.y + 64}
+        x={chipX(LEFT.x, index) + CHIP.width / 2}
+        y={ROW_TWO + CHIP.top + 32}
         text-anchor="middle"
         class="diagram-tick-label"
       >
-        {work.label}
+        {label}
       </text>
     </g>
   ))}
-  <text x={DEVICE_AFTER.x} y={444} class="diagram-label">
-    device · source of truth, does the work
-  </text>
+  {bars(LEFT, ROW_TWO).map((bar) => <rect {...bar} fill={CONTENT_BAR_FILL} />)}
+  <text x={LEFT.x} y={476} class="diagram-label">device · source of truth, does the work</text>
 
-  <text x={BOUNDARY_X} y={262} text-anchor="middle" class="diagram-boundary-label">seal</text>
+  {/* The seal stands in the gutter the two columns leave, 50 units clear of the
+      device edge and 50 clear of the arrow past it. The top row has no rule at
+      all, and that absence is half of what the figure says. */}
+  <text x={BOUNDARY_X} y={292} text-anchor="middle" class="diagram-boundary-label">seal</text>
   <line
     x1={BOUNDARY_X}
-    y1={274}
+    y1={302}
     x2={BOUNDARY_X}
-    y2={430}
+    y2={444}
     stroke="var(--oe-diagram-boundary)"
     stroke-width={2}
     stroke-dasharray="2 6"
   />
+  <text x={470} y={360} class="diagram-tick-label">envelope</text>
+  <Fragment set:html={arrow({ x: 470, y: 375, length: 50 })} />
 
-  <g fill="var(--oe-diagram-carrier-stroke)">
-    <rect x={506} y={347} width={48} height={2} />
-    <path d="M554 341 L564 348 L554 355 Z" />
-  </g>
-
-  <g stroke="var(--oe-diagram-carrier-stroke)" stroke-width={4} fill="none">
-    <path d={`M${BRACKET_LEFT + 26} 296 H${BRACKET_LEFT} V400 H${BRACKET_LEFT + 26}`} />
-    <path d={`M${BRACKET_RIGHT - 26} 296 H${BRACKET_RIGHT} V400 H${BRACKET_RIGHT - 26}`} />
-  </g>
-  {[BRACKET_LEFT + 58, BRACKET_LEFT + 128].map((x) => (
-    <g>
-      {Array.from({ length: 4 }, (_, index) => (
-        <rect x={x + 4 + index * 11} y={308} width={2} height={9} fill="var(--oe-diagram-boundary)" />
-      ))}
-      <rect x={x} y={324} width={52} height={62} fill="var(--oe-diagram-ciphertext-fill)" />
-    </g>
-  ))}
-  <text x={BRACKET_LEFT + 58} y={296} class="diagram-tick-label">metadata</text>
-  <text x={BRACKET_LEFT} y={444} class="diagram-label">relay · routes envelopes</text>
+  <Fragment set:html={relayContainer({ ...RIGHT, y: ROW_TWO, height: BOX_HEIGHT, ticks: 4 })} />
+  <text x={RIGHT.x + 24} y={322} class="diagram-tick-label">metadata</text>
+  <text x={RIGHT.x} y={476} class="diagram-label">relay · routes envelopes</text>
 </svg>

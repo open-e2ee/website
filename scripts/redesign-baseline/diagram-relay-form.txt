@@ -1,0 +1,5 @@
+<rect x="0" y="0" width="240" height="140" fill="none" stroke="var(--oe-diagram-plaintext-stroke)" stroke-width="4"/>
+<rect x="53.5" y="28" width="2" height="10" fill="var(--oe-diagram-boundary)"/><rect x="67.5" y="28" width="2" height="10" fill="var(--oe-diagram-boundary)"/><rect x="81.5" y="28" width="2" height="10" fill="var(--oe-diagram-boundary)"/>
+<path d="M24 42 L111 42 L111 118 L24 118 Z" fill="var(--oe-diagram-ciphertext-fill)"/>
+<rect x="158.5" y="28" width="2" height="10" fill="var(--oe-diagram-boundary)"/><rect x="172.5" y="28" width="2" height="10" fill="var(--oe-diagram-boundary)"/><rect x="186.5" y="28" width="2" height="10" fill="var(--oe-diagram-boundary)"/>
+<path d="M129 42 L216 42 L216 118 L129 118 Z" fill="var(--oe-diagram-ciphertext-fill)"/>
