@@ -15,15 +15,16 @@ const anchor = (html) => rewrite(html);
 
 test('sends off-site links to a new tab, and leaves our own pages alone', () => {
   assert.match(anchor('<a href="https://github.com/open-e2ee">SDK</a>'), /target="_blank"/);
-  /* Different host, same organization: the reader still keeps the page they
-   * were reading, which is the whole point of the rule. */
-  assert.match(anchor('<a href="https://docs.open-e2ee.dev">Docs</a>'), /target="_blank"/);
-  assert.match(anchor('<a href="https://console.open-e2ee.dev">Console</a>'), /target="_blank"/);
 
+  /* Different hosts, same product. The console is where "Start free" goes and
+   * the docs are where the quickstart is; a reader following either is leaving
+   * this page on purpose, and the tab left behind would be litter. */
   for (const same of [
     '<a href="/pricing">Pricing</a>',
     '<a href="#cookies">Cookies</a>',
     '<a href="https://open-e2ee.dev/security">Security</a>',
+    '<a href="https://docs.open-e2ee.dev">Docs</a>',
+    '<a href="https://console.open-e2ee.dev/relay/new?plan=relay_starter_v1">Start</a>',
   ]) {
     assert.equal(anchor(same), same);
   }

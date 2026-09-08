@@ -8,8 +8,10 @@
  * miss a link an editor forgot, and `scripts/audit-build.mjs` re-checks the
  * result so this file failing silently is not a way to ship half the site.
  *
- * `docs.` and `console.` are different hosts and are treated as external,
- * which is what was asked for: the reader keeps the page they were reading.
+ * `docs.` and `console.` are different hosts and the same product. A reader
+ * who presses "Start free" is leaving this page on purpose, and a second tab
+ * holding the pricing they just read is litter, not a courtesy. They are
+ * first-party here, and they open where the reader is.
  *
  * `mailto:` and `tel:` are left alone. They hand off to another application
  * and a blank tab left behind is litter, not a destination.
@@ -23,13 +25,13 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-const SITE_HOST = 'open-e2ee.dev';
+export const SITE_HOSTS = new Set(['open-e2ee.dev', 'docs.open-e2ee.dev', 'console.open-e2ee.dev']);
 const HINT = 'opens in a new tab';
 
 const isExternal = (href) => {
   if (!/^https?:\/\//i.test(href)) return false;
   try {
-    return new URL(href).host !== SITE_HOST;
+    return !SITE_HOSTS.has(new URL(href).host);
   } catch {
     return false;
   }

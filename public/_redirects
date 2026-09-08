@@ -50,3 +50,10 @@
 # article. The sitemap published /learn/ too, and two pages linked it inline.
 /learn /blog/e2ee-changes-your-application-architecture/ 308
 /learn/ /blog/e2ee-changes-your-application-architecture/ 308
+# /relay/pricing was the Relay limits page: the plan table, the meters, and the
+# overage rates. All of it now lives on /pricing, where the plans it priced
+# already were, so the destination carries the plan table's id. The sitemap
+# published /relay/pricing/, the Relay service terms cite it by name, and the
+# console docs linked it.
+/relay/pricing /pricing/#relay-plans 308
+/relay/pricing/ /pricing/#relay-plans 308

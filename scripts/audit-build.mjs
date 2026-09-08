@@ -13,6 +13,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { readSdkSurface, SDK_PACKAGE, suggest } from './sdk-surface.mjs';
 import { SPELLING } from './spelling-table.mjs';
+import { SITE_HOSTS } from './external-links.mjs';
 
 const DIST = resolve(process.argv[2] ?? 'dist');
 const HERE = dirname(new URL(import.meta.url).pathname);
@@ -299,7 +300,8 @@ for (const file of files) {
  * still look right.
  *
  * `mailto:` and `tel:` are excluded there and here: they hand off to another
- * application, and the tab left behind would be empty.
+ * application, and the tab left behind would be empty. The console and the
+ * docs are first-party and excluded by the same set the rewrite reads.
  */
 for (const file of files) {
   const html = await readFile(file, 'utf8');
@@ -312,7 +314,7 @@ for (const file of files) {
       problems.push(`${rel}: link has an href that is not a URL — ${href}`);
       continue;
     }
-    if (host === 'open-e2ee.dev') continue;
+    if (SITE_HOSTS.has(host)) continue;
     if (!/\btarget="_blank"/.test(tag)) {
       problems.push(`${rel}: off-site link does not open in a new tab — ${href}`);
     }

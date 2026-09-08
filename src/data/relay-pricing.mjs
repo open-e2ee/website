@@ -13,6 +13,20 @@ export const relayDevelopmentEnvironment = {
   detail: 'Created automatically for each project. It uses isolated state and credentials, 24-hour default retention, a seven-day retention maximum, and suspension after 30 inactive days.',
 };
 
+/*
+ * The launch overage rates the 2026-08-26 COGS gate approved. Delivery and
+ * storage price the same on every paid plan; the excess Relay MAU rate falls
+ * with the plan. Free has no overage: its caps are hard, and attachment
+ * operations are a hard cap on every plan.
+ */
+const paidOverage = {
+  delivery: '$55 per million',
+  storage: '$0.50 per GB-month',
+};
+
+/* Production ciphertext retention on every production plan. */
+export const relayProductionRetention = 'Up to 30 days';
+
 export const relayPlans = [
   {
     id: 'relay_free_v1',
@@ -23,6 +37,7 @@ export const relayPlans = [
     deliveryUnits: '100,000',
     attachmentOperations: '100,000',
     storage: '1 GB',
+    overage: null,
     detail: 'Production roots, hard capacity caps, and no automatic charge.',
   },
   {
@@ -34,6 +49,7 @@ export const relayPlans = [
     deliveryUnits: '500,000',
     attachmentOperations: '500,000',
     storage: '10 GB',
+    overage: { relayMau: '$0.05 each', ...paidOverage },
     detail: 'Per month. Optional overage needs explicit acceptance and a spend limit.',
   },
   {
@@ -45,6 +61,7 @@ export const relayPlans = [
     deliveryUnits: '2,500,000',
     attachmentOperations: '2,500,000',
     storage: '50 GB',
+    overage: { relayMau: '$0.03 each', ...paidOverage },
     detail: 'Per month. Higher capacity with the same protocol features.',
   },
   {
@@ -56,7 +73,8 @@ export const relayPlans = [
     deliveryUnits: '12,500,000',
     attachmentOperations: '12,500,000',
     storage: '250 GB',
-    detail: 'Per month. Evidence-backed operating controls and Business capacity.',
+    overage: { relayMau: '$0.02 each', ...paidOverage },
+    detail: 'Per month. Business capacity with the same protocol features.',
   },
   {
     id: 'relay_enterprise_v1',
@@ -67,16 +85,11 @@ export const relayPlans = [
     deliveryUnits: 'Negotiated',
     attachmentOperations: 'Negotiated',
     storage: 'Negotiated',
-    detail: 'Negotiated capacity, support, service terms, and approved operational controls.',
+    overage: null,
+    detail: 'Negotiated capacity, support, and service level.',
   },
 ];
 
-export const relayOverages = {
-  delivery: '$55 per million delivery units',
-  storage: '$0.50 per GB-month of exact live encrypted storage',
-  relayMau: 'Starter $0.05, Growth $0.03, Business $0.02 for each excess Relay MAU',
-  attachmentOperations: 'Hard cap; no overage',
-};
 
 export const relayMeterDefinitions = [
   {
