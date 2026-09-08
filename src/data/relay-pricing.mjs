@@ -49,7 +49,7 @@ export const relayPlans = [
     deliveryUnits: '500,000',
     attachmentOperations: '500,000',
     storage: '10 GB',
-    overage: { relayMau: '$0.05 each', ...paidOverage },
+    overage: { relayMau: '$0.05', ...paidOverage },
     detail: 'Per month. Optional overage needs explicit acceptance and a spend limit.',
   },
   {
@@ -61,7 +61,7 @@ export const relayPlans = [
     deliveryUnits: '2,500,000',
     attachmentOperations: '2,500,000',
     storage: '50 GB',
-    overage: { relayMau: '$0.03 each', ...paidOverage },
+    overage: { relayMau: '$0.03', ...paidOverage },
     detail: 'Per month. Higher capacity with the same protocol features.',
   },
   {
@@ -73,7 +73,7 @@ export const relayPlans = [
     deliveryUnits: '12,500,000',
     attachmentOperations: '12,500,000',
     storage: '250 GB',
-    overage: { relayMau: '$0.02 each', ...paidOverage },
+    overage: { relayMau: '$0.02', ...paidOverage },
     detail: 'Per month. Business capacity with the same protocol features.',
   },
   {

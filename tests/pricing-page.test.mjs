@@ -94,12 +94,17 @@ const capacityRows = (() => {
   return [...body.matchAll(/<tr>(.*?)<\/tr>/gs)].map(([, row]) => {
     const head = row.slice(0, row.indexOf('</th>'));
     const headClasses = head.match(/^<th scope="row" class="([^"]*)"/)?.[1] ?? '';
-    const label = head.match(/>([^<]+)<\/button>/)?.[1] ?? null;
-    /* A value cell carries classes and no markup. The class attribute holds
-     * no `>`, so a bounded match is safe here. */
-    const cells = [...row.slice(row.indexOf('</th>')).matchAll(/<td class="([^"]*)">([^<]*)<\/td>/g)].map((m) => ({
+    /* A name may break onto two lines inside its button; the break is not
+     * part of the name. */
+    const label = head.match(/<button [^>]*>(.*?)<\/button>/)?.[1].replace(/<br>/g, ' ') ?? null;
+    /* A value cell carries a figure, or the em dash for a price that does not
+     * exist with its spoken form beside it. The class attribute holds no `>`,
+     * so a bounded match is safe here. */
+    const cells = [...row.slice(row.indexOf('</th>')).matchAll(/<td class="([^"]*)">(.*?)<\/td>/g)].map((m) => ({
       classes: m[1],
-      text: m[2],
+      text: m[2].replace(/<span class="sr-only">[^<]*<\/span>/, '').replace(/<[^>]+>/g, ''),
+      spoken: m[2].match(/<span class="sr-only">([^<]*)<\/span>/)?.[1] ?? null,
+      html: m[2],
     }));
     return { head, headClasses, label, cells };
   });
@@ -151,22 +156,46 @@ test('monthly active users lead the rows, their overage follows, and every cell 
    * knows, with the meter that counts them as the unit line, and the price of
    * one more sits directly under it. Every row is named by what the plan
    * provides, and the meter that counts it is the unit under its name.
-   * Retention is the same on every plan, so it is not a row. */
+   * Retention is the same on every plan, so it is not a row. The names are
+   * the founder's, in title case, and the one that carries its abbreviation
+   * breaks before it so the row stays two lines wide in the name column. */
   assert.deepEqual(
     capacityRows.map((row) => row.label),
-    ['Monthly active users (MAU)', 'Additional MAU', 'Message delivery', 'Encrypted attachments', 'Encrypted storage'],
+    ['Monthly Active Users (MAU)', 'Additional MAU', 'Message Delivery', 'Encrypted Attachments', 'Encrypted Storage'],
   );
-  assert.deepEqual(cells('Monthly active users (MAU)'), selfServe.map((plan) => plan.relayMau));
-  assert.deepEqual(cells('Additional MAU'), selfServe.map((plan) => plan.overage?.relayMau ?? 'Hard cap'));
-  assert.deepEqual(cells('Message delivery'), selfServe.map((plan) => plan.deliveryUnits));
-  assert.deepEqual(cells('Encrypted attachments'), selfServe.map((plan) => plan.attachmentOperations));
-  assert.deepEqual(cells('Encrypted storage'), selfServe.map((plan) => plan.storage));
+  assert.match(capacityRows[0].head, /">Monthly Active Users<br>\(MAU\)<\/button>/, 'the abbreviation does not break onto its own line inside the button');
+  assert.deepEqual(cells('Monthly Active Users (MAU)'), selfServe.map((plan) => plan.relayMau));
+  assert.deepEqual(cells('Message Delivery'), selfServe.map((plan) => plan.deliveryUnits));
+  assert.deepEqual(cells('Encrypted Attachments'), selfServe.map((plan) => plan.attachmentOperations));
+  assert.deepEqual(cells('Encrypted Storage'), selfServe.map((plan) => plan.storage));
+
+  /* A price that does not exist is an em dash, never $0 and never a phrase in
+   * a column of figures, and a screen reader hears what the dash means. The
+   * price of one more is a plain figure: its unit line says what it is per. */
+  assert.deepEqual(cells('Additional MAU'), selfServe.map((plan) => plan.overage?.relayMau ?? '\u2014'));
+  for (const cell of capacityRows.find((row) => row.label === 'Additional MAU').cells) {
+    if (cell.text === '\u2014') {
+      assert.equal(cell.html, '<span aria-hidden="true">\u2014</span><span class="sr-only">No overage</span>');
+    } else {
+      assert.match(cell.text, /^\$\d+\.\d\d$/, `${cell.text} is not a plain price`);
+      assert.equal(cell.spoken, null);
+    }
+  }
+  assert.doesNotMatch(table.slice(table.indexOf('<tbody')), /Hard cap|>\$0</, 'a row still spells out a price that does not exist');
 
   const unit = (label) => capacityRows.find((row) => row.label === label).head.match(/<span class="[^"]*">([^<]*)<\/span>\s*$/)?.[1] ?? null;
-  assert.equal(unit('Monthly active users (MAU)'), 'Relay MAU');
-  assert.equal(unit('Message delivery'), 'Delivery units');
-  assert.equal(unit('Encrypted attachments'), 'Attachment uploads');
-  assert.equal(unit('Encrypted storage'), null, 'a value with its own unit needs no unit line');
+  assert.equal(unit('Monthly Active Users (MAU)'), null, 'the name carries its abbreviation, so it needs no unit line');
+  assert.equal(unit('Additional MAU'), '$ per MAU');
+  assert.equal(unit('Message Delivery'), 'Delivery Units');
+  assert.equal(unit('Encrypted Attachments'), 'Attachment Uploads');
+  assert.equal(unit('Encrypted Storage'), null, 'a value with its own unit needs no unit line');
+
+  /* The founder's 2026-09-08 call: a value sits at the vertical center of its
+   * row, so a figure beside a two-line name is level with the name and not
+   * with its first line. Names keep the top, so every name in the column
+   * starts on the same line as its row. */
+  assert.match(table.slice(0, table.indexOf('>')), /\[&amp;_td\]:align-middle/, 'the values do not center in their rows');
+  assert.match(table.slice(0, table.indexOf('>')), /\[&amp;_th\]:align-top/, 'the names do not hold the top of their rows');
 
   /* The leading row is the one a buyer decides by, so it is set apart by size
    * and room and not by color: its name is a step up from the other names, its
@@ -207,9 +236,9 @@ test('every row that differs by plan is headed by a name that defines itself', (
    * hover and focus by CSS and on a tap by the one script the component
    * ships, and the ids that bind them are unique on the page. */
   const define = (name) => relayMeterDefinitions.find((meter) => meter.name === name).definition;
-  const expected = { 'Monthly active users (MAU)': define('Relay MAU'), 'Message delivery': define('Delivery unit'), 'Encrypted attachments': define('Attachment upload'), 'Encrypted storage': define('Storage') };
+  const expected = { 'Monthly Active Users (MAU)': define('Relay MAU'), 'Message Delivery': define('Delivery unit'), 'Encrypted Attachments': define('Attachment upload'), 'Encrypted Storage': define('Storage') };
   for (const row of capacityRows) {
-    const trigger = row.head.match(/<button type="button" class="([^"]*)" aria-describedby="([^"]+)">([^<]+)<\/button>/);
+    const trigger = row.head.match(/<button type="button" class="([^"]*)" aria-describedby="([^"]+)">(.*?)<\/button>/);
     assert.ok(trigger, `${row.label} is not a button that describes itself`);
     assert.match(trigger[1], /\bcursor-help\b/);
     assert.match(trigger[1], /\bdecoration-dotted\b/, 'the affordance is the dotted underline');
@@ -239,24 +268,15 @@ test('every row that differs by plan is headed by a name that defines itself', (
   assert.doesNotMatch(wrapper, /overflow|contain:/, 'the table sits inside a clipping box');
 });
 
-test('what every plan carries opens in one dialog of cards from the corner of the table', () => {
-  /* The table holds only the rows that differ by plan: one body, and no
-   * row group for the shared rows. */
-  assert.equal((table.match(/<tbody/g) ?? []).length, 1, 'the table has more than one body');
-  assert.doesNotMatch(table, /rowgroup/);
-  assert.doesNotMatch(table, /Included on every plan/);
-  assert.doesNotMatch(built, /<details[ >]/, 'the page still has a disclosure');
-
-  /* The plans are the page. Nothing opens it but the head over the table:
-   * the label, the heading, and a lead that says what the team gets and not
-   * what to do. The control that opens what every plan carries stands inside
-   * the table, in the corner cell the column heads leave empty, on the
-   * baseline of the plan actions, so it costs the table no height; a second
-   * copy stands over the compact list and leaves the document above 62rem. */
-  assert.doesNotMatch(built, /data-included-row/, 'the trigger still takes a row under the table');
-  assert.equal((built.match(/<h1[ >]/g) ?? []).length, 1, 'the page does not have one heading');
+test('what every plan carries opens in one dialog of cards from the hero, beside the action that starts', () => {
+  /* The head over the table is the page's hero: one heading, one lead
+   * sentence the width of the table, and the two actions under it, all on
+   * the left edge the row names share. There is no label over the heading;
+   * the heading names the page. The founder's 2026-09-08 lead is the one
+   * sentence, and the sentence that lists what Relay runs is on the Relay
+   * page and in the dialog, not here twice. */
   const plansStart = built.indexOf('id="relay-plans"');
-  const plansClasses = built.slice(plansStart, built.indexOf('>', plansStart)).match(/class="([^"]*)"/)[1];
+  const plansClasses = built.slice(built.lastIndexOf('<section', plansStart), plansStart).match(/class="([^"]*)"/)?.[1] ?? '';
   assert.doesNotMatch(plansClasses, /rule-t/, 'the opening section draws a rule under the site header');
   assert.ok(built.indexOf('<h1') > plansStart, 'a hero still opens the page above the plans');
   const headStart = built.indexOf('data-plans-head');
@@ -264,44 +284,45 @@ test('what every plan carries opens in one dialog of cards from the corner of th
   assert.ok(headStart < built.indexOf('<table'), 'the head is not above the table');
   const head = built.slice(built.lastIndexOf('<div', headStart), built.indexOf('<table'));
   const headClasses = head.match(/^<div class="([^"]*)"/)[1];
-  assert.doesNotMatch(headClasses, /rule-|hidden|flex/);
-  assert.match(head, /<p class="[^"]*">Pricing<\/p>/);
-  assert.match(head, /<h1>OpenE2EE Relay, free to start\.<\/h1>/);
-  assert.match(head, /A team ships end-to-end encrypted messaging without building or running delivery infrastructure\./);
-  assert.match(head, /Relay operates the encrypted device mailboxes, group fan-out, private attachment storage, and push wakes, on every plan\./);
-  assert.match(head, /at no cost and without a card\./);
+  assert.doesNotMatch(headClasses, /rule-|hidden|flex|text-center|items-center|mx-auto/, 'the head is not a left-aligned stack');
+  assert.doesNotMatch(head, /<p class="[^"]*">Pricing<\/p>/, 'a label still stands over the heading');
+  assert.match(head, /^<div class="[^"]*" data-plans-head><h1>OpenE2EE Relay, free to start\.<\/h1>/, 'the heading does not open the head');
+  const lead = head.match(/<p class="([^"]*)">([^<]+)<\/p>/);
+  assert.equal(lead[2], 'Ship fully featured end-to-end encrypted messaging, securely, and at scale.');
+  assert.match(lead[1], /\bmax-w-none\b/, 'the lead is measured instead of running the width of the table');
+  assert.doesNotMatch(lead[1], /text-center/);
+  assert.doesNotMatch(head, /Run encrypted device mailboxes|at no cost and without a card\.|A team ships/, 'the head carries a sentence that moved');
   assert.doesNotMatch(head, /Pick a plan|Choose|Select/, 'the lead tells the reader what to do');
-  assert.doesNotMatch(head, /<button/, 'a control still stands in the head over the table');
+  assert.equal((built.match(/<h1/g) ?? []).length, 1);
   assert.doesNotMatch(built, /<h2>OpenE2EE Relay plans<\/h2>/, 'the table still carries a second heading over the head');
+
+  /* The actions are the hero's, not the table's: the primary creates a
+   * project, in the site's own recipe with the sublabel under it, and the
+   * dialog trigger is the secondary beside it, both full-size controls, in
+   * that order, in one row that wraps. There is one trigger on the page, so
+   * the table and the compact list carry none, and the head row of the table
+   * opens with an empty corner. */
+  const actions = head.match(/<div class="([^"]*)" data-actions="pricing">(.*?)<\/div>/s);
+  assert.ok(actions, 'the head has no action row');
+  assert.match(actions[1], /^flex flex-wrap items-start gap-4\b/, 'the actions are not the site recipe');
+  assert.doesNotMatch(actions[1], /justify-center|mx-auto/);
+  const primary = actions[2].match(/^<a class="([^"]*)" href="([^"]+)"><span class="oe-button">([^<]+)<\/span><span class="([^"]*)">([^<]+)<\/span><\/a>/);
+  assert.ok(primary, 'the primary action does not lead the row in the site recipe');
+  assert.equal(primary[1], 'inline-flex flex-col items-start gap-2 no-underline');
+  assert.equal(primary[2], 'https://console.open-e2ee.dev/relay/new');
+  assert.equal(primary[3], 'Start free');
+  assert.equal(primary[5], 'Development environment · no card');
+  assert.match(primary[4], /--oe-metadata-font-family/, 'the sublabel is not metadata');
   const triggerPattern = /<button type="button" class="([^"]*)" aria-haspopup="dialog" data-included-trigger>([^<]+)<\/button>/g;
   const triggers = [...built.matchAll(triggerPattern)];
-  assert.equal(triggers.length, 2, 'the page does not have one trigger for the table and one for the compact list');
-  for (const trigger of triggers) {
-    assert.match(trigger[1], /^oe-button oe-button-secondary\b/, 'the trigger is not the secondary control');
-    assert.doesNotMatch(trigger[1], /rule-|hidden|text-text-3|oe-button-strong|oe-button-full/);
-    assert.equal(trigger[2], 'See what is included');
-  }
-  /* The corner cell: the first cell of the head row, a data cell and not a
-   * header, on the baseline of the plan actions, which is the head cells'
-   * bottom padding. */
-  const theadRow = table.slice(table.indexOf('<thead'), table.indexOf('</thead>'));
-  const corner = theadRow.match(/<tr>\s*<td class="([^"]*)">(.*?)<\/td>/s);
-  assert.ok(corner, 'the head row does not open with a corner cell');
-  assert.match(corner[1], /\balign-bottom\b/, 'the control does not sit on the baseline of the plan actions');
-  /* The table sets its body cells to the top, and only its body cells: a rule
-   * over every data cell outranks the corner's own class and leaves it inert. */
-  assert.doesNotMatch(table.slice(0, table.indexOf('>')), /\[&_td\]:align-top/, "the table's top alignment reaches the corner cell");
-  assert.match(corner[1], /\bpb-6\b/, "the corner does not share the head cells' bottom padding");
-  assert.doesNotMatch(corner[1], /hidden/);
-  assert.match(corner[2], triggerPattern, 'the corner cell does not hold the trigger');
-  assert.equal((table.match(triggerPattern) ?? []).length, 1, 'the table holds other than one trigger');
-  /* The compact copy: directly over the compact list, and gone at the table's
-   * width, where the table's copy shows. */
-  const compactStart = built.indexOf('data-relay-plan-compact');
-  const beforeCompact = built.slice(built.indexOf('</table>'), compactStart);
-  const compact = beforeCompact.match(/<p class="([^"]*)"><button type="button" class="[^"]*" aria-haspopup="dialog" data-included-trigger>/);
-  assert.ok(compact, 'no trigger stands over the compact list');
-  assert.match(compact[1], /\bmin-\[62rem\]:hidden\b/, 'the compact trigger shows beside the table');
+  assert.equal(triggers.length, 1, 'the page does not have one trigger');
+  assert.match(triggers[0][1], /^oe-button oe-button-secondary$/, 'the trigger is not the full-size secondary control');
+  assert.equal(triggers[0][2], 'See what is included');
+  assert.ok(actions[2].endsWith(triggers[0][0]), 'the trigger does not close the action row');
+  assert.ok(actions[2].indexOf(primary[0]) < actions[2].indexOf(triggers[0][0]), 'the trigger stands before the primary');
+  assert.doesNotMatch(table, /data-included-trigger/, 'the table still holds the trigger');
+  assert.doesNotMatch(built.slice(built.indexOf('</table>'), built.indexOf('data-relay-plan-compact')), /data-included-trigger/, 'a trigger still stands over the compact list');
+  assert.match(table.slice(table.indexOf('<thead')), /^<thead><tr><td class="pr-4"><\/td><th scope="col"/, 'the head row does not open with an empty corner');
 
   /* The dialog is closed until asked, names itself by its heading, and is the
    * one surface above the page plane, so it carries the popover shadow with
@@ -338,8 +359,8 @@ test('what every plan carries opens in one dialog of cards from the corner of th
   const iconByPath = new Map(Object.entries(iconPaths).map(([name, paths]) => [paths.join(' '), name]));
   assert.deepEqual(
     cards.map((card) => iconByPath.get(card.path)),
-    ['stack', 'send', 'people', 'clock', 'pulse', 'terminal'],
-    'the cards do not lead with the six icons the design system ships for them',
+    ['send', 'key', 'unseen', 'people', 'device', 'attachment', 'clock', 'pulse', 'terminal'],
+    'the cards do not lead with the nine icons the design system ships for them',
   );
   for (const card of cards) {
     assert.match(card.termClasses, /\bflex\b/, `${card.label} does not set its icon beside the term`);
@@ -348,14 +369,33 @@ test('what every plan carries opens in one dialog of cards from the corner of th
   }
   assert.deepEqual(
     cards.map((card) => card.label),
-    ['Protocol features', 'Delivery', 'Groups and attachments', 'Ciphertext retention', 'Operations', 'Development environment'],
+    [
+      'Encrypted delivery',
+      'Keys and sessions',
+      'Sealed sender',
+      'Zero-knowledge groups',
+      'Multi-device',
+      'Encrypted attachments',
+      'Ciphertext retention',
+      'Push wakes and operations',
+      'Development environment',
+    ],
   );
   for (const card of cards) {
     assert.match(card.classes, /\brule\b/, `${card.label} is not a hairline card`);
     assert.match(card.classes, /\bbg-ground-panel\b/, `${card.label} is not on the panel ground`);
   }
-  assert.equal(cards.find((card) => card.label === 'Delivery').detail, 'Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.');
-  assert.equal(cards.find((card) => card.label === 'Groups and attachments').detail, 'Bounded group fan-out and private encrypted attachment storage.');
+  /* Every phrase names a route or concept the relay ships. "Zero-knowledge"
+   * is the term of art for the SDK's group credentials and describes nothing
+   * else on the page; sealed sender is never "anonymous". */
+  assert.equal(
+    cards.find((card) => card.label === 'Encrypted delivery').detail,
+    'Durable encrypted device mailboxes, pull or a live connection, acknowledgment, retry requests, and bounded fan-out.',
+  );
+  assert.equal(cards.find((card) => card.label === 'Sealed sender').detail, 'Sender certificates, access keys, and unidentified delivery to devices and groups.');
+  assert.doesNotMatch(included, /anonymous|untraceable/i, 'a card applies a banned word to sealed sender');
+  assert.equal((built.match(/[Zz]ero-knowledge/g) ?? []).length, 1, '"zero-knowledge" is on the page other than as the name of the group credentials card');
+  assert.equal(cards.find((card) => card.label === 'Development environment').detail, 'One with every project, at no cost and without a card.');
   /* Retention is the same on every plan, so it is one card here and not a
    * row of one repeated figure, and the figure is the catalog's. */
   assert.equal(
@@ -379,7 +419,10 @@ test('every plan\'s action carries its name and nothing else', () => {
    * header's action, and the plan section carries none of it. */
   const plans = built.slice(built.indexOf('id="relay-plans"'), built.indexOf(`data-relay-plan="${enterprise.id}"`));
   assert.equal((plans.match(/>Free<\/a>/g) ?? []).length, 2, 'Free does not open with "Free" in each rendering');
-  assert.doesNotMatch(plans, /Start free/, 'a plan action still reads "Start free"');
+  /* "Start free" is the hero's primary action and the site header's; no plan
+   * action reads it. */
+  assert.equal((plans.match(/>Start free</g) ?? []).length, 1, 'the plans carry "Start free" other than once, in the hero');
+  assert.ok(plans.indexOf('>Start free<') < plans.indexOf('<table'), 'the hero is not where "Start free" stands');
 });
 
 test('one plan is marked, and it alone carries the filled action', () => {
