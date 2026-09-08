@@ -19,9 +19,9 @@ test('publishes the exact approved Relay catalog from one data module', () => {
     })),
     [
       { id: 'relay_free_v1', price: '$0', relayMau: '100', deliveryUnits: '100,000', attachmentOperations: '100,000', storage: '1 GB', overage: null },
-      { id: 'relay_starter_v1', price: '$99', relayMau: '1,000', deliveryUnits: '500,000', attachmentOperations: '500,000', storage: '10 GB', overage: { relayMau: '$0.05 each', delivery: '$55 per million', storage: '$0.50 per GB-month' } },
-      { id: 'relay_growth_v1', price: '$299', relayMau: '5,000', deliveryUnits: '2,500,000', attachmentOperations: '2,500,000', storage: '50 GB', overage: { relayMau: '$0.03 each', delivery: '$55 per million', storage: '$0.50 per GB-month' } },
-      { id: 'relay_business_v1', price: '$899', relayMau: '25,000', deliveryUnits: '12,500,000', attachmentOperations: '12,500,000', storage: '250 GB', overage: { relayMau: '$0.02 each', delivery: '$55 per million', storage: '$0.50 per GB-month' } },
+      { id: 'relay_starter_v1', price: '$99', relayMau: '1,000', deliveryUnits: '500,000', attachmentOperations: '500,000', storage: '10 GB', overage: { relayMau: '$0.05', delivery: '$55 per million', storage: '$0.50 per GB-month' } },
+      { id: 'relay_growth_v1', price: '$299', relayMau: '5,000', deliveryUnits: '2,500,000', attachmentOperations: '2,500,000', storage: '50 GB', overage: { relayMau: '$0.03', delivery: '$55 per million', storage: '$0.50 per GB-month' } },
+      { id: 'relay_business_v1', price: '$899', relayMau: '25,000', deliveryUnits: '12,500,000', attachmentOperations: '12,500,000', storage: '250 GB', overage: { relayMau: '$0.02', delivery: '$55 per million', storage: '$0.50 per GB-month' } },
       { id: 'relay_enterprise_v1', price: 'Custom', relayMau: 'Negotiated', deliveryUnits: 'Negotiated', attachmentOperations: 'Negotiated', storage: 'Negotiated', overage: null },
     ],
   );

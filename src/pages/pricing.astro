@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Icon from '../components/Icon.astro';
-import type { IconName } from '../components/Icon.astro';
+import Icon, { type IconName } from '../components/Icon.astro';
 import Term from '../components/Term.astro';
 import {
   relayDevelopmentEnvironment,
@@ -13,12 +12,13 @@ import { startupTier, tiers } from '../data/pricing.mjs';
 import { startAction } from '../lib/site-navigation';
 import {
   ACTIONS,
+  CTA_PRIMARY,
+  CTA_SUBLABEL,
   BAND,
   BAND_HEAD,
   BAND_SURFACE,
   CONTAINER,
   DEFINITION_ROWS,
-  LABEL,
   LEAD,
   MEASURE,
   METADATA,
@@ -41,7 +41,7 @@ import {
  * The table holds to 62rem. Below that the same rows render as one block per
  * plan, from the same data, and the other rendering leaves the document.
  */
-const PLAN_TABLE = 'w-full table-fixed border-collapse text-[0.9375rem] [&_th]:text-left [&_th]:align-top [&_tbody_td]:align-top';
+const PLAN_TABLE = 'w-full table-fixed border-collapse text-[0.9375rem] [&_th]:text-left [&_th]:align-top [&_td]:align-middle';
 
 /*
  * No scroll region around this table. It is full width and fixed layout inside
@@ -86,49 +86,49 @@ const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
 
 
 /*
- * The head over the table: the label, the heading, and the lead, and nothing
- * else, so the table starts as soon as the lead ends. The section opens the
- * page, so it carries the opening's room above and no rule: the site header
- * draws the one rule that belongs there.
+ * The head over the table is the page's hero: the heading, one sentence, and
+ * the two actions, left-aligned on the edge the row names share, so one eye
+ * line runs from the heading through the actions into the table. Centering
+ * would set the actions over the Free and Starter columns and off the grid
+ * that follows. The primary creates the project, at the full control height
+ * the home and Relay heroes use, and carries its promise underneath; the
+ * secondary opens what every plan carries. The section opens the page, so it
+ * carries the opening's room above and no rule: the site header draws the one
+ * rule that belongs there.
  */
 const PLANS = 'pt-[clamp(2.5rem,1.75rem+4vw,4.5rem)] pb-[clamp(3rem,2rem+4vw,5.5rem)]';
-const PLANS_HEAD = 'mb-8 [&>*+*]:mt-4';
+/* The lead runs the width of the table under it, not the recipe's measure. */
+const PLANS_LEAD = 'max-w-none';
+const PLANS_HEAD = 'mb-10 [&>*+*]:mt-4';
+const PLANS_ACTIONS = 'mt-8!';
 
 /*
- * What every plan carries opens in a dialog, one card per group, so the table
- * keeps its space for what differs by plan. The trigger is the same secondary
- * control the Enterprise band and the plan columns use, so every action on the
- * page is one shape. It sits inside the table, in the corner cell over the row
- * names that the column heads leave empty, on the baseline of the four plan
- * actions, so the row of actions reads as five: what every plan carries, then
- * each plan. It costs the table no height. Below 62rem the table leaves the
- * document, so a second copy of the control stands over the compact list and
- * leaves the document above it. The dialog is the
- * native element that traps focus, closes on Escape, returns focus to the
- * trigger, and makes the page behind it inert, and it is the surface above the
- * page plane DESIGN.md gives the popover shadow and its inset ring. The page
- * behind it stays visible through a clear backdrop: overlap occludes, it never
- * blends, so there is no half-transparent scrim. A press on the backdrop
- * closes it; the content sits in its own box so a press on the padding does
- * not. Each card is the relay page's start card, a hairline on the panel
- * ground with the comfortable 24px padding, and the set is a definition list,
- * a term over what it means, because these are not tiers and carry no heading.
- * Each term leads with a chrome icon from the design system's set, muted, at
- * the text size, so the six read as a set at a glance; the word carries the
- * meaning and the icon is hidden from assistive technology.
+ * What every plan carries opens in a dialog, one card per capability, so the
+ * table keeps its space for what differs by plan. The trigger is the hero's
+ * secondary action, beside the primary that creates the project, at every
+ * width. The dialog is the native element that traps
+ * focus, closes on Escape, returns focus to the trigger, and makes the page
+ * behind it inert, and it is the surface above the page plane DESIGN.md gives
+ * the popover shadow and its inset ring. The page behind it stays visible
+ * through a clear backdrop: overlap occludes, it never blends, so there is no
+ * half-transparent scrim. A press on the backdrop closes it; the content sits
+ * in its own box so a press on the padding does not. Each card is a hairline
+ * on the panel ground, and the set is a definition list, a term over what it
+ * means, because these are not tiers and carry no heading. Nine cards sit
+ * three across, so the deck reads as one grid, and each leads with a chrome
+ * icon from the design package so a reader scanning the deck finds a card by
+ * its shape before its words. None is a padlock or a shield.
  */
 const INCLUDED_TRIGGER = 'oe-button oe-button-secondary';
-const INCLUDED_CORNER = 'pr-4 pb-6 align-bottom';
-const INCLUDED_COMPACT = 'mb-6 min-[62rem]:hidden';
 const INCLUDED_DIALOG =
-  'm-auto w-[min(48rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-y-auto border-0 bg-ground-raised p-0 text-text-1 ' +
+  'm-auto w-[min(60rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-y-auto border-0 bg-ground-raised p-0 text-text-1 ' +
   'shadow-[var(--oe-shadow-md),inset_0_0_0_1px_var(--oe-border-1)] backdrop:bg-transparent';
 const INCLUDED_BODY = 'p-6 max-[34rem]:p-4';
 const INCLUDED_HEAD = 'mb-6 flex items-start justify-between gap-4';
 const INCLUDED_TITLE = 'm-0 text-[1.25rem] leading-tight font-semibold tracking-[var(--oe-heading-tracking-display)] text-text-1';
 const INCLUDED_LEAD = 'mt-2 text-[0.9375rem] text-text-3';
-const INCLUDED_CARDS = 'm-0 grid grid-cols-2 gap-3 [--oe-icon-size:1rem] max-[34rem]:grid-cols-1';
-const INCLUDED_CARD = 'rule bg-ground-panel px-6 py-5';
+const INCLUDED_CARDS = 'm-0 grid grid-cols-3 gap-3 [--oe-icon-size:1rem] max-[48rem]:grid-cols-2 max-[34rem]:grid-cols-1';
+const INCLUDED_CARD = 'rule bg-ground-panel px-5 py-4';
 const INCLUDED_CARD_TITLE = 'm-0 flex items-center gap-2 text-[0.9375rem] font-medium text-text-1';
 const INCLUDED_CARD_ICON = 'shrink-0 text-text-3';
 const INCLUDED_CARD_DETAIL = 'm-0 mt-1 text-[0.9375rem] leading-[1.5] text-text-3';
@@ -234,7 +234,10 @@ const ENTERPRISE_ACTION = {
  * "per month". Free has no overage, so its overage cell reads as the cap it is.
  * Retention is the same on every plan, so it sits with what every plan carries.
  */
-const HARD_CAP = 'Hard cap';
+/* Free has no overage, so its cell is the em dash DESIGN.md gives a price that
+ * does not exist. A screen reader hears the words instead. */
+const NO_OVERAGE = '\u2014';
+const NO_OVERAGE_LABEL = 'No overage';
 
 const define = (name: string) => {
   const meter = relayMeterDefinitions.find((entry) => entry.name === name);
@@ -242,19 +245,22 @@ const define = (name: string) => {
   return meter.definition;
 };
 
-type Row = { label: string; definition: string; unit?: string; lead?: boolean; value: (plan: Plan) => string };
+type Row = { label: string; tail?: string; definition: string; unit?: string; lead?: boolean; value: (plan: Plan) => string };
 const rows: Row[] = [
-  { label: 'Monthly active users (MAU)', unit: 'Relay MAU', lead: true, definition: define('Relay MAU'), value: (plan) => plan.relayMau },
+  { label: 'Monthly Active Users', tail: '(MAU)', lead: true, definition: define('Relay MAU'), value: (plan) => plan.relayMau },
   {
     label: 'Additional MAU',
+    unit: '$ per MAU',
     definition: 'Each Relay MAU beyond the plan allowance in a month, charged only once overage is on. Free has no overage and stops at its cap.',
-    value: (plan) => plan.overage?.relayMau ?? HARD_CAP,
+    value: (plan) => plan.overage?.relayMau ?? NO_OVERAGE,
   },
-  { label: 'Message delivery', unit: 'Delivery units', definition: define('Delivery unit'), value: (plan) => plan.deliveryUnits },
-  { label: 'Encrypted attachments', unit: 'Attachment uploads', definition: define('Attachment upload'), value: (plan) => plan.attachmentOperations },
-  { label: 'Encrypted storage', definition: define('Storage'), value: (plan) => plan.storage },
+  { label: 'Message Delivery', unit: 'Delivery Units', definition: define('Delivery unit'), value: (plan) => plan.deliveryUnits },
+  { label: 'Encrypted Attachments', unit: 'Attachment Uploads', definition: define('Attachment upload'), value: (plan) => plan.attachmentOperations },
+  { label: 'Encrypted Storage', definition: define('Storage'), value: (plan) => plan.storage },
 ];
 
+/* The compact list has one line per row, so the tail joins the label. */
+const compactLabel = (row: Row) => [row.label, row.tail].filter(Boolean).join(' ');
 const rowId = (row: Row, scope: string) => `${scope}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
 /* The lead row has room around it; the last row closes the tint. */
@@ -271,20 +277,47 @@ const compactLabelClasses = (row: Row) => (row.lead ? 'text-text-1' : 'text-text
 const compactValueClasses = (row: Row) => [COMPACT_VALUE, row.lead ? LEAD_VALUE : 'text-text-1'];
 
 /*
- * What every plan carries, in the words the Relay page uses for it. These
- * do not differ by plan, so each is one card, and the whole set opens in one
- * dialog rather than taking the table's space.
+ * What every plan carries, one card per relay capability, each in the words
+ * the relay's own routes and concepts use. These do not differ by plan, so
+ * the whole set opens in one dialog rather than taking the table's space.
  */
 const included: { icon: IconName; label: string; detail: string }[] = [
-  { icon: 'stack', label: 'Protocol features', detail: 'Groups, attachments, sealed sender, multi-device delivery, and push.' },
-  { icon: 'send', label: 'Delivery', detail: 'Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.' },
-  { icon: 'people', label: 'Groups and attachments', detail: 'Bounded group fan-out and private encrypted attachment storage.' },
+  {
+    icon: 'send',
+    label: 'Encrypted delivery',
+    detail: 'Durable encrypted device mailboxes, pull or a live connection, acknowledgment, retry requests, and bounded fan-out.',
+  },
+  {
+    icon: 'key',
+    label: 'Keys and sessions',
+    detail: 'Identity key and prekey distribution, post-quantum ML-KEM prekeys included, with stale-key cleanup.',
+  },
+  { icon: 'unseen', label: 'Sealed sender', detail: 'Sender certificates, access keys, and unidentified delivery to devices and groups.' },
+  {
+    icon: 'people',
+    label: 'Zero-knowledge groups',
+    detail: 'Group send credentials, signed encrypted group revisions, fan-out status, and group recovery.',
+  },
+  {
+    icon: 'device',
+    label: 'Multi-device',
+    detail: 'Device registration and linking, device authorization, account recovery, identity migration, and account deletion.',
+  },
+  {
+    icon: 'attachment',
+    label: 'Encrypted attachments',
+    detail: 'Private encrypted attachment storage with authorized upload, download, and deletion.',
+  },
   {
     icon: 'clock',
     label: 'Ciphertext retention',
     detail: `${relayProductionRetention} in device mailboxes and attachment storage before ciphertext expires. A project can set a shorter retention.`,
   },
-  { icon: 'pulse', label: 'Operations', detail: 'Push wakes, exact usage, quotas, lifecycle controls, and recovery drills.' },
+  {
+    icon: 'pulse',
+    label: 'Push wakes and operations',
+    detail: 'Push wakes, exact usage, quotas, capacity, lifecycle controls, and recovery drills.',
+  },
   { icon: 'terminal', label: 'Development environment', detail: 'One with every project, at no cost and without a card.' },
 ];
 const INCLUDED_HEADING = 'Included on every plan';
@@ -313,9 +346,15 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
   <section id="relay-plans" class={PLANS}>
     <div class={CONTAINER}>
       <div class={PLANS_HEAD} data-plans-head>
-        <p class={LABEL}>Pricing</p>
         <h1>OpenE2EE Relay, free to start.</h1>
-        <p class={LEAD}>OpenE2EE Relay is the managed delivery layer for applications that use the OpenE2EE Signal Protocol SDK. A team ships end-to-end encrypted messaging without building or running delivery infrastructure. Relay operates the encrypted device mailboxes, group fan-out, private attachment storage, and push wakes, on every plan. Every project starts with a Development environment, at no cost and without a card.</p>
+        <p class:list={[LEAD, PLANS_LEAD]}>Ship fully featured end-to-end encrypted messaging, securely, and at scale.</p>
+        <div class:list={[ACTIONS, PLANS_ACTIONS]} data-actions="pricing">
+          <a class={CTA_PRIMARY} href={RELAY_PROJECT}>
+            <span class="oe-button">{startAction.label}</span>
+            <span class={CTA_SUBLABEL}>Development environment · no card</span>
+          </a>
+          <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button>
+        </div>
       </div>
       <div class={PLAN_TABLE_AT}>
         <table class={PLAN_TABLE} itemscope itemtype="https://schema.org/Product">
@@ -323,7 +362,7 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
           <colgroup><col class="w-[15rem]" />{selfServe.map(() => <col />)}</colgroup>
           <thead>
             <tr>
-              <td class={INCLUDED_CORNER}><button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button></td>
+              <td class="pr-4"></td>
               {selfServe.map((plan) => (
                 <th scope="col" class:list={headClasses(plan)} data-relay-plan={plan.id} itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                   <meta itemprop="priceCurrency" content="USD" />
@@ -341,16 +380,15 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
             {rows.map((row, index) => (
               <tr>
                 <th scope="row" class:list={rowHeadClasses(row, index)}>
-                  <Term id={rowId(row, 'table')} label={row.label} definition={row.definition} />
+                  <Term id={rowId(row, 'table')} label={row.label} tail={row.tail} definition={row.definition} />
                   {row.unit && <span class={ROW_UNIT}>{row.unit}</span>}
                 </th>
-                {selfServe.map((plan) => <td class:list={cellClasses(row, index, plan)}>{row.value(plan)}</td>)}
+                {selfServe.map((plan) => <td class:list={cellClasses(row, index, plan)}>{row.value(plan) === NO_OVERAGE ? <><span aria-hidden="true">{NO_OVERAGE}</span><span class="sr-only">{NO_OVERAGE_LABEL}</span></> : row.value(plan)}</td>)}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p class={INCLUDED_COMPACT}><button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button></p>
       <ul class={COMPACT}>
         {selfServe.map((plan) => (
           <li class:list={compactPlanClasses(plan)} data-relay-plan-compact={plan.id}>
@@ -362,8 +400,8 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
             <dl class={COMPACT_ROWS}>
               {rows.map((row) => (
                 <div class:list={compactRowClasses(row)}>
-                  <dt class={compactLabelClasses(row)}><Term id={rowId(row, plan.id)} label={row.label} definition={row.definition} /></dt>
-                  <dd class:list={compactValueClasses(row)}>{row.value(plan)}</dd>
+                  <dt class={compactLabelClasses(row)}><Term id={rowId(row, plan.id)} label={compactLabel(row)} definition={row.definition} /></dt>
+                  <dd class:list={compactValueClasses(row)}>{row.value(plan) === NO_OVERAGE ? <><span aria-hidden="true">{NO_OVERAGE}</span><span class="sr-only">{NO_OVERAGE_LABEL}</span></> : row.value(plan)}</dd>
                 </div>
               ))}
             </dl>

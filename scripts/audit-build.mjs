@@ -21,9 +21,12 @@ const HERE = dirname(new URL(import.meta.url).pathname);
 /*
  * Phrases that overclaim, imply a compliance mandate, or assert a review that
  * has not happened. "audited" is allowed only in an explicit negation.
+ * "zero-knowledge" is allowed only as the cryptographic term of art for the
+ * SDK's group credentials (`zk/groups`, `zk/credentials`), which is the one
+ * use `docs/messaging.md` permits; it never describes the service or storage.
  */
 const BANNED = [
-  /zero[- ]knowledge/i,
+  /zero[- ]knowledge(?![- ]group)/i,
   /military[- ]grade/i,
   /\bmilitary\b/i,
   /bank[- ]grade/i,
