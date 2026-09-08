@@ -161,13 +161,31 @@ test('monthly active users lead the rows, their overage follows, and every cell 
    * breaks before it so the row stays two lines wide in the name column. */
   assert.deepEqual(
     capacityRows.map((row) => row.label),
-    ['Monthly Active Users (MAU)', 'Additional MAU', 'Message Delivery', 'Encrypted Attachments', 'Encrypted Storage'],
+    ['Monthly Active Users (MAU)', 'Additional MAU', 'Message Delivery', 'Encrypted Attachments', 'Encrypted Storage', 'SDK Commercial License'],
   );
   assert.match(capacityRows[0].head, /">Monthly Active Users<br>\(MAU\)<\/button>/, 'the abbreviation does not break onto its own line inside the button');
   assert.deepEqual(cells('Monthly Active Users (MAU)'), selfServe.map((plan) => plan.relayMau));
   assert.deepEqual(cells('Message Delivery'), selfServe.map((plan) => plan.deliveryUnits));
   assert.deepEqual(cells('Encrypted Attachments'), selfServe.map((plan) => plan.attachmentOperations));
   assert.deepEqual(cells('Encrypted Storage'), selfServe.map((plan) => plan.storage));
+
+  /* The founder's 2026-09-08 call: the one row every plan shares. A buyer with
+   * a proprietary application asks whether the SDK's license reaches it before
+   * asking how many users a plan carries, and the meters do not answer. The
+   * Relay service terms grant the project license on every plan, Free
+   * included, so every cell is the check, in the color of a thing that holds,
+   * and a screen reader hears the word. The definition repeats the grant's
+   * limits, so the row promises nothing the terms do not. */
+  const license = capacityRows.find((row) => row.label === 'SDK Commercial License');
+  assert.equal(license.cells.length, selfServe.length);
+  for (const cell of license.cells) {
+    assert.match(cell.html, /^<svg class="oe-icon text-success" [^>]*aria-hidden="true"/, 'the cell is not the check');
+    assert.equal(cell.spoken, 'Included');
+    assert.equal(cell.text, '');
+  }
+  assert.match(license.head, /no self-hosting right and no right to redistribute the SDK\./, 'the definition does not repeat the limits of the grant');
+  const compact = built.slice(built.indexOf('data-relay-plan-compact='), built.indexOf('<dialog '));
+  assert.equal((compact.match(/<dd class="[^"]*"><svg class="oe-icon text-success" /g) ?? []).length, selfServe.length, 'the compact blocks do not carry the check');
 
   /* A price that does not exist is an em dash, never $0 and never a phrase in
    * a column of figures, and a screen reader hears what the dash means. The
@@ -189,6 +207,7 @@ test('monthly active users lead the rows, their overage follows, and every cell 
   assert.equal(unit('Message Delivery'), 'Delivery Units');
   assert.equal(unit('Encrypted Attachments'), 'Attachment Uploads');
   assert.equal(unit('Encrypted Storage'), null, 'a value with its own unit needs no unit line');
+  assert.equal(unit('SDK Commercial License'), null, 'a right has no meter');
 
   /* The founder's 2026-09-08 call: a value sits at the vertical center of its
    * row, so a figure beside a two-line name is level with the name and not

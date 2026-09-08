@@ -1,0 +1,19 @@
+---
+/*
+ * One value cell of the Relay plan table, in either rendering. A figure prints
+ * as itself. Two values are not figures: the em dash for a price that does not
+ * exist, and the check for a right every plan carries. Each shows its sign and
+ * gives a screen reader the word. The check is in the color of a thing that
+ * holds, the one place on the page that color appears.
+ */
+import Icon from './Icon.astro';
+import { INCLUDED, INCLUDED_LABEL, NO_OVERAGE, NO_OVERAGE_LABEL } from '../lib/relay-plan-values';
+
+interface Props {
+  value: string;
+}
+
+const { value } = Astro.props;
+---
+
+{value === NO_OVERAGE ? <><span aria-hidden="true">{NO_OVERAGE}</span><span class="sr-only">{NO_OVERAGE_LABEL}</span></> : value === INCLUDED ? <><Icon name="check" class="text-success" /><span class="sr-only">{INCLUDED_LABEL}</span></> : value}
