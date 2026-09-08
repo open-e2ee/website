@@ -8,9 +8,10 @@
  *
  * This file asserts the shape the page keeps now: the self-service plans are
  * the columns of one table and the meters are its rows, in catalog order,
- * priced larger than they are named; Enterprise is one ruled row under them;
- * the same rows render again as one block per plan for narrow viewports; and
- * the licensing section follows, raised once the plans are read.
+ * priced larger than they are named; one plan is marked and carries the filled
+ * action; Enterprise is one outlined band under them; the same rows render
+ * again as one block per plan for narrow viewports; and the licensing section
+ * follows, raised once the plans are read.
  */
 
 import assert from 'node:assert/strict';
@@ -35,6 +36,17 @@ const source = await readFile(new URL('../src/pages/pricing.astro', import.meta.
 
 const selfServe = relayPlans.filter((plan) => plan.monthlyPriceUsd !== null);
 const enterprise = relayPlans.find((plan) => plan.monthlyPriceUsd === null);
+
+/* The founder's 2026-09-07 call in docs/decisions.md: Starter carries the label. */
+const HIGHLIGHT = 'relay_starter_v1';
+const HIGHLIGHT_LABEL = 'Most popular';
+
+/** The Enterprise band, from its marker to the section after the plans. */
+function enterpriseBand() {
+  const start = built.indexOf(`data-relay-plan="${enterprise.id}"`);
+  assert.ok(start !== -1, 'Enterprise has no band');
+  return built.slice(start, built.indexOf('id="development"', start));
+}
 
 /** The plan table, from its opening tag to its close. */
 const table = (() => {
@@ -106,17 +118,51 @@ test('the self-service plans are the columns of one table, in catalog order', ()
 
 test('the meters are the rows, and every cell comes from the catalog', () => {
   assert.deepEqual(cells('Relay MAU'), selfServe.map((plan) => plan.relayMau));
-  assert.deepEqual(cells('Delivery units per month'), selfServe.map((plan) => plan.deliveryUnits));
-  assert.deepEqual(cells('Attachment operations per month'), selfServe.map((plan) => plan.attachmentOperations));
-  assert.deepEqual(cells('Exact live storage'), selfServe.map((plan) => plan.storage));
+  assert.deepEqual(cells('Delivery units'), selfServe.map((plan) => plan.deliveryUnits));
+  assert.deepEqual(cells('Attachment uploads'), selfServe.map((plan) => plan.attachmentOperations));
+  assert.deepEqual(cells('Storage'), selfServe.map((plan) => plan.storage));
 
   /* The overage a buyer does arithmetic on sits under the plan it prices. Free
    * has none: its caps are hard, and the cell says so rather than printing a
    * dash a reader has to interpret. */
-  assert.deepEqual(cells('Excess Relay MAU'), selfServe.map((plan) => plan.overage?.relayMau ?? 'Hard cap'));
+  assert.deepEqual(cells('Additional MAU'), selfServe.map((plan) => plan.overage?.relayMau ?? 'Hard cap'));
   assert.deepEqual(cells('Additional delivery units'), selfServe.map((plan) => plan.overage?.delivery ?? 'Hard cap'));
   assert.deepEqual(cells('Additional storage'), selfServe.map((plan) => plan.overage?.storage ?? 'Hard cap'));
   assert.deepEqual(cells('Ciphertext retention'), selfServe.map(() => relayProductionRetention));
+
+  /* The price under every name already reads "per month", and the note under
+   * the table says the allowances are monthly once. A row label that says it
+   * again is the explainer this page shed. */
+  const labels = [...table.matchAll(/<th scope="row">([^<]*)<\/th>/g)].map((m) => m[1]);
+  assert.equal(labels.length, 8, `the table has ${labels.length} rows, not eight`);
+  for (const label of labels) assert.doesNotMatch(label, /per month|[Ee]xact|[Ee]xcess|operations/, `row label "${label}"`);
+  assert.match(built.slice(built.indexOf('</table>'), built.indexOf('id="development"')), /allowances are monthly/);
+});
+
+test('one plan is marked, and it alone carries the filled action', () => {
+  const head = table.slice(table.indexOf('<thead'), table.indexOf('</thead>'));
+  assert.equal(head.split(`>${HIGHLIGHT_LABEL}<`).length - 1, 1, `the head does not carry "${HIGHLIGHT_LABEL}" exactly once`);
+  assert.ok(columnHead(HIGHLIGHT).includes(`>${HIGHLIGHT_LABEL}<`), `${HIGHLIGHT} is not the marked column`);
+  assert.equal((head.match(/<col class="bg-ground-panel">/g) ?? []).length, 0, 'the tint is on a head cell, not a column');
+  const colgroup = table.slice(table.indexOf('<colgroup'), table.indexOf('</colgroup>'));
+  assert.equal((colgroup.match(/<col class="bg-ground-panel">/g) ?? []).length, 1, 'exactly one column is tinted');
+  assert.equal((colgroup.match(/<col[ >]/g) ?? []).length, selfServe.length + 1);
+  assert.equal(
+    [...colgroup.matchAll(/<col(?: class="([^"]*)")?>/g)].findIndex((m) => m[1] === 'bg-ground-panel') - 1,
+    selfServe.findIndex((plan) => plan.id === HIGHLIGHT),
+    'the tinted column is not the marked plan',
+  );
+
+  for (const plan of selfServe) {
+    for (const rendering of [columnHead(plan.id), compactBlock(plan.id)]) {
+      const classes = rendering.match(/<a class="(oe-button[^"]*)" href=/)[1];
+      if (plan.id === HIGHLIGHT) assert.doesNotMatch(classes, /oe-button-secondary/, `${plan.id} is marked but not filled`);
+      else assert.match(classes, /oe-button-secondary/, `${plan.id} is filled but not marked`);
+      /* The lines under each button said what the note under the table and
+       * "How buying works" already say. */
+      assert.doesNotMatch(rendering, /Verified card|Billed monthly|Overage off|Start here/);
+    }
+  }
 });
 
 test('a paid plan names itself to the console, and the free plan needs no query', () => {
@@ -125,7 +171,6 @@ test('a paid plan names itself to the console, and the free plan needs no query'
     const href = head.match(/<a class="oe-button[^"]*" href="([^"]+)"/)[1];
     if (plan.id === 'relay_free_v1') {
       assert.equal(href, 'https://console.open-e2ee.dev/relay/new');
-      assert.match(head, /Verified card\. Hard caps, no automatic charge\./);
     } else {
       assert.equal(href, `https://console.open-e2ee.dev/relay/new?plan=${plan.id}`);
     }
@@ -138,7 +183,7 @@ test('a paid plan names itself to the console, and the free plan needs no query'
 test('the price is larger than the name it prices', () => {
   const heads = [
     ...selfServe.map((plan) => [plan.id, columnHead(plan.id)]),
-    [enterprise.id, built.slice(built.indexOf(`data-relay-plan="${enterprise.id}"`), built.indexOf('</li>', built.indexOf(`data-relay-plan="${enterprise.id}"`)))],
+    [enterprise.id, enterpriseBand()],
   ];
   for (const [id, head] of heads) {
     /* The price is the element directly after the heading, which is also the
@@ -167,7 +212,7 @@ test('the narrow rendering carries the same plans, rows, and actions', () => {
       head.match(/<a class="oe-button[^"]*" href="([^"]+)"/)[1],
       `${plan.id} opens two different routes in its two renderings`,
     );
-    for (const label of ['Relay MAU', 'Excess Relay MAU', 'Ciphertext retention']) {
+    for (const label of ['Relay MAU', 'Additional MAU', 'Ciphertext retention']) {
       assert.ok(block.includes(`<dt>${label}</dt>`), `${plan.id} compact block has no ${label} row`);
     }
   }
@@ -178,14 +223,23 @@ test('the narrow rendering carries the same plans, rows, and actions', () => {
   assert.match(source, /const COMPACT = '[^']*\bmin-\[62rem\]:hidden\b/);
 });
 
-test('Enterprise is one ruled row under the table, with its own action', () => {
+test('Enterprise is one outlined band under the table, with its own action', () => {
   const start = built.indexOf(`data-relay-plan="${enterprise.id}"`);
-  assert.ok(start !== -1, 'Enterprise has no row');
   assert.ok(start > built.indexOf('</table>'), 'Enterprise is not below the table');
-  const row = built.slice(start, built.indexOf('</li>', start));
-  assert.ok(row.includes(`>${enterprise.name}</h3>`));
-  assert.ok(row.includes(`>${enterprise.price}</p>`));
-  assert.match(row, /<a class="oe-button oe-button-secondary" href="mailto:licensing@open-e2ee\.dev/);
+  assert.ok(start > built.indexOf('data-relay-plan-compact='), 'Enterprise is not below the compact blocks');
+
+  /* The band is outlined on every side with the house hairline and sits on the
+   * panel ground, so it reads as the table's last row and not as a footnote. */
+  const opening = built.slice(built.lastIndexOf('<div', start), start);
+  const classes = opening.match(/class="([^"]+)"/)[1];
+  assert.match(classes, /\brule\b/, `the Enterprise band has no hairline: ${classes}`);
+  assert.match(classes, /\bbg-ground-panel\b/, `the Enterprise band has no ground: ${classes}`);
+  assert.doesNotMatch(classes, /rule-t/);
+
+  const band = enterpriseBand();
+  assert.ok(band.includes(`>${enterprise.name}</h3>`));
+  assert.ok(band.includes(`>${enterprise.price}</p>`));
+  assert.match(band, /<a class="oe-button oe-button-secondary" href="mailto:licensing@open-e2ee\.dev/);
 });
 
 test('the licensing section follows the plans, raised in context above it', () => {
@@ -219,7 +273,7 @@ test('the meters and the Development environment are on this page', () => {
   const licensing = built.indexOf('id="licensing"');
   assert.ok(development !== -1 && meters !== -1, 'the page dropped a section the limits page carried');
   assert.ok(development < meters && meters < licensing, 'the sections are out of the order the page argues');
-  for (const meter of ['Relay MAU', 'Delivery unit', 'Attachment operation', 'Exact live storage']) {
+  for (const meter of ['Relay MAU', 'Delivery unit', 'Attachment upload', 'Storage']) {
     assert.ok(built.slice(meters, licensing).includes(`<dt>${meter}</dt>`), `${meter} is not defined`);
   }
   assert.match(built.slice(development, meters), />Development environment<\/h3>/);

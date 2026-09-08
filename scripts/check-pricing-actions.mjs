@@ -13,8 +13,8 @@
  *   1. Every Relay plan column or row carries exactly one action control.
  *   2. Every SDK commercial license row carries exactly one action control.
  *   3. Each rendering leads with one filled action and no more, so a reader who
- *      scans for weight finds the free start and the entry license.
- *   4. The free plan is the filled action.
+ *      scans for weight finds the marked plan and the entry license.
+ *   4. The plan marked "Most popular" is the filled action, in both renderings.
  *
  * The Relay plans render twice from one data set: a table of plan columns above
  * 62rem, and one block per plan below it, with one of the two in the document
@@ -57,6 +57,9 @@ function actions(slice) {
 
 const failures = [];
 
+/** The label one plan carries, and with it the filled action. */
+const MARK = 'Most popular';
+
 const plans = section('relay-plans');
 const licensing = section('licensing');
 
@@ -96,10 +99,10 @@ if (plans) {
   const filled = actions(wide).filled.length;
   if (filled !== 1) failures.push(`the Relay plan table leads with ${filled} filled actions, not one`);
 
-  const free = rows.find((row) => row.id === 'relay_free_v1');
-  if (!free) failures.push('no column is marked relay_free_v1');
-  else if (actions(free.html).filled.length !== 1) {
-    failures.push('the free plan is not the filled action in its table');
+  const marked = rows.filter((row) => row.html.includes(`>${MARK}<`));
+  if (marked.length !== 1) failures.push(`${marked.length} columns carry "${MARK}", not one`);
+  else if (actions(marked[0].html).filled.length !== 1) {
+    failures.push(`${marked[0].id} is marked "${MARK}" but is not the filled action in its table`);
   }
 
   /* The narrow rendering: one block per self-service plan, same routes. */
@@ -119,6 +122,14 @@ if (plans) {
   const compactFilled = actions(compact).filled.length;
   if (blocks.length > 0 && compactFilled !== 1) {
     failures.push(`the compact plan blocks lead with ${compactFilled} filled actions, not one`);
+  }
+  const markedBlock = blocks.filter((block) => block.html.includes(`>${MARK}<`));
+  if (blocks.length > 0 && markedBlock.length !== 1) {
+    failures.push(`${markedBlock.length} compact blocks carry "${MARK}", not one`);
+  } else if (markedBlock.length === 1 && (marked.length !== 1 || markedBlock[0].id !== marked[0].id)) {
+    failures.push(`${markedBlock[0].id} is marked in its block and ${marked[0]?.id} in its column`);
+  } else if (markedBlock.length === 1 && actions(markedBlock[0].html).filled.length !== 1) {
+    failures.push(`${markedBlock[0].id} is marked "${MARK}" but is not the filled action in its block`);
   }
 }
 
