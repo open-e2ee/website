@@ -7,14 +7,7 @@
       "right": 374,
       "width": 358
     },
-    "tables": [
-      {
-        "clientWidth": 0,
-        "overflowX": "auto",
-        "scrollWidth": 0,
-        "tabIndex": 0
-      }
-    ],
+    "tables": [],
     "viewportWidth": 390
   },
   "mobile:/compare/virgil-security/": {
@@ -55,14 +48,7 @@
       "right": 771.7,
       "width": 617.7
     },
-    "tables": [
-      {
-        "clientWidth": 1132,
-        "overflowX": "auto",
-        "scrollWidth": 1132,
-        "tabIndex": 0
-      }
-    ],
+    "tables": [],
     "viewportWidth": 1440
   },
   "desktop:/compare/virgil-security/": {

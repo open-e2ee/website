@@ -19,7 +19,12 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const DIST = join(ROOT, 'dist');
 const FIXTURE = join(ROOT, 'tests', 'fixtures', 'relay-pages-layout.json');
 const WRITE = process.argv.includes('--write');
-const PAGES = ['/pricing/', '/compare/virgil-security/'];
+/* Each page with the scroll regions it exposes. The comparison tables are
+   wider than a phone and scroll inside a region each. The plan table is full
+   width and fixed layout, and leaves the document below 62rem, so it has no
+   region: a scroll box it cannot use is a tab stop that does nothing, and one
+   that stood there clipped the row tooltips and scrolled against the page. */
+const PAGES = { '/pricing/': 0, '/compare/virgil-security/': 3 };
 const VIEWPORTS = [
   { name: 'mobile', width: 390, height: 844 },
   { name: 'desktop', width: 1440, height: 1000 },
@@ -101,7 +106,7 @@ async function main() {
     const actual = {};
 
     for (const viewport of VIEWPORTS) {
-      for (const path of PAGES) {
+      for (const [path, regions] of Object.entries(PAGES)) {
         const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
         held.targets.push(targetId);
         const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
@@ -145,8 +150,8 @@ async function main() {
         if (value.h1.left < 0 || value.h1.right > value.viewportWidth + 1) {
           throw new Red(`${path} clips its heading at ${viewport.name}`);
         }
-        if (value.tables.length === 0) {
-          throw new Red(`${path} exposes no table region at ${viewport.name}`);
+        if (value.tables.length !== regions) {
+          throw new Red(`${path} exposes ${value.tables.length} table regions at ${viewport.name}, not ${regions}`);
         }
         for (const table of value.tables) {
           if (table.overflowX !== 'auto' || table.tabIndex !== 0) {

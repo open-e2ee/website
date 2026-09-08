@@ -216,6 +216,13 @@ test('every row that differs by plan is headed by a name that defines itself', (
   assert.equal(new Set(ids).size, ids.length, 'two tooltips share an id');
   assert.equal(ids.length, capacityRows.length * (selfServe.length + 1), 'every rendering of every row defines itself');
   assert.equal((built.match(/Term\.astro_astro_type_script/g) ?? []).length, 1, 'the tap script is on the page once');
+
+  /* A tooltip opens below its row, so nothing between the table and the band
+   * may clip or scroll: a scroll box here cut the last rows' tooltips off and
+   * counted their hidden boxes as height the table scrolled through. */
+  assert.doesNotMatch(built, /data-table-scroll/, 'the page has a scroll region');
+  const wrapper = built.slice(built.indexOf('<h2>OpenE2EE Relay plans</h2>'), table.length ? built.indexOf('<table') : -1);
+  assert.doesNotMatch(wrapper, /overflow|contain:/, 'the table sits inside a clipping box');
 });
 
 test('what every plan carries folds under one disclosure below the plans', () => {
