@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Icon from '../components/Icon.astro';
+import type { IconName } from '../components/Icon.astro';
 import Term from '../components/Term.astro';
 import {
   relayDevelopmentEnvironment,
@@ -83,8 +84,10 @@ const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
 
 /*
  * What every plan carries opens in a dialog, one card per group, so the table
- * keeps its space for what differs by plan. The trigger is a row in the
- * table's voice with a drawn plus, the one mark for "more". The dialog is the
+ * keeps its space for what differs by plan. The trigger is a ruled row under
+ * the table: the label and one sentence naming the six groups on the left, and
+ * on the right the same secondary control the Enterprise band and the plan
+ * columns use, so every action on the page is one shape. The dialog is the
  * native element that traps focus, closes on Escape, returns focus to the
  * trigger, and makes the page behind it inert, and it is the surface above the
  * page plane DESIGN.md gives the popover shadow and its inset ring. The page
@@ -94,10 +97,13 @@ const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
  * not. Each card is the relay page's start card, a hairline on the panel
  * ground with the comfortable 24px padding, and the set is a definition list,
  * a term over what it means, because these are not tiers and carry no heading.
+ * Each term leads with a chrome icon from the design system's set, muted, at
+ * the text size, so the six read as a set at a glance; the word carries the
+ * meaning and the icon is hidden from assistive technology.
  */
-const INCLUDED_TRIGGER =
-  `${METADATA} mt-8 flex w-full cursor-pointer appearance-none items-center justify-between gap-4 rule-t rule-b bg-transparent py-4 text-left text-text-3 hover:text-text-1`;
-const INCLUDED_MARK = 'size-3 shrink-0';
+const INCLUDED_ROW = 'mt-8 flex items-center justify-between gap-6 rule-t pt-6 max-[34rem]:flex-col max-[34rem]:items-stretch';
+const INCLUDED_ROW_TEXT = 'm-0 mt-2 max-w-[72ch] text-[0.9375rem] leading-[1.5] text-text-3';
+const INCLUDED_TRIGGER = 'oe-button oe-button-secondary shrink-0';
 const INCLUDED_DIALOG =
   'm-auto w-[min(48rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-y-auto border-0 bg-ground-raised p-0 text-text-1 ' +
   'shadow-[var(--oe-shadow-md),inset_0_0_0_1px_var(--oe-border-1)] backdrop:bg-transparent';
@@ -105,9 +111,10 @@ const INCLUDED_BODY = 'p-6 max-[34rem]:p-4';
 const INCLUDED_HEAD = 'mb-6 flex items-start justify-between gap-4';
 const INCLUDED_TITLE = 'm-0 text-[1.25rem] leading-tight font-semibold tracking-[var(--oe-heading-tracking-display)] text-text-1';
 const INCLUDED_LEAD = 'mt-2 text-[0.9375rem] text-text-3';
-const INCLUDED_CARDS = 'm-0 grid grid-cols-2 gap-3 max-[34rem]:grid-cols-1';
+const INCLUDED_CARDS = 'm-0 grid grid-cols-2 gap-3 [--oe-icon-size:1rem] max-[34rem]:grid-cols-1';
 const INCLUDED_CARD = 'rule bg-ground-panel px-6 py-5';
-const INCLUDED_CARD_TITLE = 'm-0 text-[0.9375rem] font-medium text-text-1';
+const INCLUDED_CARD_TITLE = 'm-0 flex items-center gap-2 text-[0.9375rem] font-medium text-text-1';
+const INCLUDED_CARD_ICON = 'shrink-0 text-text-3';
 const INCLUDED_CARD_DETAIL = 'm-0 mt-1 text-[0.9375rem] leading-[1.5] text-text-3';
 
 /*
@@ -245,19 +252,23 @@ const compactValueClasses = (row: Row) => [COMPACT_VALUE, row.lead ? LEAD_VALUE 
  * do not differ by plan, so each is one card, and the whole set opens in one
  * dialog rather than taking the table's space.
  */
-const included: { label: string; detail: string }[] = [
-  { label: 'Protocol features', detail: 'Groups, attachments, sealed sender, multi-device delivery, and push.' },
-  { label: 'Delivery', detail: 'Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.' },
-  { label: 'Groups and attachments', detail: 'Bounded group fan-out and private encrypted attachment storage.' },
+const included: { icon: IconName; label: string; detail: string }[] = [
+  { icon: 'stack', label: 'Protocol features', detail: 'Groups, attachments, sealed sender, multi-device delivery, and push.' },
+  { icon: 'send', label: 'Delivery', detail: 'Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.' },
+  { icon: 'people', label: 'Groups and attachments', detail: 'Bounded group fan-out and private encrypted attachment storage.' },
   {
+    icon: 'clock',
     label: 'Ciphertext retention',
     detail: `${relayProductionRetention} in device mailboxes and attachment storage before ciphertext expires. A project can set a shorter retention.`,
   },
-  { label: 'Operations', detail: 'Push wakes, exact usage, quotas, lifecycle controls, and recovery drills.' },
-  { label: 'Development environment', detail: 'One with every project, at no cost and without a card.' },
+  { icon: 'pulse', label: 'Operations', detail: 'Push wakes, exact usage, quotas, lifecycle controls, and recovery drills.' },
+  { icon: 'terminal', label: 'Development environment', detail: 'One with every project, at no cost and without a card.' },
 ];
 const INCLUDED_HEADING = 'Included on every plan';
 const INCLUDED_ID = 'included-on-every-plan';
+const INCLUDED_SUMMARY =
+  'Protocol features, delivery, groups and attachments, ciphertext retention, operations, and a Development environment, Free included.';
+const INCLUDED_ACTION = 'See what is included';
 
 /* The note under the table prices delivery and storage overage once, which
  * holds only while every paid plan prices them the same. */
@@ -345,10 +356,13 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
           </li>
         ))}
       </ul>
-      <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>
-        <span>{INCLUDED_HEADING}</span>
-        <svg viewBox="0 0 12 12" aria-hidden="true" class={INCLUDED_MARK}><path d="M6 1.5v9M1.5 6h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"></path></svg>
-      </button>
+      <div class={INCLUDED_ROW} data-included-row>
+        <div>
+          <p class={LABEL}>{INCLUDED_HEADING}</p>
+          <p class={INCLUDED_ROW_TEXT}>{INCLUDED_SUMMARY}</p>
+        </div>
+        <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button>
+      </div>
       <dialog class={INCLUDED_DIALOG} aria-labelledby={INCLUDED_ID} data-included>
         <div class={INCLUDED_BODY}>
           <div class={INCLUDED_HEAD}>
@@ -361,7 +375,7 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
           <dl class={INCLUDED_CARDS}>
             {included.map((item) => (
               <div class={INCLUDED_CARD}>
-                <dt class={INCLUDED_CARD_TITLE}>{item.label}</dt>
+                <dt class={INCLUDED_CARD_TITLE}><Icon name={item.icon} class={INCLUDED_CARD_ICON} />{item.label}</dt>
                 <dd class={INCLUDED_CARD_DETAIL}>{item.detail}</dd>
               </div>
             ))}
