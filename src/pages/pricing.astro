@@ -62,12 +62,22 @@ const ROW_HEAD = 'rule-t pr-4 font-medium text-text-1';
 const ROW_UNIT = `${METADATA} mt-1 block text-text-3`;
 const CELL = 'rule-t px-4 font-[family-name:var(--oe-metadata-font-family)] tabular-nums';
 
+/*
+ * The row a buyer decides by is set apart by size and room, not by color. Its
+ * name is a step up from the other row names, and its values are a step up
+ * again, in the weight the price above them carries, so the eye lands on the
+ * price and then on this row before anything else in the table.
+ */
+const LEAD_HEAD = 'text-[1.0625rem]';
+const LEAD_VALUE = 'text-[1.375rem] leading-[1.15] font-medium text-text-1';
+
 const COMPACT = 'm-0 grid list-none grid-cols-2 gap-x-8 p-0 min-[62rem]:hidden max-[44rem]:grid-cols-1';
 
 const COMPACT_PLAN = 'py-6 [&>*+*]:mt-3';
 
 const COMPACT_ROWS = 'm-0 w-full text-[0.9375rem] [&>div]:flex [&>div]:justify-between [&>div]:gap-4 [&>div]:rule-t [&>div]:py-2';
 const COMPACT_VALUE = 'm-0 text-right font-[family-name:var(--oe-metadata-font-family)] tabular-nums';
+const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
 
 
 /*
@@ -165,15 +175,16 @@ const ENTERPRISE_ACTION = {
 };
 
 /*
- * The rows that differ by plan. Relay MAU leads, because it is the meter a
- * buyer sizes a plan by, and its overage sits directly under it so the two
- * numbers a buyer does arithmetic on are read together. The rest are named by
- * what the plan provides, with the meter that counts it as the unit under the
- * name, and each name defines itself on hover. Delivery and storage overage
- * price the same on every paid plan, so they are the note under the table
- * rather than two rows of one repeated figure. Allowances are monthly, which
- * the same note says once; the price under each name already reads
+ * The rows that differ by plan. Monthly active users lead, because that is the
+ * count a buyer sizes a plan by, and its overage sits directly under it so the
+ * two numbers a buyer does arithmetic on are read together. Every row is named
+ * by what the plan provides, with the meter that counts it as the unit under
+ * the name, and each name defines itself on hover. Delivery and storage
+ * overage price the same on every paid plan, so they are the note under the
+ * table rather than two rows of one repeated figure. Allowances are monthly,
+ * which the same note says once; the price under each name already reads
  * "per month". Free has no overage, so its overage cell reads as the cap it is.
+ * Retention is the same on every plan, so it sits with what every plan carries.
  */
 const HARD_CAP = 'Hard cap';
 
@@ -185,7 +196,7 @@ const define = (name: string) => {
 
 type Row = { label: string; definition: string; unit?: string; lead?: boolean; value: (plan: Plan) => string };
 const rows: Row[] = [
-  { label: 'Relay MAU', unit: 'Active accounts', lead: true, definition: define('Relay MAU'), value: (plan) => plan.relayMau },
+  { label: 'Monthly active users (MAU)', unit: 'Relay MAU', lead: true, definition: define('Relay MAU'), value: (plan) => plan.relayMau },
   {
     label: 'Additional MAU',
     definition: 'Each Relay MAU beyond the plan allowance in a month, charged only once overage is on. Free has no overage and stops at its cap.',
@@ -194,26 +205,22 @@ const rows: Row[] = [
   { label: 'Message delivery', unit: 'Delivery units', definition: define('Delivery unit'), value: (plan) => plan.deliveryUnits },
   { label: 'Encrypted attachments', unit: 'Attachment uploads', definition: define('Attachment upload'), value: (plan) => plan.attachmentOperations },
   { label: 'Encrypted storage', definition: define('Storage'), value: (plan) => plan.storage },
-  {
-    label: 'Ciphertext retention',
-    definition: 'The longest the relay keeps production ciphertext, in device mailboxes and attachment storage, before it expires. A project can set a shorter retention.',
-    value: () => relayProductionRetention,
-  },
 ];
 
 const rowId = (row: Row, scope: string) => `${scope}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
-/* The first row opens with room under the head; the last closes the tint. */
-const rowPadding = (index: number) => [index === 0 ? 'pt-4' : 'pt-3', index === rows.length - 1 ? 'pb-6' : 'pb-3'];
-const rowHeadClasses = (row: Row, index: number) => [ROW_HEAD, ...rowPadding(index)];
+/* The lead row has room around it; the last row closes the tint. */
+const rowPadding = (row: Row, index: number) => (row.lead ? ['pt-5', 'pb-4'] : ['pt-3', index === rows.length - 1 ? 'pb-6' : 'pb-3']);
+const rowHeadClasses = (row: Row, index: number) => [ROW_HEAD, ...rowPadding(row, index), row.lead && LEAD_HEAD];
 const cellClasses = (row: Row, index: number, plan: Plan) => [
   CELL,
-  ...rowPadding(index),
-  row.lead ? 'text-[1.0625rem] text-text-1' : 'text-text-3',
+  ...rowPadding(row, index),
+  row.lead ? LEAD_VALUE : 'text-text-3',
   marked(plan) && 'bg-ground-panel',
 ];
+const compactRowClasses = (row: Row) => (row.lead ? COMPACT_LEAD : undefined);
 const compactLabelClasses = (row: Row) => (row.lead ? 'text-text-1' : 'text-text-3');
-const compactValueClasses = (row: Row) => [COMPACT_VALUE, row.lead ? 'text-[1.0625rem] text-text-1' : 'text-text-1'];
+const compactValueClasses = (row: Row) => [COMPACT_VALUE, row.lead ? LEAD_VALUE : 'text-text-1'];
 
 /*
  * What every plan carries, in the words the Relay page uses for it. These
@@ -224,6 +231,10 @@ const included: { label: string; detail: string }[] = [
   { label: 'Protocol features', detail: 'Groups, attachments, sealed sender, multi-device delivery, and push.' },
   { label: 'Delivery', detail: 'Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.' },
   { label: 'Groups and attachments', detail: 'Bounded group fan-out and private encrypted attachment storage.' },
+  {
+    label: 'Ciphertext retention',
+    detail: `${relayProductionRetention} in device mailboxes and attachment storage before ciphertext expires. A project can set a shorter retention.`,
+  },
   { label: 'Operations', detail: 'Push wakes, exact usage, quotas, lifecycle controls, and recovery drills.' },
   { label: 'Development environment', detail: 'One with every project, at no cost and without a card.' },
 ];
@@ -261,12 +272,12 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
     <div class={CONTAINER}>
       <div class={BAND_HEAD}>
         <h2>OpenE2EE Relay plans</h2>
-        <p class={MEASURE}>Pick a plan by Relay MAU, the accounts active in a month. Every plan carries every Relay feature, and paid plans add capacity and optional overage.</p>
+        <p class={MEASURE}>Pick a plan by monthly active users, the accounts active in a month. Every plan carries every Relay feature, and paid plans add capacity and optional overage.</p>
       </div>
       <div class={PLAN_TABLE_AT}>
         <table class={PLAN_TABLE} itemscope itemtype="https://schema.org/Product">
           <caption class="oe-visually-hidden" itemprop="name">OpenE2EE Relay plans, monthly prices, allowances, and what every plan includes</caption>
-          <colgroup><col class="w-[13rem]" />{selfServe.map(() => <col />)}</colgroup>
+          <colgroup><col class="w-[15rem]" />{selfServe.map(() => <col />)}</colgroup>
           <thead>
             <tr>
               <td class="pr-4"></td>
@@ -306,7 +317,7 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
             <a class:list={startClasses(plan)} href={startHref(plan)}>{startLabel(plan)}</a>
             <dl class={COMPACT_ROWS}>
               {rows.map((row) => (
-                <div>
+                <div class:list={compactRowClasses(row)}>
                   <dt class={compactLabelClasses(row)}><Term id={rowId(row, plan.id)} label={row.label} definition={row.definition} /></dt>
                   <dd class:list={compactValueClasses(row)}>{row.value(plan)}</dd>
                 </div>
