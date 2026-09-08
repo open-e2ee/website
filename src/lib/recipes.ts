@@ -132,7 +132,16 @@ export const ACTIONS = 'flex flex-wrap items-start gap-4';
  */
 export const CTA_PRIMARY = 'inline-flex flex-col items-start gap-2 no-underline';
 
-export const CTA_SUBLABEL = `${METADATA} text-text-3`;
+/*
+ * The sublabel hangs under the button without setting the anchor's width. A
+ * flex child at `w-0` adds nothing to its parent's intrinsic width, and
+ * `min-w-full` then hands it the button's width to hang from, with its words
+ * running past that edge on one line. Without this, a sublabel wider than its
+ * button widens the anchor, and the secondary control beside it lands a
+ * sublabel's width away instead of one gap: "Start free" over "Development
+ * environment · no card" put the next button 159px out.
+ */
+export const CTA_SUBLABEL = `${METADATA} w-0 min-w-full whitespace-nowrap text-text-3`;
 
 export const TEXT_LINKS = 'flex flex-wrap gap-4 text-[0.9375rem]';
 

@@ -1312,6 +1312,18 @@ test('centers the hero at the phone’s width as well as the desktop’s', async
     'the call to action no longer starts at items-start, so its important suffix in the hero is unexplained',
   );
 
+  /* The sublabel hangs from the button's width instead of setting the anchor's.
+   * A sublabel wider than its button once pushed the secondary control 159px
+   * out on /pricing and /relay, where "Start free" sits over "Development
+   * environment · no card". The centered hero centers the words under its
+   * button; the left-aligned heroes let them run past its right edge. */
+  assert.match(
+    recipes,
+    /export const CTA_SUBLABEL = `[^`]*\bw-0 min-w-full whitespace-nowrap\b/,
+    'the sublabel sets the width of the call to action again',
+  );
+  assert.match(index, /class:list=\{\[CTA_SUBLABEL, 'text-center'\]\}/, 'the centered hero no longer centers its sublabel under the button');
+
   /* The strip centers itself rather than being centered by its caller. It has
    * one caller, so a prop for it would be a setting with one possible value,
    * and the hero passes it the one thing the hero owns — the distance down to
