@@ -69,7 +69,11 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
           <p class={LABEL}>Managed delivery</p>
           <h1>OpenE2EE Relay is the delivery half of an end-to-end encrypted application.</h1>
           <p class={LEAD}>Relay operates encrypted device mailboxes, delivery and pull, group fan-out, private attachment storage, push wakes, and exact lifecycle controls, so an application server does not become message infrastructure. The SDK runs on each device and reaches Relay through one connection URL.</p>
-          <p>The relay never needs message plaintext or device private keys. It does see the routing, timing, size, quota, and abuse metadata needed to operate the service.</p>
+          {/* The first two of the four Relay boundary statements. docs/messaging.md
+              publishes them as a set, and the other two stand in the band that
+              names what Relay operates. tests/relay-page.test.mjs holds all
+              four on the built page. */}
+          <p>OpenE2EE Relay stores ciphertext and the account, device, route, timing, size, quota, and abuse metadata that delivery requires. The relay never needs message plaintext or device private keys.</p>
           {/* Two actions and one order. The primary creates the project, which
               is the shortest route from this page to a running relay; the
               secondary is the reading a developer who wants the shape of the
@@ -123,6 +127,10 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
         <div><dt>Operations</dt><dd>Push wakes, exact usage, quotas, lifecycle controls, recovery drills, and an operator plane.</dd></div>
         <div><dt>Your application</dt><dd>Authentication choice, product directory and social graph, user experience, moderation policy, recovery policy, and application data.</dd></div>
       </dl>
+      {/* The other two boundary statements. A reader who arrives from the SDK
+          asks whether Relay is required, and a reader who operates their own
+          infrastructure asks where the metadata lives. */}
+      <p class={MEASURE}>The OpenE2EE Signal Protocol SDK works with OpenE2EE Relay or another adapter. OpenE2EE Relay is the shortest hosted path, not a requirement of the SDK. A self-hosted adapter keeps relay metadata in infrastructure the developer operates. A managed project places the required relay metadata with OpenE2EE.</p>
       <p class={TEXT_LINKS}><a href="/relay/pricing">Review Relay pricing</a><a href="/legal/relay-terms">Relay service terms</a><a href="/compare/virgil-security">Compare architecture with Virgil Security</a><a href="/licensing">Review self-hosted licensing</a></p>
     </div>
   </section>

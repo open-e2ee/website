@@ -148,3 +148,24 @@ test('holds the wide drawing to a legible floor', async () => {
   assert.ok(off >= 0, 'the narrow-viewport rule no longer turns the scroll off');
   assert.ok(back > off, 'the wide figure never gets its scroll back at narrow widths');
 });
+
+/*
+ * The four Relay boundary statements from docs/messaging.md travel together or
+ * not at all. The page carried the second alone for its first two releases,
+ * and a reader who arrived from the SDK could not learn from it whether Relay
+ * was required, or where the metadata of a self-hosted adapter lives. The
+ * sentences are typed here on purpose: the guard is that the published page
+ * says these words, not that it says whatever the source file says today.
+ */
+test('publishes all four Relay boundary statements together', async () => {
+  const text = (await builtPage()).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  const statements = [
+    'OpenE2EE Relay stores ciphertext and the account, device, route, timing, size, quota, and abuse metadata that delivery requires.',
+    'The relay never needs message plaintext or device private keys.',
+    'The OpenE2EE Signal Protocol SDK works with OpenE2EE Relay or another adapter. OpenE2EE Relay is the shortest hosted path, not a requirement of the SDK.',
+    'A self-hosted adapter keeps relay metadata in infrastructure the developer operates. A managed project places the required relay metadata with OpenE2EE.',
+  ];
+  for (const statement of statements) {
+    assert.ok(text.includes(statement), `the page does not carry: ${statement}`);
+  }
+});
