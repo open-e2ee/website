@@ -7,18 +7,21 @@
  * does arithmetic on sat on another route.
  *
  * This file asserts the shape the page keeps now: the self-service plans are
- * the columns of one table and the meters are its rows, in catalog order,
- * priced larger than they are named; one plan is marked and carries the filled
- * action; Enterprise is one outlined band under them; the same rows render
- * again as one block per plan for narrow viewports; and the licensing section
- * follows, raised once the plans are read.
+ * the columns of one table, in catalog order, priced larger than they are
+ * named; Relay MAU is the first row and its overage the second, because a
+ * buyer sizes a plan by it; every row that differs by plan is headed by a name
+ * that defines itself on hover; what every plan carries closes the table under
+ * one heading; one plan is marked with a tinted, padded column and carries the
+ * filled action; Enterprise is one outlined band under them; the same rows
+ * render again as one block per plan for narrow viewports; and the licensing
+ * section follows, raised once the plans are read.
  */
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 
-import { relayPlans, relayProductionRetention } from '../src/data/relay-pricing.mjs';
+import { relayMeterDefinitions, relayPlans, relayProductionRetention } from '../src/data/relay-pricing.mjs';
 import { tiers } from '../src/data/pricing.mjs';
 
 const built = await readFile(new URL('../dist/pricing/index.html', import.meta.url), 'utf8').catch(
@@ -83,12 +86,37 @@ function textRem(classes) {
   return rem ? Number(rem[1]) : null;
 }
 
-/** The cells of one table row, by its row heading. */
+/** The rows of the table's first body, each as its heading and its cells. */
+const capacityRows = (() => {
+  const start = table.indexOf('<tbody');
+  const body = table.slice(start, table.indexOf('</tbody>', start));
+  return [...body.matchAll(/<tr>(.*?)<\/tr>/gs)].map(([, row]) => {
+    const head = row.slice(0, row.indexOf('</th>'));
+    const label = head.match(/>([^<]+)<\/button>/)?.[1] ?? null;
+    /* A value cell carries classes and no markup. The class attribute holds
+     * no `>`, so a bounded match is safe here. */
+    const cells = [...row.slice(row.indexOf('</th>')).matchAll(/<td class="([^"]*)">([^<]*)<\/td>/g)].map((m) => ({
+      classes: m[1],
+      text: m[2],
+    }));
+    return { head, label, cells };
+  });
+})();
+
+/** The cells of one row of the first body, by its heading. */
 function cells(label) {
-  const row = table.match(new RegExp(`<th scope="row">${label}</th>((?:<td>[^<]*</td>)+)</tr>`));
+  const row = capacityRows.find((entry) => entry.label === label);
   assert.ok(row, `the table has no row headed ${label}`);
-  return [...row[1].matchAll(/<td>([^<]*)<\/td>/g)].map((match) => match[1]);
+  return row.cells.map((cell) => cell.text);
 }
+
+/** The table's second body: what every plan carries. */
+const includedBody = (() => {
+  const first = table.indexOf('</tbody>');
+  const start = table.indexOf('<tbody', first);
+  assert.ok(start !== -1, 'the table has no second body');
+  return table.slice(start, table.indexOf('</tbody>', start));
+})();
 
 test('the self-service plans are the columns of one table, in catalog order', () => {
   /* The head's class carries a `>` (a child-combinator variant), so the
@@ -116,42 +144,154 @@ test('the self-service plans are the columns of one table, in catalog order', ()
   assert.doesNotMatch(source, /<h3[^>]*>Starter</);
 });
 
-test('the meters are the rows, and every cell comes from the catalog', () => {
+test('Relay MAU leads the rows, its overage follows it, and every cell comes from the catalog', () => {
+  /* The founder's 2026-09-08 call: Relay MAU is the meter a buyer sizes a plan
+   * by, so it is the first row, and the price of one more sits directly under
+   * it. The rest are named by what the plan provides, and the meter that
+   * counts each one is the unit under its name. */
+  assert.deepEqual(
+    capacityRows.map((row) => row.label),
+    ['Relay MAU', 'Additional MAU', 'Message delivery', 'Encrypted attachments', 'Encrypted storage', 'Ciphertext retention'],
+  );
   assert.deepEqual(cells('Relay MAU'), selfServe.map((plan) => plan.relayMau));
-  assert.deepEqual(cells('Delivery units'), selfServe.map((plan) => plan.deliveryUnits));
-  assert.deepEqual(cells('Attachment uploads'), selfServe.map((plan) => plan.attachmentOperations));
-  assert.deepEqual(cells('Storage'), selfServe.map((plan) => plan.storage));
-
-  /* The overage a buyer does arithmetic on sits under the plan it prices. Free
-   * has none: its caps are hard, and the cell says so rather than printing a
-   * dash a reader has to interpret. */
   assert.deepEqual(cells('Additional MAU'), selfServe.map((plan) => plan.overage?.relayMau ?? 'Hard cap'));
-  assert.deepEqual(cells('Additional delivery units'), selfServe.map((plan) => plan.overage?.delivery ?? 'Hard cap'));
-  assert.deepEqual(cells('Additional storage'), selfServe.map((plan) => plan.overage?.storage ?? 'Hard cap'));
+  assert.deepEqual(cells('Message delivery'), selfServe.map((plan) => plan.deliveryUnits));
+  assert.deepEqual(cells('Encrypted attachments'), selfServe.map((plan) => plan.attachmentOperations));
+  assert.deepEqual(cells('Encrypted storage'), selfServe.map((plan) => plan.storage));
   assert.deepEqual(cells('Ciphertext retention'), selfServe.map(() => relayProductionRetention));
 
-  /* The price under every name already reads "per month", and the note under
-   * the table says the allowances are monthly once. A row label that says it
-   * again is the explainer this page shed. */
-  const labels = [...table.matchAll(/<th scope="row">([^<]*)<\/th>/g)].map((m) => m[1]);
-  assert.equal(labels.length, 8, `the table has ${labels.length} rows, not eight`);
-  for (const label of labels) assert.doesNotMatch(label, /per month|[Ee]xact|[Ee]xcess|operations/, `row label "${label}"`);
-  assert.match(built.slice(built.indexOf('</table>'), built.indexOf('id="development"')), /allowances are monthly/);
+  const unit = (label) => capacityRows.find((row) => row.label === label).head.match(/<span class="[^"]*">([^<]*)<\/span>\s*$/)?.[1] ?? null;
+  assert.equal(unit('Relay MAU'), 'Active accounts');
+  assert.equal(unit('Message delivery'), 'Delivery units');
+  assert.equal(unit('Encrypted attachments'), 'Attachment uploads');
+  assert.equal(unit('Encrypted storage'), null, 'a value with its own unit needs no unit line');
+
+  /* The leading row is read first because it is set apart: its values are the
+   * first-step text at a larger size, where every other value recedes. */
+  for (const cell of capacityRows[0].cells) {
+    assert.match(cell.classes, /\btext-text-1\b/);
+    assert.match(cell.classes, /\btext-\[1\.0625rem\]/);
+  }
+  for (const row of capacityRows.slice(1)) for (const cell of row.cells) assert.match(cell.classes, /\btext-text-3\b/);
+
+  /* Delivery and storage overage price the same on every paid plan, so they
+   * are one sentence in the note under the table and not two rows of one
+   * repeated figure. The note also says once that allowances are monthly; a
+   * row label that says it again is the explainer this page shed. */
+  const note = built.slice(built.indexOf('</table>'), built.indexOf('id="development"'));
+  const paid = selfServe.filter((plan) => plan.overage);
+  for (const plan of paid) {
+    assert.ok(note.includes(plan.overage.delivery), `the note does not price delivery overage at ${plan.overage.delivery}`);
+    assert.ok(note.includes(plan.overage.storage), `the note does not price storage overage at ${plan.overage.storage}`);
+  }
+  assert.match(note, /allowances are monthly/);
+  for (const row of capacityRows) assert.doesNotMatch(row.label, /per month|[Ee]xact|[Ee]xcess|operations/, `row label "${row.label}"`);
+});
+
+test('every row that differs by plan is headed by a name that defines itself', () => {
+  /* A title attribute reaches neither a keyboard nor a touch screen. The
+   * definition is a tooltip the label's button describes itself by, shown on
+   * hover and focus by CSS and on a tap by the one script the component
+   * ships, and the ids that bind them are unique on the page. */
+  const define = (name) => relayMeterDefinitions.find((meter) => meter.name === name).definition;
+  const expected = { 'Relay MAU': define('Relay MAU'), 'Message delivery': define('Delivery unit'), 'Encrypted attachments': define('Attachment upload'), 'Encrypted storage': define('Storage') };
+  for (const row of capacityRows) {
+    const trigger = row.head.match(/<button type="button" class="([^"]*)" aria-describedby="([^"]+)">([^<]+)<\/button>/);
+    assert.ok(trigger, `${row.label} is not a button that describes itself`);
+    assert.match(trigger[1], /\bcursor-help\b/);
+    assert.match(trigger[1], /\bdecoration-dotted\b/, 'the affordance is the dotted underline');
+    const tooltip = row.head.match(new RegExp(`<span role="tooltip" id="${trigger[2]}" class="([^"]*)">([^<]+)</span>`));
+    assert.ok(tooltip, `${row.label} has no tooltip with id ${trigger[2]}`);
+    assert.match(tooltip[1], /\bgroup-hover:visible\b/);
+    assert.match(tooltip[1], /\bgroup-focus-within:visible\b/);
+    assert.match(tooltip[1], /\bgroup-data-\[open\]:visible\b/);
+    /* A popover is the one surface above the page plane, so it is the one
+     * that carries a shadow, and DESIGN.md gives every shadow an inset ring. */
+    assert.match(tooltip[1], /shadow-\[var\(--oe-shadow-md\),inset_0_0_0_1px_var\(--oe-border-1\)\]/);
+    assert.doesNotMatch(tooltip[1], /rounded/);
+    if (expected[row.label]) assert.equal(tooltip[2], expected[row.label], `${row.label} does not carry the catalog definition`);
+    else assert.ok(tooltip[2].length > 40, `${row.label} carries a definition too short to define it`);
+    assert.doesNotMatch(row.head, /title="/);
+  }
+  const ids = [...built.matchAll(/role="tooltip" id="([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(new Set(ids).size, ids.length, 'two tooltips share an id');
+  assert.equal(ids.length, capacityRows.length * (selfServe.length + 1), 'every rendering of every row defines itself');
+  assert.equal((built.match(/Term\.astro_astro_type_script/g) ?? []).length, 1, 'the tap script is on the page once');
+});
+
+test('what every plan carries closes the table under one heading', () => {
+  const heading = includedBody.match(/<th scope="rowgroup" colspan="(\d+)" class="[^"]*">([^<]+)<\/th>/);
+  assert.ok(heading, 'the second body has no group heading');
+  assert.equal(Number(heading[1]), selfServe.length + 1);
+  assert.equal(heading[2], 'Included on every plan');
+
+  /* These rows do not differ by plan, so each is one description across the
+   * plan columns rather than four ticks, in the words the Relay page uses. */
+  const rows = [...includedBody.matchAll(/<th scope="row" class="[^"]*">([^<]+)<\/th><td colspan="(\d+)" class="[^"]*">([^<]+)<\/td>/g)].map((m) => ({ label: m[1], span: Number(m[2]), detail: m[3] }));
+  assert.deepEqual(
+    rows.map((row) => row.label),
+    ['Protocol features', 'Delivery', 'Groups and attachments', 'Operations', 'Development environment'],
+  );
+  for (const row of rows) assert.equal(row.span, selfServe.length, `${row.label} does not span the plan columns`);
+  assert.equal(rows.find((row) => row.label === 'Delivery').detail, 'Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.');
+  assert.equal(rows.find((row) => row.label === 'Groups and attachments').detail, 'Bounded group fan-out and private encrypted attachment storage.');
+  assert.doesNotMatch(includedBody, /bg-ground-panel/, 'the tint marks the rows that differ by plan, and these do not');
+
+  /* The narrow rendering carries the group once under the plan blocks, not
+   * once per plan. */
+  const compact = built.slice(built.indexOf('data-relay-plan-compact='), built.indexOf(`data-relay-plan="${enterprise.id}"`));
+  assert.equal((compact.match(/Included on every plan/g) ?? []).length, 1);
+  assert.match(source, /const COMPACT_INCLUDED = '[^']*\bmin-\[62rem\]:hidden\b/);
 });
 
 test('one plan is marked, and it alone carries the filled action', () => {
   const head = table.slice(table.indexOf('<thead'), table.indexOf('</thead>'));
   assert.equal(head.split(`>${HIGHLIGHT_LABEL}<`).length - 1, 1, `the head does not carry "${HIGHLIGHT_LABEL}" exactly once`);
   assert.ok(columnHead(HIGHLIGHT).includes(`>${HIGHLIGHT_LABEL}<`), `${HIGHLIGHT} is not the marked column`);
-  assert.equal((head.match(/<col class="bg-ground-panel">/g) ?? []).length, 0, 'the tint is on a head cell, not a column');
-  const colgroup = table.slice(table.indexOf('<colgroup'), table.indexOf('</colgroup>'));
-  assert.equal((colgroup.match(/<col class="bg-ground-panel">/g) ?? []).length, 1, 'exactly one column is tinted');
-  assert.equal((colgroup.match(/<col[ >]/g) ?? []).length, selfServe.length + 1);
-  assert.equal(
-    [...colgroup.matchAll(/<col(?: class="([^"]*)")?>/g)].findIndex((m) => m[1] === 'bg-ground-panel') - 1,
-    selfServe.findIndex((plan) => plan.id === HIGHLIGHT),
-    'the tinted column is not the marked plan',
-  );
+  /* The tint is on the cells, not on a <col>: a column background is flush
+   * with every cell edge and runs under the rows every plan shares. Each cell
+   * carries its own padding, so the tint has an inset on all four sides, and
+   * the marked head closes at the top with the 3px edge the callout uses
+   * where something is settled; the other heads carry the edge in no color so
+   * every name sits on one baseline. */
+  assert.doesNotMatch(table, /<col class="[^"]*bg-ground-panel/);
+  const markedIndex = selfServe.findIndex((plan) => plan.id === HIGHLIGHT);
+  for (const plan of selfServe) {
+    const classes = table.slice(table.lastIndexOf('<th scope="col"', table.indexOf(`data-relay-plan="${plan.id}"`))).match(/class="([^"]+)"/)[1];
+    assert.match(classes, /\bborder-t-\[3px\]/, `${plan.id} head has no top edge`);
+    assert.match(classes, /\bpx-4\b/, `${plan.id} head has no side padding`);
+    assert.match(classes, /\bpt-4\b/, `${plan.id} head has no top padding`);
+    if (plan.id === HIGHLIGHT) {
+      assert.match(classes, /\bbg-ground-panel\b/, 'the marked head is not tinted');
+      assert.match(classes, /border-t-\[var\(--oe-sealed\)\]/, 'the marked head has no sealed edge');
+    } else {
+      assert.doesNotMatch(classes, /bg-ground-panel/, `${plan.id} head is tinted`);
+      assert.match(classes, /\bborder-t-transparent\b/, `${plan.id} head does not hold the baseline`);
+    }
+  }
+  for (const row of capacityRows) {
+    row.cells.forEach((cell, index) => {
+      assert.match(cell.classes, /\bpx-4\b/, `${row.label} cell ${index} has no side padding`);
+      if (index === markedIndex) assert.match(cell.classes, /\bbg-ground-panel\b/, `${row.label} is not tinted under the marked plan`);
+      else assert.doesNotMatch(cell.classes, /bg-ground-panel/, `${row.label} is tinted under an unmarked plan`);
+    });
+  }
+  /* The last row that differs by plan closes the tint with room under it. */
+  for (const cell of capacityRows.at(-1).cells) assert.match(cell.classes, /\bpb-6\b/);
+  for (const cell of capacityRows[0].cells) assert.match(cell.classes, /\bpt-4\b/);
+
+  /* The narrow rendering marks the same plan the same way. */
+  for (const plan of selfServe) {
+    const opening = built.slice(built.lastIndexOf('<li', built.indexOf(`data-relay-plan-compact="${plan.id}"`)));
+    const classes = opening.match(/class="([^"]+)"/)[1];
+    if (plan.id === HIGHLIGHT) {
+      assert.match(classes, /\bbg-ground-panel\b/);
+      assert.match(classes, /border-t-\[var\(--oe-sealed\)\]/);
+    } else {
+      assert.doesNotMatch(classes, /bg-ground-panel|oe-sealed/);
+      assert.match(classes, /\brule-t\b/);
+    }
+  }
 
   for (const plan of selfServe) {
     for (const rendering of [columnHead(plan.id), compactBlock(plan.id)]) {
@@ -212,9 +352,9 @@ test('the narrow rendering carries the same plans, rows, and actions', () => {
       head.match(/<a class="oe-button[^"]*" href="([^"]+)"/)[1],
       `${plan.id} opens two different routes in its two renderings`,
     );
-    for (const label of ['Relay MAU', 'Additional MAU', 'Ciphertext retention']) {
-      assert.ok(block.includes(`<dt>${label}</dt>`), `${plan.id} compact block has no ${label} row`);
-    }
+    const labels = [...block.matchAll(/<dt class="[^"]*"><span class="group relative inline-block" data-term><button type="button" class="[^"]*" aria-describedby="[^"]+">([^<]+)<\/button>/g)].map((m) => m[1]);
+    assert.deepEqual(labels, capacityRows.map((row) => row.label), `${plan.id} compact block does not carry the table's rows`);
+    assert.equal(block.match(/<dd class="[^"]*">([^<]*)<\/dd>/)[1], plan.relayMau, `${plan.id} compact block does not lead with Relay MAU`);
   }
 
   /* One rendering is in the document at a time: the table above 62rem, the

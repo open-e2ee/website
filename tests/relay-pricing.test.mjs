@@ -68,7 +68,7 @@ test('publishes canonical Relay routes with accessible responsive tables', async
     assert.match(page, /<TableScroll label="[^"]+">/);
     assert.doesNotMatch(page, /<div class=\{TABLE_SCROLL\}/, 'a table dresses its own scroll box');
     assert.match(page, /<th scope="col"/);
-    assert.match(page, /<th scope="row">/);
+    assert.match(page, /<th scope="row"[ >]/);
   }
 
   /* And that the component is the whole contract. A focusable box that cannot
