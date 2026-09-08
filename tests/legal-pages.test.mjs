@@ -202,16 +202,14 @@ test('publishes the exact Relay legal and lifecycle boundary', async () => {
 });
 
 test('reaches each agreement from the pages that sell against it', async () => {
-  const [pricing, relayPricing, relay, licensing] = await Promise.all([
+  const [pricing, relay, licensing] = await Promise.all([
     flat('../src/pages/pricing.astro'),
-    flat('../src/pages/relay/pricing.astro'),
     flat('../src/pages/relay/index.astro'),
     flat('../src/pages/licensing.astro'),
   ]);
 
   assert.match(pricing, /href="\/legal\/terms"/);
   assert.match(pricing, /href="\/legal\/relay-terms"/);
-  assert.match(relayPricing, /href="\/legal\/relay-terms"/);
   assert.match(relay, /href="\/legal\/relay-terms"/);
   assert.match(pricing, /renews annually until you cancel/i);
   assert.match(licensing, /href="\/legal\/terms"/);

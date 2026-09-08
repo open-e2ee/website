@@ -19,7 +19,7 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const DIST = join(ROOT, 'dist');
 const FIXTURE = join(ROOT, 'tests', 'fixtures', 'relay-pages-layout.json');
 const WRITE = process.argv.includes('--write');
-const PAGES = ['/relay/pricing/', '/compare/virgil-security/'];
+const PAGES = ['/pricing/', '/compare/virgil-security/'];
 const VIEWPORTS = [
   { name: 'mobile', width: 390, height: 844 },
   { name: 'desktop', width: 1440, height: 1000 },

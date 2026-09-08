@@ -1,27 +1,28 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { relayDevelopmentEnvironment, relayMeterDefinitions, relayOverages, relayPlans } from '../src/data/relay-pricing.mjs';
+import { relayDevelopmentEnvironment, relayMeterDefinitions, relayPlans, relayProductionRetention } from '../src/data/relay-pricing.mjs';
 import { virgilSecurityComparison } from '../src/data/virgil-security-comparison.mjs';
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('publishes the exact approved Relay catalog from one data module', () => {
   assert.deepEqual(
-    relayPlans.map(({ id, price, relayMau, deliveryUnits, attachmentOperations, storage }) => ({
+    relayPlans.map(({ id, price, relayMau, deliveryUnits, attachmentOperations, storage, overage }) => ({
       id,
       price,
       relayMau,
       deliveryUnits,
       attachmentOperations,
       storage,
+      overage,
     })),
     [
-      { id: 'relay_free_v1', price: '$0', relayMau: '100', deliveryUnits: '100,000', attachmentOperations: '100,000', storage: '1 GB' },
-      { id: 'relay_starter_v1', price: '$99', relayMau: '1,000', deliveryUnits: '500,000', attachmentOperations: '500,000', storage: '10 GB' },
-      { id: 'relay_growth_v1', price: '$299', relayMau: '5,000', deliveryUnits: '2,500,000', attachmentOperations: '2,500,000', storage: '50 GB' },
-      { id: 'relay_business_v1', price: '$899', relayMau: '25,000', deliveryUnits: '12,500,000', attachmentOperations: '12,500,000', storage: '250 GB' },
-      { id: 'relay_enterprise_v1', price: 'Custom', relayMau: 'Negotiated', deliveryUnits: 'Negotiated', attachmentOperations: 'Negotiated', storage: 'Negotiated' },
+      { id: 'relay_free_v1', price: '$0', relayMau: '100', deliveryUnits: '100,000', attachmentOperations: '100,000', storage: '1 GB', overage: null },
+      { id: 'relay_starter_v1', price: '$99', relayMau: '1,000', deliveryUnits: '500,000', attachmentOperations: '500,000', storage: '10 GB', overage: { relayMau: '$0.05 each', delivery: '$55 per million', storage: '$0.50 per GB-month' } },
+      { id: 'relay_growth_v1', price: '$299', relayMau: '5,000', deliveryUnits: '2,500,000', attachmentOperations: '2,500,000', storage: '50 GB', overage: { relayMau: '$0.03 each', delivery: '$55 per million', storage: '$0.50 per GB-month' } },
+      { id: 'relay_business_v1', price: '$899', relayMau: '25,000', deliveryUnits: '12,500,000', attachmentOperations: '12,500,000', storage: '250 GB', overage: { relayMau: '$0.02 each', delivery: '$55 per million', storage: '$0.50 per GB-month' } },
+      { id: 'relay_enterprise_v1', price: 'Custom', relayMau: 'Negotiated', deliveryUnits: 'Negotiated', attachmentOperations: 'Negotiated', storage: 'Negotiated', overage: null },
     ],
   );
   assert.deepEqual(relayDevelopmentEnvironment, {
@@ -32,9 +33,7 @@ test('publishes the exact approved Relay catalog from one data module', () => {
     detail: 'Created automatically for each project. It uses isolated state and credentials, 24-hour default retention, a seven-day retention maximum, and suspension after 30 inactive days.',
   });
   assert.equal(relayMeterDefinitions.length, 4);
-  assert.equal(relayOverages.delivery, '$55 per million delivery units');
-  assert.equal(relayOverages.storage, '$0.50 per GB-month of exact live encrypted storage');
-  assert.equal(relayOverages.attachmentOperations, 'Hard cap; no overage');
+  assert.equal(relayProductionRetention, 'Up to 30 days');
 });
 
 test('keeps the comparison factual, dated, sourced, and explicit about the 5,000-user ambiguity', async () => {
@@ -52,13 +51,13 @@ test('keeps the comparison factual, dated, sourced, and explicit about the 5,000
 
 test('publishes canonical Relay routes with accessible responsive tables', async () => {
   const relay = await source('src/pages/relay/index.astro');
-  const pricing = await source('src/pages/relay/pricing.astro');
+  const pricing = await source('src/pages/pricing.astro');
   const comparison = await source('src/pages/compare/virgil-security.astro');
   assert.match(relay, /canonical="\/relay"/);
   assert.match(relay, /OPEN_E2EE_RELAY_URL/);
   assert.match(relay, /public configuration, not a credential/i);
   assert.match(relay, /do not select a Relay hostname or pair/i);
-  assert.match(pricing, /canonical="\/relay\/pricing"/);
+  assert.match(pricing, /canonical="\/pricing"/);
   assert.match(comparison, /canonical="\/compare\/virgil-security"/);
   for (const page of [pricing, comparison]) {
     /* Every wide table goes through the one component that carries the
@@ -68,7 +67,7 @@ test('publishes canonical Relay routes with accessible responsive tables', async
        past the right edge. */
     assert.match(page, /<TableScroll label="[^"]+">/);
     assert.doesNotMatch(page, /<div class=\{TABLE_SCROLL\}/, 'a table dresses its own scroll box');
-    assert.match(page, /<th scope="col">/);
+    assert.match(page, /<th scope="col"/);
     assert.match(page, /<th scope="row">/);
   }
 

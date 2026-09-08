@@ -10,14 +10,20 @@
  *
  * So this reads the built page rather than the source, and holds four rules:
  *
- *   1. Every Relay plan row carries exactly one action control.
+ *   1. Every Relay plan column or row carries exactly one action control.
  *   2. Every SDK commercial license row carries exactly one action control.
- *   3. Each section leads with one filled action and no more, so a reader who
+ *   3. Each rendering leads with one filled action and no more, so a reader who
  *      scans for weight finds the free start and the entry license.
- *   4. The free plan is the section's filled action.
+ *   4. The free plan is the filled action.
+ *
+ * The Relay plans render twice from one data set: a table of plan columns above
+ * 62rem, and one block per plan below it, with one of the two in the document
+ * at a time. The rules hold on each rendering, and the table and the blocks
+ * open the same routes, or the phone and the desktop sell different things.
  *
  * A count alone would pass a page that put all five buttons in one row, which
- * is why each rule is scoped to a row or a section rather than to the page.
+ * is why each rule is scoped to a column, a row, or a rendering rather than to
+ * the page.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -57,30 +63,62 @@ const licensing = section('licensing');
 if (!plans) failures.push('no section carries id="relay-plans"');
 if (!licensing) failures.push('no section carries id="licensing"');
 
-let rows = [];
-if (plans) {
-  /* One row per plan, taken from the marker the page writes for each. */
-  const markers = [...plans.matchAll(/data-relay-plan="([^"]+)"/g)];
-  rows = markers.map((marker, index) => {
+/** One slice per plan marker in a slice, each running to the next marker. */
+function planSlices(slice, attribute) {
+  const markers = [...slice.matchAll(new RegExp(`${attribute}="([^"]+)"`, 'g'))];
+  return markers.map((marker, index) => {
     const start = marker.index;
-    const end = index + 1 < markers.length ? markers[index + 1].index : plans.length;
-    return { id: marker[1], html: plans.slice(start, end) };
+    const end = index + 1 < markers.length ? markers[index + 1].index : slice.length;
+    return { id: marker[1], html: slice.slice(start, end) };
   });
+}
 
-  if (rows.length < 5) failures.push(`only ${rows.length} Relay plan row(s) on the page`);
+/** The first action's route in a slice, or null. */
+const route = (slice) => slice.match(/<a class="oe-button[^"]*" href="([^"]+)"/)?.[1] ?? null;
+
+let rows = [];
+let blocks = [];
+if (plans) {
+  /* The wide rendering: the table's plan columns, then the Enterprise row. */
+  const compactStart = plans.indexOf('data-relay-plan-compact=');
+  const compactEnd = compactStart === -1 ? -1 : plans.indexOf('</ul>', compactStart);
+  const wide =
+    compactStart === -1 ? plans : plans.slice(0, compactStart) + plans.slice(compactEnd);
+  rows = planSlices(wide, 'data-relay-plan');
+
+  if (rows.length < 5) failures.push(`only ${rows.length} Relay plan column(s) and row(s) on the page`);
 
   for (const row of rows) {
     const found = actions(row.html).all.length;
     if (found !== 1) failures.push(`${row.id} carries ${found} action controls, not one`);
   }
 
-  const filled = actions(plans).filled.length;
-  if (filled !== 1) failures.push(`the Relay plans lead with ${filled} filled actions, not one`);
+  const filled = actions(wide).filled.length;
+  if (filled !== 1) failures.push(`the Relay plan table leads with ${filled} filled actions, not one`);
 
   const free = rows.find((row) => row.id === 'relay_free_v1');
-  if (!free) failures.push('no row is marked relay_free_v1');
+  if (!free) failures.push('no column is marked relay_free_v1');
   else if (actions(free.html).filled.length !== 1) {
-    failures.push('the free plan is not the filled action in its section');
+    failures.push('the free plan is not the filled action in its table');
+  }
+
+  /* The narrow rendering: one block per self-service plan, same routes. */
+  const compact = compactStart === -1 ? '' : plans.slice(compactStart, compactEnd);
+  blocks = planSlices(compact, 'data-relay-plan-compact');
+  if (blocks.length !== rows.length - 1) {
+    failures.push(`${blocks.length} compact plan block(s) against ${rows.length - 1} self-service column(s)`);
+  }
+  for (const block of blocks) {
+    const found = actions(block.html).all.length;
+    if (found !== 1) failures.push(`${block.id} compact block carries ${found} action controls, not one`);
+    const column = rows.find((row) => row.id === block.id);
+    if (column && route(column.html) !== route(block.html)) {
+      failures.push(`${block.id} opens ${route(block.html)} in its block and ${route(column.html)} in its column`);
+    }
+  }
+  const compactFilled = actions(compact).filled.length;
+  if (blocks.length > 0 && compactFilled !== 1) {
+    failures.push(`the compact plan blocks lead with ${compactFilled} filled actions, not one`);
   }
 }
 
@@ -101,7 +139,8 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `Pricing actions passed: ${rows.length} Relay plan rows each carrying one action, ` +
+  `Pricing actions passed: ${rows.length} Relay plan columns and rows each carrying one action, ` +
+    `${blocks.length} compact blocks opening the same routes, ` +
     `${licenseRows} SDK commercial license actions below them, ` +
-    'and one filled action leading each section.',
+    'and one filled action leading each rendering.',
 );
