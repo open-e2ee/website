@@ -43,10 +43,10 @@
   "desktop:/pricing/": {
     "documentWidth": 1440,
     "h1": {
-      "height": 134.4,
+      "height": 67.2,
       "left": 154,
-      "right": 771.7,
-      "width": 617.7
+      "right": 991.5,
+      "width": 837.5
     },
     "tables": [],
     "viewportWidth": 1440
