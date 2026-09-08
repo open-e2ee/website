@@ -86,7 +86,7 @@ test('the free plan is named, from the catalog, before the demo runs', () => {
   const capacity = [
     `${free.relayMau} Relay MAU`,
     `${free.deliveryUnits} delivery units`,
-    `${free.storage} exact live storage`,
+    `${free.storage} storage`,
   ];
   for (const value of capacity) {
     assert.ok(band.includes(value), `the band does not carry the catalog's "${value}"`);

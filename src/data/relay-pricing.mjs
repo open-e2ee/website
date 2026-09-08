@@ -15,9 +15,9 @@ export const relayDevelopmentEnvironment = {
 
 /*
  * The launch overage rates the 2026-08-26 COGS gate approved. Delivery and
- * storage price the same on every paid plan; the excess Relay MAU rate falls
+ * storage price the same on every paid plan; the additional MAU rate falls
  * with the plan. Free has no overage: its caps are hard, and attachment
- * operations are a hard cap on every plan.
+ * uploads are a hard cap on every plan.
  */
 const paidOverage = {
   delivery: '$55 per million',
@@ -30,7 +30,7 @@ export const relayProductionRetention = 'Up to 30 days';
 export const relayPlans = [
   {
     id: 'relay_free_v1',
-    name: 'Free production',
+    name: 'Free',
     monthlyPriceUsd: 0,
     price: '$0',
     relayMau: '100',
@@ -101,11 +101,11 @@ export const relayMeterDefinitions = [
     definition: 'One accepted encrypted envelope or shared-body reference for one destination device. An exact retry with the same stable operation identifier does not charge twice.',
   },
   {
-    name: 'Attachment operation',
-    definition: 'One accepted upload authorization for one stable SDK request identifier. Exact retries do not count again.',
+    name: 'Attachment upload',
+    definition: 'One accepted upload authorization for one stable SDK request identifier. Exact retries do not count again.'
   },
   {
-    name: 'Exact live storage',
-    definition: 'Customer ciphertext plus attachment bytes, integrated from exact byte changes over time. Internal identifiers, indexes, and bookkeeping are not billable bytes.',
+    name: 'Storage',
+    definition: 'Live customer ciphertext plus attachment bytes, integrated from exact byte changes over time. Internal identifiers, indexes, and bookkeeping are not billable bytes.'
   },
 ];
