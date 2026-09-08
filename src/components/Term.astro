@@ -1,0 +1,66 @@
+---
+/*
+ * A label with its definition one hover, focus, or tap away.
+ *
+ * A pricing row is headed by a name the reader may not know. "Relay MAU" is
+ * the meter every plan is sized by, and the page that defines it sits three
+ * screens down. The definition sits here instead, under the label, in a
+ * square box on the raised ground with the popover shadow DESIGN.md reserves
+ * for a surface above the page plane, and its inset ring.
+ *
+ * The trigger is a button, not a span with a title attribute: a title never
+ * reaches a keyboard or a touch screen. `aria-describedby` reads the
+ * definition to a screen reader with the label. Hover and focus show the box
+ * through CSS alone. The script below adds the tap, because iOS Safari does
+ * not focus a button on touch; without it a phone reader has no way in.
+ */
+interface Props {
+  /** The label the row is headed by. */
+  label: string;
+  /** What the label means, as one or two sentences. */
+  definition: string;
+  /** A document-unique id for the definition. */
+  id: string;
+}
+
+const { label, definition, id } = Astro.props;
+
+const TRIGGER =
+  'cursor-help appearance-none border-0 bg-transparent p-0 text-left text-inherit ' +
+  'underline decoration-border-3 decoration-dotted underline-offset-[0.25em]';
+
+const DEFINITION =
+  'invisible absolute left-0 top-full z-10 mt-2 w-[19rem] max-w-[calc(100vw-3rem)] ' +
+  'bg-ground-raised px-4 py-3 text-left font-[family-name:var(--oe-font-sans)] text-[0.875rem] leading-[1.5] font-normal tracking-normal text-text-3 ' +
+  'shadow-[var(--oe-shadow-md),inset_0_0_0_1px_var(--oe-border-1)] ' +
+  'group-hover:visible group-focus-within:visible group-data-[open]:visible';
+---
+
+<span class="group relative inline-block" data-term>
+  <button type="button" class={TRIGGER} aria-describedby={id}>{label}</button>
+  <span role="tooltip" id={id} class={DEFINITION}>{definition}</span>
+</span>
+
+<script>
+  /*
+   * The tap. Hover and focus already show the definition through CSS, so a
+   * pointer and a keyboard need none of this. A touch screen gets the box on a
+   * tap, and loses it on the next tap anywhere, or on Escape.
+   */
+  const terms = [...document.querySelectorAll<HTMLElement>('[data-term]')];
+  const close = () => {
+    for (const term of terms) delete term.dataset.open;
+  };
+  for (const term of terms) {
+    term.querySelector('button')?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const open = 'open' in term.dataset;
+      close();
+      if (!open) term.dataset.open = '';
+    });
+  }
+  document.addEventListener('click', close);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') close();
+  });
+</script>
