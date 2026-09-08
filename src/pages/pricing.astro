@@ -30,9 +30,9 @@ import {
  * The four self-service plans are the columns of one table, and what a plan
  * carries is its rows. A buyer arrives with a size in mind, reads the Relay
  * MAU row first because that is the meter every plan is sized by, and reads
- * down the column that fits it. The rows that differ by plan come first; the
- * rows every plan shares close the table under one heading, described once
- * across the columns rather than ticked four times.
+ * down the column that fits it. The table holds only the rows that differ by
+ * plan. What every plan shares folds under one disclosure below it, described
+ * once rather than ticked four times, and stays out of the way of the choice.
  *
  * The table holds to 62rem. Below that the same rows render as one block per
  * plan, from the same data, and the other rendering leaves the document.
@@ -55,8 +55,6 @@ const HEAD_CELL = `${PLAN_HEAD} border-t-[3px] px-4 pt-4 pb-6 font-normal`;
 const ROW_HEAD = 'rule-t pr-4 font-medium text-text-1';
 const ROW_UNIT = `${METADATA} mt-1 block text-text-3`;
 const CELL = 'rule-t px-4 font-[family-name:var(--oe-metadata-font-family)] tabular-nums';
-const GROUP_HEAD = `${METADATA} rule-t pt-8 pb-2 text-text-3`;
-const INCLUDED_CELL = 'rule-t px-4 py-3 text-text-3';
 
 const COMPACT = 'm-0 grid list-none grid-cols-2 gap-x-8 p-0 min-[62rem]:hidden max-[44rem]:grid-cols-1';
 
@@ -65,7 +63,18 @@ const COMPACT_PLAN = 'py-6 [&>*+*]:mt-3';
 const COMPACT_ROWS = 'm-0 w-full text-[0.9375rem] [&>div]:flex [&>div]:justify-between [&>div]:gap-4 [&>div]:rule-t [&>div]:py-2';
 const COMPACT_VALUE = 'm-0 text-right font-[family-name:var(--oe-metadata-font-family)] tabular-nums';
 
-const COMPACT_INCLUDED = 'rule-t pt-6 min-[62rem]:hidden [&>dl]:mt-4';
+
+/*
+ * What every plan carries sits under one native disclosure, closed until the
+ * reader asks. The browser owns the open state and the keyboard. The summary
+ * is a row in the table's voice with a drawn chevron in place of the
+ * disclosure triangle, so one control shows one affordance.
+ */
+const INCLUDED = 'group mt-8 rule-t rule-b';
+const INCLUDED_SUMMARY =
+  `${METADATA} flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-text-3 hover:text-text-1 group-open:text-text-1 [&::-webkit-details-marker]:hidden`;
+const INCLUDED_MARK = 'size-3 shrink-0 group-open:rotate-180';
+const INCLUDED_ROWS = `${DEFINITION_ROWS} pb-2`;
 
 /*
  * The Development environment and the licenses are ruled rows: a name and
@@ -116,6 +125,9 @@ const TIER_BODY = 'flex max-w-[58ch] flex-col items-start gap-3 text-text-3';
  * itself in the query so the Console can offer that plan first once the
  * project exists. The highlighted plan is the filled action; the others,
  * Free among them, are secondary, and every one of them opens the same route.
+ * A paid plan's action carries the plan's name and nothing else; "Start with
+ * Starter" stuttered, and the name under the name already says what pressing
+ * it picks. Free keeps "Start free", the action the rest of the site uses.
  */
 const RELAY_PROJECT = startAction.href;
 
@@ -128,7 +140,7 @@ const enterprise = relayPlans.find((plan) => plan.monthlyPriceUsd === null);
 if (!enterprise) throw new Error('pricing.astro: the Relay catalog has no negotiated plan');
 
 const startHref = (plan: Plan) => (plan.id === FREE ? RELAY_PROJECT : `${RELAY_PROJECT}?plan=${plan.id}`);
-const startLabel = (plan: Plan) => (plan.id === FREE ? 'Start free' : `Start with ${plan.name}`);
+const startLabel = (plan: Plan) => (plan.id === FREE ? 'Start free' : plan.name);
 const planMark = (plan: Plan) => (plan.id === HIGHLIGHT ? HIGHLIGHT_LABEL : '');
 const startClasses = (plan: Plan) => ['oe-button', 'oe-button-full', plan.id !== HIGHLIGHT && 'oe-button-secondary'];
 
@@ -199,7 +211,8 @@ const compactValueClasses = (row: Row) => [COMPACT_VALUE, row.lead ? 'text-[1.06
 
 /*
  * What every plan carries, in the words the Relay page uses for it. These
- * rows do not differ by plan, so each is one description across the columns.
+ * rows do not differ by plan, so each is one description, and the whole
+ * list folds under one disclosure rather than taking the table's space.
  */
 const included: { label: string; detail: string }[] = [
   { label: 'Protocol features', detail: 'Groups, attachments, sealed sender, multi-device delivery, and push.' },
@@ -276,12 +289,6 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
                 </tr>
               ))}
             </tbody>
-            <tbody>
-              <tr><th scope="rowgroup" colspan={selfServe.length + 1} class={GROUP_HEAD}>{INCLUDED_HEADING}</th></tr>
-              {included.map((item) => (
-                <tr><th scope="row" class:list={[ROW_HEAD, 'py-3']}>{item.label}</th><td colspan={selfServe.length} class={INCLUDED_CELL}>{item.detail}</td></tr>
-              ))}
-            </tbody>
           </table>
         </TableScroll>
       </div>
@@ -304,10 +311,13 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
           </li>
         ))}
       </ul>
-      <div class={COMPACT_INCLUDED}>
-        <p class={LABEL}>{INCLUDED_HEADING}</p>
-        <dl class={DEFINITION_ROWS}>{included.map((item) => <div><dt>{item.label}</dt><dd>{item.detail}</dd></div>)}</dl>
-      </div>
+      <details class={INCLUDED} data-included>
+        <summary class={INCLUDED_SUMMARY}>
+          <span>{INCLUDED_HEADING}</span>
+          <svg viewBox="0 0 12 12" aria-hidden="true" class={INCLUDED_MARK}><path d="M2 4.5 6 8.5l4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"></path></svg>
+        </summary>
+        <dl class={INCLUDED_ROWS}>{included.map((item) => <div><dt>{item.label}</dt><dd>{item.detail}</dd></div>)}</dl>
+      </details>
       <div class={ENTERPRISE_BAND} data-relay-plan={enterprise.id}>
         <div class={TIER_NAME}>
           <h3 class={TIER_HEADING}>{enterprise.name}</h3>

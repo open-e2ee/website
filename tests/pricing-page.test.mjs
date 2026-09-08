@@ -110,12 +110,11 @@ function cells(label) {
   return row.cells.map((cell) => cell.text);
 }
 
-/** The table's second body: what every plan carries. */
-const includedBody = (() => {
-  const first = table.indexOf('</tbody>');
-  const start = table.indexOf('<tbody', first);
-  assert.ok(start !== -1, 'the table has no second body');
-  return table.slice(start, table.indexOf('</tbody>', start));
+/** The disclosure under the plans: what every plan carries. */
+const included = (() => {
+  const start = built.indexOf('<details class="');
+  assert.ok(start !== -1, 'the page has no disclosure');
+  return built.slice(start, built.indexOf('</details>', start) + '</details>'.length);
 })();
 
 test('the self-service plans are the columns of one table, in catalog order', () => {
@@ -219,29 +218,63 @@ test('every row that differs by plan is headed by a name that defines itself', (
   assert.equal((built.match(/Term\.astro_astro_type_script/g) ?? []).length, 1, 'the tap script is on the page once');
 });
 
-test('what every plan carries closes the table under one heading', () => {
-  const heading = includedBody.match(/<th scope="rowgroup" colspan="(\d+)" class="[^"]*">([^<]+)<\/th>/);
-  assert.ok(heading, 'the second body has no group heading');
-  assert.equal(Number(heading[1]), selfServe.length + 1);
-  assert.equal(heading[2], 'Included on every plan');
+test('what every plan carries folds under one disclosure below the plans', () => {
+  /* The table holds only the rows that differ by plan: one body, and no
+   * row group for the shared rows. */
+  assert.equal((table.match(/<tbody/g) ?? []).length, 1, 'the table has more than one body');
+  assert.doesNotMatch(table, /rowgroup/);
+  assert.doesNotMatch(table, /Included on every plan/);
 
-  /* These rows do not differ by plan, so each is one description across the
-   * plan columns rather than four ticks, in the words the Relay page uses. */
-  const rows = [...includedBody.matchAll(/<th scope="row" class="[^"]*">([^<]+)<\/th><td colspan="(\d+)" class="[^"]*">([^<]+)<\/td>/g)].map((m) => ({ label: m[1], span: Number(m[2]), detail: m[3] }));
+  /* One native disclosure, closed until the reader opens it, after the plan
+   * renderings and before the Enterprise band, and never hidden by width. */
+  assert.equal((built.match(/<details /g) ?? []).length, 1, 'the page has more than one disclosure');
+  assert.equal((built.match(/Included on every plan/g) ?? []).length, 1, 'the heading is on the page more than once');
+  const open = built.indexOf('<details class="');
+  assert.ok(open > built.lastIndexOf('data-relay-plan-compact='), 'the disclosure is above the plan blocks');
+  assert.ok(open < built.indexOf(`data-relay-plan="${enterprise.id}"`), 'the disclosure is below the Enterprise band');
+  const attributes = included.slice(0, included.indexOf('>'));
+  assert.doesNotMatch(attributes, /\bopen\b/, 'the disclosure ships open');
+  assert.match(attributes, /\brule-t\b/);
+  assert.doesNotMatch(attributes, /hidden/);
+
+  /* The summary is a control: its own marker is drawn, so the browser's
+   * triangle is gone, and it names what it opens. */
+  const summary = included.match(/<summary class="([^"]*)">([\s\S]*?)<\/summary>/);
+  assert.ok(summary, 'the disclosure has no summary');
+  assert.match(summary[1], /\bcursor-pointer\b/);
+  assert.match(summary[1], /\blist-none\b/);
+  /* Astro escapes the `&` of the arbitrary variant in the attribute; the
+   * browser decodes it, and the selector matches. */
+  assert.match(summary[1], /\[&(?:amp;)?::-webkit-details-marker\]:hidden/);
+  assert.match(summary[1], /\bgroup-open:/);
+  assert.match(summary[2], /<span>Included on every plan<\/span>/);
+  assert.match(summary[2], /<svg [^>]*aria-hidden="true"/);
+
+  /* These rows do not differ by plan, so each is one description, in the
+   * words the Relay page uses. */
+  const rows = [...included.matchAll(/<dt>([^<]+)<\/dt><dd>([^<]+)<\/dd>/g)].map((m) => ({ label: m[1], detail: m[2] }));
   assert.deepEqual(
     rows.map((row) => row.label),
     ['Protocol features', 'Delivery', 'Groups and attachments', 'Operations', 'Development environment'],
   );
-  for (const row of rows) assert.equal(row.span, selfServe.length, `${row.label} does not span the plan columns`);
   assert.equal(rows.find((row) => row.label === 'Delivery').detail, 'Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.');
   assert.equal(rows.find((row) => row.label === 'Groups and attachments').detail, 'Bounded group fan-out and private encrypted attachment storage.');
-  assert.doesNotMatch(includedBody, /bg-ground-panel/, 'the tint marks the rows that differ by plan, and these do not');
+  assert.doesNotMatch(included, /bg-ground-panel/, 'the tint marks the rows that differ by plan, and these do not');
+});
 
-  /* The narrow rendering carries the group once under the plan blocks, not
-   * once per plan. */
-  const compact = built.slice(built.indexOf('data-relay-plan-compact='), built.indexOf(`data-relay-plan="${enterprise.id}"`));
-  assert.equal((compact.match(/Included on every plan/g) ?? []).length, 1);
-  assert.match(source, /const COMPACT_INCLUDED = '[^']*\bmin-\[62rem\]:hidden\b/);
+test('a paid plan\'s action carries its name and nothing else', () => {
+  for (const plan of selfServe) {
+    const expected = plan.id === 'relay_free_v1' ? 'Start free' : plan.name;
+    const labels = [...built.matchAll(new RegExp(`href="[^"]*plan=${plan.id}"[^>]*>([^<]+)</a>`, 'g'))].map((m) => m[1]);
+    if (plan.id !== 'relay_free_v1') {
+      assert.equal(labels.length, 2, `${plan.name} does not have one action per rendering`);
+      for (const label of labels) assert.equal(label, expected);
+    }
+  }
+  assert.doesNotMatch(built, /Start with /, 'an action still carries the "Start with" prefix');
+  /* The header carries its own "Start free"; the count is the plan section's. */
+  const plans = built.slice(built.indexOf('id="relay-plans"'), built.indexOf(`data-relay-plan="${enterprise.id}"`));
+  assert.equal((plans.match(/>Start free<\/a>/g) ?? []).length, 2, 'Free does not open with "Start free" in each rendering');
 });
 
 test('one plan is marked, and it alone carries the filled action', () => {
