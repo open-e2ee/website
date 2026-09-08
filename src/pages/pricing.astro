@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Icon, { type IconName } from '../components/Icon.astro';
 import Term from '../components/Term.astro';
+import PlanValue from '../components/PlanValue.astro';
 import {
   relayDevelopmentEnvironment,
   relayMeterDefinitions,
@@ -10,6 +11,7 @@ import {
 } from '../data/relay-pricing.mjs';
 import { startupTier, tiers } from '../data/pricing.mjs';
 import { startAction, startPromise } from '../lib/site-navigation';
+import { INCLUDED, NO_OVERAGE } from '../lib/relay-plan-values';
 import {
   ACTIONS,
   CTA_SUBLABEL,
@@ -28,10 +30,12 @@ import {
  * The four self-service plans are the columns of one table, and what a plan
  * carries is its rows. A buyer arrives with a size in mind, reads the Relay
  * MAU row first because that is the meter every plan is sized by, and reads
- * down the column that fits it. The table holds only the rows that differ by
- * plan. What every plan shares opens from one control in the table's corner
- * cell, level with the plan actions, described once rather than ticked four
- * times, and stays out of the way of the choice.
+ * down the column that fits it. The table holds the rows that differ by plan
+ * and one row every plan shares, the SDK license, because a buyer with a
+ * proprietary application asks whether the SDK's license reaches it before
+ * asking how many users a plan carries. What else every plan shares opens from
+ * one control in the head, described once rather than ticked four times, and
+ * stays out of the way of the choice.
  *
  * The plans are the page. There is no hero above them: the head over the table
  * is the page's opening, a label, the heading, and a lead that says what the
@@ -233,12 +237,15 @@ const ENTERPRISE_ACTION = {
  * which the same note says once; the price under each name already reads
  * "per month". Free has no overage, so its overage cell reads as the cap it is.
  * Retention is the same on every plan, so it sits with what every plan carries.
+ *
+ * The last row is the one every plan shares, the founder's 2026-09-08 call:
+ * the project commercial SDK license in section 4 of the Relay service terms.
+ * The meters do not answer whether the SDK's AGPL reaches a proprietary
+ * application, and that is the question a buyer asks before sizing. Every plan
+ * carries the license, Free included, so every cell is the check, and the
+ * definition repeats the grant's limits so the row promises nothing the terms
+ * do not.
  */
-/* Free has no overage, so its cell is the em dash DESIGN.md gives a price that
- * does not exist. A screen reader hears the words instead. */
-const NO_OVERAGE = '\u2014';
-const NO_OVERAGE_LABEL = 'No overage';
-
 const define = (name: string) => {
   const meter = relayMeterDefinitions.find((entry) => entry.name === name);
   if (!meter) throw new Error(`pricing.astro: the catalog defines no meter named ${name}`);
@@ -257,6 +264,12 @@ const rows: Row[] = [
   { label: 'Message Delivery', unit: 'Delivery Units', definition: define('Delivery unit'), value: (plan) => plan.deliveryUnits },
   { label: 'Encrypted Attachments', unit: 'Attachment Uploads', definition: define('Attachment upload'), value: (plan) => plan.attachmentOperations },
   { label: 'Encrypted Storage', definition: define('Storage'), value: (plan) => plan.storage },
+  {
+    label: 'SDK Commercial License',
+    definition:
+      'Use @open-e2ee/signal-protocol-sdk in one proprietary application that connects to the project, for as long as the project is active. Every plan carries it, Free included. It grants no self-hosting right and no right to redistribute the SDK.',
+    value: () => INCLUDED,
+  },
 ];
 
 /* The compact list has one line per row, so the tail joins the label. */
@@ -383,7 +396,7 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
                   <Term id={rowId(row, 'table')} label={row.label} tail={row.tail} definition={row.definition} />
                   {row.unit && <span class={ROW_UNIT}>{row.unit}</span>}
                 </th>
-                {selfServe.map((plan) => <td class:list={cellClasses(row, index, plan)}>{row.value(plan) === NO_OVERAGE ? <><span aria-hidden="true">{NO_OVERAGE}</span><span class="sr-only">{NO_OVERAGE_LABEL}</span></> : row.value(plan)}</td>)}
+                {selfServe.map((plan) => <td class:list={cellClasses(row, index, plan)}><PlanValue value={row.value(plan)} /></td>)}
               </tr>
             ))}
           </tbody>
@@ -401,7 +414,7 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
               {rows.map((row) => (
                 <div class:list={compactRowClasses(row)}>
                   <dt class={compactLabelClasses(row)}><Term id={rowId(row, plan.id)} label={compactLabel(row)} definition={row.definition} /></dt>
-                  <dd class:list={compactValueClasses(row)}>{row.value(plan) === NO_OVERAGE ? <><span aria-hidden="true">{NO_OVERAGE}</span><span class="sr-only">{NO_OVERAGE_LABEL}</span></> : row.value(plan)}</dd>
+                  <dd class:list={compactValueClasses(row)}><PlanValue value={row.value(plan)} /></dd>
                 </div>
               ))}
             </dl>
