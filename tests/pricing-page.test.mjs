@@ -163,7 +163,7 @@ test('Relay MAU leads the rows, its overage follows it, and every cell comes fro
   const unit = (label) => capacityRows.find((row) => row.label === label).head.match(/<span class="[^"]*">([^<]*)<\/span>\s*$/)?.[1] ?? null;
   assert.equal(unit('Relay MAU'), 'Active accounts');
   assert.equal(unit('Message delivery'), 'Delivery units');
-  assert.equal(unit('Encrypted attachments'), 'Uploads');
+  assert.equal(unit('Encrypted attachments'), 'Attachment uploads');
   assert.equal(unit('Encrypted storage'), null, 'a value with its own unit needs no unit line');
 
   /* The leading row is read first because it is set apart: its values are the

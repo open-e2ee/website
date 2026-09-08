@@ -174,7 +174,7 @@ const rows: Row[] = [
     value: (plan) => plan.overage?.relayMau ?? HARD_CAP,
   },
   { label: 'Message delivery', unit: 'Delivery units', definition: define('Delivery unit'), value: (plan) => plan.deliveryUnits },
-  { label: 'Encrypted attachments', unit: 'Uploads', definition: define('Attachment upload'), value: (plan) => plan.attachmentOperations },
+  { label: 'Encrypted attachments', unit: 'Attachment uploads', definition: define('Attachment upload'), value: (plan) => plan.attachmentOperations },
   { label: 'Encrypted storage', definition: define('Storage'), value: (plan) => plan.storage },
   {
     label: 'Ciphertext retention',
