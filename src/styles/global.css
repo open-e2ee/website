@@ -59,6 +59,15 @@
   }
 
   /*
+   * A modal dialog makes the page behind it inert, and the page stops
+   * scrolling with it: a wheel over the dialog would otherwise move the page
+   * the reader can no longer reach.
+   */
+  body:has(dialog:modal) {
+    overflow: hidden;
+  }
+
+  /*
    * The size and the leading are shared presentation measures. The website,
    * the console, and the documentation body read one answer, so a change to
    * the density reaches all three rather than one.

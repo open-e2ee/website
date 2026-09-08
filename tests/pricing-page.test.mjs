@@ -111,11 +111,11 @@ function cells(label) {
   return row.cells.map((cell) => cell.text);
 }
 
-/** The disclosure under the plans: what every plan carries. */
+/** The dialog under the plans: what every plan carries. */
 const included = (() => {
-  const start = built.indexOf('<details class="');
-  assert.ok(start !== -1, 'the page has no disclosure');
-  return built.slice(start, built.indexOf('</details>', start) + '</details>'.length);
+  const start = built.indexOf('<dialog ');
+  assert.ok(start !== -1, 'the page has no dialog');
+  return built.slice(start, built.indexOf('</dialog>', start) + '</dialog>'.length);
 })();
 
 test('the self-service plans are the columns of one table, in catalog order', () => {
@@ -238,55 +238,74 @@ test('every row that differs by plan is headed by a name that defines itself', (
   assert.doesNotMatch(wrapper, /overflow|contain:/, 'the table sits inside a clipping box');
 });
 
-test('what every plan carries folds under one disclosure below the plans', () => {
+test('what every plan carries opens in one dialog of cards below the plans', () => {
   /* The table holds only the rows that differ by plan: one body, and no
    * row group for the shared rows. */
   assert.equal((table.match(/<tbody/g) ?? []).length, 1, 'the table has more than one body');
   assert.doesNotMatch(table, /rowgroup/);
   assert.doesNotMatch(table, /Included on every plan/);
+  assert.doesNotMatch(built, /<details[ >]/, 'the page still has a disclosure');
 
-  /* One native disclosure, closed until the reader opens it, after the plan
-   * renderings and before the Enterprise band, and never hidden by width. */
-  assert.equal((built.match(/<details /g) ?? []).length, 1, 'the page has more than one disclosure');
-  assert.equal((built.match(/Included on every plan/g) ?? []).length, 1, 'the heading is on the page more than once');
-  const open = built.indexOf('<details class="');
-  assert.ok(open > built.lastIndexOf('data-relay-plan-compact='), 'the disclosure is above the plan blocks');
-  assert.ok(open < built.indexOf(`data-relay-plan="${enterprise.id}"`), 'the disclosure is below the Enterprise band');
+  /* One trigger, a row in the table's voice, after the plan renderings and
+   * before the Enterprise band, and never hidden by width. It says it opens a
+   * dialog, and its mark is drawn. */
+  const triggers = [...built.matchAll(/<button type="button" class="([^"]*)" aria-haspopup="dialog" data-included-trigger>([\s\S]*?)<\/button>/g)];
+  assert.equal(triggers.length, 1, 'the page does not have one trigger');
+  const [trigger] = triggers;
+  assert.ok(trigger.index > built.lastIndexOf('data-relay-plan-compact='), 'the trigger is above the plan blocks');
+  assert.ok(trigger.index < built.indexOf(`data-relay-plan="${enterprise.id}"`), 'the trigger is below the Enterprise band');
+  assert.match(trigger[1], /\brule-t\b/);
+  assert.match(trigger[1], /\brule-b\b/);
+  assert.match(trigger[1], /\bw-full\b/);
+  assert.match(trigger[1], /\bcursor-pointer\b/);
+  assert.doesNotMatch(trigger[1], /hidden/);
+  assert.match(trigger[2], /<span>Included on every plan<\/span>/);
+  assert.match(trigger[2], /<svg [^>]*aria-hidden="true"/);
+
+  /* The dialog is closed until asked, names itself by its heading, and is the
+   * one surface above the page plane, so it carries the popover shadow with
+   * DESIGN.md's inset ring, on the raised ground, behind a clear backdrop:
+   * overlap occludes and never blends, so there is no half-transparent scrim. */
+  assert.equal((built.match(/<dialog /g) ?? []).length, 1, 'the page does not have one dialog');
   const attributes = included.slice(0, included.indexOf('>'));
-  assert.doesNotMatch(attributes, /\bopen\b/, 'the disclosure ships open');
-  assert.match(attributes, /\brule-t\b/);
-  assert.doesNotMatch(attributes, /hidden/);
+  assert.doesNotMatch(attributes, /\bopen\b/, 'the dialog ships open');
+  const labelId = attributes.match(/aria-labelledby="([^"]+)"/)?.[1];
+  assert.ok(labelId, 'the dialog does not name itself by its heading');
+  assert.match(included, new RegExp(`<h2 id="${labelId}" class="[^"]*">Included on every plan</h2>`));
+  const classes = attributes.match(/class="([^"]*)"/)[1];
+  assert.match(classes, /shadow-\[var\(--oe-shadow-md\),inset_0_0_0_1px_var\(--oe-border-1\)\]/);
+  assert.match(classes, /\bbg-ground-raised\b/);
+  assert.match(classes, /\bbackdrop:bg-transparent\b/);
+  assert.doesNotMatch(classes, /rounded|backdrop:bg-black|backdrop:backdrop-blur|\/\d\d\b/);
+  assert.equal((built.match(/Included on every plan/g) ?? []).length, 2, 'the heading is on the page other than on the trigger and in the dialog');
 
-  /* The summary is a control: its own marker is drawn, so the browser's
-   * triangle is gone, and it names what it opens. */
-  const summary = included.match(/<summary class="([^"]*)">([\s\S]*?)<\/summary>/);
-  assert.ok(summary, 'the disclosure has no summary');
-  assert.match(summary[1], /\bcursor-pointer\b/);
-  assert.match(summary[1], /\blist-none\b/);
-  /* Astro escapes the `&` of the arbitrary variant in the attribute; the
-   * browser decodes it, and the selector matches. */
-  assert.match(summary[1], /\[&(?:amp;)?::-webkit-details-marker\]:hidden/);
-  assert.match(summary[1], /\bgroup-open:/);
-  assert.match(summary[2], /<span>Included on every plan<\/span>/);
-  assert.match(summary[2], /<svg [^>]*aria-hidden="true"/);
+  /* One close control in the design system's icon button, with a name a
+   * screen reader can say, and the one page script that opens and closes. */
+  assert.match(included, /<button type="button" class="oe-icon-button" aria-label="Close" data-included-close>/);
+  assert.equal((built.match(/pricing\.astro_astro_type_script/g) ?? []).length, 1, 'the dialog script is not on the page once');
 
-  /* These rows do not differ by plan, so each is one description, in the
-   * words the Relay page uses. */
-  const rows = [...included.matchAll(/<dt>([^<]+)<\/dt><dd>([^<]+)<\/dd>/g)].map((m) => ({ label: m[1], detail: m[2] }));
+  /* These do not differ by plan, so each is one card, in the words the Relay
+   * page uses: a hairline on the panel ground with a term over what it means.
+   * They are not tiers, so none is a heading. */
+  const cards = [...included.matchAll(/<div class="([^"]*)"><dt class="[^"]*">([^<]+)<\/dt><dd class="[^"]*">([^<]+)<\/dd><\/div>/g)].map((m) => ({ classes: m[1], label: m[2], detail: m[3] }));
+  assert.doesNotMatch(included, /<h3/, 'a card carries a tier heading');
   assert.deepEqual(
-    rows.map((row) => row.label),
+    cards.map((card) => card.label),
     ['Protocol features', 'Delivery', 'Groups and attachments', 'Ciphertext retention', 'Operations', 'Development environment'],
   );
-  assert.equal(rows.find((row) => row.label === 'Delivery').detail, 'Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.');
-  assert.equal(rows.find((row) => row.label === 'Groups and attachments').detail, 'Bounded group fan-out and private encrypted attachment storage.');
-  /* Retention is the same on every plan, so it is one description here and
-   * not a row of one repeated figure, and the figure is the catalog's. */
+  for (const card of cards) {
+    assert.match(card.classes, /\brule\b/, `${card.label} is not a hairline card`);
+    assert.match(card.classes, /\bbg-ground-panel\b/, `${card.label} is not on the panel ground`);
+  }
+  assert.equal(cards.find((card) => card.label === 'Delivery').detail, 'Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.');
+  assert.equal(cards.find((card) => card.label === 'Groups and attachments').detail, 'Bounded group fan-out and private encrypted attachment storage.');
+  /* Retention is the same on every plan, so it is one card here and not a
+   * row of one repeated figure, and the figure is the catalog's. */
   assert.equal(
-    rows.find((row) => row.label === 'Ciphertext retention').detail,
+    cards.find((card) => card.label === 'Ciphertext retention').detail,
     `${relayProductionRetention} in device mailboxes and attachment storage before ciphertext expires. A project can set a shorter retention.`,
   );
   assert.doesNotMatch(built.slice(built.indexOf('<table'), built.indexOf('</table>')), /retention/i, 'retention is still a row of the plan table');
-  assert.doesNotMatch(included, /bg-ground-panel/, 'the tint marks the rows that differ by plan, and these do not');
 });
 
 test('a paid plan\'s action carries its name and nothing else', () => {
