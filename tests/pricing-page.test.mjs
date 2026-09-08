@@ -8,7 +8,7 @@
  *
  * This file asserts the shape the page keeps now: the self-service plans are
  * the columns of one table, in catalog order, priced larger than they are
- * named; Relay MAU is the first row and its overage the second, because a
+ * named; monthly active users are the first row and its overage the second, because a
  * buyer sizes a plan by it; every row that differs by plan is headed by a name
  * that defines itself on hover; what every plan carries closes the table under
  * one heading; one plan is marked with a tinted, padded column and carries the
@@ -92,6 +92,7 @@ const capacityRows = (() => {
   const body = table.slice(start, table.indexOf('</tbody>', start));
   return [...body.matchAll(/<tr>(.*?)<\/tr>/gs)].map(([, row]) => {
     const head = row.slice(0, row.indexOf('</th>'));
+    const headClasses = head.match(/^<th scope="row" class="([^"]*)"/)?.[1] ?? '';
     const label = head.match(/>([^<]+)<\/button>/)?.[1] ?? null;
     /* A value cell carries classes and no markup. The class attribute holds
      * no `>`, so a bounded match is safe here. */
@@ -99,7 +100,7 @@ const capacityRows = (() => {
       classes: m[1],
       text: m[2],
     }));
-    return { head, label, cells };
+    return { head, headClasses, label, cells };
   });
 })();
 
@@ -143,35 +144,47 @@ test('the self-service plans are the columns of one table, in catalog order', ()
   assert.doesNotMatch(source, /<h3[^>]*>Starter</);
 });
 
-test('Relay MAU leads the rows, its overage follows it, and every cell comes from the catalog', () => {
-  /* The founder's 2026-09-08 call: Relay MAU is the meter a buyer sizes a plan
-   * by, so it is the first row, and the price of one more sits directly under
-   * it. The rest are named by what the plan provides, and the meter that
-   * counts each one is the unit under its name. */
+test('monthly active users lead the rows, their overage follows, and every cell comes from the catalog', () => {
+  /* The founder's 2026-09-08 call: monthly active users are the count a buyer
+   * sizes a plan by, so they are the first row under the name every buyer
+   * knows, with the meter that counts them as the unit line, and the price of
+   * one more sits directly under it. Every row is named by what the plan
+   * provides, and the meter that counts it is the unit under its name.
+   * Retention is the same on every plan, so it is not a row. */
   assert.deepEqual(
     capacityRows.map((row) => row.label),
-    ['Relay MAU', 'Additional MAU', 'Message delivery', 'Encrypted attachments', 'Encrypted storage', 'Ciphertext retention'],
+    ['Monthly active users (MAU)', 'Additional MAU', 'Message delivery', 'Encrypted attachments', 'Encrypted storage'],
   );
-  assert.deepEqual(cells('Relay MAU'), selfServe.map((plan) => plan.relayMau));
+  assert.deepEqual(cells('Monthly active users (MAU)'), selfServe.map((plan) => plan.relayMau));
   assert.deepEqual(cells('Additional MAU'), selfServe.map((plan) => plan.overage?.relayMau ?? 'Hard cap'));
   assert.deepEqual(cells('Message delivery'), selfServe.map((plan) => plan.deliveryUnits));
   assert.deepEqual(cells('Encrypted attachments'), selfServe.map((plan) => plan.attachmentOperations));
   assert.deepEqual(cells('Encrypted storage'), selfServe.map((plan) => plan.storage));
-  assert.deepEqual(cells('Ciphertext retention'), selfServe.map(() => relayProductionRetention));
 
   const unit = (label) => capacityRows.find((row) => row.label === label).head.match(/<span class="[^"]*">([^<]*)<\/span>\s*$/)?.[1] ?? null;
-  assert.equal(unit('Relay MAU'), 'Active accounts');
+  assert.equal(unit('Monthly active users (MAU)'), 'Relay MAU');
   assert.equal(unit('Message delivery'), 'Delivery units');
   assert.equal(unit('Encrypted attachments'), 'Attachment uploads');
   assert.equal(unit('Encrypted storage'), null, 'a value with its own unit needs no unit line');
 
-  /* The leading row is read first because it is set apart: its values are the
-   * first-step text at a larger size, where every other value recedes. */
-  for (const cell of capacityRows[0].cells) {
+  /* The leading row is the one a buyer decides by, so it is set apart by size
+   * and room and not by color: its name is a step up from the other names, its
+   * values are a step up again in the price's weight, and it has more space
+   * above and below it than any other row. Every other value recedes. */
+  const lead = capacityRows[0];
+  assert.match(lead.headClasses, /\btext-\[1\.0625rem\]/);
+  assert.match(lead.headClasses, /\bpt-5\b/);
+  for (const cell of lead.cells) {
     assert.match(cell.classes, /\btext-text-1\b/);
-    assert.match(cell.classes, /\btext-\[1\.0625rem\]/);
+    assert.match(cell.classes, /\btext-\[1\.375rem\]/);
+    assert.match(cell.classes, /\bfont-medium\b/);
+    assert.match(cell.classes, /\bpt-5\b/);
+    assert.doesNotMatch(cell.classes, /\btext-\[var\(--oe-sealed\)\]/, 'the lead row does not borrow the accent');
   }
-  for (const row of capacityRows.slice(1)) for (const cell of row.cells) assert.match(cell.classes, /\btext-text-3\b/);
+  for (const row of capacityRows.slice(1)) {
+    assert.doesNotMatch(row.headClasses, /\btext-\[1\.0625rem\]/);
+    for (const cell of row.cells) assert.match(cell.classes, /\btext-text-3\b/);
+  }
 
   /* Delivery and storage overage price the same on every paid plan, so they
    * are one sentence in the note under the table and not two rows of one
@@ -193,7 +206,7 @@ test('every row that differs by plan is headed by a name that defines itself', (
    * hover and focus by CSS and on a tap by the one script the component
    * ships, and the ids that bind them are unique on the page. */
   const define = (name) => relayMeterDefinitions.find((meter) => meter.name === name).definition;
-  const expected = { 'Relay MAU': define('Relay MAU'), 'Message delivery': define('Delivery unit'), 'Encrypted attachments': define('Attachment upload'), 'Encrypted storage': define('Storage') };
+  const expected = { 'Monthly active users (MAU)': define('Relay MAU'), 'Message delivery': define('Delivery unit'), 'Encrypted attachments': define('Attachment upload'), 'Encrypted storage': define('Storage') };
   for (const row of capacityRows) {
     const trigger = row.head.match(/<button type="button" class="([^"]*)" aria-describedby="([^"]+)">([^<]+)<\/button>/);
     assert.ok(trigger, `${row.label} is not a button that describes itself`);
@@ -262,10 +275,17 @@ test('what every plan carries folds under one disclosure below the plans', () =>
   const rows = [...included.matchAll(/<dt>([^<]+)<\/dt><dd>([^<]+)<\/dd>/g)].map((m) => ({ label: m[1], detail: m[2] }));
   assert.deepEqual(
     rows.map((row) => row.label),
-    ['Protocol features', 'Delivery', 'Groups and attachments', 'Operations', 'Development environment'],
+    ['Protocol features', 'Delivery', 'Groups and attachments', 'Ciphertext retention', 'Operations', 'Development environment'],
   );
   assert.equal(rows.find((row) => row.label === 'Delivery').detail, 'Durable encrypted device mailboxes, pull, acknowledgment, expiry, and multi-device fan-out.');
   assert.equal(rows.find((row) => row.label === 'Groups and attachments').detail, 'Bounded group fan-out and private encrypted attachment storage.');
+  /* Retention is the same on every plan, so it is one description here and
+   * not a row of one repeated figure, and the figure is the catalog's. */
+  assert.equal(
+    rows.find((row) => row.label === 'Ciphertext retention').detail,
+    `${relayProductionRetention} in device mailboxes and attachment storage before ciphertext expires. A project can set a shorter retention.`,
+  );
+  assert.doesNotMatch(built.slice(built.indexOf('<table'), built.indexOf('</table>')), /retention/i, 'retention is still a row of the plan table');
   assert.doesNotMatch(included, /bg-ground-panel/, 'the tint marks the rows that differ by plan, and these do not');
 });
 
@@ -318,7 +338,7 @@ test('one plan is marked, and it alone carries the filled action', () => {
   }
   /* The last row that differs by plan closes the tint with room under it. */
   for (const cell of capacityRows.at(-1).cells) assert.match(cell.classes, /\bpb-6\b/);
-  for (const cell of capacityRows[0].cells) assert.match(cell.classes, /\bpt-4\b/);
+  for (const cell of capacityRows[0].cells) assert.match(cell.classes, /\bpt-5\b/, "the lead row does not open the tint with room under the head");
 
   /* The narrow rendering marks the same plan the same way. */
   for (const plan of selfServe) {
