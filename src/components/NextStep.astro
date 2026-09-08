@@ -16,8 +16,8 @@
  * so this file names no URL of its own. The words are the ones `/relay`
  * carries.
  */
-import { ACTIONS, CTA_PRIMARY, CTA_SUBLABEL, LABEL, NEXT_STEP } from '../lib/recipes';
-import { startAction } from '../lib/site-navigation';
+import { ACTIONS, CTA_SUBLABEL, LABEL, NEXT_STEP } from '../lib/recipes';
+import { startAction, startPromise } from '../lib/site-navigation';
 ---
 
 <aside class={NEXT_STEP} aria-label="Start with OpenE2EE Relay">
@@ -26,11 +26,11 @@ import { startAction } from '../lib/site-navigation';
     OpenE2EE Relay is the delivery half of an end-to-end encrypted application.
     The SDK runs on each device and reaches Relay through one connection URL.
   </p>
-  <div class={ACTIONS}>
-    <a class={CTA_PRIMARY} href={startAction.href} data-next-step>
-      <span class="oe-button">{startAction.label}</span>
-      <span class={CTA_SUBLABEL}>Development environment · no card</span>
-    </a>
-    <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the Relay quickstart</a>
+  <div>
+    <div class={ACTIONS}>
+      <a class="oe-button" href={startAction.href} data-next-step>{startAction.label}</a>
+      <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the Relay quickstart</a>
+    </div>
+    <p class={CTA_SUBLABEL}>{startPromise}</p>
   </div>
 </aside>

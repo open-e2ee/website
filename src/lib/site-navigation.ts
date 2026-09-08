@@ -94,6 +94,13 @@ export const startAction: NavigationLink = {
 };
 
 /*
+ * The promise under the start action wherever it stands as a hero control:
+ * opening a project asks for no card. One string, so the heroes that carry it
+ * cannot drift.
+ */
+export const startPromise = 'No credit card needed';
+
+/*
  * The returning reader's route, and it stays a word beside the control above.
  *
  * This entry was the only way into the console, and calling it "Sign in"

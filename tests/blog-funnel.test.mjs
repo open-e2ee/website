@@ -56,7 +56,7 @@ test('names the destination once, and never in the component', async () => {
   /* The header, the sheet, the relay page, and now the end of every post all
      open the same route. A URL typed into this file is a fifth answer that
      nothing keeps in step with the other four. */
-  assert.match(component, /import \{ startAction \}/);
+  assert.match(component, /import \{ startAction, startPromise \}/);
   assert.doesNotMatch(
     component.replace(/\/\*[\s\S]*?\*\//g, ''),
     /href=\{?['"]https:\/\/console\./,
