@@ -30,18 +30,18 @@ import {
  * carries is its rows. A buyer arrives with a size in mind, reads the Relay
  * MAU row first because that is the meter every plan is sized by, and reads
  * down the column that fits it. The table holds only the rows that differ by
- * plan. What every plan shares opens from one control in the head over the
- * table, described once rather than ticked four times, and stays out of the
- * way of the choice.
+ * plan. What every plan shares opens from one control in the table's corner
+ * cell, level with the plan actions, described once rather than ticked four
+ * times, and stays out of the way of the choice.
  *
  * The plans are the page. There is no hero above them: the head over the table
- * is the page's opening, a label, the heading, and a lead of three sentences,
- * and the table starts on the first screen.
+ * is the page's opening, a label, the heading, and a lead that says what the
+ * team gets, and the table starts on the first screen.
  *
  * The table holds to 62rem. Below that the same rows render as one block per
  * plan, from the same data, and the other rendering leaves the document.
  */
-const PLAN_TABLE = 'w-full table-fixed border-collapse text-[0.9375rem] [&_th]:text-left [&_th]:align-top [&_td]:align-top';
+const PLAN_TABLE = 'w-full table-fixed border-collapse text-[0.9375rem] [&_th]:text-left [&_th]:align-top [&_tbody_td]:align-top';
 
 /*
  * No scroll region around this table. It is full width and fixed layout inside
@@ -86,22 +86,24 @@ const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
 
 
 /*
- * The head over the table: the label, the heading, and the lead on the left,
- * and at the end of the lead's last line the one control that opens what every
- * plan carries, on the table's shoulder, so it takes no row of its own. Below
- * 34rem the head stacks and the control sits under the lead at its own width.
- * The section opens the page, so it carries the opening's room above and no
- * rule: the site header draws the one rule that belongs there.
+ * The head over the table: the label, the heading, and the lead, and nothing
+ * else, so the table starts as soon as the lead ends. The section opens the
+ * page, so it carries the opening's room above and no rule: the site header
+ * draws the one rule that belongs there.
  */
 const PLANS = 'pt-[clamp(2.5rem,1.75rem+4vw,4.5rem)] pb-[clamp(3rem,2rem+4vw,5.5rem)]';
-const PLANS_HEAD = 'mb-8 flex items-end justify-between gap-6 max-[34rem]:flex-col max-[34rem]:items-start';
-const PLANS_HEAD_TEXT = 'min-w-0 [&>*+*]:mt-4';
+const PLANS_HEAD = 'mb-8 [&>*+*]:mt-4';
 
 /*
  * What every plan carries opens in a dialog, one card per group, so the table
  * keeps its space for what differs by plan. The trigger is the same secondary
  * control the Enterprise band and the plan columns use, so every action on the
- * page is one shape. The dialog is the
+ * page is one shape. It sits inside the table, in the corner cell over the row
+ * names that the column heads leave empty, on the baseline of the four plan
+ * actions, so the row of actions reads as five: what every plan carries, then
+ * each plan. It costs the table no height. Below 62rem the table leaves the
+ * document, so a second copy of the control stands over the compact list and
+ * leaves the document above it. The dialog is the
  * native element that traps focus, closes on Escape, returns focus to the
  * trigger, and makes the page behind it inert, and it is the surface above the
  * page plane DESIGN.md gives the popover shadow and its inset ring. The page
@@ -115,7 +117,9 @@ const PLANS_HEAD_TEXT = 'min-w-0 [&>*+*]:mt-4';
  * the text size, so the six read as a set at a glance; the word carries the
  * meaning and the icon is hidden from assistive technology.
  */
-const INCLUDED_TRIGGER = 'oe-button oe-button-secondary shrink-0';
+const INCLUDED_TRIGGER = 'oe-button oe-button-secondary';
+const INCLUDED_CORNER = 'pr-4 pb-6 align-bottom';
+const INCLUDED_COMPACT = 'mb-6 min-[62rem]:hidden';
 const INCLUDED_DIALOG =
   'm-auto w-[min(48rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-y-auto border-0 bg-ground-raised p-0 text-text-1 ' +
   'shadow-[var(--oe-shadow-md),inset_0_0_0_1px_var(--oe-border-1)] backdrop:bg-transparent';
@@ -309,12 +313,9 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
   <section id="relay-plans" class={PLANS}>
     <div class={CONTAINER}>
       <div class={PLANS_HEAD} data-plans-head>
-        <div class={PLANS_HEAD_TEXT}>
-          <p class={LABEL}>Pricing</p>
-          <h1>OpenE2EE Relay, free to start.</h1>
-          <p class={LEAD}>OpenE2EE Relay is managed delivery for applications that use the OpenE2EE Signal Protocol SDK. Pick a plan by monthly active users, the accounts active in a month. Every plan carries every Relay protocol feature, and every project starts with a Development environment, at no cost and without a card.</p>
-        </div>
-        <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button>
+        <p class={LABEL}>Pricing</p>
+        <h1>OpenE2EE Relay, free to start.</h1>
+        <p class={LEAD}>OpenE2EE Relay is the managed delivery layer for applications that use the OpenE2EE Signal Protocol SDK. A team ships end-to-end encrypted messaging without building or running delivery infrastructure. Relay operates the encrypted device mailboxes, group fan-out, private attachment storage, and push wakes, on every plan. Every project starts with a Development environment, at no cost and without a card.</p>
       </div>
       <div class={PLAN_TABLE_AT}>
         <table class={PLAN_TABLE} itemscope itemtype="https://schema.org/Product">
@@ -322,7 +323,7 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
           <colgroup><col class="w-[15rem]" />{selfServe.map(() => <col />)}</colgroup>
           <thead>
             <tr>
-              <td class="pr-4"></td>
+              <td class={INCLUDED_CORNER}><button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button></td>
               {selfServe.map((plan) => (
                 <th scope="col" class:list={headClasses(plan)} data-relay-plan={plan.id} itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                   <meta itemprop="priceCurrency" content="USD" />
@@ -349,6 +350,7 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
           </tbody>
         </table>
       </div>
+      <p class={INCLUDED_COMPACT}><button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button></p>
       <ul class={COMPACT}>
         {selfServe.map((plan) => (
           <li class:list={compactPlanClasses(plan)} data-relay-plan-compact={plan.id}>
@@ -485,14 +487,16 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
 <script>
   /*
    * The dialog's open state, and nothing else. The browser owns the focus
-   * trap, Escape, the return of focus to the trigger, and the inert page. A
+   * trap, Escape, the return of focus to the trigger that opened it, and the
+   * inert page. Two triggers stand on the page, one in the table and one over
+   * the compact list, and width shows one of them at a time. A
    * press on the backdrop reaches the dialog element itself and nothing inside
    * it, which is how it is told apart from a press on the content.
    */
   const dialog = document.querySelector<HTMLDialogElement>('[data-included]');
-  const trigger = document.querySelector<HTMLButtonElement>('[data-included-trigger]');
-  if (dialog && trigger) {
-    trigger.addEventListener('click', () => dialog.showModal());
+  const triggers = document.querySelectorAll<HTMLButtonElement>('[data-included-trigger]');
+  if (dialog && triggers.length) {
+    for (const trigger of triggers) trigger.addEventListener('click', () => dialog.showModal());
     dialog.querySelector('[data-included-close]')?.addEventListener('click', () => dialog.close());
     dialog.addEventListener('click', (event) => {
       if (event.target === dialog) dialog.close();
