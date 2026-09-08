@@ -23,6 +23,7 @@ import { readFile } from 'node:fs/promises';
 
 import { relayMeterDefinitions, relayPlans, relayProductionRetention } from '../src/data/relay-pricing.mjs';
 import { tiers } from '../src/data/pricing.mjs';
+import { iconPaths } from '@open-e2ee/design/icons';
 
 const built = await readFile(new URL('../dist/pricing/index.html', import.meta.url), 'utf8').catch(
   () => null,
@@ -246,21 +247,27 @@ test('what every plan carries opens in one dialog of cards below the plans', () 
   assert.doesNotMatch(table, /Included on every plan/);
   assert.doesNotMatch(built, /<details[ >]/, 'the page still has a disclosure');
 
-  /* One trigger, a row in the table's voice, after the plan renderings and
-   * before the Enterprise band, and never hidden by width. It says it opens a
-   * dialog, and its mark is drawn. */
-  const triggers = [...built.matchAll(/<button type="button" class="([^"]*)" aria-haspopup="dialog" data-included-trigger>([\s\S]*?)<\/button>/g)];
-  assert.equal(triggers.length, 1, 'the page does not have one trigger');
-  const [trigger] = triggers;
-  assert.ok(trigger.index > built.lastIndexOf('data-relay-plan-compact='), 'the trigger is above the plan blocks');
-  assert.ok(trigger.index < built.indexOf(`data-relay-plan="${enterprise.id}"`), 'the trigger is below the Enterprise band');
-  assert.match(trigger[1], /\brule-t\b/);
-  assert.match(trigger[1], /\brule-b\b/);
-  assert.match(trigger[1], /\bw-full\b/);
-  assert.match(trigger[1], /\bcursor-pointer\b/);
-  assert.doesNotMatch(trigger[1], /hidden/);
-  assert.match(trigger[2], /<span>Included on every plan<\/span>/);
-  assert.match(trigger[2], /<svg [^>]*aria-hidden="true"/);
+  /* One ruled row after the plan renderings and before the Enterprise band:
+   * the label, one sentence naming the six groups, and the trigger as the
+   * page's secondary control, so every action on the page is one shape. It
+   * says it opens a dialog and is never hidden by width. */
+  const rowStart = built.indexOf('data-included-row');
+  assert.ok(rowStart > 0, 'the page has no row for what every plan carries');
+  assert.ok(rowStart > built.lastIndexOf('data-relay-plan-compact='), 'the row is above the plan blocks');
+  assert.ok(rowStart < built.indexOf(`data-relay-plan="${enterprise.id}"`), 'the row is below the Enterprise band');
+  const row = built.slice(built.lastIndexOf('<div', rowStart), built.indexOf('<dialog ', rowStart));
+  const rowClasses = row.match(/^<div class="([^"]*)"/)[1];
+  assert.match(rowClasses, /\brule-t\b/);
+  assert.doesNotMatch(rowClasses, /hidden/);
+  assert.match(row, /<p class="[^"]*">Included on every plan<\/p>/);
+  assert.match(row, /<p class="[^"]*">Protocol features, delivery, groups and attachments, ciphertext retention, operations, and a Development environment, Free included\.<\/p>/);
+  const triggerPattern = /<button type="button" class="([^"]*)" aria-haspopup="dialog" data-included-trigger>([^<]+)<\/button>/g;
+  assert.equal([...built.matchAll(triggerPattern)].length, 1, 'the page does not have one trigger');
+  const [trigger] = [...row.matchAll(triggerPattern)];
+  assert.ok(trigger, 'the trigger is not in the row');
+  assert.match(trigger[1], /^oe-button oe-button-secondary\b/, 'the trigger is not the secondary control');
+  assert.doesNotMatch(trigger[1], /rule-|hidden|text-text-3/);
+  assert.equal(trigger[2], 'See what is included');
 
   /* The dialog is closed until asked, names itself by its heading, and is the
    * one surface above the page plane, so it carries the popover shadow with
@@ -286,9 +293,25 @@ test('what every plan carries opens in one dialog of cards below the plans', () 
 
   /* These do not differ by plan, so each is one card, in the words the Relay
    * page uses: a hairline on the panel ground with a term over what it means.
-   * They are not tiers, so none is a heading. */
-  const cards = [...included.matchAll(/<div class="([^"]*)"><dt class="[^"]*">([^<]+)<\/dt><dd class="[^"]*">([^<]+)<\/dd><\/div>/g)].map((m) => ({ classes: m[1], label: m[2], detail: m[3] }));
+   * They are not tiers, so none is a heading. Each term leads with one icon
+   * from the design system's set, muted and at the text size, hidden from
+   * assistive technology because the word carries the meaning. */
+  assert.match(included, /<dl class="[^"]*\[--oe-icon-size:1rem\][^"]*">/, 'the cards do not size their icons');
+  const cardPattern =
+    /<div class="([^"]*)"><dt class="([^"]*)"><svg class="oe-icon ([^"]*)" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="([^"]+)"><\/path><\/svg>([^<]+)<\/dt><dd class="[^"]*">([^<]+)<\/dd><\/div>/g;
+  const cards = [...included.matchAll(cardPattern)].map((m) => ({ classes: m[1], termClasses: m[2], iconClasses: m[3], path: m[4], label: m[5], detail: m[6] }));
   assert.doesNotMatch(included, /<h3/, 'a card carries a tier heading');
+  const iconByPath = new Map(Object.entries(iconPaths).map(([name, paths]) => [paths.join(' '), name]));
+  assert.deepEqual(
+    cards.map((card) => iconByPath.get(card.path)),
+    ['stack', 'send', 'people', 'clock', 'pulse', 'terminal'],
+    'the cards do not lead with the six icons the design system ships for them',
+  );
+  for (const card of cards) {
+    assert.match(card.termClasses, /\bflex\b/, `${card.label} does not set its icon beside the term`);
+    assert.match(card.iconClasses, /\btext-text-3\b/, `${card.label} icon is not muted`);
+    assert.doesNotMatch(card.iconClasses, /accent/, `${card.label} icon takes the accent`);
+  }
   assert.deepEqual(
     cards.map((card) => card.label),
     ['Protocol features', 'Delivery', 'Groups and attachments', 'Ciphertext retention', 'Operations', 'Development environment'],
