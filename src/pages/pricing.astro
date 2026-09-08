@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import TableScroll from '../components/TableScroll.astro';
 import Term from '../components/Term.astro';
 import {
   relayDevelopmentEnvironment,
@@ -39,6 +38,13 @@ import {
  */
 const PLAN_TABLE = 'w-full table-fixed border-collapse text-[0.9375rem] [&_th]:text-left [&_th]:align-top [&_td]:align-top';
 
+/*
+ * No scroll region around this table. It is full width and fixed layout inside
+ * the container, and it leaves the document below 62rem, so it can never be
+ * wider than its column; a scroll box here would be a tab stop that does
+ * nothing. One did stand here, and it clipped the row tooltips and counted
+ * their hidden boxes as scroll height, so the table scrolled against the page.
+ */
 const PLAN_TABLE_AT = 'max-[62rem]:hidden';
 
 /* A column head is a stack: marker, name, price, note, action. */
@@ -258,39 +264,37 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
         <p class={MEASURE}>Pick a plan by Relay MAU, the accounts active in a month. Every plan carries every Relay feature, and paid plans add capacity and optional overage.</p>
       </div>
       <div class={PLAN_TABLE_AT}>
-        <TableScroll label="OpenE2EE Relay plans">
-          <table class={PLAN_TABLE} itemscope itemtype="https://schema.org/Product">
-            <caption class="oe-visually-hidden" itemprop="name">OpenE2EE Relay plans, monthly prices, allowances, and what every plan includes</caption>
-            <colgroup><col class="w-[13rem]" />{selfServe.map(() => <col />)}</colgroup>
-            <thead>
-              <tr>
-                <td class="pr-4"></td>
-                {selfServe.map((plan) => (
-                  <th scope="col" class:list={headClasses(plan)} data-relay-plan={plan.id} itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-                    <meta itemprop="priceCurrency" content="USD" />
-                    <meta itemprop="price" content={String(plan.monthlyPriceUsd)} />
-                    <p class={PLAN_MARK}>{planMark(plan)}</p>
-                    <h3 class={TIER_HEADING} itemprop="name">{plan.name}</h3>
-                    <p class={TIER_PRICE}>{plan.price}</p>
-                    <p class={TIER_NOTE}>per month</p>
-                    <a class:list={startClasses(plan)} href={startHref(plan)}>{startLabel(plan)}</a>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, index) => (
-                <tr>
-                  <th scope="row" class:list={rowHeadClasses(row, index)}>
-                    <Term id={rowId(row, 'table')} label={row.label} definition={row.definition} />
-                    {row.unit && <span class={ROW_UNIT}>{row.unit}</span>}
-                  </th>
-                  {selfServe.map((plan) => <td class:list={cellClasses(row, index, plan)}>{row.value(plan)}</td>)}
-                </tr>
+        <table class={PLAN_TABLE} itemscope itemtype="https://schema.org/Product">
+          <caption class="oe-visually-hidden" itemprop="name">OpenE2EE Relay plans, monthly prices, allowances, and what every plan includes</caption>
+          <colgroup><col class="w-[13rem]" />{selfServe.map(() => <col />)}</colgroup>
+          <thead>
+            <tr>
+              <td class="pr-4"></td>
+              {selfServe.map((plan) => (
+                <th scope="col" class:list={headClasses(plan)} data-relay-plan={plan.id} itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                  <meta itemprop="priceCurrency" content="USD" />
+                  <meta itemprop="price" content={String(plan.monthlyPriceUsd)} />
+                  <p class={PLAN_MARK}>{planMark(plan)}</p>
+                  <h3 class={TIER_HEADING} itemprop="name">{plan.name}</h3>
+                  <p class={TIER_PRICE}>{plan.price}</p>
+                  <p class={TIER_NOTE}>per month</p>
+                  <a class:list={startClasses(plan)} href={startHref(plan)}>{startLabel(plan)}</a>
+                </th>
               ))}
-            </tbody>
-          </table>
-        </TableScroll>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, index) => (
+              <tr>
+                <th scope="row" class:list={rowHeadClasses(row, index)}>
+                  <Term id={rowId(row, 'table')} label={row.label} definition={row.definition} />
+                  {row.unit && <span class={ROW_UNIT}>{row.unit}</span>}
+                </th>
+                {selfServe.map((plan) => <td class:list={cellClasses(row, index, plan)}>{row.value(plan)}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
       <ul class={COMPACT}>
         {selfServe.map((plan) => (

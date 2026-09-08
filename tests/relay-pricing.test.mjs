@@ -59,13 +59,18 @@ test('publishes canonical Relay routes with accessible responsive tables', async
   assert.match(relay, /do not select a Relay hostname or pair/i);
   assert.match(pricing, /canonical="\/pricing"/);
   assert.match(comparison, /canonical="\/compare\/virgil-security"/);
+  /* Every wide table goes through the one component that carries the
+     accessibility contract, and each one names what it holds. Written out at
+     the table, two of the five call sites carried the scroll recipe and
+     neither of the attributes that let a keyboard reader reach what scrolls
+     past the right edge. */
+  assert.match(comparison, /<TableScroll label="[^"]+">/);
+  /* The plan table is not wide: full width and fixed layout in its container,
+     and out of the document below 62rem, it can never overflow its column. A
+     scroll box around it is a tab stop that does nothing, and the one that
+     stood there clipped the row tooltips and scrolled against the page. */
+  assert.doesNotMatch(pricing, /TableScroll|overflow-x-auto|data-table-scroll/, 'the plan table has a scroll box it cannot use');
   for (const page of [pricing, comparison]) {
-    /* Every wide table goes through the one component that carries the
-       accessibility contract, and each one names what it holds. Written out at
-       the table, two of the five call sites carried the scroll recipe and
-       neither of the attributes that let a keyboard reader reach what scrolls
-       past the right edge. */
-    assert.match(page, /<TableScroll label="[^"]+">/);
     assert.doesNotMatch(page, /<div class=\{TABLE_SCROLL\}/, 'a table dresses its own scroll box');
     assert.match(page, /<th scope="col"/);
     assert.match(page, /<th scope="row"[ >]/);
