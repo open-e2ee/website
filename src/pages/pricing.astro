@@ -17,13 +17,11 @@ import {
   BAND_HEAD,
   BAND_SURFACE,
   CONTAINER,
-  CONTAINER_MEASURE,
   DEFINITION_ROWS,
   LABEL,
   LEAD,
   MEASURE,
   METADATA,
-  PAGE_HERO,
   TEXT_LINKS,
 } from '../lib/recipes';
 
@@ -32,8 +30,13 @@ import {
  * carries is its rows. A buyer arrives with a size in mind, reads the Relay
  * MAU row first because that is the meter every plan is sized by, and reads
  * down the column that fits it. The table holds only the rows that differ by
- * plan. What every plan shares folds under one disclosure below it, described
- * once rather than ticked four times, and stays out of the way of the choice.
+ * plan. What every plan shares opens from one control in the head over the
+ * table, described once rather than ticked four times, and stays out of the
+ * way of the choice.
+ *
+ * The plans are the page. There is no hero above them: the head over the table
+ * is the page's opening, a label, the heading, and a lead of three sentences,
+ * and the table starts on the first screen.
  *
  * The table holds to 62rem. Below that the same rows render as one block per
  * plan, from the same data, and the other rendering leaves the document.
@@ -83,11 +86,22 @@ const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
 
 
 /*
+ * The head over the table: the label, the heading, and the lead on the left,
+ * and at the end of the lead's last line the one control that opens what every
+ * plan carries, on the table's shoulder, so it takes no row of its own. Below
+ * 34rem the head stacks and the control sits under the lead at its own width.
+ * The section opens the page, so it carries the opening's room above and no
+ * rule: the site header draws the one rule that belongs there.
+ */
+const PLANS = 'pt-[clamp(2.5rem,1.75rem+4vw,4.5rem)] pb-[clamp(3rem,2rem+4vw,5.5rem)]';
+const PLANS_HEAD = 'mb-8 flex items-end justify-between gap-6 max-[34rem]:flex-col max-[34rem]:items-start';
+const PLANS_HEAD_TEXT = 'min-w-0 [&>*+*]:mt-4';
+
+/*
  * What every plan carries opens in a dialog, one card per group, so the table
- * keeps its space for what differs by plan. The trigger is a ruled row under
- * the table: the label and one sentence naming the six groups on the left, and
- * on the right the same secondary control the Enterprise band and the plan
- * columns use, so every action on the page is one shape. The dialog is the
+ * keeps its space for what differs by plan. The trigger is the same secondary
+ * control the Enterprise band and the plan columns use, so every action on the
+ * page is one shape. The dialog is the
  * native element that traps focus, closes on Escape, returns focus to the
  * trigger, and makes the page behind it inert, and it is the surface above the
  * page plane DESIGN.md gives the popover shadow and its inset ring. The page
@@ -101,8 +115,6 @@ const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
  * the text size, so the six read as a set at a glance; the word carries the
  * meaning and the icon is hidden from assistive technology.
  */
-const INCLUDED_ROW = 'mt-8 flex items-center justify-between gap-6 rule-t pt-6 max-[34rem]:flex-col max-[34rem]:items-stretch';
-const INCLUDED_ROW_TEXT = 'm-0 mt-2 max-w-[72ch] text-[0.9375rem] leading-[1.5] text-text-3';
 const INCLUDED_TRIGGER = 'oe-button oe-button-secondary shrink-0';
 const INCLUDED_DIALOG =
   'm-auto w-[min(48rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-y-auto border-0 bg-ground-raised p-0 text-text-1 ' +
@@ -164,11 +176,13 @@ const TIER_BODY = 'flex max-w-[58ch] flex-col items-start gap-3 text-text-3';
  * Every self-service plan opens the Console route that creates a project,
  * because a production plan is activated inside a project. A paid plan names
  * itself in the query so the Console can offer that plan first once the
- * project exists. The highlighted plan is the filled action; the others,
- * Free among them, are secondary, and every one of them opens the same route.
- * A paid plan's action carries the plan's name and nothing else; "Start with
- * Starter" stuttered, and the name under the name already says what pressing
- * it picks. Free keeps "Start free", the action the rest of the site uses.
+ * project exists. The highlighted plan is the filled action; the others are
+ * secondary, and every one of them opens the same route. Every action carries
+ * the plan's name and nothing else; "Start with Starter" stuttered, and the
+ * name under the name already says what pressing it picks. Free is the one
+ * plan that costs nothing, so its action is the strong secondary, the frame in
+ * the foreground: it reads apart from the paid secondaries, and the filled
+ * control stays the one accent in the row.
  */
 const RELAY_PROJECT = startAction.href;
 
@@ -181,9 +195,14 @@ const enterprise = relayPlans.find((plan) => plan.monthlyPriceUsd === null);
 if (!enterprise) throw new Error('pricing.astro: the Relay catalog has no negotiated plan');
 
 const startHref = (plan: Plan) => (plan.id === FREE ? RELAY_PROJECT : `${RELAY_PROJECT}?plan=${plan.id}`);
-const startLabel = (plan: Plan) => (plan.id === FREE ? 'Start free' : plan.name);
+const startLabel = (plan: Plan) => plan.name;
 const planMark = (plan: Plan) => (plan.id === HIGHLIGHT ? HIGHLIGHT_LABEL : '');
-const startClasses = (plan: Plan) => ['oe-button', 'oe-button-full', plan.id !== HIGHLIGHT && 'oe-button-secondary'];
+const startClasses = (plan: Plan) => [
+  'oe-button',
+  'oe-button-full',
+  plan.id !== HIGHLIGHT && 'oe-button-secondary',
+  plan.id === FREE && 'oe-button-strong',
+];
 
 /* The marked column: a sealed edge over the head, and the panel ground down
  * every row that differs by plan. */
@@ -266,8 +285,6 @@ const included: { icon: IconName; label: string; detail: string }[] = [
 ];
 const INCLUDED_HEADING = 'Included on every plan';
 const INCLUDED_ID = 'included-on-every-plan';
-const INCLUDED_SUMMARY =
-  'Protocol features, delivery, groups and attachments, ciphertext retention, operations, and a Development environment, Free included.';
 const INCLUDED_ACTION = 'See what is included';
 
 /* The note under the table prices delivery and storage overage once, which
@@ -289,20 +306,15 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
   description={`OpenE2EE Relay plans from Free through Starter, Growth, Business, and Enterprise, with every meter and overage rate, and SDK commercial licensing from ${startupTier.price} per year.`}
   canonical="/pricing"
 >
-  <header class={PAGE_HERO}>
-    <div class={CONTAINER_MEASURE}>
-      <p class={LABEL}>Pricing</p>
-      <h1>OpenE2EE Relay, free to start.</h1>
-      <p class={LEAD}>OpenE2EE Relay is the managed delivery product for applications built on the OpenE2EE Signal Protocol SDK. Every plan carries every Relay protocol feature: groups, attachments, sealed sender, multi-device delivery, and push.</p>
-      <p>Every project starts with a Development environment, at no cost and without a card.</p>
-    </div>
-  </header>
-
-  <section id="relay-plans" class={BAND}>
+  <section id="relay-plans" class={PLANS}>
     <div class={CONTAINER}>
-      <div class={BAND_HEAD}>
-        <h2>OpenE2EE Relay plans</h2>
-        <p class={MEASURE}>Pick a plan by monthly active users, the accounts active in a month. Every plan carries every Relay feature, and paid plans add capacity and optional overage.</p>
+      <div class={PLANS_HEAD} data-plans-head>
+        <div class={PLANS_HEAD_TEXT}>
+          <p class={LABEL}>Pricing</p>
+          <h1>OpenE2EE Relay, free to start.</h1>
+          <p class={LEAD}>OpenE2EE Relay is managed delivery for applications that use the OpenE2EE Signal Protocol SDK. Pick a plan by monthly active users, the accounts active in a month. Every plan carries every Relay protocol feature, and every project starts with a Development environment, at no cost and without a card.</p>
+        </div>
+        <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button>
       </div>
       <div class={PLAN_TABLE_AT}>
         <table class={PLAN_TABLE} itemscope itemtype="https://schema.org/Product">
@@ -356,13 +368,6 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
           </li>
         ))}
       </ul>
-      <div class={INCLUDED_ROW} data-included-row>
-        <div>
-          <p class={LABEL}>{INCLUDED_HEADING}</p>
-          <p class={INCLUDED_ROW_TEXT}>{INCLUDED_SUMMARY}</p>
-        </div>
-        <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button>
-      </div>
       <dialog class={INCLUDED_DIALOG} aria-labelledby={INCLUDED_ID} data-included>
         <div class={INCLUDED_BODY}>
           <div class={INCLUDED_HEAD}>

@@ -235,11 +235,11 @@ test('every row that differs by plan is headed by a name that defines itself', (
    * may clip or scroll: a scroll box here cut the last rows' tooltips off and
    * counted their hidden boxes as height the table scrolled through. */
   assert.doesNotMatch(built, /data-table-scroll/, 'the page has a scroll region');
-  const wrapper = built.slice(built.indexOf('<h2>OpenE2EE Relay plans</h2>'), table.length ? built.indexOf('<table') : -1);
+  const wrapper = built.slice(built.indexOf('id="relay-plans"'), table.length ? built.indexOf('<table') : -1);
   assert.doesNotMatch(wrapper, /overflow|contain:/, 'the table sits inside a clipping box');
 });
 
-test('what every plan carries opens in one dialog of cards below the plans', () => {
+test('what every plan carries opens in one dialog of cards from the head over the plans', () => {
   /* The table holds only the rows that differ by plan: one body, and no
    * row group for the shared rows. */
   assert.equal((table.match(/<tbody/g) ?? []).length, 1, 'the table has more than one body');
@@ -247,26 +247,36 @@ test('what every plan carries opens in one dialog of cards below the plans', () 
   assert.doesNotMatch(table, /Included on every plan/);
   assert.doesNotMatch(built, /<details[ >]/, 'the page still has a disclosure');
 
-  /* One ruled row after the plan renderings and before the Enterprise band:
-   * the label, one sentence naming the six groups, and the trigger as the
-   * page's secondary control, so every action on the page is one shape. It
-   * says it opens a dialog and is never hidden by width. */
-  const rowStart = built.indexOf('data-included-row');
-  assert.ok(rowStart > 0, 'the page has no row for what every plan carries');
-  assert.ok(rowStart > built.lastIndexOf('data-relay-plan-compact='), 'the row is above the plan blocks');
-  assert.ok(rowStart < built.indexOf(`data-relay-plan="${enterprise.id}"`), 'the row is below the Enterprise band');
-  const row = built.slice(built.lastIndexOf('<div', rowStart), built.indexOf('<dialog ', rowStart));
-  const rowClasses = row.match(/^<div class="([^"]*)"/)[1];
-  assert.match(rowClasses, /\brule-t\b/);
-  assert.doesNotMatch(rowClasses, /hidden/);
-  assert.match(row, /<p class="[^"]*">Included on every plan<\/p>/);
-  assert.match(row, /<p class="[^"]*">Protocol features, delivery, groups and attachments, ciphertext retention, operations, and a Development environment, Free included\.<\/p>/);
+  /* The plans are the page. Nothing opens it but the head over the table:
+   * the label, the heading, and the lead, and at the end of the lead the one
+   * control that opens what every plan carries, the page's secondary control
+   * on the table's shoulder. It takes no row of its own, says it opens a
+   * dialog, and is never hidden by width. */
+  assert.doesNotMatch(built, /data-included-row/, 'the trigger still takes a row under the table');
+  assert.equal((built.match(/<h1[ >]/g) ?? []).length, 1, 'the page does not have one heading');
+  const plansStart = built.indexOf('id="relay-plans"');
+  const plansClasses = built.slice(plansStart, built.indexOf('>', plansStart)).match(/class="([^"]*)"/)[1];
+  assert.doesNotMatch(plansClasses, /rule-t/, 'the opening section draws a rule under the site header');
+  assert.ok(built.indexOf('<h1') > plansStart, 'a hero still opens the page above the plans');
+  const headStart = built.indexOf('data-plans-head');
+  assert.ok(headStart > plansStart, 'the head is not inside the plans section');
+  assert.ok(headStart < built.indexOf('<table'), 'the head is not above the table');
+  const head = built.slice(built.lastIndexOf('<div', headStart), built.indexOf('<table'));
+  const headClasses = head.match(/^<div class="([^"]*)"/)[1];
+  assert.match(headClasses, /\bflex\b/);
+  assert.match(headClasses, /\bitems-end\b/, "the control does not sit on the table's shoulder");
+  assert.doesNotMatch(headClasses, /rule-|hidden/);
+  assert.match(head, /<p class="[^"]*">Pricing<\/p>/);
+  assert.match(head, /<h1>OpenE2EE Relay, free to start\.<\/h1>/);
+  assert.match(head, /Pick a plan by monthly active users, the accounts active in a month\./);
+  assert.match(head, /at no cost and without a card\./);
+  assert.doesNotMatch(built, /<h2>OpenE2EE Relay plans<\/h2>/, 'the table still carries a second heading over the head');
   const triggerPattern = /<button type="button" class="([^"]*)" aria-haspopup="dialog" data-included-trigger>([^<]+)<\/button>/g;
   assert.equal([...built.matchAll(triggerPattern)].length, 1, 'the page does not have one trigger');
-  const [trigger] = [...row.matchAll(triggerPattern)];
-  assert.ok(trigger, 'the trigger is not in the row');
+  const [trigger] = [...head.matchAll(triggerPattern)];
+  assert.ok(trigger, 'the trigger is not in the head');
   assert.match(trigger[1], /^oe-button oe-button-secondary\b/, 'the trigger is not the secondary control');
-  assert.doesNotMatch(trigger[1], /rule-|hidden|text-text-3/);
+  assert.doesNotMatch(trigger[1], /rule-|hidden|text-text-3|oe-button-strong/);
   assert.equal(trigger[2], 'See what is included');
 
   /* The dialog is closed until asked, names itself by its heading, and is the
@@ -284,7 +294,7 @@ test('what every plan carries opens in one dialog of cards below the plans', () 
   assert.match(classes, /\bbg-ground-raised\b/);
   assert.match(classes, /\bbackdrop:bg-transparent\b/);
   assert.doesNotMatch(classes, /rounded|backdrop:bg-black|backdrop:backdrop-blur|\/\d\d\b/);
-  assert.equal((built.match(/Included on every plan/g) ?? []).length, 2, 'the heading is on the page other than on the trigger and in the dialog');
+  assert.equal((built.match(/Included on every plan/g) ?? []).length, 1, 'the heading is on the page other than in the dialog');
 
   /* One close control in the design system's icon button, with a name a
    * screen reader can say, and the one page script that opens and closes. */
@@ -331,9 +341,9 @@ test('what every plan carries opens in one dialog of cards below the plans', () 
   assert.doesNotMatch(built.slice(built.indexOf('<table'), built.indexOf('</table>')), /retention/i, 'retention is still a row of the plan table');
 });
 
-test('a paid plan\'s action carries its name and nothing else', () => {
+test('every plan\'s action carries its name and nothing else', () => {
   for (const plan of selfServe) {
-    const expected = plan.id === 'relay_free_v1' ? 'Start free' : plan.name;
+    const expected = plan.name;
     const labels = [...built.matchAll(new RegExp(`href="[^"]*plan=${plan.id}"[^>]*>([^<]+)</a>`, 'g'))].map((m) => m[1]);
     if (plan.id !== 'relay_free_v1') {
       assert.equal(labels.length, 2, `${plan.name} does not have one action per rendering`);
@@ -341,9 +351,11 @@ test('a paid plan\'s action carries its name and nothing else', () => {
     }
   }
   assert.doesNotMatch(built, /Start with /, 'an action still carries the "Start with" prefix');
-  /* The header carries its own "Start free"; the count is the plan section's. */
+  /* Free names itself like the paid plans do; "Start free" is the site
+   * header's action, and the plan section carries none of it. */
   const plans = built.slice(built.indexOf('id="relay-plans"'), built.indexOf(`data-relay-plan="${enterprise.id}"`));
-  assert.equal((plans.match(/>Start free<\/a>/g) ?? []).length, 2, 'Free does not open with "Start free" in each rendering');
+  assert.equal((plans.match(/>Free<\/a>/g) ?? []).length, 2, 'Free does not open with "Free" in each rendering');
+  assert.doesNotMatch(plans, /Start free/, 'a plan action still reads "Start free"');
 });
 
 test('one plan is marked, and it alone carries the filled action', () => {
@@ -398,8 +410,13 @@ test('one plan is marked, and it alone carries the filled action', () => {
   for (const plan of selfServe) {
     for (const rendering of [columnHead(plan.id), compactBlock(plan.id)]) {
       const classes = rendering.match(/<a class="(oe-button[^"]*)" href=/)[1];
-      if (plan.id === HIGHLIGHT) assert.doesNotMatch(classes, /oe-button-secondary/, `${plan.id} is marked but not filled`);
+      if (plan.id === HIGHLIGHT) assert.doesNotMatch(classes, /oe-button-secondary|oe-button-strong/, `${plan.id} is marked but not filled`);
       else assert.match(classes, /oe-button-secondary/, `${plan.id} is filled but not marked`);
+      /* Free costs nothing, so its action is the strong secondary: apart from
+       * the paid secondaries, and short of the one filled control. The class is
+       * a modifier of the secondary, so it rides with it or not at all. */
+      if (plan.id === 'relay_free_v1') assert.match(classes, /\boe-button-secondary oe-button-strong\b/, 'Free is not the strong secondary');
+      else assert.doesNotMatch(classes, /oe-button-strong/, `${plan.id} takes the strong secondary`);
       /* The lines under each button said what the note under the table and
        * "How buying works" already say. */
       assert.doesNotMatch(rendering, /Verified card|Billed monthly|Overage off|Start here/);
