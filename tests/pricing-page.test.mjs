@@ -239,7 +239,7 @@ test('every row that differs by plan is headed by a name that defines itself', (
   assert.doesNotMatch(wrapper, /overflow|contain:/, 'the table sits inside a clipping box');
 });
 
-test('what every plan carries opens in one dialog of cards from the head over the plans', () => {
+test('what every plan carries opens in one dialog of cards from the corner of the table', () => {
   /* The table holds only the rows that differ by plan: one body, and no
    * row group for the shared rows. */
   assert.equal((table.match(/<tbody/g) ?? []).length, 1, 'the table has more than one body');
@@ -248,10 +248,11 @@ test('what every plan carries opens in one dialog of cards from the head over th
   assert.doesNotMatch(built, /<details[ >]/, 'the page still has a disclosure');
 
   /* The plans are the page. Nothing opens it but the head over the table:
-   * the label, the heading, and the lead, and at the end of the lead the one
-   * control that opens what every plan carries, the page's secondary control
-   * on the table's shoulder. It takes no row of its own, says it opens a
-   * dialog, and is never hidden by width. */
+   * the label, the heading, and a lead that says what the team gets and not
+   * what to do. The control that opens what every plan carries stands inside
+   * the table, in the corner cell the column heads leave empty, on the
+   * baseline of the plan actions, so it costs the table no height; a second
+   * copy stands over the compact list and leaves the document above 62rem. */
   assert.doesNotMatch(built, /data-included-row/, 'the trigger still takes a row under the table');
   assert.equal((built.match(/<h1[ >]/g) ?? []).length, 1, 'the page does not have one heading');
   const plansStart = built.indexOf('id="relay-plans"');
@@ -263,21 +264,44 @@ test('what every plan carries opens in one dialog of cards from the head over th
   assert.ok(headStart < built.indexOf('<table'), 'the head is not above the table');
   const head = built.slice(built.lastIndexOf('<div', headStart), built.indexOf('<table'));
   const headClasses = head.match(/^<div class="([^"]*)"/)[1];
-  assert.match(headClasses, /\bflex\b/);
-  assert.match(headClasses, /\bitems-end\b/, "the control does not sit on the table's shoulder");
-  assert.doesNotMatch(headClasses, /rule-|hidden/);
+  assert.doesNotMatch(headClasses, /rule-|hidden|flex/);
   assert.match(head, /<p class="[^"]*">Pricing<\/p>/);
   assert.match(head, /<h1>OpenE2EE Relay, free to start\.<\/h1>/);
-  assert.match(head, /Pick a plan by monthly active users, the accounts active in a month\./);
+  assert.match(head, /A team ships end-to-end encrypted messaging without building or running delivery infrastructure\./);
+  assert.match(head, /Relay operates the encrypted device mailboxes, group fan-out, private attachment storage, and push wakes, on every plan\./);
   assert.match(head, /at no cost and without a card\./);
+  assert.doesNotMatch(head, /Pick a plan|Choose|Select/, 'the lead tells the reader what to do');
+  assert.doesNotMatch(head, /<button/, 'a control still stands in the head over the table');
   assert.doesNotMatch(built, /<h2>OpenE2EE Relay plans<\/h2>/, 'the table still carries a second heading over the head');
   const triggerPattern = /<button type="button" class="([^"]*)" aria-haspopup="dialog" data-included-trigger>([^<]+)<\/button>/g;
-  assert.equal([...built.matchAll(triggerPattern)].length, 1, 'the page does not have one trigger');
-  const [trigger] = [...head.matchAll(triggerPattern)];
-  assert.ok(trigger, 'the trigger is not in the head');
-  assert.match(trigger[1], /^oe-button oe-button-secondary\b/, 'the trigger is not the secondary control');
-  assert.doesNotMatch(trigger[1], /rule-|hidden|text-text-3|oe-button-strong/);
-  assert.equal(trigger[2], 'See what is included');
+  const triggers = [...built.matchAll(triggerPattern)];
+  assert.equal(triggers.length, 2, 'the page does not have one trigger for the table and one for the compact list');
+  for (const trigger of triggers) {
+    assert.match(trigger[1], /^oe-button oe-button-secondary\b/, 'the trigger is not the secondary control');
+    assert.doesNotMatch(trigger[1], /rule-|hidden|text-text-3|oe-button-strong|oe-button-full/);
+    assert.equal(trigger[2], 'See what is included');
+  }
+  /* The corner cell: the first cell of the head row, a data cell and not a
+   * header, on the baseline of the plan actions, which is the head cells'
+   * bottom padding. */
+  const theadRow = table.slice(table.indexOf('<thead'), table.indexOf('</thead>'));
+  const corner = theadRow.match(/<tr>\s*<td class="([^"]*)">(.*?)<\/td>/s);
+  assert.ok(corner, 'the head row does not open with a corner cell');
+  assert.match(corner[1], /\balign-bottom\b/, 'the control does not sit on the baseline of the plan actions');
+  /* The table sets its body cells to the top, and only its body cells: a rule
+   * over every data cell outranks the corner's own class and leaves it inert. */
+  assert.doesNotMatch(table.slice(0, table.indexOf('>')), /\[&_td\]:align-top/, "the table's top alignment reaches the corner cell");
+  assert.match(corner[1], /\bpb-6\b/, "the corner does not share the head cells' bottom padding");
+  assert.doesNotMatch(corner[1], /hidden/);
+  assert.match(corner[2], triggerPattern, 'the corner cell does not hold the trigger');
+  assert.equal((table.match(triggerPattern) ?? []).length, 1, 'the table holds other than one trigger');
+  /* The compact copy: directly over the compact list, and gone at the table's
+   * width, where the table's copy shows. */
+  const compactStart = built.indexOf('data-relay-plan-compact');
+  const beforeCompact = built.slice(built.indexOf('</table>'), compactStart);
+  const compact = beforeCompact.match(/<p class="([^"]*)"><button type="button" class="[^"]*" aria-haspopup="dialog" data-included-trigger>/);
+  assert.ok(compact, 'no trigger stands over the compact list');
+  assert.match(compact[1], /\bmin-\[62rem\]:hidden\b/, 'the compact trigger shows beside the table');
 
   /* The dialog is closed until asked, names itself by its heading, and is the
    * one surface above the page plane, so it carries the popover shadow with
