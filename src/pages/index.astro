@@ -7,7 +7,7 @@ import CommitLine from '../components/CommitLine.astro';
 import DeckIcon from '../components/DeckIcon.astro';
 import type { DeckIconName } from '../components/DeckIcon.astro';
 import StarfieldMark from '../components/StarfieldMark.astro';
-import { startAction } from '../lib/site-navigation';
+import { startAction, startPromise } from '../lib/site-navigation';
 import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
@@ -19,7 +19,6 @@ import {
   BAND_HEAD,
   BAND_SURFACE,
   CONTAINER,
-  CTA_PRIMARY,
   CTA_SUBLABEL,
   DEFINITION_ROWS,
   LABEL,
@@ -505,6 +504,7 @@ const runtimes = [
           The SDK encrypts on each device. OpenE2EE Relay operates the delivery: encrypted
           device mailboxes, group fan-out, private attachments, and push wakes.
         </p>
+        <div>
         <div class:list={[ACTIONS, 'justify-center']} data-actions="hero">
           {/* Two actions. The primary now leaves this site: the page sells a
               managed product, and the shortest path to using it is a project.
@@ -521,17 +521,13 @@ const runtimes = [
               band, the footer, and /product, and a third button split the
               decision this row exists to force.
 
-              No sublabel under either button. This page ends on the license
-              rather than on a second ask, so "ten minutes · two clients · no
-              account" is only on /product, which a reader reaches after
-              deciding to spend them. A scroll needs no time promise,
-              and a third line of small gray type here would stand between the
-              offer and the proof. */}
-          <a class:list={[CTA_PRIMARY, 'items-center!']} href={RELAY_PROJECT}>
-            <span class="oe-button">Start a Relay project</span>
-            <span class:list={[CTA_SUBLABEL, 'text-center']}>Free to start · no card</span>
-          </a>
+              One line under the row, the start promise, and no time promise:
+              "ten minutes · two clients · no account" is only on /product,
+              which a reader reaches after deciding to spend them. */}
+          <a class="oe-button" href={RELAY_PROJECT}>Start a Relay project</a>
           <a class="oe-button oe-button-secondary" href="#demo">See the demo</a>
+        </div>
+        <p class={CTA_SUBLABEL}>{startPromise}</p>
         </div>
         {/* The credentials, under the offer. */}
         <p class={HERO_MARKS} data-hero-marks>

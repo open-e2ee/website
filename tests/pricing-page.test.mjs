@@ -270,8 +270,8 @@ test('every row that differs by plan is headed by a name that defines itself', (
 
 test('what every plan carries opens in one dialog of cards from the hero, beside the action that starts', () => {
   /* The head over the table is the page's hero: one heading, one lead
-   * sentence the width of the table, and the two actions under it, all on
-   * the left edge the row names share. There is no label over the heading;
+   * sentence, and the two actions under it, centered over the table with the
+   * promise under them. There is no label over the heading;
    * the heading names the page. The founder's 2026-09-08 lead is the one
    * sentence, and the sentence that lists what Relay runs is on the Relay
    * page and in the dialog, not here twice. */
@@ -284,39 +284,44 @@ test('what every plan carries opens in one dialog of cards from the hero, beside
   assert.ok(headStart < built.indexOf('<table'), 'the head is not above the table');
   const head = built.slice(built.lastIndexOf('<div', headStart), built.indexOf('<table'));
   const headClasses = head.match(/^<div class="([^"]*)"/)[1];
-  assert.doesNotMatch(headClasses, /rule-|hidden|flex|text-center|items-center|mx-auto/, 'the head is not a left-aligned stack');
+  assert.doesNotMatch(headClasses, /rule-|hidden|flex|items-center|mx-auto/, 'the head is not a stack');
+  assert.match(headClasses, /\btext-center\b/, 'the head is not centered over the table');
   assert.doesNotMatch(head, /<p class="[^"]*">Pricing<\/p>/, 'a label still stands over the heading');
   assert.match(head, /^<div class="[^"]*" data-plans-head><h1>OpenE2EE Relay, free to start\.<\/h1>/, 'the heading does not open the head');
   const lead = head.match(/<p class="([^"]*)">([^<]+)<\/p>/);
   assert.equal(lead[2], 'Ship fully featured end-to-end encrypted messaging, securely, and at scale.');
   assert.match(lead[1], /\bmax-w-none\b/, 'the lead is measured instead of running the width of the table');
-  assert.doesNotMatch(lead[1], /text-center/);
   assert.doesNotMatch(head, /Run encrypted device mailboxes|at no cost and without a card\.|A team ships/, 'the head carries a sentence that moved');
   assert.doesNotMatch(head, /Pick a plan|Choose|Select/, 'the lead tells the reader what to do');
   assert.equal((built.match(/<h1/g) ?? []).length, 1);
   assert.doesNotMatch(built, /<h2>OpenE2EE Relay plans<\/h2>/, 'the table still carries a second heading over the head');
 
   /* The actions are the hero's, not the table's: the primary creates a
-   * project, in the site's own recipe with the sublabel under it, and the
-   * dialog trigger is the secondary beside it, both full-size controls, in
-   * that order, in one row that wraps. There is one trigger on the page, so
+   * project and the dialog trigger is the secondary beside it, in that order,
+   * in one centered row that wraps. Both are the large control, the size the
+   * design package reserves for the pair under a page's one heading, so the
+   * hero's buttons are not the size of the plan buttons a screen below. The
+   * promise that goes with the primary is a line of metadata under the row,
+   * not a span inside the link: as a span it made the words a link to the
+   * console and set the anchor's width. There is one trigger on the page, so
    * the table and the compact list carry none, and the head row of the table
    * opens with an empty corner. */
-  const actions = head.match(/<div class="([^"]*)" data-actions="pricing">(.*?)<\/div>/s);
-  assert.ok(actions, 'the head has no action row');
-  assert.match(actions[1], /^flex flex-wrap items-start gap-4\b/, 'the actions are not the site recipe');
-  assert.doesNotMatch(actions[1], /justify-center|mx-auto/);
-  const primary = actions[2].match(/^<a class="([^"]*)" href="([^"]+)"><span class="oe-button">([^<]+)<\/span><span class="([^"]*)">([^<]+)<\/span><\/a>/);
-  assert.ok(primary, 'the primary action does not lead the row in the site recipe');
-  assert.equal(primary[1], 'inline-flex flex-col items-start gap-2 no-underline');
+  const actions = head.match(/<div class="([^"]*)" data-actions="pricing">(.*?)<\/div>\s*<p class="([^"]*)">([^<]+)<\/p>/s);
+  assert.ok(actions, 'the head has no action row with a line under it');
+  assert.equal(actions[1], 'flex flex-wrap items-start gap-4 justify-center', 'the actions are not the site recipe, centered');
+  const primary = actions[2].match(/^<a class="([^"]*)" href="([^"]+)">([^<]+)<\/a>/);
+  assert.ok(primary, 'the primary action does not lead the row as one plain control');
+  assert.equal(primary[1], 'oe-button oe-button-large');
   assert.equal(primary[2], 'https://console.open-e2ee.dev/relay/new');
   assert.equal(primary[3], 'Start free');
-  assert.equal(primary[5], 'Development environment · no card');
-  assert.match(primary[4], /--oe-metadata-font-family/, 'the sublabel is not metadata');
+  assert.doesNotMatch(actions[2], /<span|no card|No credit card/, 'the promise is inside the action row');
+  assert.equal(actions[4], 'No credit card needed');
+  assert.match(actions[3], /--oe-metadata-font-family/, 'the promise is not metadata');
+  assert.doesNotMatch(built, /Development environment · no card/, 'the old promise is still on the page');
   const triggerPattern = /<button type="button" class="([^"]*)" aria-haspopup="dialog" data-included-trigger>([^<]+)<\/button>/g;
   const triggers = [...built.matchAll(triggerPattern)];
   assert.equal(triggers.length, 1, 'the page does not have one trigger');
-  assert.match(triggers[0][1], /^oe-button oe-button-secondary$/, 'the trigger is not the full-size secondary control');
+  assert.equal(triggers[0][1], 'oe-button oe-button-secondary oe-button-large', 'the trigger is not the large secondary control');
   assert.equal(triggers[0][2], 'See what is included');
   assert.ok(actions[2].endsWith(triggers[0][0]), 'the trigger does not close the action row');
   assert.ok(actions[2].indexOf(primary[0]) < actions[2].indexOf(triggers[0][0]), 'the trigger stands before the primary');

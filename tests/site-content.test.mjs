@@ -1275,10 +1275,15 @@ test('keeps the example’s settings on one row, and shortens the writing to hol
 });
 
 test('centers the hero at the phone’s width as well as the desktop’s', async () => {
-  const [index, recipes, strip] = await Promise.all([
+  const [index, recipes, strip, navigation, pricing, relay, product, nextStep] = await Promise.all([
     read('../src/pages/index.astro'),
     read('../src/lib/recipes.ts'),
     read('../src/components/PlatformStrip.astro'),
+    read('../src/lib/site-navigation.ts'),
+    read('../src/pages/pricing.astro'),
+    read('../src/pages/relay/index.astro'),
+    read('../src/pages/product.astro'),
+    read('../src/components/NextStep.astro'),
   ]);
 
   /* The hero column, which is centered at every width. There was a breakpoint
@@ -1288,41 +1293,42 @@ test('centers the hero at the phone’s width as well as the desktop’s', async
   assert.match(copy, /\btext-center\b/, 'the hero copy is left-aligned again');
   assert.match(copy, /\bitems-center\b/);
 
-  /* The children do not inherit `text-align` — the action row and the primary
-   * call to action are flex containers, and the strip is a grid sibling — so
-   * each is centered where it is written. Centered copy above flush-left
-   * buttons is the failure this catches, and it looks like a bug rather than a
-   * choice.
-   *
-   * Both callers override a recipe that starts them at `items-start`, and that
-   * is the part worth writing down. Two utilities setting one property resolve
-   * by the order Tailwind emits them, not by the order of the `class:list`, so
-   * the call to action carries the important suffix. Without it the recipe wins
-   * about half the time and nothing in the markup says which half. */
+  /* The children do not inherit `text-align` — the action row is a flex
+   * container, and the strip is a grid sibling — so each is centered where it
+   * is written. Centered copy above flush-left buttons is the failure this
+   * catches, and it looks like a bug rather than a choice. The row overrides a
+   * recipe that starts it at `items-start`, and that is the part worth writing
+   * down: two utilities setting one property resolve by the order Tailwind
+   * emits them, not by the order of the `class:list`. The line under the row is
+   * a block of text, so it centers by inheritance and carries nothing. */
   assert.match(index, /class:list=\{\[ACTIONS, 'justify-center'\]\}/);
-  assert.match(index, /class:list=\{\[CTA_PRIMARY, 'items-center!'\]\}/);
   assert.match(
     recipes,
     /export const ACTIONS = '[^']*\bitems-start\b/,
     'the action row no longer starts at items-start, so the hero override is now the only thing setting it',
   );
-  assert.match(
-    recipes,
-    /export const CTA_PRIMARY = '[^']*\bitems-start\b/,
-    'the call to action no longer starts at items-start, so its important suffix in the hero is unexplained',
-  );
 
-  /* The sublabel hangs from the button's width instead of setting the anchor's.
-   * A sublabel wider than its button once pushed the secondary control 159px
-   * out on /pricing and /relay, where "Start free" sits over "Development
-   * environment · no card". The centered hero centers the words under its
-   * button; the left-aligned heroes let them run past its right edge. */
-  assert.match(
-    recipes,
-    /export const CTA_SUBLABEL = `[^`]*\bw-0 min-w-full whitespace-nowrap\b/,
-    'the sublabel sets the width of the call to action again',
-  );
-  assert.match(index, /class:list=\{\[CTA_SUBLABEL, 'text-center'\]\}/, 'the centered hero no longer centers its sublabel under the button');
+  /* The promise under the primary is a line under the row, never a span inside
+   * the link. As a second span in the anchor it made "no card" a link to the
+   * console and, where the words were wider than the button, set the anchor's
+   * width, so the secondary control landed a sublabel's width away on
+   * /pricing and /relay. Every hero that carries the promise wraps its row and
+   * the line in one block, and the four that make the console's promise read
+   * the words from one place. */
+  assert.doesNotMatch(recipes, /CTA_PRIMARY/, 'a recipe that puts the sublabel inside the link is back');
+  assert.match(recipes, /export const CTA_SUBLABEL = `m-0 mt-3 \$\{METADATA\} text-text-3`;/, 'the sublabel is not a block of metadata under the row');
+  assert.match(navigation, /export const startPromise = 'No credit card needed';/, 'the console\u2019s promise is not one string');
+  const heroes = { index, pricing, relay, product, nextStep };
+  for (const [name, source] of Object.entries(heroes)) {
+    assert.doesNotMatch(source, /<span class(?::list)?=\{\[?CTA_SUBLABEL/, `${name} puts the sublabel inside a link`);
+    assert.doesNotMatch(source, /<span class="oe-button">/, `${name} draws a button inside a link`);
+    assert.doesNotMatch(source, /Development environment · no card|Free to start · no card/, `${name} carries the old words`);
+    assert.match(
+      source,
+      /<\/div>\s*<p class=\{CTA_SUBLABEL\}>(\{startPromise\}|ten minutes · two clients · no account)<\/p>\s*<\/div>/,
+      `${name} does not set the line under its action row, in the row\u2019s block`,
+    );
+  }
 
   /* The strip centers itself rather than being centered by its caller. It has
    * one caller, so a prop for it would be a setting with one possible value,

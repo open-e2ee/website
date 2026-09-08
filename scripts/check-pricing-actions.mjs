@@ -82,11 +82,13 @@ const route = (slice) => slice.match(/<a class="oe-button[^"]*" href="([^"]+)"/)
 let rows = [];
 let blocks = [];
 if (plans) {
-  /* The wide rendering: the table's plan columns, then the Enterprise row. */
+  /* The wide rendering: the table's plan columns, then the Enterprise row. The
+   * hero above the table carries the page's own actions, so the rendering
+   * starts at the first plan. */
   const compactStart = plans.indexOf('data-relay-plan-compact=');
   const compactEnd = compactStart === -1 ? -1 : plans.indexOf('</ul>', compactStart);
-  const wide =
-    compactStart === -1 ? plans : plans.slice(0, compactStart) + plans.slice(compactEnd);
+  const tableStart = Math.max(plans.indexOf('data-relay-plan='), 0);
+  const wide = (compactStart === -1 ? plans : plans.slice(0, compactStart) + plans.slice(compactEnd)).slice(tableStart);
   rows = planSlices(wide, 'data-relay-plan');
 
   if (rows.length < 5) failures.push(`only ${rows.length} Relay plan column(s) and row(s) on the page`);

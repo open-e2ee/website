@@ -9,10 +9,9 @@ import {
   relayProductionRetention,
 } from '../data/relay-pricing.mjs';
 import { startupTier, tiers } from '../data/pricing.mjs';
-import { startAction } from '../lib/site-navigation';
+import { startAction, startPromise } from '../lib/site-navigation';
 import {
   ACTIONS,
-  CTA_PRIMARY,
   CTA_SUBLABEL,
   BAND,
   BAND_HEAD,
@@ -99,8 +98,9 @@ const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
 const PLANS = 'pt-[clamp(2.5rem,1.75rem+4vw,4.5rem)] pb-[clamp(3rem,2rem+4vw,5.5rem)]';
 /* The lead runs the width of the table under it, not the recipe's measure. */
 const PLANS_LEAD = 'max-w-none';
-const PLANS_HEAD = 'mb-10 [&>*+*]:mt-4';
+const PLANS_HEAD = 'mb-10 text-center [&>*+*]:mt-4';
 const PLANS_ACTIONS = 'mt-8!';
+const PLANS_PRIMARY = 'oe-button oe-button-large';
 
 /*
  * What every plan carries opens in a dialog, one card per capability, so the
@@ -119,7 +119,7 @@ const PLANS_ACTIONS = 'mt-8!';
  * icon from the design package so a reader scanning the deck finds a card by
  * its shape before its words. None is a padlock or a shield.
  */
-const INCLUDED_TRIGGER = 'oe-button oe-button-secondary';
+const INCLUDED_TRIGGER = 'oe-button oe-button-secondary oe-button-large';
 const INCLUDED_DIALOG =
   'm-auto w-[min(60rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-y-auto border-0 bg-ground-raised p-0 text-text-1 ' +
   'shadow-[var(--oe-shadow-md),inset_0_0_0_1px_var(--oe-border-1)] backdrop:bg-transparent';
@@ -348,12 +348,12 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
       <div class={PLANS_HEAD} data-plans-head>
         <h1>OpenE2EE Relay, free to start.</h1>
         <p class:list={[LEAD, PLANS_LEAD]}>Ship fully featured end-to-end encrypted messaging, securely, and at scale.</p>
-        <div class:list={[ACTIONS, PLANS_ACTIONS]} data-actions="pricing">
-          <a class={CTA_PRIMARY} href={RELAY_PROJECT}>
-            <span class="oe-button">{startAction.label}</span>
-            <span class={CTA_SUBLABEL}>Development environment · no card</span>
-          </a>
-          <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button>
+        <div class={PLANS_ACTIONS}>
+          <div class:list={[ACTIONS, 'justify-center']} data-actions="pricing">
+            <a class={PLANS_PRIMARY} href={RELAY_PROJECT}>{startAction.label}</a>
+            <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button>
+          </div>
+          <p class={CTA_SUBLABEL}>{startPromise}</p>
         </div>
       </div>
       <div class={PLAN_TABLE_AT}>

@@ -59,10 +59,9 @@ test('the hero starts a Relay project, and the demo follows it', () => {
   );
   assert.match(demo, /href="#demo"/, 'the demo is not the second action');
 
-  /* Read the controls rather than the anchors: the primary carries its label
-   * and its terms in two spans under one anchor, so the fill is on a child.
-   * Exactly one of the two is filled, because two filled buttons state no
-   * order, which is the state this row exists to remove. */
+  /* Read the controls, which are the anchors themselves. Exactly one of the
+   * two is filled, because two filled buttons state no order, which is the
+   * state this row exists to remove. */
   const controls = [...row.matchAll(/class="[^"]*\boe-button\b[^"]*"/g)].map((match) => match[0]);
   assert.equal(controls.length, 2, `the hero row draws ${controls.length} controls for two actions`);
 

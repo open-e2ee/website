@@ -125,23 +125,16 @@ export const QUIET_LINK = 'text-text-3 no-underline hover:text-text-1';
 export const ACTIONS = 'flex flex-wrap items-start gap-4';
 
 /*
- * The activation call to action carries its promise underneath it, not in a
- * tooltip. The anchor wraps both the filled button and the sublabel, so the
- * link underline would otherwise paint twice: once through the button label and
- * once as a stray rule under the terms out on the canvas.
+ * The line under an action row: the promise that goes with the primary, set as
+ * metadata under the buttons and never inside a link. It was once a second
+ * span inside the primary's anchor, which made "no card" a link to the console
+ * and, when the words were wider than the button, widened the anchor so the
+ * secondary control landed a sublabel's width away. A hero wraps its row and
+ * this line in one block, so the block takes the hero's spacing and the line
+ * keeps its own distance from the buttons. A hero that centers its text
+ * centers this line by inheritance.
  */
-export const CTA_PRIMARY = 'inline-flex flex-col items-start gap-2 no-underline';
-
-/*
- * The sublabel hangs under the button without setting the anchor's width. A
- * flex child at `w-0` adds nothing to its parent's intrinsic width, and
- * `min-w-full` then hands it the button's width to hang from, with its words
- * running past that edge on one line. Without this, a sublabel wider than its
- * button widens the anchor, and the secondary control beside it lands a
- * sublabel's width away instead of one gap: "Start free" over "Development
- * environment · no card" put the next button 159px out.
- */
-export const CTA_SUBLABEL = `${METADATA} w-0 min-w-full whitespace-nowrap text-text-3`;
+export const CTA_SUBLABEL = `m-0 mt-3 ${METADATA} text-text-3`;
 
 export const TEXT_LINKS = 'flex flex-wrap gap-4 text-[0.9375rem]';
 

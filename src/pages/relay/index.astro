@@ -2,14 +2,13 @@
 import RelayMailboxes from '../../components/diagrams/RelayMailboxes.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { relayPlans } from '../../data/relay-pricing.mjs';
-import { startAction } from '../../lib/site-navigation';
+import { startAction, startPromise } from '../../lib/site-navigation';
 import {
   ACTIONS,
   BAND,
   BAND_HEAD,
   BAND_SURFACE,
   CONTAINER,
-  CTA_PRIMARY,
   CTA_SUBLABEL,
   DEFINITION_ROWS,
   LABEL,
@@ -78,12 +77,12 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
               is the shortest route from this page to a running relay; the
               secondary is the reading a developer who wants the shape of the
               API before an account asks for. */}
-          <div class={ACTIONS}>
-            <a class={CTA_PRIMARY} href={RELAY_PROJECT}>
-              <span class="oe-button">Start free</span>
-              <span class={CTA_SUBLABEL}>Development environment · no card</span>
-            </a>
-            <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the quickstart</a>
+          <div>
+            <div class={ACTIONS}>
+              <a class="oe-button" href={RELAY_PROJECT}>{startAction.label}</a>
+              <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the quickstart</a>
+            </div>
+            <p class={CTA_SUBLABEL}>{startPromise}</p>
           </div>
         </div>
         <div class={START_CARD}>
