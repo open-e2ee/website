@@ -18,12 +18,12 @@ const { product, size = 16, class: className } = Astro.props;
 <span
   class:list={[
     'inline-flex items-center gap-[0.437em] text-[length:var(--oe-chrome-lockup-size)] leading-none text-text-1',
-    '[&_.oe-mark]:h-[0.795em] [&_.oe-mark]:w-[0.795em] [&_.oe-mark]:min-h-4 [&_.oe-mark]:min-w-4 [&_.oe-mark]:flex-none',
+    '[&_.oe-mark]:h-[1.1em] [&_.oe-mark]:w-[1.1em] [&_.oe-mark]:min-h-4 [&_.oe-mark]:min-w-4 [&_.oe-mark]:flex-none [&_.oe-mark]:translate-y-[0.264em]',
     product && 'flex-col items-start gap-[0.4em]',
     className,
   ]}
 >
-  <span style="display: inline-flex; align-items: center; gap: 0.298em;">
+  <span style="display: inline-flex; align-items: baseline; gap: 0.4125em;">
     <Mark size={size} lockup />
     <span class="oe-wordmark"><span>Open</span><span>E2EE</span></span>
   </span>

@@ -1,6 +1,6 @@
 {
   "package": "@open-e2ee/design",
-  "version": "0.20.1",
+  "version": "0.20.2",
   "source": "packages/design/dist/assets",
-  "sha256": "32bad5f0dab7155916dc586f2534c6cb57e457c28abf9b37de480f03b96ce80e"
+  "sha256": "7a811e2481360859b7b44a28b1c81c50e80f97921d4ab834dfdffa7edecae9af"
 }

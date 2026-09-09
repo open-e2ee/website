@@ -28,7 +28,6 @@ const MANIFEST = new URL('../public/brand/manifest.json', import.meta.url);
 
 /* DESIGN.md's own bound: the mark stands at most 1.15 cap heights tall.
    `scripts/measure-lockup-fit.mjs` carries the same number for the same rule. */
-const MARK_CAP_LIMIT = 1.15;
 
 /* The stylesheet rounds an em to three places, which costs at most half a
    thousandth. A thousandth admits that rounding and nothing else: the defect
@@ -118,12 +117,8 @@ function spacingRem(css, name) {
 
 const manifest = JSON.parse(await readFile(MANIFEST, 'utf8')).lockups;
 
-/* Both ratios are of the wordmark's font size, which is what the header sets
-   the lockup in. The cap ratio is the same division, and it is the thing the
-   mark has to match rather than the font size. */
-const markEm = manifest.symbolSize / manifest.wordmarkFontSize;
-const gapEm = manifest.symbolGap / manifest.wordmarkFontSize;
-const capEm = manifest.wordmarkCapHeight / manifest.wordmarkFontSize;
+const markEm = manifest.symbolFontRatio;
+const gapEm = manifest.gapFontRatio;
 
 let pages = [];
 let css = '';
@@ -154,12 +149,17 @@ test('the mark is the manifest share of the wordmark font size', { skip: pages.l
   }
 });
 
-test('the mark stands no taller than the cap height allows', { skip: pages.length === 0 }, () => {
-  const ratio = markEm / capEm;
-  assert.ok(
-    ratio <= MARK_CAP_LIMIT,
-    `the mark is ${ratio.toFixed(3)} cap heights tall, over the ${MARK_CAP_LIMIT} the lockup allows`,
-  );
+test('the larger mark stays centered on the full wordmark', { skip: pages.length === 0 }, () => {
+  assert.equal(markEm, 1.1);
+  for (const page of pages) {
+    const { lockup, lockupStyle } = header(page);
+    assert.match(lockupStyle, /align-items:\s*baseline/);
+    const drop = Number(only(lockup, /^\[&_\.oe-mark\]:translate-y-\[([\d.]+)em\]$/, 'mark baseline drop', page.path));
+    assert.ok(Math.abs(drop - manifest.symbolBaselineDropRatio) < TOLERANCE);
+    const markCenter = drop - markEm / 2;
+    const wordmarkCenter = (manifest.wordmarkInkBottomRatio - manifest.wordmarkInkTopRatio) / 2;
+    assert.ok(Math.abs(markCenter - wordmarkCenter) < TOLERANCE);
+  }
 });
 
 test('the gap beside the mark is the manifest gap', { skip: pages.length === 0 }, () => {
