@@ -149,16 +149,14 @@ test('the mark is the manifest share of the wordmark font size', { skip: pages.l
   }
 });
 
-test('the larger mark stays centered on the full wordmark', { skip: pages.length === 0 }, () => {
-  assert.equal(markEm, 1.1);
+test('the larger mark bottom aligns with the wordmark descender', { skip: pages.length === 0 }, () => {
+  assert.equal(markEm, 1.3);
   for (const page of pages) {
     const { lockup, lockupStyle } = header(page);
     assert.match(lockupStyle, /align-items:\s*baseline/);
     const drop = Number(only(lockup, /^\[&_\.oe-mark\]:translate-y-\[([\d.]+)em\]$/, 'mark baseline drop', page.path));
     assert.ok(Math.abs(drop - manifest.symbolBaselineDropRatio) < TOLERANCE);
-    const markCenter = drop - markEm / 2;
-    const wordmarkCenter = (manifest.wordmarkInkBottomRatio - manifest.wordmarkInkTopRatio) / 2;
-    assert.ok(Math.abs(markCenter - wordmarkCenter) < TOLERANCE);
+    assert.ok(Math.abs(drop - manifest.wordmarkInkBottomRatio) < TOLERANCE);
   }
 });
 

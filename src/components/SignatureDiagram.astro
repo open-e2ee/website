@@ -134,7 +134,7 @@ const STACK = {
     <g id="sd-mark" fill="var(--oe-diagram-carrier-stroke)">
       <path d={geometry.full.carrierLeftPath} />
       <path d={geometry.full.carrierRightPath} />
-      <path d={geometry.full.payloadPath} />
+      <path d={geometry.full.payloadWithLockPath} fill-rule="evenodd" />
     </g>
   </defs>
 
@@ -242,7 +242,7 @@ const STACK = {
     <g id="sd-mark-stacked" fill="var(--oe-diagram-carrier-stroke)">
       <path d={geometry.full.carrierLeftPath} />
       <path d={geometry.full.carrierRightPath} />
-      <path d={geometry.full.payloadPath} />
+      <path d={geometry.full.payloadWithLockPath} fill-rule="evenodd" />
     </g>
   </defs>
 

@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="28 28 456 456" role="img" aria-labelledby="title desc">
   <title id="title">Adaptive OpenE2EE small-size mark</title>
-  <desc id="desc">Two open carrier brackets holding a solid square payload. Small-size optical variant, drawn with thicker stems for favicon scale. The fill follows the active color scheme.</desc>
+  <desc id="desc">Two open carrier brackets holding a square with a centered lock cutout. Small-size optical canvas with the same proportions at favicon scale. The fill follows the active color scheme.</desc>
   <style>
     :root { --oe-mark: #080808; }
     @media (prefers-color-scheme: dark) {
@@ -10,7 +10,7 @@
       path { fill: CanvasText; }
     }
   </style>
-  <path d="M56 56 H200 V112 H112 V400 H200 V456 H56 Z" fill="var(--oe-mark)"/>
-  <path d="M456 56 H312 V112 H400 V400 H312 V456 H456 Z" fill="var(--oe-mark)"/>
-  <path d="M152 152 H360 V360 H152 Z" fill="var(--oe-mark)"/>
+  <path d="M56 56 H200 V92 H92 V420 H200 V456 H56 Z" fill="var(--oe-mark)" fill-rule="evenodd"/>
+  <path d="M456 56 H312 V92 H420 V420 H312 V456 H456 Z" fill="var(--oe-mark)" fill-rule="evenodd"/>
+  <path d="M120 120 H392 V392 H120 Z M190.72 250.56 Q190.72 245.12 196.16 245.12 H212.48 V217.92 A43.52 43.52 0 0 1 299.52 217.92 V245.12 H315.84 Q321.28 245.12 321.28 250.56 V332.16 Q321.28 337.6 315.84 337.6 H196.16 Q190.72 337.6 190.72 332.16 Z M234.24 245.12 H277.76 V217.92 A21.76 21.76 0 0 0 234.24 217.92 Z" fill="var(--oe-mark)" fill-rule="evenodd"/>
 </svg>

@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="37.12 37.12 437.76 437.76" role="img" aria-labelledby="title desc">
   <title id="title">Adaptive OpenE2EE mark</title>
-  <desc id="desc">Two open carrier brackets holding a solid square payload. The payload touches neither bracket. The fill follows the active color scheme.</desc>
+  <desc id="desc">Two open carrier brackets holding a square with a centered lock cutout. The square touches neither bracket. The fill follows the active color scheme.</desc>
   <style>
     :root { --oe-mark: #080808; }
     @media (prefers-color-scheme: dark) {
@@ -10,7 +10,7 @@
       path { fill: CanvasText; }
     }
   </style>
-  <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="var(--oe-mark)"/>
-  <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="var(--oe-mark)"/>
-  <path d="M152 152 H360 V360 H152 Z" fill="var(--oe-mark)"/>
+  <path d="M64 64 H202.24 V98.56 H98.56 V413.44 H202.24 V448 H64 Z" fill="var(--oe-mark)" fill-rule="evenodd"/>
+  <path d="M448 64 H309.76 V98.56 H413.44 V413.44 H309.76 V448 H448 Z" fill="var(--oe-mark)" fill-rule="evenodd"/>
+  <path d="M125.44 125.44 H386.56 V386.56 H125.44 Z M193.3312 250.7776 Q193.3312 245.5552 198.5536 245.5552 H214.2208 V219.4432 A41.7792 41.7792 0 0 1 297.7792 219.4432 V245.5552 H313.4464 Q318.6688 245.5552 318.6688 250.7776 V329.1136 Q318.6688 334.336 313.4464 334.336 H198.5536 Q193.3312 334.336 193.3312 329.1136 Z M235.1104 245.5552 H276.8896 V219.4432 A20.8896 20.8896 0 0 0 235.1104 219.4432 Z" fill="var(--oe-mark)" fill-rule="evenodd"/>
 </svg>

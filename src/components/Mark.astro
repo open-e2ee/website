@@ -15,7 +15,7 @@ const { size = 32, lockup = false, decorative = true, class: className } = Astro
 const variant = variantForSize(size);
 const paths = pathsForVariant(variant);
 const bounds = geometry[variant].construction.artwork;
-const viewBox = lockup ? `${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}` : geometry.viewBox;
+const viewBox = lockup ? `${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}` : geometry[variant].viewBox;
 const titleId = `oe-mark-${crypto.randomUUID().slice(0, 8)}`;
 ---
 
@@ -30,5 +30,5 @@ const titleId = `oe-mark-${crypto.randomUUID().slice(0, 8)}`;
   aria-labelledby={decorative ? undefined : titleId}
 >
   {!decorative && <title id={titleId}>OpenE2EE</title>}
-  {paths.map((d) => <path d={d} />)}
+  {paths.map((d) => <path d={d} fill-rule="evenodd" />)}
 </svg>
