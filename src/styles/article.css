@@ -136,7 +136,6 @@
   font-size: var(--oe-metadata-size);
   font-weight: var(--oe-metadata-weight);
   letter-spacing: var(--oe-metadata-tracking);
-  text-transform: uppercase;
 }
 
 .oe-article-toc ol {
@@ -296,7 +295,6 @@
   font-size: var(--oe-metadata-size);
   font-weight: var(--oe-metadata-weight);
   letter-spacing: var(--oe-metadata-tracking);
-  text-transform: uppercase;
 }
 
 .oe-article-neighbor-title {
