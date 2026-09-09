@@ -10,7 +10,9 @@
  *
  * So this reads the built page rather than the source, and holds four rules:
  *
- *   1. Every Relay plan column or row carries exactly one action control.
+ *   1. Every Relay plan column or row carries exactly one action control. A
+ *      column's action stands in the table's foot, under the rows, so a column
+ *      here is its head plus its foot cell.
  *   2. Every SDK commercial license row carries exactly one action control.
  *   3. Each rendering leads with one filled action and no more, so a reader who
  *      scans for weight finds the marked plan and the entry license.
@@ -89,7 +91,22 @@ if (plans) {
   const compactEnd = compactStart === -1 ? -1 : plans.indexOf('</ul>', compactStart);
   const tableStart = Math.max(plans.indexOf('data-relay-plan='), 0);
   const wide = (compactStart === -1 ? plans : plans.slice(0, compactStart) + plans.slice(compactEnd)).slice(tableStart);
-  rows = planSlices(wide, 'data-relay-plan');
+  const tableEnd = wide.indexOf('</table>');
+  const table = tableEnd === -1 ? '' : wide.slice(0, tableEnd);
+  const bodyStart = table.indexOf('<tbody');
+  const footStart = table.indexOf('<tfoot');
+  if (bodyStart === -1 || footStart === -1) failures.push('the Relay plan table has no body or no foot');
+  const heads = planSlices(table.slice(0, bodyStart === -1 ? table.length : bodyStart), 'data-relay-plan');
+  const feet = planSlices(footStart === -1 ? '' : table.slice(footStart), 'data-relay-plan-action');
+  if (feet.map((cell) => cell.id).join() !== heads.map((head) => head.id).join()) {
+    failures.push(`the foot carries actions for ${feet.map((cell) => cell.id).join(', ') || 'no plan'} under columns ${heads.map((head) => head.id).join(', ')}`);
+  }
+  for (const head of heads) {
+    const found = actions(head.html).all.length;
+    if (found !== 0) failures.push(`${head.id} carries ${found} action control(s) in its head; the action stands in the foot`);
+  }
+  const columns = heads.map((head) => ({ id: head.id, html: head.html + (feet.find((cell) => cell.id === head.id)?.html ?? '') }));
+  rows = [...columns, ...planSlices(tableEnd === -1 ? '' : wide.slice(tableEnd), 'data-relay-plan')];
 
   if (rows.length < 5) failures.push(`only ${rows.length} Relay plan column(s) and row(s) on the page`);
 

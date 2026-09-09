@@ -17,15 +17,13 @@
 interface Props {
   /** The label the row is headed by. */
   label: string;
-  /** A short tail on its own line under the label, still part of the trigger. */
-  tail?: string;
   /** What the label means, as one or two sentences. */
   definition: string;
   /** A document-unique id for the definition. */
   id: string;
 }
 
-const { label, tail, definition, id } = Astro.props;
+const { label, definition, id } = Astro.props;
 
 const TRIGGER =
   'cursor-help appearance-none border-0 bg-transparent p-0 text-left text-inherit ' +
@@ -39,7 +37,7 @@ const DEFINITION =
 ---
 
 <span class="group relative inline-block" data-term>
-  <button type="button" class={TRIGGER} aria-describedby={id}>{label}{tail && <><br />{tail}</>}</button>
+  <button type="button" class={TRIGGER} aria-describedby={id}>{label}</button>
   <span role="tooltip" id={id} class={DEFINITION}>{definition}</span>
 </span>
 

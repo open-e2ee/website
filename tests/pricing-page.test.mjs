@@ -10,8 +10,8 @@
  * the columns of one table, in catalog order, priced larger than they are
  * named; monthly active users are the first row and its overage the second, because a
  * buyer sizes a plan by it; every row that differs by plan is headed by a name
- * that defines itself on hover; what every plan carries closes the table under
- * one heading; one plan is marked with a tinted, padded column and carries the
+ * that defines itself on hover; what every plan carries stands in its own
+ * section under the plans, one card per capability, and answers the pointer; one plan is marked with a tinted, padded column and carries the
  * filled action; Enterprise is one outlined band under them; the same rows
  * render again as one block per plan for narrow viewports; and the licensing
  * section follows, raised once the plans are read.
@@ -49,7 +49,7 @@ const HIGHLIGHT_LABEL = 'Most popular';
 function enterpriseBand() {
   const start = built.indexOf(`data-relay-plan="${enterprise.id}"`);
   assert.ok(start !== -1, 'Enterprise has no band');
-  return built.slice(start, built.indexOf('id="development"', start));
+  return built.slice(start, built.indexOf('id="included"', start));
 }
 
 /** The plan table, from its opening tag to its close. */
@@ -67,6 +67,15 @@ function columnHead(id) {
   const next = table.indexOf('<th scope="col"', start + 1);
   const body = table.indexOf('<tbody', start);
   return table.slice(start, next === -1 ? body : Math.min(next, body));
+}
+
+/** The foot cell for one plan, from its marker to the next cell or the row's end. */
+function columnFoot(id) {
+  const start = table.indexOf(`data-relay-plan-action="${id}"`);
+  if (start === -1) return null;
+  const next = table.indexOf('<td ', start + 1);
+  const end = table.indexOf('</tr>', start);
+  return table.slice(start, next === -1 ? end : Math.min(next, end));
 }
 
 /** The compact block for one plan, from its marker to the next block or the list's end. */
@@ -94,9 +103,7 @@ const capacityRows = (() => {
   return [...body.matchAll(/<tr>(.*?)<\/tr>/gs)].map(([, row]) => {
     const head = row.slice(0, row.indexOf('</th>'));
     const headClasses = head.match(/^<th scope="row" class="([^"]*)"/)?.[1] ?? '';
-    /* A name may break onto two lines inside its button; the break is not
-     * part of the name. */
-    const label = head.match(/<button [^>]*>(.*?)<\/button>/)?.[1].replace(/<br>/g, ' ') ?? null;
+    const label = head.match(/<button [^>]*>(.*?)<\/button>/)?.[1] ?? null;
     /* A value cell carries a figure, or the em dash for a price that does not
      * exist with its spoken form beside it. The class attribute holds no `>`,
      * so a bounded match is safe here. */
@@ -117,11 +124,11 @@ function cells(label) {
   return row.cells.map((cell) => cell.text);
 }
 
-/** The dialog under the plans: what every plan carries. */
+/** The section under the plans: what every plan carries. */
 const included = (() => {
-  const start = built.indexOf('<dialog ');
-  assert.ok(start !== -1, 'the page has no dialog');
-  return built.slice(start, built.indexOf('</dialog>', start) + '</dialog>'.length);
+  const start = built.indexOf('<section id="included"');
+  assert.ok(start !== -1, 'the page has no included section');
+  return built.slice(start, built.indexOf('</section>', start) + '</section>'.length);
 })();
 
 test('the self-service plans are the columns of one table, in catalog order', () => {
@@ -140,7 +147,7 @@ test('the self-service plans are the columns of one table, in catalog order', ()
     const head = columnHead(plan.id);
     assert.ok(head.includes(`>${plan.name}</h3>`), `${plan.id} is not headed ${plan.name}`);
     assert.ok(head.includes(`>${plan.price}</p>`), `${plan.id} does not print ${plan.price}`);
-    assert.match(head, /<a class="oe-button[^"]*" href="https:\/\/console\.open-e2ee\.dev\/relay\/new/);
+    assert.match(columnFoot(plan.id), /<a class="oe-button[^"]*" href="https:\/\/console\.open-e2ee\.dev\/relay\/new/, `${plan.id} has no action under its column`);
   }
 
   /* Rendered from the catalog, not typed. A page that lists the plans by hand
@@ -153,20 +160,21 @@ test('the self-service plans are the columns of one table, in catalog order', ()
 test('monthly active users lead the rows, their overage follows, and every cell comes from the catalog', () => {
   /* The founder's 2026-09-08 call: monthly active users are the count a buyer
    * sizes a plan by, so they are the first row under the name every buyer
-   * knows, with the meter that counts them as the unit line, and the price of
-   * one more sits directly under it. Every row is named by what the plan
-   * provides, and the meter that counts it is the unit under its name.
-   * Retention is the same on every plan, so it is not a row. The names are
-   * the founder's, in title case, and the one that carries its abbreviation
-   * breaks before it so the row stays two lines wide in the name column. */
+   * knows, and the price of one more sits directly under it. Every row is
+   * named by what the plan provides, in the founder's words, in title case,
+   * with no unit line under it. Retention is the same on every plan, so it is
+   * not a row. */
   assert.deepEqual(
     capacityRows.map((row) => row.label),
-    ['Monthly Active Users (MAU)', 'Additional MAU', 'Message Delivery', 'Encrypted Attachments', 'Encrypted Storage', 'SDK Commercial License'],
+    ['Monthly Active Users', 'Additional MAU', 'Message Delivery Units', 'Attachment Uploads', 'Encrypted Storage', 'SDK Commercial License'],
   );
-  assert.match(capacityRows[0].head, /">Monthly Active Users<br>\(MAU\)<\/button>/, 'the abbreviation does not break onto its own line inside the button');
-  assert.deepEqual(cells('Monthly Active Users (MAU)'), selfServe.map((plan) => plan.relayMau));
-  assert.deepEqual(cells('Message Delivery'), selfServe.map((plan) => plan.deliveryUnits));
-  assert.deepEqual(cells('Encrypted Attachments'), selfServe.map((plan) => plan.attachmentOperations));
+  /* The founder's 2026-09-08 call: the row name stands on its own, with no
+   * abbreviation on a second line. The row under it says "MAU", and the
+   * definition on each spells it out. */
+  assert.doesNotMatch(capacityRows[0].head, /<br>|MAU/, 'the lead row name carries more than the name');
+  assert.deepEqual(cells('Monthly Active Users'), selfServe.map((plan) => plan.relayMau));
+  assert.deepEqual(cells('Message Delivery Units'), selfServe.map((plan) => plan.deliveryUnits));
+  assert.deepEqual(cells('Attachment Uploads'), selfServe.map((plan) => plan.attachmentOperations));
   assert.deepEqual(cells('Encrypted Storage'), selfServe.map((plan) => plan.storage));
 
   /* The founder's 2026-09-08 call: the one row every plan shares. A buyer with
@@ -184,12 +192,12 @@ test('monthly active users lead the rows, their overage follows, and every cell 
     assert.equal(cell.text, '');
   }
   assert.match(license.head, /no self-hosting right and no right to redistribute the SDK\./, 'the definition does not repeat the limits of the grant');
-  const compact = built.slice(built.indexOf('data-relay-plan-compact='), built.indexOf('<dialog '));
+  const compact = built.slice(built.indexOf('data-relay-plan-compact='), built.indexOf(`data-relay-plan="${enterprise.id}"`));
   assert.equal((compact.match(/<dd class="[^"]*"><svg class="oe-icon text-success" /g) ?? []).length, selfServe.length, 'the compact blocks do not carry the check');
 
   /* A price that does not exist is an em dash, never $0 and never a phrase in
    * a column of figures, and a screen reader hears what the dash means. The
-   * price of one more is a plain figure: its unit line says what it is per. */
+   * price of one more is a plain figure, and its definition says what it is per. */
   assert.deepEqual(cells('Additional MAU'), selfServe.map((plan) => plan.overage?.relayMau ?? '\u2014'));
   for (const cell of capacityRows.find((row) => row.label === 'Additional MAU').cells) {
     if (cell.text === '\u2014') {
@@ -202,12 +210,10 @@ test('monthly active users lead the rows, their overage follows, and every cell 
   assert.doesNotMatch(table.slice(table.indexOf('<tbody')), /Hard cap|>\$0</, 'a row still spells out a price that does not exist');
 
   const unit = (label) => capacityRows.find((row) => row.label === label).head.match(/<span class="[^"]*">([^<]*)<\/span>\s*$/)?.[1] ?? null;
-  assert.equal(unit('Monthly Active Users (MAU)'), null, 'the name carries its abbreviation, so it needs no unit line');
-  assert.equal(unit('Additional MAU'), '$ per MAU');
-  assert.equal(unit('Message Delivery'), 'Delivery Units');
-  assert.equal(unit('Encrypted Attachments'), 'Attachment Uploads');
-  assert.equal(unit('Encrypted Storage'), null, 'a value with its own unit needs no unit line');
-  assert.equal(unit('SDK Commercial License'), null, 'a right has no meter');
+  /* The founder's 2026-09-08 call: a row name carries its meter, so no row
+   * has a unit line under its name. */
+  for (const row of capacityRows) assert.equal(unit(row.label), null, `${row.label} carries a unit line`);
+  assert.doesNotMatch(source, /ROW_UNIT|unit\?: string/, 'the page still knows how to set a unit line');
 
   /* The founder's 2026-09-08 call: a value sits at the vertical center of its
    * row, so a figure beside a two-line name is level with the name and not
@@ -235,17 +241,25 @@ test('monthly active users lead the rows, their overage follows, and every cell 
     for (const cell of row.cells) assert.match(cell.classes, /\btext-text-3\b/);
   }
 
-  /* Delivery and storage overage price the same on every paid plan, so they
-   * are one sentence in the note under the table and not two rows of one
-   * repeated figure. The note also says once that allowances are monthly; a
-   * row label that says it again is the explainer this page shed. */
-  const note = built.slice(built.indexOf('</table>'), built.indexOf('id="development"'));
+  /* Delivery and storage overage price the same on every paid plan, so each
+   * is one sentence in the definition of its row and not a row of one
+   * repeated figure. The founder's 2026-09-08 call removed the note under the
+   * table that used to carry them, with the self-hosting note and the two
+   * links under it, and then the How buying works band. The terms stand in
+   * the footer of every page, and the console binds them at checkout. A row
+   * label that says "per month" is the explainer this page shed. */
   const paid = selfServe.filter((plan) => plan.overage);
+  const delivery = capacityRows.find((row) => row.label === 'Message Delivery Units');
+  const storage = capacityRows.find((row) => row.label === 'Encrypted Storage');
   for (const plan of paid) {
-    assert.ok(note.includes(plan.overage.delivery), `the note does not price delivery overage at ${plan.overage.delivery}`);
-    assert.ok(note.includes(plan.overage.storage), `the note does not price storage overage at ${plan.overage.storage}`);
+    assert.ok(delivery.head.includes(`additional units are ${plan.overage.delivery} on every paid plan`), `the delivery row does not price its overage at ${plan.overage.delivery}`);
+    assert.ok(storage.head.includes(`additional storage is ${plan.overage.storage} on every paid plan`), `the storage row does not price its overage at ${plan.overage.storage}`);
   }
-  assert.match(note, /allowances are monthly/);
+  const underTable = built.slice(built.indexOf('</table>'), built.indexOf('id="licensing"'));
+  assert.doesNotMatch(underTable, /Prefer to operate the delivery layer|allowances are monthly|Free stops at every cap/, 'a note the founder removed still stands under the table');
+  assert.doesNotMatch(underTable, /href="\/relay"|href="\/compare\/virgil-security"/, 'a link the founder removed still stands under the table');
+  assert.equal(built.indexOf('How buying works'), -1, 'the How buying works band the founder cut is still on the page');
+  assert.doesNotMatch(built.slice(0, built.indexOf('<footer')), /Taxes can apply|Compare self-hosted rights|Ask a licensing question|Create a project and build in its Development environment/, 'a line of the How buying works band is still on the page');
   for (const row of capacityRows) assert.doesNotMatch(row.label, /per month|[Ee]xact|[Ee]xcess|operations/, `row label "${row.label}"`);
 });
 
@@ -255,7 +269,17 @@ test('every row that differs by plan is headed by a name that defines itself', (
    * hover and focus by CSS and on a tap by the one script the component
    * ships, and the ids that bind them are unique on the page. */
   const define = (name) => relayMeterDefinitions.find((meter) => meter.name === name).definition;
-  const expected = { 'Monthly Active Users (MAU)': define('Relay MAU'), 'Message Delivery': define('Delivery unit'), 'Encrypted Attachments': define('Attachment upload'), 'Encrypted Storage': define('Storage') };
+  const rate = (key) => {
+    const rates = new Set(selfServe.flatMap((plan) => (plan.overage ? [plan.overage[key]] : [])));
+    assert.equal(rates.size, 1, `paid plans price ${key} overage more than one way, so one sentence cannot state it`);
+    return [...rates][0];
+  };
+  const expected = {
+    'Monthly Active Users': define('Relay MAU'),
+    'Message Delivery Units': `${define('Delivery unit')} Once overage is on, additional units are ${rate('delivery')} on every paid plan.`,
+    'Attachment Uploads': `${define('Attachment upload')} A hard cap on every plan.`,
+    'Encrypted Storage': `${define('Storage')} Once overage is on, additional storage is ${rate('storage')} on every paid plan.`,
+  };
   for (const row of capacityRows) {
     const trigger = row.head.match(/<button type="button" class="([^"]*)" aria-describedby="([^"]+)">(.*?)<\/button>/);
     assert.ok(trigger, `${row.label} is not a button that describes itself`);
@@ -287,13 +311,13 @@ test('every row that differs by plan is headed by a name that defines itself', (
   assert.doesNotMatch(wrapper, /overflow|contain:/, 'the table sits inside a clipping box');
 });
 
-test('what every plan carries opens in one dialog of cards from the hero, beside the action that starts', () => {
+test('what every plan carries stands in one section of cards under the plans, linked from the hero', () => {
   /* The head over the table is the page's hero: one heading, one lead
    * sentence, and the two actions under it, centered over the table, the
    * primary carrying the promise as its note. There is no label over the heading;
    * the heading names the page. The founder's 2026-09-08 lead is the one
    * sentence, and the sentence that lists what Relay runs is on the Relay
-   * page and in the dialog, not here twice. */
+   * page, not here twice. */
   const plansStart = built.indexOf('id="relay-plans"');
   const plansClasses = built.slice(built.lastIndexOf('<section', plansStart), plansStart).match(/class="([^"]*)"/)?.[1] ?? '';
   assert.doesNotMatch(plansClasses, /rule-t/, 'the opening section draws a rule under the site header');
@@ -306,8 +330,8 @@ test('what every plan carries opens in one dialog of cards from the hero, beside
   assert.doesNotMatch(headClasses, /rule-|hidden|flex|items-center|mx-auto/, 'the head is not a stack');
   assert.match(headClasses, /\btext-center\b/, 'the head is not centered over the table');
   assert.doesNotMatch(head, /<p class="[^"]*">Pricing<\/p>/, 'a label still stands over the heading');
-  assert.match(head, /^<div class="[^"]*" data-plans-head><h1>Free to start, pricing that scales\.<\/h1>/, 'the heading does not open the head');
-  assert.doesNotMatch(built, /OpenE2EE Relay, free to start/, 'the heading the founder replaced on 2026-09-08 is still on the page');
+  assert.match(head, /^<div class="[^"]*" data-plans-head><h1>Pricing that scales to zero\.<\/h1>/, 'the heading does not open the head');
+  assert.doesNotMatch(built, /OpenE2EE Relay, free to start|Free to start, pricing that scales/, 'a heading the founder replaced on 2026-09-08 is still on the page');
   const lead = head.match(/<p class="([^"]*)">([^<]+)<\/p>/);
   assert.equal(lead[2], 'Ship fully featured end-to-end encrypted messaging, securely, and at scale.');
   assert.match(lead[1], /\bmax-w-none\b/, 'the lead is measured instead of running the width of the table');
@@ -317,16 +341,16 @@ test('what every plan carries opens in one dialog of cards from the hero, beside
   assert.doesNotMatch(built, /<h2>OpenE2EE Relay plans<\/h2>/, 'the table still carries a second heading over the head');
 
   /* The actions are the hero's, not the table's: the primary creates a
-   * project and the dialog trigger is the secondary beside it, in that order,
+   * project and the link down to what every plan carries is the secondary beside it, in that order,
    * in one centered row that wraps. Both are the large control, the size the
    * design package reserves for the pair under a page's one heading, so the
    * hero's buttons are not the size of the plan buttons a screen below. The
    * primary is the stacked button, the founder's 2026-09-08 call: the promise
    * is the smaller note under "Start free" inside the control, not a line
    * under the row and not a span this site styles. The row leaves its cross
-   * axis at stretch, so the trigger grows to the primary's height. There is
-   * one trigger on the page, so the table and the compact list carry none,
-   * and the head row of the table opens with an empty corner. */
+   * axis at stretch, so the link grows to the primary's height. There is one
+   * such link on the page, in the hero, so the table and the compact list
+   * carry none, and the head row of the table opens with an empty corner. */
   const actions = head.match(/<div class="([^"]*)" data-actions="pricing">(.*?)<\/div>/s);
   assert.ok(actions, 'the head has no action row');
   assert.equal(actions[1], 'flex flex-wrap gap-4 justify-center mt-8!', 'the actions are not the site recipe, centered, at the hero\u2019s distance');
@@ -340,45 +364,44 @@ test('what every plan carries opens in one dialog of cards from the hero, beside
   assert.equal((head.match(/No credit card needed/g) ?? []).length, 1, 'the promise is on the head more than once');
   assert.doesNotMatch(head.slice(head.indexOf('data-actions="pricing"')), /<p /, 'a line still stands under the action row');
   assert.doesNotMatch(built, /Development environment · no card/, 'the old promise is still on the page');
-  const triggerPattern = /<button type="button" class="([^"]*)" aria-haspopup="dialog" data-included-trigger>([^<]+)<\/button>/g;
-  const triggers = [...built.matchAll(triggerPattern)];
-  assert.equal(triggers.length, 1, 'the page does not have one trigger');
-  assert.equal(triggers[0][1], 'oe-button oe-button-secondary oe-button-large', 'the trigger is not the large secondary control');
-  assert.equal(triggers[0][2], 'See what is included');
-  assert.ok(actions[2].endsWith(triggers[0][0]), 'the trigger does not close the action row');
-  assert.ok(actions[2].indexOf(primary[0]) < actions[2].indexOf(triggers[0][0]), 'the trigger stands before the primary');
-  assert.doesNotMatch(table, /data-included-trigger/, 'the table still holds the trigger');
-  assert.doesNotMatch(built.slice(built.indexOf('</table>'), built.indexOf('data-relay-plan-compact')), /data-included-trigger/, 'a trigger still stands over the compact list');
+  const linkPattern = /<a class="([^"]*)" href="#included">([^<]+)<\/a>/g;
+  const links = [...built.matchAll(linkPattern)];
+  assert.equal(links.length, 1, 'the page does not have one link down to what every plan carries');
+  assert.equal(links[0][1], 'oe-button oe-button-secondary oe-button-large', 'the link is not the large secondary control');
+  assert.equal(links[0][2], 'See what is included');
+  assert.ok(actions[2].endsWith(links[0][0]), 'the link does not close the action row');
+  assert.ok(actions[2].indexOf(primary[0]) < actions[2].indexOf(links[0][0]), 'the link stands before the primary');
+  assert.doesNotMatch(built, /<dialog |data-included|aria-haspopup/, 'the dialog the founder replaced on 2026-09-08 is still on the page');
   assert.match(table.slice(table.indexOf('<thead')), /^<thead><tr><td class="pr-4"><\/td><th scope="col"/, 'the head row does not open with an empty corner');
 
-  /* The dialog is closed until asked, names itself by its heading, and is the
-   * one surface above the page plane, so it carries the popover shadow with
-   * DESIGN.md's inset ring, on the raised ground, behind a clear backdrop:
-   * overlap occludes and never blends, so there is no half-transparent scrim. */
-  assert.equal((built.match(/<dialog /g) ?? []).length, 1, 'the page does not have one dialog');
+  /* The section stands right after the Enterprise band, before the licensing
+   * section, names itself by its heading, and is the one place the heading
+   * appears. It is a band on the page ground, so its cards on the panel ground
+   * read as cards. The page ships no dialog and no script of its own now: the
+   * one script left is the Term component's. */
+  assert.equal((built.match(/<section id="included"/g) ?? []).length, 1, 'the page does not have one included section');
+  const enterpriseEnd = built.indexOf('</section>', built.indexOf(`data-relay-plan="${enterprise.id}"`));
+  assert.match(built.slice(enterpriseEnd, enterpriseEnd + 80), /^<\/section>\s*<section id="included"/, 'the section does not follow the Enterprise band directly');
+  assert.ok(built.indexOf('<section id="included"') < built.indexOf('id="licensing"'), 'the section is not before licensing');
   const attributes = included.slice(0, included.indexOf('>'));
-  assert.doesNotMatch(attributes, /\bopen\b/, 'the dialog ships open');
   const labelId = attributes.match(/aria-labelledby="([^"]+)"/)?.[1];
-  assert.ok(labelId, 'the dialog does not name itself by its heading');
-  assert.match(included, new RegExp(`<h2 id="${labelId}" class="[^"]*">Included on every plan</h2>`));
+  assert.ok(labelId, 'the section does not name itself by its heading');
+  assert.match(included, new RegExp(`<h2 id="${labelId}">Built into every plan</h2></div>`));
   const classes = attributes.match(/class="([^"]*)"/)[1];
-  assert.match(classes, /shadow-\[var\(--oe-shadow-md\),inset_0_0_0_1px_var\(--oe-border-1\)\]/);
-  assert.match(classes, /\bbg-ground-raised\b/);
-  assert.match(classes, /\bbackdrop:bg-transparent\b/);
-  assert.doesNotMatch(classes, /rounded|backdrop:bg-black|backdrop:backdrop-blur|\/\d\d\b/);
-  assert.equal((built.match(/Included on every plan/g) ?? []).length, 1, 'the heading is on the page other than in the dialog');
-
-  /* One close control in the design system's icon button, with a name a
-   * screen reader can say, and the one page script that opens and closes. */
-  assert.match(included, /<button type="button" class="oe-icon-button" aria-label="Close" data-included-close>/);
-  assert.equal((built.match(/pricing\.astro_astro_type_script/g) ?? []).length, 1, 'the dialog script is not on the page once');
+  assert.match(classes, /\brule-t\b/, 'the band draws no rule');
+  assert.doesNotMatch(classes, /bg-ground-panel/, 'the band is on the panel ground, so its cards on the panel ground are not cards');
+  /* The founder's 2026-09-08 call: the heading is the whole head. A lead that
+   * said every plan carries all of these said the heading again. */
+  assert.doesNotMatch(included.slice(0, included.indexOf('<dl')), /<p[ >]/, 'a lead stands under the heading');
+  assert.equal((built.match(/Built into every plan/g) ?? []).length, 1, 'the heading is on the page other than over the section');
+  assert.equal((built.match(/pricing\.astro_astro_type_script/g) ?? []).length, 0, 'the page still ships the dialog script');
 
   /* These do not differ by plan, so each is one card, in the words the Relay
    * page uses: a hairline on the panel ground with a term over what it means.
    * They are not tiers, so none is a heading. Each term leads with one icon
    * from the design system's set, muted and at the text size, hidden from
    * assistive technology because the word carries the meaning. */
-  assert.match(included, /<dl class="[^"]*\[--oe-icon-size:1rem\][^"]*">/, 'the cards do not size their icons');
+  assert.match(included, /<dl class="[^"]*\[--oe-icon-size:1\.125rem\][^"]*">/, 'the cards do not size their icons');
   const cardPattern =
     /<div class="([^"]*)"><dt class="([^"]*)"><svg class="oe-icon ([^"]*)" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="([^"]+)"><\/path><\/svg>([^<]+)<\/dt><dd class="[^"]*">([^<]+)<\/dd><\/div>/g;
   const cards = [...included.matchAll(cardPattern)].map((m) => ({ classes: m[1], termClasses: m[2], iconClasses: m[3], path: m[4], label: m[5], detail: m[6] }));
@@ -412,6 +435,25 @@ test('what every plan carries opens in one dialog of cards from the hero, beside
     assert.match(card.classes, /\brule\b/, `${card.label} is not a hairline card`);
     assert.match(card.classes, /\bbg-ground-panel\b/, `${card.label} is not on the panel ground`);
   }
+  assert.match(included, /<dl class="[^"]*\bgrid-cols-3\b[^"]*">/, 'the deck is not three across');
+  /* A card answers the pointer, the founder's 2026-09-08 call: it lifts, takes
+   * the hover ground and the stronger edge, casts the elevation shadow, and
+   * its icon comes forward. Every part is a transition on the design
+   * package's durations, which collapse under reduced motion, and the lift is
+   * off there. Nothing fades, nothing morphs, and no card animates on its own. */
+  for (const card of cards) {
+    assert.match(card.classes, /\bgroup\b/, `${card.label} is not the group its icon answers`);
+    assert.match(card.classes, /\btransition-\[transform,box-shadow,border-color,background-color\]/, `${card.label} does not transition the parts that change`);
+    assert.match(card.classes, /\bduration-\[var\(--oe-duration-normal\)\]/, `${card.label} does not take its duration from the design package`);
+    assert.match(card.classes, /\bhover:-translate-y-0\.5\b/, `${card.label} does not lift`);
+    assert.match(card.classes, /\bhover:bg-ground-hover\b/, `${card.label} does not take the hover ground`);
+    assert.match(card.classes, /\bhover:border-border-2\b/, `${card.label} does not take the stronger edge`);
+    assert.match(card.classes, /\bhover:shadow-\[var\(--oe-shadow-md\)\]/, `${card.label} casts no elevation shadow`);
+    assert.match(card.classes, /\bmotion-reduce:hover:translate-y-0\b/, `${card.label} still lifts under reduced motion`);
+    assert.doesNotMatch(card.classes, /opacity|animate-|scale-|rotate-|blur/, `${card.label} fades, animates on its own, or morphs`);
+    assert.match(card.iconClasses, /\bgroup-hover:text-text-1\b/, `${card.label} icon does not come forward on hover`);
+    assert.match(card.iconClasses, /\bduration-\[var\(--oe-duration-normal\)\]/, `${card.label} icon does not take its duration from the design package`);
+  }
   /* Every phrase names a route or concept the relay ships. "Zero-knowledge"
    * is the term of art for the SDK's group credentials and describes nothing
    * else on the page; sealed sender is never "anonymous". */
@@ -432,20 +474,27 @@ test('what every plan carries opens in one dialog of cards from the hero, beside
   assert.doesNotMatch(built.slice(built.indexOf('<table'), built.indexOf('</table>')), /retention/i, 'retention is still a row of the plan table');
 });
 
-test('every plan\'s action carries its name and nothing else', () => {
+/* The founder's 2026-09-08 labels, recorded in docs/messaging.md. The plan
+ * keeps its name in its heading; the action under the rows is the invitation. */
+const ACTION_LABELS = {
+  relay_free_v1: 'Fun &amp; Free',
+  relay_starter_v1: 'Startup Starter',
+  relay_growth_v1: 'Get Growing',
+  relay_business_v1: 'Big Business',
+};
+
+test('every plan\'s action carries the label the founder chose for it', () => {
+  const plans = built.slice(built.indexOf('id="relay-plans"'), built.indexOf(`data-relay-plan="${enterprise.id}"`));
   for (const plan of selfServe) {
-    const expected = plan.name;
-    const labels = [...built.matchAll(new RegExp(`href="[^"]*plan=${plan.id}"[^>]*>([^<]+)</a>`, 'g'))].map((m) => m[1]);
-    if (plan.id !== 'relay_free_v1') {
-      assert.equal(labels.length, 2, `${plan.name} does not have one action per rendering`);
-      for (const label of labels) assert.equal(label, expected);
-    }
+    const expected = ACTION_LABELS[plan.id];
+    assert.ok(expected, `${plan.id} has no label in this test`);
+    const href = plan.id === 'relay_free_v1' ? 'https://console.open-e2ee.dev/relay/new' : `https://console.open-e2ee.dev/relay/new?plan=${plan.id}`;
+    const labels = [...plans.matchAll(/<a class="oe-button[^"]*" href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].filter((m) => m[1] === href).map((m) => m[2]);
+    assert.equal(labels.length, 2, `${plan.name} does not have one action per rendering`);
+    for (const label of labels) assert.equal(label, expected, `${plan.name} action reads "${label}"`);
+    assert.ok(plans.includes(`>${plan.name}</h3>`), `${plan.id} is not still named ${plan.name} in its heading`);
   }
   assert.doesNotMatch(built, /Start with /, 'an action still carries the "Start with" prefix');
-  /* Free names itself like the paid plans do; "Start free" is the site
-   * header's action, and the plan section carries none of it. */
-  const plans = built.slice(built.indexOf('id="relay-plans"'), built.indexOf(`data-relay-plan="${enterprise.id}"`));
-  assert.equal((plans.match(/>Free<\/a>/g) ?? []).length, 2, 'Free does not open with "Free" in each rendering');
   /* "Start free" is the hero's primary action and the site header's; no plan
    * action reads it. */
   assert.equal((plans.match(/>Start free\b/g) ?? []).length, 1, 'the plans carry "Start free" other than once, in the hero');
@@ -484,8 +533,9 @@ test('one plan is marked, and it alone carries the filled action', () => {
       else assert.doesNotMatch(cell.classes, /bg-ground-panel/, `${row.label} is tinted under an unmarked plan`);
     });
   }
-  /* The last row that differs by plan closes the tint with room under it. */
-  for (const cell of capacityRows.at(-1).cells) assert.match(cell.classes, /\bpb-6\b/);
+  /* The rows close flush on one another; the foot row closes the tint with
+   * room under the action. */
+  for (const cell of capacityRows.at(-1).cells) assert.match(cell.classes, /\bpb-3\b/);
   for (const cell of capacityRows[0].cells) assert.match(cell.classes, /\bpt-5\b/, "the lead row does not open the tint with room under the head");
 
   /* The narrow rendering marks the same plan the same way. */
@@ -502,7 +552,7 @@ test('one plan is marked, and it alone carries the filled action', () => {
   }
 
   for (const plan of selfServe) {
-    for (const rendering of [columnHead(plan.id), compactBlock(plan.id)]) {
+    for (const rendering of [columnFoot(plan.id), compactBlock(plan.id)]) {
       const classes = rendering.match(/<a class="(oe-button[^"]*)" href=/)[1];
       if (plan.id === HIGHLIGHT) assert.doesNotMatch(classes, /oe-button-secondary|oe-button-strong/, `${plan.id} is marked but not filled`);
       else assert.match(classes, /oe-button-secondary/, `${plan.id} is filled but not marked`);
@@ -511,16 +561,53 @@ test('one plan is marked, and it alone carries the filled action', () => {
        * a modifier of the secondary, so it rides with it or not at all. */
       if (plan.id === 'relay_free_v1') assert.match(classes, /\boe-button-secondary oe-button-strong\b/, 'Free is not the strong secondary');
       else assert.doesNotMatch(classes, /oe-button-strong/, `${plan.id} takes the strong secondary`);
-      /* The lines under each button said what the note under the table and
-       * "How buying works" already say. */
+      /* The lines under each button said what the table and the Relay service
+       * terms already say. */
       assert.doesNotMatch(rendering, /Verified card|Billed monthly|Overage off|Start here/);
     }
   }
 });
 
+test('the actions close the table and each compact block', () => {
+  /* The founder's 2026-09-08 call: a reader chooses after reading the rows.
+   * The head carries no action, the foot carries one per column in column
+   * order, and each foot cell closes the column's tint with room around the
+   * action. */
+  const head = table.slice(table.indexOf('<thead'), table.indexOf('</thead>'));
+  assert.doesNotMatch(head, /<a class="oe-button/, 'an action still stands in the head');
+  const footStart = table.indexOf('<tfoot');
+  assert.ok(footStart > table.indexOf('</tbody>'), 'the foot does not follow the body');
+  const foot = table.slice(footStart);
+  /* The corner is empty like the head's: the founder cut the instruction that
+   * stood there. */
+  assert.match(foot, /^<tfoot><tr><td class="rule-t pr-4"><\/td><td /, 'the foot row does not open with an empty ruled corner');
+  assert.doesNotMatch(built, /Select a plan/i, 'the foot row carries an instruction');
+  assert.deepEqual([...foot.matchAll(/data-relay-plan-action="([^"]+)"/g)].map((m) => m[1]), selfServe.map((plan) => plan.id));
+  assert.equal((foot.match(/<a class="oe-button/g) ?? []).length, selfServe.length, 'the foot does not carry one action per plan');
+  for (const plan of selfServe) {
+    const cell = columnFoot(plan.id);
+    const classes = table.slice(table.lastIndexOf('<td class="', table.indexOf(`data-relay-plan-action="${plan.id}"`))).match(/class="([^"]+)"/)[1];
+    assert.match(classes, /\brule-t\b/, `${plan.id} foot cell has no rule over it`);
+    assert.match(classes, /\bpx-4\b/, `${plan.id} foot cell has no side padding`);
+    assert.match(classes, /\bpy-5\b/, `${plan.id} foot cell does not close with room`);
+    if (plan.id === HIGHLIGHT) assert.match(classes, /\bbg-ground-panel\b/, 'the marked column loses its tint at the foot');
+    else assert.doesNotMatch(classes, /bg-ground-panel/, `${plan.id} foot cell is tinted`);
+    assert.equal((cell.match(/<a class="oe-button/g) ?? []).length, 1, `${plan.id} foot cell does not carry one action`);
+    assert.match(cell, /oe-button-full/, `${plan.id} action does not fill its cell`);
+
+    const block = compactBlock(plan.id);
+    const action = block.indexOf('<a class="oe-button');
+    assert.ok(action !== -1 && action > block.indexOf('</dl>'), `${plan.id} compact action does not follow the rows`);
+    assert.match(block.slice(action), /^<a class="oe-button[^"]* mt-5!"/, `${plan.id} compact action does not stand off the rows`);
+  }
+  /* Every body row now closes flush; the foot carries the room. */
+  assert.doesNotMatch(table.slice(table.indexOf('<tbody'), table.indexOf('</tbody>')), /\bpb-6\b/, 'a body row still closes the tint');
+  assert.match(source, /const HEAD_CELL = `\$\{PLAN_HEAD\} border-t-\[3px\] px-4 pt-4 pb-4 font-normal`;/, 'the head still carries the room the action had');
+});
+
 test('a paid plan names itself to the console, and the free plan needs no query', () => {
   for (const plan of selfServe) {
-    const head = columnHead(plan.id);
+    const head = columnFoot(plan.id);
     const href = head.match(/<a class="oe-button[^"]*" href="([^"]+)"/)[1];
     if (plan.id === 'relay_free_v1') {
       assert.equal(href, 'https://console.open-e2ee.dev/relay/new');
@@ -557,7 +644,7 @@ test('the narrow rendering carries the same plans, rows, and actions', () => {
 
   for (const plan of selfServe) {
     const block = compactBlock(plan.id);
-    const head = columnHead(plan.id);
+    const head = columnFoot(plan.id);
     assert.ok(block.includes(`>${plan.name}</h3>`), `${plan.id} compact block is not headed ${plan.name}`);
     assert.ok(block.includes(`>${plan.price}</p>`), `${plan.id} compact block does not print ${plan.price}`);
     assert.equal(
@@ -595,20 +682,24 @@ test('Enterprise is one outlined band under the table, with its own action', () 
   assert.match(band, /<a class="oe-button oe-button-secondary" href="mailto:licensing@open-e2ee\.dev/);
 });
 
-test('the licensing section follows the plans, raised in context above it', () => {
-  const anchor = built.indexOf('href="#licensing"');
+test('the licensing section follows the plans and what they carry, and states the other way to run the code', () => {
   const plans = built.indexOf('id="relay-plans"');
   const lastPlan = built.indexOf(`data-relay-plan="${enterprise.id}"`);
+  const included = built.indexOf('id="included"');
   const licensing = built.indexOf('id="licensing"');
 
-  assert.ok(anchor !== -1, 'the page carries no in-page link to the licensing section');
-  assert.ok(licensing !== -1, 'the page carries no licensing section to link to');
+  assert.ok(licensing !== -1, 'the page carries no licensing section');
   assert.ok(plans < licensing, 'the licensing section is not below the Relay plans');
 
-  /* The link is raised where a reader has just read the plans and can weigh
-   * the other way of running the code, not in the hero ahead of them. */
-  assert.ok(lastPlan < anchor, 'the licensing link is raised before the Relay plans are read');
-  assert.ok(anchor < licensing, 'the licensing link is not above the section it points at');
+  /* The founder's 2026-09-08 call removed the note under the plans that once
+   * linked here and the How buying works band that followed, so the section
+   * is reached by reading down: plans, what every plan carries, then the
+   * license tiers, which close the page. The other way of running the code is
+   * the AGPLv3 tier's own column, and /licensing holds the self-hosting rule. */
+  assert.ok(lastPlan < included && included < licensing, 'the licensing section does not follow what every plan carries');
+  assert.equal(built.indexOf('href="#licensing"'), -1, 'a link to the licensing section came back under the plans');
+  assert.equal(built.indexOf('<section', licensing), -1, 'a band follows the license tiers');
+  assert.ok(built.slice(licensing).includes('AGPLv3'), 'the license tiers do not name AGPLv3');
 
   /* Every license tier still prices itself on the page it moved down within,
    * so the move did not quietly become a deletion. */
@@ -620,16 +711,20 @@ test('the licensing section follows the plans, raised in context above it', () =
   }
 });
 
-test('the meters and the Development environment are on this page', () => {
-  const meters = built.indexOf('id="meters"');
-  const development = built.indexOf('id="development"');
-  const licensing = built.indexOf('id="licensing"');
-  assert.ok(development !== -1 && meters !== -1, 'the page dropped a section the limits page carried');
-  assert.ok(development < meters && meters < licensing, 'the sections are out of the order the page argues');
-  for (const meter of ['Relay MAU', 'Delivery unit', 'Attachment upload', 'Storage']) {
-    assert.ok(built.slice(meters, licensing).includes(`<dt>${meter}</dt>`), `${meter} is not defined`);
+test('the meters and the Development environment left their sections for the table and the cards', () => {
+  /* The founder's 2026-09-08 call: the row names define the meters on hover,
+   * so the page has no section that defines them again, and the Development
+   * environment is one card of what every plan carries, so it has no band of
+   * its own. Every definition the catalog carries is still on the page, in a
+   * tooltip of the table, and the dropped headings are gone. */
+  assert.equal(built.indexOf('id="meters"'), -1, 'the meters section is still on the page');
+  assert.equal(built.indexOf('id="development"'), -1, 'the Development environment section is still on the page');
+  assert.doesNotMatch(built, /What the meters count|Included with every project|defined the way the Relay service terms define them/);
+  for (const meter of relayMeterDefinitions) {
+    assert.ok(table.includes(meter.definition), `${meter.name} is not defined in the table`);
   }
-  assert.match(built.slice(development, meters), />Development environment<\/h3>/);
+  assert.doesNotMatch(built, /Development environment<\/h3>/, 'the Development environment is still a tier');
+  assert.ok(built.indexOf('id="included"') < built.indexOf('id="licensing"'), 'the sections are out of the order the page argues');
 });
 
 test('no two tiers on the page answer to the same name', () => {
@@ -640,8 +735,8 @@ test('no two tiers on the page answer to the same name', () => {
 
   assert.equal(
     names.size,
-    relayPlans.length + tiers.length + 1,
-    `expected ${relayPlans.length + tiers.length + 1} tier names, found ${[...names]}`,
+    relayPlans.length + tiers.length,
+    `expected ${relayPlans.length + tiers.length} tier names, found ${[...names]}`,
   );
 
   /* `Growth` names a Relay plan at $299 a month and an SDK commercial license

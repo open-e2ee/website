@@ -202,21 +202,26 @@ test('publishes the exact Relay legal and lifecycle boundary', async () => {
 });
 
 test('reaches each agreement from the pages that sell against it', async () => {
-  const [pricing, relay, licensing] = await Promise.all([
+  const [pricing, relay, licensing, footer] = await Promise.all([
     flat('../src/pages/pricing.astro'),
     flat('../src/pages/relay/index.astro'),
     flat('../src/pages/licensing.astro'),
+    flat('../src/components/Footer.astro'),
   ]);
 
   assert.match(pricing, /href="\/legal\/terms"/);
-  assert.match(pricing, /href="\/legal\/relay-terms"/);
+  /* The Relay plans sell against the Relay service terms. /pricing carries no
+   * prose about them since the founder cut its How buying works band on
+   * 2026-09-08, so the footer on every page, /pricing included, is the route,
+   * and the console binds the terms at checkout. */
+  assert.match(footer, /href="\/legal\/relay-terms"/);
   assert.match(relay, /href="\/legal\/relay-terms"/);
   assert.match(pricing, /renews annually until you cancel/i);
   assert.match(licensing, /href="\/legal\/terms"/);
   /* Was /signed order form/. Which instrument closes which tier is a purchase
-   * step, so /pricing's "How buying works" owns it and /licensing stopped
-   * printing it a third time. What this page still owes is a description of
-   * the negotiated path, which is what the pin follows. */
+   * step the agreement owns, so /licensing does not print it. What this page
+   * still owes is a description of the negotiated path, which is what the pin
+   * follows. */
   assert.match(licensing, /separately negotiated production grant/i);
 });
 
