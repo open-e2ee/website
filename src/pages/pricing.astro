@@ -9,6 +9,7 @@ import {
   relayProductionRetention,
 } from '../data/relay-pricing.mjs';
 import { startupTier, tiers } from '../data/pricing.mjs';
+import { salesMeetingUrl } from '../data/booking.mjs';
 import { startAction, startPromise } from '../lib/site-navigation';
 import { INCLUDED, NO_OVERAGE } from '../lib/plan-values.mjs';
 import {
@@ -117,14 +118,14 @@ const PLANS_LEAD = 'max-w-none';
 const PLANS_HEAD = 'mb-10 text-center [&>*+*]:mt-4';
 const PLANS_ACTIONS = 'justify-center mt-8!';
 const PLANS_PRIMARY = 'oe-button oe-button-large oe-button-stacked';
+const PLANS_SECONDARY = 'oe-button oe-button-secondary oe-button-large';
 
 /*
  * What every plan carries stands in its own section under the plans, one card
  * per capability, so the table keeps its space for what differs by plan and
  * the reader chooses a plan before reading what all of them share; the
- * founder's 2026-09-08 call, in place of the dialog the hero used to open. The
- * hero's secondary action, beside the primary that creates the project, is
- * the link down to it. Each card is a hairline on the panel ground, and the
+ * founder's 2026-09-08 call, in place of the dialog the hero used to open.
+ * Each card is a hairline on the panel ground, and the
  * set is a definition list, a term over what it means, because these are not
  * tiers and carry no heading. Nine cards sit three across, so the deck reads
  * as one grid, and each leads with a chrome icon from the design package so a
@@ -140,7 +141,6 @@ const PLANS_PRIMARY = 'oe-button oe-button-large oe-button-stacked';
  * and no card animates on its own; a card that is not under the pointer is
  * still.
  */
-const INCLUDED_TRIGGER = 'oe-button oe-button-secondary oe-button-large';
 const INCLUDED_CARDS = 'm-0 grid grid-cols-3 gap-4 [--oe-icon-size:1.125rem] max-[48rem]:grid-cols-2 max-[34rem]:grid-cols-1';
 const INCLUDED_CARD =
   'group rule bg-ground-panel px-5 py-5 transition-[transform,box-shadow,border-color,background-color] duration-[var(--oe-duration-normal)] ease-out ' +
@@ -439,7 +439,6 @@ const included: { icon: IconName; label: string; detail: string }[] = [
 const INCLUDED_HEADING = 'Signal Protocol Relay features built into every plan';
 const INCLUDED_ID = 'built-into-every-plan';
 const INCLUDED_ANCHOR = 'included';
-const INCLUDED_ACTION = 'See what is included';
 
 ---
 
@@ -455,7 +454,7 @@ const INCLUDED_ACTION = 'See what is included';
         <p class:list={[LEAD, PLANS_LEAD]}>Ship fully featured end-to-end encrypted messaging, securely, and at scale.</p>
         <div class:list={[ACTIONS, PLANS_ACTIONS]} data-actions="pricing">
           <a class={PLANS_PRIMARY} href={RELAY_PROJECT}>{startAction.label}{' '}<span class="oe-button-note">{startPromise}</span></a>
-          <a class={INCLUDED_TRIGGER} href={`#${INCLUDED_ANCHOR}`}>{INCLUDED_ACTION}</a>
+          <a class={PLANS_SECONDARY} href={salesMeetingUrl}>Schedule a demo</a>
         </div>
       </div>
       <div class={PLAN_TABLE_AT}>

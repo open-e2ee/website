@@ -32,6 +32,7 @@
  * dated terms version, with the superseded one kept as published.
  */
 import { INCLUDED, NOT_INCLUDED } from '../lib/plan-values.mjs';
+import { salesMeetingUrl } from './booking.mjs';
 
 export const tiers = [
   {
@@ -83,7 +84,7 @@ export const tiers = [
     support: 'Negotiated',
     securityReview: 'Negotiated',
     cta: {
-      href: 'https://console.open-e2ee.dev/contact?plan=enterprise',
+      href: salesMeetingUrl,
       label: 'Schedule a meeting',
       secondary: true,
     },

@@ -347,7 +347,7 @@ test('what every plan carries stands in one section of cards under the plans, li
   assert.doesNotMatch(built, /<h2>OpenE2EE Relay plans<\/h2>/, 'the table still carries a second heading over the head');
 
   /* The actions are the hero's, not the table's: the primary creates a
-   * project and the link down to what every plan carries is the secondary beside it, in that order,
+   * project and the secondary opens the booking page, in that order,
    * in one centered row that wraps. Both are the large control, the size the
    * design package reserves for the pair under a page's one heading, so the
    * hero's buttons are not the size of the plan buttons a screen below. The
@@ -370,11 +370,13 @@ test('what every plan carries stands in one section of cards under the plans, li
   assert.equal((head.match(/No credit card needed/g) ?? []).length, 1, 'the promise is on the head more than once');
   assert.doesNotMatch(head.slice(head.indexOf('data-actions="pricing"')), /<p /, 'a line still stands under the action row');
   assert.doesNotMatch(built, /Development environment · no card/, 'the old promise is still on the page');
-  const linkPattern = /<a class="([^"]*)" href="#included">([^<]+)<\/a>/g;
+  const linkPattern = /<a class="([^"]*)" href="([^"]+)" rel="noopener" target="_blank">Schedule a demo<span class="oe-visually-hidden"> \(opens in a new tab\)<\/span><\/a>/g;
   const links = [...built.matchAll(linkPattern)];
-  assert.equal(links.length, 1, 'the page does not have one link down to what every plan carries');
+  assert.equal(links.length, 1, 'the page must have one demo booking action');
   assert.equal(links[0][1], 'oe-button oe-button-secondary oe-button-large', 'the link is not the large secondary control');
-  assert.equal(links[0][2], 'See what is included');
+  assert.equal(links[0][2], 'https://calendar.app.google/mb3PgGVCae7DFVAZ7');
+  assert.equal(tiers.find((tier) => tier.id === 'enterprise').cta.href, links[0][2]);
+  assert.doesNotMatch(built, /See what is included|https:\/\/console\.open-e2ee\.dev\/contact\?plan=enterprise/);
   assert.ok(actions[2].endsWith(links[0][0]), 'the link does not close the action row');
   assert.ok(actions[2].indexOf(primary[0]) < actions[2].indexOf(links[0][0]), 'the link stands before the primary');
   assert.doesNotMatch(built, /<dialog |data-included|aria-haspopup/, 'the dialog the founder replaced on 2026-09-08 is still on the page');
@@ -777,7 +779,7 @@ test('the licenses are a second table in the shape of the first: three columns, 
   assert.ok(rows[0].cells[0].includes('aria-hidden="true">\u2014<'), 'a right a license does not carry is not the dash');
 
   const foot = table.slice(table.indexOf('<tfoot'));
-  const actions = [...foot.matchAll(/data-license-action="([^"]+)"[^>]*><a class="([^"]*)" href="([^"]+)">([^<]+)<\/a>/g)];
+  const actions = [...foot.matchAll(/data-license-action="([^"]+)"[^>]*><a class="([^"]*)" href="([^"]+)"(?: rel="noopener" target="_blank")?>([^<]+)(?:<span class="oe-visually-hidden"> \(opens in a new tab\)<\/span>)?<\/a>/g)];
   assert.deepEqual(actions.map((m) => m[1]), tiers.map((tier) => tier.id), 'the foot does not carry one action per license');
   for (const [, id, classes, href, label] of actions) {
     const tier = tiers.find((entry) => entry.id === id);
