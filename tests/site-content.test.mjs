@@ -4429,13 +4429,17 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
    * a promise about itself. */
   assert.match(index, /The complete SDK is free under AGPLv3/);
   assert.match(index, /<a href="\/pricing">Pricing<\/a>/);
-  assert.match(pricing, /Free under AGPLv3\./i);
+  /* /pricing prints the AGPLv3 tier from src/data/pricing.mjs in its license
+   * band, the last band on the page, so the source is checked for the band
+   * and the data for the tier. */
+  assert.match(pricing, /id="licensing"/);
 
   /* The tier copy and the prices moved out of this page and into
    * src/data/pricing.mjs, so that the landing page could quote the entry
    * price from the same source instead of describing it. The assertions
    * follow the data rather than the file it used to live in. */
   const { tiers } = await import('../src/data/pricing.mjs');
+  assert.ok(tiers.some((tier) => tier.name === 'AGPLv3' && tier.price === 'Free'), 'no tier prices the SDK as free under AGPLv3');
   /* Was /You run your own infrastructure/. The free column states the
    * obligation that disqualifies a reader from it rather than a benefit, so
    * this follows the trigger sentence. positioning.md §3 makes that friction

@@ -4,7 +4,6 @@ import Icon, { type IconName } from '../components/Icon.astro';
 import Term from '../components/Term.astro';
 import PlanValue from '../components/PlanValue.astro';
 import {
-  relayDevelopmentEnvironment,
   relayMeterDefinitions,
   relayPlans,
   relayProductionRetention,
@@ -18,11 +17,9 @@ import {
   BAND_HEAD,
   BAND_SURFACE,
   CONTAINER,
-  DEFINITION_ROWS,
   LEAD,
   MEASURE,
   METADATA,
-  TEXT_LINKS,
 } from '../lib/recipes';
 
 /*
@@ -32,9 +29,9 @@ import {
  * down the column that fits it. The table holds the rows that differ by plan
  * and one row every plan shares, the SDK license, because a buyer with a
  * proprietary application asks whether the SDK's license reaches it before
- * asking how many users a plan carries. What else every plan shares opens from
- * one control in the head, described once rather than ticked four times, and
- * stays out of the way of the choice.
+ * asking how many users a plan carries. What else every plan shares stands in
+ * its own section under the plans, one card per capability, described once
+ * rather than ticked four times, so the reader chooses before reading it.
  *
  * The plans are the page. There is no hero above them: the head over the table
  * is the page's opening, a label, the heading, and a lead that says what the
@@ -54,19 +51,22 @@ const PLAN_TABLE = 'w-full table-fixed border-collapse text-[0.9375rem] [&_th]:t
  */
 const PLAN_TABLE_AT = 'max-[62rem]:hidden';
 
-/* A column head is a stack: marker, name, price, note, action. */
+/* A column head is a stack: marker, name, price, note. The action stands in
+ * the foot, under every row, so a reader chooses after reading what each plan
+ * holds; the founder's 2026-09-08 call. The foot's corner is empty, like the
+ * head's: the buttons need no instruction. */
 const PLAN_HEAD = '[&>*+*]:mt-3';
 
 /*
  * Every cell carries its own padding, so the tint on the marked column has an
  * inset on all four sides: the head starts under a 3px edge, the values sit a
- * gutter in from the tint's sides, and the last row that differs by plan
+ * gutter in from the tint's sides, and the foot cell that carries the action
  * closes it with room to spare. The other heads carry the same edge in no
  * color, so every name sits on one baseline.
  */
-const HEAD_CELL = `${PLAN_HEAD} border-t-[3px] px-4 pt-4 pb-6 font-normal`;
+const HEAD_CELL = `${PLAN_HEAD} border-t-[3px] px-4 pt-4 pb-4 font-normal`;
+const FOOT_CELL = 'rule-t px-4 py-5';
 const ROW_HEAD = 'rule-t pr-4 font-medium text-text-1';
-const ROW_UNIT = `${METADATA} mt-1 block text-text-3`;
 const CELL = 'rule-t px-4 font-[family-name:var(--oe-metadata-font-family)] tabular-nums';
 
 /*
@@ -82,6 +82,8 @@ const COMPACT = 'm-0 grid list-none grid-cols-2 gap-x-8 p-0 min-[62rem]:hidden m
 
 const COMPACT_PLAN = 'py-6 [&>*+*]:mt-3';
 
+/* The action closes the block the way the foot closes the table. */
+const COMPACT_ACTION = 'mt-5!';
 const COMPACT_ROWS = 'm-0 w-full text-[0.9375rem] [&>div]:flex [&>div]:justify-between [&>div]:gap-4 [&>div]:rule-t [&>div]:py-2';
 const COMPACT_VALUE = 'm-0 text-right font-[family-name:var(--oe-metadata-font-family)] tabular-nums';
 const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
@@ -94,7 +96,7 @@ const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
  * would set the actions over the Free and Starter columns and off the grid
  * that follows. The primary creates the project, at the full control height
  * the home and Relay heroes use, and carries its promise as the note inside
- * it; the secondary opens what every plan carries. The section opens the page, so it
+ * it; the secondary leads down to what every plan carries. The section opens the page, so it
  * carries the opening's room above and no rule: the site header draws the one
  * rule that belongs there.
  */
@@ -106,35 +108,35 @@ const PLANS_ACTIONS = 'justify-center mt-8!';
 const PLANS_PRIMARY = 'oe-button oe-button-large oe-button-stacked';
 
 /*
- * What every plan carries opens in a dialog, one card per capability, so the
- * table keeps its space for what differs by plan. The trigger is the hero's
- * secondary action, beside the primary that creates the project, at every
- * width. The dialog is the native element that traps
- * focus, closes on Escape, returns focus to the trigger, and makes the page
- * behind it inert, and it is the surface above the page plane DESIGN.md gives
- * the popover shadow and its inset ring. The page behind it stays visible
- * through a clear backdrop: overlap occludes, it never blends, so there is no
- * half-transparent scrim. A press on the backdrop closes it; the content sits
- * in its own box so a press on the padding does not. Each card is a hairline
- * on the panel ground, and the set is a definition list, a term over what it
- * means, because these are not tiers and carry no heading. Nine cards sit
- * three across, so the deck reads as one grid, and each leads with a chrome
- * icon from the design package so a reader scanning the deck finds a card by
- * its shape before its words. None is a padlock or a shield.
+ * What every plan carries stands in its own section under the plans, one card
+ * per capability, so the table keeps its space for what differs by plan and
+ * the reader chooses a plan before reading what all of them share; the
+ * founder's 2026-09-08 call, in place of the dialog the hero used to open. The
+ * hero's secondary action, beside the primary that creates the project, is
+ * the link down to it. Each card is a hairline on the panel ground, and the
+ * set is a definition list, a term over what it means, because these are not
+ * tiers and carry no heading. Nine cards sit three across, so the deck reads
+ * as one grid, and each leads with a chrome icon from the design package so a
+ * reader scanning the deck finds a card by its shape before its words. None
+ * is a padlock or a shield.
+ *
+ * A card answers the pointer the way the design package's controls do: it
+ * lifts by two pixels, takes the hover ground and the stronger edge, casts the
+ * elevation shadow, and its icon comes forward from the muted text to the
+ * foreground. Every part is a transition on the package's durations, so under
+ * reduced motion it collapses with them, and the lift itself is off there:
+ * the hovered card changes ground and edge, and nothing moves. Nothing fades,
+ * and no card animates on its own; a card that is not under the pointer is
+ * still.
  */
 const INCLUDED_TRIGGER = 'oe-button oe-button-secondary oe-button-large';
-const INCLUDED_DIALOG =
-  'm-auto w-[min(60rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-y-auto border-0 bg-ground-raised p-0 text-text-1 ' +
-  'shadow-[var(--oe-shadow-md),inset_0_0_0_1px_var(--oe-border-1)] backdrop:bg-transparent';
-const INCLUDED_BODY = 'p-6 max-[34rem]:p-4';
-const INCLUDED_HEAD = 'mb-6 flex items-start justify-between gap-4';
-const INCLUDED_TITLE = 'm-0 text-[1.25rem] leading-tight font-semibold tracking-[var(--oe-heading-tracking-display)] text-text-1';
-const INCLUDED_LEAD = 'mt-2 text-[0.9375rem] text-text-3';
-const INCLUDED_CARDS = 'm-0 grid grid-cols-3 gap-3 [--oe-icon-size:1rem] max-[48rem]:grid-cols-2 max-[34rem]:grid-cols-1';
-const INCLUDED_CARD = 'rule bg-ground-panel px-5 py-4';
-const INCLUDED_CARD_TITLE = 'm-0 flex items-center gap-2 text-[0.9375rem] font-medium text-text-1';
-const INCLUDED_CARD_ICON = 'shrink-0 text-text-3';
-const INCLUDED_CARD_DETAIL = 'm-0 mt-1 text-[0.9375rem] leading-[1.5] text-text-3';
+const INCLUDED_CARDS = 'm-0 grid grid-cols-3 gap-4 [--oe-icon-size:1.125rem] max-[48rem]:grid-cols-2 max-[34rem]:grid-cols-1';
+const INCLUDED_CARD =
+  'group rule bg-ground-panel px-5 py-5 transition-[transform,box-shadow,border-color,background-color] duration-[var(--oe-duration-normal)] ease-out ' +
+  'hover:-translate-y-0.5 hover:border-border-2 hover:bg-ground-hover hover:shadow-[var(--oe-shadow-md)] motion-reduce:hover:translate-y-0';
+const INCLUDED_CARD_TITLE = 'm-0 flex items-center gap-2.5 text-[1rem] font-medium text-text-1';
+const INCLUDED_CARD_ICON = 'shrink-0 text-text-3 transition-[color] duration-[var(--oe-duration-normal)] ease-out group-hover:text-text-1';
+const INCLUDED_CARD_DETAIL = 'm-0 mt-2 text-[0.9375rem] leading-[1.5] text-text-3';
 
 /*
  * The Development environment and the licenses are ruled rows: a name and
@@ -157,7 +159,7 @@ const TIER_NAME = 'flex flex-col items-start gap-2';
  * The price is the largest thing in a column or a row, and the name reads as
  * its label. A pricing page answers the price question first.
  */
-const TIER_HEADING = 'text-[1.0625rem] leading-tight font-semibold text-text-1';
+const TIER_HEADING = 'text-[1.25rem] leading-tight font-semibold text-text-1';
 
 const TIER_PRICE =
   'font-[family-name:var(--oe-metadata-font-family)] ' +
@@ -184,12 +186,13 @@ const TIER_BODY = 'flex max-w-[58ch] flex-col items-start gap-3 text-text-3';
  * because a production plan is activated inside a project. A paid plan names
  * itself in the query so the Console can offer that plan first once the
  * project exists. The highlighted plan is the filled action; the others are
- * secondary, and every one of them opens the same route. Every action carries
- * the plan's name and nothing else; "Start with Starter" stuttered, and the
- * name under the name already says what pressing it picks. Free is the one
- * plan that costs nothing, so its action is the strong secondary, the frame in
- * the foreground: it reads apart from the paid secondaries, and the filled
- * control stays the one accent in the row.
+ * secondary, and every one of them opens the same route. Each action carries
+ * the label the founder chose for it on 2026-09-08 (`docs/messaging.md`); the
+ * plan keeps its name in the heading over the column, and the label under the
+ * rows is the invitation. Free is the one plan that costs nothing, so its
+ * action is the strong secondary, the frame in the foreground: it reads apart
+ * from the paid secondaries, and the filled control stays the one accent in
+ * the row.
  */
 const RELAY_PROJECT = startAction.href;
 
@@ -202,7 +205,17 @@ const enterprise = relayPlans.find((plan) => plan.monthlyPriceUsd === null);
 if (!enterprise) throw new Error('pricing.astro: the Relay catalog has no negotiated plan');
 
 const startHref = (plan: Plan) => (plan.id === FREE ? RELAY_PROJECT : `${RELAY_PROJECT}?plan=${plan.id}`);
-const startLabel = (plan: Plan) => plan.name;
+const ACTION_LABEL: Record<string, string> = {
+  relay_free_v1: 'Fun & Free',
+  relay_starter_v1: 'Startup Starter',
+  relay_growth_v1: 'Get Growing',
+  relay_business_v1: 'Big Business',
+};
+const startLabel = (plan: Plan) => {
+  const label = ACTION_LABEL[plan.id];
+  if (!label) throw new Error(`pricing.astro: no action label for the ${plan.id} plan`);
+  return label;
+};
 const planMark = (plan: Plan) => (plan.id === HIGHLIGHT ? HIGHLIGHT_LABEL : '');
 const startClasses = (plan: Plan) => [
   'oe-button',
@@ -215,6 +228,7 @@ const startClasses = (plan: Plan) => [
  * every row that differs by plan. */
 const marked = (plan: Plan) => plan.id === HIGHLIGHT;
 const headClasses = (plan: Plan) => [HEAD_CELL, marked(plan) ? 'border-t-[var(--oe-sealed)] bg-ground-panel' : 'border-t-transparent'];
+const footClasses = (plan: Plan) => [FOOT_CELL, marked(plan) && 'bg-ground-panel'];
 const compactPlanClasses = (plan: Plan) => [
   COMPACT_PLAN,
   marked(plan) ? '-mx-4 border-t-[3px] border-t-[var(--oe-sealed)] bg-ground-panel px-4' : 'rule-t',
@@ -229,12 +243,12 @@ const ENTERPRISE_ACTION = {
  * The rows that differ by plan. Monthly active users lead, because that is the
  * count a buyer sizes a plan by, and its overage sits directly under it so the
  * two numbers a buyer does arithmetic on are read together. Every row is named
- * by what the plan provides, with the meter that counts it as the unit under
- * the name, and each name defines itself on hover. Delivery and storage
- * overage price the same on every paid plan, so they are the note under the
- * table rather than two rows of one repeated figure. Allowances are monthly,
- * which the same note says once; the price under each name already reads
- * "per month". Free has no overage, so its overage cell reads as the cap it is.
+ * by what the plan provides, in the founder's words of 2026-09-08, with no
+ * unit line under it, and each name defines itself on hover. Delivery and storage
+ * overage price the same on every paid plan, so each is a sentence in the
+ * definition of its row rather than a row of one repeated figure. Allowances
+ * are monthly, which the price under each name already reads as "per month".
+ * Free has no overage, so its overage cell reads as the cap it is.
  * Retention is the same on every plan, so it sits with what every plan carries.
  *
  * The last row is the one every plan shares, the founder's 2026-09-08 call:
@@ -251,18 +265,35 @@ const define = (name: string) => {
   return meter.definition;
 };
 
-type Row = { label: string; tail?: string; definition: string; unit?: string; lead?: boolean; value: (plan: Plan) => string };
+/* The definitions price delivery and storage overage once each, which holds
+ * only while every paid plan prices them the same. */
+const overageRates = (key: 'delivery' | 'storage') => {
+  const rates = new Set(selfServe.flatMap((plan) => (plan.overage ? [plan.overage[key]] : [])));
+  if (rates.size !== 1) throw new Error(`pricing.astro: paid plans price ${key} overage ${rates.size} ways; the row definition states one`);
+  return [...rates][0];
+};
+const deliveryOverage = overageRates('delivery');
+const storageOverage = overageRates('storage');
+
+type Row = { label: string; definition: string; lead?: boolean; value: (plan: Plan) => string };
 const rows: Row[] = [
-  { label: 'Monthly Active Users', tail: '(MAU)', lead: true, definition: define('Relay MAU'), value: (plan) => plan.relayMau },
+  { label: 'Monthly Active Users', lead: true, definition: define('Relay MAU'), value: (plan) => plan.relayMau },
   {
     label: 'Additional MAU',
-    unit: '$ per MAU',
     definition: 'Each Relay MAU beyond the plan allowance in a month, charged only once overage is on. Free has no overage and stops at its cap.',
     value: (plan) => plan.overage?.relayMau ?? NO_OVERAGE,
   },
-  { label: 'Message Delivery', unit: 'Delivery Units', definition: define('Delivery unit'), value: (plan) => plan.deliveryUnits },
-  { label: 'Encrypted Attachments', unit: 'Attachment Uploads', definition: define('Attachment upload'), value: (plan) => plan.attachmentOperations },
-  { label: 'Encrypted Storage', definition: define('Storage'), value: (plan) => plan.storage },
+  {
+    label: 'Message Delivery Units',
+    definition: `${define('Delivery unit')} Once overage is on, additional units are ${deliveryOverage} on every paid plan.`,
+    value: (plan) => plan.deliveryUnits,
+  },
+  { label: 'Attachment Uploads', definition: `${define('Attachment upload')} A hard cap on every plan.`, value: (plan) => plan.attachmentOperations },
+  {
+    label: 'Encrypted Storage',
+    definition: `${define('Storage')} Once overage is on, additional storage is ${storageOverage} on every paid plan.`,
+    value: (plan) => plan.storage,
+  },
   {
     label: 'SDK Commercial License',
     definition:
@@ -271,16 +302,14 @@ const rows: Row[] = [
   },
 ];
 
-/* The compact list has one line per row, so the tail joins the label. */
-const compactLabel = (row: Row) => [row.label, row.tail].filter(Boolean).join(' ');
 const rowId = (row: Row, scope: string) => `${scope}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
-/* The lead row has room around it; the last row closes the tint. */
-const rowPadding = (row: Row, index: number) => (row.lead ? ['pt-5', 'pb-4'] : ['pt-3', index === rows.length - 1 ? 'pb-6' : 'pb-3']);
-const rowHeadClasses = (row: Row, index: number) => [ROW_HEAD, ...rowPadding(row, index), row.lead && LEAD_HEAD];
-const cellClasses = (row: Row, index: number, plan: Plan) => [
+/* The lead row has room around it; the foot closes the tint. */
+const rowPadding = (row: Row) => (row.lead ? ['pt-5', 'pb-4'] : ['pt-3', 'pb-3']);
+const rowHeadClasses = (row: Row) => [ROW_HEAD, ...rowPadding(row), row.lead && LEAD_HEAD];
+const cellClasses = (row: Row, plan: Plan) => [
   CELL,
-  ...rowPadding(row, index),
+  ...rowPadding(row),
   row.lead ? LEAD_VALUE : 'text-text-3',
   marked(plan) && 'bg-ground-panel',
 ];
@@ -291,7 +320,8 @@ const compactValueClasses = (row: Row) => [COMPACT_VALUE, row.lead ? LEAD_VALUE 
 /*
  * What every plan carries, one card per relay capability, each in the words
  * the relay's own routes and concepts use. These do not differ by plan, so
- * the whole set opens in one dialog rather than taking the table's space.
+ * the whole set stands in one section under the plans rather than taking the
+ * table's space.
  */
 const included: { icon: IconName; label: string; detail: string }[] = [
   {
@@ -332,19 +362,11 @@ const included: { icon: IconName; label: string; detail: string }[] = [
   },
   { icon: 'terminal', label: 'Development environment', detail: 'One with every project, at no cost and without a card.' },
 ];
-const INCLUDED_HEADING = 'Included on every plan';
-const INCLUDED_ID = 'included-on-every-plan';
+const INCLUDED_HEADING = 'Built into every plan';
+const INCLUDED_ID = 'built-into-every-plan';
+const INCLUDED_ANCHOR = 'included';
 const INCLUDED_ACTION = 'See what is included';
 
-/* The note under the table prices delivery and storage overage once, which
- * holds only while every paid plan prices them the same. */
-const overageRates = (key: 'delivery' | 'storage') => {
-  const rates = new Set(selfServe.flatMap((plan) => (plan.overage ? [plan.overage[key]] : [])));
-  if (rates.size !== 1) throw new Error(`pricing.astro: paid plans price ${key} overage ${rates.size} ways; the note under the table states one`);
-  return [...rates][0];
-};
-const deliveryOverage = overageRates('delivery');
-const storageOverage = overageRates('storage');
 
 const licenseHeading = (tier: (typeof tiers)[number]) =>
   /license/i.test(tier.name) ? tier.name : `${tier.name} license`;
@@ -358,11 +380,11 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
   <section id="relay-plans" class={PLANS}>
     <div class={CONTAINER}>
       <div class={PLANS_HEAD} data-plans-head>
-        <h1>Free to start, pricing that scales.</h1>
+        <h1>Pricing that scales to zero.</h1>
         <p class:list={[LEAD, PLANS_LEAD]}>Ship fully featured end-to-end encrypted messaging, securely, and at scale.</p>
         <div class:list={[ACTIONS, PLANS_ACTIONS]} data-actions="pricing">
           <a class={PLANS_PRIMARY} href={RELAY_PROJECT}>{startAction.label}{' '}<span class="oe-button-note">{startPromise}</span></a>
-          <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button>
+          <a class={INCLUDED_TRIGGER} href={`#${INCLUDED_ANCHOR}`}>{INCLUDED_ACTION}</a>
         </div>
       </div>
       <div class={PLAN_TABLE_AT}>
@@ -380,22 +402,30 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
                   <h3 class={TIER_HEADING} itemprop="name">{plan.name}</h3>
                   <p class={TIER_PRICE}>{plan.price}</p>
                   <p class={TIER_NOTE}>per month</p>
-                  <a class:list={startClasses(plan)} href={startHref(plan)}>{startLabel(plan)}</a>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, index) => (
+            {rows.map((row) => (
               <tr>
-                <th scope="row" class:list={rowHeadClasses(row, index)}>
-                  <Term id={rowId(row, 'table')} label={row.label} tail={row.tail} definition={row.definition} />
-                  {row.unit && <span class={ROW_UNIT}>{row.unit}</span>}
+                <th scope="row" class:list={rowHeadClasses(row)}>
+                  <Term id={rowId(row, 'table')} label={row.label} definition={row.definition} />
                 </th>
-                {selfServe.map((plan) => <td class:list={cellClasses(row, index, plan)}><PlanValue value={row.value(plan)} /></td>)}
+                {selfServe.map((plan) => <td class:list={cellClasses(row, plan)}><PlanValue value={row.value(plan)} /></td>)}
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr>
+              <td class="rule-t pr-4"></td>
+              {selfServe.map((plan) => (
+                <td class:list={footClasses(plan)} data-relay-plan-action={plan.id}>
+                  <a class:list={startClasses(plan)} href={startHref(plan)}>{startLabel(plan)}</a>
+                </td>
+              ))}
+            </tr>
+          </tfoot>
         </table>
       </div>
       <ul class={COMPACT}>
@@ -405,37 +435,18 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
             <h3 class={TIER_HEADING}>{plan.name}</h3>
             <p class={TIER_PRICE}>{plan.price}</p>
             <p class={TIER_NOTE}>per month</p>
-            <a class:list={startClasses(plan)} href={startHref(plan)}>{startLabel(plan)}</a>
             <dl class={COMPACT_ROWS}>
               {rows.map((row) => (
                 <div class:list={compactRowClasses(row)}>
-                  <dt class={compactLabelClasses(row)}><Term id={rowId(row, plan.id)} label={compactLabel(row)} definition={row.definition} /></dt>
+                  <dt class={compactLabelClasses(row)}><Term id={rowId(row, plan.id)} label={row.label} definition={row.definition} /></dt>
                   <dd class:list={compactValueClasses(row)}><PlanValue value={row.value(plan)} /></dd>
                 </div>
               ))}
             </dl>
+            <a class:list={[startClasses(plan), COMPACT_ACTION]} href={startHref(plan)}>{startLabel(plan)}</a>
           </li>
         ))}
       </ul>
-      <dialog class={INCLUDED_DIALOG} aria-labelledby={INCLUDED_ID} data-included>
-        <div class={INCLUDED_BODY}>
-          <div class={INCLUDED_HEAD}>
-            <div>
-              <h2 id={INCLUDED_ID} class={INCLUDED_TITLE}>{INCLUDED_HEADING}</h2>
-              <p class={INCLUDED_LEAD}>Every plan carries all of these, Free included. Paid plans add capacity and optional overage.</p>
-            </div>
-            <button type="button" class="oe-icon-button" aria-label="Close" data-included-close><Icon name="close" /></button>
-          </div>
-          <dl class={INCLUDED_CARDS}>
-            {included.map((item) => (
-              <div class={INCLUDED_CARD}>
-                <dt class={INCLUDED_CARD_TITLE}><Icon name={item.icon} class={INCLUDED_CARD_ICON} />{item.label}</dt>
-                <dd class={INCLUDED_CARD_DETAIL}>{item.detail}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </dialog>
       <div class={ENTERPRISE_BAND} data-relay-plan={enterprise.id}>
         <div class={TIER_NAME}>
           <h3 class={TIER_HEADING}>{enterprise.name}</h3>
@@ -449,41 +460,22 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
           </p>
         </div>
       </div>
-      <p class:list={['mt-8', MEASURE]}>Prefer to operate the delivery layer yourself? The SDK is free under AGPLv3. Self-hosting it inside a proprietary product takes an <a href="#licensing">SDK commercial license</a>, from {startupTier.price} per year, and a Relay plan grants no self-hosting rights.</p>
-      <p class:list={['mt-4 text-text-3', MEASURE]}>Prices and allowances are monthly, and taxes can apply. Once overage is on, additional delivery units are {deliveryOverage} and additional storage is {storageOverage} on every paid plan. Attachment uploads are a hard cap on every plan, and Free stops at every cap. The <a href="/legal/relay-terms">Relay service terms</a> control a managed project.</p>
-      <p class:list={['mt-4', TEXT_LINKS]}><a href="/relay">What Relay operates</a><a href="/compare/virgil-security">Compare with Virgil Security</a></p>
     </div>
   </section>
 
-  <section id="development" class:list={[BAND, BAND_SURFACE]}>
+  <section id={INCLUDED_ANCHOR} class={BAND} aria-labelledby={INCLUDED_ID}>
     <div class={CONTAINER}>
       <div class={BAND_HEAD}>
-        <h2>Included with every project</h2>
-        <p class={MEASURE}>The Development environment is separate from the production plan. It uses isolated state, credentials, limits, and lifecycle controls, and it is not a production plan.</p>
+        <h2 id={INCLUDED_ID}>{INCLUDED_HEADING}</h2>
       </div>
-      <ul class={TIERS}>
-        <li class={TIER}>
-          <div class={TIER_NAME}>
-            <h3 class={TIER_HEADING}>Development environment</h3>
-            <p class={TIER_PRICE}>Included</p>
-            <p class={TIER_NOTE}>No card</p>
+      <dl class={INCLUDED_CARDS}>
+        {included.map((item) => (
+          <div class={INCLUDED_CARD}>
+            <dt class={INCLUDED_CARD_TITLE}><Icon name={item.icon} class={INCLUDED_CARD_ICON} />{item.label}</dt>
+            <dd class={INCLUDED_CARD_DETAIL}>{item.detail}</dd>
           </div>
-          <div class={TIER_BODY}>
-            <p>{relayDevelopmentEnvironment.relayMau}, {relayDevelopmentEnvironment.deliveryUnits} delivery units and {relayDevelopmentEnvironment.attachmentOperations} attachment uploads per month, and {relayDevelopmentEnvironment.storage} storage.</p>
-            <p class={TIER_NOTE}>{relayDevelopmentEnvironment.detail}</p>
-          </div>
-        </li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="meters" class={BAND}>
-    <div class={CONTAINER}>
-      <div class={BAND_HEAD}>
-        <h2>What the meters count</h2>
-        <p class={MEASURE}>The four meters the table counts, defined the way the Relay service terms define them.</p>
-      </div>
-      <dl class={DEFINITION_ROWS}>{relayMeterDefinitions.map((meter) => <div><dt>{meter.name}</dt><dd>{meter.definition}</dd></div>)}</dl>
+        ))}
+      </dl>
     </div>
   </section>
 
@@ -514,39 +506,4 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
       <p class:list={['text-text-3', MEASURE]}>A Startup commercial license renews annually until you cancel before the renewal date. Taxes may apply. The <a href="/legal/terms">self-hosted agreement</a> controls that grant, covered products, support, renewal, and post-expiration rights.</p>
     </div>
   </section>
-
-  <section class={BAND}>
-    <div class={CONTAINER}>
-      <div class={BAND_HEAD}><h2>How buying works</h2></div>
-      <dl class={DEFINITION_ROWS}>
-        <div><dt>Relay plan</dt><dd>Create a project and build in its Development environment without a card. To activate Production, save a verified card in Console and choose a plan. Free charges nothing and stops at its caps. A paid plan bills monthly, and overage stays off until you turn it on.</dd></div>
-        <div><dt>At a cap</dt><dd>At a hard cap or spend limit, Relay refuses new billable work. It preserves receive, pull, acknowledgment, deletion, revocation, usage export, and billing access.</dd></div>
-        <div><dt>Overage</dt><dd>Overage is off until an organization administrator accepts the rate and sets a monthly spend limit in Console. Reaching that limit stops new billable work and preserves pull, acknowledgment, deletion, revocation, recovery, and mailbox draining.</dd></div>
-        <div><dt>Self-hosting</dt><dd>A Relay plan covers the managed service and grants no self-hosting rights. Self-hosting the SDK inside a proprietary product takes an SDK commercial license.</dd></div>
-        <div><dt>Startup license</dt><dd>Sign in, name the legal entity and covered product, accept the commercial terms, and complete annual checkout.</dd></div>
-        <div><dt>Growth and Enterprise / OEM licenses</dt><dd>Portfolio rights, redistribution, integration support, security review, and service levels need a signed order form.</dd></div>
-      </dl>
-      <p class={TEXT_LINKS}><a href="/licensing">Compare self-hosted rights</a><a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">Ask a licensing question</a></p>
-    </div>
-  </section>
 </BaseLayout>
-
-<script>
-  /*
-   * The dialog's open state, and nothing else. The browser owns the focus
-   * trap, Escape, the return of focus to the trigger that opened it, and the
-   * inert page. Two triggers stand on the page, one in the table and one over
-   * the compact list, and width shows one of them at a time. A
-   * press on the backdrop reaches the dialog element itself and nothing inside
-   * it, which is how it is told apart from a press on the content.
-   */
-  const dialog = document.querySelector<HTMLDialogElement>('[data-included]');
-  const triggers = document.querySelectorAll<HTMLButtonElement>('[data-included-trigger]');
-  if (dialog && triggers.length) {
-    for (const trigger of triggers) trigger.addEventListener('click', () => dialog.showModal());
-    dialog.querySelector('[data-included-close]')?.addEventListener('click', () => dialog.close());
-    dialog.addEventListener('click', (event) => {
-      if (event.target === dialog) dialog.close();
-    });
-  }
-</script>
