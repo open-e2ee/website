@@ -12,25 +12,19 @@ interface Props {
   class?: string;
 }
 
-const { product, size = 30, class: className } = Astro.props;
+const { product, size = 16, class: className } = Astro.props;
 ---
 
-{/* Both ratios are of the wordmark font size, read out of
-    `public/brand/manifest.json` under `lockups`: the mark is
-    `symbolSize / wordmarkFontSize`, 128 / 160.95, and the gap beside it is
-    `symbolGap / wordmarkFontSize`, 48 / 160.95. Neither is a ratio of the
-    symbol height. `0.375em` was `symbolGap / symbolSize` applied against the
-    font size, which drew the gap a third wider than the manifest asks for. */}
 <span
   class:list={[
     'inline-flex items-center gap-[0.437em] text-[length:var(--oe-chrome-lockup-size)] leading-none text-text-1',
-    '[&_.oe-mark]:h-[0.795em] [&_.oe-mark]:w-[0.795em] [&_.oe-mark]:flex-none',
+    '[&_.oe-mark]:h-[0.795em] [&_.oe-mark]:w-[0.795em] [&_.oe-mark]:min-h-4 [&_.oe-mark]:min-w-4 [&_.oe-mark]:flex-none',
     product && 'flex-col items-start gap-[0.4em]',
     className,
   ]}
 >
   <span style="display: inline-flex; align-items: center; gap: 0.298em;">
-    <Mark size={size} />
+    <Mark size={size} lockup />
     <span class="oe-wordmark"><span>Open</span><span>E2EE</span></span>
   </span>
   {product && (

@@ -1,6 +1,6 @@
 {
   "package": "@open-e2ee/design",
-  "version": "0.20.0",
+  "version": "0.20.1",
   "mark": "carrier",
   "variants": {
     "rule": "Use the optical variant from 16 to 31 px and the full mark from 32 px. Do not reproduce the mark below 16 px.",
@@ -27,7 +27,9 @@
     "stackedGap": 39.68,
     "productFontSize": 99.79,
     "productBaselineDrop": 180.36,
-    "note": "SVG only, and the wordmark is live text: a lockup needs Public Sans available to render as drawn.",
+    "note": "Lockup SVGs use live Public Sans text. hosted/ supplies outlined SVG and PNG uploads.",
+    "symbolFontRatio": 0.7953000000000001,
+    "gapFontRatio": 0.29823750000000004,
     "assets": [
       {
         "lockup": "symbol",
@@ -152,8 +154,12 @@
       }
     ]
   },
-  "sha256": "4cf6dd0e46ed277d17db6bb5410a9842aa8954e0fe65052727a49aa17f1d65d4",
+  "sha256": "32bad5f0dab7155916dc586f2534c6cb57e457c28abf9b37de480f03b96ce80e",
   "files": [
+    "hosted/open-e2ee-logo-dark.png",
+    "hosted/open-e2ee-logo-dark.svg",
+    "hosted/open-e2ee-logo-light.png",
+    "hosted/open-e2ee-logo-light.svg",
     "lockup/open-e2ee-lockup-horizontal-dark.svg",
     "lockup/open-e2ee-lockup-horizontal-light.svg",
     "lockup/open-e2ee-lockup-horizontal-mono.svg",
@@ -166,6 +172,10 @@
     "lockup/open-e2ee-lockup-symbol-dark.svg",
     "lockup/open-e2ee-lockup-symbol-light.svg",
     "lockup/open-e2ee-lockup-symbol-mono.svg",
+    "open-e2ee-app-icon-180.png",
+    "open-e2ee-app-icon-192.png",
+    "open-e2ee-app-icon-512.png",
+    "open-e2ee-favicon.ico",
     "open-e2ee-favicon.svg",
     "open-e2ee-mark-adaptive-small.svg",
     "open-e2ee-mark-adaptive.svg",

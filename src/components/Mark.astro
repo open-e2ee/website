@@ -4,20 +4,24 @@ import { geometry, pathsForVariant, variantForSize } from '../lib/brand';
 interface Props {
   /** Rendered size in CSS pixels. Selects the silhouette. */
   size?: number;
+  /** Use visible bounds when the surrounding lockup supplies clear space. */
+  lockup?: boolean;
   /** Decorative marks inside a lockup are labeled by the wordmark beside them. */
   decorative?: boolean;
   class?: string;
 }
 
-const { size = 32, decorative = true, class: className } = Astro.props;
+const { size = 32, lockup = false, decorative = true, class: className } = Astro.props;
 const variant = variantForSize(size);
 const paths = pathsForVariant(variant);
+const bounds = geometry[variant].construction.artwork;
+const viewBox = lockup ? `${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}` : geometry.viewBox;
 const titleId = `oe-mark-${crypto.randomUUID().slice(0, 8)}`;
 ---
 
 <svg
   class:list={['oe-mark', className]}
-  viewBox={geometry.viewBox}
+  viewBox={viewBox}
   width={size}
   height={size}
   fill="currentColor"
