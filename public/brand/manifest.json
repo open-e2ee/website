@@ -1,9 +1,9 @@
 {
   "package": "@open-e2ee/design",
-  "version": "0.20.2",
+  "version": "0.21.2",
   "mark": "carrier",
   "variants": {
-    "rule": "Use the optical variant from 16 to 31 px and the full mark from 32 px. Do not reproduce the mark below 16 px.",
+    "rule": "Use the optical canvas from 16 to 31 px and the full canvas from 32 px. Both use the same approved proportions.",
     "minimumSize": 16,
     "smallMaximumSize": 31,
     "png": {
@@ -21,102 +21,102 @@
   "lockups": {
     "rule": "Lockup proportions are derived from visible symbol and Public Sans wordmark bounds; see DESIGN.md.",
     "symbolSize": 128,
-    "wordmarkCapHeight": 84.13,
-    "wordmarkFontSize": 116.36,
+    "wordmarkCapHeight": 71.19,
+    "wordmarkFontSize": 98.46,
     "symbolGap": 48,
     "stackedGap": 39.68,
-    "productFontSize": 72.15,
-    "productBaselineDrop": 130.4,
+    "productFontSize": 61.05,
+    "productBaselineDrop": 110.34,
     "note": "Lockup SVGs use live Public Sans text. hosted/ supplies outlined SVG and PNG uploads.",
-    "symbolFontRatio": 1.1,
-    "symbolBaselineDropRatio": 0.26400000000000007,
+    "symbolFontRatio": 1.3,
+    "symbolBaselineDropRatio": 0.161,
     "wordmarkInkTopRatio": 0.733,
     "wordmarkInkBottomRatio": 0.161,
-    "gapFontRatio": 0.41250000000000003,
+    "gapFontRatio": 0.48750000000000004,
     "assets": [
       {
         "lockup": "symbol",
         "mode": "light",
         "svg": "lockup/open-e2ee-lockup-symbol-light.svg",
-        "width": 160,
-        "height": 160
+        "width": 145.92,
+        "height": 145.92
       },
       {
         "lockup": "symbol",
         "mode": "dark",
         "svg": "lockup/open-e2ee-lockup-symbol-dark.svg",
-        "width": 160,
-        "height": 160
+        "width": 145.92,
+        "height": 145.92
       },
       {
         "lockup": "symbol",
         "mode": "mono",
         "svg": "lockup/open-e2ee-lockup-symbol-mono.svg",
-        "width": 160,
-        "height": 160
+        "width": 145.92,
+        "height": 145.92
       },
       {
         "lockup": "horizontal",
         "mode": "light",
         "svg": "lockup/open-e2ee-lockup-horizontal-light.svg",
-        "width": 787.9,
-        "height": 160
+        "width": 684.6,
+        "height": 145.92
       },
       {
         "lockup": "horizontal",
         "mode": "dark",
         "svg": "lockup/open-e2ee-lockup-horizontal-dark.svg",
-        "width": 787.9,
-        "height": 160
+        "width": 684.6,
+        "height": 145.92
       },
       {
         "lockup": "horizontal",
         "mode": "mono",
         "svg": "lockup/open-e2ee-lockup-horizontal-mono.svg",
-        "width": 787.9,
-        "height": 160
+        "width": 684.6,
+        "height": 145.92
       },
       {
         "lockup": "stacked",
         "mode": "light",
         "svg": "lockup/open-e2ee-lockup-stacked-light.svg",
-        "width": 611.9,
-        "height": 309.99
+        "width": 508.6,
+        "height": 278.94
       },
       {
         "lockup": "stacked",
         "mode": "dark",
         "svg": "lockup/open-e2ee-lockup-stacked-dark.svg",
-        "width": 611.9,
-        "height": 309.99
+        "width": 508.6,
+        "height": 278.94
       },
       {
         "lockup": "stacked",
         "mode": "mono",
         "svg": "lockup/open-e2ee-lockup-stacked-mono.svg",
-        "width": 611.9,
-        "height": 309.99
+        "width": 508.6,
+        "height": 278.94
       },
       {
         "lockup": "product",
         "mode": "light",
         "svg": "lockup/open-e2ee-lockup-product-light.svg",
-        "width": 787.9,
-        "height": 275.92
+        "width": 684.6,
+        "height": 254.14
       },
       {
         "lockup": "product",
         "mode": "dark",
         "svg": "lockup/open-e2ee-lockup-product-dark.svg",
-        "width": 787.9,
-        "height": 275.92
+        "width": 684.6,
+        "height": 254.14
       },
       {
         "lockup": "product",
         "mode": "mono",
         "svg": "lockup/open-e2ee-lockup-product-mono.svg",
-        "width": 787.9,
-        "height": 275.92
+        "width": 684.6,
+        "height": 254.14
       }
     ]
   },
@@ -157,7 +157,7 @@
       }
     ]
   },
-  "sha256": "7a811e2481360859b7b44a28b1c81c50e80f97921d4ab834dfdffa7edecae9af",
+  "sha256": "d0f1e2cb4fa1edb60637696571fbfbb4652e246f6cf402b2154f03ae473a8c16",
   "files": [
     "hosted/open-e2ee-logo-dark.png",
     "hosted/open-e2ee-logo-dark.svg",

@@ -5,33 +5,33 @@
   <g transform="translate(40 40)">
     <rect width="560" height="600" fill="#faf7f3"/>
     <g transform="translate(120 40) scale(0.625)">
-      <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#080808"/>
-      <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#080808"/>
-      <path d="M152 152 H360 V360 H152 Z" fill="#080808"/>
+      <path d="M64 64 H202.24 V98.56 H98.56 V413.44 H202.24 V448 H64 Z" fill="#080808" fill-rule="evenodd"/>
+      <path d="M448 64 H309.76 V98.56 H413.44 V413.44 H309.76 V448 H448 Z" fill="#080808" fill-rule="evenodd"/>
+      <path d="M125.44 125.44 H386.56 V386.56 H125.44 Z M193.3312 250.7776 Q193.3312 245.5552 198.5536 245.5552 H214.2208 V219.4432 A41.7792 41.7792 0 0 1 297.7792 219.4432 V245.5552 H313.4464 Q318.6688 245.5552 318.6688 250.7776 V329.1136 Q318.6688 334.336 313.4464 334.336 H198.5536 Q193.3312 334.336 193.3312 329.1136 Z M235.1104 245.5552 H276.8896 V219.4432 A20.8896 20.8896 0 0 0 235.1104 219.4432 Z" fill="#080808" fill-rule="evenodd"/>
     </g>
     <g transform="translate(40 424)">
       <g transform="translate(48 48) scale(0.03125)">
-        <path d="M56 56 H200 V112 H112 V400 H200 V456 H56 Z" fill="#080808"/>
-        <path d="M456 56 H312 V112 H400 V400 H312 V456 H456 Z" fill="#080808"/>
-        <path d="M152 152 H360 V360 H152 Z" fill="#080808"/>
+        <path d="M56 56 H200 V92 H92 V420 H200 V456 H56 Z" fill="#080808" fill-rule="evenodd"/>
+        <path d="M456 56 H312 V92 H420 V420 H312 V456 H456 Z" fill="#080808" fill-rule="evenodd"/>
+        <path d="M120 120 H392 V392 H120 Z M190.72 250.56 Q190.72 245.12 196.16 245.12 H212.48 V217.92 A43.52 43.52 0 0 1 299.52 217.92 V245.12 H315.84 Q321.28 245.12 321.28 250.56 V332.16 Q321.28 337.6 315.84 337.6 H196.16 Q190.72 337.6 190.72 332.16 Z M234.24 245.12 H277.76 V217.92 A21.76 21.76 0 0 0 234.24 217.92 Z" fill="#080808" fill-rule="evenodd"/>
       </g>
       <text x="48" y="88" fill="#080808" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">16px optical</text>
       <g transform="translate(156 40) scale(0.046875)">
-        <path d="M56 56 H200 V112 H112 V400 H200 V456 H56 Z" fill="#080808"/>
-        <path d="M456 56 H312 V112 H400 V400 H312 V456 H456 Z" fill="#080808"/>
-        <path d="M152 152 H360 V360 H152 Z" fill="#080808"/>
+        <path d="M56 56 H200 V92 H92 V420 H200 V456 H56 Z" fill="#080808" fill-rule="evenodd"/>
+        <path d="M456 56 H312 V92 H420 V420 H312 V456 H456 Z" fill="#080808" fill-rule="evenodd"/>
+        <path d="M120 120 H392 V392 H120 Z M190.72 250.56 Q190.72 245.12 196.16 245.12 H212.48 V217.92 A43.52 43.52 0 0 1 299.52 217.92 V245.12 H315.84 Q321.28 245.12 321.28 250.56 V332.16 Q321.28 337.6 315.84 337.6 H196.16 Q190.72 337.6 190.72 332.16 Z M234.24 245.12 H277.76 V217.92 A21.76 21.76 0 0 0 234.24 217.92 Z" fill="#080808" fill-rule="evenodd"/>
       </g>
       <text x="156" y="88" fill="#080808" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">24px optical</text>
       <g transform="translate(264 32) scale(0.0625)">
-        <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#080808"/>
-        <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#080808"/>
-        <path d="M152 152 H360 V360 H152 Z" fill="#080808"/>
+        <path d="M64 64 H202.24 V98.56 H98.56 V413.44 H202.24 V448 H64 Z" fill="#080808" fill-rule="evenodd"/>
+        <path d="M448 64 H309.76 V98.56 H413.44 V413.44 H309.76 V448 H448 Z" fill="#080808" fill-rule="evenodd"/>
+        <path d="M125.44 125.44 H386.56 V386.56 H125.44 Z M193.3312 250.7776 Q193.3312 245.5552 198.5536 245.5552 H214.2208 V219.4432 A41.7792 41.7792 0 0 1 297.7792 219.4432 V245.5552 H313.4464 Q318.6688 245.5552 318.6688 250.7776 V329.1136 Q318.6688 334.336 313.4464 334.336 H198.5536 Q193.3312 334.336 193.3312 329.1136 Z M235.1104 245.5552 H276.8896 V219.4432 A20.8896 20.8896 0 0 0 235.1104 219.4432 Z" fill="#080808" fill-rule="evenodd"/>
       </g>
       <text x="264" y="88" fill="#080808" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">32px full</text>
       <g transform="translate(372 0) scale(0.125)">
-        <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#080808"/>
-        <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#080808"/>
-        <path d="M152 152 H360 V360 H152 Z" fill="#080808"/>
+        <path d="M64 64 H202.24 V98.56 H98.56 V413.44 H202.24 V448 H64 Z" fill="#080808" fill-rule="evenodd"/>
+        <path d="M448 64 H309.76 V98.56 H413.44 V413.44 H309.76 V448 H448 Z" fill="#080808" fill-rule="evenodd"/>
+        <path d="M125.44 125.44 H386.56 V386.56 H125.44 Z M193.3312 250.7776 Q193.3312 245.5552 198.5536 245.5552 H214.2208 V219.4432 A41.7792 41.7792 0 0 1 297.7792 219.4432 V245.5552 H313.4464 Q318.6688 245.5552 318.6688 250.7776 V329.1136 Q318.6688 334.336 313.4464 334.336 H198.5536 Q193.3312 334.336 193.3312 329.1136 Z M235.1104 245.5552 H276.8896 V219.4432 A20.8896 20.8896 0 0 0 235.1104 219.4432 Z" fill="#080808" fill-rule="evenodd"/>
       </g>
       <text x="372" y="88" fill="#080808" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">64px full</text>
     </g>
@@ -40,33 +40,33 @@
   <g transform="translate(640 40)">
     <rect width="560" height="600" fill="#0e0e0e"/>
     <g transform="translate(120 40) scale(0.625)">
-      <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#f4f1eb"/>
-      <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#f4f1eb"/>
-      <path d="M152 152 H360 V360 H152 Z" fill="#f4f1eb"/>
+      <path d="M64 64 H202.24 V98.56 H98.56 V413.44 H202.24 V448 H64 Z" fill="#f4f1eb" fill-rule="evenodd"/>
+      <path d="M448 64 H309.76 V98.56 H413.44 V413.44 H309.76 V448 H448 Z" fill="#f4f1eb" fill-rule="evenodd"/>
+      <path d="M125.44 125.44 H386.56 V386.56 H125.44 Z M193.3312 250.7776 Q193.3312 245.5552 198.5536 245.5552 H214.2208 V219.4432 A41.7792 41.7792 0 0 1 297.7792 219.4432 V245.5552 H313.4464 Q318.6688 245.5552 318.6688 250.7776 V329.1136 Q318.6688 334.336 313.4464 334.336 H198.5536 Q193.3312 334.336 193.3312 329.1136 Z M235.1104 245.5552 H276.8896 V219.4432 A20.8896 20.8896 0 0 0 235.1104 219.4432 Z" fill="#f4f1eb" fill-rule="evenodd"/>
     </g>
     <g transform="translate(40 424)">
       <g transform="translate(48 48) scale(0.03125)">
-        <path d="M56 56 H200 V112 H112 V400 H200 V456 H56 Z" fill="#f4f1eb"/>
-        <path d="M456 56 H312 V112 H400 V400 H312 V456 H456 Z" fill="#f4f1eb"/>
-        <path d="M152 152 H360 V360 H152 Z" fill="#f4f1eb"/>
+        <path d="M56 56 H200 V92 H92 V420 H200 V456 H56 Z" fill="#f4f1eb" fill-rule="evenodd"/>
+        <path d="M456 56 H312 V92 H420 V420 H312 V456 H456 Z" fill="#f4f1eb" fill-rule="evenodd"/>
+        <path d="M120 120 H392 V392 H120 Z M190.72 250.56 Q190.72 245.12 196.16 245.12 H212.48 V217.92 A43.52 43.52 0 0 1 299.52 217.92 V245.12 H315.84 Q321.28 245.12 321.28 250.56 V332.16 Q321.28 337.6 315.84 337.6 H196.16 Q190.72 337.6 190.72 332.16 Z M234.24 245.12 H277.76 V217.92 A21.76 21.76 0 0 0 234.24 217.92 Z" fill="#f4f1eb" fill-rule="evenodd"/>
       </g>
       <text x="48" y="88" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">16px optical</text>
       <g transform="translate(156 40) scale(0.046875)">
-        <path d="M56 56 H200 V112 H112 V400 H200 V456 H56 Z" fill="#f4f1eb"/>
-        <path d="M456 56 H312 V112 H400 V400 H312 V456 H456 Z" fill="#f4f1eb"/>
-        <path d="M152 152 H360 V360 H152 Z" fill="#f4f1eb"/>
+        <path d="M56 56 H200 V92 H92 V420 H200 V456 H56 Z" fill="#f4f1eb" fill-rule="evenodd"/>
+        <path d="M456 56 H312 V92 H420 V420 H312 V456 H456 Z" fill="#f4f1eb" fill-rule="evenodd"/>
+        <path d="M120 120 H392 V392 H120 Z M190.72 250.56 Q190.72 245.12 196.16 245.12 H212.48 V217.92 A43.52 43.52 0 0 1 299.52 217.92 V245.12 H315.84 Q321.28 245.12 321.28 250.56 V332.16 Q321.28 337.6 315.84 337.6 H196.16 Q190.72 337.6 190.72 332.16 Z M234.24 245.12 H277.76 V217.92 A21.76 21.76 0 0 0 234.24 217.92 Z" fill="#f4f1eb" fill-rule="evenodd"/>
       </g>
       <text x="156" y="88" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">24px optical</text>
       <g transform="translate(264 32) scale(0.0625)">
-        <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#f4f1eb"/>
-        <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#f4f1eb"/>
-        <path d="M152 152 H360 V360 H152 Z" fill="#f4f1eb"/>
+        <path d="M64 64 H202.24 V98.56 H98.56 V413.44 H202.24 V448 H64 Z" fill="#f4f1eb" fill-rule="evenodd"/>
+        <path d="M448 64 H309.76 V98.56 H413.44 V413.44 H309.76 V448 H448 Z" fill="#f4f1eb" fill-rule="evenodd"/>
+        <path d="M125.44 125.44 H386.56 V386.56 H125.44 Z M193.3312 250.7776 Q193.3312 245.5552 198.5536 245.5552 H214.2208 V219.4432 A41.7792 41.7792 0 0 1 297.7792 219.4432 V245.5552 H313.4464 Q318.6688 245.5552 318.6688 250.7776 V329.1136 Q318.6688 334.336 313.4464 334.336 H198.5536 Q193.3312 334.336 193.3312 329.1136 Z M235.1104 245.5552 H276.8896 V219.4432 A20.8896 20.8896 0 0 0 235.1104 219.4432 Z" fill="#f4f1eb" fill-rule="evenodd"/>
       </g>
       <text x="264" y="88" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">32px full</text>
       <g transform="translate(372 0) scale(0.125)">
-        <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#f4f1eb"/>
-        <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#f4f1eb"/>
-        <path d="M152 152 H360 V360 H152 Z" fill="#f4f1eb"/>
+        <path d="M64 64 H202.24 V98.56 H98.56 V413.44 H202.24 V448 H64 Z" fill="#f4f1eb" fill-rule="evenodd"/>
+        <path d="M448 64 H309.76 V98.56 H413.44 V413.44 H309.76 V448 H448 Z" fill="#f4f1eb" fill-rule="evenodd"/>
+        <path d="M125.44 125.44 H386.56 V386.56 H125.44 Z M193.3312 250.7776 Q193.3312 245.5552 198.5536 245.5552 H214.2208 V219.4432 A41.7792 41.7792 0 0 1 297.7792 219.4432 V245.5552 H313.4464 Q318.6688 245.5552 318.6688 250.7776 V329.1136 Q318.6688 334.336 313.4464 334.336 H198.5536 Q193.3312 334.336 193.3312 329.1136 Z M235.1104 245.5552 H276.8896 V219.4432 A20.8896 20.8896 0 0 0 235.1104 219.4432 Z" fill="#f4f1eb" fill-rule="evenodd"/>
       </g>
       <text x="372" y="88" fill="#f4f1eb" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="13" opacity="0.72">64px full</text>
     </g>

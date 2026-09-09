@@ -22,5 +22,5 @@ export function variantForSize(size: number): MarkVariant {
 
 export function pathsForVariant(variant: MarkVariant): string[] {
   const source = geometry[variant];
-  return [source.carrierLeftPath, source.carrierRightPath, source.payloadPath];
+  return [source.carrierLeftPath, source.carrierRightPath, source.payloadWithLockPath];
 }

@@ -74,6 +74,11 @@ const tokens = await readJsonFile(new URL('packages/design/dist/tokens.json', de
 const typeMetrics = await readJsonFile(designInternal('brand/source/public-sans-metrics.json'));
 const { monoWidth, textWidth } = await import(designInternal('scripts/lib.mjs').href);
 
+const lockupSource = await readJsonFile(designInternal('brand/source/lockups.json'));
+const wordmarkOutlines = await readJsonFile(designInternal('brand/source/wordmark-outlines.json'));
+const wordmarkGlyphBounds = wordmarkOutlines.runs.flatMap((run) => run.glyphs.map((glyph) => glyph.bounds));
+const wordmarkInkBottomRatio = -Math.min(...wordmarkGlyphBounds.map((bounds) => bounds[1])) / wordmarkOutlines.unitsPerEm;
+
 const light = tokens.semantic.light;
 const geometry = tokens.geometry;
 
@@ -145,8 +150,8 @@ const LABEL_LIMIT =
   CARD.parcelX;
 
 const markMarkup = (fill, indent) =>
-  [geometry.full.carrierLeftPath, geometry.full.carrierRightPath, geometry.full.payloadPath]
-    .map((path) => `${indent}<path d="${path}" fill="${fill}"/>`)
+  [geometry.full.carrierLeftPath, geometry.full.carrierRightPath, geometry.full.payloadWithLockPath]
+    .map((path) => `${indent}<path d="${path}" fill="${fill}" fill-rule="evenodd"/>`)
     .join('\n');
 
 /*
@@ -156,6 +161,13 @@ const markMarkup = (fill, indent) =>
  * implements only the path they use.
  */
 export function socialSvg({ title, description, plateRows, footer }) {
+  const markSize = CARD.wordmarkSize * lockupSource.proportions.symbolFontSize;
+  const markBounds = geometry.full.construction.artwork;
+  const markScale = markSize / markBounds.height;
+  const markX = CARD.columnX - markBounds.x * markScale;
+  const markY = CARD.wordmarkBaseline + CARD.wordmarkSize * wordmarkInkBottomRatio - markSize - markBounds.y * markScale;
+  const wordmarkX = CARD.columnX + markSize * (1 + lockupSource.proportions.symbolGap);
+
   const plate = CARD.parcels
     .map((parcel, index) => {
       const row = plateRows[index];
@@ -203,11 +215,11 @@ export function socialSvg({ title, description, plateRows, footer }) {
     <path d="${slabPath(CARD.transit)}" fill="${light['diagram-ciphertext-fill']}"/>
     ${metadataTicks({ x: CARD.transit.x + 16, y: CARD.transit.y, count: CARD.transit.ticks, fill: light['diagram-boundary'] })}${plate}
   </g>
-  <g transform="translate(88 88) scale(0.1875)">
+  <g transform="translate(${markX} ${markY}) scale(${markScale})">
 ${markMarkup(light.foreground, '    ')}
   </g>
-  <text x="220" y="${CARD.wordmarkBaseline}" fill="${light.foreground}" font-family="${sansStack}" font-size="${CARD.wordmarkSize}">
-    <tspan font-weight="500" letter-spacing="-0.85">Open</tspan><tspan font-weight="800" letter-spacing="-1.28">E2EE</tspan>
+  <text x="${wordmarkX}" y="${CARD.wordmarkBaseline}" fill="${light.foreground}" font-family="${sansStack}" font-size="${CARD.wordmarkSize}">
+    <tspan font-weight="${lockupSource.wordmark.openWeight}" letter-spacing="-0.85">Open</tspan><tspan font-weight="800" letter-spacing="-1.28">E2EE</tspan>
   </text>
   <rect x="${CARD.columnX}" y="${round2(ruleY)}" width="${CARD.columnWidth}" height="1" fill="${light.border}"/>${descriptionLines}
   <text x="${CARD.columnX}" y="${CARD.footerBaseline}" fill="${light.subtle}" font-family="${monoStack}" font-size="19">${escapeXml(footer)}</text>

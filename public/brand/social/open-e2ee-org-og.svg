@@ -17,13 +17,13 @@
     <rect x="860" y="398" width="2" height="10" fill="#a5700d"/><rect x="876" y="398" width="2" height="10" fill="#a5700d"/><rect x="892" y="398" width="2" height="10" fill="#a5700d"/><rect x="908" y="398" width="2" height="10" fill="#a5700d"/><rect x="924" y="398" width="2" height="10" fill="#a5700d"/><rect x="940" y="398" width="2" height="10" fill="#a5700d"/>
     <text x="856" y="492" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">open source · commercial licensing</text>
   </g>
-  <g transform="translate(88 88) scale(0.1875)">
-    <path d="M64 64 H208 V112 H112 V400 H208 V448 H64 Z" fill="#080808"/>
-    <path d="M448 64 H304 V112 H400 V400 H304 V448 H448 Z" fill="#080808"/>
-    <path d="M152 152 H360 V360 H152 Z" fill="#080808"/>
+  <g transform="translate(69.58333333333333 50.76833333333333) scale(0.2877604166666667)">
+    <path d="M64 64 H202.24 V98.56 H98.56 V413.44 H202.24 V448 H64 Z" fill="#080808" fill-rule="evenodd"/>
+    <path d="M448 64 H309.76 V98.56 H413.44 V413.44 H309.76 V448 H448 Z" fill="#080808" fill-rule="evenodd"/>
+    <path d="M125.44 125.44 H386.56 V386.56 H125.44 Z M193.3312 250.7776 Q193.3312 245.5552 198.5536 245.5552 H214.2208 V219.4432 A41.7792 41.7792 0 0 1 297.7792 219.4432 V245.5552 H313.4464 Q318.6688 245.5552 318.6688 250.7776 V329.1136 Q318.6688 334.336 313.4464 334.336 H198.5536 Q193.3312 334.336 193.3312 329.1136 Z M235.1104 245.5552 H276.8896 V219.4432 A20.8896 20.8896 0 0 0 235.1104 219.4432 Z" fill="#080808" fill-rule="evenodd"/>
   </g>
-  <text x="220" y="166" fill="#080808" font-family="'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="85">
-    <tspan font-weight="500" letter-spacing="-0.85">Open</tspan><tspan font-weight="800" letter-spacing="-1.28">E2EE</tspan>
+  <text x="239.9375" y="166" fill="#080808" font-family="'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="85">
+    <tspan font-weight="600" letter-spacing="-0.85">Open</tspan><tspan font-weight="800" letter-spacing="-1.28">E2EE</tspan>
   </text>
   <rect x="88" y="240" width="692" height="1" fill="#ded9d3"/>
   <text x="88" y="300" fill="#615d57" font-family="'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="500">A family of open-source end-to-end encryption</text>
