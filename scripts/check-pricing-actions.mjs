@@ -13,15 +13,20 @@
  *   1. Every Relay plan column or row carries exactly one action control. A
  *      column's action stands in the table's foot, under the rows, so a column
  *      here is its head plus its foot cell.
- *   2. Every SDK commercial license row carries exactly one action control.
+ *   2. Every SDK commercial license column or block carries exactly one
+ *      action control, in the foot of its column as a Relay plan's is.
  *   3. Each rendering leads with one filled action and no more, so a reader who
  *      scans for weight finds the marked plan and the entry license.
  *   4. The plan marked "Most popular" is the filled action, in both renderings.
  *
- * The Relay plans render twice from one data set: a table of plan columns above
- * 62rem, and one block per plan below it, with one of the two in the document
- * at a time. The rules hold on each rendering, and the table and the blocks
- * open the same routes, or the phone and the desktop sell different things.
+ * The Relay plans and the licenses each render twice from one data set: a
+ * table of columns above 62rem, and one block per column below it, with one of
+ * the two in the document at a time. The rules hold on each rendering, and the
+ * table and the blocks open the same routes, or the phone and the desktop sell
+ * different things.
+ *
+ * The Enterprise band's link down to the licenses wears the button's classes
+ * but leads nowhere off the page, so it is a cross-reference and not counted.
  *
  * A count alone would pass a page that put all five buttons in one row, which
  * is why each rule is scoped to a column, a row, or a rendering rather than to
@@ -48,9 +53,12 @@ function section(id) {
   return html.slice(start, end === -1 ? html.length : end);
 }
 
-/** The action controls in a slice, filled ones first. */
+/** The action controls in a slice, filled ones first. A link within the page
+ * is a cross-reference in the control's clothes, not an action. */
 function actions(slice) {
-  const anchors = [...slice.matchAll(/<a class="(oe-button[^"]*)"/g)].map((match) => match[1]);
+  const anchors = [...slice.matchAll(/<a class="(oe-button[^"]*)" href="([^"]+)"/g)]
+    .filter((match) => !match[2].startsWith('#'))
+    .map((match) => match[1]);
   return {
     all: anchors,
     filled: anchors.filter((classes) => !classes.includes('oe-button-secondary')),
@@ -79,7 +87,7 @@ function planSlices(slice, attribute) {
 }
 
 /** The first action's route in a slice, or null. */
-const route = (slice) => slice.match(/<a class="oe-button[^"]*" href="([^"]+)"/)?.[1] ?? null;
+const route = (slice) => slice.match(/<a class="oe-button[^"]*" href="([^#"][^"]*)"/)?.[1] ?? null;
 
 let rows = [];
 let blocks = [];
@@ -152,15 +160,53 @@ if (plans) {
   }
 }
 
-let licenseRows = 0;
+let licenseColumns = [];
+let licenseBlocks = [];
 if (licensing) {
-  licenseRows = [...licensing.matchAll(/<a class="oe-button[^"]*"/g)].length;
-  if (licenseRows < 4) {
-    failures.push(`the licensing section carries ${licenseRows} action controls, fewer than four`);
+  /* The wide rendering: the license table's columns, head plus foot cell. */
+  const compactStart = licensing.indexOf('data-license-compact=');
+  const compactEnd = compactStart === -1 ? -1 : licensing.indexOf('</ul>', compactStart);
+  const tableEnd = licensing.indexOf('</table>');
+  const table = tableEnd === -1 ? '' : licensing.slice(0, tableEnd);
+  const bodyStart = table.indexOf('<tbody');
+  const footStart = table.indexOf('<tfoot');
+  if (bodyStart === -1 || footStart === -1) failures.push('the license table has no body or no foot');
+  const heads = planSlices(table.slice(0, bodyStart === -1 ? table.length : bodyStart), 'data-license');
+  const feet = planSlices(footStart === -1 ? '' : table.slice(footStart), 'data-license-action');
+  if (feet.map((cell) => cell.id).join() !== heads.map((head) => head.id).join()) {
+    failures.push(`the license foot carries actions for ${feet.map((cell) => cell.id).join(', ') || 'no license'} under columns ${heads.map((head) => head.id).join(', ')}`);
   }
+  for (const head of heads) {
+    const found = actions(head.html).all.length;
+    if (found !== 0) failures.push(`${head.id} carries ${found} action control(s) in its head; the action stands in the foot`);
+  }
+  licenseColumns = heads.map((head) => ({ id: head.id, html: head.html + (feet.find((cell) => cell.id === head.id)?.html ?? '') }));
+  if (licenseColumns.length !== 3) failures.push(`${licenseColumns.length} license column(s) on the page, not three`);
+  for (const column of licenseColumns) {
+    const found = actions(column.html).all.length;
+    if (found !== 1) failures.push(`${column.id} license carries ${found} action controls, not one`);
+  }
+  const filled = actions(table).filled.length;
+  if (filled !== 1) failures.push(`the license table leads with ${filled} filled actions, not one`);
 
-  const filled = actions(licensing).filled.length;
-  if (filled !== 1) failures.push(`the licensing section leads with ${filled} filled actions, not one`);
+  /* The narrow rendering: one block per license, same routes. */
+  const compact = compactStart === -1 ? '' : licensing.slice(compactStart, compactEnd);
+  licenseBlocks = planSlices(compact, 'data-license-compact');
+  if (licenseBlocks.length !== licenseColumns.length) {
+    failures.push(`${licenseBlocks.length} compact license block(s) against ${licenseColumns.length} license column(s)`);
+  }
+  for (const block of licenseBlocks) {
+    const found = actions(block.html).all.length;
+    if (found !== 1) failures.push(`${block.id} compact license block carries ${found} action controls, not one`);
+    const column = licenseColumns.find((entry) => entry.id === block.id);
+    if (column && route(column.html) !== route(block.html)) {
+      failures.push(`${block.id} license opens ${route(block.html)} in its block and ${route(column.html)} in its column`);
+    }
+  }
+  const compactFilled = actions(compact).filled.length;
+  if (licenseBlocks.length > 0 && compactFilled !== 1) {
+    failures.push(`the compact license blocks lead with ${compactFilled} filled actions, not one`);
+  }
 }
 
 if (failures.length > 0) {
@@ -171,6 +217,6 @@ if (failures.length > 0) {
 console.log(
   `Pricing actions passed: ${rows.length} Relay plan columns and rows each carrying one action, ` +
     `${blocks.length} compact blocks opening the same routes, ` +
-    `${licenseRows} SDK commercial license actions below them, ` +
+    `${licenseColumns.length} SDK commercial license columns and ${licenseBlocks.length} blocks below them, ` +
     'and one filled action leading each rendering.',
 );

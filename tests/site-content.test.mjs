@@ -3500,7 +3500,7 @@ test('quotes the entry price from the module on every marketing page', async () 
   for (const page of marketingPages) {
     const body = strip(await read(page));
     for (const tier of tiers) {
-      if (tier.price === 'Free') continue;
+      if (!/^\$/.test(tier.price)) continue;
       assert.ok(
         !body.includes(tier.price),
         `${page} hard-codes ${tier.price}; read it from pricing.mjs instead`,
@@ -4455,10 +4455,11 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
    * the page, because "at a published price" asserts the price is public in
    * the same breath as not showing it. The numbers exist — this asserts they
    * do, so the link cannot come to point at a page that stopped saying them. */
-  assert.ok(
-    tiers.filter((tier) => /^\$[\d,]+\+?$/.test(tier.price)).length >= 3,
-    'fewer than three tiers carry a concrete price',
-  );
+  const { startupTier } = await import('../src/data/pricing.mjs');
+  assert.match(startupTier.price, /^\$[\d,]+$/, 'the entry license carries no concrete price');
+  /* The founder's 2026-09-09 catalog: three licenses, and the negotiated one
+   * prints "Custom" where the others print a figure. */
+  assert.deepEqual(tiers.map((tier) => tier.price), ['Free', startupTier.price, 'Custom'], 'the license prices are not free, the entry figure, and Custom');
 });
 
 test('names the license AGPLv3 wherever the site is not quoting an identifier', async () => {
