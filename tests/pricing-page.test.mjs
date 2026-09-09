@@ -289,8 +289,8 @@ test('every row that differs by plan is headed by a name that defines itself', (
 
 test('what every plan carries opens in one dialog of cards from the hero, beside the action that starts', () => {
   /* The head over the table is the page's hero: one heading, one lead
-   * sentence, and the two actions under it, centered over the table with the
-   * promise under them. There is no label over the heading;
+   * sentence, and the two actions under it, centered over the table, the
+   * primary carrying the promise as its note. There is no label over the heading;
    * the heading names the page. The founder's 2026-09-08 lead is the one
    * sentence, and the sentence that lists what Relay runs is on the Relay
    * page and in the dialog, not here twice. */
@@ -306,7 +306,8 @@ test('what every plan carries opens in one dialog of cards from the hero, beside
   assert.doesNotMatch(headClasses, /rule-|hidden|flex|items-center|mx-auto/, 'the head is not a stack');
   assert.match(headClasses, /\btext-center\b/, 'the head is not centered over the table');
   assert.doesNotMatch(head, /<p class="[^"]*">Pricing<\/p>/, 'a label still stands over the heading');
-  assert.match(head, /^<div class="[^"]*" data-plans-head><h1>OpenE2EE Relay, free to start\.<\/h1>/, 'the heading does not open the head');
+  assert.match(head, /^<div class="[^"]*" data-plans-head><h1>Free to start, pricing that scales\.<\/h1>/, 'the heading does not open the head');
+  assert.doesNotMatch(built, /OpenE2EE Relay, free to start/, 'the heading the founder replaced on 2026-09-08 is still on the page');
   const lead = head.match(/<p class="([^"]*)">([^<]+)<\/p>/);
   assert.equal(lead[2], 'Ship fully featured end-to-end encrypted messaging, securely, and at scale.');
   assert.match(lead[1], /\bmax-w-none\b/, 'the lead is measured instead of running the width of the table');
@@ -320,22 +321,24 @@ test('what every plan carries opens in one dialog of cards from the hero, beside
    * in one centered row that wraps. Both are the large control, the size the
    * design package reserves for the pair under a page's one heading, so the
    * hero's buttons are not the size of the plan buttons a screen below. The
-   * promise that goes with the primary is a line of metadata under the row,
-   * not a span inside the link: as a span it made the words a link to the
-   * console and set the anchor's width. There is one trigger on the page, so
-   * the table and the compact list carry none, and the head row of the table
-   * opens with an empty corner. */
-  const actions = head.match(/<div class="([^"]*)" data-actions="pricing">(.*?)<\/div>\s*<p class="([^"]*)">([^<]+)<\/p>/s);
-  assert.ok(actions, 'the head has no action row with a line under it');
-  assert.equal(actions[1], 'flex flex-wrap items-start gap-4 justify-center', 'the actions are not the site recipe, centered');
-  const primary = actions[2].match(/^<a class="([^"]*)" href="([^"]+)">([^<]+)<\/a>/);
-  assert.ok(primary, 'the primary action does not lead the row as one plain control');
-  assert.equal(primary[1], 'oe-button oe-button-large');
+   * primary is the stacked button, the founder's 2026-09-08 call: the promise
+   * is the smaller note under "Start free" inside the control, not a line
+   * under the row and not a span this site styles. The row leaves its cross
+   * axis at stretch, so the trigger grows to the primary's height. There is
+   * one trigger on the page, so the table and the compact list carry none,
+   * and the head row of the table opens with an empty corner. */
+  const actions = head.match(/<div class="([^"]*)" data-actions="pricing">(.*?)<\/div>/s);
+  assert.ok(actions, 'the head has no action row');
+  assert.equal(actions[1], 'flex flex-wrap gap-4 justify-center mt-8!', 'the actions are not the site recipe, centered, at the hero\u2019s distance');
+  const primary = actions[2].match(/^<a class="([^"]*)" href="([^"]+)">([^<]+)<span class="([^"]*)">([^<]+)<\/span><\/a>/);
+  assert.ok(primary, 'the primary action does not lead the row as one stacked control');
+  assert.equal(primary[1], 'oe-button oe-button-large oe-button-stacked');
   assert.equal(primary[2], 'https://console.open-e2ee.dev/relay/new');
-  assert.equal(primary[3], 'Start free');
-  assert.doesNotMatch(actions[2], /<span|no card|No credit card/, 'the promise is inside the action row');
-  assert.equal(actions[4], 'No credit card needed');
-  assert.match(actions[3], /--oe-metadata-font-family/, 'the promise is not metadata');
+  assert.equal(primary[3], 'Start free ', 'the label does not end in the space that keeps it a word apart from the note in the link\u2019s name');
+  assert.equal(primary[4], 'oe-button-note', 'the note is not the design package\u2019s');
+  assert.equal(primary[5], 'No credit card needed');
+  assert.equal((head.match(/No credit card needed/g) ?? []).length, 1, 'the promise is on the head more than once');
+  assert.doesNotMatch(head.slice(head.indexOf('data-actions="pricing"')), /<p /, 'a line still stands under the action row');
   assert.doesNotMatch(built, /Development environment · no card/, 'the old promise is still on the page');
   const triggerPattern = /<button type="button" class="([^"]*)" aria-haspopup="dialog" data-included-trigger>([^<]+)<\/button>/g;
   const triggers = [...built.matchAll(triggerPattern)];
@@ -445,7 +448,7 @@ test('every plan\'s action carries its name and nothing else', () => {
   assert.equal((plans.match(/>Free<\/a>/g) ?? []).length, 2, 'Free does not open with "Free" in each rendering');
   /* "Start free" is the hero's primary action and the site header's; no plan
    * action reads it. */
-  assert.equal((plans.match(/>Start free</g) ?? []).length, 1, 'the plans carry "Start free" other than once, in the hero');
+  assert.equal((plans.match(/>Start free\b/g) ?? []).length, 1, 'the plans carry "Start free" other than once, in the hero');
   assert.ok(plans.indexOf('>Start free<') < plans.indexOf('<table'), 'the hero is not where "Start free" stands');
 });
 

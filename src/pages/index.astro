@@ -19,7 +19,6 @@ import {
   BAND_HEAD,
   BAND_SURFACE,
   CONTAINER,
-  CTA_SUBLABEL,
   DEFINITION_ROWS,
   LABEL,
   LEAD,
@@ -504,7 +503,6 @@ const runtimes = [
           The SDK encrypts on each device. OpenE2EE Relay operates the delivery: encrypted
           device mailboxes, group fan-out, private attachments, and push wakes.
         </p>
-        <div>
         <div class:list={[ACTIONS, 'justify-center']} data-actions="hero">
           {/* Two actions. The primary now leaves this site: the page sells a
               managed product, and the shortest path to using it is a project.
@@ -521,13 +519,12 @@ const runtimes = [
               band, the footer, and /product, and a third button split the
               decision this row exists to force.
 
-              One line under the row, the start promise, and no time promise:
-              "ten minutes · two clients · no account" is only on /product,
-              which a reader reaches after deciding to spend them. */}
-          <a class="oe-button" href={RELAY_PROJECT}>Start a Relay project</a>
+              The start promise rides inside the primary as its note, and there
+              is no time promise: "ten minutes · two clients · no account" is
+              only on /product, which a reader reaches after deciding to spend
+              them. */}
+          <a class="oe-button oe-button-stacked" href={RELAY_PROJECT}>Start a Relay project{' '}<span class="oe-button-note">{startPromise}</span></a>
           <a class="oe-button oe-button-secondary" href="#demo">See the demo</a>
-        </div>
-        <p class={CTA_SUBLABEL}>{startPromise}</p>
         </div>
         {/* The credentials, under the offer. */}
         <p class={HERO_MARKS} data-hero-marks>

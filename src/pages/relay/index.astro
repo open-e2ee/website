@@ -9,7 +9,6 @@ import {
   BAND_HEAD,
   BAND_SURFACE,
   CONTAINER,
-  CTA_SUBLABEL,
   DEFINITION_ROWS,
   LABEL,
   LEAD,
@@ -77,12 +76,9 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
               is the shortest route from this page to a running relay; the
               secondary is the reading a developer who wants the shape of the
               API before an account asks for. */}
-          <div>
-            <div class={ACTIONS}>
-              <a class="oe-button" href={RELAY_PROJECT}>{startAction.label}</a>
-              <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the quickstart</a>
-            </div>
-            <p class={CTA_SUBLABEL}>{startPromise}</p>
+          <div class={ACTIONS}>
+            <a class="oe-button oe-button-stacked" href={RELAY_PROJECT}>{startAction.label}{' '}<span class="oe-button-note">{startPromise}</span></a>
+            <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the quickstart</a>
           </div>
         </div>
         <div class={START_CARD}>

@@ -12,7 +12,6 @@ import {
   CALLOUT,
   CONTAINER,
   CONTAINER_MEASURE,
-  CTA_SUBLABEL,
   DATA_TABLE,
   DEFINITION_ROWS,
   LABEL,
@@ -205,17 +204,14 @@ const ordered = projects
         pure TypeScript with no native crypto module to link.
       </p>
       <p class={MATURITY}>{maturityLine}</p>
-      <div>
-        <div class={ACTIONS}>
-          <a class="oe-button" href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message</a>
-          <a class="oe-button oe-button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
-            SDK on GitHub
-          </a>
-          <a class="oe-button oe-button-secondary" href="/relay">
-            Managed Relay
-          </a>
-        </div>
-        <p class={CTA_SUBLABEL}>ten minutes · two clients · no account</p>
+      <div class={ACTIONS}>
+        <a class="oe-button oe-button-stacked" href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message{' '}<span class="oe-button-note">ten minutes · two clients · no account</span></a>
+        <a class="oe-button oe-button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
+          SDK on GitHub
+        </a>
+        <a class="oe-button oe-button-secondary" href="/relay">
+          Managed Relay
+        </a>
       </div>
     </div>
   </header>
