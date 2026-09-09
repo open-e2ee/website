@@ -621,10 +621,8 @@ test('a paid plan names itself to the console, and the free plan needs no query'
 });
 
 test('the price is larger than the name it prices', () => {
-  const heads = [
-    ...selfServe.map((plan) => [plan.id, columnHead(plan.id)]),
-    [enterprise.id, enterpriseBand()],
-  ];
+  /* Enterprise prints no price, so its band is not in the set. */
+  const heads = selfServe.map((plan) => [plan.id, columnHead(plan.id)]);
   for (const [id, head] of heads) {
     /* The price is the element directly after the heading, which is also the
      * reading order the column is built to produce. */
@@ -677,15 +675,18 @@ test('Enterprise is one outlined band under the table, with its own action', () 
   assert.doesNotMatch(classes, /rule-t/);
 
   /* The founder's 2026-09-09 call: the band is one row as tall as its button
-   * plus padding, not the two-column grid the license rows keep. Name, price,
-   * detail, and the action are direct children on one centerline, and no
-   * wrapper adds height of its own. */
+   * plus padding, not the two-column grid the license rows keep, and it sits
+   * close under the table. Name, detail, and the action are direct children on
+   * one centerline, and no wrapper adds height of its own. The band prints no
+   * price: "Custom" is not one, and it outsized the name. */
   assert.match(classes, /\bflex\b/, 'the band is not a row');
   assert.match(classes, /\bitems-center\b/, 'the band does not center its row');
   assert.doesNotMatch(classes, /\bgrid\b|py-[5-9]|py-1\d/, `the band is taller than its button: ${classes}`);
+  assert.match(classes, /\bmt-4\b/, `the band does not sit close under the table: ${classes}`);
   const band = enterpriseBand();
   const inner = band.slice(band.indexOf('>') + 1, band.indexOf('</div>'));
-  assert.match(inner, new RegExp(`^<h3 class="[^"]*">${enterprise.name}</h3><p class="[^"]*">${enterprise.price}</p><p class="[^"]*">${enterprise.detail}</p><a class="oe-button oe-button-secondary [^"]*" href="mailto:licensing@open-e2ee\\.dev[^"]*">Ask about Enterprise</a>$`), `the band is not name, price, detail, action: ${inner}`);
+  assert.match(inner, new RegExp(`^<h3 class="[^"]*">${enterprise.name}</h3><p class="[^"]*">${enterprise.detail}</p><a class="oe-button oe-button-secondary [^"]*" href="mailto:licensing@open-e2ee\\.dev[^"]*">Ask about Enterprise</a>$`), `the band is not name, detail, action: ${inner}`);
+  assert.equal(inner.includes(enterprise.price), false, 'the band prints the Custom price the founder removed');
   assert.match(inner.match(/<a class="([^"]*)"/)[1], /\bms-auto\b/, 'the action does not keep to the end of the row');
 });
 
