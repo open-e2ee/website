@@ -548,7 +548,11 @@ const INCLUDED_ANCHOR = 'included';
     <div class={CONTAINER}>
       <div class={BAND_HEAD}>
         <h2>SDK commercial licensing</h2>
-        <p class={MEASURE}>The OpenE2EE Signal Protocol SDK is a separate product from OpenE2EE Relay, with separate rights and no meter. These grants cover a proprietary product that operates its own infrastructure, and each one renews annually.</p>
+        {/* The lead says what the reader gets, as the hero's does, not what
+          * the product is. The claims are the landing page's: the complete SDK,
+          * closed-source products, the same build, and no meter. The table
+          * under it says what differs. */}
+        <p class={MEASURE}>Ship the complete SDK in a closed-source product, on infrastructure you run. Same build, every feature, no meter.</p>
       </div>
       <div class={PLAN_TABLE_AT}>
         <table class={PLAN_TABLE}>
