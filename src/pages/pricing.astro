@@ -70,11 +70,12 @@ const HEAD_CELL = `${PLAN_HEAD} border-t-[3px] px-4 pt-4 pb-4 font-normal`;
  * The corner of the Relay table names it, the founder's 2026-09-09 call: the
  * name stands in the head's empty corner, at the top of the head row, in the
  * size a plan name takes, so it reads as the table's name and not as a fifth
- * column. It carries the same clear edge as the heads, so its top is theirs.
+ * column. It carries no top padding and no edge, so it floats at the table's
+ * top, above the plan heads' first line, the founder's 2026-09-09 call.
  * The narrow rendering has no corner, so the name stands over the blocks.
  */
 const TABLE_NAME = 'Signal Protocol Relay';
-const CORNER = 'border-t-[3px] border-t-transparent pr-4 pt-4 pb-4 align-top text-[1.25rem] leading-tight font-semibold text-text-1';
+const CORNER = 'pr-4 pt-0 pb-4 align-top text-[1.25rem] leading-tight font-semibold text-text-1';
 const COMPACT_NAME = 'm-0 pt-2 text-[1.25rem] leading-tight font-semibold text-text-1 min-[62rem]:hidden';
 const FOOT_CELL = 'rule-t px-4 py-5';
 const ROW_HEAD = 'rule-t pr-4 font-medium text-text-1';
