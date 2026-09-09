@@ -136,7 +136,12 @@ test('the self-service plans are the columns of one table, in catalog order', ()
    * markers are read from the head as a whole rather than tag by tag. */
   const head = table.slice(table.indexOf('<thead'), table.indexOf('</thead>'));
   const columns = [...head.matchAll(/data-relay-plan="([^"]+)"/g)].map((m) => m[1]);
-  assert.equal((head.match(/<th scope="col"/g) ?? []).length, columns.length, 'a column head is not a th');
+  /* The corner names the table, the founder's 2026-09-09 call, so it is a
+   * column head too: one more th than there are plans, and the first. */
+  assert.equal((head.match(/<th scope="col"/g) ?? []).length, columns.length + 1, 'a column head is not a th');
+  assert.match(head, /^<thead><tr><th scope="col" class="[^"]*">Signal Protocol Relay<\/th><th scope="col" class="[^"]*" data-relay-plan=/, 'the head row does not open with the table\u2019s name in its corner');
+  assert.match(head.match(/<th scope="col" class="([^"]*)">Signal Protocol Relay/)[1], /\balign-top\b/, 'the name does not stand at the top of the head row');
+  assert.match(built, /<p class="[^"]*min-\[62rem\]:hidden[^"]*">Signal Protocol Relay<\/p><ul class="[^"]*min-\[62rem\]:hidden/, 'the narrow rendering does not carry the table\u2019s name over the blocks');
   assert.deepEqual(
     columns,
     selfServe.map((plan) => plan.id),
@@ -300,7 +305,8 @@ test('every row that differs by plan is headed by a name that defines itself', (
   }
   const ids = [...built.matchAll(/role="tooltip" id="([^"]+)"/g)].map((m) => m[1]);
   assert.equal(new Set(ids).size, ids.length, 'two tooltips share an id');
-  assert.equal(ids.length, capacityRows.length * (selfServe.length + 1), 'every rendering of every row defines itself');
+  const plansIds = ids.filter((id) => !id.startsWith('license-'));
+  assert.equal(plansIds.length, capacityRows.length * (selfServe.length + 1), 'every rendering of every row defines itself');
   assert.equal((built.match(/Term\.astro_astro_type_script/g) ?? []).length, 1, 'the tap script is on the page once');
 
   /* A tooltip opens below its row, so nothing between the table and the band
@@ -350,7 +356,7 @@ test('what every plan carries stands in one section of cards under the plans, li
    * under the row and not a span this site styles. The row leaves its cross
    * axis at stretch, so the link grows to the primary's height. There is one
    * such link on the page, in the hero, so the table and the compact list
-   * carry none, and the head row of the table opens with an empty corner. */
+   * carry none, and the corner of the head row carries the table's name. */
   const actions = head.match(/<div class="([^"]*)" data-actions="pricing">(.*?)<\/div>/s);
   assert.ok(actions, 'the head has no action row');
   assert.equal(actions[1], 'flex flex-wrap gap-4 justify-center mt-8!', 'the actions are not the site recipe, centered, at the hero\u2019s distance');
@@ -372,7 +378,7 @@ test('what every plan carries stands in one section of cards under the plans, li
   assert.ok(actions[2].endsWith(links[0][0]), 'the link does not close the action row');
   assert.ok(actions[2].indexOf(primary[0]) < actions[2].indexOf(links[0][0]), 'the link stands before the primary');
   assert.doesNotMatch(built, /<dialog |data-included|aria-haspopup/, 'the dialog the founder replaced on 2026-09-08 is still on the page');
-  assert.match(table.slice(table.indexOf('<thead')), /^<thead><tr><td class="pr-4"><\/td><th scope="col"/, 'the head row does not open with an empty corner');
+  assert.match(table.slice(table.indexOf('<thead')), /^<thead><tr><th scope="col" class="[^"]*">Signal Protocol Relay<\/th><th scope="col"/, 'the head row does not open with the table\u2019s name');
 
   /* The section stands right after the Enterprise band, before the licensing
    * section, names itself by its heading, and is the one place the heading
@@ -386,14 +392,15 @@ test('what every plan carries stands in one section of cards under the plans, li
   const attributes = included.slice(0, included.indexOf('>'));
   const labelId = attributes.match(/aria-labelledby="([^"]+)"/)?.[1];
   assert.ok(labelId, 'the section does not name itself by its heading');
-  assert.match(included, new RegExp(`<h2 id="${labelId}">Built into every plan</h2></div>`));
+  /* The founder's 2026-09-09 heading names the Relay. */
+  assert.match(included, new RegExp(`<h2 id="${labelId}">Signal Protocol Relay features built into every plan</h2></div>`));
   const classes = attributes.match(/class="([^"]*)"/)[1];
   assert.match(classes, /\brule-t\b/, 'the band draws no rule');
   assert.doesNotMatch(classes, /bg-ground-panel/, 'the band is on the panel ground, so its cards on the panel ground are not cards');
   /* The founder's 2026-09-08 call: the heading is the whole head. A lead that
    * said every plan carries all of these said the heading again. */
   assert.doesNotMatch(included.slice(0, included.indexOf('<dl')), /<p[ >]/, 'a lead stands under the heading');
-  assert.equal((built.match(/Built into every plan/g) ?? []).length, 1, 'the heading is on the page other than over the section');
+  assert.equal((built.match(/built into every plan/gi) ?? []).length, 1, 'the heading is on the page other than over the section');
   assert.equal((built.match(/pricing\.astro_astro_type_script/g) ?? []).length, 0, 'the page still ships the dialog script');
 
   /* These do not differ by plan, so each is one card, in the words the Relay
@@ -678,16 +685,21 @@ test('Enterprise is one outlined band under the table, with its own action', () 
    * plus padding, not the two-column grid the license rows keep, and it sits
    * close under the table. Name, detail, and the action are direct children on
    * one centerline, and no wrapper adds height of its own. The band prints no
-   * price: "Custom" is not one, and it outsized the name. */
+   * price: "Custom" is not one, and it outsized the name. The founder's
+   * 2026-09-09 call adds a subdued link down to the SDK licenses before the
+   * action: the secondary control in the muted text, keeping to the end. */
   assert.match(classes, /\bflex\b/, 'the band is not a row');
   assert.match(classes, /\bitems-center\b/, 'the band does not center its row');
   assert.doesNotMatch(classes, /\bgrid\b|py-[5-9]|py-1\d/, `the band is taller than its button: ${classes}`);
   assert.match(classes, /\bmt-4\b/, `the band does not sit close under the table: ${classes}`);
   const band = enterpriseBand();
   const inner = band.slice(band.indexOf('>') + 1, band.indexOf('</div>'));
-  assert.match(inner, new RegExp(`^<h3 class="[^"]*">${enterprise.name}</h3><p class="[^"]*">${enterprise.detail}</p><a class="oe-button oe-button-secondary [^"]*" href="mailto:licensing@open-e2ee\\.dev[^"]*">Ask about Enterprise</a>$`), `the band is not name, detail, action: ${inner}`);
+  assert.match(inner, new RegExp(`^<h3 class="[^"]*">${enterprise.name}</h3><p class="[^"]*">${enterprise.detail}</p><a class="oe-button oe-button-secondary [^"]*" href="#licensing">SDK commercial licenses</a><a class="oe-button oe-button-secondary[^"]*" href="mailto:licensing@open-e2ee\\.dev[^"]*">Ask about Enterprise</a>$`), `the band is not name, detail, link, action: ${inner}`);
   assert.equal(inner.includes(enterprise.price), false, 'the band prints the Custom price the founder removed');
-  assert.match(inner.match(/<a class="([^"]*)"/)[1], /\bms-auto\b/, 'the action does not keep to the end of the row');
+  const [link, action] = [...inner.matchAll(/<a class="([^"]*)"/g)].map((m) => m[1]);
+  assert.match(link, /\bms-auto\b/, 'the link does not keep the controls to the end of the row');
+  assert.match(link, /\btext-text-3!/, 'the link is not subdued');
+  assert.doesNotMatch(action, /ms-auto|text-text-3/, 'the action is not the plain secondary control');
 });
 
 test('the licensing section follows the plans and what they carry, and states the other way to run the code', () => {
@@ -703,20 +715,95 @@ test('the licensing section follows the plans and what they carry, and states th
    * linked here and the How buying works band that followed, so the section
    * is reached by reading down: plans, what every plan carries, then the
    * license tiers, which close the page. The other way of running the code is
-   * the AGPLv3 tier's own column, and /licensing holds the self-hosting rule. */
+   * the AGPLv3 tier's own column, and /licensing holds the self-hosting rule.
+   * The one link down to the section is the Enterprise band's, the founder's
+   * 2026-09-09 call. */
   assert.ok(lastPlan < included && included < licensing, 'the licensing section does not follow what every plan carries');
-  assert.equal(built.indexOf('href="#licensing"'), -1, 'a link to the licensing section came back under the plans');
+  const links = [...built.matchAll(/href="#licensing"/g)].map((m) => m.index);
+  assert.equal(links.length, 1, `${links.length} links to the licensing section`);
+  assert.ok(links[0] > lastPlan && links[0] < included, 'the link to the licensing section is not in the Enterprise band');
   assert.equal(built.indexOf('<section', licensing), -1, 'a band follows the license tiers');
   assert.ok(built.slice(licensing).includes('AGPLv3'), 'the license tiers do not name AGPLv3');
 
-  /* Every license tier still prices itself on the page it moved down within,
-   * so the move did not quietly become a deletion. */
+  /* Every license tier prints its price, so the move did not quietly become
+   * a deletion. Enterprise prints "Custom", the founder's word for a figure
+   * the contract sets. */
   for (const tier of tiers) {
     assert.ok(
       built.slice(licensing).includes(tier.price),
       `the licensing section does not price ${tier.name}`,
     );
   }
+});
+
+test('the licenses are a second table in the shape of the first: three columns, ruled rows, actions in the foot', () => {
+  /* The founder's 2026-09-09 call: AGPLv3, Startup, and Enterprise. Growth and
+   * Enterprise / OEM are one column here; the console keeps them apart. The
+   * table is the Relay table's shape from the same classes, so a reader who
+   * has read the plans reads the licenses the same way, and the narrow
+   * rendering makes one block per license as it does per plan. */
+  const licensing = built.slice(built.indexOf('id="licensing"'));
+  const start = licensing.indexOf('<table');
+  const end = licensing.indexOf('</table>', start);
+  assert.ok(start !== -1 && end !== -1, 'the licensing section carries no table');
+  const table = licensing.slice(start, end);
+  const tableClasses = (slice) => slice.match(/^<table class="([^"]*)"/)[1];
+  assert.equal(tableClasses(table), tableClasses(built.slice(built.indexOf('<table'))), 'the license table does not take the Relay table\u2019s classes');
+
+  const head = table.slice(table.indexOf('<thead'), table.indexOf('</thead>'));
+  assert.deepEqual([...head.matchAll(/data-license="([^"]+)"/g)].map((m) => m[1]), tiers.map((tier) => tier.id), 'the columns are not the license catalog in order');
+  assert.deepEqual(tiers.map((tier) => tier.name), ['AGPLv3', 'Startup', 'Enterprise'], 'the public catalog is not the founder\u2019s three licenses');
+  assert.match(head, /^<thead><tr><td class="pr-4"><\/td><th scope="col"/, 'the head row does not open with an empty corner');
+  for (const tier of tiers) {
+    const column = head.slice(head.indexOf(`data-license="${tier.id}"`));
+    const own = column.slice(0, column.indexOf('</th>'));
+    assert.ok(own.includes(`>${tier.name}</h3>`), `${tier.id} is not headed ${tier.name}`);
+    assert.ok(own.includes(`>${tier.price}</p>`), `${tier.id} does not print ${tier.price}`);
+    assert.ok(own.includes(`>${tier.note}</p>`), `${tier.id} does not carry its note`);
+  }
+
+  const body = table.slice(table.indexOf('<tbody'), table.indexOf('</tbody>'));
+  const rows = [...body.matchAll(/<tr>(.*?)<\/tr>/gs)].map(([, row]) => ({
+    label: row.match(/<button [^>]*>(.*?)<\/button>/)?.[1],
+    lead: /text-\[1\.0625rem\]/.test(row.slice(0, row.indexOf('</th>'))),
+    cells: [...row.slice(row.indexOf('</th>')).matchAll(/<td class="([^"]*)">(.*?)<\/td>/g)].map((m) => m[2]),
+  }));
+  assert.deepEqual(rows.map((row) => row.label), ['Closed Source', 'Products Covered', 'Redistribution', 'SDK Updates', 'Support', 'Security Review'], 'the rows are not the rights that differ by license');
+  assert.deepEqual(rows.map((row) => row.lead), [true, false, false, false, false, false], 'closed source does not lead the rows');
+  for (const row of rows) assert.equal(row.cells.length, tiers.length, `${row.label} does not carry one cell per license`);
+  const spoken = (cell) => cell.match(/<span class="sr-only">([^<]*)<\/span>/)?.[1] ?? cell.replace(/<[^>]+>/g, '');
+  assert.deepEqual(rows[0].cells.map(spoken), ['Not included', 'Included', 'Included'], 'closed source is not the free column\u2019s one absence');
+  assert.deepEqual(rows[2].cells.map(spoken), ['Under AGPLv3', 'Not included', 'Negotiated'], 'redistribution does not follow the agreement');
+  assert.ok(rows[0].cells[0].includes('aria-hidden="true">\u2014<'), 'a right a license does not carry is not the dash');
+
+  const foot = table.slice(table.indexOf('<tfoot'));
+  const actions = [...foot.matchAll(/data-license-action="([^"]+)"[^>]*><a class="([^"]*)" href="([^"]+)">([^<]+)<\/a>/g)];
+  assert.deepEqual(actions.map((m) => m[1]), tiers.map((tier) => tier.id), 'the foot does not carry one action per license');
+  for (const [, id, classes, href, label] of actions) {
+    const tier = tiers.find((entry) => entry.id === id);
+    assert.equal(href, tier.cta.href, `${id} opens ${href}`);
+    assert.equal(label, tier.cta.label);
+    assert.match(classes, /\boe-button-full\b/);
+  }
+  assert.deepEqual(actions.filter((m) => !m[2].includes('oe-button-secondary')).map((m) => m[1]), ['startup'], 'the entry license is not the one filled action');
+
+  /* The narrow rendering: one block per license, same heads, rows, and routes. */
+  const blocks = [...licensing.matchAll(/data-license-compact="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(blocks, tiers.map((tier) => tier.id), 'the compact blocks are not the license catalog');
+  const compact = licensing.slice(licensing.indexOf('<ul class='), licensing.indexOf('</ul>'));
+  assert.match(compact.slice(0, compact.indexOf('>')), /min-\[62rem\]:hidden/, 'the blocks do not leave the document above 62rem');
+  const relayCompact = built.slice(built.indexOf('<ul class='));
+  assert.equal(compact.slice(0, compact.indexOf('>')), relayCompact.slice(0, relayCompact.indexOf('>')), 'the license blocks do not stand on the plan blocks\u2019 grid');
+  for (const tier of tiers) {
+    const block = compact.slice(compact.indexOf(`data-license-compact="${tier.id}"`));
+    const own = block.slice(0, block.indexOf('</li>'));
+    assert.ok(own.includes(`>${tier.name}</h3>`), `${tier.id} compact block is not headed ${tier.name}`);
+    assert.equal(own.match(/<a class="oe-button[^"]*" href="([^"]+)"/)[1], tier.cta.href, `${tier.id} opens two routes in its two renderings`);
+    const labels = [...own.matchAll(/<dt class="[^"]*"><span class="group relative inline-block" data-term><button type="button" class="[^"]*" aria-describedby="[^"]+">([^<]+)<\/button>/g)].map((m) => m[1]);
+    assert.deepEqual(labels, rows.map((row) => row.label), `${tier.id} compact block does not carry the table\u2019s rows`);
+  }
+  const licenseIds = [...built.matchAll(/role="tooltip" id="(license-[^"]+)"/g)].map((m) => m[1]);
+  assert.equal(licenseIds.length, rows.length * (tiers.length + 1), 'every rendering of every license row defines itself');
 });
 
 test('the meters and the Development environment left their sections for the table and the cards', () => {
@@ -738,21 +825,17 @@ test('the meters and the Development environment left their sections for the tab
 test('no two tiers on the page answer to the same name', () => {
   /* The compact rendering repeats each self-service heading by design, so the
    * names are read once from the table and once from the ruled rows. */
-  const headings = [...built.matchAll(/<h3 class="[^"]*"(?: itemprop="name")?>([^<]+)<\/h3>/g)].map((m) => m[1]);
-  const names = new Set(headings);
+  const headingsIn = (slice) => new Set([...slice.matchAll(/<h3 class="[^"]*"(?: itemprop="name")?>([^<]+)<\/h3>/g)].map((m) => m[1]));
+  const licensing = built.indexOf('id="licensing"');
+  const plans = headingsIn(built.slice(0, licensing));
+  const licenses = headingsIn(built.slice(licensing));
 
-  assert.equal(
-    names.size,
-    relayPlans.length + tiers.length,
-    `expected ${relayPlans.length + tiers.length} tier names, found ${[...names]}`,
-  );
-
-  /* `Growth` names a Relay plan at $299 a month and an SDK commercial license
-   * at $20,000 a year. Neither name may move — the catalog is the approved
-   * product contract, and the license is a Stripe product the Console bills
-   * against — so the license heading carries the word that separates them. */
-  assert.ok(names.has('Growth'), 'the Relay plan Growth is not a heading');
-  assert.ok(names.has('Growth license'), 'the Growth license is not headed as a license');
+  /* `Enterprise` names a Relay plan and an SDK commercial license, the
+   * founder's 2026-09-09 catalog. Each section's headings are its own
+   * catalog and nothing else, so the two share a name only across the
+   * section rule, under headings that say which is which. */
+  assert.deepEqual([...plans].sort(), relayPlans.map((plan) => plan.name).sort(), `the plan headings are ${[...plans]}`);
+  assert.deepEqual([...licenses].sort(), tiers.map((tier) => tier.name).sort(), `the license headings are ${[...licenses]}`);
 });
 
 test('the page names no differentiator the product contract does not define', () => {

@@ -10,7 +10,7 @@ import {
 } from '../data/relay-pricing.mjs';
 import { startupTier, tiers } from '../data/pricing.mjs';
 import { startAction, startPromise } from '../lib/site-navigation';
-import { INCLUDED, NO_OVERAGE } from '../lib/relay-plan-values';
+import { INCLUDED, NO_OVERAGE } from '../lib/plan-values.mjs';
 import {
   ACTIONS,
   BAND,
@@ -65,6 +65,17 @@ const PLAN_HEAD = '[&>*+*]:mt-3';
  * color, so every name sits on one baseline.
  */
 const HEAD_CELL = `${PLAN_HEAD} border-t-[3px] px-4 pt-4 pb-4 font-normal`;
+
+/*
+ * The corner of the Relay table names it, the founder's 2026-09-09 call: the
+ * name stands in the head's empty corner, at the top of the head row, in the
+ * size a plan name takes, so it reads as the table's name and not as a fifth
+ * column. It carries the same clear edge as the heads, so its top is theirs.
+ * The narrow rendering has no corner, so the name stands over the blocks.
+ */
+const TABLE_NAME = 'Signal Protocol Relay';
+const CORNER = 'border-t-[3px] border-t-transparent pr-4 pt-4 pb-4 align-top text-[1.25rem] leading-tight font-semibold text-text-1';
+const COMPACT_NAME = 'm-0 pt-2 text-[1.25rem] leading-tight font-semibold text-text-1 min-[62rem]:hidden';
 const FOOT_CELL = 'rule-t px-4 py-5';
 const ROW_HEAD = 'rule-t pr-4 font-medium text-text-1';
 const CELL = 'rule-t px-4 font-[family-name:var(--oe-metadata-font-family)] tabular-nums';
@@ -139,31 +150,33 @@ const INCLUDED_CARD_ICON = 'shrink-0 text-text-3 transition-[color] duration-[va
 const INCLUDED_CARD_DETAIL = 'm-0 mt-2 text-[0.9375rem] leading-[1.5] text-text-3';
 
 /*
- * The licenses are ruled rows: a name and price on the left, what they carry
- * and their action on the right.
+ * The licenses are a second table in the shape of the first, the founder's
+ * 2026-09-09 call: one column per license in catalog order, one row per right
+ * that differs by license, and the action in the foot. The narrow rendering
+ * makes the blocks the plans make, on the same grid: three across would push
+ * the last column's definitions past a 48rem window. No column is marked; the
+ * entry license carries the filled action.
  */
-const TIERS = 'm-0 list-none p-0';
-
-const TIER_GRID =
-  'grid grid-cols-[minmax(12rem,1fr)_minmax(0,2fr)] items-start gap-6 max-[58rem]:grid-cols-1 max-[58rem]:gap-4';
-
-const TIER = `${TIER_GRID} rule-t py-8`;
+const LICENSE_HEAD = `${HEAD_CELL} border-t-transparent`;
 
 /*
  * Enterprise is one outlined band under the table, so the fifth plan reads as
  * the table's last row and not as a footnote. The founder's 2026-09-09 call:
  * the band is one row as tall as its button plus padding, close under the
- * table. Name and detail sit on the button's centerline, and the action keeps
- * to the end. The band prints no price: "Custom" is not one, and it outsized
- * the name. Under 34rem the row wraps and the action takes a line of its own.
+ * table. Name and detail sit on the button's centerline, and the actions keep
+ * to the end: a subdued link down to the SDK licenses, then the action. The
+ * link is the secondary control in the muted text, so it reads a step behind
+ * the action beside it. The band prints no price: "Custom" is not one, and it
+ * outsized the name. Under 34rem the row wraps and the actions take a line of
+ * their own.
  */
 const ENTERPRISE_BAND = 'mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 rule bg-ground-panel px-5 py-3 max-[34rem]:px-4';
 
 const ENTERPRISE_DETAIL = 'm-0 text-[0.9375rem] text-text-3';
 
-const ENTERPRISE_ACTION_CLASS = 'oe-button oe-button-secondary ms-auto max-[34rem]:ms-0';
-
-const TIER_NAME = 'flex flex-col items-start gap-2';
+const ENTERPRISE_LINK_CLASS = 'oe-button oe-button-secondary ms-auto text-text-3! hover:text-text-1! max-[34rem]:ms-0';
+const ENTERPRISE_ACTION_CLASS = 'oe-button oe-button-secondary';
+const ENTERPRISE_LINK = { href: '#licensing', label: 'SDK commercial licenses' };
 
 /*
  * The price is the largest thing in a column or a row, and the name reads as
@@ -188,8 +201,6 @@ const TIER_NOTE = `${METADATA} text-text-3`;
 const HIGHLIGHT = 'relay_starter_v1';
 const HIGHLIGHT_LABEL = 'Most popular';
 const PLAN_MARK = `${METADATA} min-h-[1lh] text-[var(--oe-sealed)]`;
-
-const TIER_BODY = 'flex max-w-[58ch] flex-col items-start gap-3 text-text-3';
 
 /*
  * Every self-service plan opens the Console route that creates a project,
@@ -285,7 +296,8 @@ const overageRates = (key: 'delivery' | 'storage') => {
 const deliveryOverage = overageRates('delivery');
 const storageOverage = overageRates('storage');
 
-type Row = { label: string; definition: string; lead?: boolean; value: (plan: Plan) => string };
+type RowShape = { label: string; definition: string; lead?: boolean };
+type Row = RowShape & { value: (plan: Plan) => string };
 const rows: Row[] = [
   { label: 'Monthly Active Users', lead: true, definition: define('Relay MAU'), value: (plan) => plan.relayMau },
   {
@@ -312,20 +324,72 @@ const rows: Row[] = [
   },
 ];
 
-const rowId = (row: Row, scope: string) => `${scope}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+const rowId = (row: RowShape, scope: string) => `${scope}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
 /* The lead row has room around it; the foot closes the tint. */
-const rowPadding = (row: Row) => (row.lead ? ['pt-5', 'pb-4'] : ['pt-3', 'pb-3']);
-const rowHeadClasses = (row: Row) => [ROW_HEAD, ...rowPadding(row), row.lead && LEAD_HEAD];
+const rowPadding = (row: RowShape) => (row.lead ? ['pt-5', 'pb-4'] : ['pt-3', 'pb-3']);
+const rowHeadClasses = (row: RowShape) => [ROW_HEAD, ...rowPadding(row), row.lead && LEAD_HEAD];
 const cellClasses = (row: Row, plan: Plan) => [
   CELL,
   ...rowPadding(row),
   row.lead ? LEAD_VALUE : 'text-text-3',
   marked(plan) && 'bg-ground-panel',
 ];
-const compactRowClasses = (row: Row) => (row.lead ? COMPACT_LEAD : undefined);
-const compactLabelClasses = (row: Row) => (row.lead ? 'text-text-1' : 'text-text-3');
-const compactValueClasses = (row: Row) => [COMPACT_VALUE, row.lead ? LEAD_VALUE : 'text-text-1'];
+const compactRowClasses = (row: RowShape) => (row.lead ? COMPACT_LEAD : undefined);
+const compactLabelClasses = (row: RowShape) => (row.lead ? 'text-text-1' : 'text-text-3');
+const compactValueClasses = (row: RowShape) => [COMPACT_VALUE, row.lead ? LEAD_VALUE : 'text-text-1'];
+
+/*
+ * The rows that differ by license, each named by the right it is and defined
+ * on hover, as the Relay rows are. Whether the product can be closed source
+ * leads, because that is the question that sends a buyer to this table. The
+ * values are the catalog's, and the definitions state each license's answer
+ * in the words of the agreement that gives it.
+ */
+type Tier = (typeof tiers)[number];
+type LicenseRow = RowShape & { value: (tier: Tier) => string };
+const agpl = tiers.find((tier) => tier.id === 'agplv3');
+if (!agpl) throw new Error('pricing.astro: the license catalog has no AGPLv3 tier');
+const licenseRows: LicenseRow[] = [
+  {
+    label: 'Closed Source',
+    lead: true,
+    definition: `Ship a proprietary product without the AGPLv3 source obligations. ${agpl.detail}`,
+    value: (tier) => tier.closedSource,
+  },
+  {
+    label: 'Products Covered',
+    definition:
+      'The products one grant reaches. AGPLv3 reaches any product that meets its obligations. A Startup license covers one named product owned by one legal entity. An Enterprise license states its product and component scope in the contract.',
+    value: (tier) => tier.products,
+  },
+  {
+    label: 'Redistribution',
+    definition:
+      'Shipping the SDK as a standalone component, or inside a product that others then distribute. AGPLv3 permits it under its own terms. A Startup license excludes standalone redistribution. An Enterprise license negotiates portfolio or OEM rights.',
+    value: (tier) => tier.redistribution,
+  },
+  {
+    label: 'SDK Updates',
+    definition:
+      'New releases of @open-e2ee/signal-protocol-sdk. Every release is public under AGPLv3. A Startup license includes generally available updates during its term. An Enterprise contract states its own.',
+    value: (tier) => tier.updates,
+  },
+  {
+    label: 'Support',
+    definition:
+      'AGPLv3 carries no support. A Startup license includes reasonable email support during its term, and no implementation services or response times. An Enterprise license negotiates implementation support and service levels.',
+    value: (tier) => tier.support,
+  },
+  {
+    label: 'Security Review',
+    definition:
+      'A review of your integration with OpenE2EE. A Startup license does not include one unless a signed order form states it. An Enterprise license negotiates one.',
+    value: (tier) => tier.securityReview,
+  },
+];
+const licenseCellClasses = (row: RowShape) => [CELL, ...rowPadding(row), row.lead ? LEAD_VALUE : 'text-text-3'];
+const licenseActionClasses = (tier: Tier) => ['oe-button', 'oe-button-full', tier.cta.secondary && 'oe-button-secondary'];
 
 /*
  * What every plan carries, one card per relay capability, each in the words
@@ -372,14 +436,11 @@ const included: { icon: IconName; label: string; detail: string }[] = [
   },
   { icon: 'terminal', label: 'Development environment', detail: 'One with every project, at no cost and without a card.' },
 ];
-const INCLUDED_HEADING = 'Built into every plan';
+const INCLUDED_HEADING = 'Signal Protocol Relay features built into every plan';
 const INCLUDED_ID = 'built-into-every-plan';
 const INCLUDED_ANCHOR = 'included';
 const INCLUDED_ACTION = 'See what is included';
 
-
-const licenseHeading = (tier: (typeof tiers)[number]) =>
-  /license/i.test(tier.name) ? tier.name : `${tier.name} license`;
 ---
 
 <BaseLayout
@@ -403,7 +464,7 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
           <colgroup><col class="w-[15rem]" />{selfServe.map(() => <col />)}</colgroup>
           <thead>
             <tr>
-              <td class="pr-4"></td>
+              <th scope="col" class={CORNER}>{TABLE_NAME}</th>
               {selfServe.map((plan) => (
                 <th scope="col" class:list={headClasses(plan)} data-relay-plan={plan.id} itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                   <meta itemprop="priceCurrency" content="USD" />
@@ -438,6 +499,7 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
           </tfoot>
         </table>
       </div>
+      <p class={COMPACT_NAME}>{TABLE_NAME}</p>
       <ul class={COMPACT}>
         {selfServe.map((plan) => (
           <li class:list={compactPlanClasses(plan)} data-relay-plan-compact={plan.id}>
@@ -460,6 +522,7 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
       <div class={ENTERPRISE_BAND} data-relay-plan={enterprise.id}>
         <h3 class={TIER_HEADING}>{enterprise.name}</h3>
         <p class={ENTERPRISE_DETAIL}>{enterprise.detail}</p>
+        <a class={ENTERPRISE_LINK_CLASS} href={ENTERPRISE_LINK.href}>{ENTERPRISE_LINK.label}</a>
         <a class={ENTERPRISE_ACTION_CLASS} href={ENTERPRISE_ACTION.href}>{ENTERPRISE_ACTION.label}</a>
       </div>
     </div>
@@ -487,21 +550,57 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
         <h2>SDK commercial licensing</h2>
         <p class={MEASURE}>The OpenE2EE Signal Protocol SDK is a separate product from OpenE2EE Relay, with separate rights and no meter. These grants cover a proprietary product that operates its own infrastructure, and each one renews annually.</p>
       </div>
-      <ul class={TIERS}>
+      <div class={PLAN_TABLE_AT}>
+        <table class={PLAN_TABLE}>
+          <thead>
+            <tr>
+              <td class="pr-4"></td>
+              {tiers.map((tier) => (
+                <th scope="col" class={LICENSE_HEAD} data-license={tier.id}>
+                  <h3 class={TIER_HEADING}>{tier.name}</h3>
+                  <p class={TIER_PRICE}>{tier.price}</p>
+                  <p class={TIER_NOTE}>{tier.note}</p>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {licenseRows.map((row) => (
+              <tr>
+                <th scope="row" class:list={rowHeadClasses(row)}>
+                  <Term id={rowId(row, 'license-table')} label={row.label} definition={row.definition} />
+                </th>
+                {tiers.map((tier) => <td class:list={licenseCellClasses(row)}><PlanValue value={row.value(tier)} /></td>)}
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td class="rule-t pr-4"></td>
+              {tiers.map((tier) => (
+                <td class={FOOT_CELL} data-license-action={tier.id}>
+                  <a class:list={licenseActionClasses(tier)} href={tier.cta.href}>{tier.cta.label}</a>
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <ul class={COMPACT}>
         {tiers.map((tier) => (
-          <li class={TIER}>
-            <div class={TIER_NAME}>
-              <h3 class={TIER_HEADING}>{licenseHeading(tier)}</h3>
-              <p class={TIER_PRICE}>{tier.price}</p>
-              {tier.period && <p class={TIER_NOTE}>{tier.period}</p>}
-            </div>
-            <div class={TIER_BODY}>
-              <p>{tier.body}</p>
-              <p class={TIER_NOTE}>{tier.detail}</p>
-              <p class={ACTIONS}>
-                <a class:list={['oe-button', tier.cta.secondary && 'oe-button-secondary']} href={tier.cta.href}>{tier.cta.label}</a>
-              </p>
-            </div>
+          <li class={COMPACT_PLAN} data-license-compact={tier.id}>
+            <h3 class={TIER_HEADING}>{tier.name}</h3>
+            <p class={TIER_PRICE}>{tier.price}</p>
+            <p class={TIER_NOTE}>{tier.note}</p>
+            <dl class={COMPACT_ROWS}>
+              {licenseRows.map((row) => (
+                <div class:list={compactRowClasses(row)}>
+                  <dt class={compactLabelClasses(row)}><Term id={rowId(row, `license-${tier.id}`)} label={row.label} definition={row.definition} /></dt>
+                  <dd class:list={compactValueClasses(row)}><PlanValue value={row.value(tier)} /></dd>
+                </div>
+              ))}
+            </dl>
+            <a class:list={[licenseActionClasses(tier), COMPACT_ACTION]} href={tier.cta.href}>{tier.cta.label}</a>
           </li>
         ))}
       </ul>
