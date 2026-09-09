@@ -230,7 +230,7 @@ const notHidden = [
     </div>
   </section>
 
-  <section class:list={[BAND, BAND_SURFACE]}>
+  <section class:list={[BAND, BAND_SURFACE]} id="reporting">
     <div class:list={[CONTAINER, STACK]}>
       <div class={BAND_HEAD}>
         <h2>What there is to check</h2>
@@ -269,8 +269,12 @@ const notHidden = [
           <dd>
             to acknowledge a vulnerability report sent to{' '}
             <a href={`mailto:${reporting.address}`}>{reporting.address}</a>, and{' '}
-            {reporting.assessment} to an initial assessment. Do not open a public issue. The full
-            policy is <a href={docs.reporting}>in the repository</a>.
+            {reporting.assessment} to an initial assessment. Resolution targets by severity:{' '}
+            {reporting.resolution
+              .map(({ severity, target }) => `${severity.toLowerCase()} ${target}`)
+              .join(', ')}
+            . Good-faith research on the SDK is covered by the safe harbor in the policy. Do not
+            open a public issue. The full policy is <a href={docs.reporting}>in the repository</a>.
           </dd>
         </div>
       </dl>
@@ -436,9 +440,7 @@ const notHidden = [
         negotiated portfolio or redistribution rights.
       </p>
       <div class={ACTIONS}>
-        <a class="oe-button" href="https://console.open-e2ee.dev/contact?plan=enterprise">
-          Plan a security review
-        </a>
+        <a class="oe-button" href="/contact">Plan a security review</a>
         <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/start/quickstart">
           Build your first encrypted message
         </a>

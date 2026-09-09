@@ -138,7 +138,7 @@ export const footerGroups: readonly FooterGroup[] = [
       { href: '/pricing', label: 'Pricing' },
       { href: '/compare/virgil-security', label: 'Compare with Virgil Security' },
       { href: '/licensing', label: 'Licensing' },
-      { href: 'mailto:licensing@open-e2ee.dev', label: 'Ask a licensing question' },
+      { href: '/contact', label: 'Contact' },
     ],
   },
   {

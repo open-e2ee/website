@@ -71,6 +71,13 @@ export const reporting = {
   address: 'security@open-e2ee.dev',
   acknowledgment: '72 hours',
   assessment: '7 days',
+  /** Resolution targets by severity, from the "What to Expect" list. */
+  resolution: [
+    { severity: 'Critical', target: '24 to 72 hours' },
+    { severity: 'High', target: '1 to 2 weeks' },
+    { severity: 'Medium', target: '2 to 4 weeks' },
+    { severity: 'Low', target: 'the next release cycle' },
+  ],
 };
 
 /**
