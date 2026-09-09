@@ -1296,38 +1296,33 @@ test('centers the hero at the phone’s width as well as the desktop’s', async
   /* The children do not inherit `text-align` — the action row is a flex
    * container, and the strip is a grid sibling — so each is centered where it
    * is written. Centered copy above flush-left buttons is the failure this
-   * catches, and it looks like a bug rather than a choice. The row overrides a
-   * recipe that starts it at `items-start`, and that is the part worth writing
-   * down: two utilities setting one property resolve by the order Tailwind
-   * emits them, not by the order of the `class:list`. The line under the row is
-   * a block of text, so it centers by inheritance and carries nothing. */
+   * catches, and it looks like a bug rather than a choice. The row leaves the
+   * cross axis at the flex default, stretch, so the plain secondary grows to
+   * the height of the stacked primary beside it; a recipe that starts or
+   * centers the items would leave the secondary short. */
   assert.match(index, /class:list=\{\[ACTIONS, 'justify-center'\]\}/);
-  assert.match(
-    recipes,
-    /export const ACTIONS = '[^']*\bitems-start\b/,
-    'the action row no longer starts at items-start, so the hero override is now the only thing setting it',
-  );
+  assert.match(recipes, /export const ACTIONS = 'flex flex-wrap gap-4';/, 'the action row sets its cross axis, so the secondary no longer matches the stacked primary');
 
-  /* The promise under the primary is a line under the row, never a span inside
-   * the link. As a second span in the anchor it made "no card" a link to the
-   * console and, where the words were wider than the button, set the anchor's
-   * width, so the secondary control landed a sublabel's width away on
-   * /pricing and /relay. Every hero that carries the promise wraps its row and
-   * the line in one block, and the four that make the console's promise read
-   * the words from one place. */
-  assert.doesNotMatch(recipes, /CTA_PRIMARY/, 'a recipe that puts the sublabel inside the link is back');
-  assert.match(recipes, /export const CTA_SUBLABEL = `m-0 mt-3 \$\{METADATA\} text-text-3`;/, 'the sublabel is not a block of metadata under the row');
+  /* The promise that goes with the primary is the note inside it: the design
+   * package's stacked button carries the label over a smaller line, so the
+   * offer and its condition are one control. It was once a line of metadata
+   * under the row, which belonged to nothing, and before that a second span
+   * inside the anchor styled by this site, which set the anchor's width so the
+   * secondary landed a sublabel's width away. The four heroes that make the
+   * console's promise read the words from one place, and /product carries its
+   * own line the same way. */
+  assert.doesNotMatch(recipes, /CTA_PRIMARY|CTA_SUBLABEL/, 'a recipe for a promise outside the button is back');
   assert.match(navigation, /export const startPromise = 'No credit card needed';/, 'the console\u2019s promise is not one string');
+  assert.match(pricing, /const PLANS_PRIMARY = 'oe-button oe-button-large oe-button-stacked';/, 'the pricing primary is not the large stacked button');
   const heroes = { index, pricing, relay, product, nextStep };
   for (const [name, source] of Object.entries(heroes)) {
-    assert.doesNotMatch(source, /<span class(?::list)?=\{\[?CTA_SUBLABEL/, `${name} puts the sublabel inside a link`);
-    assert.doesNotMatch(source, /<span class="oe-button">/, `${name} draws a button inside a link`);
+    assert.doesNotMatch(source, /CTA_SUBLABEL|<span class="oe-button">/, `${name} sets the promise outside the button, or draws a button inside a link`);
     assert.doesNotMatch(source, /Development environment · no card|Free to start · no card/, `${name} carries the old words`);
-    assert.match(
-      source,
-      /<\/div>\s*<p class=\{CTA_SUBLABEL\}>(\{startPromise\}|ten minutes · two clients · no account)<\/p>\s*<\/div>/,
-      `${name} does not set the line under its action row, in the row\u2019s block`,
-    );
+    const stacked = source.match(/<a class=(?:"oe-button oe-button-stacked"|\{PLANS_PRIMARY\}) href=[^>]*>([^<]+)<span class="oe-button-note">(\{startPromise\}|ten minutes · two clients · no account)<\/span><\/a>/);
+    assert.ok(stacked, `${name} does not carry the promise as the note inside its stacked primary`);
+    assert.match(stacked[1], /\{' '\}$/, `${name} runs the label into the note in the link\u2019s name; a flex column drops the space between them, so it is written`);
+    assert.equal((source.match(/oe-button-note/g) ?? []).length, 1, `${name} carries the note more than once`);
+    assert.equal(stacked[2], name === 'product' ? 'ten minutes · two clients · no account' : '{startPromise}', `${name} carries the wrong note`);
   }
 
   /* The strip centers itself rather than being centered by its caller. It has

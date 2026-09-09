@@ -16,7 +16,7 @@
  * so this file names no URL of its own. The words are the ones `/relay`
  * carries.
  */
-import { ACTIONS, CTA_SUBLABEL, LABEL, NEXT_STEP } from '../lib/recipes';
+import { ACTIONS, LABEL, NEXT_STEP } from '../lib/recipes';
 import { startAction, startPromise } from '../lib/site-navigation';
 ---
 
@@ -26,11 +26,8 @@ import { startAction, startPromise } from '../lib/site-navigation';
     OpenE2EE Relay is the delivery half of an end-to-end encrypted application.
     The SDK runs on each device and reaches Relay through one connection URL.
   </p>
-  <div>
-    <div class={ACTIONS}>
-      <a class="oe-button" href={startAction.href} data-next-step>{startAction.label}</a>
-      <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the Relay quickstart</a>
-    </div>
-    <p class={CTA_SUBLABEL}>{startPromise}</p>
+  <div class={ACTIONS}>
+    <a class="oe-button oe-button-stacked" href={startAction.href} data-next-step>{startAction.label}{' '}<span class="oe-button-note">{startPromise}</span></a>
+    <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the Relay quickstart</a>
   </div>
 </aside>

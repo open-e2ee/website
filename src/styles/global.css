@@ -46,10 +46,9 @@
  * surfaces it reaches 3.41–4.60, so it fails 4.5:1 on six of the eight
  * surface-and-mode pairs; `text-3` clears every one by 5.31 or better.
  * Third-tier text is made with size, weight, and letterspacing, which is how
- * `MATURITY` and `CTA_SUBLABEL` in src/lib/recipes.ts recede without going
- * pale. Those two are why this matters more than it looks: the maturity caveat
- * and the terms under the primary button are the page admitting its limits,
- * and they were the hardest lines on it to read.
+ * `MATURITY` in src/lib/recipes.ts recedes without going pale. That line is
+ * why this matters more than it looks: the maturity caveat is the page
+ * admitting its limits, and it was the hardest line on it to read.
  */
 
 @layer base {

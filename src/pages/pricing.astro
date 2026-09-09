@@ -14,7 +14,6 @@ import { startAction, startPromise } from '../lib/site-navigation';
 import { INCLUDED, NO_OVERAGE } from '../lib/relay-plan-values';
 import {
   ACTIONS,
-  CTA_SUBLABEL,
   BAND,
   BAND_HEAD,
   BAND_SURFACE,
@@ -94,8 +93,8 @@ const COMPACT_LEAD = 'items-baseline text-[1.0625rem]';
  * line runs from the heading through the actions into the table. Centering
  * would set the actions over the Free and Starter columns and off the grid
  * that follows. The primary creates the project, at the full control height
- * the home and Relay heroes use, and carries its promise underneath; the
- * secondary opens what every plan carries. The section opens the page, so it
+ * the home and Relay heroes use, and carries its promise as the note inside
+ * it; the secondary opens what every plan carries. The section opens the page, so it
  * carries the opening's room above and no rule: the site header draws the one
  * rule that belongs there.
  */
@@ -103,8 +102,8 @@ const PLANS = 'pt-[clamp(2.5rem,1.75rem+4vw,4.5rem)] pb-[clamp(3rem,2rem+4vw,5.5
 /* The lead runs the width of the table under it, not the recipe's measure. */
 const PLANS_LEAD = 'max-w-none';
 const PLANS_HEAD = 'mb-10 text-center [&>*+*]:mt-4';
-const PLANS_ACTIONS = 'mt-8!';
-const PLANS_PRIMARY = 'oe-button oe-button-large';
+const PLANS_ACTIONS = 'justify-center mt-8!';
+const PLANS_PRIMARY = 'oe-button oe-button-large oe-button-stacked';
 
 /*
  * What every plan carries opens in a dialog, one card per capability, so the
@@ -359,14 +358,11 @@ const licenseHeading = (tier: (typeof tiers)[number]) =>
   <section id="relay-plans" class={PLANS}>
     <div class={CONTAINER}>
       <div class={PLANS_HEAD} data-plans-head>
-        <h1>OpenE2EE Relay, free to start.</h1>
+        <h1>Free to start, pricing that scales.</h1>
         <p class:list={[LEAD, PLANS_LEAD]}>Ship fully featured end-to-end encrypted messaging, securely, and at scale.</p>
-        <div class={PLANS_ACTIONS}>
-          <div class:list={[ACTIONS, 'justify-center']} data-actions="pricing">
-            <a class={PLANS_PRIMARY} href={RELAY_PROJECT}>{startAction.label}</a>
-            <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button>
-          </div>
-          <p class={CTA_SUBLABEL}>{startPromise}</p>
+        <div class:list={[ACTIONS, PLANS_ACTIONS]} data-actions="pricing">
+          <a class={PLANS_PRIMARY} href={RELAY_PROJECT}>{startAction.label}{' '}<span class="oe-button-note">{startPromise}</span></a>
+          <button type="button" class={INCLUDED_TRIGGER} aria-haspopup="dialog" data-included-trigger>{INCLUDED_ACTION}</button>
         </div>
       </div>
       <div class={PLAN_TABLE_AT}>

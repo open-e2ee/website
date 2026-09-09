@@ -122,19 +122,16 @@ export const QUIET_LINK = 'text-text-3 no-underline hover:text-text-1';
  * hidden label, and the focus ring — come from `@open-e2ee/design`. What is
  * here is how this site arranges them.
  */
-export const ACTIONS = 'flex flex-wrap items-start gap-4';
-
 /*
- * The line under an action row: the promise that goes with the primary, set as
- * metadata under the buttons and never inside a link. It was once a second
- * span inside the primary's anchor, which made "no card" a link to the console
- * and, when the words were wider than the button, widened the anchor so the
- * secondary control landed a sublabel's width away. A hero wraps its row and
- * this line in one block, so the block takes the hero's spacing and the line
- * keeps its own distance from the buttons. A hero that centers its text
- * centers this line by inheritance.
+ * The row stretches its items, which is the flex default and so goes unwritten:
+ * the primary in a hero is the design package's stacked button, the label over
+ * a smaller note, so the plain secondary beside it grows to the same height
+ * and the pair reads as one row. The promise that goes with the primary is
+ * that note, inside the control, so the offer and its condition are one
+ * decision. It was once a line of metadata under the row, and before that a
+ * second span inside the anchor that set the anchor's width; both are gone.
  */
-export const CTA_SUBLABEL = `m-0 mt-3 ${METADATA} text-text-3`;
+export const ACTIONS = 'flex flex-wrap gap-4';
 
 export const TEXT_LINKS = 'flex flex-wrap gap-4 text-[0.9375rem]';
 
