@@ -9,7 +9,7 @@ import {
   relayProductionRetention,
 } from '../data/relay-pricing.mjs';
 import { startupTier, tiers } from '../data/pricing.mjs';
-import { salesMeetingUrl } from '../data/booking.mjs';
+import { demoBookingUrl, relayEnterpriseBookingUrl } from '../data/booking.mjs';
 import { startAction, startPromise } from '../lib/site-navigation';
 import { INCLUDED, NO_OVERAGE } from '../lib/plan-values.mjs';
 import {
@@ -257,8 +257,8 @@ const compactPlanClasses = (plan: Plan) => [
 ];
 
 const ENTERPRISE_ACTION = {
-  href: 'mailto:licensing@open-e2ee.dev?subject=OpenE2EE%20Relay%20Enterprise%20plan',
-  label: 'Ask about Enterprise',
+  href: relayEnterpriseBookingUrl,
+  label: 'Schedule a meeting',
 };
 
 /*
@@ -455,7 +455,7 @@ const INCLUDED_ANCHOR = 'included';
         <p class:list={[LEAD, PLANS_LEAD]}>Ship fully featured end-to-end encrypted messaging, securely, and at scale.</p>
         <div class:list={[ACTIONS, PLANS_ACTIONS]} data-actions="pricing">
           <a class={PLANS_PRIMARY} href={RELAY_PROJECT}>{startAction.label}{' '}<span class="oe-button-note">{startPromise}</span></a>
-          <a class={PLANS_SECONDARY} href={salesMeetingUrl}>Schedule a demo</a>
+          <a class={PLANS_SECONDARY} href={demoBookingUrl}>Schedule a demo</a>
         </div>
       </div>
       <div class={PLAN_TABLE_AT}>

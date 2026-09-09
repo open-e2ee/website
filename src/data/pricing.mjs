@@ -32,7 +32,7 @@
  * dated terms version, with the superseded one kept as published.
  */
 import { INCLUDED, NOT_INCLUDED } from '../lib/plan-values.mjs';
-import { salesMeetingUrl } from './booking.mjs';
+import { sdkLicensingBookingUrl } from './booking.mjs';
 
 export const tiers = [
   {
@@ -84,7 +84,7 @@ export const tiers = [
     support: 'Negotiated',
     securityReview: 'Negotiated',
     cta: {
-      href: salesMeetingUrl,
+      href: sdkLicensingBookingUrl,
       label: 'Schedule a meeting',
       secondary: true,
     },

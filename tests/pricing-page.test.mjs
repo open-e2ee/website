@@ -374,8 +374,9 @@ test('what every plan carries stands in one section of cards under the plans, li
   const links = [...built.matchAll(linkPattern)];
   assert.equal(links.length, 1, 'the page must have one demo booking action');
   assert.equal(links[0][1], 'oe-button oe-button-secondary oe-button-large', 'the link is not the large secondary control');
-  assert.equal(links[0][2], 'https://calendar.app.google/mb3PgGVCae7DFVAZ7');
-  assert.equal(tiers.find((tier) => tier.id === 'enterprise').cta.href, links[0][2]);
+  assert.equal(links[0][2], 'https://calendar.app.google/AzV4HAGYh91zy4ZG7');
+  assert.equal(tiers.find((tier) => tier.id === 'enterprise').cta.href, 'https://calendar.app.google/mb3PgGVCae7DFVAZ7');
+  assert.notEqual(tiers.find((tier) => tier.id === 'enterprise').cta.href, links[0][2]);
   assert.doesNotMatch(built, /See what is included|https:\/\/console\.open-e2ee\.dev\/contact\?plan=enterprise/);
   assert.ok(actions[2].endsWith(links[0][0]), 'the link does not close the action row');
   assert.ok(actions[2].indexOf(primary[0]) < actions[2].indexOf(links[0][0]), 'the link stands before the primary');
@@ -696,7 +697,7 @@ test('Enterprise is one outlined band under the table, with its own action', () 
   assert.match(classes, /\bmt-4\b/, `the band does not sit close under the table: ${classes}`);
   const band = enterpriseBand();
   const inner = band.slice(band.indexOf('>') + 1, band.indexOf('</div>'));
-  assert.match(inner, new RegExp(`^<h3 class="[^"]*">${enterprise.name}</h3><p class="[^"]*">${enterprise.detail}</p><a class="oe-button oe-button-secondary [^"]*" href="#licensing">SDK commercial licenses</a><a class="oe-button oe-button-secondary[^"]*" href="mailto:licensing@open-e2ee\\.dev[^"]*">Ask about Enterprise</a>$`), `the band is not name, detail, link, action: ${inner}`);
+  assert.match(inner, new RegExp(`^<h3 class="[^"]*">${enterprise.name}</h3><p class="[^"]*">${enterprise.detail}</p><a class="oe-button oe-button-secondary [^"]*" href="#licensing">SDK commercial licenses</a><a class="oe-button oe-button-secondary[^"]*" href="https://calendar\\.app\\.google/ZpFdxaL9HZh9J7x97" rel="noopener" target="_blank">Schedule a meeting<span class="oe-visually-hidden"> \\(opens in a new tab\\)</span></a>$`), `the band is not name, detail, link, action: ${inner}`);
   assert.equal(inner.includes(enterprise.price), false, 'the band prints the Custom price the founder removed');
   const [link, action] = [...inner.matchAll(/<a class="([^"]*)"/g)].map((m) => m[1]);
   assert.match(link, /\bms-auto\b/, 'the link does not keep the controls to the end of the row');
