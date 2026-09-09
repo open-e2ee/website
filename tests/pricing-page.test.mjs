@@ -676,10 +676,17 @@ test('Enterprise is one outlined band under the table, with its own action', () 
   assert.match(classes, /\bbg-ground-panel\b/, `the Enterprise band has no ground: ${classes}`);
   assert.doesNotMatch(classes, /rule-t/);
 
+  /* The founder's 2026-09-09 call: the band is one row as tall as its button
+   * plus padding, not the two-column grid the license rows keep. Name, price,
+   * detail, and the action are direct children on one centerline, and no
+   * wrapper adds height of its own. */
+  assert.match(classes, /\bflex\b/, 'the band is not a row');
+  assert.match(classes, /\bitems-center\b/, 'the band does not center its row');
+  assert.doesNotMatch(classes, /\bgrid\b|py-[5-9]|py-1\d/, `the band is taller than its button: ${classes}`);
   const band = enterpriseBand();
-  assert.ok(band.includes(`>${enterprise.name}</h3>`));
-  assert.ok(band.includes(`>${enterprise.price}</p>`));
-  assert.match(band, /<a class="oe-button oe-button-secondary" href="mailto:licensing@open-e2ee\.dev/);
+  const inner = band.slice(band.indexOf('>') + 1, band.indexOf('</div>'));
+  assert.match(inner, new RegExp(`^<h3 class="[^"]*">${enterprise.name}</h3><p class="[^"]*">${enterprise.price}</p><p class="[^"]*">${enterprise.detail}</p><a class="oe-button oe-button-secondary [^"]*" href="mailto:licensing@open-e2ee\\.dev[^"]*">Ask about Enterprise</a>$`), `the band is not name, price, detail, action: ${inner}`);
+  assert.match(inner.match(/<a class="([^"]*)"/)[1], /\bms-auto\b/, 'the action does not keep to the end of the row');
 });
 
 test('the licensing section follows the plans and what they carry, and states the other way to run the code', () => {
