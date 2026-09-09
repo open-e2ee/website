@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import {
+  demoBookingUrl,
+  relayEnterpriseBookingUrl,
+  sdkLicensingBookingUrl,
+} from '../data/booking.mjs';
+import { docs, reporting } from '../lib/assurance.mjs';
+import {
+  BAND,
+  CONTAINER,
+  CONTAINER_MEASURE,
+  LABEL,
+  LEAD,
+  PAGE_HERO,
+  ROWS,
+  TEXT_LINKS,
+} from '../lib/recipes';
+
+/*
+ * One page, one channel per reason to write. A prospect reads this before an
+ * account exists, so nothing here sits behind console sign-in; the console has
+ * its own contact page for a signed-in customer. Every address and calendar
+ * link on this page is the same one the pricing, licensing, and legal pages
+ * already use, so a reader who arrives from any of them lands on a channel
+ * they have seen.
+ */
+---
+
+<BaseLayout
+  title="Contact"
+  description="How to reach OpenE2EE: report a vulnerability, book a licensing or Relay call, schedule a demo, or send a legal or privacy request."
+  canonical="/contact"
+>
+  <header class={PAGE_HERO}>
+    <div class={CONTAINER_MEASURE}>
+      <p class={LABEL}>Contact</p>
+      <h1>Write to the channel that answers.</h1>
+      <p class={LEAD}>
+        Each address below is read by the person who can act on it. State what you are building,
+        which product it concerns, and what you need from us, and the first reply carries an
+        answer rather than a question.
+      </p>
+    </div>
+  </header>
+
+  <section class={BAND}>
+    <div class={CONTAINER}>
+      <ul class={ROWS}>
+        <li>
+          <p class={LABEL}>Vulnerability report</p>
+          <h3><a href={`mailto:${reporting.address}`}>{reporting.address}</a></h3>
+          <p>
+            Acknowledged within {reporting.acknowledgment}, with an initial assessment within{' '}
+            {reporting.assessment}. Do not open a public issue. Resolution targets by severity and
+            the safe harbor for good-faith research are on the{' '}
+            <a href="/security#reporting">security page</a> and in the{' '}
+            <a href={docs.reporting}>disclosure policy</a>.
+          </p>
+        </li>
+        <li>
+          <p class={LABEL}>Enterprise and OEM</p>
+          <h3><a href={sdkLicensingBookingUrl}>Book a licensing call</a></h3>
+          <p>
+            Portfolio and redistribution rights, a scoped security review, service levels, and a
+            signed order form. Or write to{' '}
+            <a href="mailto:licensing@open-e2ee.dev?subject=Enterprise%20agreement">
+              licensing@open-e2ee.dev
+            </a>{' '}
+            with the products the agreement has to cover.
+          </p>
+        </li>
+        <li>
+          <p class={LABEL}>OpenE2EE Relay</p>
+          <h3><a href={relayEnterpriseBookingUrl}>Schedule a meeting</a></h3>
+          <p>
+            Capacity beyond the published plans, a dedicated deployment, or a data-processing
+            question about the managed service. Bring the monthly active users and regions you
+            expect.
+          </p>
+        </li>
+        <li>
+          <p class={LABEL}>See it run</p>
+          <h3><a href={demoBookingUrl}>Schedule a demo</a></h3>
+          <p>
+            A walk through the SDK and the console against your use case, before any agreement.
+          </p>
+        </li>
+        <li>
+          <p class={LABEL}>Licensing question</p>
+          <h3>
+            <a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">
+              licensing@open-e2ee.dev
+            </a>
+          </h3>
+          <p>
+            Whether AGPLv3 fits your distribution, which plan covers a product, or what an order
+            form has to name. The <a href="/licensing">licensing page</a> answers the common
+            cases.
+          </p>
+        </li>
+        <li>
+          <p class={LABEL}>Legal and privacy</p>
+          <h3>
+            <a href="mailto:support@open-e2ee.dev?subject=Privacy%20request">
+              support@open-e2ee.dev
+            </a>
+          </h3>
+          <p>
+            A data-subject request, a question about the <a href="/legal/terms">terms</a> or the{' '}
+            <a href="/legal/privacy">privacy notice</a>, or a copy of the{' '}
+            <a href="/legal/subprocessors">subprocessor list</a> for a procurement file.
+          </p>
+        </li>
+      </ul>
+      <p class={TEXT_LINKS}>
+        <a href="https://console.open-e2ee.dev/contact">Signed-in customer support</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/security">Security model</a>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
