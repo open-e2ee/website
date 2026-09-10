@@ -415,6 +415,14 @@ sr_v39() {
   node scripts/check-ground-neutrality.mjs
 }
 
+# FR9. Beside the navigation the wordmark shares the words' baseline, and at
+# phone width, where the navigation is hidden, the lockup centers its ink on
+# the bar. Both are rendered facts, so the browser reads them.
+sr_v40() {
+  have_chrome || return 1
+  npm run visual:header
+}
+
 # --- self-assertions -------------------------------------------------------------------------
 
 self_ci() { grep -q 'verify-site-redesign.sh' .github/workflows/ci.yml; }
@@ -483,6 +491,7 @@ check SR-V36 'FR10  The built site paints with every one of the six ramps' sr_v3
 check SR-V37 'FR17  The role layer answers the shared presentation measures' sr_v37
 check SR-V38 'FR17  The website reads the shared presentation measures' sr_v38
 check SR-V39 'FR16  No dark ground exceeds four percent saturation' sr_v39
+check SR-V40 'FR9  The wordmark sits on the navigation baseline' sr_v40
 
 printf 'Summary: %d passed, %d failed\n' "$passed" "$failed"
 
