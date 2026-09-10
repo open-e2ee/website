@@ -425,6 +425,22 @@ test('publishes the exact Relay legal and lifecycle boundary', async () => {
   for (const provider of ['Cloudflare', 'Vercel', 'WorkOS', 'Stripe', 'Better Stack']) {
     assert.match(subprocessors, new RegExp(provider));
   }
+  /* Relay authorizes an upload for 14 minutes and keeps the last minute as
+   * clock and request-processing headroom under the published ceiling
+   * (relay/src/concepts/objects/contract.ts, ATTACHMENT_UPLOAD_AUTHORIZATION_SECONDS).
+   * A page that prints the ceiling as the value hands a reader an entitlement
+   * the service does not owe; a page that prints 14 has to be re-edited the day
+   * the headroom moves. Both pages publish the ceiling and say the real window
+   * is under it, which stays true either way. */
+  for (const page of [retention, beta]) {
+    assert.doesNotMatch(page, /15 minutes maximum/, 'a page publishes the ceiling as the value');
+    assert.match(
+      page,
+      /never .{0,20}more than 15 minutes\. The current window is shorter\./,
+      'a page states the upload window without saying the real one is under the ceiling',
+    );
+  }
+
   assert.match(retention, /24-hour retention by default/i);
   assert.match(retention, /30-day maximum retention/i);
   assert.match(beta, /Direct encrypted envelope: 256 KiB maximum/i);
