@@ -65,3 +65,16 @@ export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
  */
 export const privacyVersion = '2026-08-26';
 export const privacyEffectiveDate = 'August 26, 2026';
+
+/*
+ * The data processing agreement is auto-incorporated: it binds when a customer
+ * accepts the Relay terms, and no signature is exchanged. That makes the
+ * version identity the only record of which processor terms an organization is
+ * under, so it is pinned the same way the two commercial documents are. A
+ * customer that files this agreement in a procurement review files the dated
+ * URL, and an edit to /legal/dpa must never reach it.
+ */
+export const dpaVersion = '2026-09-10';
+export const dpaEffectiveDate = 'September 10, 2026';
+export const dpaPath = '/legal/dpa/2026-09-10';
+export const dpaUrl = `https://open-e2ee.dev${dpaPath}`;

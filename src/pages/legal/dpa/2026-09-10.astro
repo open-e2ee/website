@@ -1,0 +1,526 @@
+---
+/*
+ * The immutable copy of the OpenE2EE Data Processing Agreement, version
+ * 2026-09-10. The agreement binds on acceptance of the Relay terms rather than
+ * by signature, so no countersigned paper records which processor terms an
+ * organization is under. The dated URL is that record, and a customer's
+ * procurement file cites it.
+ *
+ * So this page is a literal snapshot. The document text is inlined here, and
+ * the page must never import the live component or the live version constants,
+ * or an edit to /legal/dpa would rewrite terms already accepted. The guard bans
+ * those import paths as strings, so the path forms are not written even in this
+ * comment. A new version means a new dated page beside this one, never an edit.
+ * tests/legal-pages.test.mjs enforces the decoupling.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CALLOUT,
+  CONTAINER,
+  LABEL,
+  LEAD,
+  LEGAL_PIN,
+  LEGAL_TOC,
+} from '../../../lib/recipes';
+---
+
+<BaseLayout
+  title="Data Processing Agreement 2026-09-10"
+  description="Frozen copy of the OpenE2EE Data Processing Agreement, version 2026-09-10."
+  canonical="/legal/dpa/2026-09-10"
+>
+  <article>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/legal">Legal</a>
+        <h1>Data Processing Agreement</h1>
+        <p class={LEAD}>
+          The processor terms that apply to personal data OpenE2EE handles on a Relay customer’s
+          instructions. It is part of the Relay Service Terms and takes effect with them.
+        </p>
+        <p class={ARTICLE_META}>
+          <span>Effective September 10, 2026</span>
+          <span>Version 2026-09-10</span>
+        </p>
+        <p class={LEGAL_PIN}>
+          This is the permanent copy of that version. It is the agreement as it stood while version
+          2026-09-10 was current, and it does not change. The version that applies to a new
+          acceptance is the{' '}
+          <a href="/legal/dpa">current Data Processing Agreement</a>.
+        </p>
+      </div>
+    </header>
+
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+      <div class="prose">
+        <aside class={CALLOUT} aria-label="What this agreement covers">
+          <p class={LABEL}>What this agreement covers</p>
+          <p>
+            Relay carries customer-encrypted content and operates delivery infrastructure. It does
+            not receive message plaintext, device private keys, ratchet state, or attachment keys.
+            The personal data this agreement governs is therefore account, routing, usage, and
+            billing data, not the content of a customer’s application.
+          </p>
+        </aside>
+
+        <nav class={LEGAL_TOC} aria-label="Data processing agreement contents">
+          <p class={LABEL}>Contents</p>
+          <ol>
+            <li><a href="#parties">Parties and incorporation</a></li>
+            <li><a href="#definitions">Definitions</a></li>
+            <li><a href="#roles">Roles of the parties</a></li>
+            <li><a href="#instructions">Processing instructions</a></li>
+            <li><a href="#personnel">Confidentiality of personnel</a></li>
+            <li><a href="#security">Security measures</a></li>
+            <li><a href="#subprocessors">Subprocessors</a></li>
+            <li><a href="#requests">Data subject requests</a></li>
+            <li><a href="#breach">Personal data breach</a></li>
+            <li><a href="#assistance">Assistance and audits</a></li>
+            <li><a href="#deletion">Deletion and return</a></li>
+            <li><a href="#transfers">International transfers</a></li>
+            <li><a href="#annex-i">Annex I: description of the processing</a></li>
+            <li><a href="#annex-ii">Annex II: technical and organizational measures</a></li>
+          </ol>
+        </nav>
+
+        <h2 id="parties">1. Parties and incorporation</h2>
+        <p>
+          This Data Processing Agreement is between OpenE2EE LLC, a Minnesota limited liability
+          company (“OpenE2EE,” “we,” or “us”), and the organization that accepts the{' '}
+          <a href="/legal/relay-terms">OpenE2EE Relay Service Terms</a> (“Customer,” “you”). It
+          forms part of those Terms.
+        </p>
+        <p>
+          It becomes binding when you accept the Terms. You do not need to sign it, countersign it,
+          or ask us for it, and nothing in it waits on a request. If you need a copy for a
+          procurement file, email{' '}
+          <a href="mailto:licensing@open-e2ee.dev">licensing@open-e2ee.dev</a>.
+        </p>
+        <p>
+          Where this agreement and the Terms say different things about the processing of personal
+          data, this agreement governs. Everything else about the service, including fees,
+          liability, and termination, stays with the Terms. Send legal notices under this agreement
+          by email to OpenE2EE LLC at{' '}
+          <a href="mailto:legal@open-e2ee.dev">legal@open-e2ee.dev</a>. We may send notices under
+          this agreement to the project owner’s console email, and those are given when sent.
+        </p>
+
+        <h2 id="definitions">2. Definitions</h2>
+        <p>
+          <strong>Data Protection Law</strong> means Regulation (EU) 2016/679 (the “GDPR”), the UK
+          General Data Protection Regulation together with the Data Protection Act 2018, the Swiss
+          Federal Act on Data Protection, and any other data-protection or privacy law that applies
+          to a party’s processing under this agreement.
+        </p>
+        <p>
+          <strong>Controller</strong>, <strong>processor</strong>, <strong>data subject</strong>,{' '}
+          <strong>personal data</strong>, <strong>personal data breach</strong>,{' '}
+          <strong>processing</strong>, and <strong>supervisory authority</strong> carry the meanings
+          the GDPR gives them, and their equivalents under the other laws named above.
+        </p>
+        <p>
+          <strong>Customer Personal Data</strong> means personal data contained in the data we
+          process on your behalf to provide the console and OpenE2EE Relay. Annex I describes it.
+        </p>
+        <p>
+          <strong>SCCs</strong> means the standard contractual clauses annexed to Commission
+          Implementing Decision (EU) 2021/914 of 4 June 2021. <strong>UK Addendum</strong> means the
+          International Data Transfer Addendum to the EU Commission Standard Contractual Clauses
+          issued by the UK Information Commissioner under section 119A of the Data Protection Act
+          2018, version B1.0.
+        </p>
+        <p>
+          Terms defined in the Relay Service Terms and not redefined here keep the meaning the Terms
+          give them.
+        </p>
+
+        <h2 id="roles">3. Roles of the parties</h2>
+        <p>
+          For Customer Personal Data, you are the controller and we are your processor. Where you
+          are yourself a processor acting for another controller, we are your subprocessor and every
+          obligation below runs to you in that capacity. In that case you confirm that your
+          controller has authorized the processing described here, including our engagement of the
+          subprocessors on the published list.
+        </p>
+        <p>
+          We are a separate and independent controller for the personal data we process for our own
+          purposes: operating and securing our business, keeping account and billing records,
+          meeting our own legal obligations, and communicating with you. That processing is governed
+          by our <a href="/legal/privacy">Privacy Notice</a>, not by this agreement, and we are
+          responsible for it as controller.
+        </p>
+        <p>
+          You are responsible for the personal data your own application handles. Relay carries
+          content your application has already encrypted, and we hold no key that opens it, so the
+          decisions about what that content contains, whose it is, and how long your users keep it
+          are yours alone.
+        </p>
+
+        <h2 id="instructions">4. Processing instructions</h2>
+        <p>
+          We process Customer Personal Data only on your documented instructions, including for
+          transfers, unless law requires otherwise. The Relay Service Terms, this agreement, the
+          settings you choose in the console, and your use of the documented API together are your
+          complete documented instructions. Ask for anything beyond them in writing, and we will
+          confirm in writing whether we can carry it out and on what terms.
+        </p>
+        <p>
+          We process Customer Personal Data to provide, secure, meter, support, and troubleshoot the
+          console and Relay, to enforce the Terms and the{' '}
+          <a href="/legal/acceptable-use">Acceptable Use Policy</a>, and to comply with law. We do
+          not sell it, share it for cross-context behavioral advertising, use it for advertising of
+          any kind, or use it to train machine-learning models.
+        </p>
+        <p>
+          If we believe an instruction of yours infringes Data Protection Law, we will tell you, and
+          we may pause the affected processing until the instruction is withdrawn, confirmed, or
+          changed. Telling you is not legal advice and does not shift responsibility for the
+          instruction.
+        </p>
+        <p>
+          If law requires us to process Customer Personal Data beyond your instructions, we will
+          inform you of that requirement before processing unless the law forbids it on important
+          grounds of public interest. If we receive a government or law-enforcement demand for
+          Customer Personal Data, we will, where lawful, redirect the requester to you, tell you in
+          time for you to seek protective relief, and disclose no more than the demand compels.
+        </p>
+
+        <h2 id="personnel">5. Confidentiality of personnel</h2>
+        <p>
+          Access to Customer Personal Data is limited to the people who need it to provide, secure,
+          meter, or support the service, and to what each of them needs. Everyone with access,
+          employee or contractor, is bound by written confidentiality obligations that survive the
+          end of their engagement, and is instructed in handling personal data before access is
+          granted. Access is removed when the need for it ends.
+        </p>
+
+        <h2 id="security">6. Security measures</h2>
+        <p>
+          We implement and maintain the technical and organizational measures set out in Annex II,
+          taking account of the state of the art, the cost of implementation, the nature, scope,
+          context, and purposes of the processing, and the risk to data subjects. We may change a
+          measure, and we will not let a change reduce the overall level of security during the
+          term.
+        </p>
+        <p>
+          The first of those measures is architectural. Relay is built so that message plaintext,
+          device private keys, ratchet state, and attachment keys never reach it, which removes the
+          most sensitive categories from the system rather than protecting them inside it. A control
+          that is absent because the data is absent cannot later be misconfigured.
+        </p>
+        <p>
+          We hold no security certification and this agreement makes none of the representations a
+          certification would carry. Annex II states what we actually do.
+        </p>
+
+        <h2 id="subprocessors">7. Subprocessors</h2>
+        <p>
+          You give us general written authorization to engage subprocessors to process Customer
+          Personal Data. The current list, with each provider’s purpose, data boundary, and
+          processing location, is published at{' '}
+          <a href="/legal/subprocessors">Subprocessors</a>. That page is the list this agreement
+          refers to.
+        </p>
+        <p>
+          We give at least 30 days’ notice by email to the project owner’s console address before a
+          new subprocessor begins processing Customer Personal Data, except where a change is needed
+          urgently to protect security or service continuity, in which case we give notice as soon
+          as practicable. The published list is updated at the same time.
+        </p>
+        <p>
+          You may object within the notice period on reasonable grounds relating to data protection
+          by replying to that notice or writing to{' '}
+          <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>. We will work with you to
+          find a reasonable alternative. If we cannot offer one, you may terminate the affected
+          Relay project without further charge beyond fees already accrued, and that is your remedy
+          for the objection.
+        </p>
+        <p>
+          Each subprocessor is engaged under a written contract that imposes data-protection
+          obligations equivalent in substance to those in this agreement. We remain responsible to
+          you for a subprocessor’s performance of those obligations as if the processing were our
+          own.
+        </p>
+
+        <h2 id="requests">8. Data subject requests</h2>
+        <p>
+          Taking account of the nature of the processing, we assist you by appropriate technical and
+          organizational measures, insofar as this is possible, in fulfilling your obligation to
+          respond to requests to exercise a data subject’s rights of access, rectification, erasure,
+          restriction, portability, and objection. The console’s own account and project deletion
+          actions and the boundaries described in the{' '}
+          <a href="/legal/relay-retention">Relay Retention Statement</a> are the primary means by
+          which you exercise that control directly.
+        </p>
+        <p>
+          We cannot read the content your application encrypts, so a request that concerns that
+          content is one only you can answer. Our assistance covers the account, routing, usage, and
+          billing data described in Annex I.
+        </p>
+        <p>
+          If a data subject contacts us directly about Customer Personal Data, we will not respond
+          to the substance of the request. We will tell them to contact you, and we will tell you
+          without undue delay unless law forbids it.
+        </p>
+
+        <h2 id="breach">9. Personal data breach</h2>
+        <p>
+          We will notify you without undue delay after becoming aware of a personal data breach
+          affecting Customer Personal Data, and in any event in time for you to meet your own
+          notification deadlines. The notice goes to the project owner’s console email from{' '}
+          <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>.
+        </p>
+        <p>
+          The notice will describe what we know at the time: the nature of the breach, the
+          categories and approximate number of records and data subjects affected, the likely
+          consequences, the measures we have taken or propose to take to address it and to mitigate
+          its effects, and a contact point for more information. We will send further updates as we
+          learn more, rather than delaying the first notice until the picture is complete.
+        </p>
+        <p>
+          We will assist you in meeting your obligations under Articles 33 and 34 of the GDPR and
+          their equivalents under other Data Protection Law. Notifying a supervisory authority or a
+          data subject is your decision to make as controller, and we will not make it for you.
+        </p>
+
+        <h2 id="assistance">10. Assistance and audits</h2>
+        <p>
+          Taking account of the nature of the processing and the information available to us, we
+          assist you in meeting your obligations under Articles 32 through 36 of the GDPR: security
+          of processing, breach notification, data protection impact assessment, and prior
+          consultation with a supervisory authority.
+        </p>
+        <p>
+          We make available the information necessary to demonstrate compliance with Article 28,
+          and we allow for and contribute to audits, including inspections, conducted by you or by
+          another party you appoint. In the first instance that means our published documentation,
+          this agreement’s annexes, and written answers to your security and privacy
+          questionnaires, which we will provide within a reasonable period.
+        </p>
+        <p>
+          Where that information does not answer your question, you may carry out an audit of our
+          processing of Customer Personal Data, or appoint an independent party to carry one out on
+          your behalf, once in any twelve-month period, and more often if a supervisory authority
+          requires it or if we have notified you of a personal data breach. Give us at least 30
+          days’ written notice, keep the scope to what Data Protection Law requires, conduct it
+          during business hours without unreasonably disrupting the service, and bear its cost.
+          Whoever conducts it must be bound by confidentiality obligations, and we may withhold
+          information whose disclosure would compromise another customer’s data, our security, or a
+          legal obligation.
+        </p>
+
+        <h2 id="deletion">11. Deletion and return</h2>
+        <p>
+          At the end of the provision of the service, we delete Customer Personal Data or return it
+          to you, at your choice, unless law requires us to keep it. You may exercise the choice by
+          deleting the project in the console or by writing to us before the account closes; if you
+          do neither, we delete.
+        </p>
+        <p>
+          Deletion follows the boundaries and periods published in the{' '}
+          <a href="/legal/relay-retention">Relay Retention Statement</a>, which describes what
+          project deletion purges and which narrow security, billing, reconciliation, and legal
+          records survive payload deletion, for how long, and why. Those records use opaque
+          identifiers and contain no message content. Backups roll off on their documented cycle
+          rather than being edited in place.
+        </p>
+
+        <h2 id="transfers">12. International transfers</h2>
+        <p>
+          We are established in the United States, and Customer Personal Data may be processed in
+          the United States and in other countries where our subprocessors operate. Annex I and the{' '}
+          <a href="/legal/subprocessors">Subprocessor List</a> describe where.
+        </p>
+        <p>
+          Where Data Protection Law requires a transfer mechanism for personal data leaving the
+          European Economic Area, the United Kingdom, or Switzerland, the following apply and are
+          deemed entered into by the parties on acceptance of the Relay Service Terms, with no
+          further signature:
+        </p>
+        <ul>
+          <li>
+            <strong>European Economic Area.</strong> The SCCs, incorporated by reference. Module Two
+            (controller to processor) applies where you are a controller. Module Three (processor to
+            processor) applies where you are a processor acting for another controller. You are the
+            data exporter and OpenE2EE LLC is the data importer. In Clause 7, the optional docking
+            clause applies. In Clause 9, Option 2, general written authorization, applies with the
+            notice period in section 7. In Clause 11, the optional independent dispute resolution
+            body does not apply. In Clause 17, Option 1 applies and the governing law is the law of
+            Ireland. In Clause 18(b), the forum is the courts of Ireland. Annex I and Annex II
+            below are Annex I and Annex II of the SCCs, and the list at{' '}
+            <a href="/legal/subprocessors">Subprocessors</a> is Annex III.
+          </li>
+          <li>
+            <strong>United Kingdom.</strong> The UK Addendum, version B1.0, applies to the SCCs as
+            incorporated above. Table 1 is completed by the parties named in Annex I, Tables 2 and 3
+            by the SCCs and annexes as set out here, and in Table 4 neither party may end the
+            Addendum as set out in section 19 of the Mandatory Clauses.
+          </li>
+          <li>
+            <strong>Switzerland.</strong> The SCCs apply with the amendments the Swiss Federal Data
+            Protection and Information Commissioner requires: references to the GDPR are read as
+            references to the Swiss Federal Act on Data Protection, the Commissioner is the
+            competent supervisory authority, and the clauses also protect the data of legal entities
+            until Swiss law no longer requires it.
+          </li>
+        </ul>
+        <p>
+          If a transfer mechanism named above is invalidated or replaced, the parties will apply the
+          replacement or an alternative mechanism that Data Protection Law recognizes, and this
+          agreement is read accordingly without needing an amendment.
+        </p>
+        <p>
+          Where the SCCs and this agreement conflict, the SCCs prevail for transfers they govern.
+        </p>
+
+        <h2 id="annex-i">Annex I: description of the processing</h2>
+        <h3>A. Parties</h3>
+        <p>
+          <strong>Data exporter.</strong> Customer, the organization that accepted the Relay Service
+          Terms, acting as controller or as processor for its own controller. It is identified by
+          the organization name recorded in the console, and its contact point is the console email
+          of the person who accepted the Terms. Activities relevant to the transfer: operating an
+          application that uses the OpenE2EE Signal Protocol SDK with Relay for delivery.
+        </p>
+        <p>
+          <strong>Data importer.</strong> OpenE2EE LLC, a Minnesota limited liability company,
+          acting as processor. Contact:{' '}
+          <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>. Activities relevant to
+          the transfer: providing, securing, metering, and supporting the console and OpenE2EE
+          Relay.
+        </p>
+
+        <h3>B. Description of the transfer</h3>
+        <p>
+          <strong>Categories of data subjects.</strong> Customer’s personnel who administer the
+          console, accept terms, or handle billing; and the end users of Customer’s application,
+          who are known to us only through opaque identifiers.
+        </p>
+        <p><strong>Categories of personal data.</strong></p>
+        <ul>
+          <li>
+            Console account and organization records: organization name and identifier, account and
+            project identifiers, the console email address of each administrator, and the console
+            email of the person who accepted the Terms together with the version accepted.
+          </li>
+          <li>
+            Billing identity and payment status held by our payment provider, and the aggregate
+            usage figures mapped to an account for invoicing.
+          </li>
+          <li>
+            Opaque end-user account and device identifiers, public key material and signed public
+            certificates, delivery and acknowledgment state, usage counters, and push provider
+            tokens.
+          </li>
+          <li>
+            Customer-encrypted envelopes, shared encrypted group bodies, and encrypted attachment
+            bytes, which may contain personal data that only Customer and its users can read.
+          </li>
+          <li>Request metadata inherent to operating a network service, and support correspondence.</li>
+        </ul>
+        <p>
+          <strong>Data not transferred.</strong> Message plaintext, device private keys, ratchet
+          state, and attachment keys are not sent to us and cannot be produced by us.
+        </p>
+        <p>
+          <strong>Sensitive data.</strong> We do not request special categories of personal data and
+          the service is not designed to receive them in a form we can read. Customer must not place
+          special categories in any field we process in the clear.
+        </p>
+        <p>
+          <strong>Frequency.</strong> Continuous, for as long as the service is in use.
+        </p>
+        <p>
+          <strong>Nature and purpose.</strong> Accepting, routing, storing, and delivering encrypted
+          content between a customer’s end users; registering devices and distributing public key
+          material; metering usage for billing; operating security, abuse prevention, and
+          availability monitoring; and providing support.
+        </p>
+        <p>
+          <strong>Duration.</strong> For the term of the Relay Service Terms, plus the retention
+          periods published in the <a href="/legal/relay-retention">Relay Retention Statement</a>.
+        </p>
+        <p>
+          <strong>Subprocessors.</strong> Subject matter, nature, and duration as set out in the
+          list at <a href="/legal/subprocessors">Subprocessors</a>.
+        </p>
+
+        <h3>C. Competent supervisory authority</h3>
+        <p>
+          For transfers under the SCCs, the Irish Data Protection Commission, on the basis of Clause
+          13 and the choice of Irish law in Clause 17. For UK transfers, the Information
+          Commissioner’s Office. For Swiss transfers, the Federal Data Protection and Information
+          Commissioner.
+        </p>
+
+        <h2 id="annex-ii">Annex II: technical and organizational measures</h2>
+        <p>
+          These are the measures we apply to Customer Personal Data, as required by Article 32 of
+          the GDPR and Clause 8.6 of the SCCs.
+        </p>
+        <ul>
+          <li>
+            <strong>Data minimization by architecture.</strong> Relay is designed so that message
+            plaintext, device private keys, ratchet state, and attachment keys are never transmitted
+            to it. Content arrives encrypted by the customer’s application and leaves in the same
+            state. This is the primary measure and the one the others sit beneath.
+          </li>
+          <li>
+            <strong>Access control.</strong> Access to production systems and to Customer Personal
+            Data is limited to the people whose role requires it, granted at the least privilege the
+            work needs, and removed when the need ends. Administrative access to the console is
+            scoped by organization and project.
+          </li>
+          <li>
+            <strong>Authentication.</strong> Console sign-in is handled by our identity provider
+            rather than by credentials we hold ourselves, and multi-factor authentication is
+            available through it. API access uses per-project credentials that a customer can
+            rotate or revoke, and a revoked credential stops working at the service rather than at
+            the client.
+          </li>
+          <li>
+            <strong>Transmission and disclosure control.</strong> Data in transit is protected by
+            TLS. Data at rest sits in our providers’ encrypted storage. Delivery state, key
+            material, and usage counters are held under opaque identifiers rather than names or
+            addresses.
+          </li>
+          <li>
+            <strong>Separation of environments and tenants.</strong> A project’s Development and
+            production environments are separated, and every stored object is scoped to the project
+            that owns it so that one customer’s state cannot be reached through another’s
+            credentials.
+          </li>
+          <li>
+            <strong>Control of instructions.</strong> Processing runs from code and configuration
+            under version control and code review. Changes reach production through an automated
+            pipeline with its checks, not by hand.
+          </li>
+          <li>
+            <strong>Availability and resilience.</strong> The service runs on providers with
+            redundant infrastructure, with availability monitoring and a public status page.
+            Retention and expiry boundaries are enforced by the service itself, with storage
+            lifecycle rules as a backstop.
+          </li>
+          <li>
+            <strong>Deletion.</strong> Project deletion fences new work, drains accepted work,
+            purges project-owned state, and verifies the deletion generation before completing. The
+            published retention statement states what survives and for how long.
+          </li>
+          <li>
+            <strong>Incident handling.</strong> Suspected compromise is reported to{' '}
+            <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>, investigated, and
+            notified to affected customers under section 9.
+          </li>
+        </ul>
+        <p>
+          Measures taken by subprocessors are those in their own published security documentation
+          and in the contracts described in section 7.
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

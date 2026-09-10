@@ -6,6 +6,10 @@ import {
   commercialTermsPath,
   commercialTermsUrl,
   commercialTermsVersion,
+  dpaEffectiveDate,
+  dpaPath,
+  dpaUrl,
+  dpaVersion,
   privacyEffectiveDate,
   privacyVersion,
   relayTermsPath,
@@ -24,6 +28,10 @@ test('pins the first Startup terms to an immutable canonical URL', () => {
   assert.equal(relayTermsVersion, 'relay-2026-08-26');
   assert.equal(relayTermsPath, '/legal/relay-terms/2026-08-26');
   assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-08-26');
+  assert.equal(dpaVersion, '2026-09-10');
+  assert.equal(dpaEffectiveDate, 'September 10, 2026');
+  assert.equal(dpaPath, '/legal/dpa/2026-09-10');
+  assert.equal(dpaUrl, 'https://open-e2ee.dev/legal/dpa/2026-09-10');
 });
 
 /*
@@ -75,6 +83,105 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   assert.match(relayVersion, /canonical="\/legal\/relay-terms\/2026-08-26"/);
   assert.match(privacy, /Privacy Notice/);
   assert.match(privacy, /canonical="\/legal\/privacy"/);
+  assert.match(legalIndex, /href="\/legal\/dpa"/);
+});
+
+/*
+ * The agreement binds on acceptance of the Relay terms and is never signed, so
+ * the dated URL is the only record of which processor terms an organization is
+ * under. The live route renders the component; the dated route may not.
+ */
+test('publishes the data processing agreement at a current and a dated route', async () => {
+  const [live, dated] = await Promise.all([
+    read('../src/pages/legal/dpa.astro'),
+    read(`../src/pages/legal/dpa/${dpaVersion}.astro`),
+  ]);
+
+  assert.match(live, /DataProcessingAgreement/);
+  assert.match(live, /canonical="\/legal\/dpa"/);
+  assert.match(dated, new RegExp(`canonical="${dpaPath}"`));
+});
+
+const frozenDpaVersions = [
+  { version: '2026-09-10', effective: 'September 10, 2026' },
+];
+
+test('keeps every dated DPA page frozen: it never reads the live agreement', async () => {
+  for (const { version, effective } of frozenDpaVersions) {
+    const page = await read(`../src/pages/legal/dpa/${version}.astro`);
+
+    /* Path forms, as on the other two dated documents: the component name may
+     * appear in this file's own comment explaining the freeze, and an import
+     * resolves a path, so the paths are what is banned. */
+    assert.doesNotMatch(page, /lib\/legal(\.mjs)?/, `${version} reads the live version constants`);
+    assert.doesNotMatch(
+      page,
+      /components\/DataProcessingAgreement/,
+      `${version} renders the live agreement`,
+    );
+
+    assert.match(
+      page,
+      new RegExp(`<span>Version ${version}</span>`),
+      `${version} does not head itself as version ${version}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`<span>Effective ${effective}</span>`),
+      `${version} does not head itself as effective ${effective}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`canonical="/legal/dpa/${version}"`),
+      `${version} is not canonical at its own path`,
+    );
+  }
+});
+
+test('freezes the DPA version the site currently publishes', () => {
+  const frozen = frozenDpaVersions.map(({ version }) => version);
+  assert.ok(
+    frozen.includes(dpaVersion),
+    `DPA version ${dpaVersion} has no frozen page; frozen: ${frozen.join(', ')}`,
+  );
+});
+
+/*
+ * Article 28(3) is a list of things a processor contract must contain, and a
+ * DPA that drops one of them is not a DPA. The anchors are the contract's own
+ * table of contents, and a procurement reviewer follows them, so the section
+ * has to exist on the live agreement and on every frozen copy of it.
+ */
+const DPA_SECTIONS = [
+  'parties',
+  'definitions',
+  'roles',
+  'instructions',
+  'personnel',
+  'security',
+  'subprocessors',
+  'requests',
+  'breach',
+  'assistance',
+  'deletion',
+  'transfers',
+  'annex-i',
+  'annex-ii',
+];
+
+test('carries every Article 28 section, on the live agreement and every frozen copy', async () => {
+  const pages = [
+    '../src/components/DataProcessingAgreement20260910.astro',
+    ...frozenDpaVersions.map(({ version }) => `../src/pages/legal/dpa/${version}.astro`),
+  ];
+
+  for (const path of pages) {
+    const page = await read(path);
+    for (const id of DPA_SECTIONS) {
+      assert.match(page, new RegExp(`<h[23] id="${id}">`), `${path} has no section #${id}`);
+      assert.match(page, new RegExp(`<a href="#${id}">`), `${path} does not list #${id} in contents`);
+    }
+  }
 });
 
 /*
