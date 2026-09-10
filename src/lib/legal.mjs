@@ -5,23 +5,51 @@
  * Section 9 of the terms binds an existing license to the version recorded at
  * checkout. That promise only holds if the recorded URL is immutable, so the
  * dated path below is published as its own page and never edited in place: a
- * new version gets a new date, a new path, and a new constant here.
+ * new version gets a new date, a new path, and a new constant here. The
+ * console's COMMERCIAL_TERMS_URL and COMMERCIAL_TERMS_VERSION settings and the
+ * Stripe checkout terms-of-service link must move with these constants once
+ * the dated page is live.
  */
 
-export const commercialTermsVersion = 'startup-2026-07-23';
-export const commercialTermsEffectiveDate = 'July 23, 2026';
-export const commercialTermsPath = '/legal/terms/2026-07-23';
+export const commercialTermsVersion = 'startup-2026-09-10';
+export const commercialTermsEffectiveDate = 'September 10, 2026';
+export const commercialTermsPath = '/legal/terms/2026-09-10';
 export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
 
 /*
  * OpenE2EE Relay has a separate service agreement from the SDK commercial
  * license. Keep its accepted version at a permanent URL so a later
  * service-terms update cannot rewrite an existing order.
+ *
+ * The relay-2026-09-10 version states the fee table in the terms themselves
+ * instead of incorporating the pricing page, describes the plan change,
+ * cancellation, and drain behavior the console and Relay implement, and adds
+ * the counterparty, indemnity, confidentiality, assignment, export, and notice
+ * clauses the 2026-08-26 version lacked. The console records the URL below
+ * against each activation, and its RELAY_TERMS_URL and RELAY_TERMS_VERSION
+ * settings must move with these constants once the dated page is live.
  */
-export const relayTermsVersion = 'relay-2026-08-26';
-export const relayTermsEffectiveDate = 'August 26, 2026';
-export const relayTermsPath = '/legal/relay-terms/2026-08-26';
+export const relayTermsVersion = 'relay-2026-09-10';
+export const relayTermsEffectiveDate = 'September 10, 2026';
+export const relayTermsPath = '/legal/relay-terms/2026-09-10';
 export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
+
+/*
+ * The Relay Retention Statement and the Beta Service Limits are incorporated
+ * by the Relay terms, so a customer who filed the terms must be able to file
+ * the policies they pointed at. Each version lives at a dated page beside the
+ * live one, and the constants below name the version the live page carries.
+ * Both documents were corrected on 2026-09-10 (the upload-authorization
+ * window is now stated as a ceiling), which is the change that gave them a
+ * second version and their first dated pages.
+ */
+export const relayRetentionVersion = '2026-09-10';
+export const relayRetentionEffectiveDate = 'September 10, 2026';
+export const relayRetentionPath = `/legal/relay-retention/${relayRetentionVersion}`;
+
+export const relayBetaLimitsVersion = '2026-09-10';
+export const relayBetaLimitsEffectiveDate = 'September 10, 2026';
+export const relayBetaLimitsPath = `/legal/relay-beta-limits/${relayBetaLimitsVersion}`;
 
 /*
  * The privacy notice is versioned by date. Two versions were published on

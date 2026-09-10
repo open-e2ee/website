@@ -10,6 +10,10 @@ import {
   privacyEffectiveDate,
   privacyPath,
   privacyVersion,
+  relayBetaLimitsPath,
+  relayBetaLimitsVersion,
+  relayRetentionPath,
+  relayRetentionVersion,
   relayTermsEffectiveDate,
   relayTermsPath,
   relayTermsVersion,
@@ -89,7 +93,8 @@ import {
           <h3><a href={commercialTermsPath}>Pinned terms {commercialTermsVersion}</a></h3>
           <p>
             The immutable copy of the terms recorded at checkout. Existing orders stay bound to the
-            version they accepted, so each published version keeps its own address.
+            version they accepted, so each published version keeps its own address, including{' '}
+            <a href="/legal/terms/2026-07-23">startup-2026-07-23</a>.
           </p>
         </li>
         <li>
@@ -107,7 +112,11 @@ import {
           <h3><a href={relayTermsPath}>Pinned Relay terms {relayTermsVersion}</a></h3>
           <p>
             The permanent copy the console records when an organization accepts this service
-            agreement before its first Relay project.
+            agreement before its first Relay project. The superseded version,{' '}
+            <a href="/legal/relay-terms/2026-08-26">relay-2026-08-26</a>, keeps its own address, and
+            so do the policies the terms incorporate: the{' '}
+            <a href={relayRetentionPath}>retention statement {relayRetentionVersion}</a> and the{' '}
+            <a href={relayBetaLimitsPath}>beta limits {relayBetaLimitsVersion}</a>.
           </p>
         </li>
         <li>

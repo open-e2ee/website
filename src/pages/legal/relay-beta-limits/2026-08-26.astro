@@ -1,10 +1,21 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import {
-  relayBetaLimitsEffectiveDate,
-  relayBetaLimitsPath,
-  relayBetaLimitsVersion,
-} from '../../lib/legal.mjs';
+/*
+ * The immutable copy of the OpenE2EE Relay Beta Service Limits, version
+ * 2026-08-26. The Relay Service Terms incorporate this document, so a
+ * customer who filed the terms must be able to file the version of this
+ * document they pointed at. This page is a literal snapshot: the document
+ * text is inlined here, and the page must never import the live version
+ * constants or the live page, or an edit to /legal/relay-beta-limits would
+ * reach the archive that exists to escape it. This copy is the text
+ * /legal/relay-beta-limits rendered on 2026-09-10, immediately before the
+ * upload-authorization window was restated as a ceiling in version
+ * 2026-09-10; the 2026-08-30 environment rename and the 2026-09-07 pricing-
+ * link change are included, since no customer filed the text between. A new
+ * version means a new dated page beside this one, never an edit.
+ * tests/legal-pages.test.mjs enforces that this source stays decoupled from
+ * the live page and the live version constants.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -13,13 +24,13 @@ import {
   CONTAINER,
   LEAD,
   LEGAL_PIN,
-} from '../../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
-  title="Relay Beta Limits"
-  description="Current launch limits and service commitments for the OpenE2EE Relay beta."
-  canonical="/legal/relay-beta-limits"
+  title="Beta limits 2026-08-26"
+  description="Frozen copy of the OpenE2EE Relay Beta Service Limits, version 2026-08-26."
+  canonical="/legal/relay-beta-limits/2026-08-26"
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -28,12 +39,12 @@ import {
         <h1>OpenE2EE Relay Beta Service Limits</h1>
         <p class={LEAD}>The launch boundary for capacity, support, and service commitments.</p>
         <p class={ARTICLE_META}>
-          <span>Effective {relayBetaLimitsEffectiveDate}</span>
-          <span>Version {relayBetaLimitsVersion}</span>
+          <span>Effective August 26, 2026</span>
+          <span>Version 2026-08-26</span>
         </p>
         <p class={LEGAL_PIN}>
           The Relay terms incorporate this document. The permanent copy of this version is at{' '}
-          <a href={relayBetaLimitsPath}><code>{relayBetaLimitsPath}</code></a>.
+          <a href="/legal/relay-beta-limits/2026-08-26"><code>/legal/relay-beta-limits/2026-08-26</code></a>.
         </p>
       </div>
     </header>
@@ -60,7 +71,7 @@ import {
           <li>Mailbox: 3,000 accepted messages maximum.</li>
           <li>Group encrypted body: 96 KiB plus a 512-byte prefix.</li>
           <li>Group delivery: up to 5,000 destination devices in 100-destination fan-out pages.</li>
-          <li>Attachment upload URL: never more than 15 minutes. The current window is shorter.</li>
+          <li>Attachment upload URL: 15 minutes maximum.</li>
           <li>Completed attachment retention: 30 days maximum.</li>
         </ul>
 

@@ -1,0 +1,477 @@
+---
+/*
+ * The immutable copy of the OpenE2EE Relay Service Terms, version
+ * relay-2026-09-10. Relay activation records this URL against the
+ * organization (the console's relay_terms_acceptances table) and Section 11
+ * binds an accepted order to its recorded version, so this page is a literal
+ * snapshot: the document text is inlined here and the page must never import
+ * the live ManagedRelayTerms20260910 component, or an edit to
+ * /legal/relay-terms would silently rewrite the version an organization
+ * already accepted. A new version means a new dated page beside this one,
+ * never an edit. tests/legal-pages.test.mjs enforces that this source stays
+ * decoupled from the component and the live version constants.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import TableScroll from '../../../components/TableScroll.astro';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CALLOUT,
+  CONTAINER,
+  DATA_TABLE,
+  LABEL,
+  LEAD,
+  LEGAL_NOTICE,
+  LEGAL_PIN,
+  LEGAL_TOC,
+} from '../../../lib/recipes';
+---
+
+{/* The frozen copy exists for contract provenance, so its title and
+    description say so, and the pair of routes is not a duplicate-content
+    pair with no signal telling a reader which one they have. */}
+
+<BaseLayout
+  title="Relay terms relay-2026-09-10"
+  description="Frozen copy of the OpenE2EE Relay Service Terms, version relay-2026-09-10."
+  canonical="/legal/relay-terms/2026-09-10"
+>
+  <article>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/legal">Legal</a>
+        <h1>OpenE2EE Relay Service Terms</h1>
+        <p class={LEAD}>
+          These Terms govern a project’s Development environment and production environment on
+          OpenE2EE Relay.
+        </p>
+        <p class={ARTICLE_META}>
+          <span>Effective September 10, 2026</span>
+          <span>Version relay-2026-09-10</span>
+        </p>
+        <p class={LEGAL_PIN}>
+          Relay activation records the version you accept. The permanent copy of this version is at{' '}
+          <a href="/legal/relay-terms/2026-09-10"><code>/legal/relay-terms/2026-09-10</code></a>.
+        </p>
+      </div>
+    </header>
+
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+      <div class="prose">
+        <aside class={CALLOUT} aria-label="Service boundary">
+          <p class={LABEL}>Service boundary</p>
+          <p>
+            Relay carries customer-encrypted content and operates delivery infrastructure. It does
+            not receive message plaintext, device private keys, ratchet state, or attachment keys.
+          </p>
+        </aside>
+
+        <nav class={LEGAL_TOC} aria-label="Relay terms contents">
+          <p class={LABEL}>Contents</p>
+          <ol>
+            <li><a href="#agreement">Agreement, eligibility, and definitions</a></li>
+            <li><a href="#service">Service and customer responsibilities</a></li>
+            <li><a href="#plans">Plans, limits, and billing</a></li>
+            <li><a href="#license">Project commercial SDK license</a></li>
+            <li><a href="#data">Customer data, deletion, and data processing</a></li>
+            <li><a href="#security">Security, acceptable use, and export</a></li>
+            <li><a href="#availability">Beta availability and support</a></li>
+            <li><a href="#liability">Disclaimers, liability, and indemnity</a></li>
+            <li><a href="#termination">Suspension and termination</a></li>
+            <li><a href="#confidentiality">Confidentiality</a></li>
+            <li><a href="#general">Changes, notices, and general terms</a></li>
+          </ol>
+        </nav>
+
+        <h2 id="agreement">1. Agreement, eligibility, and definitions</h2>
+        <p>
+          These Terms are a binding agreement between OpenE2EE LLC, a Minnesota limited liability
+          company (“OpenE2EE,” “we,” “us,” or “our”), and the organization in whose console
+          account a Relay project is created (“Customer,” “you,” or “your”). The organization is
+          the counterparty, not the individual who accepts. You accept these Terms when a person
+          acting for the organization activates a Relay project or accepts a paid Relay order. That
+          person represents that they are authorized to bind the organization, and we record the
+          organization, the version accepted, that person’s identity and console email, and the
+          time of acceptance. If no organization exists, these Terms bind the individual who
+          accepts them.
+        </p>
+        <p>
+          You must be at least 18 years old and able to form a binding contract, and you must not
+          be barred from using Relay under any applicable law. If you accept for an organization,
+          that organization must be validly formed.
+        </p>
+        <p>
+          Each Relay project has one qualified plan ID, a catalog version, an owner, and separate
+          credentials for its Development environment and its production environment. A signed
+          order form controls over conflicting language in these Terms.
+        </p>
+        <p>In these Terms:</p>
+        <ul>
+          <li>
+            <strong>Relay</strong> means the OpenE2EE Relay service: the hosted delivery
+            infrastructure, its control interfaces, and the console pages that administer it.
+          </li>
+          <li>
+            <strong>SDK</strong> means <code>@open-e2ee/signal-protocol-sdk</code>, the OpenE2EE
+            Signal Protocol SDK.
+          </li>
+          <li>
+            <strong>Project</strong> means one Relay project in your console account, with its
+            plan, credentials, environments, and data.
+          </li>
+          <li>
+            <strong>Development environment</strong> means the isolated environment created for
+            each project for building and testing, with its own credentials, state, and limits.
+          </li>
+          <li>
+            <strong>Production environment</strong> means the environment a project’s plan
+            governs, on which the included quantities, caps, and fees in Section 3 apply.
+          </li>
+          <li>
+            <strong>Plan</strong> means one of the production plans in Section 3.1.
+          </li>
+          <li>
+            <strong>Console</strong> means the OpenE2EE console at{' '}
+            <code>console.open-e2ee.dev</code>.
+          </li>
+          <li>
+            <strong>Documentation</strong> means the current OpenE2EE documentation for Relay and
+            the SDK.
+          </li>
+          <li>
+            <strong>Order form</strong> means a document signed by both parties that sets
+            negotiated pricing, capacity, support, or other terms for a project.
+          </li>
+        </ul>
+
+        <h2 id="service">2. Service and customer responsibilities</h2>
+        <p>
+          Relay provides encrypted device mailboxes, delivery and pull, group fan-out, private
+          encrypted attachment storage, push wakes, exact usage controls, and lifecycle operations
+          for the SDK. The Documentation defines the supported interfaces and limits.
+        </p>
+        <p>
+          Customer owns account authentication, authorization, lawful end-user notices, device
+          trust decisions, plaintext processing, private keys, backup policy, client security,
+          application behavior, and compliance for its use case. Customer must use stable request
+          identifiers and supported SDK behavior where the service contract requires them.
+        </p>
+
+        <h2 id="plans">3. Plans, limits, and billing</h2>
+        <h3>3.1 Plans and fees</h3>
+        <p>
+          The plans, their included quantities, and their overage rates are set out in the table
+          below. Fees are in United States dollars and do not include tax. The{' '}
+          <a href="/pricing#relay-plans">Relay pricing page</a> is a summary of this table. Where
+          the two differ, these Terms control.
+        </p>
+        <TableScroll label="Relay plans, monthly fees, included quantities, and overage rates">
+          <table class={DATA_TABLE}>
+            <thead>
+              <tr>
+                <th scope="col">Plan</th>
+                <th scope="col">Monthly</th>
+                <th scope="col">Relay MAU</th>
+                <th scope="col">Delivery units</th>
+                <th scope="col">Attachment uploads</th>
+                <th scope="col">Storage</th>
+                <th scope="col">Additional MAU</th>
+                <th scope="col">Additional delivery</th>
+                <th scope="col">Additional storage</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Free</th><td>$0</td><td>100</td><td>100,000</td><td>100,000</td><td>1 GB</td><td>Hard cap</td><td>Hard cap</td><td>Hard cap</td></tr>
+              <tr><th scope="row">Starter</th><td>$99</td><td>1,000</td><td>500,000</td><td>500,000</td><td>10 GB</td><td>$0.05</td><td>$55 per million</td><td>$0.50 per GB-month</td></tr>
+              <tr><th scope="row">Growth</th><td>$299</td><td>5,000</td><td>2,500,000</td><td>2,500,000</td><td>50 GB</td><td>$0.03</td><td>$55 per million</td><td>$0.50 per GB-month</td></tr>
+              <tr><th scope="row">Business</th><td>$899</td><td>25,000</td><td>12,500,000</td><td>12,500,000</td><td>250 GB</td><td>$0.02</td><td>$55 per million</td><td>$0.50 per GB-month</td></tr>
+              <tr><th scope="row">Enterprise</th><td>Custom</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td></tr>
+            </tbody>
+          </table>
+        </TableScroll>
+        <p>
+          Included quantities are per calendar month. Additional MAU is priced per account. Every
+          project also has a Development environment with 25 test accounts and, each calendar
+          month, 25,000 delivery units, 25,000 attachment uploads, and 250 MB of storage. It keeps
+          content for 24 hours by default and seven days at most, and it may be suspended after 30
+          inactive days. The Development environment has no fee and no overage.
+        </p>
+
+        <h3>3.2 Meters</h3>
+        <p>The table’s quantities are measured by these meters:</p>
+        <ul>
+          <li>
+            <strong>Relay MAU.</strong> One canonical account with qualifying authenticated
+            production activity during one UTC calendar month. Multiple devices for one account
+            count once.
+          </li>
+          <li>
+            <strong>Delivery unit.</strong> One accepted encrypted envelope or shared-body
+            reference for one destination device.
+          </li>
+          <li>
+            <strong>Attachment upload.</strong> One accepted upload authorization for one stable
+            SDK request identifier.
+          </li>
+          <li>
+            <strong>Storage.</strong> Live customer ciphertext plus attachment bytes, integrated
+            from exact byte changes over time. Internal identifiers, indexes, and bookkeeping are
+            not billable bytes.
+          </li>
+        </ul>
+        <p>
+          An exact retry that carries the same stable operation identifier is not charged twice on
+          any meter.
+        </p>
+
+        <h3>3.3 Billing</h3>
+        <p>
+          Paid plans are billed monthly in advance. Approved overage and tax are billed in arrears
+          for the period in which they were incurred. Payments are processed by Stripe. A paid plan
+          renews each month until you cancel it. Except where the law requires otherwise or a
+          signed order form says otherwise, fees are non-refundable. You authorize OpenE2EE and
+          Stripe to charge the payment method on file for each renewal, approved overage, and
+          applicable tax, and you are responsible for keeping billing details current. Send
+          billing questions to <a href="mailto:billing@open-e2ee.dev">billing@open-e2ee.dev</a>.
+        </p>
+
+        <h3>3.4 Caps and drains</h3>
+        <p>
+          Attachment uploads are a hard cap on every plan. The Free plan has hard caps on every
+          meter and never incurs an automatic charge. A paid plan may reserve approved overage
+          spend up to the project spend limit. Relay may refuse new work or enter a drain state
+          when a hard cap, a spend limit, a payment failure, a policy change, or a security control
+          requires it. A drain does not make Stripe or another billing provider the authority for
+          message delivery.
+        </p>
+
+        <h3>3.5 Changing plans</h3>
+        <p>
+          You may change a project’s plan yourself, on the project’s plan form in the console. An
+          upgrade takes effect immediately, and the console shows the prorated amount due before
+          you confirm it. A downgrade, including a downgrade to the Free plan, takes effect at the
+          close of the current paid period, and your current plan’s capacity stays available until
+          then.
+        </p>
+
+        <h3>3.6 Cancelling a paid plan</h3>
+        <p>
+          You may cancel a paid plan at any time on the same plan form. Cancelling is a downgrade
+          to the Free plan and takes effect at the close of the current paid period. Until then the
+          project keeps its paid capacity, and you remain responsible for the fees and approved
+          overage accrued through that date. The current period is not refunded and is not
+          prorated for the unused part. At the close of the period the project moves to the Free
+          plan and keeps its production data, its credentials, and its project commercial SDK
+          license under Section 4. You may undo a scheduled cancellation on the plan form at any
+          time before the period closes, and you may return to a paid plan at any time.
+        </p>
+
+        <h3>3.7 Capacity after a downgrade or cancellation</h3>
+        <p>
+          From the moment a lower plan takes effect, its included quantities and caps apply, and
+          the Free plan’s caps are hard caps with no automatic charge. We do not delete your
+          stored ciphertext because you moved to a lower plan. If the project’s monthly activity or
+          stored bytes are above the new plan’s caps, Relay refuses new work on the affected meter
+          and the project enters a drain state until it is back inside them: new deliveries and
+          uploads are refused, and existing data stays readable so you can export or delete it.
+          Retention periods for the new plan apply from that moment, and data past those periods
+          is deleted under Section 5. Reduce usage or export before the change takes effect if you
+          need to stay inside the caps without interruption.
+        </p>
+
+        <h3>3.8 Deleting a project</h3>
+        <p>
+          Deleting a project is not the same as cancelling a plan. Deletion ends the paid plan
+          immediately with no refund, purges the project’s encrypted service data under Section 5,
+          and ends the project commercial SDK license under Section 4. Cancelling a paid plan keeps
+          the project and its data on the Free plan.
+        </p>
+
+        <h3>3.9 Price changes</h3>
+        <p>
+          We may change a plan’s price or its included quantities by giving at least 30 days’
+          notice before the change applies to your project. Notice is given to the project owner’s
+          console email and by publishing an updated version of these Terms. If you do not agree,
+          cancel the paid plan before the change takes effect. Enterprise pricing and commitments
+          require a signed order form, and a signed order form controls over this Section. Send
+          enterprise inquiries to <a href="mailto:sales@open-e2ee.dev">sales@open-e2ee.dev</a>.
+        </p>
+
+        <h2 id="license">4. Project commercial SDK license</h2>
+        <p>
+          While a Relay project remains active and compliant, OpenE2EE grants Customer a limited,
+          non-exclusive, non-transferable, non-sublicensable commercial license to use the SDK in
+          one proprietary application that connects to that project. The license includes a
+          project on the Free plan. It grants no self-hosting right, no right for another project,
+          and no right to redistribute the SDK as a standalone product or service.
+        </p>
+        <p>
+          The project license ends when the project is deleted or 30 days after its production
+          plan ends, whichever occurs first. A cancellation under Section 3.6 moves the project to
+          the Free plan and does not end the license. During a transition after the license ends,
+          Customer may export configuration and move to an AGPL-compliant deployment or a separate
+          commercial license under the <a href="/legal/terms">Commercial Terms</a>. The transition
+          does not extend Relay capacity or data retention. The AGPL remains available under its
+          own terms.
+        </p>
+
+        <h2 id="data">5. Customer data, deletion, and data processing</h2>
+        <p>
+          Customer retains its rights in encrypted content and project data. Customer instructs
+          OpenE2EE to process that data only to provide, secure, meter, support, and improve Relay,
+          comply with law, and enforce these Terms. The <a href="/legal/privacy">Privacy Notice</a>,{' '}
+          <a href="/legal/subprocessors">Subprocessor List</a>, and{' '}
+          <a href="/legal/relay-retention">Relay Retention Statement</a> describe the processing
+          boundary.
+        </p>
+        <p>
+          The <a href="/legal/dpa">Data Processing Agreement</a> applies to personal data that
+          OpenE2EE processes for you as a processor. It becomes binding when you accept these
+          Terms. You do not need to sign or request it.
+        </p>
+        <p>
+          Account deletion removes the account-owned inbound mailbox and objects. It does not recall
+          messages from another recipient’s mailbox or delete shared group ciphertext only because
+          one member leaves. Project deletion enters a fenced drain and purge process. Narrow
+          security, billing, reconciliation, and legal records may survive payload deletion for the
+          periods stated in the Relay Retention Statement.
+        </p>
+
+        <h2 id="security">6. Security, acceptable use, and export</h2>
+        <p>
+          Customer must protect credentials, use least privilege, install security updates, and
+          promptly report suspected compromise or a vulnerability to{' '}
+          <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>. Customer must follow
+          the <a href="/legal/acceptable-use">Acceptable Use Policy</a>. OpenE2EE may rate-limit,
+          suspend, or isolate activity that threatens the service, another customer, or the public.
+        </p>
+        <p>
+          If we become aware of a personal data breach affecting personal data we process for you,
+          we notify you under <a href="/legal/dpa#breach">section 9 of the Data Processing
+          Agreement</a>, which states the timing and contents of that notice.
+        </p>
+        <p>
+          <strong>Export and sanctions.</strong> You will comply with applicable export control and
+          economic sanctions laws when you use Relay and the SDK. You represent that you are not
+          located in, organized under the laws of, or ordinarily resident in a country or region
+          subject to comprehensive United States sanctions, and that you are not on and are not
+          owned or controlled by a party on a United States restricted-party list. We may suspend
+          or terminate access if we reasonably determine that continuing would breach these laws or
+          create sanctions risk for us or our providers.
+        </p>
+
+        <h2 id="availability">7. Beta availability and support</h2>
+        <p>
+          Relay is a pre-release beta until OpenE2EE announces a generally available service. The
+          Development environment and the Free plan include no service-level agreement. Paid beta
+          plans include reasonable email support through{' '}
+          <a href="mailto:support@open-e2ee.dev">support@open-e2ee.dev</a> and the support shown in
+          the applicable order, but no uptime credit or response guarantee unless a signed order
+          form says otherwise. The <a href="/legal/relay-beta-limits">Beta Service Limits</a>{' '}
+          describe current operating constraints.
+        </p>
+
+        <h2 id="liability">8. Disclaimers, liability, and indemnity</h2>
+        <p class={LEGAL_NOTICE}>
+          TO THE MAXIMUM EXTENT PERMITTED BY LAW, RELAY IS PROVIDED “AS IS” AND “AS AVAILABLE.”
+          OPENE2EE DISCLAIMS IMPLIED WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR
+          PURPOSE, TITLE, NON-INFRINGEMENT, AND ANY WARRANTY THAT THE SERVICE IS ERROR-FREE,
+          UNINTERRUPTED, OR SUITABLE FOR A PARTICULAR THREAT MODEL.
+        </p>
+        <p class={LEGAL_NOTICE}>
+          TO THE MAXIMUM EXTENT PERMITTED BY LAW, NEITHER PARTY IS LIABLE FOR INDIRECT, INCIDENTAL,
+          SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES, OR LOST PROFITS, REVENUE, DATA,
+          GOODWILL, OR BUSINESS INTERRUPTION. EACH PARTY’S TOTAL AGGREGATE LIABILITY UNDER THESE
+          TERMS WILL NOT EXCEED THE FEES PAID OR PAYABLE FOR THE AFFECTED RELAY PROJECT DURING THE 12
+          MONTHS BEFORE THE EVENT. THESE LIMITS DO NOT APPLY TO PAYMENT OBLIGATIONS, CUSTOMER’S
+          INDEMNITY OBLIGATION BELOW, FRAUD, WILLFUL MISCONDUCT, OR LIABILITY THAT CANNOT LAWFULLY
+          BE LIMITED.
+        </p>
+        <p>
+          <strong>Your indemnity.</strong> You will defend OpenE2EE and its officers, employees, and
+          contractors against any third-party claim arising from your encrypted content, your
+          applications and your relationships with your end users, your processing of personal data
+          through Relay and the instructions you give us about it, your breach of these Terms or the
+          Acceptable Use Policy, your violation of law, or any use of Relay through your
+          credentials. You will pay the damages and costs finally awarded against us, or agreed in a
+          settlement you approve. We will tell you about the claim promptly, give you sole control
+          of its defense and settlement, and cooperate at your expense. You may not settle a claim
+          in a way that admits fault on our part or imposes an obligation on us without our written
+          consent, which we will not unreasonably withhold. This obligation is not subject to the
+          liability cap in this Section.
+        </p>
+
+        <h2 id="termination">9. Suspension and termination</h2>
+        <p>
+          Either party may terminate for a material breach that remains uncured 30 days after
+          written notice. OpenE2EE may suspend sooner for nonpayment, unlawful activity, sanctions
+          risk, abuse, credential compromise, or a material threat. Where safe and lawful, we will
+          give notice and a reasonable opportunity to cure before termination.
+        </p>
+        <p>
+          After termination, Customer must stop using Relay credentials. Data follows the documented
+          drain, retention, and deletion process. Accrued fees and provisions that by their nature
+          should survive remain in effect, including Sections 5, 8, 10, and 11.
+        </p>
+
+        <h2 id="confidentiality">10. Confidentiality</h2>
+        <p>
+          Each party may receive non-public information from the other that is marked confidential
+          or that a reasonable person would understand to be confidential from its nature and the
+          circumstances. The receiving party will protect it with at least reasonable care, use it
+          only to perform this agreement, and disclose it only to personnel and advisers who need
+          it and are under equivalent obligations. This does not apply to information that is or
+          becomes public through no fault of the receiving party, was already known to it, was
+          independently developed without use of the disclosing party’s information, or was
+          lawfully received from a third party. A party may disclose when the law compels it, after
+          giving reasonable notice where lawful. These obligations last for the term and three years
+          afterward, and for trade secrets for as long as they remain trade secrets. Your encrypted
+          content is your confidential information.
+        </p>
+
+        <h2 id="general">11. Changes, notices, and general terms</h2>
+        <p>
+          We may publish a new version for future activations and renewals. An accepted paid order
+          remains under its recorded version until Customer accepts a later version or law requires
+          a change. Section 3.9 governs a change to a plan’s price or included quantities. We may
+          change other Development environment and beta operating limits with reasonable notice
+          when practicable, including to protect service integrity.
+        </p>
+        <p>
+          Send legal notices to OpenE2EE LLC by email to{' '}
+          <a href="mailto:legal@open-e2ee.dev">legal@open-e2ee.dev</a>. We may send legal and
+          operational notices to the console or Stripe email associated with your account, and
+          those are given when sent. You are responsible for keeping that address current.
+        </p>
+        <p>
+          Customer may not assign these Terms or any Relay project without OpenE2EE’s prior written
+          consent, except to a successor in a merger or sale of substantially all of the assets of
+          the business that uses the project, where the successor agrees in writing to these Terms
+          and is not a competitor of OpenE2EE. Any other attempted assignment is void. OpenE2EE may
+          assign these Terms in connection with a reorganization, merger, or sale of the business.
+          These Terms bind and benefit the parties and their permitted successors.
+        </p>
+        <p>
+          Minnesota law governs, without regard to conflict-of-law rules. The state and federal
+          courts located in Hennepin County, Minnesota have exclusive jurisdiction, and each party
+          consents to that venue. Before filing a claim, the parties will attempt in good faith for
+          30 days to resolve it through written notice.
+        </p>
+        <p>
+          The parties are independent contractors. If one provision is unenforceable, it will be
+          limited to the minimum extent necessary and the remainder stays effective. A waiver must
+          be in writing. Headings are for convenience only. Neither party is liable for delay
+          caused by events beyond reasonable control.
+        </p>
+        <p>
+          These Terms, the recorded project order, the Data Processing Agreement, the linked
+          policies, and any signed order form are the entire agreement about Relay and supersede
+          prior discussions about that subject. Send licensing and contract questions to{' '}
+          <a href="mailto:licensing@open-e2ee.dev">licensing@open-e2ee.dev</a>.
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

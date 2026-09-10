@@ -1,10 +1,21 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import {
-  relayRetentionEffectiveDate,
-  relayRetentionPath,
-  relayRetentionVersion,
-} from '../../lib/legal.mjs';
+/*
+ * The immutable copy of the OpenE2EE Relay Retention Statement, version
+ * 2026-08-26. The Relay Service Terms incorporate this document, so a
+ * customer who filed the terms must be able to file the version of this
+ * document they pointed at. This page is a literal snapshot: the document
+ * text is inlined here, and the page must never import the live version
+ * constants or the live page, or an edit to /legal/relay-retention would
+ * reach the archive that exists to escape it. This copy is the text
+ * /legal/relay-retention rendered on 2026-09-10, immediately before the
+ * upload-authorization window was restated as a ceiling in version
+ * 2026-09-10; the 2026-08-30 environment rename and the 2026-09-07 pricing-
+ * link change are included, since no customer filed the text between. A new
+ * version means a new dated page beside this one, never an edit.
+ * tests/legal-pages.test.mjs enforces that this source stays decoupled from
+ * the live page and the live version constants.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -13,13 +24,13 @@ import {
   CONTAINER,
   LEAD,
   LEGAL_PIN,
-} from '../../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
-  title="Relay Retention"
-  description="Retention and deletion boundaries for encrypted OpenE2EE Relay data."
-  canonical="/legal/relay-retention"
+  title="Retention 2026-08-26"
+  description="Frozen copy of the OpenE2EE Relay Retention Statement, version 2026-08-26."
+  canonical="/legal/relay-retention/2026-08-26"
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -28,12 +39,12 @@ import {
         <h1>OpenE2EE Relay Retention Statement</h1>
         <p class={LEAD}>What Relay keeps, for how long, and what deletion can and cannot recall.</p>
         <p class={ARTICLE_META}>
-          <span>Effective {relayRetentionEffectiveDate}</span>
-          <span>Version {relayRetentionVersion}</span>
+          <span>Effective August 26, 2026</span>
+          <span>Version 2026-08-26</span>
         </p>
         <p class={LEGAL_PIN}>
           The Relay terms incorporate this document. The permanent copy of this version is at{' '}
-          <a href={relayRetentionPath}><code>{relayRetentionPath}</code></a>.
+          <a href="/legal/relay-retention/2026-08-26"><code>/legal/relay-retention/2026-08-26</code></a>.
         </p>
       </div>
     </header>
@@ -49,7 +60,7 @@ import {
 
         <h2>Attachments</h2>
         <ul>
-          <li>An upload authorization is never valid for more than 15 minutes. The current window is shorter.</li>
+          <li>An upload authorization is valid for no more than 15 minutes.</li>
           <li>An incomplete upload expires after 24 hours.</li>
           <li>A completed attachment has a 30-day maximum retention.</li>
           <li>Relay deletes bytes directly on the owning expiry or deletion transition. Storage lifecycle rules are a cleanup backstop and may run later.</li>

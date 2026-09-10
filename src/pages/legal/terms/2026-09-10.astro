@@ -1,22 +1,15 @@
 ---
 /*
- * The Startup commercial terms, version startup-2026-09-10. `/legal/terms` is
- * what a new order accepts and renders this component. Each dated page under
- * `/legal/terms/` is the immutable copy an existing order is bound to: a literal
- * snapshot that never imports this file, which tests/legal-pages.test.mjs
- * enforces. Publishing a new version means a new dated page, not an edit.
- *
- * This version replaces the cancellation path the 2026-07-23 text promised (a
- * Stripe-hosted billing portal the console never offered) with the license
- * page in the console, gives the notice clause an address, and adds a mutual
- * confidentiality section.
+ * The immutable copy of the Startup commercial terms, version
+ * startup-2026-09-10. Checkout records this URL and Section 9 binds an
+ * existing order to it, so this page is a literal snapshot: the document text
+ * is inlined here and the page must never import the live CommercialTerms
+ * component, or an edit to /legal/terms would silently rewrite the version an
+ * order already accepted. A new version means a new dated page beside this
+ * one, never an edit. tests/legal-pages.test.mjs enforces that this source
+ * stays decoupled from the component and the live version constants.
  */
-import BaseLayout from '../layouts/BaseLayout.astro';
-import {
-  commercialTermsEffectiveDate,
-  commercialTermsPath,
-  commercialTermsVersion,
-} from '../lib/legal.mjs';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -29,19 +22,17 @@ import {
   LEGAL_NOTICE,
   LEGAL_PIN,
   LEGAL_TOC,
-} from '../lib/recipes';
-
-interface Props {
-  canonical: string;
-}
-
-const { canonical } = Astro.props;
+} from '../../../lib/recipes';
 ---
 
+{/* The frozen copy exists for contract provenance, so its title and
+    description say so, and the pair of routes is not a duplicate-content
+    pair with no signal telling a reader which one they have. */}
+
 <BaseLayout
-  title="Terms"
-  description="Website terms and versioned Startup commercial license terms for OpenE2EE."
-  canonical={canonical}
+  title="Terms startup-2026-09-10"
+  description="Frozen copy of the OpenE2EE Startup commercial license terms, version startup-2026-09-10."
+  canonical="/legal/terms/2026-09-10"
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -53,12 +44,12 @@ const { canonical } = Astro.props;
           Startup commercial license order.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {commercialTermsEffectiveDate}</span>
-          <span>Version {commercialTermsVersion}</span>
+          <span>Effective September 10, 2026</span>
+          <span>Version startup-2026-09-10</span>
         </p>
         <p class={LEGAL_PIN}>
           Startup checkout records the version you accept. The immutable copy of this one is
-          published at <a href={commercialTermsPath}><code>{commercialTermsPath}</code></a>.
+          published at <a href="/legal/terms/2026-09-10"><code>/legal/terms/2026-09-10</code></a>.
         </p>
       </div>
     </header>
@@ -295,7 +286,7 @@ const { canonical } = Astro.props;
         </p>
         <ul>
           <li>
-            <strong>Version {commercialTermsVersion}:</strong> Section 4 names the console license
+            <strong>Version startup-2026-09-10:</strong> Section 4 names the console license
             page as where renewal is cancelled, replacing a billing portal the console did not
             offer; Section 10 adds mutual confidentiality; Section 11 gives legal notices an
             address. No fee, grant, or restriction changed.

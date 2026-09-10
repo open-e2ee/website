@@ -1,10 +1,19 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import {
-  relayRetentionEffectiveDate,
-  relayRetentionPath,
-  relayRetentionVersion,
-} from '../../lib/legal.mjs';
+/*
+ * The immutable copy of the OpenE2EE Relay Retention Statement, version
+ * 2026-09-10. The Relay Service Terms incorporate this document, so a
+ * customer who filed the terms must be able to file the version of this
+ * document they pointed at. This page is a literal snapshot: the document
+ * text is inlined here, and the page must never import the live version
+ * constants or the live page, or an edit to /legal/relay-retention would
+ * reach the archive that exists to escape it. This copy is the text
+ * /legal/relay-retention rendered on 2026-09-10, after the upload-
+ * authorization window was restated as a ceiling. A new version means a new
+ * dated page beside this one, never an edit. tests/legal-pages.test.mjs
+ * enforces that this source stays decoupled from the live page and the live
+ * version constants.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -13,13 +22,13 @@ import {
   CONTAINER,
   LEAD,
   LEGAL_PIN,
-} from '../../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
-  title="Relay Retention"
-  description="Retention and deletion boundaries for encrypted OpenE2EE Relay data."
-  canonical="/legal/relay-retention"
+  title="Retention 2026-09-10"
+  description="Frozen copy of the OpenE2EE Relay Retention Statement, version 2026-09-10."
+  canonical="/legal/relay-retention/2026-09-10"
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -28,12 +37,12 @@ import {
         <h1>OpenE2EE Relay Retention Statement</h1>
         <p class={LEAD}>What Relay keeps, for how long, and what deletion can and cannot recall.</p>
         <p class={ARTICLE_META}>
-          <span>Effective {relayRetentionEffectiveDate}</span>
-          <span>Version {relayRetentionVersion}</span>
+          <span>Effective September 10, 2026</span>
+          <span>Version 2026-09-10</span>
         </p>
         <p class={LEGAL_PIN}>
           The Relay terms incorporate this document. The permanent copy of this version is at{' '}
-          <a href={relayRetentionPath}><code>{relayRetentionPath}</code></a>.
+          <a href="/legal/relay-retention/2026-09-10"><code>/legal/relay-retention/2026-09-10</code></a>.
         </p>
       </div>
     </header>
