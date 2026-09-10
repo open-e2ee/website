@@ -142,9 +142,24 @@ test('keeps every dated privacy page frozen: it never reads the live notice', as
     assert.doesNotMatch(page, /lib\/legal(\.mjs)?/, `${version} reads the live version constants`);
     assert.doesNotMatch(page, /legal\/privacy\.astro/, `${version} renders the live notice`);
 
-    assert.match(page, new RegExp(`Version ${version}`));
-    assert.match(page, new RegExp(`Effective ${effective}`));
-    assert.match(page, new RegExp(`canonical="/legal/privacy/${version}"`));
+    /* The header spans, not the bare strings. Section 9 restates every version
+     * number in its changelog, so a looser match was satisfied by the history
+     * even after the header itself had been re-dated. */
+    assert.match(
+      page,
+      new RegExp(`<span>Version ${version}</span>`),
+      `${version} does not head itself as version ${version}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`<span>Effective ${effective}</span>`),
+      `${version} does not head itself as effective ${effective}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`canonical="/legal/privacy/${version}"`),
+      `${version} is not canonical at its own path`,
+    );
   }
 });
 

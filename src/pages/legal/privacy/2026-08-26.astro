@@ -1,6 +1,24 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
+/*
+ * The immutable copy of the OpenE2EE Privacy Notice, version 2026-08-26. The
+ * notice had never been published at an address of its own: Section 9's six
+ * entries were the whole record of what the earlier versions said, and an edit
+ * to /legal/privacy rewrote the one page all six of them describe, superseded
+ * versions included. A privacy notice is a representation about what the site
+ * transmits and to whom, so a reader who wants to know what was represented
+ * while a version was current needs the version, not a line about it.
+ *
+ * So this page is a literal snapshot. The document text is inlined here, and
+ * the page must never import the live version constants or the live notice, or
+ * an edit to /legal/privacy would reach the archive that exists to escape it.
+ * The guard bans the import paths as strings, so those path forms are not
+ * written even in this comment. This copy is the text /legal/privacy rendered
+ * on 2026-09-10, immediately before the naming and contact corrections that
+ * became version 2026-09-10. A new version means a new dated page beside this
+ * one, never an edit. tests/legal-pages.test.mjs enforces that this source
+ * stays decoupled from the live notice and the live version constants.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -10,14 +28,15 @@ import {
   CONTAINER,
   LABEL,
   LEAD,
+  LEGAL_PIN,
   LEGAL_TOC,
-} from '../../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
-  title="Privacy"
-  description="How OpenE2EE collects, uses, shares, and protects personal information."
-  canonical="/legal/privacy"
+  title="Privacy 2026-08-26"
+  description="Frozen copy of the OpenE2EE Privacy Notice, version 2026-08-26."
+  canonical="/legal/privacy/2026-08-26"
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -29,8 +48,13 @@ import {
           documentation, console, OpenE2EE Relay, licensing, billing, and communications.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {privacyEffectiveDate}</span>
-          <span>Version {privacyVersion}</span>
+          <span>Effective August 26, 2026</span>
+          <span>Version 2026-08-26</span>
+        </p>
+        <p class={LEGAL_PIN}>
+          This is the immutable copy of that version. It is what this notice said while version
+          2026-08-26 was current, and it does not change. The notice that governs today is the{' '}
+          <a href="/legal/privacy">current Privacy Notice</a>.
         </p>
       </div>
     </header>
@@ -338,13 +362,6 @@ import {
           collected information without appropriate notice and consent where required.
         </p>
         <p>
-          From version 2026-08-26 onward, each version is also published at a permanent address of
-          its own, and that copy does not change when this page does. The versions before it were
-          published without one, so the entries below are the only record of what they said.
-          Archived versions:{' '}
-          <a href="/legal/privacy/2026-08-26">2026-08-26</a>.
-        </p>
-        <p>
           <strong>Version 2026-07-28:</strong> the marketing site began recording the anonymous
           usage events described in <a href="#cookies">Cookies and analytics</a>, nine of them at
           that date. No cookie, storage, identifier, or IP-address record was introduced with them,
@@ -387,7 +404,7 @@ import {
           still no cookie, no storage, no identifier, and no IP-address record.
         </p>
         <p>
-          <strong>Version {privacyVersion}:</strong> OpenE2EE Relay was added to the service scope.
+          <strong>Version 2026-08-26:</strong> OpenE2EE Relay was added to the service scope.
           This version identifies the encrypted content, public key material, opaque routing and
           usage state, push tokens, providers, and retention boundaries that managed delivery
           requires. It also corrects the console authentication provider from GitHub to WorkOS. The
