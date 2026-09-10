@@ -14,8 +14,8 @@ export const commercialTermsPath = '/legal/terms/2026-07-23';
 export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
 
 /*
- * Managed Relay has a separate service agreement from the self-hosted SDK
- * commercial license. Keep its accepted version at a permanent URL so a later
+ * OpenE2EE Relay has a separate service agreement from the SDK commercial
+ * license. Keep its accepted version at a permanent URL so a later
  * service-terms update cannot rewrite an existing order.
  */
 export const relayTermsVersion = 'relay-2026-08-26';
@@ -60,11 +60,28 @@ export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
  * dangerous direction is the reverse — a notice published ahead of the string
  * describes transmission that is not happening yet, and keeps describing it for
  * as long as the second deploy is delayed. That is why 2026-08-07.2 stayed on
- * August 7, and why the removal and the notice ship in one commit here rather
- * than one leading the other.
+ * August 7, and why a removal and its notice ship in one commit rather than one
+ * leading the other.
+ *
+ * From 2026-08-26 onward each version also has a page of its own under
+ * /legal/privacy, and the constant below has to name a version that has one.
+ * The guard in tests/legal-pages.test.mjs is the ratchet: moving this line
+ * without freezing the text it replaces fails, because the changelog entry the
+ * bump writes would point at nothing.
+ *
+ * The 2026-09-10 version changes no event and no category. It names the console
+ * database provider that the previous version's list walked past, says where
+ * the anonymous measurement runs rather than calling it our own infrastructure,
+ * routes privacy requests to a mailbox of their own, gives a legal-notice
+ * address, points at the data processing agreement, and uses one name for the
+ * relay service. A notice is versioned for a correction as well as for a
+ * collection change: section 5's standard is that the words this page publishes
+ * are the thing being represented, and six of them were wrong.
  */
-export const privacyVersion = '2026-08-26';
-export const privacyEffectiveDate = 'August 26, 2026';
+export const privacyVersion = '2026-09-10';
+export const privacyEffectiveDate = 'September 10, 2026';
+export const privacyPath = `/legal/privacy/${privacyVersion}`;
+export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
 
 /*
  * The data processing agreement is auto-incorporated: it binds when a customer

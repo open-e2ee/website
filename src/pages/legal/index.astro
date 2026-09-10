@@ -8,6 +8,7 @@ import {
   dpaPath,
   dpaVersion,
   privacyEffectiveDate,
+  privacyPath,
   privacyVersion,
   relayTermsEffectiveDate,
   relayTermsPath,
@@ -107,6 +108,14 @@ import {
           <p>
             The permanent copy the console records when an organization accepts this service
             agreement before its first Relay project.
+          </p>
+        </li>
+        <li>
+          <p class={LABEL}>Privacy version history</p>
+          <h3><a href={privacyPath}>Pinned notice {privacyVersion}</a></h3>
+          <p>
+            The immutable copy of the notice in force. Each version from 2026-08-26 onward keeps its
+            own address, so what a notice said while it applied stays readable after it is replaced.
           </p>
         </li>
         <li>

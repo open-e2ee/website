@@ -11,6 +11,8 @@ import {
   dpaUrl,
   dpaVersion,
   privacyEffectiveDate,
+  privacyPath,
+  privacyUrl,
   privacyVersion,
   relayTermsPath,
   relayTermsUrl,
@@ -24,7 +26,9 @@ test('pins the first Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-07-23');
   assert.equal(commercialTermsPath, '/legal/terms/2026-07-23');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-07-23');
-  assert.equal(privacyVersion, '2026-08-26');
+  assert.equal(privacyVersion, '2026-09-10');
+  assert.equal(privacyPath, '/legal/privacy/2026-09-10');
+  assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-09-10');
   assert.equal(relayTermsVersion, 'relay-2026-08-26');
   assert.equal(relayTermsPath, '/legal/relay-terms/2026-08-26');
   assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-08-26');
@@ -238,6 +242,7 @@ test('keeps the dated Relay terms page frozen: it never reads the live document'
  */
 const frozenPrivacyVersions = [
   { version: '2026-08-26', effective: 'August 26, 2026' },
+  { version: '2026-09-10', effective: 'September 10, 2026' },
 ];
 
 test('keeps every dated privacy page frozen: it never reads the live notice', async () => {

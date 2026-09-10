@@ -1851,6 +1851,50 @@ test('gives the SDK license agreement one name wherever a page links it', async 
   }
 });
 
+/*
+ * The hosted product is OpenE2EE Relay. "Managed Relay" is the name it was
+ * described by before the glossary settled one, and docs/GLOSSARY.md lists it
+ * in the Avoid column of the Relay row.
+ *
+ * Nothing else catches it. The build audit's TERMINOLOGY list is short by
+ * design, and the retired name is a plain English phrase that reads correctly
+ * to anyone who does not know the product has a name, which is why it survived
+ * on two surfaces after the glossary retired it.
+ *
+ * Comments are not stripped here, unlike the guard above. That guard has to
+ * let a source explain a retired name; this one does not, because the phrase
+ * describes a product rather than titling a document, and a source file has no
+ * occasion to write it at all.
+ *
+ * Frozen dated legal pages are exempt. /legal/privacy/2026-08-26 is the text
+ * that was published under that name, it is served as an immutable copy of a
+ * document a customer may have accepted, and correcting a word in it would
+ * make it a different document than the one it claims to be.
+ */
+test('calls the hosted product by the name the glossary settles on', async () => {
+  const sources = [];
+  const walk = async (dir) => {
+    for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
+      if (entry.isDirectory()) await walk(`${dir}${entry.name}/`);
+      else if (/\.(astro|mdx|mjs|ts)$/.test(entry.name)) sources.push(`${dir}${entry.name}`);
+    }
+  };
+  await walk('../src/');
+  assert.ok(sources.length > 30, `expected to walk the whole tree, found ${sources.length} files`);
+
+  const frozen = /\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$/;
+  const live = sources.filter((source) => !frozen.test(source));
+  assert.ok(live.length > 30, `every source read as a frozen page, found ${live.length} live files`);
+
+  for (const source of live) {
+    assert.doesNotMatch(
+      await read(source),
+      /Managed Relay/,
+      `${source} calls the hosted product "Managed Relay"; it is OpenE2EE Relay`,
+    );
+  }
+});
+
 test('renders a phone at the phone’s own width, so overflow is visible', async () => {
   const layout = await flat('../src/layouts/BaseLayout.astro');
 
