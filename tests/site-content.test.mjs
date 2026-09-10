@@ -1787,6 +1787,70 @@ test('does not revive the retired promise of an independent review, anywhere', a
   }
 });
 
+/*
+ * One document, one name. The SDK license agreement is titled "Commercial
+ * Terms", and on 2026-09-10 three surfaces called it three different things:
+ * the legal index said "Terms of Service", /pricing said "the self-hosted
+ * agreement", and the console checkout said "commercial terms" in lower case.
+ * A reader who is told to accept a document cannot check they accepted the
+ * right one when its name changes with the page they came from.
+ *
+ * "Self-hosted agreement" is banned outright, in every context: the grant
+ * covers any proprietary use of the SDK, including use against Relay, so the
+ * phrase misdescribes the document as well as misnaming it.
+ *
+ * "Terms of Service" is banned only as the name a page gives the link, not as
+ * a string. The document's own heading is "Terms of Service and Startup
+ * Commercial License Terms" — that is its formal title, it is frozen into
+ * /legal/terms/2026-07-23, and a page may quote it. What no page may do is
+ * send a reader to /legal/terms under a name the document does not answer to.
+ *
+ * The tree is walked rather than listed, for the reason the guard above it is:
+ * a hand-written list of four surfaces stops covering the fifth page.
+ */
+test('gives the SDK license agreement one name wherever a page links it', async () => {
+  const sources = [];
+  const walk = async (dir) => {
+    for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
+      if (entry.isDirectory()) await walk(`${dir}${entry.name}/`);
+      else if (/\.(astro|mdx|mjs|ts)$/.test(entry.name)) sources.push(`${dir}${entry.name}`);
+    }
+  };
+  await walk('../src/');
+  assert.ok(sources.length > 30, `expected to walk the whole tree, found ${sources.length} files`);
+
+  /* Comments come out first: explaining a retired name means writing it, and
+   * this file's own history of it lives in the sources it guards. */
+  const prose = (text) =>
+    text
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/^[ \t]*\/\/.*$/gm, ' ');
+
+  const retiredLinkNames = [/^Terms of Service$/i, /self[- ]hosted agreement/i];
+
+  for (const source of sources) {
+    const text = prose(await read(source));
+
+    assert.doesNotMatch(
+      text,
+      /self[- ]hosted agreement/i,
+      `${source} calls the Commercial Terms "the self-hosted agreement"`,
+    );
+
+    for (const [, name] of text.matchAll(/<a\b[^>]*href="\/legal\/terms"[^>]*>([^<]*)</g)) {
+      const trimmed = name.replace(/\s+/g, ' ').trim();
+      for (const retired of retiredLinkNames) {
+        assert.doesNotMatch(
+          trimmed,
+          retired,
+          `${source} links /legal/terms as "${trimmed}"; the document is the Commercial Terms`,
+        );
+      }
+    }
+  }
+});
+
 test('renders a phone at the phone’s own width, so overflow is visible', async () => {
   const layout = await flat('../src/layouts/BaseLayout.astro');
 

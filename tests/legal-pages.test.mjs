@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { relayDevelopmentEnvironment, relayPlans } from '../src/data/relay-pricing.mjs';
 import {
   commercialTermsPath,
   commercialTermsUrl,
@@ -114,6 +115,94 @@ test('keeps the dated Relay terms page frozen: it never reads the live document'
   assert.doesNotMatch(versionedRelayTerms, /lib\/legal(\.mjs)?/);
   assert.match(versionedRelayTerms, /Version relay-2026-08-26/);
   assert.match(versionedRelayTerms, /Effective August 26, 2026/);
+});
+
+/*
+ * The privacy notice earned the same treatment on 2026-09-10. Its Section 9
+ * listed five superseded versions with nothing archived behind any of them, so
+ * a correction to the live page rewrote what every one of those entries claims
+ * to describe. Only versions published as their own frozen page are listed
+ * here; the four before 2026-08-26 have no archived text and Section 9 says so.
+ *
+ * The list is written out rather than derived, because deriving it from the
+ * live constant is the coupling the freeze exists to prevent: it would name
+ * only the current version and go quiet about every earlier one the moment the
+ * constant moves.
+ */
+const frozenPrivacyVersions = [
+  { version: '2026-08-26', effective: 'August 26, 2026' },
+];
+
+test('keeps every dated privacy page frozen: it never reads the live notice', async () => {
+  for (const { version, effective } of frozenPrivacyVersions) {
+    const page = await read(`../src/pages/legal/privacy/${version}.astro`);
+
+    /* Path forms, as on the terms pages: a re-render through any future
+     * spelling still reds, and the page's own comment may name what it froze. */
+    assert.doesNotMatch(page, /lib\/legal(\.mjs)?/, `${version} reads the live version constants`);
+    assert.doesNotMatch(page, /legal\/privacy\.astro/, `${version} renders the live notice`);
+
+    assert.match(page, new RegExp(`Version ${version}`));
+    assert.match(page, new RegExp(`Effective ${effective}`));
+    assert.match(page, new RegExp(`canonical="/legal/privacy/${version}"`));
+  }
+});
+
+/*
+ * And the version the site publishes today is one of them. This is the ratchet:
+ * bumping privacyVersion without freezing the text it replaces leaves the new
+ * Section 9 entry pointing at nothing, which is the state the freeze was
+ * introduced to end.
+ */
+test('freezes the privacy version the notice currently publishes', () => {
+  const frozen = frozenPrivacyVersions.map(({ version }) => version);
+  assert.ok(
+    frozen.includes(privacyVersion),
+    `privacy version ${privacyVersion} has no frozen page; frozen: ${frozen.join(', ')}`,
+  );
+});
+
+/*
+ * Invariant 4 of the legal-terms-2026-09 plan: the fee table lives in the terms,
+ * and /pricing is a summary of it. A price that appears on the pricing page and
+ * not in the current Relay terms is a price no accepted document states.
+ *
+ * SKIPPED UNTIL LG7. Section 3 of relay-2026-08-26 incorporates /pricing by
+ * reference instead of carrying the table, so this reads red against the
+ * published version, and that version may not be edited. LG7 writes the table
+ * into relay-2026-09-10 and removes this skip. The fail-before output is in
+ * proof/legal-terms-2026-09/LG0.md.
+ */
+test('states every published price and included quantity in the Relay terms', { skip: 'LG7 pending' }, async () => {
+  const terms = await flat('../src/components/ManagedRelayTerms20260826.astro');
+
+  /* Bounded on both sides so a shorter figure cannot be satisfied by a longer
+   * one containing it: "100" must not pass on "100,000", and "$0" must not
+   * pass on "$0.50". */
+  const states = (value, where) => {
+    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(
+      terms,
+      new RegExp(`(?<![\\d.,])${escaped}(?![\\d.,])`),
+      `the Relay terms do not state ${where}: ${value}`,
+    );
+  };
+
+  for (const plan of relayPlans) {
+    states(plan.price, `the ${plan.name} price`);
+    states(plan.relayMau, `the ${plan.name} Relay MAU allowance`);
+    states(plan.deliveryUnits, `the ${plan.name} delivery units`);
+    states(plan.attachmentOperations, `the ${plan.name} attachment uploads`);
+    states(plan.storage, `the ${plan.name} storage`);
+    for (const [meter, rate] of Object.entries(plan.overage ?? {})) {
+      states(rate, `the ${plan.name} ${meter} overage rate`);
+    }
+  }
+
+  for (const [meter, value] of Object.entries(relayDevelopmentEnvironment)) {
+    if (meter === 'detail') continue;
+    states(value, `the Development environment ${meter}`);
+  }
 });
 
 test('makes privacy and terms available from the site footer', async () => {
