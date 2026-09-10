@@ -102,6 +102,20 @@ test('keeps the dated terms page frozen: it never reads the live document', asyn
   assert.match(versionedTerms, /Effective July 23, 2026/);
 });
 
+/*
+ * The Relay page carries the same promise: the console records this URL when
+ * an organization accepts the terms. It rendered the shared component until
+ * 2026-09-10, so the guard the commercial page earned applies to it too.
+ */
+test('keeps the dated Relay terms page frozen: it never reads the live document', async () => {
+  const versionedRelayTerms = await read('../src/pages/legal/relay-terms/2026-08-26.astro');
+
+  assert.doesNotMatch(versionedRelayTerms, /components\/ManagedRelayTerms/);
+  assert.doesNotMatch(versionedRelayTerms, /lib\/legal(\.mjs)?/);
+  assert.match(versionedRelayTerms, /Version relay-2026-08-26/);
+  assert.match(versionedRelayTerms, /Effective August 26, 2026/);
+});
+
 test('makes privacy and terms available from the site footer', async () => {
   const footer = await read('../src/components/Footer.astro');
   assert.match(footer, /href="\/legal"/);
