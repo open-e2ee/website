@@ -40,6 +40,13 @@
      It is a floor on the leading and trailing tracks, not their size. */
   --oe-article-gutter: var(--oe-space-6);
 
+  /* The page container narrows its gutter to 16 px below 34rem, and the
+     article narrows with it, so the header's lockup and the first line of
+     prose share one edge. */
+  @media (max-width: 34rem) {
+    --oe-article-gutter: var(--oe-space-4);
+  }
+
   --oe-article-rail: 14rem;
 
   /*

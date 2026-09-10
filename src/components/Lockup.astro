@@ -23,7 +23,14 @@ const { product, size = 16, class: className } = Astro.props;
     className,
   ]}
 >
-  <span style="display: inline-flex; align-items: baseline; gap: 0.4875em;">
+  {/* The recipe in DESIGN.md: baselines aligned, then the mark lowered
+      0.161em. That drop is a translate, which runs after layout, and the
+      wordmark's line box runs 0.15em below the baseline at `leading-none`, so
+      the row's box is 0.15em deeper than its ink. A host that centers the row
+      centers the box, and the ink lands 0.086em low, half the difference of
+      the two. The row lifts itself by that much, so a centered row centers
+      its ink, the way the generated asset centers the mark on its canvas. */}
+  <span style="display: inline-flex; align-items: baseline; gap: 0.4875em; translate: 0 -0.086em;">
     <Mark size={size} lockup />
     <span class="oe-wordmark"><span>Open</span><span>E2EE</span></span>
   </span>

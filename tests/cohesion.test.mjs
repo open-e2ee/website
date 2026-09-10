@@ -54,20 +54,38 @@ test('the header height is one shared token and no host literal', async () => {
   assert.equal(await declaredChromeToken('header-height'), '4rem');
   assert.equal(chrome['header-height'], '4rem');
 
+  assert.equal(await declaredChromeToken('header-height-compact'), '3rem');
+
+  /* The site names the height it draws at each width in one variable, and
+     that variable reads the two chrome tokens: the full height above the
+     sheet breakpoint and the compact height below it. */
+  const global = await read('src/styles/global.css');
+  const declared = [...global.matchAll(/--oe-site-header-height:\s*([^;]+);/g)].map((m) =>
+    m[1].trim(),
+  );
+  assert.deepEqual(declared, [
+    'var(--oe-chrome-header-height)',
+    'var(--oe-chrome-header-height-compact)',
+  ]);
+  assert.match(
+    global,
+    /@media \(max-width: 62rem\) \{\s*:root \{\s*--oe-site-header-height: var\(--oe-chrome-header-height-compact\);/,
+    'the compact height applies below the sheet breakpoint',
+  );
+
   const header = await read('src/components/Header.astro');
-  assert.match(header, /min-h-\[var\(--oe-chrome-header-height\)\]/);
+  assert.match(header, /min-h-\[var\(--oe-site-header-height\)\]/);
   assert.doesNotMatch(
     header,
-    /\b(?:min-)?h-16\b/,
-    'the header states its own height beside the token',
+    /\b(?:min-)?h-(?:12|16)\b|min-h-\[var\(--oe-chrome-header-height(?:-compact)?\)\]/,
+    'the header states a height beside the site variable',
   );
 
   /* The sticky header sets the offset every in-page link needs. A second
      literal here is the same measure written twice, which is how the two
      drifted apart the first time. */
-  const global = await read('src/styles/global.css');
   const target = ruleFor(global, ':target');
-  assert.match(target, /calc\(var\(--oe-chrome-header-height\) \+ var\(--oe-space-6\)\)/);
+  assert.match(target, /calc\(var\(--oe-site-header-height\) \+ var\(--oe-space-6\)\)/);
   assert.doesNotMatch(target, /\d+rem/, ':target restates the header height as a literal');
 });
 
