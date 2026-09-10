@@ -4,7 +4,11 @@ import {
   commercialTermsEffectiveDate,
   commercialTermsPath,
   commercialTermsVersion,
+  dpaEffectiveDate,
+  dpaPath,
+  dpaVersion,
   privacyEffectiveDate,
+  privacyPath,
   privacyVersion,
   relayTermsEffectiveDate,
   relayTermsPath,
@@ -43,7 +47,7 @@ import {
       <ul class={ROWS}>
         <li>
           <p class={LABEL}>Agreement</p>
-          <h3><a href="/legal/terms">Terms of Service</a></h3>
+          <h3><a href="/legal/terms">Commercial Terms</a></h3>
           <p>
             Website terms, and the Startup commercial license agreement accepted at self-service
             checkout. Growth and Enterprise orders close on a signed order form instead.
@@ -71,6 +75,16 @@ import {
           <p class:list={[LABEL, 'mt-3']}>Effective {privacyEffectiveDate} · {privacyVersion}</p>
         </li>
         <li>
+          <p class={LABEL}>Processor terms</p>
+          <h3><a href="/legal/dpa">Data Processing Agreement</a></h3>
+          <p>
+            The Article 28 terms for personal data we process on a Relay customer’s instructions,
+            with the standard contractual clauses for transfers. It binds when the Relay terms are
+            accepted; there is nothing to sign and nothing to request.
+          </p>
+          <p class:list={[LABEL, 'mt-3']}>Effective {dpaEffectiveDate} · {dpaVersion}</p>
+        </li>
+        <li>
           <p class={LABEL}>Version history</p>
           <h3><a href={commercialTermsPath}>Pinned terms {commercialTermsVersion}</a></h3>
           <p>
@@ -94,6 +108,22 @@ import {
           <p>
             The permanent copy the console records when an organization accepts this service
             agreement before its first Relay project.
+          </p>
+        </li>
+        <li>
+          <p class={LABEL}>Privacy version history</p>
+          <h3><a href={privacyPath}>Pinned notice {privacyVersion}</a></h3>
+          <p>
+            The immutable copy of the notice in force. Each version from 2026-08-26 onward keeps its
+            own address, so what a notice said while it applied stays readable after it is replaced.
+          </p>
+        </li>
+        <li>
+          <p class={LABEL}>Processor terms history</p>
+          <h3><a href={dpaPath}>Pinned agreement {dpaVersion}</a></h3>
+          <p>
+            The permanent copy of the version in force, for a procurement file that needs an address
+            rather than an attachment.
           </p>
         </li>
         <li>

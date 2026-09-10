@@ -19,9 +19,8 @@
  * has no figure, and the word says so at the size a reader scans for.
  *
  * Each tier states, for every row of the license table, what it carries. The
- * values come from the self-hosted agreement for Startup, from the AGPLv3
- * text for the free column, and from the negotiated grant's description for
- * Enterprise. `NOT_INCLUDED` renders as the dash a value that does not exist
+ * values come from the Commercial Terms for Startup, from the AGPLv3 text for
+ * the free column, and from the negotiated grant's description for Enterprise. `NOT_INCLUDED` renders as the dash a value that does not exist
  * takes, with the word a screen reader hears.
  *
  * The legal text is deliberately not one of them. /legal/terms and its frozen

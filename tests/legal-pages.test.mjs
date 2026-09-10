@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { relayDevelopmentEnvironment, relayPlans } from '../src/data/relay-pricing.mjs';
 import {
   commercialTermsPath,
   commercialTermsUrl,
   commercialTermsVersion,
+  dpaEffectiveDate,
+  dpaPath,
+  dpaUrl,
+  dpaVersion,
   privacyEffectiveDate,
+  privacyPath,
+  privacyUrl,
   privacyVersion,
   relayTermsPath,
   relayTermsUrl,
@@ -19,10 +26,16 @@ test('pins the first Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-07-23');
   assert.equal(commercialTermsPath, '/legal/terms/2026-07-23');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-07-23');
-  assert.equal(privacyVersion, '2026-08-26');
+  assert.equal(privacyVersion, '2026-09-10');
+  assert.equal(privacyPath, '/legal/privacy/2026-09-10');
+  assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-09-10');
   assert.equal(relayTermsVersion, 'relay-2026-08-26');
   assert.equal(relayTermsPath, '/legal/relay-terms/2026-08-26');
   assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-08-26');
+  assert.equal(dpaVersion, '2026-09-10');
+  assert.equal(dpaEffectiveDate, 'September 10, 2026');
+  assert.equal(dpaPath, '/legal/dpa/2026-09-10');
+  assert.equal(dpaUrl, 'https://open-e2ee.dev/legal/dpa/2026-09-10');
 });
 
 /*
@@ -74,6 +87,105 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   assert.match(relayVersion, /canonical="\/legal\/relay-terms\/2026-08-26"/);
   assert.match(privacy, /Privacy Notice/);
   assert.match(privacy, /canonical="\/legal\/privacy"/);
+  assert.match(legalIndex, /href="\/legal\/dpa"/);
+});
+
+/*
+ * The agreement binds on acceptance of the Relay terms and is never signed, so
+ * the dated URL is the only record of which processor terms an organization is
+ * under. The live route renders the component; the dated route may not.
+ */
+test('publishes the data processing agreement at a current and a dated route', async () => {
+  const [live, dated] = await Promise.all([
+    read('../src/pages/legal/dpa.astro'),
+    read(`../src/pages/legal/dpa/${dpaVersion}.astro`),
+  ]);
+
+  assert.match(live, /DataProcessingAgreement/);
+  assert.match(live, /canonical="\/legal\/dpa"/);
+  assert.match(dated, new RegExp(`canonical="${dpaPath}"`));
+});
+
+const frozenDpaVersions = [
+  { version: '2026-09-10', effective: 'September 10, 2026' },
+];
+
+test('keeps every dated DPA page frozen: it never reads the live agreement', async () => {
+  for (const { version, effective } of frozenDpaVersions) {
+    const page = await read(`../src/pages/legal/dpa/${version}.astro`);
+
+    /* Path forms, as on the other two dated documents: the component name may
+     * appear in this file's own comment explaining the freeze, and an import
+     * resolves a path, so the paths are what is banned. */
+    assert.doesNotMatch(page, /lib\/legal(\.mjs)?/, `${version} reads the live version constants`);
+    assert.doesNotMatch(
+      page,
+      /components\/DataProcessingAgreement/,
+      `${version} renders the live agreement`,
+    );
+
+    assert.match(
+      page,
+      new RegExp(`<span>Version ${version}</span>`),
+      `${version} does not head itself as version ${version}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`<span>Effective ${effective}</span>`),
+      `${version} does not head itself as effective ${effective}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`canonical="/legal/dpa/${version}"`),
+      `${version} is not canonical at its own path`,
+    );
+  }
+});
+
+test('freezes the DPA version the site currently publishes', () => {
+  const frozen = frozenDpaVersions.map(({ version }) => version);
+  assert.ok(
+    frozen.includes(dpaVersion),
+    `DPA version ${dpaVersion} has no frozen page; frozen: ${frozen.join(', ')}`,
+  );
+});
+
+/*
+ * Article 28(3) is a list of things a processor contract must contain, and a
+ * DPA that drops one of them is not a DPA. The anchors are the contract's own
+ * table of contents, and a procurement reviewer follows them, so the section
+ * has to exist on the live agreement and on every frozen copy of it.
+ */
+const DPA_SECTIONS = [
+  'parties',
+  'definitions',
+  'roles',
+  'instructions',
+  'personnel',
+  'security',
+  'subprocessors',
+  'requests',
+  'breach',
+  'assistance',
+  'deletion',
+  'transfers',
+  'annex-i',
+  'annex-ii',
+];
+
+test('carries every Article 28 section, on the live agreement and every frozen copy', async () => {
+  const pages = [
+    '../src/components/DataProcessingAgreement20260910.astro',
+    ...frozenDpaVersions.map(({ version }) => `../src/pages/legal/dpa/${version}.astro`),
+  ];
+
+  for (const path of pages) {
+    const page = await read(path);
+    for (const id of DPA_SECTIONS) {
+      assert.match(page, new RegExp(`<h[23] id="${id}">`), `${path} has no section #${id}`);
+      assert.match(page, new RegExp(`<a href="#${id}">`), `${path} does not list #${id} in contents`);
+    }
+  }
 });
 
 /*
@@ -114,6 +226,110 @@ test('keeps the dated Relay terms page frozen: it never reads the live document'
   assert.doesNotMatch(versionedRelayTerms, /lib\/legal(\.mjs)?/);
   assert.match(versionedRelayTerms, /Version relay-2026-08-26/);
   assert.match(versionedRelayTerms, /Effective August 26, 2026/);
+});
+
+/*
+ * The privacy notice earned the same treatment on 2026-09-10. Its Section 9
+ * listed five superseded versions with nothing archived behind any of them, so
+ * a correction to the live page rewrote what every one of those entries claims
+ * to describe. Only versions published as their own frozen page are listed
+ * here; the four before 2026-08-26 have no archived text and Section 9 says so.
+ *
+ * The list is written out rather than derived, because deriving it from the
+ * live constant is the coupling the freeze exists to prevent: it would name
+ * only the current version and go quiet about every earlier one the moment the
+ * constant moves.
+ */
+const frozenPrivacyVersions = [
+  { version: '2026-08-26', effective: 'August 26, 2026' },
+  { version: '2026-09-10', effective: 'September 10, 2026' },
+];
+
+test('keeps every dated privacy page frozen: it never reads the live notice', async () => {
+  for (const { version, effective } of frozenPrivacyVersions) {
+    const page = await read(`../src/pages/legal/privacy/${version}.astro`);
+
+    /* Path forms, as on the terms pages: a re-render through any future
+     * spelling still reds, and the page's own comment may name what it froze. */
+    assert.doesNotMatch(page, /lib\/legal(\.mjs)?/, `${version} reads the live version constants`);
+    assert.doesNotMatch(page, /legal\/privacy\.astro/, `${version} renders the live notice`);
+
+    /* The header spans, not the bare strings. Section 9 restates every version
+     * number in its changelog, so a looser match was satisfied by the history
+     * even after the header itself had been re-dated. */
+    assert.match(
+      page,
+      new RegExp(`<span>Version ${version}</span>`),
+      `${version} does not head itself as version ${version}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`<span>Effective ${effective}</span>`),
+      `${version} does not head itself as effective ${effective}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`canonical="/legal/privacy/${version}"`),
+      `${version} is not canonical at its own path`,
+    );
+  }
+});
+
+/*
+ * And the version the site publishes today is one of them. This is the ratchet:
+ * bumping privacyVersion without freezing the text it replaces leaves the new
+ * Section 9 entry pointing at nothing, which is the state the freeze was
+ * introduced to end.
+ */
+test('freezes the privacy version the notice currently publishes', () => {
+  const frozen = frozenPrivacyVersions.map(({ version }) => version);
+  assert.ok(
+    frozen.includes(privacyVersion),
+    `privacy version ${privacyVersion} has no frozen page; frozen: ${frozen.join(', ')}`,
+  );
+});
+
+/*
+ * Invariant 4 of the legal-terms-2026-09 plan: the fee table lives in the terms,
+ * and /pricing is a summary of it. A price that appears on the pricing page and
+ * not in the current Relay terms is a price no accepted document states.
+ *
+ * SKIPPED UNTIL LG7. Section 3 of relay-2026-08-26 incorporates /pricing by
+ * reference instead of carrying the table, so this reads red against the
+ * published version, and that version may not be edited. LG7 writes the table
+ * into relay-2026-09-10 and removes this skip. The fail-before output is in
+ * proof/legal-terms-2026-09/LG0.md.
+ */
+test('states every published price and included quantity in the Relay terms', { skip: 'LG7 pending' }, async () => {
+  const terms = await flat('../src/components/ManagedRelayTerms20260826.astro');
+
+  /* Bounded on both sides so a shorter figure cannot be satisfied by a longer
+   * one containing it: "100" must not pass on "100,000", and "$0" must not
+   * pass on "$0.50". */
+  const states = (value, where) => {
+    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(
+      terms,
+      new RegExp(`(?<![\\d.,])${escaped}(?![\\d.,])`),
+      `the Relay terms do not state ${where}: ${value}`,
+    );
+  };
+
+  for (const plan of relayPlans) {
+    states(plan.price, `the ${plan.name} price`);
+    states(plan.relayMau, `the ${plan.name} Relay MAU allowance`);
+    states(plan.deliveryUnits, `the ${plan.name} delivery units`);
+    states(plan.attachmentOperations, `the ${plan.name} attachment uploads`);
+    states(plan.storage, `the ${plan.name} storage`);
+    for (const [meter, rate] of Object.entries(plan.overage ?? {})) {
+      states(rate, `the ${plan.name} ${meter} overage rate`);
+    }
+  }
+
+  for (const [meter, value] of Object.entries(relayDevelopmentEnvironment)) {
+    if (meter === 'detail') continue;
+    states(value, `the Development environment ${meter}`);
+  }
 });
 
 test('makes privacy and terms available from the site footer', async () => {
@@ -209,10 +425,77 @@ test('publishes the exact Relay legal and lifecycle boundary', async () => {
   for (const provider of ['Cloudflare', 'Vercel', 'WorkOS', 'Stripe', 'Better Stack']) {
     assert.match(subprocessors, new RegExp(provider));
   }
+  /* Relay authorizes an upload for 14 minutes and keeps the last minute as
+   * clock and request-processing headroom under the published ceiling
+   * (relay/src/concepts/objects/contract.ts, ATTACHMENT_UPLOAD_AUTHORIZATION_SECONDS).
+   * A page that prints the ceiling as the value hands a reader an entitlement
+   * the service does not owe; a page that prints 14 has to be re-edited the day
+   * the headroom moves. Both pages publish the ceiling and say the real window
+   * is under it, which stays true either way. */
+  for (const page of [retention, beta]) {
+    assert.doesNotMatch(page, /15 minutes maximum/, 'a page publishes the ceiling as the value');
+    assert.match(
+      page,
+      /never .{0,20}more than 15 minutes\. The current window is shorter\./,
+      'a page states the upload window without saying the real one is under the ceiling',
+    );
+  }
+
   assert.match(retention, /24-hour retention by default/i);
   assert.match(retention, /30-day maximum retention/i);
   assert.match(beta, /Direct encrypted envelope: 256 KiB maximum/i);
   assert.match(beta, /Group encrypted body: 96 KiB plus a 512-byte prefix/i);
+});
+
+/*
+ * Section 7 of the data processing agreement makes this page the subprocessor
+ * list the agreement refers to, and tells the reader it carries each provider's
+ * purpose, data boundary, and processing location. A column dropped here makes
+ * that sentence false for every provider; a row added without a location makes
+ * it false for one, which is the harder version to notice.
+ *
+ * The row count is exact rather than a lower bound. A subprocessor added
+ * without the notice this page promises is the failure the count is for, and a
+ * lower bound cannot see it. Adding a provider means updating this number in
+ * the same commit, which is the point.
+ */
+test('publishes the subprocessor list the agreement points at', async () => {
+  const page = await read('../src/pages/legal/subprocessors.astro');
+  /* Prose is read flattened: a sentence that wraps is the same promise, and a
+   * guard that reads otherwise fails on a reflow instead of on a broken one. */
+  const prose = page.replace(/\s+/g, ' ');
+  const body = page.slice(page.indexOf('<tbody>'), page.indexOf('</tbody>'));
+  const rows = [...body.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(([, row]) =>
+    [...row.matchAll(/<td>([\s\S]*?)<\/td>/g)].map(([, cell]) => cell.trim()),
+  );
+
+  assert.equal(rows.length, 8, `the list publishes ${rows.length} providers`);
+  assert.match(page, /<th>Location<\/th>/, 'the list publishes no location column');
+  for (const cells of rows) {
+    assert.equal(
+      cells.length,
+      4,
+      `"${cells[0]}" has ${cells.length} cells, not provider, purpose, boundary, and location`,
+    );
+    assert.ok(cells[3], `"${cells[0]}" publishes no location`);
+  }
+  assert.ok(
+    rows.some(([provider]) => provider === 'Neon'),
+    'the console database provider is not on the list',
+  );
+
+  assert.match(
+    prose,
+    /at least 30 days’ notice by email to the project owner’s console address/,
+    'the list does not state the notice period the agreement promises',
+  );
+  assert.match(
+    prose,
+    /urgently for security or service continuity/,
+    'the notice promise carries no urgent carve-out, so it promises what an incident cannot keep',
+  );
+  assert.match(prose, /href="\/legal\/dpa"/, 'the list does not reach the agreement that cites it');
+  assert.match(prose, /privacy@open-e2ee\.dev/, 'the list publishes no address to object to');
 });
 
 test('reaches each agreement from the pages that sell against it', async () => {

@@ -1787,6 +1787,114 @@ test('does not revive the retired promise of an independent review, anywhere', a
   }
 });
 
+/*
+ * One document, one name. The SDK license agreement is titled "Commercial
+ * Terms", and on 2026-09-10 three surfaces called it three different things:
+ * the legal index said "Terms of Service", /pricing said "the self-hosted
+ * agreement", and the console checkout said "commercial terms" in lower case.
+ * A reader who is told to accept a document cannot check they accepted the
+ * right one when its name changes with the page they came from.
+ *
+ * "Self-hosted agreement" is banned outright, in every context: the grant
+ * covers any proprietary use of the SDK, including use against Relay, so the
+ * phrase misdescribes the document as well as misnaming it.
+ *
+ * "Terms of Service" is banned only as the name a page gives the link, not as
+ * a string. The document's own heading is "Terms of Service and Startup
+ * Commercial License Terms" — that is its formal title, it is frozen into
+ * /legal/terms/2026-07-23, and a page may quote it. What no page may do is
+ * send a reader to /legal/terms under a name the document does not answer to.
+ *
+ * The tree is walked rather than listed, for the reason the guard above it is:
+ * a hand-written list of four surfaces stops covering the fifth page.
+ */
+test('gives the SDK license agreement one name wherever a page links it', async () => {
+  const sources = [];
+  const walk = async (dir) => {
+    for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
+      if (entry.isDirectory()) await walk(`${dir}${entry.name}/`);
+      else if (/\.(astro|mdx|mjs|ts)$/.test(entry.name)) sources.push(`${dir}${entry.name}`);
+    }
+  };
+  await walk('../src/');
+  assert.ok(sources.length > 30, `expected to walk the whole tree, found ${sources.length} files`);
+
+  /* Comments come out first: explaining a retired name means writing it, and
+   * this file's own history of it lives in the sources it guards. */
+  const prose = (text) =>
+    text
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/^[ \t]*\/\/.*$/gm, ' ');
+
+  const retiredLinkNames = [/^Terms of Service$/i, /self[- ]hosted agreement/i];
+
+  for (const source of sources) {
+    const text = prose(await read(source));
+
+    assert.doesNotMatch(
+      text,
+      /self[- ]hosted agreement/i,
+      `${source} calls the Commercial Terms "the self-hosted agreement"`,
+    );
+
+    for (const [, name] of text.matchAll(/<a\b[^>]*href="\/legal\/terms"[^>]*>([^<]*)</g)) {
+      const trimmed = name.replace(/\s+/g, ' ').trim();
+      for (const retired of retiredLinkNames) {
+        assert.doesNotMatch(
+          trimmed,
+          retired,
+          `${source} links /legal/terms as "${trimmed}"; the document is the Commercial Terms`,
+        );
+      }
+    }
+  }
+});
+
+/*
+ * The hosted product is OpenE2EE Relay. "Managed Relay" is the name it was
+ * described by before the glossary settled one, and docs/GLOSSARY.md lists it
+ * in the Avoid column of the Relay row.
+ *
+ * Nothing else catches it. The build audit's TERMINOLOGY list is short by
+ * design, and the retired name is a plain English phrase that reads correctly
+ * to anyone who does not know the product has a name, which is why it survived
+ * on two surfaces after the glossary retired it.
+ *
+ * Comments are not stripped here, unlike the guard above. That guard has to
+ * let a source explain a retired name; this one does not, because the phrase
+ * describes a product rather than titling a document, and a source file has no
+ * occasion to write it at all.
+ *
+ * Frozen dated legal pages are exempt. /legal/privacy/2026-08-26 is the text
+ * that was published under that name, it is served as an immutable copy of a
+ * document a customer may have accepted, and correcting a word in it would
+ * make it a different document than the one it claims to be.
+ */
+test('calls the hosted product by the name the glossary settles on', async () => {
+  const sources = [];
+  const walk = async (dir) => {
+    for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
+      if (entry.isDirectory()) await walk(`${dir}${entry.name}/`);
+      else if (/\.(astro|mdx|mjs|ts)$/.test(entry.name)) sources.push(`${dir}${entry.name}`);
+    }
+  };
+  await walk('../src/');
+  assert.ok(sources.length > 30, `expected to walk the whole tree, found ${sources.length} files`);
+
+  const frozen = /\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$/;
+  const live = sources.filter((source) => !frozen.test(source));
+  assert.ok(live.length > 30, `every source read as a frozen page, found ${live.length} live files`);
+
+  for (const source of live) {
+    assert.doesNotMatch(
+      await read(source),
+      /Managed Relay/,
+      `${source} calls the hosted product "Managed Relay"; it is OpenE2EE Relay`,
+    );
+  }
+});
+
 test('renders a phone at the phone’s own width, so overflow is visible', async () => {
   const layout = await flat('../src/layouts/BaseLayout.astro');
 

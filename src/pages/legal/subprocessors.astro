@@ -21,22 +21,23 @@ import {
         <a class={BACK_LINK} href="/legal">Legal</a>
         <h1>Subprocessor List</h1>
         <p class={LEAD}>Providers that process customer information for OpenE2EE services.</p>
-        <p class={ARTICLE_META}><span>Last updated August 26, 2026</span><span>Owner: OpenE2EE operations</span></p>
+        <p class={ARTICLE_META}><span>Last updated September 10, 2026</span><span>Owner: OpenE2EE operations</span></p>
       </div>
     </header>
     <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
       <div class="prose">
         <div class="table-wrap" role="region" aria-label="Subprocessor list" tabindex="0">
           <table>
-            <thead><tr><th>Provider</th><th>Purpose</th><th>Data boundary</th></tr></thead>
+            <thead><tr><th>Provider</th><th>Purpose</th><th>Data boundary</th><th>Location</th></tr></thead>
             <tbody>
-              <tr><td>Cloudflare</td><td>Relay compute, encrypted storage, delivery state, security, DNS, and public website</td><td>Encrypted payloads, public key material, opaque routing and usage state, and request metadata</td></tr>
-              <tr><td>Vercel</td><td>Console and documentation hosting</td><td>Console requests, authentication session data, and project administration</td></tr>
-              <tr><td>WorkOS</td><td>Console authentication and organization identity</td><td>Account, organization, and authentication data</td></tr>
-              <tr><td>Stripe</td><td>Payments, subscriptions, tax, invoices, and billing portal</td><td>Billing identity, payment status, subscription data, and Relay aggregate usage mapped inside Console</td></tr>
-              <tr><td>Expo, Apple, Google, and browser push services</td><td>Data-only device wake delivery</td><td>Provider token, project routing, and opaque wake payload; no message plaintext</td></tr>
-              <tr><td>Better Stack</td><td>Availability monitoring and public status</td><td>Probe results, endpoint status, and sanitized operational metadata</td></tr>
-              <tr><td>Google Workspace</td><td>Business email and support communications</td><td>Contact details and communication content</td></tr>
+              <tr><td>Cloudflare</td><td>Relay compute, encrypted storage, delivery state, security, DNS, and public website</td><td>Encrypted payloads, public key material, opaque routing and usage state, and request metadata</td><td>Global network; United States entity</td></tr>
+              <tr><td>Vercel</td><td>Console and documentation hosting</td><td>Console requests, authentication session data, and project administration</td><td>United States</td></tr>
+              <tr><td>Neon</td><td>Console database for organization, project, licensing, and terms-acceptance records</td><td>Account and organization identifiers, the console email of the person who accepted terms, and project and licensing records</td><td>United States</td></tr>
+              <tr><td>WorkOS</td><td>Console authentication and organization identity</td><td>Account, organization, and authentication data</td><td>United States</td></tr>
+              <tr><td>Stripe</td><td>Payments, subscriptions, tax, invoices, and billing portal</td><td>Billing identity, payment status, subscription data, and Relay aggregate usage mapped inside Console</td><td>United States</td></tr>
+              <tr><td>Expo, Apple, Google, and browser push services</td><td>Data-only device wake delivery</td><td>Provider token, project routing, and opaque wake payload; no message plaintext</td><td>United States</td></tr>
+              <tr><td>Better Stack</td><td>Availability monitoring and public status</td><td>Probe results, endpoint status, and sanitized operational metadata</td><td>United States</td></tr>
+              <tr><td>Google Workspace</td><td>Business email and support communications</td><td>Contact details and communication content</td><td>United States</td></tr>
             </tbody>
           </table>
         </div>
@@ -47,8 +48,18 @@ import {
           boundary.
         </p>
         <p>
-          We will update this list before adding a subprocessor that handles a new material category
-          of customer data. Send questions to{' '}
+          Location names the jurisdiction of the entity we contract with. Several of these providers
+          serve requests from a global network, so a request can be handled outside that
+          jurisdiction by the entity named.
+        </p>
+        <p>
+          We publish a subprocessor on this page before it begins processing customer personal data.
+          We give at least 30 days’ notice by email to the project owner’s console address before a
+          new subprocessor processes customer data, except where a change is needed urgently for
+          security or service continuity, in which case we give notice as soon as practicable. You
+          may object within that period on reasonable grounds relating to data protection, and the{' '}
+          <a href="/legal/dpa">Data Processing Agreement</a> sets out what follows if we cannot offer
+          you a reasonable alternative. Send questions and objections to{' '}
           <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>.
         </p>
       </div>

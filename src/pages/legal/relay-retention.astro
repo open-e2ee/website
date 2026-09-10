@@ -36,7 +36,7 @@ import {
 
         <h2>Attachments</h2>
         <ul>
-          <li>An upload authorization is valid for no more than 15 minutes.</li>
+          <li>An upload authorization is never valid for more than 15 minutes. The current window is shorter.</li>
           <li>An incomplete upload expires after 24 hours.</li>
           <li>A completed attachment has a 30-day maximum retention.</li>
           <li>Relay deletes bytes directly on the owning expiry or deletion transition. Storage lifecycle rules are a cleanup backstop and may run later.</li>

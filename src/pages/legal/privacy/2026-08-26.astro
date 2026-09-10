@@ -1,6 +1,24 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
+/*
+ * The immutable copy of the OpenE2EE Privacy Notice, version 2026-08-26. The
+ * notice had never been published at an address of its own: Section 9's six
+ * entries were the whole record of what the earlier versions said, and an edit
+ * to /legal/privacy rewrote the one page all six of them describe, superseded
+ * versions included. A privacy notice is a representation about what the site
+ * transmits and to whom, so a reader who wants to know what was represented
+ * while a version was current needs the version, not a line about it.
+ *
+ * So this page is a literal snapshot. The document text is inlined here, and
+ * the page must never import the live version constants or the live notice, or
+ * an edit to /legal/privacy would reach the archive that exists to escape it.
+ * The guard bans the import paths as strings, so those path forms are not
+ * written even in this comment. This copy is the text /legal/privacy rendered
+ * on 2026-09-10, immediately before the naming and contact corrections that
+ * became version 2026-09-10. A new version means a new dated page beside this
+ * one, never an edit. tests/legal-pages.test.mjs enforces that this source
+ * stays decoupled from the live notice and the live version constants.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -10,14 +28,15 @@ import {
   CONTAINER,
   LABEL,
   LEAD,
+  LEGAL_PIN,
   LEGAL_TOC,
-} from '../../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
-  title="Privacy"
-  description="How OpenE2EE collects, uses, shares, and protects personal information."
-  canonical="/legal/privacy"
+  title="Privacy 2026-08-26"
+  description="Frozen copy of the OpenE2EE Privacy Notice, version 2026-08-26."
+  canonical="/legal/privacy/2026-08-26"
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -29,8 +48,13 @@ import {
           documentation, console, OpenE2EE Relay, licensing, billing, and communications.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {privacyEffectiveDate}</span>
-          <span>Version {privacyVersion}</span>
+          <span>Effective August 26, 2026</span>
+          <span>Version 2026-08-26</span>
+        </p>
+        <p class={LEGAL_PIN}>
+          This is the immutable copy of that version. It is what this notice said while version
+          2026-08-26 was current, and it does not change. The notice that governs today is the{' '}
+          <a href="/legal/privacy">current Privacy Notice</a>.
         </p>
       </div>
     </header>
@@ -71,14 +95,8 @@ import {
         <p>
           This notice does not govern information processed solely inside software that you operate.
           When a customer uses the SDK in its own product, that customer determines its application
-          data practices and is responsible for its notices. For OpenE2EE Relay, OpenE2EE processes
+          data practices and is responsible for its notices. For Managed Relay, OpenE2EE processes
           the service data described below on that customer’s instructions.
-        </p>
-        <p>
-          Send legal notices to OpenE2EE LLC by email to{' '}
-          <a href="mailto:legal@open-e2ee.dev">legal@open-e2ee.dev</a>. We may send legal and
-          operational notices to the console or Stripe email associated with your account, and those
-          are given when sent. You are responsible for keeping that address current.
         </p>
 
         <h2 id="collect">2. Information we collect</h2>
@@ -114,7 +132,7 @@ import {
           </li>
         </ul>
 
-        <h3>Relay information</h3>
+        <h3>Managed Relay information</h3>
         <ul>
           <li>
             customer-encrypted envelopes, shared encrypted group bodies, and encrypted attachment
@@ -178,12 +196,11 @@ import {
         <ul>
           <li>
             <strong>Service providers:</strong> Cloudflare for Relay, encrypted storage, the public
-            site, DNS, TLS, and security; Vercel for the console and documentation; Neon for the
-            console database that holds organization, project, licensing, and terms-acceptance
-            records; WorkOS for authentication and organization identity; Stripe for payments,
-            subscriptions, tax information, and the billing portal; Expo, Apple, Google, and browser
-            push services for best-effort device wakes; Better Stack for availability monitoring and
-            public status; and Google Workspace for business email. The current list is at{' '}
+            site, DNS, TLS, and security; Vercel for the console and documentation; WorkOS for
+            authentication and organization identity; Stripe for payments, subscriptions, tax
+            information, and the billing portal; Expo, Apple, Google, and browser push services for
+            best-effort device wakes; Better Stack for availability monitoring and public status; and
+            Google Workspace for business email. The current list is at{' '}
             <a href="/legal/subprocessors">Subprocessors</a>.
           </li>
           <li>
@@ -238,8 +255,8 @@ import {
           there is nothing that distinguishes one visitor from another, these events cannot be
           linked to you, to each other, or into a journey through the site, either by us or by
           anyone who obtained the data. What they show is how many people took each step, and
-          nothing else. The measurement is handled by our own code running on Cloudflare, our
-          hosting provider, and no third-party analytics service receives it.
+          nothing else. The measurement is handled by our own code on our own infrastructure, and no
+          third-party analytics service receives it.
         </p>
         <p>
           The console uses essential authentication, security, and session cookies. Cloudflare,
@@ -315,7 +332,7 @@ import {
         </p>
         <p>
           Submit a request to{' '}
-          <a href="mailto:privacy@open-e2ee.dev?subject=Privacy%20request">privacy@open-e2ee.dev</a>.
+          <a href="mailto:support@open-e2ee.dev?subject=Privacy%20request">support@open-e2ee.dev</a>.
           Describe the request and the account or email involved. We may need to verify your
           identity and authority before acting. An authorized agent may submit a request where
           applicable. You may appeal a denial by replying with “Privacy appeal” in the subject. You
@@ -336,12 +353,6 @@ import {
           laws. Where required, we rely on recognized transfer mechanisms and contractual safeguards
           made available through our providers.
         </p>
-        <p>
-          For personal information we process on a Relay customer’s instructions, the transfer terms
-          are in the <a href="/legal/dpa">Data Processing Agreement</a>, which incorporates the
-          European Commission’s standard contractual clauses, the UK addendum, and the Swiss
-          amendments. It binds when the customer accepts the Relay terms, and needs no signature.
-        </p>
 
         <h2 id="changes">9. Changes and contact</h2>
         <p>
@@ -349,14 +360,6 @@ import {
           new effective date and provide additional notice when a change is material. We will not
           apply a materially more permissive use or disclosure practice retroactively to previously
           collected information without appropriate notice and consent where required.
-        </p>
-        <p>
-          From version 2026-08-26 onward, each version is also published at a permanent address of
-          its own, and that copy does not change when this page does. The versions before it were
-          published without one, so the entries below are the only record of what they said.
-          Archived versions:{' '}
-          <a href="/legal/privacy/2026-08-26">2026-08-26</a>,{' '}
-          <a href="/legal/privacy/2026-09-10">2026-09-10</a>.
         </p>
         <p>
           <strong>Version 2026-07-28:</strong> the marketing site began recording the anonymous
@@ -408,23 +411,8 @@ import {
           anonymous website measurement did not change.
         </p>
         <p>
-          <strong>Version {privacyVersion}:</strong> no new event, no new category of information,
-          and nothing additional collected. Neon, which runs the console database, was named in{' '}
-          <a href="#share">How we disclose information</a>; it was already processing the records
-          described there, and the earlier version listed the providers around it without listing
-          it. Section 5 now says where the anonymous measurement runs — our own code on Cloudflare,
-          our hosting provider — rather than calling it our own infrastructure, which read as though
-          we operated the machines. The service is called OpenE2EE Relay throughout, replacing two
-          uses of an earlier name for it. Privacy requests go to a mailbox of their own,{' '}
-          <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>, rather than to support.
-          Section 1 now says where to send a legal notice, and section 8 points at the{' '}
-          <a href="/legal/dpa">Data Processing Agreement</a> for the transfer terms that apply to a
-          Relay customer’s data. Nothing about what is collected changed: still no cookie, no
-          storage, no identifier, and no IP-address record.
-        </p>
-        <p>
           For privacy questions or requests, email{' '}
-          <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>. For suspected
+          <a href="mailto:support@open-e2ee.dev">support@open-e2ee.dev</a>. For suspected
           vulnerabilities or security incidents, email{' '}
           <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>.
         </p>
