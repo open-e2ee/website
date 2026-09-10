@@ -14,6 +14,12 @@ import {
   privacyPath,
   privacyUrl,
   privacyVersion,
+  relayBetaLimitsEffectiveDate,
+  relayBetaLimitsPath,
+  relayBetaLimitsVersion,
+  relayRetentionEffectiveDate,
+  relayRetentionPath,
+  relayRetentionVersion,
   relayTermsPath,
   relayTermsUrl,
   relayTermsVersion,
@@ -22,16 +28,22 @@ import {
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
 
-test('pins the first Startup terms to an immutable canonical URL', () => {
-  assert.equal(commercialTermsVersion, 'startup-2026-07-23');
-  assert.equal(commercialTermsPath, '/legal/terms/2026-07-23');
-  assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-07-23');
+test('pins the current Startup terms to an immutable canonical URL', () => {
+  assert.equal(commercialTermsVersion, 'startup-2026-09-10');
+  assert.equal(commercialTermsPath, '/legal/terms/2026-09-10');
+  assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-09-10');
   assert.equal(privacyVersion, '2026-09-10');
   assert.equal(privacyPath, '/legal/privacy/2026-09-10');
   assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-09-10');
-  assert.equal(relayTermsVersion, 'relay-2026-08-26');
-  assert.equal(relayTermsPath, '/legal/relay-terms/2026-08-26');
-  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-08-26');
+  assert.equal(relayTermsVersion, 'relay-2026-09-10');
+  assert.equal(relayTermsPath, '/legal/relay-terms/2026-09-10');
+  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-09-10');
+  assert.equal(relayRetentionVersion, '2026-09-10');
+  assert.equal(relayRetentionEffectiveDate, 'September 10, 2026');
+  assert.equal(relayRetentionPath, '/legal/relay-retention/2026-09-10');
+  assert.equal(relayBetaLimitsVersion, '2026-09-10');
+  assert.equal(relayBetaLimitsEffectiveDate, 'September 10, 2026');
+  assert.equal(relayBetaLimitsPath, '/legal/relay-beta-limits/2026-09-10');
   assert.equal(dpaVersion, '2026-09-10');
   assert.equal(dpaEffectiveDate, 'September 10, 2026');
   assert.equal(dpaPath, '/legal/dpa/2026-09-10');
@@ -65,9 +77,9 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   const [legalIndex, currentTerms, versionedTerms, relayTerms, relayVersion, privacy] = await Promise.all([
     read('../src/pages/legal/index.astro'),
     read('../src/pages/legal/terms.astro'),
-    read('../src/pages/legal/terms/2026-07-23.astro'),
+    read('../src/pages/legal/terms/2026-09-10.astro'),
     read('../src/pages/legal/relay-terms.astro'),
-    read('../src/pages/legal/relay-terms/2026-08-26.astro'),
+    read('../src/pages/legal/relay-terms/2026-09-10.astro'),
     read('../src/pages/legal/privacy.astro'),
   ]);
 
@@ -76,7 +88,7 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   assert.match(legalIndex, /href="\/legal\/privacy"/);
   assert.match(currentTerms, /CommercialTerms/);
   assert.match(currentTerms, /canonical="\/legal\/terms"/);
-  assert.match(versionedTerms, /canonical="\/legal\/terms\/2026-07-23"/);
+  assert.match(versionedTerms, /canonical="\/legal\/terms\/2026-09-10"/);
   assert.match(legalIndex, /href="\/legal\/relay-terms"/);
   assert.match(legalIndex, /href="\/legal\/acceptable-use"/);
   assert.match(legalIndex, /href="\/legal\/subprocessors"/);
@@ -84,7 +96,7 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   assert.match(legalIndex, /href="\/legal\/relay-beta-limits"/);
   assert.match(relayTerms, /ManagedRelayTerms/);
   assert.match(relayTerms, /canonical="\/legal\/relay-terms"/);
-  assert.match(relayVersion, /canonical="\/legal\/relay-terms\/2026-08-26"/);
+  assert.match(relayVersion, /canonical="\/legal\/relay-terms\/2026-09-10"/);
   assert.match(privacy, /Privacy Notice/);
   assert.match(privacy, /canonical="\/legal\/privacy"/);
   assert.match(legalIndex, /href="\/legal\/dpa"/);
@@ -198,34 +210,152 @@ test('carries every Article 28 section, on the live agreement and every frozen c
  * component or the live version constants, rather than asserting it equals
  * them, which would re-couple it to every future edit.
  */
-test('keeps the dated terms page frozen: it never reads the live document', async () => {
-  const versionedTerms = await read('../src/pages/legal/terms/2026-07-23.astro');
+const frozenCommercialTermsVersions = [
+  { version: 'startup-2026-07-23', date: '2026-07-23', effective: 'July 23, 2026' },
+  { version: 'startup-2026-09-10', date: '2026-09-10', effective: 'September 10, 2026' },
+];
 
-  /* Matched as names, not as import statements, so a re-render through any
-   * future spelling — import, dynamic import, re-export — still reds. The
-   * component name may appear in this file's own comment explaining the
-   * freeze; imports resolve a path, so the path forms are what is banned. */
-  assert.doesNotMatch(versionedTerms, /components\/CommercialTerms/);
-  assert.doesNotMatch(versionedTerms, /lib\/legal(\.mjs)?/);
+test('keeps every dated terms page frozen: it never reads the live document', async () => {
+  for (const { version, date, effective } of frozenCommercialTermsVersions) {
+    const page = await read(`../src/pages/legal/terms/${date}.astro`);
 
-  /* And it carries its version identity as literals, so the constants moving
-   * to a new version cannot move this page with them. */
-  assert.match(versionedTerms, /Version startup-2026-07-23/);
-  assert.match(versionedTerms, /Effective July 23, 2026/);
+    /* Matched as names, not as import statements, so a re-render through any
+     * future spelling — import, dynamic import, re-export — still reds. The
+     * component name may appear in this file's own comment explaining the
+     * freeze; imports resolve a path, so the path forms are what is banned. */
+    assert.doesNotMatch(page, /components\/CommercialTerms/, `${version} renders the live terms`);
+    assert.doesNotMatch(page, /lib\/legal(\.mjs)?/, `${version} reads the live version constants`);
+
+    /* And it carries its version identity as literals, so the constants moving
+     * to a new version cannot move this page with them. The header spans, not
+     * the bare strings: Section 9 restates every version in its history. */
+    assert.match(
+      page,
+      new RegExp(`<span>Version ${version}</span>`),
+      `${version} does not head itself as version ${version}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`<span>Effective ${effective}</span>`),
+      `${version} does not head itself as effective ${effective}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`canonical="/legal/terms/${date}"`),
+      `${version} is not canonical at its own path`,
+    );
+  }
+});
+
+test('freezes the Startup terms version the site currently publishes', () => {
+  const frozen = frozenCommercialTermsVersions.map(({ version }) => version);
+  assert.ok(
+    frozen.includes(commercialTermsVersion),
+    `Startup terms version ${commercialTermsVersion} has no frozen page; frozen: ${frozen.join(', ')}`,
+  );
 });
 
 /*
- * The Relay page carries the same promise: the console records this URL when
- * an organization accepts the terms. It rendered the shared component until
- * 2026-09-10, so the guard the commercial page earned applies to it too.
+ * The Relay pages carry the same promise: the console records the dated URL
+ * when an organization accepts the terms. The first dated page rendered the
+ * shared component until 2026-09-10, so the guard the commercial page earned
+ * applies to every dated Relay page. The list is written out, not derived from
+ * the live constant, for the reason the privacy list gives below.
  */
-test('keeps the dated Relay terms page frozen: it never reads the live document', async () => {
-  const versionedRelayTerms = await read('../src/pages/legal/relay-terms/2026-08-26.astro');
+const frozenRelayTermsVersions = [
+  { version: 'relay-2026-08-26', date: '2026-08-26', effective: 'August 26, 2026' },
+  { version: 'relay-2026-09-10', date: '2026-09-10', effective: 'September 10, 2026' },
+];
 
-  assert.doesNotMatch(versionedRelayTerms, /components\/ManagedRelayTerms/);
-  assert.doesNotMatch(versionedRelayTerms, /lib\/legal(\.mjs)?/);
-  assert.match(versionedRelayTerms, /Version relay-2026-08-26/);
-  assert.match(versionedRelayTerms, /Effective August 26, 2026/);
+test('keeps every dated Relay terms page frozen: it never reads the live document', async () => {
+  for (const { version, date, effective } of frozenRelayTermsVersions) {
+    const page = await read(`../src/pages/legal/relay-terms/${date}.astro`);
+
+    assert.doesNotMatch(page, /components\/ManagedRelayTerms/, `${version} renders the live terms`);
+    assert.doesNotMatch(page, /lib\/legal(\.mjs)?/, `${version} reads the live version constants`);
+    assert.match(
+      page,
+      new RegExp(`<span>Version ${version}</span>`),
+      `${version} does not head itself as version ${version}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`<span>Effective ${effective}</span>`),
+      `${version} does not head itself as effective ${effective}`,
+    );
+    assert.match(
+      page,
+      new RegExp(`canonical="/legal/relay-terms/${date}"`),
+      `${version} is not canonical at its own path`,
+    );
+  }
+});
+
+test('freezes the Relay terms version the site currently publishes', () => {
+  const frozen = frozenRelayTermsVersions.map(({ version }) => version);
+  assert.ok(
+    frozen.includes(relayTermsVersion),
+    `Relay terms version ${relayTermsVersion} has no frozen page; frozen: ${frozen.join(', ')}`,
+  );
+});
+
+/*
+ * Section 5 and Section 7 of the Relay terms incorporate the retention
+ * statement and the beta limits, so a customer who filed the terms must be
+ * able to file the policies the terms pointed at. Both documents earned dated
+ * pages on 2026-09-10, when the upload-authorization window was restated as a
+ * ceiling: the 2026-08-26 pages carry the text as it stood immediately before
+ * that correction, and the live pages read the version constants.
+ */
+const frozenRelayPolicyVersions = [
+  { version: '2026-08-26', effective: 'August 26, 2026' },
+  { version: '2026-09-10', effective: 'September 10, 2026' },
+];
+
+const relayPolicies = [
+  { slug: 'relay-retention', current: relayRetentionVersion, title: 'Retention Statement' },
+  { slug: 'relay-beta-limits', current: relayBetaLimitsVersion, title: 'Beta Service Limits' },
+];
+
+test('keeps every dated Relay policy page frozen: it never reads the live page', async () => {
+  for (const { slug, title } of relayPolicies) {
+    for (const { version, effective } of frozenRelayPolicyVersions) {
+      const page = await read(`../src/pages/legal/${slug}/${version}.astro`);
+      const label = `${slug} ${version}`;
+
+      assert.doesNotMatch(page, /lib\/legal(\.mjs)?/, `${label} reads the live version constants`);
+      assert.doesNotMatch(page, new RegExp(`legal/${slug}\\.astro`), `${label} renders the live page`);
+      assert.match(page, new RegExp(`OpenE2EE Relay ${title}`), `${label} is not the ${title}`);
+      assert.match(
+        page,
+        new RegExp(`<span>Version ${version}</span>`),
+        `${label} does not head itself as version ${version}`,
+      );
+      assert.match(
+        page,
+        new RegExp(`<span>Effective ${effective}</span>`),
+        `${label} does not head itself as effective ${effective}`,
+      );
+      assert.match(
+        page,
+        new RegExp(`canonical="/legal/${slug}/${version}"`),
+        `${label} is not canonical at its own path`,
+      );
+    }
+  }
+});
+
+test('freezes the Relay policy versions the site currently publishes', async () => {
+  const frozen = frozenRelayPolicyVersions.map(({ version }) => version);
+  for (const { slug, current } of relayPolicies) {
+    assert.ok(
+      frozen.includes(current),
+      `${slug} version ${current} has no frozen page; frozen: ${frozen.join(', ')}`,
+    );
+    const live = await read(`../src/pages/legal/${slug}.astro`);
+    assert.match(live, /lib\/legal\.mjs/, `${slug} does not read its version from the constants`);
+    assert.match(live, /LEGAL_PIN/, `${slug} does not point at its permanent copy`);
+  }
 });
 
 /*
@@ -293,15 +423,11 @@ test('freezes the privacy version the notice currently publishes', () => {
  * Invariant 4 of the legal-terms-2026-09 plan: the fee table lives in the terms,
  * and /pricing is a summary of it. A price that appears on the pricing page and
  * not in the current Relay terms is a price no accepted document states.
- *
- * SKIPPED UNTIL LG7. Section 3 of relay-2026-08-26 incorporates /pricing by
- * reference instead of carrying the table, so this reads red against the
- * published version, and that version may not be edited. LG7 writes the table
- * into relay-2026-09-10 and removes this skip. The fail-before output is in
- * proof/legal-terms-2026-09/LG0.md.
+ * Section 3.1 of relay-2026-09-10 carries the table; relay-2026-08-26
+ * incorporated /pricing by reference, which is what this guard rules out.
  */
-test('states every published price and included quantity in the Relay terms', { skip: 'LG7 pending' }, async () => {
-  const terms = await flat('../src/components/ManagedRelayTerms20260826.astro');
+test('states every published price and included quantity in the Relay terms', async () => {
+  const terms = await flat('../src/components/ManagedRelayTerms20260910.astro');
 
   /* Bounded on both sides so a shorter figure cannot be satisfied by a longer
    * one containing it: "100" must not pass on "100,000", and "$0" must not
@@ -345,6 +471,20 @@ test('discloses annual renewal and protects accepted versions from retroactive r
   const terms = await flat('../src/components/CommercialTerms.astro');
   assert.match(terms, /automatically renews for successive one-year terms/i);
   assert.match(terms, /remains governed by the version recorded at checkout/i);
+});
+
+/*
+ * The 2026-07-23 text sent a customer to a Stripe-hosted billing portal to
+ * cancel, and the console never offered one. Renewal is cancelled on the
+ * console license page (console PR #195), so the terms name that page and
+ * nothing else as the cancellation path.
+ */
+test('names the console license page as the only cancellation path', async () => {
+  const terms = await flat('../src/components/CommercialTerms.astro');
+  const cancellation = /<strong>Your Startup subscription automatically renews[^<]*<\/strong>([^<]*)/.exec(terms);
+  assert.ok(cancellation, 'the renewal paragraph is missing');
+  assert.match(cancellation[1], /cancel renewal from the license page in the console/);
+  assert.doesNotMatch(cancellation[1], /billing portal/);
 });
 
 test('grants the license over the package that is actually published', async () => {
@@ -411,7 +551,7 @@ test('describes the implemented providers and managed Relay boundary', async () 
 
 test('publishes the exact Relay legal and lifecycle boundary', async () => {
   const [terms, acceptableUse, subprocessors, retention, beta] = await Promise.all([
-    flat('../src/components/ManagedRelayTerms20260826.astro'),
+    flat('../src/components/ManagedRelayTerms20260910.astro'),
     flat('../src/pages/legal/acceptable-use.astro'),
     flat('../src/pages/legal/subprocessors.astro'),
     flat('../src/pages/legal/relay-retention.astro'),
@@ -528,4 +668,5 @@ test('permanently redirects short and historical legal paths to one hierarchy', 
   assert.match(redirects, /^\/terms \/legal\/terms\/ 308$/m);
   assert.match(redirects, /^\/privacy \/legal\/privacy\/ 308$/m);
   assert.match(redirects, /^\/terms\/2026-07-23 \/legal\/terms\/2026-07-23\/ 308$/m);
+  assert.match(redirects, /^\/terms\/2026-09-10 \/legal\/terms\/2026-09-10\/ 308$/m);
 });
