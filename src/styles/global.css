@@ -52,6 +52,23 @@
  */
 
 @layer base {
+  /*
+   * The header's height at this width. Both values are chrome tokens, and the
+   * site restates neither: it names the one it draws, and the sheet
+   * breakpoint, 62rem, is where the header's words leave the row and the
+   * compact height applies. The header and the `:target` offset below both
+   * read this, so the two cannot drift apart.
+   */
+  :root {
+    --oe-site-header-height: var(--oe-chrome-header-height);
+  }
+
+  @media (max-width: 62rem) {
+    :root {
+      --oe-site-header-height: var(--oe-chrome-header-height-compact);
+    }
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
@@ -159,6 +176,6 @@
      exhibit, and this is the whole of what stands the scene clear of the
      header. */
   :target {
-    scroll-margin-top: calc(var(--oe-chrome-header-height) + var(--oe-space-6));
+    scroll-margin-top: calc(var(--oe-site-header-height) + var(--oe-space-6));
   }
 }

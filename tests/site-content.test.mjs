@@ -785,13 +785,13 @@ test('lands the demo fragment on the exhibit, not on the paragraph above it', as
      legal-page detail: scoping it away would park the scene under the header
      on every press of Demo, with nothing else in the stylesheet to catch it.
 
-     The offset reads `--oe-chrome-header-height`, which is the header's own
-     measure rather than a second copy of it. The height that token carries is
-     asserted in tests/cohesion.test.mjs; here what matters is that the rule
-     tracks the header instead of restating it. */
+     The offset reads `--oe-site-header-height`, the header's own measure at
+     each width rather than a second copy of it. The chrome tokens that
+     variable reads are asserted in tests/cohesion.test.mjs; here what matters
+     is that the rule tracks the header instead of restating it. */
   assert.match(
     ruleFor(css, ':target'),
-    /scroll-margin-top:\s*calc\(var\(--oe-chrome-header-height\) \+ var\(--oe-space-6\)\)/,
+    /scroll-margin-top:\s*calc\(var\(--oe-site-header-height\) \+ var\(--oe-space-6\)\)/,
   );
 });
 test('draws the demo status line in the kind of thing it is saying', async () => {
