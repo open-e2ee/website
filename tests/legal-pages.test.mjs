@@ -431,6 +431,57 @@ test('publishes the exact Relay legal and lifecycle boundary', async () => {
   assert.match(beta, /Group encrypted body: 96 KiB plus a 512-byte prefix/i);
 });
 
+/*
+ * Section 7 of the data processing agreement makes this page the subprocessor
+ * list the agreement refers to, and tells the reader it carries each provider's
+ * purpose, data boundary, and processing location. A column dropped here makes
+ * that sentence false for every provider; a row added without a location makes
+ * it false for one, which is the harder version to notice.
+ *
+ * The row count is exact rather than a lower bound. A subprocessor added
+ * without the notice this page promises is the failure the count is for, and a
+ * lower bound cannot see it. Adding a provider means updating this number in
+ * the same commit, which is the point.
+ */
+test('publishes the subprocessor list the agreement points at', async () => {
+  const page = await read('../src/pages/legal/subprocessors.astro');
+  /* Prose is read flattened: a sentence that wraps is the same promise, and a
+   * guard that reads otherwise fails on a reflow instead of on a broken one. */
+  const prose = page.replace(/\s+/g, ' ');
+  const body = page.slice(page.indexOf('<tbody>'), page.indexOf('</tbody>'));
+  const rows = [...body.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(([, row]) =>
+    [...row.matchAll(/<td>([\s\S]*?)<\/td>/g)].map(([, cell]) => cell.trim()),
+  );
+
+  assert.equal(rows.length, 8, `the list publishes ${rows.length} providers`);
+  assert.match(page, /<th>Location<\/th>/, 'the list publishes no location column');
+  for (const cells of rows) {
+    assert.equal(
+      cells.length,
+      4,
+      `"${cells[0]}" has ${cells.length} cells, not provider, purpose, boundary, and location`,
+    );
+    assert.ok(cells[3], `"${cells[0]}" publishes no location`);
+  }
+  assert.ok(
+    rows.some(([provider]) => provider === 'Neon'),
+    'the console database provider is not on the list',
+  );
+
+  assert.match(
+    prose,
+    /at least 30 days’ notice by email to the project owner’s console address/,
+    'the list does not state the notice period the agreement promises',
+  );
+  assert.match(
+    prose,
+    /urgently for security or service continuity/,
+    'the notice promise carries no urgent carve-out, so it promises what an incident cannot keep',
+  );
+  assert.match(prose, /href="\/legal\/dpa"/, 'the list does not reach the agreement that cites it');
+  assert.match(prose, /privacy@open-e2ee\.dev/, 'the list publishes no address to object to');
+});
+
 test('reaches each agreement from the pages that sell against it', async () => {
   const [pricing, relay, licensing, footer] = await Promise.all([
     flat('../src/pages/pricing.astro'),
