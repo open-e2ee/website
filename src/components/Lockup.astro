@@ -29,8 +29,10 @@ const { product, size = 16, class: className } = Astro.props;
       the row's box is 0.15em deeper than its ink. A host that centers the row
       centers the box, and the ink lands 0.086em low, half the difference of
       the two. The row lifts itself by that much, so a centered row centers
-      its ink, the way the generated asset centers the mark on its canvas. */}
-  <span style="display: inline-flex; align-items: baseline; gap: 0.4875em; translate: 0 -0.086em;">
+      its ink, the way the generated asset centers the mark on its canvas.
+      The lift is a class so a host that seats the wordmark on a neighbor's
+      baseline instead can override it without touching the row's recipe. */}
+  <span style="display: inline-flex; align-items: baseline; gap: 0.4875em;" class="-translate-y-[0.086em]">
     <Mark size={size} lockup />
     <span class="oe-wordmark"><span>Open</span><span>E2EE</span></span>
   </span>

@@ -80,7 +80,7 @@ async function stylesheet() {
 }
 
 /** An attribute value as the document means it, not as HTML spells it. */
-const unescape = (value) => value.replace(/&amp;/g, '&');
+const unescape = (value) => value.replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 
 /** The chrome header of one built page: the row, the lockup, the navigation. */
 function header({ markup, path }) {
@@ -192,5 +192,24 @@ test('the lockup keeps more clear space than the navigation', { skip: pages.leng
       leaves,
       `${path} narrows the header row at ${narrows} and hides the navigation at ${leaves}`,
     );
+  }
+});
+
+test('the header seats the wordmark on the navigation baseline while the navigation shows', { skip: pages.length === 0 }, () => {
+  for (const page of pages) {
+    const { navigation, path } = { ...header(page), path: page.path };
+    const anchor = /<a class="([^"]*)" href="\/" aria-label="OpenE2EE home"><span class="[^"]*"><span style="[^"]*" class="([^"]*)"/.exec(page.markup);
+    assert.ok(anchor, `${path} draws no lockup link in its header`);
+    const link = unescape(anchor[1]).split(/\s+/);
+    const row = unescape(anchor[2]).split(/\s+/);
+    /* The row lifts itself to center its ink, and the header overrides that
+       lift from the width the navigation appears at. Were the two widths to
+       differ, one band of widths would seat the wordmark on a baseline that
+       no navigation word shares, or center a row beside words that it should
+       sit level with. */
+    only(row, /^-translate-y-\[([\d.]+)em\]$/, 'row lift', path);
+    const seats = only(link, /^min-\[([\d.]+rem)\]:\[&>span>span\]:-translate-y-\[[\d.]+em\]$/, 'baseline seat', path);
+    const leaves = only(navigation, /^max-\[([\d.]+rem)\]:hidden$/, 'navigation hide', path);
+    assert.equal(seats, leaves, `${path} seats the wordmark from ${seats} and hides the navigation at ${leaves}`);
   }
 });

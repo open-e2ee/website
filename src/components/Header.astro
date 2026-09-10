@@ -24,7 +24,20 @@ const path = Astro.url.pathname;
       'flex min-h-[var(--oe-site-header-height)] items-center gap-8 max-[62rem]:justify-between max-[62rem]:gap-3',
     ]}
   >
-    <a class="inline-flex text-[inherit] no-underline" href="/" aria-label="OpenE2EE home"><Lockup /></a>
+    {/* Beside the navigation the wordmark sits on the navigation's baseline,
+        so "OpenE2EE" and the words after it share one bottom line. The words
+        are 15px at the body leading of 1.6, a 24px line box, which puts their
+        baseline 5px (0.25em of the 20px lockup) below the bar's center. The
+        lockup row's own baseline, centered and unlifted, runs 0.575em below
+        that center: the 1.3em mark dropped 0.161em plus the wordmark's 0.15em
+        descent, halved. 0.575em - 0.25em is the lift. The mark rides along and
+        sits higher than centered; that is the accepted trade. Below 62rem the
+        navigation is hidden and the row keeps its ink-centering lift. */}
+    <a
+      class="inline-flex text-[inherit] no-underline min-[62rem]:[&>span>span]:-translate-y-[0.325em]"
+      href="/"
+      aria-label="OpenE2EE home"><Lockup /></a
+    >
     {/* The row of words, and the sheet below carries the same set at phone
         width. 62rem is where the words stop fitting beside the actions. */}
     <nav class="me-auto flex gap-6 text-[0.9375rem] max-[62rem]:hidden" aria-label="Primary">
