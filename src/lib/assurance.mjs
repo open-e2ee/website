@@ -33,8 +33,8 @@ export const docs = {
 export const checks = {
   measuredOn: '2026-09-12',
   modules: 399,
-  cases: '7,065',
-  passed: '7,063',
+  cases: '7,069',
+  passed: '7,067',
   skipped: 2,
   failed: 0,
 };
