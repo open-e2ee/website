@@ -157,9 +157,9 @@ const notHidden = [
       </TableScroll>
       <p class:list={['text-text-3', MEASURE]}>
         Some fields appear only in context: <code>recipientRegistrationId</code> accompanies the
-        initial handshake envelope, and <code>contentHint</code>, <code>ephemeral</code>, and{' '}
-        <code>urgent</code> are optional delivery hints. Your relay also assigns its own message id
-        and server timestamp.
+        initial handshake envelope. <code>contentHint</code> is optional.{' '}
+        <code>deliveryClass</code> selects durable delivery or an online-only hint.
+        Your relay also assigns its own message identifier and server timestamp.
       </p>
     </div>
   </section>
@@ -243,9 +243,9 @@ const notHidden = [
       </div>
       <dl class={FIGURE_ROWS}>
         <div>
-          <dt>{checks.assertions}</dt>
+          <dt>{checks.cases}</dt>
           <dd>
-            assertions across {checks.modules} modules, {checks.failed} failing and {checks.skipped}{' '}
+            test cases across {checks.modules} modules, {checks.failed} failing and {checks.skipped}{' '}
             skipped, on {checks.measuredOn}. An export is only cut from a revision where they pass.
           </dd>
         </div>
@@ -315,7 +315,7 @@ const notHidden = [
           <dt>Not audited by any independent firm</dt>
           <dd>
             Reviewed continuously by adversarial AI agents; not audited by any independent firm.
-            Every change passes an adversarial AI review before it merges, and recurring
+            Each substantive code change passes an adversarial AI review before it merges, and recurring
             whole-codebase AI audit passes run against the engineering repository. The{' '}
             <a href={docs.assurance}>assurance summary</a> states what that covers and what it does
             not. No independent firm has audited the SDK, and none is engaged.
