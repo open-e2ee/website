@@ -11,3 +11,9 @@
 
 /brand/*
   Cache-Control: public, max-age=86400
+
+/playground
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+/playground/
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
