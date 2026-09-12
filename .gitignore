@@ -32,3 +32,7 @@ pnpm-debug.log*
 /signal-protocol-js*/
 /design*/
 /console*/
+
+# Built from the installed SDK browser example.
+/public/playground/
+/build-artifacts/

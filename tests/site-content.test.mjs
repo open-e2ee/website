@@ -1641,7 +1641,7 @@ test('states the same assurance figures on every page that states them', async (
 
   for (const page of pages) {
     assert.match(page, /from '\.\.\/lib\/assurance\.mjs'/);
-    assert.doesNotMatch(page, new RegExp(checks.assertions));
+    assert.doesNotMatch(page, new RegExp(checks.cases));
     /* Derived, not typed. This was `/\b351 modules\b/` and went on passing
      * after the figures moved to 389 — a guard against a hand-typed number
      * that is itself a hand-typed number is a guard against last year's

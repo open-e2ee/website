@@ -31,10 +31,10 @@ export const docs = {
 
 /** Most recent full run of the automated checks, from docs/ASSURANCE.md. */
 export const checks = {
-  measuredOn: '2026-08-17',
-  modules: 389,
-  assertions: '6,922',
-  passed: '6,920',
+  measuredOn: '2026-09-12',
+  modules: 400,
+  cases: '7,073',
+  passed: '7,071',
   skipped: 2,
   failed: 0,
 };

@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import example from '../../build-artifacts/playground.json';
+---
+
+<BaseLayout title="Run an encrypted exchange" description="Send a message between two Signal Protocol clients in your browser. Inspect the actual ciphertext, decrypted reply, and console output.">
+  {example.styles.map((href) => <link rel="stylesheet" href={href} />)}
+  <section id="sdk-example" set:html={example.markup} />
+  {example.scripts.map((src) => <script is:inline type="module" src={src}></script>)}
+</BaseLayout>
