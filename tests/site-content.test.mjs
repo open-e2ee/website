@@ -766,18 +766,12 @@ test('lands the demo fragment on the exhibit, not on the paragraph above it', as
   assert.match(exhibit, /<div class="demo-console-stage">/);
   assert.match(exhibit, /<DemoMobile /);
 
-  /* The links that lead there. Both are the reader asking for the exhibit.
-
-     On the homepage the demo is the secondary action. The primary opens a
-     Relay project, because a page that sells a managed product and offers no
-     route into it is a brochure. The demo is still an action a reader can
-     take from the first screen, and the assertion here holds it to that: an
-     `oe-button` in the hero's action row, pointing at the fragment. */
+  /* The hero opens the playground. The header retains the visual demo link. */
   const heroActions = index.slice(index.indexOf('data-actions="hero"'));
   assert.match(
     heroActions.slice(0, heroActions.indexOf('</div>')),
-    /<a class="oe-button oe-button-secondary" href="#demo">/,
-    'the hero no longer offers the demo',
+    /<a class="oe-button oe-button-secondary" href="\/playground\/">/,
+    'the hero no longer offers the playground',
   );
   assert.match(await declaration('headerNavigation'), /href: '\/#demo'/);
 
