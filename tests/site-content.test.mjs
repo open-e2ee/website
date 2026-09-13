@@ -766,12 +766,12 @@ test('lands the demo fragment on the exhibit, not on the paragraph above it', as
   assert.match(exhibit, /<div class="demo-console-stage">/);
   assert.match(exhibit, /<DemoMobile /);
 
-  /* The hero opens the playground. The header retains the visual demo link. */
+  /* The hero and header both link the visual demo. */
   const heroActions = index.slice(index.indexOf('data-actions="hero"'));
   assert.match(
     heroActions.slice(0, heroActions.indexOf('</div>')),
-    /<a class="oe-button oe-button-secondary" href="\/playground\/">/,
-    'the hero no longer offers the playground',
+    /<a class="oe-button oe-button-secondary" href="#demo">/,
+    'the hero no longer offers the visual demo',
   );
   assert.match(await declaration('headerNavigation'), /href: '\/#demo'/);
 
