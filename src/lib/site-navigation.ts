@@ -17,7 +17,7 @@ export type FooterGroup = {
 };
 
 /*
- * Six items: SDK, Relay, Demo, Docs, Pricing, Blog.
+ * Seven items: SDK, Relay, Demo, Playground, Docs, Pricing, Blog.
  *
  * The five it replaces — Product, Demo, Docs, Pricing, Blog — were measured
  * against a 35-site developer-infrastructure corpus, where five is the mode and
@@ -63,6 +63,7 @@ export const headerNavigation: readonly NavigationLink[] = [
   { href: '/product', label: 'SDK' },
   { href: '/relay', label: 'Relay' },
   { href: '/#demo', label: 'Demo' },
+  { href: '/playground/', label: 'Playground' },
   { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/blog', label: 'Blog' },

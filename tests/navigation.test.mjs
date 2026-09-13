@@ -204,6 +204,8 @@ test('offers the two products the site sells and the one thing it teaches', asyn
      other through the first one's pricing page. */
   assert.match(header, /\{ href: '\/product', label: 'SDK' \}/);
   assert.match(header, /\{ href: '\/relay', label: 'Relay' \}/);
+  assert.match(header, /\{ href: '\/#demo', label: 'Demo' \}/);
+  assert.match(header, /\{ href: '\/playground\/', label: 'Playground' \}/);
   assert.match(header, /\{ href: '\/blog', label: 'Blog' \}/);
 
   /* "Product" was a category label for a company with one product. Keeping it
