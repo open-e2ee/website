@@ -8,7 +8,7 @@
  * see where to.
  *
  * This file asserts the funnel the rebuilt page carries: a filled primary
- * action into the Console, the demo demoted to the secondary, and the free plan
+ * action into the Console, the playground as the secondary, and the free plan
  * named from the catalog before the demo band runs.
  */
 
@@ -41,14 +41,14 @@ function actionRow(hook) {
   return built.slice(start, end === -1 ? undefined : end);
 }
 
-test('the hero starts a Relay project, and the demo follows it', () => {
+test('the hero offers a Relay project and the playground', () => {
   const row = actionRow('hero');
   assert.ok(row, 'the hero sets no action row this test can read');
 
   const anchors = [...row.matchAll(/<a\s[^>]*>/g)].map((match) => match[0]);
   assert.equal(anchors.length, 2, `the hero offers ${anchors.length} actions; two is the decision`);
 
-  const [start, demo] = anchors;
+  const [start, playground] = anchors;
 
   /* The primary is the free start, and the click leaves this site. A page that
    * sells a managed product and offers no route into it is a brochure. */
@@ -57,7 +57,7 @@ test('the hero starts a Relay project, and the demo follows it', () => {
     /href="https:\/\/console\.open-e2ee\.dev\//,
     'the hero leads with something other than the Console',
   );
-  assert.match(demo, /href="#demo"/, 'the demo is not the second action');
+  assert.match(playground, /href="\/playground\/"/, 'the playground is not the second action');
 
   /* Read the controls, which are the anchors themselves: a tag that carries
    * the button class, not every class that starts with it, since the note

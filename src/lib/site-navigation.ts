@@ -144,6 +144,7 @@ export const footerGroups: readonly FooterGroup[] = [
   {
     heading: 'Build',
     links: [
+      { href: '/playground/', label: 'Playground' },
       { href: 'https://docs.open-e2ee.dev/start/quickstart', label: 'Ten-minute quickstart' },
       { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
       { href: repositoryUrl, label: 'SDK on GitHub' },
