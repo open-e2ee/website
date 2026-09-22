@@ -17,8 +17,8 @@ export const commercialTermsPath = '/legal/terms/2026-09-10';
 export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
 
 /*
- * OpenE2EE Relay has a separate service agreement from the SDK commercial
- * license. Keep its accepted version at a permanent URL so a later
+ * The Signal Protocol Relay has a service agreement of its own, apart from
+ * the SDK's licenses. Keep its accepted version at a permanent URL so a later
  * service-terms update cannot rewrite an existing order.
  *
  * The relay-2026-09-10 version states the fee table in the terms themselves

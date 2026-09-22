@@ -4,9 +4,12 @@
  *
  * Every entry is checked against the installed package rather than against the
  * roadmap. The four runtimes each have a local store under ./local/store, and
- * the three backends each have a shipped adapter: ./remote/relay/convex,
- * ./remote/object-store/convex-r2, ./remote/object-store/s3. The in-memory
- * store and relay are not here — they are development adapters, not platforms.
+ * the three backends each stand behind a shipped adapter: Convex and R2 share
+ * ./remote/object-store/convex-r2, where Convex brokers and R2 stores, and S3
+ * has ./remote/object-store/s3. The in-memory store and relay are not here —
+ * they are development adapters, not platforms — and the Signal Protocol Relay
+ * is not here either, because it is the product and not a platform of
+ * somebody else's; the hero's relay selector carries it.
  *
  * The names are visible rather than tooltip-only, and that is the difference
  * between a compatibility list and a partner wall. It also carries the

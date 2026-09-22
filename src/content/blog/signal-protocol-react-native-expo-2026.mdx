@@ -81,18 +81,17 @@ configureSignalProtocolExpoDbBindings({
 });
 ```
 
-Use the same client composition on both devices:
+Use the same client composition on both devices. This example reaches the OpenE2EE Signal Protocol Relay. The `getIdentityAssertion` callback is your own function: it returns the signed identity assertion from your identity provider.
 
 ```ts
-import { createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
+import { createHostedSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
 import { expoStore } from '@open-e2ee/signal-protocol-sdk/local/store/expo';
-import { convexRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/convex';
 
-const relay = convexRelay({ convex, api: api.signal, currentUserId: userId });
+const relayUrl = process.env.OPEN_E2EE_RELAY_URL!;
 
-const signal = await createSignalProtocolClient({
-  identity: { userId },
-  adapters: { storage: expoStore(), relay },
+const signal = await createHostedSignalProtocolClient({
+  hosted: { relayUrl, getIdentityAssertion: signIn },
+  adapters: { storage: expoStore() },
 });
 
 signal.registerHook('onMessageDecrypted', (message) => {
@@ -103,11 +102,11 @@ signal.startRelaySubscription();
 await signal.send(peerUserId, 'Dinner at 7.');
 ```
 
-On first run, `createSignalProtocolClient()` generates the identity keys. With a relay, it publishes the public material during initial synchronization. The first send establishes a session.
+On first run, the client generates the identity keys and publishes the public material to the relay during initial synchronization. The first send establishes a session.
 
 The defaults are `postQuantum: 'required'` and `braid: 'required'`. PQXDH uses ML-KEM-1024 for session establishment. The braid setting requires the post-quantum ratchet. There is no public `postQuantum: 'disabled'` mode.
 
-If you have no relay yet, use `inMemoryRelay()` from `@open-e2ee/signal-protocol-sdk/remote/relay/memory`. The same code then runs entirely in memory, against real protocol and real cryptography.
+If you have no Relay project yet, use `createSignalProtocolClient()` from the package root with `identity: { userId }` and `inMemoryRelay()` from `@open-e2ee/signal-protocol-sdk/remote/relay/memory` as the `relay` adapter. The same conversation then runs entirely in memory, against real protocol and real cryptography.
 
 ## Where the keys live
 
@@ -142,9 +141,9 @@ Key lifetime determines whether the app still works in month six.
 **Prekey exhaustion weakens forward secrecy without an error.** Without a one-time prekey, session establishment falls back to the signed prekey. This fallback weakens forward secrecy for that session. A 2025 WhatsApp measurement found [13% of companion devices lacked a one-time prekey at scan time](https://arxiv.org/pdf/2511.20252). The SDK exposes a low-watermark callback and status check:
 
 ```ts
-const signal = await createSignalProtocolClient({
-  identity: { userId },
-  adapters: { storage: expoStore(), relay },
+const signal = await createHostedSignalProtocolClient({
+  hosted: { relayUrl, getIdentityAssertion: signIn },
+  adapters: { storage: expoStore() },
   preKeyLowThreshold: 50,
   onPreKeyLow: (remaining) => {
     console.warn(`${remaining} one-time prekeys left`);
@@ -179,4 +178,4 @@ The Expo guide covers SQLCipher setup, vault bootstrap, a real relay, offline se
 
 **[Follow the complete Expo guide →](https://docs.open-e2ee.dev/guides/expo-encrypted-chat)**
 
-[The Expo quickstart](https://docs.open-e2ee.dev/start/expo) gives the ten-minute version. [The Convex relay guide](https://docs.open-e2ee.dev/guides/expo-convex-relay) covers the relay. [The migration guide](https://docs.open-e2ee.dev/guides/migrating-from-libsignal) applies if you shipped the privacyresearch port. Review [the production checklist](https://docs.open-e2ee.dev/operate/production-checklist) before release.
+[The Expo quickstart](https://docs.open-e2ee.dev/start/expo) gives the ten-minute version. [The Signal Protocol Relay documentation](https://docs.open-e2ee.dev/relay) covers the relay. [The migration guide](https://docs.open-e2ee.dev/guides/migrating-from-libsignal) applies if you shipped the privacyresearch port. Review [the production checklist](https://docs.open-e2ee.dev/operate/production-checklist) before release.

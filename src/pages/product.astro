@@ -2,7 +2,6 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { MEASURED_ON, axes, libsignalReadme, notes, projects } from '../lib/comparison.mjs';
 import { maturityLine } from '../lib/sdk.mjs';
-import { startupTier } from '../data/pricing.mjs';
 import TableScroll from '../components/TableScroll.astro';
 import {
   ACTIONS,
@@ -139,8 +138,8 @@ const adapters = [
   },
   {
     role: 'Relay',
-    body: 'How sealed envelopes reach the other device. Use your own backend contract or OpenE2EE Relay.',
-    options: ['./remote/relay/convex', './remote/relay/memory', './remote/relay/types'],
+    body: 'How sealed envelopes reach the other device. Use your own backend contract or the OpenE2EE Signal Protocol Relay, which the root client reaches by URL.',
+    options: ['./remote/relay/memory', './remote/relay/types'],
   },
   {
     role: 'Object store',
@@ -210,7 +209,7 @@ const ordered = projects
           SDK on GitHub
         </a>
         <a class="oe-button oe-button-secondary" href="/relay">
-          OpenE2EE Relay
+          Signal Protocol Relay
         </a>
       </div>
     </div>
@@ -399,9 +398,8 @@ const ordered = projects
           scorecard either" was an invented contrast whose "either" pointed at
           the note above it. */}
       <p class:list={['text-text-3', MEASURE]}>
-        <code>ts-mls</code> is MIT, which already permits proprietary use, so that row costs its
-        users nothing. This SDK is AGPLv3 with a commercial license available, which is a real cost
-        to some readers.
+        <code>ts-mls</code> is MIT and this SDK is MIT or Apache-2.0, so neither row costs its
+        users anything. The three copyleft rows are a real cost to some readers.
       </p>
       {/*
         "What each one is actually for" was a band of its own here: five
@@ -448,12 +446,10 @@ const ordered = projects
     <div class:list={[CONTAINER_MEASURE, STACK]}>
       <h2>Licensing</h2>
       <p>
-        The complete SDK is available under AGPLv3. Proprietary products purchase annual
-        commercial production rights at a published price, starting at {startupTier.price}{' '}
-        {startupTier.note}.
+        The complete SDK is available under the MIT or Apache-2.0 license, at your option.
+        Proprietary products need no commercial license.
       </p>
       <p class={TEXT_LINKS}>
-        <a href="/pricing">Pricing</a>
         <a href="/licensing">Licensing</a>
       </p>
     </div>

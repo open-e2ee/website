@@ -31,7 +31,7 @@
  * capture was recorded with. The other nine swap an adapter, so a capture
  * cannot prove them: what holds those is the build audit checking every
  * `@open-e2ee/` specifier and named export against the installed types, and,
- * for the one line an adapter needs that is nobody's export, the provenance
+ * for the names an option needs that are nobody's export, the disclosure
  * written down beside the option itself.
  */
 
@@ -48,13 +48,14 @@ const PACKAGE = capture.packageName;
  * process: it calls `relay.registerDevice()` twice and reads the queue back
  * with `relay.getPendingMessages()`. Both belong to the in-memory relay, and
  * they exist so that a quickstart can show a round trip with no server running.
- * `convexRelay` returns a different class and does not have them.
+ * The Signal Protocol Relay is reached through a different client factory and
+ * has neither.
  *
  * So a snippet built by swapping the relay line of the recording would compile
  * in the reader's head and fail on their machine — the exact failure this site
  * spends its whole budget avoiding. The program below is the subset that is
  * true of any relay: construct, subscribe, send. It is the shape the SDK's own
- * `convexRelay` docstring uses.
+ * `createHostedSignalProtocolClient` docstring uses.
  *
  * It shows both sides of the conversation, which an earlier draft argued
  * against — an application owns one client, so the panel showed one. That
@@ -87,7 +88,9 @@ const PACKAGE = capture.packageName;
  * block above it is now what publishes them: `create()` syncs to the relay on
  * its own when one is configured, which is the same fact `syncToServer()` was
  * dropped for. So the send has its recipient in the listing rather than in the
- * reader's assumptions.
+ * reader's assumptions. The hosted variant sends to `bob.userId` instead of
+ * to a string, because there the identity comes from the assertion the
+ * reader's provider signs, and the program does not know it in advance.
  *
  * The round trip is still on the page in fuller form — /product carries the
  * whole 29-line recording, and the carrier panel below the fold shows the
@@ -131,9 +134,7 @@ export const storageOptions = [
     label: 'Expo',
     subpath: 'local/store/expo',
     symbol: 'expoStore',
-    /* The relay is passed in because the SDK's own docstring passes it in —
-       the Expo store keeps remote sender state alongside the local keys. */
-    expr: 'expoStore({ relay })',
+    expr: 'expoStore()',
     experimental: false,
   },
   {
@@ -164,59 +165,53 @@ export const storageOptions = [
 /*
  * The relay, which is the backend question.
  *
- * `setup` is the whole construction, not just a factory name, because the two
- * options differ in more than one: the in-memory one takes nothing, and the
- * Convex one takes a client the reader builds and an API their own `convex/`
- * directory generates. The `convexRelay({ convex, api: api.signal })` shape is
- * copied from the SDK's docstring, `api.signal` included.
+ * The two options differ in more than a factory name, which is why each
+ * carries its whole shape. The in-memory relay is an adapter: it is imported
+ * from a subpath, constructed, and passed as `adapters.relay` to
+ * `createSignalProtocolClient`. The Signal Protocol Relay is not an adapter
+ * the reader constructs. `createHostedSignalProtocolClient`, from the package
+ * root, takes the Relay's connection URL and a callback that returns the
+ * device's signed identity assertion, and builds the relay adapter and the
+ * identity itself. So `factory` names the client factory, `setup` is the
+ * construction that precedes the clients, and `hosted` switches the client
+ * blocks between the two option shapes.
  *
- * Those two names used to be explained instead of shown — "convex is your
- * ConvexClient, api your generated Convex API" — which is a caption on a
- * program that could just contain them, and a program that names something it
- * never binds is not one a reader can paste. `imports` is the fix, and the
- * lines in it are not composed here either:
+ * `process.env.OPEN_E2EE_RELAY_URL` is the spelling the Relay documentation
+ * and the `oe` CLI write. An application reads its configuration however its
+ * bundler exposes one, and picking a different spelling here to look more
+ * idiomatic would be guessing at somebody else's build — the same mistake
+ * naming a React Native storage package would be, one option up.
  *
- *   `import { api } from "../convex/_generated/api";` is verbatim from the
- *   SDK's own usage docstring, dist/remote/relay/convex/index.d.ts.
- *
- *   `new ConvexReactClient(process.env.CONVEX_URL!)` is verbatim from the three
- *   places the SDK source constructs one — client/headless.ts (as
- *   `ConvexHttpClient`), remote/relay/convex/relay.ts and
- *   remote/relay/convex/group-server.ts. `ConvexClient` in the relay's types is
- *   the union of those two, so either satisfies it.
- *
- * The env var keeps the SDK's spelling. An application reads its Convex URL
- * however its bundler exposes one, and picking a different spelling here to
- * look more idiomatic would be guessing at somebody else's build — the same
- * mistake naming a React Native storage package would be, one option up.
+ * `aliceSignIn` and `bobSignIn` are the reader's own functions. Each returns
+ * a signed assertion from the application's identity provider, and nothing
+ * importable produces one, so the option discloses whose they are in a
+ * comment the same way the React Native store discloses `storage`.
  *
  * scripts/audit-build.mjs checks module specifiers under `@open-e2ee/` only, so
- * it does not re-check these two. That scope is right — they are not ours to
- * check — and it is why the provenance is written down here instead.
+ * it holds the two factories and the store subpaths to the installed types
+ * and leaves the reader's names alone. That scope is right — they are not
+ * ours to check — and it is why the disclosure is written down here instead.
  */
 export const relayOptions = [
   {
     id: 'memory',
-    label: 'In-memory',
+    label: 'In-memory relay',
     subpath: 'remote/relay/memory',
     symbol: 'inMemoryRelay',
+    factory: 'createSignalProtocolClient',
+    hosted: false,
     setup: 'const relay = inMemoryRelay();',
     experimental: false,
   },
   {
-    id: 'convex',
-    label: 'Convex',
-    subpath: 'remote/relay/convex',
-    symbol: 'convexRelay',
-    imports: [
-      'import { ConvexReactClient } from "convex/react";',
-      'import { api } from "../convex/_generated/api";',
-    ],
-    setup: [
-      'const convex = new ConvexReactClient(process.env.CONVEX_URL!);',
-      'const relay = convexRelay({ convex, api: api.signal });',
-    ].join('\n'),
+    id: 'hosted',
+    label: 'Signal Protocol Relay',
+    factory: 'createHostedSignalProtocolClient',
+    hosted: true,
+    setup: 'const relayUrl = process.env.OPEN_E2EE_RELAY_URL!;',
     experimental: false,
+    comment:
+      "aliceSignIn and bobSignIn return each device's signed identity assertion from your identity provider.",
   },
 ];
 
@@ -247,11 +242,11 @@ export const relayOptions = [
  * below a copy button is read after the copy, if at all; a comment travels with
  * the paste.
  *
- * That note covered `convex` and `api` too, and those two are no longer
- * explained by anybody. The Convex option imports them. A comment saying where
- * a name comes from is a weaker version of a line that binds it, and the
- * stronger version was available the whole time — so the disclosure that
- * remains is the one with nothing importable behind it.
+ * The Signal Protocol Relay option carries a disclosure of the same kind for
+ * `aliceSignIn` and `bobSignIn`. A comment saying where a name comes from is
+ * a weaker version of a line that binds it, so a disclosure is spent only on
+ * a name with nothing importable behind it, and both of these are the
+ * reader's own identity-provider calls.
  *
  * The wording is held to design/DESIGN.md's fixed relay formula like any other
  * text on the site. It renders into the page, so `scripts/audit-build.mjs`
@@ -287,8 +282,10 @@ export const relayOptions = [
    and does not help a reader who meets the word before the distinction.
 
    True of both options, which is the standing constraint on a fixed comment:
-   devices post to `inMemoryRelay` in this process and to `convexRelay` over the
-   network, and collect from either the same way.
+   devices post to `inMemoryRelay` in this process and to the Signal Protocol
+   Relay over the network, and collect from either the same way. On the hosted
+   option it rides on the line that names the Relay's URL, which is the one
+   line of that construction.
 
    Exported, alone among the six, because it is the one whose place in the
    listing depends on the option chosen. A test that only knew the comment
@@ -306,9 +303,11 @@ export const relayComment = '// Devices post and collect envelopes from the rela
  *
  * Nothing overruns 1280. Below it two do, and both are known: React Native's
  * adapters line is 101 characters with its comment and scrolls under a 1120px
- * viewport, and Convex's construction takes `PANEL_COLUMNS` off the trailing
- * position entirely, so its comment is a line rather than a scrollbar. All
- * three figures are measured in a browser, not estimated from a font size.
+ * viewport, and the Signal Protocol Relay's two long lines — the URL line
+ * with the relay comment on it, and the sign-in disclosure — are 104 each,
+ * which the 97-column budget at 1024 does not hold either. The two budgets
+ * are measured in a browser, not estimated from a font size; the line
+ * lengths are counted.
  *
  * So they say one thing each, and the thing they say is the one the code does
  * not. `adapters:` shows that an adapter is a value you pass, so its comment
@@ -366,10 +365,10 @@ const PANEL_COLUMNS = 108;
  * under the program for as long as it ships, at every viewport width, because
  * the panel has a maximum width and this exceeds it there too.
  *
- * Only Convex takes that branch today, and only because its construction line
- * is the longest in the file at 54 characters. Above it rather than below is
- * deliberate: `const convex = …` sits on the line before, and a comment about
- * what a relay does would be answering for its neighbor.
+ * No option takes that branch today. The Signal Protocol Relay's URL line is
+ * the longest construction at 50 characters and still leaves room. The branch
+ * stays for the next construction that does not, and puts the comment above
+ * rather than below so that it never reads as describing the line after.
  */
 const withTrailingComment = (code, comment) => {
   const lines = code.split('\n');
@@ -396,29 +395,48 @@ export const buildSnippet = (storageId, relayId) => {
   if (!store) throw new Error(`Unknown storage adapter: ${storageId}`);
   if (!relay) throw new Error(`Unknown relay adapter: ${relayId}`);
 
+  /* The two option shapes, side by side. The in-memory relay is an adapter the
+     client is handed, so each block names its identity and passes `relay`.
+     The Signal Protocol Relay's client takes the URL and the sign-in callback
+     under `hosted` and derives the identity from the assertion, so there is
+     no `identity` line and no `relay` key. */
+  const aliceIdentity = relay.hosted
+    ? '  hosted: { relayUrl, getIdentityAssertion: aliceSignIn },'
+    : '  identity: { userId: "alice" },';
+  const bobIdentity = relay.hosted
+    ? '  hosted: { relayUrl, getIdentityAssertion: bobSignIn },'
+    : '  identity: { userId: "bob" },';
+  const adapters = relay.hosted
+    ? `  adapters: { storage: ${store.expr} },`
+    : `  adapters: { storage: ${store.expr}, relay },`;
+  const recipient = relay.hosted ? 'bob.userId' : '"bob"';
+
   return [
-    `import { createSignalProtocolClient } from "${PACKAGE}";`,
+    `import { ${relay.factory} } from "${PACKAGE}";`,
     `import { ${store.symbol} } from ${specifier(store.subpath)};`,
-    `import { ${relay.symbol} } from ${specifier(relay.subpath)};`,
-    /* An adapter may need names the SDK does not export — the Convex relay
-       needs a client and a generated API — and they belong in the import block
-       with the rest, not in a comment underneath. Written for either side
-       because nothing about this is particular to relays; no store needs one
-       today. */
+    /* The Signal Protocol Relay has no subpath: its factory is the root import
+       on the first line. */
+    ...(relay.subpath ? [`import { ${relay.symbol} } from ${specifier(relay.subpath)};`] : []),
+    /* An adapter may need names the SDK does not export, and they belong in the
+       import block with the rest, not in a comment underneath. Written for
+       either side because nothing about this is particular to relays; no
+       option needs one today. */
     ...(store.imports ?? []),
     ...(relay.imports ?? []),
     '',
-    ...(relay.comment ? [`// ${relay.comment}`] : []),
-    /* The relay's comment rides on the last line of its construction, not the
-       first. Convex builds a client before it builds a relay, and a comment
-       about what a relay does, sitting on the line that makes a Convex client,
-       would be describing its neighbor. */
+    /* The relay's comment rides on the last line of its construction, so that
+       a construction of more than one line never has the comment describing
+       its neighbor. */
     ...withTrailingComment(relay.setup, relayComment),
     '',
-    `const alice = await createSignalProtocolClient({ ${ALICE_COMMENT}`,
-    '  identity: { userId: "alice" },',
+    /* An option's own disclosure sits directly above the first line that uses
+       the names it explains, which for the Signal Protocol Relay is Alice's
+       `hosted` line. */
+    ...(relay.comment ? [`// ${relay.comment}`] : []),
+    `const alice = await ${relay.factory}({ ${ALICE_COMMENT}`,
+    aliceIdentity,
     ...(store.comment ? [`  // ${store.comment}`] : []),
-    `  adapters: { storage: ${store.expr}, relay }, ${ADAPTERS_COMMENT}`,
+    `${adapters} ${ADAPTERS_COMMENT}`,
     '});',
     /* Bob's block is the same four lines with a different identity, and it
        deliberately carries neither the adapters note nor the store's own
@@ -428,9 +446,9 @@ export const buildSnippet = (storageId, relayId) => {
 
        No blank line between the two, either. They are one beat — two devices
        — and a gap made them read as two unrelated setups. */
-    `const bob = await createSignalProtocolClient({ ${BOB_COMMENT}`,
-    '  identity: { userId: "bob" },',
-    `  adapters: { storage: ${store.expr}, relay },`,
+    `const bob = await ${relay.factory}({ ${BOB_COMMENT}`,
+    bobIdentity,
+    adapters,
     '});',
     '',
     /* Receive first, then send. That is the order the SDK's own docstring uses
@@ -449,7 +467,7 @@ export const buildSnippet = (storageId, relayId) => {
        that has to survive at full length: what is encrypted, where, and when
        relative to the relay. */
     SEND_COMMENT,
-    `await alice.send("bob", "${capture.plaintext}");`,
+    `await alice.send(${recipient}, "${capture.plaintext}");`,
   ].join('\n');
 };
 

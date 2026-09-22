@@ -478,7 +478,7 @@ check SR-V23 'UIR6.4  One theme choice persists under the shared key' sr_v23
 check SR-V24 'UIR1.5  The website pins the new design tag' sr_v24
 check SR-V25 'UIR5.1  The demo stylesheet needs no class the chrome defines' sr_v25
 check SR-V26 'FR2  The pricing page leads with the five Relay tiers' sr_v26
-check SR-V27 'FR2  Every Relay tier carries its own action, and licensing follows' sr_v27
+check SR-V27 'FR2  Every Relay tier carries its own action, and no license table follows' sr_v27
 check SR-V28 'FR3  The homepage leads with the Relay and a free start' sr_v28
 check SR-V29 'FR4  The header carries a start action at every width' sr_v29
 check SR-V30 'FR5  The relay page carries a figure and a free start' sr_v30

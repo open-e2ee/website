@@ -639,27 +639,37 @@ test('publishes the subprocessor list the agreement points at', async () => {
 });
 
 test('reaches each agreement from the pages that sell against it', async () => {
+  /* `flat` keeps comments, and two of these sources carry the retired SDK
+   * license path inside a comment on purpose: the dated table on /pricing and
+   * the notes on /licensing that say what the page stopped being. The shipped
+   * markup is what sells, so the comments come out before the two negative
+   * checks below. */
+  const shipped = async (path) => (await read(path)).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ').replace(/\s+/g, ' ');
   const [pricing, relay, licensing, footer] = await Promise.all([
-    flat('../src/pages/pricing.astro'),
+    shipped('../src/pages/pricing.astro'),
     flat('../src/pages/relay/index.astro'),
-    flat('../src/pages/licensing.astro'),
+    shipped('../src/pages/licensing.astro'),
     flat('../src/components/Footer.astro'),
   ]);
 
-  assert.match(pricing, /href="\/legal\/terms"/);
   /* The Relay plans sell against the Relay service terms. /pricing carries no
    * prose about them since the founder cut its How buying works band on
    * 2026-09-08, so the footer on every page, /pricing included, is the route,
-   * and the console binds the terms at checkout. */
+   * and the console binds the terms at checkout. The SDK commercial license
+   * table on /pricing, which reached /legal/terms, is commented out as of
+   * 2026-09-22; the stripped source reaches no agreement, and the comment
+   * still does. */
   assert.match(footer, /href="\/legal\/relay-terms"/);
   assert.match(relay, /href="\/legal\/relay-terms"/);
-  assert.match(pricing, /renews annually until you cancel/i);
-  assert.match(licensing, /href="\/legal\/terms"/);
-  /* Was /signed order form/. Which instrument closes which tier is a purchase
-   * step the agreement owns, so /licensing does not print it. What this page
-   * still owes is a description of the negotiated path, which is what the pin
-   * follows. */
-  assert.match(licensing, /separately negotiated production grant/i);
+  assert.doesNotMatch(pricing, /href="\/legal\/terms"/, '/pricing reaches the SDK commercial terms it no longer sells against');
+  assert.match(await read('../src/pages/pricing.astro'), /href="\/legal\/terms"/, 'the commented table lost its route to the terms');
+  /* The SDK is MIT OR Apache-2.0 from 3.0.0. /licensing names the two license
+   * files, which are the instruments now, and the Relay's terms, which are the
+   * one agreement the site still sells against. */
+  assert.match(licensing, /LICENSE-MIT/);
+  assert.match(licensing, /LICENSE-APACHE/);
+  assert.match(licensing, /href="\/legal\/relay-terms"/);
+  assert.doesNotMatch(licensing, /AGPL|commercial license/i, '/licensing still describes the AGPLv3 path');
 });
 
 test('permanently redirects short and historical legal paths to one hierarchy', async () => {

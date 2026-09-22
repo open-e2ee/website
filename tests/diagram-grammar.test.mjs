@@ -9,7 +9,7 @@
  * mark's own construction while claiming to draw the reader's infrastructure.
  *
  * `DESIGN.md` under *Two relay forms* settles it. The brackets are the mark, so
- * they belong to a drawing whose subject is OpenE2EE Relay. Every diagram in an
+ * they belong to a drawing whose subject is the Signal Protocol Relay. Every diagram in an
  * article is a diagram of the reader's architecture, and takes the unbranded
  * container instead. `src/lib/relay-form.mjs` is the only place that container
  * is constructed, and these guards hold it there.

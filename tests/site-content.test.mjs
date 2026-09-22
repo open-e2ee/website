@@ -364,10 +364,26 @@ test('offers every adapter as a real, complete, copyable program', () => {
     const store = storageOptions.find((option) => option.id === variant.storage);
     const relay = relayOptions.find((option) => option.id === variant.relay);
 
-    /* Each variant imports its own two adapters, plus whatever else an adapter
-     * needs to be constructible — the Convex relay needs a client class and a
-     * generated API module, and a variant that dropped either would still look
-     * like a program. */
+    /* Each variant imports its client factory from the package root, its
+     * store, its relay where the relay is a subpath adapter, and whatever
+     * else an option needs to be constructible. A variant that dropped any
+     * of them would still look like a program. */
+    assert.ok(
+      variant.code.startsWith(`import { ${relay.factory} } from "${capture.packageName}";`),
+      `${variant.storage}/${variant.relay} does not open with its client factory`,
+    );
+    if (relay.subpath) {
+      assert.ok(
+        variant.code.includes(`import { ${relay.symbol} } from "${capture.packageName}/${relay.subpath}";`),
+        `${variant.storage}/${variant.relay} does not import its relay`,
+      );
+    } else {
+      assert.doesNotMatch(
+        variant.code,
+        /remote\/relay/,
+        `${variant.storage}/${variant.relay} imports a relay subpath the hosted client does not take`,
+      );
+    }
     for (const line of [...(store.imports ?? []), ...(relay.imports ?? [])]) {
       assert.ok(
         variant.code.includes(line),
@@ -384,12 +400,12 @@ test('offers every adapter as a real, complete, copyable program', () => {
       ),
       `${variant.storage}/${variant.relay} does not import its store`,
     );
-    /* Line by line rather than as one block, because the two are no longer
-       always adjacent: the relay's comment takes the trailing position on the
+    /* Line by line rather than as one block, because the two need not be
+       adjacent: the relay's comment takes the trailing position on the
        construction's last line where that line has room, and the line above it
-       where it does not, which is Convex. What must hold is that every line of
-       the construction ships — a variant that lost one would not run — and
-       that the comment ships with it, whichever of the two places it took. */
+       where it does not. What must hold is that every line of the construction
+       ships — a variant that lost one would not run — and that the comment
+       ships with it, whichever of the two places it took. */
     for (const line of relay.setup.split('\n')) {
       assert.ok(
         variant.code.includes(line),
@@ -529,8 +545,8 @@ test('binds the names the reader brings, or says whose they are', async () => {
    * produces it, the program imports it and needs no caption. If nothing does,
    * a comment has to say whose it is. This test holds each option to whichever
    * one its value admits, and it exists because the page did the weaker thing
-   * in both cases for a while: `convex` and `api` were described in a comment
-   * when they could simply have been bound. */
+   * in both cases for a while: two importable names were described in a
+   * comment when they could simply have been bound. */
   const binds = (line, name) => {
     const imported = line.match(/^import \{([^}]+)\} from /);
     if (imported) {
@@ -547,21 +563,21 @@ test('binds the names the reader brings, or says whose they are', async () => {
   assert.match(rn.comment, /your own ReactNativeKeyValueStorage/);
   assert.ok(rn.expr.includes('storage'));
 
-  /* `convex` and `api` can be, and so must be. The comment that stood here is
-   * asserted gone rather than merely not asserted present — a disclosure left
-   * beside the binding that replaced it is the state this change was made to
-   * leave behind. */
-  const convex = relayOptions.find((option) => option.id === 'convex');
-  assert.equal(convex.comment, undefined, 'the Convex relay still captions what it now imports');
-  assert.ok(
-    convex.imports.some((line) => line.includes('convex/react')),
-    'the Convex relay does not import a client',
-  );
-  assert.ok(
-    convex.imports.some((line) => line.includes('_generated/api')),
-    'the Convex relay does not import a generated API',
-  );
-  assert.match(convex.setup, /const convex = new ConvexReactClient\(/);
+  /* The Signal Protocol Relay binds `relayUrl` itself and discloses the two
+   * sign-in callbacks, which are the reader's identity-provider calls and
+   * have nothing importable behind them. It imports nothing beyond its
+   * factory: the hosted client is a root export and takes no relay subpath. */
+  const hosted = relayOptions.find((option) => option.id === 'hosted');
+  assert.equal(hosted.factory, 'createHostedSignalProtocolClient');
+  assert.equal(hosted.hosted, true);
+  assert.equal(hosted.subpath, undefined, 'the hosted client is reached through a relay subpath');
+  assert.equal(hosted.imports, undefined, 'the hosted option imports something the SDK does not export');
+  assert.match(hosted.setup, /^const relayUrl = process\.env\.OPEN_E2EE_RELAY_URL!;$/);
+  assert.match(hosted.comment, /aliceSignIn and bobSignIn return each device's signed identity assertion/);
+  const memory = relayOptions.find((option) => option.id === 'memory');
+  assert.equal(memory.factory, 'createSignalProtocolClient');
+  assert.equal(memory.hosted, false);
+  assert.equal(memory.comment, undefined, 'the in-memory relay captions a name it binds');
 
   for (const variant of snippetVariants) {
     const lines = variant.code.split('\n');
@@ -569,10 +585,9 @@ test('binds the names the reader brings, or says whose they are', async () => {
     /* Every name the program uses and did not get from the SDK is bound before
      * the line that uses it. Two exclusions from the search for a use, and both
      * are about not letting a line count as its own reader: an `import` line
-     * mentions a name inside a string — `"convex/react"` contains `convex` and
-     * is not a reference to it — and the line that binds a name mentions it by
-     * definition. */
-    for (const name of ['convex', 'api']) {
+     * mentions a name inside a string, and the line that binds a name mentions
+     * it by definition. */
+    for (const name of ['relayUrl']) {
       const mentions = new RegExp(`\\b${name}\\b`);
       const bound = lines.findIndex((line) => binds(line, name));
       const used = lines.findIndex(
@@ -601,6 +616,28 @@ test('binds the names the reader brings, or says whose they are', async () => {
       const said = lines.findIndex((line) => line.includes('ReactNativeKeyValueStorage'));
       const used = lines.findIndex((line) => line.includes('reactNativeStore({ storage })'));
       assert.ok(said !== -1 && said < used, 'the store is used before its object is explained');
+    }
+
+    /* The same rule for the Signal Protocol Relay's sign-in callbacks: present
+     * exactly when the relay is the hosted one, and said above the first line
+     * that passes one. The in-memory variants name neither callback and take
+     * no `hosted` block; the hosted variants name no `identity` and pass no
+     * `relay`, because the hosted client derives the one and builds the other. */
+    const isHosted = variant.relay === 'hosted';
+    assert.equal(
+      /aliceSignIn and bobSignIn/.test(variant.code),
+      isHosted,
+      `${variant.storage}/${variant.relay} disclosure does not match its relay`,
+    );
+    assert.equal(/hosted: \{ relayUrl, getIdentityAssertion: aliceSignIn \}/.test(variant.code), isHosted);
+    assert.equal(/hosted: \{ relayUrl, getIdentityAssertion: bobSignIn \}/.test(variant.code), isHosted);
+    assert.equal(/identity: \{ userId: "alice" \}/.test(variant.code), !isHosted);
+    assert.equal(/, relay \}/.test(variant.code), !isHosted, `${variant.storage}/${variant.relay} passes a relay adapter the wrong way`);
+    assert.equal(/alice\.send\(bob\.userId, /.test(variant.code), isHosted);
+    if (isHosted) {
+      const said = lines.findIndex((line) => line.includes('aliceSignIn and bobSignIn'));
+      const used = lines.findIndex((line) => line.includes('getIdentityAssertion: aliceSignIn'));
+      assert.ok(said !== -1 && said < used, 'the sign-in callback is used before it is explained');
     }
   }
 
@@ -1846,26 +1883,29 @@ test('gives the SDK license agreement one name wherever a page links it', async 
 });
 
 /*
- * The hosted product is OpenE2EE Relay. "Managed Relay" is the name it was
- * described by before the glossary settled one, and docs/GLOSSARY.md lists it
- * in the Avoid column of the Relay row.
+ * The product is the OpenE2EE Signal Protocol Relay: the Signal Protocol Relay,
+ * or the Relay, after a surface's first mention. "Managed Relay" and
+ * "OpenE2EE Relay" are the names it was described by before, and "hosted
+ * Relay" and "Signal Relay" are the shortenings that lose the protocol.
  *
- * Nothing else catches it. The build audit's TERMINOLOGY list is short by
- * design, and the retired name is a plain English phrase that reads correctly
- * to anyone who does not know the product has a name, which is why it survived
- * on two surfaces after the glossary retired it.
+ * Nothing else catches them. The build audit's TERMINOLOGY list is short by
+ * design, and each retired name is a plain English phrase that reads correctly
+ * to anyone who does not know the product has a name, which is why the first
+ * survived on two surfaces after the glossary retired it.
  *
  * Comments are not stripped here, unlike the guard above. That guard has to
  * let a source explain a retired name; this one does not, because the phrase
  * describes a product rather than titling a document, and a source file has no
  * occasion to write it at all.
  *
- * Frozen dated legal pages are exempt. /legal/privacy/2026-08-26 is the text
- * that was published under that name, it is served as an immutable copy of a
- * document a customer may have accepted, and correcting a word in it would
- * make it a different document than the one it claims to be.
+ * Frozen dated legal pages and the dated components they render are exempt.
+ * /legal/privacy/2026-08-26 is the text that was published under that name, it
+ * is served as an immutable copy of a document a customer may have accepted,
+ * and correcting a word in it would make it a different document than the one
+ * it claims to be. "OpenE2EE Relay Service Terms" is exempt on every page: it
+ * is the title of the accepted instrument, not a description of the product.
  */
-test('calls the hosted product by the name the glossary settles on', async () => {
+test('calls the Relay by the name the glossary settles on', async () => {
   const sources = [];
   const walk = async (dir) => {
     for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
@@ -1876,16 +1916,16 @@ test('calls the hosted product by the name the glossary settles on', async () =>
   await walk('../src/');
   assert.ok(sources.length > 30, `expected to walk the whole tree, found ${sources.length} files`);
 
-  const frozen = /\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$/;
+  const frozen = /\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$|\/components\/(?:ManagedRelayTerms\d{8}|CommercialTerms|DataProcessingAgreement\d{8})\.astro$/;
   const live = sources.filter((source) => !frozen.test(source));
   assert.ok(live.length > 30, `every source read as a frozen page, found ${live.length} live files`);
+  assert.ok(sources.length - live.length >= 4, `the frozen set is ${sources.length - live.length} files; the dated components are not in it`);
 
+  const retired = /Managed Relay|OpenE2EE Relay(?! Service Terms)|(?<!self-)hosted Relay|Signal Relay\b/;
   for (const source of live) {
-    assert.doesNotMatch(
-      await read(source),
-      /Managed Relay/,
-      `${source} calls the hosted product "Managed Relay"; it is OpenE2EE Relay`,
-    );
+    const text = await read(source);
+    const hit = text.match(retired);
+    assert.equal(hit, null, `${source} calls the Relay "${hit?.[0]}"; it is the OpenE2EE Signal Protocol Relay`);
   }
 });
 
@@ -2118,8 +2158,8 @@ test('closes the page on what the license hands over, not on forking it', async 
   assert.doesNotMatch(drawing, /aria-hidden/);
 
   /* The band states neither license's terms and routes to the page that owns
-   * them, so the route has to survive. `/licensing` carries what AGPLv3 asks
-   * of the reader's own application; a band that hands over four things and
+   * them, so the route has to survive. `/licensing` carries what each of the
+   * two licenses asks of the reader; a band that hands over four things and
    * links nowhere would leave a developer to learn it from a lawyer.
    *
    * The label is pinned as well as the href, because "Licensing" is the one
@@ -3512,7 +3552,8 @@ test('backs the durability claim it prints under the recorded row', async () => 
 });
 
 test('promises no price it does not show, and links to one that shows them all', async () => {
-  const { startupTier, tiers } = await import('../src/data/pricing.mjs');
+  const { startupTier } = await import('../src/data/pricing.mjs');
+  const { relayPlans } = await import('../src/data/relay-pricing.mjs');
   const [index, dist, pricingPage] = await Promise.all([
     flat('../src/pages/index.astro'),
     readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(() => null),
@@ -3526,26 +3567,28 @@ test('promises no price it does not show, and links to one that shows them all',
    * and not linked". Either half closes it — show the number, or make no
    * promise and link to where the numbers are. The page does the second, so
    * what has to hold is that the promise stays gone and the link stays good.
-   * The link was a deck cell's `link` field and is now an anchor in the Open
-   * Source band's link row, which is why the source pin reads as markup. */
-  assert.equal(startupTier.name, 'Startup');
-  assert.match(startupTier.price, /^\$[\d,]+$/);
+   * The link is the anchor in the Relay band's link row, which is why the
+   * source pin reads as markup. */
   assert.match(index, /<a href="\/pricing">/);
 
   if (!dist) return skipUnbuilt('dist/index.html');
   assert.doesNotMatch(dist, /at a published price/);
   assert.match(dist, /href="\/pricing"/);
 
-  /* And the page it links to renders every tier, so the link does not lead
-   * somewhere that lost the numbers the landing page declines to state. That
-   * is what makes the silence safe rather than evasive. */
+  /* And the page it links to renders every figure it sells, so the link does
+   * not lead somewhere that lost the numbers the landing page declines to
+   * state. Since 2026-09-22 those are the Relay plans: the SDK is MIT OR
+   * Apache-2.0 and its license table is a dated comment, so the dormant entry
+   * license price must be absent from the same page, or the link would lead
+   * to a price for something the site no longer sells. */
   if (!pricingPage) return skipUnbuilt('dist/pricing/index.html');
-  for (const tier of tiers) {
-    assert.ok(
-      pricingPage.includes(tier.price),
-      `/pricing does not render ${tier.name} at ${tier.price}`,
-    );
+  /* Every priced plan; "Custom" is not a price and the Enterprise band does
+   * not print it. */
+  for (const plan of relayPlans.filter((plan) => /^\$/.test(plan.price))) {
+    assert.ok(pricingPage.includes(plan.price), `/pricing does not render ${plan.name} at ${plan.price}`);
   }
+  assert.match(startupTier.price, /^\$[\d,]+$/);
+  assert.equal(pricingPage.includes(startupTier.price), false, `/pricing renders the dormant SDK entry license at ${startupTier.price}`);
 });
 
 test('quotes the entry price from the module on every marketing page', async () => {
@@ -3555,29 +3598,22 @@ test('quotes the entry price from the module on every marketing page', async () 
    * the module prevented drift on exactly one of the five places the number
    * appeared. /product, /evaluate and /pricing's own meta description each
    * carried their own typed copy, all of them correct, all of them free to go
-   * stale independently at the next price change. /evaluate has since folded
-   * into /security, which is why the list below names two pages and not three;
-   * the sweep further down is what covers the ones nobody thought to list.
+   * stale independently at the next price change. Since 2026-09-22 no live
+   * page quotes the figure at all: the SDK is MIT OR Apache-2.0, the license
+   * table on /pricing is a dated comment, and /product states the license
+   * without a price. What the module still prevents is a typed copy coming
+   * back on any page while the table is dormant, which the sweep below is.
    *
-   * Reading from the module is asserted on the source rather than the built
-   * page because a hard-coded "$5,000" and a rendered `startupTier.price` are
-   * byte-identical in `dist` today. That is the whole problem: the defect is
-   * invisible in the output until the day someone changes the price. */
-  const quoting = ['product', 'pricing'];
-  for (const page of quoting) {
-    const source = await flat(`../src/pages/${page}.astro`);
-    assert.match(
-      source,
-      /startupTier\.price/,
-      `/${page} does not read the entry price from pricing.mjs`,
-    );
-  }
-
-  /* And no page reintroduces a typed figure. Comments are stripped first: a
-   * comment does not render, so a figure inside one cannot drift on the page,
-   * and a guard that fired on the prose explaining the rule would be deleted
-   * by the next person who hit it. */
+   * Comments are stripped first: a comment does not render, so a figure inside
+   * one cannot drift on the page, and a guard that fired on the prose
+   * explaining the rule would be deleted by the next person who hit it. The
+   * dormant table maps the module's tiers and prints `tier.price` inside its
+   * comment, and that is the shape it must keep, so restoring it restores a
+   * single-sourced figure. */
   const strip = (text) => text.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ');
+  const pricingSource = await read('../src/pages/pricing.astro');
+  assert.match(pricingSource, /\{tier\.price\}/, 'the dormant table no longer reads the tier prices from pricing.mjs');
+  assert.doesNotMatch(strip(pricingSource), /tier\.price|startupTier/, '/pricing reads the dormant module outside its comment');
 
   /* Recursive, with the exemption named rather than implied. The first version
    * called `readdir` without recursion and so covered the top level only, which
@@ -4124,17 +4160,16 @@ test('carries what the OSI mark is licensed on, wherever the mark is', async () 
     'the OSI mark is on the page without its required attribution statement',
   );
 
-  /* The permission itself. The GNU Affero General Public License version 3 is
+  /* The permission itself. The MIT License and the Apache License 2.0 are both
    * on OSI's approved list; the mark is allowed here because the page says the
-   * SDK is under it. Matched on the license rather than on any one sentence,
-   * because four different sentences on this page have carried it and any of
-   * them discharges this. Both renderings satisfy the condition and both are
-   * matched: `docs/messaging.md` §4 makes AGPLv3 the prose form and leaves the
-   * SPDX identifier in place where a license field or a legal clause names it,
-   * and OSI's condition is about the license, not about its spelling. */
+   * SDK is under them. Matched on the licenses rather than on any one
+   * sentence, because more than one sentence on this page has carried them and
+   * any of them discharges this. The prose form "MIT or Apache-2.0" and the
+   * SPDX expression "MIT OR Apache-2.0" both satisfy the condition, and OSI's
+   * condition is about the license, not about its spelling. */
   assert.match(
     built,
-    /AGPLv3|AGPL-3\.0/,
+    /MIT (?:or|OR) Apache-2\.0/,
     'the OSI mark is permitted only on a page that promotes an OSI-approved license',
   );
 
@@ -4508,82 +4543,66 @@ test('states store maturity as an implementation fact, not a grade', async () =>
 });
 
 test('says what Pricing sells, on the page that shows the nav item', async () => {
-  const [index, pricing] = await Promise.all([
+  const [index, pricingRaw] = await Promise.all([
     flat('../src/pages/index.astro'),
-    flat('../src/pages/pricing.astro'),
+    read('../src/pages/pricing.astro'),
   ]);
 
   /* Four fresh readers read "Pricing" and "Console" in the nav against
    * "nothing phones home" and "no account" in the body, and every one of them
-   * concluded a hosted service was being hidden. It is a license, not hosting,
-   * and /pricing says so — but a reader forms the judgment in the first
-   * viewport and never gets there. The claim has to hold on both pages or the
-   * landing page is inventing a commercial model.
+   * concluded a hosted service was being hidden. Since 2026-09-22 there is one:
+   * /pricing sells the Signal Protocol Relay's plans and nothing else, because
+   * the SDK is MIT OR Apache-2.0 and its commercial license table is commented
+   * out of the page. The claim has to hold on both pages or the landing page
+   * is inventing a commercial model.
    *
-   * The Open Source band's lead is the homepage's statement, and the route to
-   * the tiers sits with it in that band's link row. Both used to be a cell in
-   * the feature band above, which put the license in front of a reader twice
-   * under two headings; the band that is already about the license is where
-   * the statement and its route belong.
-   *
-   * The label is the footer's, not a fresh one. /pricing was reached under
-   * four names across the site, and a destination with four names cannot make
-   * a promise about itself. */
-  assert.match(index, /The complete SDK is free under AGPLv3/);
-  assert.match(index, /<a href="\/pricing">Pricing<\/a>/);
-  /* /pricing prints the AGPLv3 tier from src/data/pricing.mjs in its license
-   * band, the last band on the page, so the source is checked for the band
-   * and the data for the tier. */
-  assert.match(pricing, /id="licensing"/);
+   * So the Open Source band states the license and routes to /licensing only,
+   * and the Relay band is the one that routes to /pricing, under a label that
+   * says what the page sells. The Pricing link that stood in the Open Source
+   * band's link row left with the license table. */
+  assert.match(index, /The complete SDK is free under the MIT or Apache-2\.0 license, at your option\./);
+  assert.match(index, /Closed-source products need no commercial license\./);
+  assert.doesNotMatch(index, /<a href="\/pricing">Pricing<\/a>/, 'the Open Source band routes to a page that sells no SDK license');
+  assert.match(index, /<a href="\/pricing">Relay plans and limits<\/a>/);
 
-  /* The tier copy and the prices moved out of this page and into
-   * src/data/pricing.mjs, so that the landing page could quote the entry
-   * price from the same source instead of describing it. The assertions
-   * follow the data rather than the file it used to live in. */
-  const { tiers } = await import('../src/data/pricing.mjs');
-  assert.ok(tiers.some((tier) => tier.name === 'AGPLv3' && tier.price === 'Free'), 'no tier prices the SDK as free under AGPLv3');
-  /* Was /You run your own infrastructure/. The free column states the
-   * obligation that disqualifies a reader from it rather than a benefit, so
-   * this follows the trigger sentence. positioning.md §3 makes that friction
-   * the qualification funnel, and it is the one fact the tier owes. */
+  /* /pricing itself: the stripped source carries no license section, and the
+   * source keeps it in a dated comment, so the table returns by uncommenting
+   * rather than by rewriting. */
+  const pricing = pricingRaw.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ').replace(/\s+/g, ' ');
+  assert.doesNotMatch(pricing, /id="licensing"/, 'the SDK license table is back on /pricing');
+  assert.match(pricingRaw, /<section id="licensing"/, 'the commented license table left the source');
+  assert.match(pricingRaw, /2026-09-22/, 'the comment does not date the removal');
+
+  /* The dormant catalog in src/data/pricing.mjs keeps its shape for the day a
+   * self-hosted Relay license is sold: three tiers, a free one that states the
+   * network-use trigger, an entry figure, and Custom. Nothing renders it. */
+  const { tiers, startupTier } = await import('../src/data/pricing.mjs');
+  assert.ok(tiers.some((tier) => tier.name === 'AGPLv3' && tier.price === 'Free'), 'the dormant catalog lost its free tier');
   assert.ok(
     tiers.some((tier) => /applications offered over a network/i.test(tier.detail)),
-    'the AGPLv3 tier no longer states the network-use trigger',
+    'the dormant free tier no longer states the network-use trigger',
   );
-
-  /* The sentence that creates the debt now links to the page that prices it.
-   * Three readers were told three times that a closed-source product owes a
-   * license fee and never once what it costs; one made it their largest gap on
-   * the page, because "at a published price" asserts the price is public in
-   * the same breath as not showing it. The numbers exist — this asserts they
-   * do, so the link cannot come to point at a page that stopped saying them. */
-  const { startupTier } = await import('../src/data/pricing.mjs');
-  assert.match(startupTier.price, /^\$[\d,]+$/, 'the entry license carries no concrete price');
-  /* The founder's 2026-09-09 catalog: three licenses, and the negotiated one
-   * prints "Custom" where the others print a figure. */
-  assert.deepEqual(tiers.map((tier) => tier.price), ['Free', startupTier.price, 'Custom'], 'the license prices are not free, the entry figure, and Custom');
+  assert.match(startupTier.price, /^\$[\d,]+$/, 'the dormant entry license carries no concrete price');
+  assert.deepEqual(tiers.map((tier) => tier.price), ['Free', startupTier.price, 'Custom'], 'the dormant prices are not free, the entry figure, and Custom');
 });
 
-test('names the license AGPLv3 wherever the site is not quoting an identifier', async () => {
-  /* `docs/messaging.md` §4: AGPLv3 is the prose rendering. The bare word is
-   * what the rule is against — it names a license family rather than a version,
-   * and the family has three versions with different obligations.
+test('names AGPL only where the comparison quotes libsignal\'s grant', async () => {
+  /* The SDK is MIT OR Apache-2.0 from 3.0.0. AGPL was its license before, and
+   * the word survived on eleven surfaces the day the license changed, so the
+   * built site is swept for it. One mention is right and stays: the
+   * comparison table's "No — AGPL-3.0 only" is libsignal's grant, and the
+   * difference from ours is the point of the row.
    *
-   * The SPDX identifier is not prose and passes: `AGPL-3.0-or-later` is what
-   * `package.json` declares, and `AGPL-3.0-only` is libsignal's grant on the
-   * comparison table, where the difference from ours is the point of the row.
-   * So this matches the word with no version after it, in either rendering.
-   *
-   * /legal is excluded because a contract defines its own terms. The commercial
-   * terms name the license in full — "Affero General Public License, version 3
-   * or later (AGPL-3.0-or-later)" — and then use the short form the way a
-   * defined term is used. Rewriting a defined term to match a marketing rule is
-   * an edit to an instrument, and this project keeps executed instruments as
-   * they were executed.
+   * /legal is excluded because a contract defines its own terms. The
+   * Commercial Terms name the license in full and then use the short form the
+   * way a defined term is used. Rewriting a defined term is an edit to an
+   * instrument, and this project keeps executed instruments as they were
+   * executed. The dormant SDK license table in src/data/pricing.mjs is not
+   * swept either: nothing renders it.
    *
    * On the built pages rather than the sources, because the sources carry
-   * comments — this one included — that quote the banned form in order to rule
-   * it out, and a source-side sweep would fail on its own reasoning. */
+   * comments — this one included — that quote the word in order to rule it
+   * out, and a source-side sweep would fail on its own reasoning. */
   const distDir = new URL('../dist/', import.meta.url);
   let pages;
   try {
@@ -4594,17 +4613,23 @@ test('names the license AGPLv3 wherever the site is not quoting an identifier', 
   }
 
   const offenders = [];
+  let libsignalCells = 0;
   for (const page of pages) {
     if (page.startsWith('legal/')) continue;
     const text = (await readFile(new URL(page, distDir), 'utf8'))
       .replace(/<[^>]*>/g, ' ')
       .replace(/\s+/g, ' ');
-    for (const hit of text.matchAll(/.{0,40}\bAGPL\b(?!-3\.0).{0,40}/g)) {
+    for (const hit of text.matchAll(/.{0,40}\bAGPL.{0,40}/g)) {
+      if (/No — AGPL-3\.0 only/.test(hit[0])) {
+        libsignalCells += 1;
+        continue;
+      }
       offenders.push(`${page}: …${hit[0]}…`);
     }
   }
 
-  assert.deepEqual(offenders, [], `the license is named without its version:\n${offenders.join('\n')}`);
+  assert.deepEqual(offenders, [], `the retired license is named outside /legal:\n${offenders.join('\n')}`);
+  assert.ok(libsignalCells > 0, 'the comparison table no longer states libsignal\'s grant');
 });
 
 /* A test here — "points at the documentation it says it has" — pinned the

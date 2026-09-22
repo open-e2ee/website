@@ -126,7 +126,7 @@ export const footerGroups: readonly FooterGroup[] = [
     heading: 'Products',
     links: [
       { href: '/product', label: 'Signal Protocol SDK' },
-      { href: '/relay', label: 'OpenE2EE Relay' },
+      { href: '/relay', label: 'Signal Protocol Relay' },
       /* "Demo in your browser" pointed at /demo and is gone with the route.
          The scenarios are a homepage section now, and a footer link to a
          fragment of the page the logo above already links to is the kind of

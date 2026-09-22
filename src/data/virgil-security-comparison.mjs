@@ -23,7 +23,7 @@ export const virgilSecurityComparison = {
   ],
   stickerPrices: [
     ['100', 'Free', 'Free', 'Virgil counts registered users; OpenE2EE counts monthly active accounts.'],
-    ['250', 'Free', '$99', 'OpenE2EE Free ends at 100 Relay MAU because Relay also supplies managed delivery infrastructure.'],
+    ['250', 'Free', '$99', 'OpenE2EE Free ends at 100 Relay MAU because Relay also supplies delivery infrastructure.'],
     ['1,000', '$99', '$99', 'The sticker price matches, but the products include different infrastructure.'],
     ['5,000', 'About $95–$99', '$299', 'Virgil lists two bands that both include 5,000 users.'],
     ['25,000', 'About $475', '$899', 'Compare the complete application stack, not only vendor fees.'],

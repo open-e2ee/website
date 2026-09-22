@@ -8,10 +8,9 @@ import {
   relayPlans,
   relayProductionRetention,
 } from '../data/relay-pricing.mjs';
-import { startupTier, tiers } from '../data/pricing.mjs';
 import { demoBookingUrl, relayEnterpriseBookingUrl } from '../data/booking.mjs';
 import { startAction, startPromise } from '../lib/site-navigation';
-import { INCLUDED, NO_OVERAGE } from '../lib/plan-values.mjs';
+import { NO_OVERAGE } from '../lib/plan-values.mjs';
 import {
   ACTIONS,
   BAND,
@@ -19,7 +18,6 @@ import {
   BAND_SURFACE,
   CONTAINER,
   LEAD,
-  MEASURE,
   METADATA,
 } from '../lib/recipes';
 
@@ -158,7 +156,9 @@ const INCLUDED_CARD_DETAIL = 'm-0 mt-2 text-[0.9375rem] leading-[1.5] text-text-
  * the last column's definitions past a 48rem window. No column is marked; the
  * entry license carries the filled action.
  */
-const LICENSE_HEAD = `${HEAD_CELL} border-t-transparent`;
+/* Commented out 2026-09-22 with the SDK commercial license table.
+ * const LICENSE_HEAD = `${HEAD_CELL} border-t-transparent`;
+ */
 
 /*
  * Enterprise is one outlined band under the table, so the fifth plan reads as
@@ -175,9 +175,16 @@ const ENTERPRISE_BAND = 'mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 rule b
 
 const ENTERPRISE_DETAIL = 'm-0 text-[0.9375rem] text-text-3';
 
-const ENTERPRISE_LINK_CLASS = 'oe-button oe-button-secondary ms-auto text-text-3! hover:text-text-1! max-[34rem]:ms-0';
-const ENTERPRISE_ACTION_CLASS = 'oe-button oe-button-secondary';
-const ENTERPRISE_LINK = { href: '#licensing', label: 'SDK commercial licenses' };
+/* The action keeps to the end of the row now that the band's link down to the
+ * SDK license table is commented out; the link carried the margin before. */
+const ENTERPRISE_ACTION_CLASS = 'oe-button oe-button-secondary ms-auto max-[34rem]:ms-0';
+/*
+ * Commented out 2026-09-22 with the SDK commercial license table below. The
+ * band's link down to that table returns with the table.
+ *
+ * const ENTERPRISE_LINK_CLASS = 'oe-button oe-button-secondary ms-auto text-text-3! hover:text-text-1! max-[34rem]:ms-0';
+ * const ENTERPRISE_LINK = { href: '#licensing', label: 'SDK commercial licenses' };
+ */
 
 /*
  * The price is the largest thing in a column or a row, and the name reads as
@@ -273,13 +280,11 @@ const ENTERPRISE_ACTION = {
  * Free has no overage, so its overage cell reads as the cap it is.
  * Retention is the same on every plan, so it sits with what every plan carries.
  *
- * The last row is the one every plan shares, the founder's 2026-09-08 call:
- * the project commercial SDK license in section 4 of the Relay service terms.
- * The meters do not answer whether the SDK's AGPL reaches a proprietary
- * application, and that is the question a buyer asks before sizing. Every plan
- * carries the license, Free included, so every cell is the check, and the
- * definition repeats the grant's limits so the row promises nothing the terms
- * do not.
+ * The SDK Commercial License row every plan shared is commented out below as of
+ * 2026-09-22. The SDK is MIT OR Apache-2.0 since that day, so a proprietary
+ * application needs no commercial license and the row answered a question the
+ * license no longer raises. Section 4 of the Relay service terms still grants
+ * the project license; the row returns if the SDK license changes.
  */
 const define = (name: string) => {
   const meter = relayMeterDefinitions.find((entry) => entry.name === name);
@@ -317,12 +322,16 @@ const rows: Row[] = [
     definition: `${define('Storage')} Once overage is on, additional storage is ${storageOverage} on every paid plan.`,
     value: (plan) => plan.storage,
   },
-  {
-    label: 'SDK Commercial License',
-    definition:
-      'Use @open-e2ee/signal-protocol-sdk in one proprietary application that connects to the project, for as long as the project is active. Every plan carries it, Free included. It grants no self-hosting right and no right to redistribute the SDK.',
-    value: () => INCLUDED,
-  },
+  /*
+   * Commented out 2026-09-22: see the rationale above the row definitions.
+   *
+   * {
+   *   label: 'SDK Commercial License',
+   *   definition:
+   *     'Use @open-e2ee/signal-protocol-sdk in one proprietary application that connects to the project, for as long as the project is active. Every plan carries it, Free included. It grants no self-hosting right and no right to redistribute the SDK.',
+   *   value: () => INCLUDED,
+   * },
+   */
 ];
 
 const rowId = (row: RowShape, scope: string) => `${scope}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
@@ -347,6 +356,14 @@ const compactValueClasses = (row: RowShape) => [COMPACT_VALUE, row.lead ? LEAD_V
  * values are the catalog's, and the definitions state each license's answer
  * in the words of the agreement that gives it.
  */
+/*
+ * Commented out 2026-09-22. The SDK is MIT OR Apache-2.0 since that day, so the
+ * site sells no SDK commercial license and the table below is dormant. It
+ * stays in source, with src/data/pricing.mjs, for a possible self-hosted Relay
+ * license product. Restoring it means restoring this block, the import of
+ * pricing.mjs, the Enterprise band link, the section in the template, and the
+ * rules in tests/pricing-page.test.mjs and scripts/check-pricing-actions.mjs.
+ *
 type Tier = (typeof tiers)[number];
 type LicenseRow = RowShape & { value: (tier: Tier) => string };
 const agpl = tiers.find((tier) => tier.id === 'agplv3');
@@ -391,6 +408,7 @@ const licenseRows: LicenseRow[] = [
 ];
 const licenseCellClasses = (row: RowShape) => [CELL, ...rowPadding(row), row.lead ? LEAD_VALUE : 'text-text-3'];
 const licenseActionClasses = (tier: Tier) => ['oe-button', 'oe-button-full', tier.cta.secondary && 'oe-button-secondary'];
+ */
 
 /*
  * What every plan carries, one card per relay capability, each in the words
@@ -445,7 +463,7 @@ const INCLUDED_ANCHOR = 'included';
 
 <BaseLayout
   title="Pricing"
-  description={`OpenE2EE Relay plans from Free through Starter, Growth, Business, and Enterprise, with every meter and overage rate, and SDK commercial licensing from ${startupTier.price} per year.`}
+  description="OpenE2EE Signal Protocol Relay plans from Free through Starter, Growth, Business, and Enterprise, with every meter and overage rate."
   canonical="/pricing"
 >
   <section id="relay-plans" class={PLANS}>
@@ -460,7 +478,7 @@ const INCLUDED_ANCHOR = 'included';
       </div>
       <div class={PLAN_TABLE_AT}>
         <table class={PLAN_TABLE} itemscope itemtype="https://schema.org/Product">
-          <caption class="oe-visually-hidden" itemprop="name">OpenE2EE Relay plans, monthly prices, allowances, and what every plan includes</caption>
+          <caption class="oe-visually-hidden" itemprop="name">OpenE2EE Signal Protocol Relay plans, monthly prices, allowances, and what every plan includes</caption>
           <colgroup><col class="w-[15rem]" />{selfServe.map(() => <col />)}</colgroup>
           <thead>
             <tr>
@@ -522,7 +540,9 @@ const INCLUDED_ANCHOR = 'included';
       <div class={ENTERPRISE_BAND} data-relay-plan={enterprise.id}>
         <h3 class={TIER_HEADING}>{enterprise.name}</h3>
         <p class={ENTERPRISE_DETAIL}>{enterprise.detail}</p>
-        <a class={ENTERPRISE_LINK_CLASS} href={ENTERPRISE_LINK.href}>{ENTERPRISE_LINK.label}</a>
+        {/* Commented out 2026-09-22 with the SDK commercial license table:
+          * <a class={ENTERPRISE_LINK_CLASS} href={ENTERPRISE_LINK.href}>{ENTERPRISE_LINK.label}</a>
+          */}
         <a class={ENTERPRISE_ACTION_CLASS} href={ENTERPRISE_ACTION.href}>{ENTERPRISE_ACTION.label}</a>
       </div>
     </div>
@@ -544,14 +564,20 @@ const INCLUDED_ANCHOR = 'included';
     </div>
   </section>
 
+  {/*
+    * Commented out 2026-09-22. The SDK is MIT OR Apache-2.0 since that day, so no
+    * SDK commercial license is sold. The section stays in source for a
+    * possible self-hosted Relay license product; its data and rows are the
+    * commented block in the frontmatter above.
+    *
   <section id="licensing" class:list={[BAND, BAND_SURFACE]}>
     <div class={CONTAINER}>
       <div class={BAND_HEAD}>
         <h2>SDK commercial licensing</h2>
-        {/* The lead says what the reader gets, as the hero's does, not what
-          * the product is. The claims are the landing page's: the complete SDK,
-          * closed-source products, the same build, and no meter. The table
-          * under it says what differs. */}
+        The lead says what the reader gets, as the hero's does, not what
+        the product is. The claims are the landing page's: the complete SDK,
+        closed-source products, the same build, and no meter. The table
+        under it says what differs.
         <p class={MEASURE}>Ship the complete SDK in a closed-source product, on infrastructure you run. Same build, every feature, no meter.</p>
       </div>
       <div class={PLAN_TABLE_AT}>
@@ -611,4 +637,5 @@ const INCLUDED_ANCHOR = 'included';
       <p class:list={['text-text-3', MEASURE]}>A Startup commercial license renews annually until you cancel before the renewal date. Taxes may apply. The <a href="/legal/terms">Commercial Terms</a> control that grant, covered products, support, renewal, and post-expiration rights.</p>
     </div>
   </section>
+    */}
 </BaseLayout>

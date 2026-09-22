@@ -383,7 +383,7 @@ const differentiators: Differentiator[] = [
     title: 'Infrastructure you own',
     icon: 'server',
     wide: true,
-    body: 'Storage, relay, and object storage are interfaces you fill. Each has a shipped adapter, or you write your own. Self-host them on your hardware, a VPS, or your cloud; the SDK itself does not phone home. Or use OpenE2EE Relay for managed encrypted delivery. A self-hosted relay holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
+    body: 'Storage, relay, and object storage are interfaces you fill. Each has a shipped adapter, or you write your own. Self-host them on your hardware, a VPS, or your cloud; the SDK itself does not phone home. Or use the Signal Protocol Relay for encrypted delivery. A self-hosted relay holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
   },
 ];
 
@@ -462,7 +462,8 @@ const runtimes = [
             evaluating a dependency wants and the one answer no competitor in
             this category can copy. "Fully" is the load-bearing word, and it is
             not decoration: the closing license band states that every feature
-            is in the package under AGPLv3 and none of it is time-limited, which
+            is in the package under MIT or Apache-2.0 and none of it is
+            time-limited, which
             is what makes the adverb true rather than promotional.
 
             Three fragments, three marks: one per clause, or the pattern reads
@@ -500,7 +501,7 @@ const runtimes = [
             publishes the four Relay boundary statements together or not at all,
             and /relay is where they are together. */}
         <p class:list={[LEAD, 'max-w-none!']} data-hero-lead>
-          The SDK encrypts on each device. OpenE2EE Relay operates the delivery: encrypted
+          The SDK encrypts on each device. The OpenE2EE Signal Protocol Relay operates the delivery: encrypted
           device mailboxes, group fan-out, private attachments, and push wakes.
         </p>
         <div class:list={[ACTIONS, 'justify-center']} data-actions="hero">
@@ -573,8 +574,8 @@ const runtimes = [
             explanatory hedging the hero does not carry. The facts they stated
             did not leave the site: /security carries the relay formula and the
             metadata admission, /product and /security carry the maturity line,
-            the license cell in the feature band names the AGPLv3/commercial
-            split, the quickstart caveat below the feature band grades the
+            the license band names the MIT or Apache-2.0 choice, the quickstart
+            caveat below the feature band grades the
             stores, and /product carries the libsignal facts. */}
       </div>
     </div>
@@ -599,8 +600,8 @@ const runtimes = [
   <section id="relay" class:list={[BAND, HERO_RAMP]}>
     <div class={CONTAINER}>
       <div class={BAND_HEAD}>
-        <p class={LABEL}>OpenE2EE Relay</p>
-        <h2>Managed encrypted delivery</h2>
+        <p class={LABEL}>Signal Protocol Relay</p>
+        <h2>Encrypted delivery for your application</h2>
         <p class={MEASURE}>Relay is the delivery half of an end-to-end encrypted application. Every plan carries every Relay protocol feature. Plans differ by capacity, support, service terms, and approved operational controls.</p>
       </div>
       <dl class={DEFINITION_ROWS}>
@@ -843,26 +844,24 @@ const runtimes = [
             here, in the band the heading already promises, and the deck's
             route to the tiers moved down with it. */}
         <p class={MEASURE}>
-          The complete SDK is free under AGPLv3, and a commercial license covers
-          closed-source products. The build is the same either way. Every feature is in
-          the package, and none of it is time-limited.
+          The complete SDK is free under the MIT or Apache-2.0 license, at your option.
+          Closed-source products need no commercial license. Every feature is in the
+          package, and none of it is time-limited.
         </p>
       </div>
 
       {/* The two figures carry this band between them: the graph says what the
           license hands over, and the field says who says so — our own lockup
           over the two marks the claim is answerable to, OSI's and the host the
-          source sits on. What AGPLv3 asks of the reader's own application is
-          not stated here — `/licensing` owns that wording, and the second link
-          is the route to it.
+          source sits on. What each license asks of the reader is not stated
+          here — `/licensing` owns that wording, and the second link is the
+          route to it.
 
           That link carries the destination's one name. The row is the same
           slot as /security's, /product's and the footer's, and a reader who
-          follows two of them lands on the same page. The tier card in
-          `src/data/pricing.mjs` keeps a longer label: there it is not
-          navigation but the qualification itself, naming the obligation that
-          disqualifies a reader, which is how Qt's licensing comparison writes
-          its free column. */}
+          follows two of them lands on the same page. The Pricing link left
+          this row on 2026-09-22: /pricing sells the Relay only, and the Relay
+          band above carries its route. */}
       <div class="commitline-band">
         <div class="commitline-pair">
           <CommitLine />
@@ -872,7 +871,6 @@ const runtimes = [
         <p class={TEXT_LINKS}>
           <a href="https://github.com/open-e2ee/signal-protocol-js">SDK on GitHub</a>
           <a href="/licensing">Licensing</a>
-          <a href="/pricing">Pricing</a>
         </p>
 
         {/*
