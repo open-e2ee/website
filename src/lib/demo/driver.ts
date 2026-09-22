@@ -31,7 +31,7 @@ import type {
   Envelope,
   Logger,
   SendResult,
-  SignalProtocolClient,
+  DefaultSignalProtocolClient,
 } from '@open-e2ee/signal-protocol-sdk';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import type { InMemorySignalProtocolStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
@@ -168,9 +168,9 @@ export interface DemoSession {
    */
   readonly relay: InMemorySignalProtocolRelayServer;
   /** The sending device, for the SDK calls a scenario has to make itself. */
-  readonly senderClient: SignalProtocolClient;
+  readonly senderClient: DefaultSignalProtocolClient;
   /** The receiving account's primary device, and its storage. */
-  readonly recipientClient: SignalProtocolClient;
+  readonly recipientClient: DefaultSignalProtocolClient;
   readonly recipientStorage: InMemorySignalProtocolStore;
   /** Every device of the receiving account, primary first, in link order. */
   readonly recipientDevices: readonly DemoRecipientDevice[];
@@ -185,7 +185,7 @@ export interface DemoSession {
    * that call in here would hide the thing worth showing. Once handed over,
    * the session stops it with the rest.
    */
-  watchRecipientDevice(client: SignalProtocolClient): DemoRecipientDevice;
+  watchRecipientDevice(client: DefaultSignalProtocolClient): DemoRecipientDevice;
   /** Watch the pipeline. Returns a function that stops delivery. */
   on(listener: (event: DemoEvent) => void): () => void;
   send(text: string): Promise<DemoExchange>;
@@ -302,14 +302,14 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
    * follow the account rather than a pair fixed at boot.
    */
   interface WatchedDevice extends DemoRecipientDevice {
-    client: SignalProtocolClient;
+    client: DefaultSignalProtocolClient;
     received: DecryptedEnvelope[];
     onDecrypted: ((message: DecryptedEnvelope) => void) | null;
   }
 
   const recipientDevices: WatchedDevice[] = [];
 
-  function watch(client: SignalProtocolClient): WatchedDevice {
+  function watch(client: DefaultSignalProtocolClient): WatchedDevice {
     const device: WatchedDevice = {
       /* Read off the client rather than passed in: the device id came from the
          relay when it linked the device, and a second copy of it here would be

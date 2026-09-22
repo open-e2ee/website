@@ -40,7 +40,7 @@
 
 import {
   DEFAULT_DEVICE_ID,
-  SignalProtocolClient,
+  DefaultSignalProtocolClient,
   createSignalProtocolClientConfig,
 } from '@open-e2ee/signal-protocol-sdk';
 import type {
@@ -143,7 +143,7 @@ export interface DemoRun {
    * hand back, and a null here would put the failure two calls away from the
    * button that caused it.
    */
-  client(actor: DeviceActor): SignalProtocolClient;
+  client(actor: DeviceActor): DefaultSignalProtocolClient;
   /**
    * Bring one device up, in the order a real device comes up.
    *
@@ -189,7 +189,7 @@ export interface DemoRun {
 interface Device {
   readonly actor: DeviceActor;
   readonly userId: string;
-  readonly client: SignalProtocolClient;
+  readonly client: DefaultSignalProtocolClient;
   /**
    * The device's own key store, kept so the run can count what the device is
    * holding — `countHeldKeys` reads it after an opening, because the first
@@ -247,7 +247,7 @@ function braidOf(device: Device): { braid?: readonly BraidReport[] } {
  *
  * Key generation is the longest thing the opening does — hundreds of X25519 and
  * ML-KEM keypairs, half a second of it — and it happens inside
- * `SignalProtocolClient.create()`, where this module has nothing to mark. The
+ * `DefaultSignalProtocolClient.create()`, where this module has nothing to mark. The
  * one window into it is `onProgress`, which the SDK calls at batch boundaries,
  * and this turns those calls into recording.
  *
@@ -601,7 +601,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      * is a two-line wrapper over these same two calls, so this is that path with
      * one extra key and not a way around anything. Both functions are root
      * exports and the SDK's own example for `onProtocolSelected` is written
-     * against `SignalProtocolClient.create`.
+     * against `DefaultSignalProtocolClient.create`.
      */
     /* Held by the device record as well as by the client, because the run
        reads it back: the private-key count the column prints comes from this
@@ -621,7 +621,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      * always empty here regardless of `protocol` above, and `{...undefined,
      * onProtocolSelected}` is just `{onProtocolSelected}`. The real merge of
      * policy and callback happens one call later, inside
-     * `SignalProtocolClient.create()`: it folds whatever `protocolStrategy`
+     * `DefaultSignalProtocolClient.create()`: it folds whatever `protocolStrategy`
      * it is handed together with the `allowClassicalFallback`/`sckaMode`
      * `resolveSignalProtocolStrategy()` derives from `protocol`, callback
      * included, which is why `onProtocolSelected` keeps firing with a
@@ -629,7 +629,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      * against `config` starting to carry a `protocolStrategy` of its own on
      * some future version of the package.
      */
-    const client = await SignalProtocolClient.create(userId, {
+    const client = await DefaultSignalProtocolClient.create(userId, {
       ...config,
       onProgress: generating.onProgress,
       protocolStrategy: {
