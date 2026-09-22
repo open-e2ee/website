@@ -35,9 +35,9 @@ test('pins the current Startup terms to an immutable canonical URL', () => {
   assert.equal(privacyVersion, '2026-09-10');
   assert.equal(privacyPath, '/legal/privacy/2026-09-10');
   assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-09-10');
-  assert.equal(relayTermsVersion, 'relay-2026-09-10');
-  assert.equal(relayTermsPath, '/legal/relay-terms/2026-09-10');
-  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-09-10');
+  assert.equal(relayTermsVersion, 'relay-2026-09-22');
+  assert.equal(relayTermsPath, '/legal/relay-terms/2026-09-22');
+  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-09-22');
   assert.equal(relayRetentionVersion, '2026-09-10');
   assert.equal(relayRetentionEffectiveDate, 'September 10, 2026');
   assert.equal(relayRetentionPath, '/legal/relay-retention/2026-09-10');
@@ -79,12 +79,16 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
     read('../src/pages/legal/terms.astro'),
     read('../src/pages/legal/terms/2026-09-10.astro'),
     read('../src/pages/legal/relay-terms.astro'),
-    read('../src/pages/legal/relay-terms/2026-09-10.astro'),
+    read('../src/pages/legal/relay-terms/2026-09-22.astro'),
     read('../src/pages/legal/privacy.astro'),
   ]);
 
   assert.match(legalIndex, /canonical="\/legal"/);
-  assert.match(legalIndex, /href="\/legal\/terms"/);
+  /* The SDK Commercial Terms left the index on 2026-09-22: the SDK is MIT OR
+   * Apache-2.0 and no license is sold. The live and dated /legal/terms pages
+   * stay published, and the footer still reaches the live one as the website
+   * terms, but the index lists only the agreements the site sells against. */
+  assert.doesNotMatch(legalIndex, /href="\/legal\/terms/, 'the index lists the retired SDK Commercial Terms');
   assert.match(legalIndex, /href="\/legal\/privacy"/);
   assert.match(currentTerms, /CommercialTerms/);
   assert.match(currentTerms, /canonical="\/legal\/terms"/);
@@ -94,9 +98,9 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   assert.match(legalIndex, /href="\/legal\/subprocessors"/);
   assert.match(legalIndex, /href="\/legal\/relay-retention"/);
   assert.match(legalIndex, /href="\/legal\/relay-beta-limits"/);
-  assert.match(relayTerms, /ManagedRelayTerms/);
+  assert.match(relayTerms, /SignalProtocolRelayTerms/);
   assert.match(relayTerms, /canonical="\/legal\/relay-terms"/);
-  assert.match(relayVersion, /canonical="\/legal\/relay-terms\/2026-09-10"/);
+  assert.match(relayVersion, /canonical="\/legal\/relay-terms\/2026-09-22"/);
   assert.match(privacy, /Privacy Notice/);
   assert.match(privacy, /canonical="\/legal\/privacy"/);
   assert.match(legalIndex, /href="\/legal\/dpa"/);
@@ -265,13 +269,14 @@ test('freezes the Startup terms version the site currently publishes', () => {
 const frozenRelayTermsVersions = [
   { version: 'relay-2026-08-26', date: '2026-08-26', effective: 'August 26, 2026' },
   { version: 'relay-2026-09-10', date: '2026-09-10', effective: 'September 10, 2026' },
+  { version: 'relay-2026-09-22', date: '2026-09-22', effective: 'September 22, 2026' },
 ];
 
 test('keeps every dated Relay terms page frozen: it never reads the live document', async () => {
   for (const { version, date, effective } of frozenRelayTermsVersions) {
     const page = await read(`../src/pages/legal/relay-terms/${date}.astro`);
 
-    assert.doesNotMatch(page, /components\/ManagedRelayTerms/, `${version} renders the live terms`);
+    assert.doesNotMatch(page, /components\/\w*RelayTerms/, `${version} renders the live terms`);
     assert.doesNotMatch(page, /lib\/legal(\.mjs)?/, `${version} reads the live version constants`);
     assert.match(
       page,
@@ -423,11 +428,12 @@ test('freezes the privacy version the notice currently publishes', () => {
  * Invariant 4 of the legal-terms-2026-09 plan: the fee table lives in the terms,
  * and /pricing is a summary of it. A price that appears on the pricing page and
  * not in the current Relay terms is a price no accepted document states.
- * Section 3.1 of relay-2026-09-10 carries the table; relay-2026-08-26
- * incorporated /pricing by reference, which is what this guard rules out.
+ * Section 3.1 of the Relay terms carries the table from relay-2026-09-10 on;
+ * relay-2026-08-26 incorporated /pricing by reference, which is what this
+ * guard rules out.
  */
 test('states every published price and included quantity in the Relay terms', async () => {
-  const terms = await flat('../src/components/ManagedRelayTerms20260910.astro');
+  const terms = await flat('../src/components/SignalProtocolRelayTerms20260922.astro');
 
   /* Bounded on both sides so a shorter figure cannot be satisfied by a longer
    * one containing it: "100" must not pass on "100,000", and "$0" must not
@@ -551,16 +557,19 @@ test('describes the implemented providers and managed Relay boundary', async () 
 
 test('publishes the exact Relay legal and lifecycle boundary', async () => {
   const [terms, acceptableUse, subprocessors, retention, beta] = await Promise.all([
-    flat('../src/components/ManagedRelayTerms20260910.astro'),
+    flat('../src/components/SignalProtocolRelayTerms20260922.astro'),
     flat('../src/pages/legal/acceptable-use.astro'),
     flat('../src/pages/legal/subprocessors.astro'),
     flat('../src/pages/legal/relay-retention.astro'),
     flat('../src/pages/legal/relay-beta-limits.astro'),
   ]);
 
-  assert.match(terms, /limited, non-exclusive, non-transferable, non-sublicensable commercial license/i);
-  assert.match(terms, /grants no self-hosting right/i);
-  assert.match(terms, /ends when the project is deleted or 30 days after/i);
+  /* The SDK is MIT OR Apache-2.0 from 3.0.0. The Relay terms grant no license
+   * to it, and say so, since relay-2026-09-22; the project commercial SDK
+   * license the earlier versions carried is what the negative check rules out. */
+  assert.match(terms, /these Terms grant no license to it/);
+  assert.doesNotMatch(terms, /commercial license/i, 'the Relay terms still grant an SDK license');
+  assert.match(terms, /OpenE2EE Signal Protocol Relay Service Terms/);
   assert.match(acceptableUse, /spam, malware, phishing/i);
   for (const provider of ['Cloudflare', 'Vercel', 'WorkOS', 'Stripe', 'Better Stack']) {
     assert.match(subprocessors, new RegExp(provider));

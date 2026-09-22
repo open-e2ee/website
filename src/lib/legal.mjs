@@ -25,13 +25,17 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * instead of incorporating the pricing page, describes the plan change,
  * cancellation, and drain behavior the console and Relay implement, and adds
  * the counterparty, indemnity, confidentiality, assignment, export, and notice
- * clauses the 2026-08-26 version lacked. The console records the URL below
- * against each activation, and its RELAY_TERMS_URL and RELAY_TERMS_VERSION
- * settings must move with these constants once the dated page is live.
+ * clauses the 2026-08-26 version lacked. The relay-2026-09-22 version names
+ * the product the OpenE2EE Signal Protocol Relay and removes the project
+ * commercial SDK license grant, which the SDK's MIT OR Apache-2.0 licensing
+ * made moot; every other clause is unchanged. The console records the URL
+ * below against each activation, and its RELAY_TERMS_URL and
+ * RELAY_TERMS_VERSION settings must move with these constants once the dated
+ * page is live.
  */
-export const relayTermsVersion = 'relay-2026-09-10';
-export const relayTermsEffectiveDate = 'September 10, 2026';
-export const relayTermsPath = '/legal/relay-terms/2026-09-10';
+export const relayTermsVersion = 'relay-2026-09-22';
+export const relayTermsEffectiveDate = 'September 22, 2026';
+export const relayTermsPath = '/legal/relay-terms/2026-09-22';
 export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
 
 /*
