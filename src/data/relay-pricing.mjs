@@ -1,5 +1,5 @@
 /**
- * The public OpenE2EE Relay catalog.
+ * The public OpenE2EE Signal Protocol Relay catalog.
  *
  * Keep this module byte-for-byte aligned with the authoritative product
  * contract and Relay's `managedRelayPlanTargets`. Prices are owner-approved;

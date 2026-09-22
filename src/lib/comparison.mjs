@@ -141,7 +141,7 @@ export const axes = [
   },
   {
     axis: 'Commercial license offered',
-    cells: ['Yes', 'No — AGPL-3.0 only', 'No — GPL-3.0', 'No — GPL-3.0', 'Not needed — MIT'],
+    cells: ['Not needed — MIT or Apache-2.0', 'No — AGPL-3.0 only', 'No — GPL-3.0', 'No — GPL-3.0', 'Not needed — MIT'],
   },
 ];
 

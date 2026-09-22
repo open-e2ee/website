@@ -11,30 +11,37 @@ import {
   PAGE_HERO,
   TEXT_LINKS,
 } from '../lib/recipes';
+
+/*
+ * The SDK is dual-licensed since 2026-09-22: MIT or Apache-2.0, at the user's
+ * option. The page that stood here sold the AGPLv3 path against a commercial
+ * license, and every link into it still reads "Licensing", so the route
+ * survives and the page answers the question the links carry now: which of
+ * the two licenses to take, and what each asks.
+ *
+ * The console's docs/licensing page states the same two rows in the same
+ * words, so a reader who follows either route reads one answer.
+ */
+const LICENSE_MIT = 'https://github.com/open-e2ee/signal-protocol-js/blob/main/LICENSE-MIT';
+const LICENSE_APACHE = 'https://github.com/open-e2ee/signal-protocol-js/blob/main/LICENSE-APACHE';
 ---
 
 <BaseLayout
   title="Licensing"
-  description="The OpenE2EE Signal Protocol SDK is available under AGPLv3, or under a commercial license for proprietary products."
+  description="The OpenE2EE Signal Protocol SDK is dual-licensed under the MIT License or the Apache License 2.0, at your option."
 >
   <header class={PAGE_HERO}>
     <div class={CONTAINER_MEASURE}>
       <p class={LABEL}>Licensing</p>
       {/*
-        The heading names the two paths instead of counting them. A reader
-        arrives here from four different link labels and needs to see the two
-        license names, which is how Qt's licensing page leads.
-
-        The lead said three things and this page said all three again below:
-        "the same code either way" is /pricing's Evaluating row, "what differs
-        is the obligations" is what the two rows under this are, and "a summary,
-        not the license itself" is stated twice more on this 250-word page.
-        Elastic's license FAQ and MongoDB's SSPL FAQ each state that disclaimer
-        once, at the top.
+        The heading names the two licenses instead of counting them, as the
+        AGPLv3 page before it named its two paths. The lead states the one
+        disclaimer once, at the top, which is how Elastic's and MongoDB's
+        license pages lead.
       */}
-      <h1>AGPLv3, or a commercial license.</h1>
+      <h1>MIT or Apache-2.0, at your option.</h1>
       <p class={LEAD}>
-        This page summarizes the two paths. The license text and your agreement control.
+        This page summarizes the two licenses. The license text controls.
       </p>
     </div>
   </header>
@@ -43,18 +50,17 @@ import {
     <div class={CONTAINER}>
       <dl class={DEFINITION_ROWS}>
         <div>
-          <dt>AGPLv3</dt>
+          <dt>MIT</dt>
           <dd>
-            If you offer your product over a network, the AGPLv3 source obligations apply to it.
-            Read the license text before you rely on this path.
+            Use, copy, modify, and redistribute, in open or proprietary products. Keep the copyright
+            and license notice.
           </dd>
         </div>
         <div>
-          <dt>Commercial license</dt>
+          <dt>Apache-2.0</dt>
           <dd>
-            A separately negotiated production grant for proprietary products, so AGPLv3 does not
-            apply to the covered product. Scoped to a named legal entity, named covered products,
-            and an explicit licensed-component list.
+            The same rights, with an express patent grant from contributors. Keep the notices and
+            state your changes to the files.
           </dd>
         </div>
       </dl>
@@ -63,37 +69,23 @@ import {
 
   <section class:list={[BAND, BAND_SURFACE]}>
     <div class={`${CONTAINER_MEASURE} prose`}>
-      {/*
-        Three paragraphs, 111 words, down to one. The first was the only one
-        carrying a fact this page owns, and even it enumerated the five governed
-        items that /pricing's fine print and /legal/terms §2 both print already.
-        /pricing owns the enumeration because it sits next to the money, so this
-        page keeps only the precedence rule.
-
-        The second paragraph said which instrument applies per tier, which is
-        the agreement's to say. The third closed on
-        "It is a shorter conversation than the one after launch", and its action
-        is the link directly below it.
-
-        The AGPLv3 row above now names the license text as its destination, so
-        the LICENSE link is the one this row keeps and "Review Startup terms" is
-        the one it drops; /pricing carries that one. It is labeled
-        "LICENSE" rather than "Read the license text" because /security reaches
-        the same file and one destination gets one name.
-      */}
-      <h2>The agreement is the license</h2>
+      <h2>The license file is the license</h2>
       <p>
-        This website describes the commercial model. It is not legal advice.
-        Where this page and your <a href="/legal/terms">agreement</a> differ, the agreement
+        Neither license requires a fee, a signed agreement, or an account, and neither requires you
+        to publish your own source. The SPDX expression on the package is{' '}
+        <code>MIT OR Apache-2.0</code>. Where this page and a license file differ, the license file
         controls.
       </p>
+      <p>
+        The OpenE2EE Signal Protocol Relay is a separate service with its own{' '}
+        <a href="/legal/relay-terms">service terms</a> and <a href="/pricing">plans</a>. The SDK
+        runs against it, or against a relay you operate, under the same two licenses.
+      </p>
       <p class={TEXT_LINKS}>
-        <a href="/pricing">Pricing</a>
-        <a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">
+        <a href={LICENSE_MIT}>LICENSE-MIT</a>
+        <a href={LICENSE_APACHE}>LICENSE-APACHE</a>
+        <a href="mailto:licensing@open-e2ee.dev?subject=Licensing%20question">
           Ask a licensing question
-        </a>
-        <a href="https://github.com/open-e2ee/signal-protocol-js/blob/main/LICENSE">
-          LICENSE
         </a>
       </p>
     </div>

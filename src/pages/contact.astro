@@ -3,7 +3,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import {
   demoBookingUrl,
   relayEnterpriseBookingUrl,
-  sdkLicensingBookingUrl,
 } from '../data/booking.mjs';
 import { docs, reporting } from '../lib/assurance.mjs';
 import {
@@ -58,24 +57,30 @@ import {
             <a href={docs.reporting}>disclosure policy</a>.
           </p>
         </li>
+        {/* Commented out 2026-09-22 with the SDK commercial license table on
+            /pricing. The SDK is MIT OR Apache-2.0 since that day, so there is no
+            Enterprise or OEM SDK agreement to scope. The entry returns, with
+            `sdkLicensingBookingUrl` from src/data/booking.mjs, if a
+            self-hosted Relay license is sold.
+          <li>
+            <p class={LABEL}>Enterprise and OEM</p>
+            <h3><a href={sdkLicensingBookingUrl}>Book a licensing call</a></h3>
+            <p>
+              Portfolio and redistribution rights, a scoped security review, service levels, and a
+              signed order form. Or write to
+              <a href="mailto:licensing@open-e2ee.dev?subject=Enterprise%20agreement">
+                licensing@open-e2ee.dev
+              </a>
+              with the products the agreement has to cover.
+            </p>
+          </li>
+        */}
         <li>
-          <p class={LABEL}>Enterprise and OEM</p>
-          <h3><a href={sdkLicensingBookingUrl}>Book a licensing call</a></h3>
-          <p>
-            Portfolio and redistribution rights, a scoped security review, service levels, and a
-            signed order form. Or write to{' '}
-            <a href="mailto:licensing@open-e2ee.dev?subject=Enterprise%20agreement">
-              licensing@open-e2ee.dev
-            </a>{' '}
-            with the products the agreement has to cover.
-          </p>
-        </li>
-        <li>
-          <p class={LABEL}>OpenE2EE Relay</p>
+          <p class={LABEL}>Signal Protocol Relay</p>
           <h3><a href={relayEnterpriseBookingUrl}>Schedule a meeting</a></h3>
           <p>
             Capacity beyond the published plans, a dedicated deployment, or a data-processing
-            question about the managed service. Bring the monthly active users and regions you
+            question about the Relay service. Bring the monthly active users and regions you
             expect.
           </p>
         </li>
@@ -89,14 +94,14 @@ import {
         <li>
           <p class={LABEL}>Licensing question</p>
           <h3>
-            <a href="mailto:licensing@open-e2ee.dev?subject=Commercial%20licensing%20question">
+            <a href="mailto:licensing@open-e2ee.dev?subject=Licensing%20question">
               licensing@open-e2ee.dev
             </a>
           </h3>
           <p>
-            Whether AGPLv3 fits your distribution, which plan covers a product, or what an order
-            form has to name. The <a href="/licensing">licensing page</a> answers the common
-            cases.
+            Whether to take the SDK under MIT or Apache-2.0, which notices to keep, or what the
+            Relay service terms grant. The <a href="/licensing">licensing page</a> answers the
+            common cases.
           </p>
         </li>
         <li>

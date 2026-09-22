@@ -113,9 +113,10 @@ import {
 
     This said "one line of the program changes with it — and nothing else" for
     several rounds, and that was never true: swapping an adapter has always
-    moved an import as well as a construction. The Convex relay now brings its
-    own client and generated API in with it, so the false version of the claim
-    would be visibly false on the second dropdown a reader touches.
+    moved an import as well as a construction. The Signal Protocol Relay moves
+    more still — its client factory replaces the identity line with the
+    `hosted` block — so the false version of the claim would be visibly false
+    on the second dropdown a reader touches.
 
     Two selects rather than one, because there are genuinely two choices and
     they compose: `adapters: { storage, relay }` has two keys, and the controls
@@ -249,19 +250,19 @@ import {
             themes={codeThemes}
             defaultColor={false}
             role="group"
-            aria-label={`Quickstart example, ${variant.storageLabel} store, ${variant.relayLabel} relay`}
+            aria-label={`Quickstart example, ${variant.storageLabel} store, ${variant.relayLabel}`}
           />
           {/* The disclosure that used to sit here as a `<p class="code-note">` is
-              in the program now. It named three objects the reader brings, and
-              they did not turn out to be the same kind of thing. `convex` and
-              `api` are importable — a Convex client and a generated API module —
-              so the Convex variant imports them, and a name a program binds needs
-              no caption. `storage` is not: the store wants an implementation of
-              `ReactNativeKeyValueStorage`, which is the reader's to write, so it
-              keeps a comment on the line above. Either way the disclosure is now
-              inside what the copy button copies, which prose under the panel
-              never was. `snippetComments` in src/lib/hero-snippet.mjs holds the
-              comments; the imports are on the option itself. */}
+              in the program now. A name the program can bind is bound by an
+              import, and a name a program binds needs no caption. A name the
+              reader brings is not: the React Native store wants an
+              implementation of `ReactNativeKeyValueStorage`, and the Signal
+              Protocol Relay wants the reader's own sign-in callbacks, so each
+              keeps a comment on the line above its first use. Either way the
+              disclosure is inside what the copy button copies, which prose
+              under the panel never was. `snippetComments` in
+              src/lib/hero-snippet.mjs holds the comments; any imports are on
+              the option itself. */}
         </div>
       ))
     }
@@ -316,7 +317,7 @@ import {
       variant.hidden = !match;
     }
     /* The shown block's own accessible name is already the sentence this
-       wants — "Quickstart example, Expo store, Convex relay" — so it is read
+       wants — "Quickstart example, Expo store, Signal Protocol Relay" — so it is read
        from there rather than rebuilt, and the two cannot drift apart. */
     const shown = panel.querySelector('.code-variant:not([hidden]) .astro-code');
     const label = shown?.getAttribute('aria-label');

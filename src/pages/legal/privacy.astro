@@ -26,7 +26,8 @@ import {
         <h1>Privacy Notice</h1>
         <p class={LEAD}>
           This notice explains how OpenE2EE handles personal information across the website,
-          documentation, console, OpenE2EE Relay, licensing, billing, and communications.
+          documentation, console, the OpenE2EE Signal Protocol Relay, licensing, billing, and
+          communications.
         </p>
         <p class={ARTICLE_META}>
           <span>Effective {privacyEffectiveDate}</span>
@@ -40,8 +41,8 @@ import {
         <aside class={CALLOUT} aria-label="Encryption boundary">
           <p class={LABEL}>Encryption boundary</p>
           <p>
-            The OpenE2EE Signal Protocol SDK runs cryptography on your devices. OpenE2EE Relay
-            processes customer-encrypted content and delivery state, but OpenE2EE does not receive
+            The OpenE2EE Signal Protocol SDK runs cryptography on your devices. The Signal Protocol
+            Relay processes customer-encrypted content and delivery state, but OpenE2EE does not receive
             message plaintext, device private keys, ratchet state, or attachment keys.
           </p>
         </aside>
@@ -65,13 +66,13 @@ import {
         <p>
           OpenE2EE LLC (“OpenE2EE,” “we,” “us,” or “our”) is responsible for personal information
           covered by this notice. It applies to <code>open-e2ee.dev</code>, the OpenE2EE
-          documentation and console, OpenE2EE Relay, commercial licensing and billing, support and
+          documentation and console, the Signal Protocol Relay, licensing and billing, support and
           sales communications, and related security operations.
         </p>
         <p>
           This notice does not govern information processed solely inside software that you operate.
           When a customer uses the SDK in its own product, that customer determines its application
-          data practices and is responsible for its notices. For OpenE2EE Relay, OpenE2EE processes
+          data practices and is responsible for its notices. For the Signal Protocol Relay, OpenE2EE processes
           the service data described below on that customer’s instructions.
         </p>
         <p>
@@ -401,9 +402,9 @@ import {
           still no cookie, no storage, no identifier, and no IP-address record.
         </p>
         <p>
-          <strong>Version 2026-08-26:</strong> OpenE2EE Relay was added to the service scope.
+          <strong>Version 2026-08-26:</strong> the Relay was added to the service scope.
           This version identifies the encrypted content, public key material, opaque routing and
-          usage state, push tokens, providers, and retention boundaries that managed delivery
+          usage state, push tokens, providers, and retention boundaries that encrypted delivery
           requires. It also corrects the console authentication provider from GitHub to WorkOS. The
           anonymous website measurement did not change.
         </p>
@@ -414,7 +415,7 @@ import {
           described there, and the earlier version listed the providers around it without listing
           it. Section 5 now says where the anonymous measurement runs — our own code on Cloudflare,
           our hosting provider — rather than calling it our own infrastructure, which read as though
-          we operated the machines. The service is called OpenE2EE Relay throughout, replacing two
+          we operated the machines. The service is named consistently throughout, replacing two
           uses of an earlier name for it. Privacy requests go to a mailbox of their own,{' '}
           <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>, rather than to support.
           Section 1 now says where to send a legal notice, and section 8 points at the{' '}

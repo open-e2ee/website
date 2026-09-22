@@ -21,7 +21,6 @@ const PRE_RENAME = [
    * renamed with it — otherwise the list asserts against a name with no
    * export behind it rather than against the short form this gate is for. */
   'InMemorySignalRelayServer',
-  'ConvexSignalRelayServer',
   'SignalRemoteObjectStore',
   'ExpoSignalStore',
   'IndexedDbSignalStore',

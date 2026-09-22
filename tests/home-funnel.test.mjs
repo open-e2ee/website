@@ -1,5 +1,5 @@
 /*
- * The homepage leads with OpenE2EE Relay and offers a free start.
+ * The homepage leads with the Signal Protocol Relay and offers a free start.
  *
  * The page sold the SDK alone. The Relay was one navigation word and one
  * sentence inside the last row of a deck. The only route into the Console was

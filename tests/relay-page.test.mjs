@@ -43,9 +43,9 @@ test('opens with the Relay as the subject, not as a property of the SDK', async 
   /* The old headline read "The managed delivery path for the OpenE2EE Signal
      Protocol SDK." Its subject was a path and its object was the other
      product, so the page that sells the Relay opened by naming the SDK. */
-  assert.match(words, /^OpenE2EE Relay\b/, `the headline opens "${words}"`);
+  assert.match(words, /^OpenE2EE Signal Protocol Relay\b/, `the headline opens "${words}"`);
   assert.doesNotMatch(
-    words.slice('OpenE2EE Relay'.length),
+    words.slice('OpenE2EE Signal Protocol Relay'.length),
     /Signal Protocol SDK/,
     `the headline still hands the sentence to the SDK: "${words}"`,
   );
@@ -160,9 +160,9 @@ test('holds the wide drawing to a legible floor', async () => {
 test('publishes all four Relay boundary statements together', async () => {
   const text = (await builtPage()).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
   const statements = [
-    'OpenE2EE Relay stores ciphertext and the account, device, route, timing, size, quota, and abuse metadata that delivery requires.',
+    'The Signal Protocol Relay stores ciphertext and the account, device, route, timing, size, quota, and abuse metadata that delivery requires.',
     'The relay never needs message plaintext or device private keys.',
-    'The OpenE2EE Signal Protocol SDK works with OpenE2EE Relay or another adapter. OpenE2EE Relay is the shortest hosted path, not a requirement of the SDK.',
+    'The OpenE2EE Signal Protocol SDK works with the Signal Protocol Relay or another adapter. The Signal Protocol Relay is the shortest hosted path, not a requirement of the SDK.',
     'A self-hosted adapter keeps relay metadata in infrastructure the developer operates. A managed project places the required relay metadata with OpenE2EE.',
   ];
   for (const statement of statements) {
