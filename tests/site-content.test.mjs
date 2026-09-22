@@ -2036,7 +2036,7 @@ test('keeps the store-maturity claims matched to the shipped release', async () 
    * Astro collapses the newline there; the regex admits it. */
   assert.match(
     product,
-    /The Expo, Node, browser, and bare React Native stores implement(?:\{' '\})? <code>ISignalProtocolLocalStore<\/code> in full/,
+    /The Expo, Node, browser, and bare React Native stores implement(?:\{' '\})? <code>SignalProtocolLocalStore<\/code> in full/,
   );
   assert.match(
     index,
@@ -4895,7 +4895,7 @@ test("the demo's own source calls the relay a relay", async () => {
    * `docs/messaging.md` §4 fixes the vocabulary: the E2EE role is the **relay**,
    * and "server" is the word avoided for it. The demo is where that slips,
    * because its prose is written inches from SDK calls that legitimately carry
-   * "Server" in their names — `syncToServer`, `ISignalProtocolRelayServer` —
+   * "Server" in their names — `syncToServer`, `SignalProtocolRelayServer` —
    * and the eye stops seeing it. Two sentences shipped that way and reached the
    * live site: the run-out-of-prekeys card, and the health-check line that
    * managed to say "the relay held" and "the server is the side that runs out"

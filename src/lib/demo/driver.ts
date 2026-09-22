@@ -29,7 +29,7 @@ import { DEFAULT_DEVICE_ID, createSignalProtocolClient } from '@open-e2ee/signal
 import type {
   DecryptedEnvelope,
   Envelope,
-  ILogger,
+  Logger,
   SendResult,
   SignalProtocolClient,
 } from '@open-e2ee/signal-protocol-sdk';
@@ -47,7 +47,7 @@ export interface DemoSessionOptions {
   /**
    * Where each device's own log goes.
    *
-   * The SDK takes an `ILogger` per client and reports through it. That is the
+   * The SDK takes an `Logger` per client and reports through it. That is the
    * only surface on which a relay-path decryption failure is visible at all:
    * `onDecryptionError` is documented as "called when decryption fails", but
    * the relay subscription handles a failure through its own retry machinery
@@ -58,7 +58,7 @@ export interface DemoSessionOptions {
    * Kept per role rather than as one logger for both, because a scenario that
    * prints these has to be able to say which device spoke.
    */
-  logger?: { sender?: ILogger; recipient?: ILogger };
+  logger?: { sender?: Logger; recipient?: Logger };
   /**
    * A hostile network, in the one place a hostile network sits.
    *

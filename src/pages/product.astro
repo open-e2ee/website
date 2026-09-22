@@ -295,12 +295,12 @@ const ordered = projects
           a clause. */}
       <p class:list={['text-text-3', MEASURE]}>
         The Expo, Node, browser, and bare React Native stores implement{' '}
-        <code>ISignalProtocolLocalStore</code> in full, so groups and multi-device work on any of
+        <code>SignalProtocolLocalStore</code> in full, so groups and multi-device work on any of
         them. They differ in where the bytes land. Expo uses{' '}
         <code>expo-sqlite</code> with SQLCipher, and Node an encrypted filesystem under{' '}
         <code>node:crypto</code> with 0600 permissions. The browser uses IndexedDB scoped to the
         page&rsquo;s origin, and bare React Native a key-value backend you supply.{' '}
-        <code>ISignalProtocolLocalStore</code> and <code>ISignalProtocolRelayServer</code> are
+        <code>SignalProtocolLocalStore</code> and <code>SignalProtocolRelayServer</code> are
         documented interfaces, so you can write your own.
       </p>
       <div class:list={[CALLOUT, MEASURE]}>
