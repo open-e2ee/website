@@ -15,7 +15,7 @@
     <text x="856" y="380" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">PQXDH · Double Ratchet · ML-KEM</text>
     <path d="M856 412 L1071 412 L1071 468 L856 468 Z" fill="#32312f"/>
     <rect x="860" y="398" width="2" height="10" fill="#a5700d"/><rect x="876" y="398" width="2" height="10" fill="#a5700d"/><rect x="892" y="398" width="2" height="10" fill="#a5700d"/><rect x="908" y="398" width="2" height="10" fill="#a5700d"/><rect x="924" y="398" width="2" height="10" fill="#a5700d"/><rect x="940" y="398" width="2" height="10" fill="#a5700d"/>
-    <text x="856" y="492" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">AGPLv3 · commercial</text>
+    <text x="856" y="492" fill="#807b74" font-family="'JetBrains Mono Variable', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">MIT · Apache-2.0</text>
   </g>
   <g transform="translate(69.58333333333333 50.76833333333333) scale(0.2877604166666667)">
     <path d="M64 64 H202.24 V98.56 H98.56 V413.44 H202.24 V448 H64 Z" fill="#080808" fill-rule="evenodd"/>
