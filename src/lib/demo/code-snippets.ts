@@ -46,7 +46,7 @@ export const CODE_SNIPPETS: Record<Step, CodeSnippet> = {
      `onProgress` is the only thing that says so while it is happening. */
   'generating-keys': {
     kind: 'call',
-    code: `const client = await SignalProtocolClient.create(userId, {
+    code: `const client = await DefaultSignalProtocolClient.create(userId, {
   ...config,
   onProgress: ({ stage, detail }) => {
     // detail?.current of detail?.total, once a batch is generated
@@ -62,7 +62,7 @@ export const CODE_SNIPPETS: Record<Step, CodeSnippet> = {
   identity: { userId },
   adapters: { storage: inMemoryStore(), relay },
 });
-const client = await SignalProtocolClient.create(userId, config);`,
+const client = await DefaultSignalProtocolClient.create(userId, config);`,
   },
 
   'bundles-published': {

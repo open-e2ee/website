@@ -14,8 +14,8 @@ import { readSdkSurface, suggest } from '../scripts/sdk-surface.mjs';
 
 /** Confirmed nonexistent in the SDK; each is a real export minus "Protocol". */
 const PRE_RENAME = [
-  'ISignalRelayServer',
-  'ISignalLocalStore',
+  'SignalRelayServer',
+  'SignalLocalStore',
   /* Each entry has to track the real export or it stops standing for
    * anything. When an adapter itself is renamed, its entry here must be
    * renamed with it — otherwise the list asserts against a name with no

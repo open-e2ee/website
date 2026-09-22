@@ -117,6 +117,6 @@ test('accepts an anchor that matches a heading', async () => {
  * a build failure, which is why the check is one segment deep on purpose.
  */
 test('leaves links below docs/ alone, because the package cannot judge them', async () => {
-  const result = await audit(`${BLOB}/docs/api/classes/SignalProtocolClient.md`);
+  const result = await audit(`${BLOB}/docs/api/classes/DefaultSignalProtocolClient.md`);
   assert.ok(result.ok, `a docs/api link must be out of scope, not a failure:\n${result.output}`);
 });
