@@ -1916,7 +1916,7 @@ test('calls the Relay by the name the glossary settles on', async () => {
   await walk('../src/');
   assert.ok(sources.length > 30, `expected to walk the whole tree, found ${sources.length} files`);
 
-  const frozen = /\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$|\/components\/(?:ManagedRelayTerms\d{8}|CommercialTerms|DataProcessingAgreement\d{8})\.astro$/;
+  const frozen = /\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$|\/components\/(?:CommercialTerms|DataProcessingAgreement\d{8})\.astro$/;
   const live = sources.filter((source) => !frozen.test(source));
   assert.ok(live.length > 30, `every source read as a frozen page, found ${live.length} live files`);
   assert.ok(sources.length - live.length >= 4, `the frozen set is ${sources.length - live.length} files; the dated components are not in it`);

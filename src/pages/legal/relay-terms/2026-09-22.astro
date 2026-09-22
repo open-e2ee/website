@@ -1,28 +1,18 @@
 ---
 /*
- * The OpenE2EE Relay Service Terms, version relay-2026-09-10. The 2026-08-26
- * version incorporated the mutable pricing page by reference, promised a
- * cancellation the product did not offer, and carried no counterparty
- * definition, no plan-change rules, no indemnity, no confidentiality, no
- * assignment clause, no export clause, and no notice clause. This version
- * states the fee table inline and takes precedence over the pricing page,
- * describes the plan change, cancellation, and drain behavior the console and
- * Relay implement, and adds the missing clauses from the peer terms the legal
- * review collected.
- *
- * `/legal/relay-terms` renders this component. The dated page under
- * `/legal/relay-terms/` holds a literal snapshot of the same text and never
- * imports this file; tests/legal-pages.test.mjs enforces that, and asserts
- * that every price and included quantity in src/data/relay-pricing.mjs is
- * stated here, so a price change cannot ship without a new version.
+ * The immutable copy of the OpenE2EE Signal Protocol Relay Service Terms,
+ * version relay-2026-09-22. Relay activation records this URL against the
+ * organization (the console's relay_terms_acceptances table) and Section 10
+ * binds an accepted order to its recorded version, so this page is a literal
+ * snapshot: the document text is inlined here and the page must never import
+ * the live SignalProtocolRelayTerms20260922 component, or an edit to
+ * /legal/relay-terms would silently rewrite the version an organization
+ * already accepted. A new version means a new dated page beside this one,
+ * never an edit. tests/legal-pages.test.mjs enforces that this source stays
+ * decoupled from the component and the live version constants.
  */
-import BaseLayout from '../layouts/BaseLayout.astro';
-import TableScroll from '../components/TableScroll.astro';
-import {
-  relayTermsEffectiveDate,
-  relayTermsPath,
-  relayTermsVersion,
-} from '../lib/legal.mjs';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import TableScroll from '../../../components/TableScroll.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -36,36 +26,34 @@ import {
   LEGAL_NOTICE,
   LEGAL_PIN,
   LEGAL_TOC,
-} from '../lib/recipes';
-
-interface Props {
-  canonical: string;
-}
-
-const { canonical } = Astro.props;
+} from '../../../lib/recipes';
 ---
 
+{/* The frozen copy exists for contract provenance, so its title and
+    description say so, and the pair of routes is not a duplicate-content
+    pair with no signal telling a reader which one they have. */}
+
 <BaseLayout
-  title="OpenE2EE Relay Terms"
-  description="Versioned service terms for OpenE2EE Relay."
-  canonical={canonical}
+  title="Relay terms relay-2026-09-22"
+  description="Frozen copy of the OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-09-22."
+  canonical="/legal/relay-terms/2026-09-22"
 >
   <article>
     <header class={ARTICLE_HEADER}>
       <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
         <a class={BACK_LINK} href="/legal">Legal</a>
-        <h1>OpenE2EE Relay Service Terms</h1>
+        <h1>OpenE2EE Signal Protocol Relay Service Terms</h1>
         <p class={LEAD}>
           These Terms govern a project’s Development environment and production environment on
-          OpenE2EE Relay.
+          the Signal Protocol Relay.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {relayTermsEffectiveDate}</span>
-          <span>Version {relayTermsVersion}</span>
+          <span>Effective September 22, 2026</span>
+          <span>Version relay-2026-09-22</span>
         </p>
         <p class={LEGAL_PIN}>
           Relay activation records the version you accept. The permanent copy of this version is at{' '}
-          <a href={relayTermsPath}><code>{relayTermsPath}</code></a>.
+          <a href="/legal/relay-terms/2026-09-22"><code>/legal/relay-terms/2026-09-22</code></a>.
         </p>
       </div>
     </header>
@@ -86,7 +74,6 @@ const { canonical } = Astro.props;
             <li><a href="#agreement">Agreement, eligibility, and definitions</a></li>
             <li><a href="#service">Service and customer responsibilities</a></li>
             <li><a href="#plans">Plans, limits, and billing</a></li>
-            <li><a href="#license">Project commercial SDK license</a></li>
             <li><a href="#data">Customer data, deletion, and data processing</a></li>
             <li><a href="#security">Security, acceptable use, and export</a></li>
             <li><a href="#availability">Beta availability and support</a></li>
@@ -122,12 +109,14 @@ const { canonical } = Astro.props;
         <p>In these Terms:</p>
         <ul>
           <li>
-            <strong>Relay</strong> means the OpenE2EE Relay service: the hosted delivery
-            infrastructure, its control interfaces, and the console pages that administer it.
+            <strong>Relay</strong> means the OpenE2EE Signal Protocol Relay service: the hosted
+            delivery infrastructure, its control interfaces, and the console pages that
+            administer it.
           </li>
           <li>
             <strong>SDK</strong> means <code>@open-e2ee/signal-protocol-sdk</code>, the OpenE2EE
-            Signal Protocol SDK.
+            Signal Protocol SDK. The SDK is licensed under its own open-source terms, and these
+            Terms grant no license to it.
           </li>
           <li>
             <strong>Project</strong> means one Relay project in your console account, with its
@@ -275,9 +264,9 @@ const { canonical } = Astro.props;
           project keeps its paid capacity, and you remain responsible for the fees and approved
           overage accrued through that date. The current period is not refunded and is not
           prorated for the unused part. At the close of the period the project moves to the Free
-          plan and keeps its production data, its credentials, and its project commercial SDK
-          license under Section 4. You may undo a scheduled cancellation on the plan form at any
-          time before the period closes, and you may return to a paid plan at any time.
+          plan and keeps its production data and its credentials. You may undo a scheduled
+          cancellation on the plan form at any time before the period closes, and you may return
+          to a paid plan at any time.
         </p>
 
         <h3>3.7 Capacity after a downgrade or cancellation</h3>
@@ -289,16 +278,15 @@ const { canonical } = Astro.props;
           and the project enters a drain state until it is back inside them: new deliveries and
           uploads are refused, and existing data stays readable so you can export or delete it.
           Retention periods for the new plan apply from that moment, and data past those periods
-          is deleted under Section 5. Reduce usage or export before the change takes effect if you
+          is deleted under Section 4. Reduce usage or export before the change takes effect if you
           need to stay inside the caps without interruption.
         </p>
 
         <h3>3.8 Deleting a project</h3>
         <p>
           Deleting a project is not the same as cancelling a plan. Deletion ends the paid plan
-          immediately with no refund, purges the project’s encrypted service data under Section 5,
-          and ends the project commercial SDK license under Section 4. Cancelling a paid plan keeps
-          the project and its data on the Free plan.
+          immediately with no refund and purges the project’s encrypted service data under
+          Section 4. Cancelling a paid plan keeps the project and its data on the Free plan.
         </p>
 
         <h3>3.9 Price changes</h3>
@@ -311,25 +299,7 @@ const { canonical } = Astro.props;
           enterprise inquiries to <a href="mailto:sales@open-e2ee.dev">sales@open-e2ee.dev</a>.
         </p>
 
-        <h2 id="license">4. Project commercial SDK license</h2>
-        <p>
-          While a Relay project remains active and compliant, OpenE2EE grants Customer a limited,
-          non-exclusive, non-transferable, non-sublicensable commercial license to use the SDK in
-          one proprietary application that connects to that project. The license includes a
-          project on the Free plan. It grants no self-hosting right, no right for another project,
-          and no right to redistribute the SDK as a standalone product or service.
-        </p>
-        <p>
-          The project license ends when the project is deleted or 30 days after its production
-          plan ends, whichever occurs first. A cancellation under Section 3.6 moves the project to
-          the Free plan and does not end the license. During a transition after the license ends,
-          Customer may export configuration and move to an AGPL-compliant deployment or a separate
-          commercial license under the <a href="/legal/terms">Commercial Terms</a>. The transition
-          does not extend Relay capacity or data retention. The AGPL remains available under its
-          own terms.
-        </p>
-
-        <h2 id="data">5. Customer data, deletion, and data processing</h2>
+        <h2 id="data">4. Customer data, deletion, and data processing</h2>
         <p>
           Customer retains its rights in encrypted content and project data. Customer instructs
           OpenE2EE to process that data only to provide, secure, meter, support, and improve Relay,
@@ -351,7 +321,7 @@ const { canonical } = Astro.props;
           periods stated in the Relay Retention Statement.
         </p>
 
-        <h2 id="security">6. Security, acceptable use, and export</h2>
+        <h2 id="security">5. Security, acceptable use, and export</h2>
         <p>
           Customer must protect credentials, use least privilege, install security updates, and
           promptly report suspected compromise or a vulnerability to{' '}
@@ -374,7 +344,7 @@ const { canonical } = Astro.props;
           create sanctions risk for us or our providers.
         </p>
 
-        <h2 id="availability">7. Beta availability and support</h2>
+        <h2 id="availability">6. Beta availability and support</h2>
         <p>
           Relay is a pre-release beta until OpenE2EE announces a generally available service. The
           Development environment and the Free plan include no service-level agreement. Paid beta
@@ -385,7 +355,7 @@ const { canonical } = Astro.props;
           describe current operating constraints.
         </p>
 
-        <h2 id="liability">8. Disclaimers, liability, and indemnity</h2>
+        <h2 id="liability">7. Disclaimers, liability, and indemnity</h2>
         <p class={LEGAL_NOTICE}>
           TO THE MAXIMUM EXTENT PERMITTED BY LAW, RELAY IS PROVIDED “AS IS” AND “AS AVAILABLE.”
           OPENE2EE DISCLAIMS IMPLIED WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR
@@ -415,7 +385,7 @@ const { canonical } = Astro.props;
           liability cap in this Section.
         </p>
 
-        <h2 id="termination">9. Suspension and termination</h2>
+        <h2 id="termination">8. Suspension and termination</h2>
         <p>
           Either party may terminate for a material breach that remains uncured 30 days after
           written notice. OpenE2EE may suspend sooner for nonpayment, unlawful activity, sanctions
@@ -425,10 +395,10 @@ const { canonical } = Astro.props;
         <p>
           After termination, Customer must stop using Relay credentials. Data follows the documented
           drain, retention, and deletion process. Accrued fees and provisions that by their nature
-          should survive remain in effect, including Sections 5, 8, 10, and 11.
+          should survive remain in effect, including Sections 4, 7, 9, and 10.
         </p>
 
-        <h2 id="confidentiality">10. Confidentiality</h2>
+        <h2 id="confidentiality">9. Confidentiality</h2>
         <p>
           Each party may receive non-public information from the other that is marked confidential
           or that a reasonable person would understand to be confidential from its nature and the
@@ -443,7 +413,7 @@ const { canonical } = Astro.props;
           content is your confidential information.
         </p>
 
-        <h2 id="general">11. Changes, notices, and general terms</h2>
+        <h2 id="general">10. Changes, notices, and general terms</h2>
         <p>
           We may publish a new version for future activations and renewals. An accepted paid order
           remains under its recorded version until Customer accepts a later version or law requires
