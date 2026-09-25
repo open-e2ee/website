@@ -1,0 +1,89 @@
+name: Deploy staging
+
+# Staging deploy of staging.open-e2ee.dev. Each push to main builds, tests, and
+# deploys wrangler.website.stage.jsonc. A deploy runs only at the current main
+# tip, so a rerun of an older run cannot move staging back. A published release
+# deploys production in deploy.yml.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy staging to Cloudflare
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    steps:
+      # The secrets reach only this step and the deploy step, so the install,
+      # build, and test steps never hold the token.
+      - name: Require Cloudflare deployment credentials
+        id: credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice title=Staging deploy skipped::Set the CLOUDFLARE_API_TOKEN secret on the staging environment to deploy staging.open-e2ee.dev."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error title=Staging deploy misconfigured::Set the CLOUDFLARE_ACCOUNT_ID secret on the staging environment next to CLOUDFLARE_API_TOKEN."
+            exit 1
+          fi
+          echo "present=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: steps.credentials.outputs.present == 'true'
+
+      - name: Require the current main tip
+        id: revision
+        if: steps.credentials.outputs.present == 'true'
+        run: |
+          main=$(git ls-remote origin refs/heads/main | cut -f1)
+          head=$(git rev-parse HEAD)
+          if [ "$main" != "$head" ]; then
+            echo "::notice title=Staging deploy skipped::Main moved from $head to $main. The run for the newer main deploys staging."
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "current=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        if: steps.revision.outputs.current == 'true'
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install from the committed lockfile
+        if: steps.revision.outputs.current == 'true'
+        run: npm ci
+
+      # Build first: the dist-reading test guards fail on an unbuilt tree when
+      # CI is set, so the suite must always run against the artifact this job
+      # is about to ship.
+      - name: Build
+        if: steps.revision.outputs.current == 'true'
+        run: npm run build
+
+      - name: Test
+        if: steps.revision.outputs.current == 'true'
+        run: npm test
+
+      - name: Deploy
+        if: steps.revision.outputs.current == 'true'
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config wrangler.website.stage.jsonc --env=""

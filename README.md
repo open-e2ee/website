@@ -48,15 +48,42 @@ deployments and verifies it with its brand synchronization script.
 
 ## Deployment
 
-The site builds to static assets and is configured for Cloudflare Workers:
+The site builds to static assets and deploys to Cloudflare Workers in three
+lanes:
+
+| Lane | Trigger | Host | Workflow |
+|---|---|---|---|
+| Preview | Each pull request | A `workers.dev` preview URL | `preview.yml` |
+| Staging | Each push to `main`, after the build and tests pass | `staging.open-e2ee.dev` | `deploy-staging.yml` |
+| Production | A published GitHub release whose tag commit is on `main` | `open-e2ee.dev` | `deploy.yml` |
+
+A push to `main` never deploys production. The staging workflow deploys only
+the current `main` tip, so a rerun of an older run cannot move staging back.
+
+To deploy production, publish a release at the `main` tip:
+
+```sh
+gh release create vYYYY.MM.DD --repo open-e2ee/website --target main --generate-notes
+```
+
+A tag is a calendar version, `vYYYY.MM.DD`. A second release on the same day
+adds a suffix: `vYYYY.MM.DD-2`, then `vYYYY.MM.DD-3`. The production workflow
+refuses any other tag, and it refuses a tag whose commit is not on `main`. To
+deploy an existing tag again, run the Deploy workflow by hand and give it the
+tag.
+
+`scripts/check-deploy-workflows.mjs` holds these triggers and guards, and
+`npm test` runs it.
+
+To check the production and staging configs without a deploy:
 
 ```sh
 npm run deploy:dry-run
-npm run deploy
+npx wrangler deploy --config wrangler.website.stage.jsonc --env="" --dry-run
 ```
 
-Production deployment requires an authenticated Wrangler session or a scoped
-`CLOUDFLARE_API_TOKEN`.
+A deploy from a workstation requires an authenticated Wrangler session or a
+scoped `CLOUDFLARE_API_TOKEN`.
 
 ## Project identity
 
