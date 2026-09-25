@@ -1,10 +1,16 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
+  // The staging lane. deploy-staging.yml deploys it from each main tip.
   "name": "open-e2ee-website-stage",
   "compatibility_date": "2026-07-15",
   "workers_dev": false,
   "preview_urls": false,
-  "routes": [],
+  "routes": [
+    {
+      "pattern": "staging.open-e2ee.dev",
+      "custom_domain": true
+    }
+  ],
   "main": "./src/workers/site.ts",
   "assets": {
     "directory": "./dist",
@@ -12,10 +18,11 @@
     "binding": "ASSETS",
     "run_worker_first": ["/e"]
   },
+  // Staging traffic must not write to the production analytics dataset.
   "analytics_engine_datasets": [
     {
       "binding": "MEASUREMENTS",
-      "dataset": "open_e2ee_website"
+      "dataset": "open_e2ee_website_staging"
     }
   ],
   "observability": {

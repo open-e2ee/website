@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { REDIRECT_HOSTS, redirectRequest } from "../src/workers/domain-redirect.ts";
+import site from "../src/workers/site.ts";
 
 const aliases = [
   "www.open-e2ee.dev",
@@ -26,6 +27,8 @@ const canaryAliases = [
 ];
 
 const canonicalAliases = ["www.open-e2ee.dev", ...canaryAliases];
+
+const stagingHost = "staging.open-e2ee.dev";
 
 /*
  * The configs are .jsonc and do carry comments, so they cannot go straight to
@@ -64,23 +67,58 @@ test("stages the redirect Worker without claiming a hostname", () => {
   assert.equal(stage.workers_dev, false);
 });
 
-test("stages the canonical website under an isolated Worker name with no routes", () => {
-  const migration = workflow("deploy-redirect-migration.yml");
+test("serves the staging lane under an isolated Worker name on the staging host only", () => {
   const production = wranglerConfig("wrangler.jsonc");
   const stage = wranglerConfig("wrangler.website.stage.jsonc");
 
-  assert.match(migration, /command: deploy --config wrangler\.website\.stage\.jsonc --env=""/);
   assert.equal(stage.name, `${production.name}-stage`);
   assert.notEqual(stage.name, production.name);
   assert.equal(stage.main, production.main);
   assert.equal(stage.compatibility_date, production.compatibility_date);
   assert.deepEqual(stage.compatibility_flags, production.compatibility_flags);
   assert.deepEqual(stage.assets, production.assets);
-  assert.deepEqual(stage.analytics_engine_datasets, production.analytics_engine_datasets);
   assert.deepEqual(stage.observability, production.observability);
-  assert.deepEqual(stage.routes, []);
+  assert.deepEqual(stage.routes, [{ pattern: stagingHost, custom_domain: true }]);
   assert.equal(stage.workers_dev, false);
   assert.equal(stage.preview_urls, false);
+
+  const datasets = (config) => config.analytics_engine_datasets.map((each) => each.dataset);
+  assert.deepEqual(datasets(stage), ["open_e2ee_website_staging"]);
+  assert.equal(datasets(production).includes(datasets(stage)[0]), false);
+});
+
+test("keeps the staging host off every redirect Worker", () => {
+  for (const name of [
+    "wrangler.redirect.jsonc",
+    "wrangler.redirect.canonical.jsonc",
+    "wrangler.redirect.canary.jsonc",
+    "wrangler.redirect.stage.jsonc",
+  ]) {
+    const hosts = wranglerConfig(name).routes.map((route) => route.pattern);
+    assert.equal(hosts.includes(stagingHost), false, `${name} claims ${stagingHost}`);
+  }
+  assert.equal(REDIRECT_HOSTS.has(stagingHost), false);
+
+  const response = redirectRequest(new Request(`https://${stagingHost}/pricing/`));
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get("location"), null);
+});
+
+test("serves staging requests from the staging assets without a redirect", async () => {
+  const seen = [];
+  const env = {
+    ASSETS: {
+      fetch: async (request) => {
+        seen.push(request.url);
+        return new Response("asset");
+      },
+    },
+  };
+  const response = await site.fetch(new Request(`https://${stagingHost}/pricing/?from=main`), env);
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("location"), null);
+  assert.deepEqual(seen, [`https://${stagingHost}/pricing/?from=main`]);
 });
 
 test("limits canary activation to the four canary hostnames", () => {
