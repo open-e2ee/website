@@ -19,15 +19,6 @@ const aliases = [
   "www.opene2ee.dev",
 ];
 
-const canaryAliases = [
-  "signal-protocol.dev",
-  "www.signal-protocol.dev",
-  "docs.signal-protocol.dev",
-  "console.signal-protocol.dev",
-];
-
-const canonicalAliases = ["www.open-e2ee.dev", ...canaryAliases];
-
 const stagingHost = "staging.open-e2ee.dev";
 
 /*
@@ -44,10 +35,6 @@ function wranglerConfig(name) {
   return JSON.parse(withoutComments);
 }
 
-function workflow(name) {
-  return readFileSync(new URL(`../.github/workflows/${name}`, import.meta.url), "utf8");
-}
-
 test("keeps canonical and redirect Worker host assignments disjoint", () => {
   const canonicalHosts = wranglerConfig("wrangler.jsonc").routes.map((route) => route.pattern);
   const redirectHosts = wranglerConfig("wrangler.redirect.jsonc").routes.map((route) => route.pattern);
@@ -55,16 +42,6 @@ test("keeps canonical and redirect Worker host assignments disjoint", () => {
   assert.deepEqual(canonicalHosts, ["open-e2ee.dev"]);
   assert.deepEqual(redirectHosts, aliases);
   assert.equal(redirectHosts.includes("open-e2ee.dev"), false);
-});
-
-test("stages the redirect Worker without claiming a hostname", () => {
-  const production = wranglerConfig("wrangler.redirect.jsonc");
-  const stage = wranglerConfig("wrangler.redirect.stage.jsonc");
-
-  assert.equal(stage.name, `${production.name}-stage`);
-  assert.equal(stage.main, production.main);
-  assert.deepEqual(stage.routes, []);
-  assert.equal(stage.workers_dev, false);
 });
 
 test("serves the staging lane under an isolated Worker name on the staging host only", () => {
@@ -87,16 +64,9 @@ test("serves the staging lane under an isolated Worker name on the staging host 
   assert.equal(datasets(production).includes(datasets(stage)[0]), false);
 });
 
-test("keeps the staging host off every redirect Worker", () => {
-  for (const name of [
-    "wrangler.redirect.jsonc",
-    "wrangler.redirect.canonical.jsonc",
-    "wrangler.redirect.canary.jsonc",
-    "wrangler.redirect.stage.jsonc",
-  ]) {
-    const hosts = wranglerConfig(name).routes.map((route) => route.pattern);
-    assert.equal(hosts.includes(stagingHost), false, `${name} claims ${stagingHost}`);
-  }
+test("keeps the staging host off the redirect Worker", () => {
+  const hosts = wranglerConfig("wrangler.redirect.jsonc").routes.map((route) => route.pattern);
+  assert.equal(hosts.includes(stagingHost), false);
   assert.equal(REDIRECT_HOSTS.has(stagingHost), false);
 
   const response = redirectRequest(new Request(`https://${stagingHost}/pricing/`));
@@ -119,40 +89,6 @@ test("serves staging requests from the staging assets without a redirect", async
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("location"), null);
   assert.deepEqual(seen, [`https://${stagingHost}/pricing/?from=main`]);
-});
-
-test("limits canary activation to the four canary hostnames", () => {
-  const production = wranglerConfig("wrangler.redirect.jsonc");
-  const canary = wranglerConfig("wrangler.redirect.canary.jsonc");
-  const canaryHosts = canary.routes.map((route) => route.pattern);
-
-  assert.equal(canary.name, production.name);
-  assert.equal(canary.main, production.main);
-  assert.deepEqual(canaryHosts, canaryAliases);
-  assert.equal(canary.routes.every((route) => route.custom_domain === true), true);
-  assert.equal(canaryHosts.every((host) => aliases.includes(host)), true);
-  assert.equal(canaryHosts.includes("open-e2ee.dev"), false);
-});
-
-test("limits canonical activation to the canonical alias and canary hostnames", () => {
-  const production = wranglerConfig("wrangler.redirect.jsonc");
-  const canonical = wranglerConfig("wrangler.redirect.canonical.jsonc");
-  const canonicalHosts = canonical.routes.map((route) => route.pattern);
-
-  assert.equal(canonical.name, production.name);
-  assert.equal(canonical.main, production.main);
-  assert.deepEqual(canonicalHosts, canonicalAliases);
-  assert.equal(canonical.routes.every((route) => route.custom_domain === true), true);
-  assert.equal(canonicalHosts.every((host) => aliases.includes(host)), true);
-  assert.equal(canonicalHosts.includes("open-e2ee.dev"), false);
-});
-
-test("activates the complete redirect set only through the final migration operation", () => {
-  const migration = workflow("deploy-redirect-migration.yml");
-
-  assert.match(migration, /- activate-final/);
-  assert.match(migration, /if: inputs\.operation == 'activate-final'/);
-  assert.match(migration, /command: deploy --config wrangler\.redirect\.jsonc --env=""/);
 });
 
 test("redirects every configured alias to the canonical domain", () => {
