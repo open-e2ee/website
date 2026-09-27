@@ -1,9 +1,11 @@
 ---
 /*
- * The OpenE2EE Data Processing Agreement. The console promised customers a DPA
- * before one existed, and no published document carried Article 28(3) processor
- * terms or a transfer mechanism, so a customer's procurement review had nothing
- * to read and nothing to file.
+ * The OpenE2EE Data Processing Agreement, version 2026-09-27. It carries the
+ * Article 28(3) processor terms and the transfer mechanism for personal data
+ * OpenE2EE processes on a Relay customer's instructions. Section 4 and Annex I
+ * list measuring and improving the Relay's reliability, performance, and cost
+ * as a purpose, because Relay operating records carry keyed hashes of account
+ * and device identifiers. Every other clause is the 2026-09-10 text.
  *
  * It is a component rather than a page for the reason the other two legal
  * documents are: /legal/dpa renders the live version and a dated page freezes
@@ -178,10 +180,14 @@ const { canonical } = Astro.props;
         </p>
         <p>
           We process Customer Personal Data to provide, secure, meter, support, and troubleshoot the
-          console and Relay, to enforce the Terms and the{' '}
-          <a href="/legal/acceptable-use">Acceptable Use Policy</a>, and to comply with law. We do
-          not sell it, share it for cross-context behavioral advertising, use it for advertising of
-          any kind, or use it to train machine-learning models.
+          console and Relay, to measure and improve the Relay’s reliability, performance, and cost,
+          to enforce the Terms and the <a href="/legal/acceptable-use">Acceptable Use Policy</a>,
+          and to comply with law. For that measurement we use operating records in which account
+          and device identifiers appear only as keyed hashes and which contain no content, and we
+          keep them for the period stated in the{' '}
+          <a href="/legal/relay-retention">Relay Retention Statement</a>. We do not sell it, share
+          it for cross-context behavioral advertising, use it for advertising of any kind, or use
+          it to train machine-learning models.
         </p>
         <p>
           If we believe an instruction of yours infringes Data Protection Law, we will tell you, and
@@ -446,7 +452,8 @@ const { canonical } = Astro.props;
           <strong>Nature and purpose.</strong> Accepting, routing, storing, and delivering encrypted
           content between a customer’s end users; registering devices and distributing public key
           material; metering usage for billing; operating security, abuse prevention, and
-          availability monitoring; and providing support.
+          availability monitoring; measuring and improving the reliability, performance, and cost
+          of the service; and providing support.
         </p>
         <p>
           <strong>Duration.</strong> For the term of the Relay Service Terms, plus the retention
