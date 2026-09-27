@@ -1,6 +1,20 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { privacyEffectiveDate, privacyVersion } from '../../lib/legal.mjs';
+/*
+ * The immutable copy of the OpenE2EE Privacy Notice, version 2026-09-27. The
+ * notice's Section 9 lists every version it has had, and from 2026-08-26 onward
+ * each entry has a document behind it rather than a line describing one. A
+ * privacy notice is a representation about what the site transmits and to whom,
+ * so a reader who wants to know what was represented while a version was
+ * current needs the version itself.
+ *
+ * So this page is a literal snapshot. The document text is inlined here, and
+ * the page must never import the live version constants or the live notice, or
+ * an edit to /legal/privacy would reach the archive that exists to escape it.
+ * The guard bans the import paths as strings, so those path forms are not
+ * written even in this comment. A new version means a new dated page beside
+ * this one, never an edit. tests/legal-pages.test.mjs enforces the decoupling.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -10,14 +24,15 @@ import {
   CONTAINER,
   LABEL,
   LEAD,
+  LEGAL_PIN,
   LEGAL_TOC,
-} from '../../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
-  title="Privacy"
-  description="How OpenE2EE collects, uses, shares, and protects personal information."
-  canonical="/legal/privacy"
+  title="Privacy 2026-09-27"
+  description="Frozen copy of the OpenE2EE Privacy Notice, version 2026-09-27."
+  canonical="/legal/privacy/2026-09-27"
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -30,8 +45,13 @@ import {
           communications.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {privacyEffectiveDate}</span>
-          <span>Version {privacyVersion}</span>
+          <span>Effective September 27, 2026</span>
+          <span>Version 2026-09-27</span>
+        </p>
+        <p class={LEGAL_PIN}>
+          This is the immutable copy of that version. It is what this notice said while version
+          2026-09-27 was current, and it does not change. The notice that governs today is the{' '}
+          <a href="/legal/privacy">current Privacy Notice</a>.
         </p>
       </div>
     </header>
@@ -441,7 +461,7 @@ import {
           storage, no identifier, and no IP-address record.
         </p>
         <p>
-          <strong>Version {privacyVersion}:</strong> added the analytics records described in
+          <strong>Version 2026-09-27:</strong> added the analytics records described in
           section 2 and their 13-month retention in section 6. They use keyed hashes in place of
           identifiers and contain no message content. No cookie, no storage, and no identifier was
           added to the marketing site’s measurement.

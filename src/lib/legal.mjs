@@ -45,10 +45,14 @@ export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
  * live one, and the constants below name the version the live page carries.
  * Both documents were corrected on 2026-09-10 (the upload-authorization
  * window is now stated as a ceiling), which is the change that gave them a
- * second version and their first dated pages.
+ * second version and their first dated pages. The two are versioned
+ * independently. The retention statement's 2026-09-27 version states that
+ * operating records carry project, account, and device identifiers only as
+ * keyed hashes and are kept for 13 months, including after a deletion, because
+ * a period that outlives a deletion is what this document exists to publish.
  */
-export const relayRetentionVersion = '2026-09-10';
-export const relayRetentionEffectiveDate = 'September 10, 2026';
+export const relayRetentionVersion = '2026-09-27';
+export const relayRetentionEffectiveDate = 'September 27, 2026';
 export const relayRetentionPath = `/legal/relay-retention/${relayRetentionVersion}`;
 
 export const relayBetaLimitsVersion = '2026-09-10';
@@ -109,9 +113,15 @@ export const relayBetaLimitsPath = `/legal/relay-beta-limits/${relayBetaLimitsVe
  * relay service. A notice is versioned for a correction as well as for a
  * collection change: section 5's standard is that the words this page publishes
  * are the thing being represented, and six of them were wrong.
+ *
+ * The 2026-09-27 version adds a category of record: analytics records about
+ * how the Services perform and are used, in which user, organization, project,
+ * and device identifiers appear only as keyed hashes, kept for 13 months. A new
+ * record and a new retention period change what the notice represents, so they
+ * take a new version. The marketing site's measurement does not change.
  */
-export const privacyVersion = '2026-09-10';
-export const privacyEffectiveDate = 'September 10, 2026';
+export const privacyVersion = '2026-09-27';
+export const privacyEffectiveDate = 'September 27, 2026';
 export const privacyPath = `/legal/privacy/${privacyVersion}`;
 export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
 
@@ -122,8 +132,14 @@ export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
  * under, so it is pinned the same way the two commercial documents are. A
  * customer that files this agreement in a procurement review files the dated
  * URL, and an edit to /legal/dpa must never reach it.
+ *
+ * The 2026-09-27 version adds measuring and improving the Relay's reliability,
+ * performance, and cost to the purposes in Section 4 and Annex I. Relay
+ * operating records carry keyed hashes derived from end-user device
+ * identifiers, which are Customer Personal Data, so a processor may keep them
+ * only for a purpose the agreement names.
  */
-export const dpaVersion = '2026-09-10';
-export const dpaEffectiveDate = 'September 10, 2026';
-export const dpaPath = '/legal/dpa/2026-09-10';
+export const dpaVersion = '2026-09-27';
+export const dpaEffectiveDate = 'September 27, 2026';
+export const dpaPath = '/legal/dpa/2026-09-27';
 export const dpaUrl = `https://open-e2ee.dev${dpaPath}`;
