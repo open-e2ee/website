@@ -127,14 +127,18 @@ const adapters = [
       './local/store/expo',
       './local/store/web',
       './local/store/node',
-      './local/store/react-native',
+      './local/store/key-value',
       './local/store/memory',
     ],
   },
   {
     role: 'Secret vault',
     body: 'Where bootstrap secrets live, backed by a platform keystore.',
-    options: ['./local/vault', './local/vault/expo-secure-store'],
+    options: [
+      './local/vault',
+      './local/vault/expo-secure-store',
+      './local/vault/react-native-keychain',
+    ],
   },
   {
     role: 'Relay',

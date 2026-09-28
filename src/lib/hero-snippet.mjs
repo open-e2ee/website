@@ -102,7 +102,7 @@ const PACKAGE = capture.packageName;
  *
  * `expr` goes into `adapters.storage`. Three of the five factories are async
  * and are awaited here rather than quietly dropped — `indexedDbStore`,
- * `nodeStore` and `reactNativeStore` all return promises, and a snippet that
+ * `nodeStore` and `keyValueStore` all return promises, and a snippet that
  * forgot the `await` would hand the client a pending promise where a store
  * belongs.
  *
@@ -148,17 +148,27 @@ export const storageOptions = [
   {
     id: 'react-native',
     label: 'React Native',
-    subpath: 'local/store/react-native',
-    symbol: 'reactNativeStore',
+    subpath: 'local/store/key-value',
+    symbol: 'keyValueStore',
+    /* The vault holds the key the store encrypts its values under, and the
+       SDK ships one over the platform keychain, so the program imports it and
+       constructs it rather than captioning it. The import is three lines
+       because on one it is 128 characters, which the panel cannot hold. */
+    imports: [
+      'import {',
+      '  ReactNativeKeychainSignalProtocolSecretVault,',
+      `} from "${PACKAGE}/local/vault/react-native-keychain";`,
+    ],
+    setup: 'const vault = new ReactNativeKeychainSignalProtocolSecretVault();',
     /* `storage` is the reader's own object, and it has to be: the store's
-       `ReactNativeKeyValueStorage` wants `atomicWrite` and `removeMany`, which
+       `KeyValueStorage` wants `atomicWrite` and `removeMany`, which
        AsyncStorage does not have. Naming a library here would be invented
        usage of somebody else's API — the one kind of false claim the build
        audit cannot catch, because the symbol would not be ours. The note says
        whose object it is instead of guessing at a package. */
-    expr: 'await reactNativeStore({ storage })',
+    expr: 'await keyValueStore({ storage, vault })',
     experimental: false,
-    comment: 'storage is your own ReactNativeKeyValueStorage implementation.',
+    comment: 'storage is your own KeyValueStorage implementation.',
   },
 ];
 
@@ -299,12 +309,13 @@ export const relayComment = '// Devices post and collect envelopes from the rela
  * trailing comment is spent from a width budget rather than given a line, and
  * the budget is measurable: 108 characters at 1280, 97 at 1024. Each of these
  * is written to the room left after the longest code it can land on, which is
- * React Native's 67-character adapters line.
+ * React Native's 72-character adapters line.
  *
  * Nothing overruns 1280. Below it two do, and both are known: React Native's
- * adapters line is 101 characters with its comment and scrolls under a 1120px
- * viewport, and the Signal Protocol Relay's two long lines — the URL line
- * with the relay comment on it, and the sign-in disclosure — are 104 each,
+ * adapters line is 105 characters with its comment and scrolls below about
+ * 1210px, where a line between the two budgets reaches 105 columns, and the
+ * Signal Protocol Relay's two long lines — the URL line with the relay
+ * comment on it, and the sign-in disclosure — are 104 each,
  * which the 97-column budget at 1024 does not hold either. The two budgets
  * are measured in a browser, not estimated from a font size; the line
  * lengths are counted.
@@ -417,10 +428,10 @@ export const buildSnippet = (storageId, relayId) => {
     /* The Signal Protocol Relay has no subpath: its factory is the root import
        on the first line. */
     ...(relay.subpath ? [`import { ${relay.symbol} } from ${specifier(relay.subpath)};`] : []),
-    /* An adapter may need names the SDK does not export, and they belong in the
-       import block with the rest, not in a comment underneath. Written for
-       either side because nothing about this is particular to relays; no
-       option needs one today. */
+    /* An adapter may need names from beyond its own subpath, and they belong
+       in the import block with the rest, not in a comment underneath. Written
+       for either side because nothing about this is particular to relays; the
+       React Native store's vault is the one that needs it today. */
     ...(store.imports ?? []),
     ...(relay.imports ?? []),
     '',
@@ -428,6 +439,9 @@ export const buildSnippet = (storageId, relayId) => {
        a construction of more than one line never has the comment describing
        its neighbor. */
     ...withTrailingComment(relay.setup, relayComment),
+    /* A store's construction comes after the relay's, in the same block: both
+       are values the two clients below are handed. */
+    ...(store.setup ? [store.setup] : []),
     '',
     /* An option's own disclosure sits directly above the first line that uses
        the names it explains, which for the Signal Protocol Relay is Alice's

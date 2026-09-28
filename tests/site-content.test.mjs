@@ -556,12 +556,15 @@ test('binds the names the reader brings, or says whose they are', async () => {
     return new RegExp(`^\\s*const ${name}\\b`).test(line);
   };
 
-  /* `storage` is the one that cannot be bound: `ReactNativeKeyValueStorage` is
-   * an interface the reader implements, and naming a package that satisfies it
-   * would be invented usage of somebody else's API. */
+  /* `storage` is the one that cannot be bound: `KeyValueStorage` is an
+   * interface the reader implements, and naming a package that satisfies it
+   * would be invented usage of somebody else's API. Its `vault` can be: the
+   * SDK exports a keychain vault, so the option imports and constructs it. */
   const rn = storageOptions.find((option) => option.id === 'react-native');
-  assert.match(rn.comment, /your own ReactNativeKeyValueStorage/);
+  assert.match(rn.comment, /your own KeyValueStorage/);
   assert.ok(rn.expr.includes('storage'));
+  assert.match(rn.setup, /^const vault = new ReactNativeKeychainSignalProtocolSecretVault\(\);$/);
+  assert.ok(rn.imports.some((line) => line.includes('ReactNativeKeychainSignalProtocolSecretVault')));
 
   /* The Signal Protocol Relay binds `relayUrl` itself and discloses the two
    * sign-in callbacks, which are the reader's identity-provider calls and
@@ -584,14 +587,17 @@ test('binds the names the reader brings, or says whose they are', async () => {
 
     /* Every name the program uses and did not get from the SDK is bound before
      * the line that uses it. Two exclusions from the search for a use, and both
-     * are about not letting a line count as its own reader: an `import` line
+     * are about not letting a line count as its own reader: the import block
      * mentions a name inside a string, and the line that binds a name mentions
-     * it by definition. */
-    for (const name of ['relayUrl']) {
+     * it by definition. The block is every line above the first blank one,
+     * because an import too wide for the panel spans three lines and only the
+     * first of them starts with `import`. */
+    const importsEnd = lines.indexOf('');
+    for (const name of ['relayUrl', 'vault']) {
       const mentions = new RegExp(`\\b${name}\\b`);
       const bound = lines.findIndex((line) => binds(line, name));
       const used = lines.findIndex(
-        (line) => !line.startsWith('import ') && !binds(line, name) && mentions.test(line),
+        (line, index) => index > importsEnd && !binds(line, name) && mentions.test(line),
       );
       if (bound === -1 && used === -1) continue;
       /* Both directions. A binding with no use is an import a reader deletes,
@@ -608,13 +614,13 @@ test('binds the names the reader brings, or says whose they are', async () => {
      * failing. */
     const bringsOwn = variant.storage === 'react-native';
     assert.equal(
-      /ReactNativeKeyValueStorage/.test(variant.code),
+      /KeyValueStorage/.test(variant.code),
       bringsOwn,
       `${variant.storage}/${variant.relay} disclosure does not match its store`,
     );
     if (bringsOwn) {
-      const said = lines.findIndex((line) => line.includes('ReactNativeKeyValueStorage'));
-      const used = lines.findIndex((line) => line.includes('reactNativeStore({ storage })'));
+      const said = lines.findIndex((line) => line.includes('KeyValueStorage'));
+      const used = lines.findIndex((line) => line.includes('keyValueStore({ storage, vault })'));
       assert.ok(said !== -1 && said < used, 'the store is used before its object is explained');
     }
 
@@ -4677,7 +4683,7 @@ test('grades exactly the runtimes the SDK marks experimental, and no others', as
      still appear in ADAPTERS.md, or the document has been restructured out
      from under the path regex and `marked` could be silently empty for the
      wrong reason. */
-  for (const path of ['local/store/expo', 'local/store/node', 'local/store/web', 'local/store/react-native']) {
+  for (const path of ['local/store/expo', 'local/store/node', 'local/store/web', 'local/store/key-value']) {
     assert.ok(doc.includes(path), `${path} is missing from ADAPTERS.md — the anchor has drifted`);
   }
 
@@ -4694,10 +4700,10 @@ test('grades exactly the runtimes the SDK marks experimental, and no others', as
    * `store → the word the page uses`, written out because this is the only
    * place the two vocabularies meet: `web` is the site's "browser" (lower-case,
    * because the word now sits mid-sentence on the cleared side), and
-   * `react-native` is the bare one, which is why Expo is separate rather than a
-   * favor of it. `mock` is a development adapter and is not a platform the
-   * page grades at all. */
-  const pageWord = { expo: 'Expo', node: 'Node', web: 'browser', 'react-native': 'React Native' };
+   * `key-value` is the store bare React Native uses, which is why Expo is
+   * separate rather than a favor of it. `mock` is a development adapter and
+   * is not a platform the page grades at all. */
+  const pageWord = { expo: 'Expo', node: 'Node', web: 'browser', 'key-value': 'React Native' };
   const graded = Object.keys(pageWord);
   for (const store of marked) {
     assert.ok(pageWord[store], `ADAPTERS.md marks ${store}, which the page has no word for`);
