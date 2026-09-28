@@ -115,6 +115,7 @@ function collectMembers(sourceFile, into) {
  *   subpaths: Map<string, Set<string>>,
  *   vocabulary: Set<string>,
  *   members: Map<string, Set<string>>,
+ *   asyncFunctions: Set<string>,
  * } | null>} `null` when no copy of the SDK can be found at all.
  */
 export async function readSdkSurface() {
@@ -143,14 +144,26 @@ export async function readSdkSurface() {
   const checker = program.getTypeChecker();
 
   const subpaths = new Map();
+  const asyncFunctions = new Set();
   for (const [subpath, file] of entries) {
     const source = program.getSourceFile(file);
     if (!source) continue;
     const moduleSymbol = checker.getSymbolAtLocation(source);
-    const names = new Set(
-      moduleSymbol ? checker.getExportsOfModule(moduleSymbol).map((s) => s.getName()) : [],
-    );
-    subpaths.set(subpath, names);
+    const exported = moduleSymbol ? checker.getExportsOfModule(moduleSymbol) : [];
+    subpaths.set(subpath, new Set(exported.map((s) => s.getName())));
+    /* A function whose every signature returns a promise. The site awaits
+     * exactly these, so a factory that turns async in a release is a failing
+     * test rather than a pending promise in a reader's program. */
+    for (const symbol of exported) {
+      const target = symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+      const signatures = checker.getTypeOfSymbolAtLocation(target, source).getCallSignatures();
+      if (
+        signatures.length > 0 &&
+        signatures.every((signature) => signature.getReturnType().getSymbol()?.getName() === 'Promise')
+      ) {
+        asyncFunctions.add(symbol.getName());
+      }
+    }
   }
 
   /* Members and literals from every file the entries reach, not just the
@@ -164,7 +177,7 @@ export async function readSdkSurface() {
   }
   for (const names of subpaths.values()) for (const name of names) vocabulary.add(name);
 
-  return { root, origin, version: manifest.version, subpaths, vocabulary, members };
+  return { root, origin, version: manifest.version, subpaths, vocabulary, members, asyncFunctions };
 }
 
 /*

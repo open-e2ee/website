@@ -11,6 +11,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readSdkSurface, suggest } from '../scripts/sdk-surface.mjs';
+import { storageOptions } from '../src/lib/hero-snippet.mjs';
 
 /** Confirmed nonexistent in the SDK; each is a real export minus "Protocol". */
 const PRE_RENAME = [
@@ -26,7 +27,7 @@ const PRE_RENAME = [
   'IndexedDbSignalStore',
   'NodeSignalStore',
   'ExpoSecureStoreSignalSecretVault',
-  'configureSignalExpoDbBindings',
+  'KeyValueSignalStore',
 ];
 
 const surface = await readSdkSurface();
@@ -61,5 +62,19 @@ test('does not suggest a replacement for a name that is simply invented', () => 
    * "did you mean" for an unrelated name would be worse than staying quiet. */
   for (const name of ['SignalProtocolTeapot', 'encryptEverything', 'ISignalProtocolMagic']) {
     assert.equal(suggest(name, surface.vocabulary), null);
+  }
+});
+
+test('awaits exactly the store factories the SDK declares async', () => {
+  /* A factory that turns async in a release leaves the hero handing the
+   * client a pending promise, and the snippet's own `await` says nothing
+   * about the SDK. So the declared return type decides. */
+  for (const store of storageOptions) {
+    assert.ok(surface.vocabulary.has(store.symbol), `${store.symbol} is not an SDK export`);
+    assert.equal(
+      store.expr.startsWith('await '),
+      surface.asyncFunctions.has(store.symbol),
+      `${store.symbol} ${surface.asyncFunctions.has(store.symbol) ? 'returns a promise and must be awaited' : 'is synchronous and must not be awaited'}`,
+    );
   }
 });

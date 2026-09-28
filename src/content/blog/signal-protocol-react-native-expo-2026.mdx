@@ -3,7 +3,7 @@ title: Signal Protocol in React Native and Expo in 2026
 description: The official JavaScript library is archived. Its replacement is a Node native add-on, and the community port has an open trust-check bug.
 image: /social/blog/signal-protocol-react-native-expo-2026.png
 publishedAt: 2026-07-25
-updatedAt: 2026-08-06
+updatedAt: 2026-09-28
 author: OpenE2EE
 tags:
   - React Native
@@ -70,16 +70,7 @@ npm install @open-e2ee/signal-protocol-sdk
 npx expo install expo-sqlite expo-secure-store expo-crypto
 ```
 
-Tell the Expo store how to reach your database. You own the connection. The SDK owns the schema:
-
-```ts
-import { configureSignalProtocolExpoDbBindings } from '@open-e2ee/signal-protocol-sdk/local/store/expo/db';
-
-configureSignalProtocolExpoDbBindings({
-  getDrizzle: async () => drizzleDatabase,
-  getRawDatabase: () => rawDatabase,
-});
-```
+**Updated 28 September 2026:** the SDK now owns the Expo database. `await expoStore()` from `@open-e2ee/signal-protocol-sdk/local/store/expo` opens it, so the step that connected the store to your own database is gone. The examples below use the current entry.
 
 Use the same client composition on both devices. This example reaches the OpenE2EE Signal Protocol Relay. The `getIdentityAssertion` callback is your own function: it returns the signed identity assertion from your identity provider.
 
@@ -91,7 +82,7 @@ const relayUrl = process.env.OPEN_E2EE_RELAY_URL!;
 
 const signal = await createHostedSignalProtocolClient({
   hosted: { relayUrl, getIdentityAssertion: signIn },
-  adapters: { storage: expoStore() },
+  adapters: { storage: await expoStore() },
 });
 
 signal.registerHook('onMessageDecrypted', (message) => {
@@ -143,7 +134,7 @@ Key lifetime determines whether the app still works in month six.
 ```ts
 const signal = await createHostedSignalProtocolClient({
   hosted: { relayUrl, getIdentityAssertion: signIn },
-  adapters: { storage: expoStore() },
+  adapters: { storage: await expoStore() },
   preKeyLowThreshold: 50,
   onPreKeyLow: (remaining) => {
     console.warn(`${remaining} one-time prekeys left`);

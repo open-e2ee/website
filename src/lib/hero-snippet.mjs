@@ -100,11 +100,12 @@ const PACKAGE = capture.packageName;
 /*
  * The device store, which is the runtime question.
  *
- * `expr` goes into `adapters.storage`. Three of the five factories are async
- * and are awaited here rather than quietly dropped — `indexedDbStore`,
- * `nodeStore` and `keyValueStore` all return promises, and a snippet that
- * forgot the `await` would hand the client a pending promise where a store
- * belongs.
+ * `expr` goes into `adapters.storage`. Four of the five factories are async
+ * and are awaited here rather than quietly dropped — `expoStore`,
+ * `indexedDbStore`, `nodeStore` and `keyValueStore` all return promises, and a
+ * snippet that forgot the `await` would hand the client a pending promise
+ * where a store belongs. A test holds each `await` to the SDK's declared
+ * return type.
  *
  * `experimental` is not decoration. When the installed SDK marks a store
  * experimental in ADAPTERS.md, the flag puts the word in the option's own
@@ -134,7 +135,7 @@ export const storageOptions = [
     label: 'Expo',
     subpath: 'local/store/expo',
     symbol: 'expoStore',
-    expr: 'expoStore()',
+    expr: 'await expoStore()',
     experimental: false,
   },
   {
