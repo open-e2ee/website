@@ -556,15 +556,18 @@ test('binds the names the reader brings, or says whose they are', async () => {
     return new RegExp(`^\\s*const ${name}\\b`).test(line);
   };
 
-  /* `storage` is the one that cannot be bound: `KeyValueStorage` is an
-   * interface the reader implements, and naming a package that satisfies it
-   * would be invented usage of somebody else's API. Its `vault` can be: the
-   * SDK exports a keychain vault, so the option imports and constructs it. */
+  /* The Node store's `directory` and `vault` cannot be bound: the SDK ships
+   * no vault for a plain Node process, and naming a secret manager that
+   * satisfies `SignalProtocolLocalSecretVault` would be invented usage of
+   * somebody else's API. So the option says whose they are. The React Native
+   * store takes the SDK's keychain vault by default and needs neither. */
+  const node = storageOptions.find((option) => option.id === 'node');
+  assert.match(node.comment, /your own SignalProtocolLocalSecretVault/);
+  assert.ok(node.expr.includes('{ directory, vault }'));
+  assert.equal(node.setup, undefined, 'the Node option binds a name it says is the reader\'s');
   const rn = storageOptions.find((option) => option.id === 'react-native');
-  assert.match(rn.comment, /your own KeyValueStorage/);
-  assert.ok(rn.expr.includes('storage'));
-  assert.match(rn.setup, /^const vault = new ReactNativeKeychainSignalProtocolSecretVault\(\);$/);
-  assert.ok(rn.imports.some((line) => line.includes('ReactNativeKeychainSignalProtocolSecretVault')));
+  assert.equal(rn.expr, 'await reactNativeStore()');
+  assert.equal(rn.comment, undefined, 'the React Native option captions a name it does not use');
 
   /* The Signal Protocol Relay binds `relayUrl` itself and discloses the two
    * sign-in callbacks, which are the reader's identity-provider calls and
@@ -593,7 +596,11 @@ test('binds the names the reader brings, or says whose they are', async () => {
      * because an import too wide for the panel spans three lines and only the
      * first of them starts with `import`. */
     const importsEnd = lines.indexOf('');
+    const store = storageOptions.find((option) => option.id === variant.storage);
     for (const name of ['relayUrl', 'vault']) {
+      /* A name the store's own comment gives to the reader is disclosed, not
+       * bound; the disclosure check below holds its position. */
+      if (store.comment?.includes(name)) continue;
       const mentions = new RegExp(`\\b${name}\\b`);
       const bound = lines.findIndex((line) => binds(line, name));
       const used = lines.findIndex(
@@ -612,15 +619,15 @@ test('binds the names the reader brings, or says whose they are', async () => {
      * your", which a narrative comment could also satisfy: a marker a passing
      * comment can meet would let the real disclosure go missing without
      * failing. */
-    const bringsOwn = variant.storage === 'react-native';
+    const bringsOwn = variant.storage === 'node';
     assert.equal(
-      /KeyValueStorage/.test(variant.code),
+      /SignalProtocolLocalSecretVault/.test(variant.code),
       bringsOwn,
       `${variant.storage}/${variant.relay} disclosure does not match its store`,
     );
     if (bringsOwn) {
-      const said = lines.findIndex((line) => line.includes('KeyValueStorage'));
-      const used = lines.findIndex((line) => line.includes('keyValueStore({ storage, vault })'));
+      const said = lines.findIndex((line) => line.includes('SignalProtocolLocalSecretVault'));
+      const used = lines.findIndex((line) => line.includes('nodeStore({ directory, vault })'));
       assert.ok(said !== -1 && said < used, 'the store is used before its object is explained');
     }
 
@@ -4683,7 +4690,7 @@ test('grades exactly the runtimes the SDK marks experimental, and no others', as
      still appear in ADAPTERS.md, or the document has been restructured out
      from under the path regex and `marked` could be silently empty for the
      wrong reason. */
-  for (const path of ['local/store/expo', 'local/store/node', 'local/store/web', 'local/store/key-value']) {
+  for (const path of ['local/store/expo', 'local/store/node', 'local/store/web', 'local/store/react-native']) {
     assert.ok(doc.includes(path), `${path} is missing from ADAPTERS.md — the anchor has drifted`);
   }
 
@@ -4700,10 +4707,10 @@ test('grades exactly the runtimes the SDK marks experimental, and no others', as
    * `store → the word the page uses`, written out because this is the only
    * place the two vocabularies meet: `web` is the site's "browser" (lower-case,
    * because the word now sits mid-sentence on the cleared side), and
-   * `key-value` is the store bare React Native uses, which is why Expo is
+   * `react-native` is the store bare React Native uses, which is why Expo is
    * separate rather than a favor of it. `mock` is a development adapter and
    * is not a platform the page grades at all. */
-  const pageWord = { expo: 'Expo', node: 'Node', web: 'browser', 'key-value': 'React Native' };
+  const pageWord = { expo: 'Expo', node: 'Node', web: 'browser', 'react-native': 'React Native' };
   const graded = Object.keys(pageWord);
   for (const store of marked) {
     assert.ok(pageWord[store], `ADAPTERS.md marks ${store}, which the page has no word for`);

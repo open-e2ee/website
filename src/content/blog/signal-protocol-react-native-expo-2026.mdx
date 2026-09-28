@@ -57,7 +57,7 @@ The `uuid` package [changed its code](https://github.com/uuidjs/uuid/pull/537) t
 
 Reported Hermes measurements also show a cost for pure JavaScript crypto. Wallet creation took [33.5s on Hermes and 14.4s on JSC](https://github.com/facebook/hermes/issues/626) on an iPhone 11 Pro. [`crypto-js` operations increased from 1.5s to 6s](https://github.com/facebook/hermes/issues/735) in another report.
 
-The OpenE2EE Signal Protocol SDK implements the protocol in TypeScript. It uses `@noble/curves`, `@noble/hashes`, `@noble/ciphers`, and `@noble/post-quantum`. The protocol code adds no native crypto module. It checks `globalThis.crypto.getRandomValues`, then Node's `webcrypto`, then `expo-crypto`'s `getRandomBytesAsync`. Expo therefore needs no randomness polyfill import. If no secure source exists, the SDK throws a specific error and does not use an insecure fallback.
+The OpenE2EE Signal Protocol SDK implements the protocol in TypeScript. It uses `@noble/curves`, `@noble/hashes`, `@noble/ciphers`, and `@noble/post-quantum`. The protocol code adds no native crypto module. On React Native and Expo, the SDK reads random bytes only from the global `crypto.getRandomValues`, so the app installs `react-native-get-random-values` 2.x or `react-native-quick-crypto` and loads it before the first SDK call. If no secure source exists, the SDK throws `SecureRandomUnavailableError` and does not use an insecure fallback.
 
 The encrypted local store uses `expo-sqlite` with SQLCipher. [Expo's SQLCipher instructions](https://docs.expo.dev/versions/latest/sdk/sqlite/#sqlcipher) require `useSQLCipher` configuration and a native build. SQLCipher is not available in Expo Go. A project can run `npx expo prebuild` directly. [Expo build tools](https://docs.expo.dev/develop/development-builds/introduction/) also run Prebuild automatically when the native directories do not exist. SQLCipher still requires native configuration and a development build.
 
@@ -67,14 +67,15 @@ Install:
 
 ```bash
 npm install @open-e2ee/signal-protocol-sdk
-npx expo install expo-sqlite expo-secure-store expo-crypto
+npx expo install expo-sqlite expo-secure-store react-native-get-random-values
 ```
 
-**Updated 28 September 2026:** the SDK now owns the Expo database. `await expoStore()` from `@open-e2ee/signal-protocol-sdk/local/store/expo` opens it, so the step that connected the store to your own database is gone. The examples below use the current entry.
+**Updated 28 September 2026:** the SDK now owns the Expo database. `await expoStore()` from `@open-e2ee/signal-protocol-sdk/local/store/expo` opens it, so the step that connected the store to your own database is gone. The SDK reads random bytes only from the global `crypto.getRandomValues`, so the install adds `react-native-get-random-values`, and the app entry imports it first. The examples below use the current entry.
 
 Use the same client composition on both devices. This example reaches the OpenE2EE Signal Protocol Relay. The `getIdentityAssertion` callback is your own function: it returns the signed identity assertion from your identity provider.
 
 ```ts
+import 'react-native-get-random-values';
 import { createHostedSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
 import { expoStore } from '@open-e2ee/signal-protocol-sdk/local/store/expo';
 

@@ -41,7 +41,7 @@ export const platformMarks = {
   'react-native': {
     /* The key names the platform and the label is the founder's word for the
        row. They differ here: bare React Native stores through
-       `./local/store/key-value`, and the strip says "React".
+       `./local/store/react-native`, and the strip says "React".
 
        Recorded rather than silently reconciled, because the quickstart caveat
        further down the page names the store "bare React Native" — the phrase

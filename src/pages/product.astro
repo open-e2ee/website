@@ -125,7 +125,9 @@ const adapters = [
     body: 'Where protocol state lives on the device.',
     options: [
       './local/store/expo',
+      './local/store/react-native',
       './local/store/web',
+      './local/store/web-sqlite',
       './local/store/node',
       './local/store/key-value',
       './local/store/memory',
@@ -138,6 +140,7 @@ const adapters = [
       './local/vault',
       './local/vault/expo-secure-store',
       './local/vault/react-native-keychain',
+      './local/vault/electron-safe-storage',
     ],
   },
   {
@@ -301,9 +304,11 @@ const ordered = projects
         The Expo, Node, browser, and bare React Native stores implement{' '}
         <code>SignalProtocolLocalStore</code> in full, so groups and multi-device work on any of
         them. They differ in where the bytes land. Expo uses{' '}
-        <code>expo-sqlite</code> with SQLCipher, and Node an encrypted filesystem under{' '}
-        <code>node:crypto</code> with 0600 permissions. The browser uses IndexedDB scoped to the
-        page&rsquo;s origin, and bare React Native a key-value backend you supply.{' '}
+        <code>expo-sqlite</code> with SQLCipher, bare React Native{' '}
+        <code>op-sqlite</code> with SQLCipher, and Node SQLCipher on{' '}
+        <code>better-sqlite3-multiple-ciphers</code>, with its key in a vault you pass. The browser
+        uses IndexedDB scoped to the page&rsquo;s origin, or an encrypted SQLite database in the
+        origin private file system.{' '}
         <code>SignalProtocolLocalStore</code> and <code>SignalProtocolRelayServer</code> are
         documented interfaces, so you can write your own.
       </p>
