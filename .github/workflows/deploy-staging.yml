@@ -1,6 +1,6 @@
 name: Deploy staging
 
-# Staging deploy of staging.open-e2ee.dev. Each push to main builds, tests, and
+# Staging deploy of stage.open-e2ee.dev. Each push to main builds, tests, and
 # deploys wrangler.website.stage.jsonc. A deploy runs only at the current main
 # tip, so a rerun of an older run cannot move staging back. A published release
 # deploys production in deploy.yml.
@@ -33,7 +33,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "::notice title=Staging deploy skipped::Set the CLOUDFLARE_API_TOKEN secret on the staging environment to deploy staging.open-e2ee.dev."
+            echo "::notice title=Staging deploy skipped::Set the CLOUDFLARE_API_TOKEN secret on the staging environment to deploy stage.open-e2ee.dev."
             echo "present=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi

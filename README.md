@@ -54,7 +54,7 @@ lanes:
 | Lane | Trigger | Host | Workflow |
 |---|---|---|---|
 | Preview | Each pull request | A `workers.dev` preview URL | `preview.yml` |
-| Staging | Each push to `main`, after the build and tests pass | `staging.open-e2ee.dev` | `deploy-staging.yml` |
+| Staging | Each push to `main`, after the build and tests pass | `stage.open-e2ee.dev` | `deploy-staging.yml` |
 | Production | A published GitHub release whose tag commit is on `main` | `open-e2ee.dev` | `deploy.yml` |
 
 A push to `main` never deploys production. The staging workflow deploys only

@@ -5,7 +5,7 @@
  *   node scripts/check-deploy-workflows.mjs <workflows-dir>
  *
  * A pull request deploys a preview (preview.yml). A push to main deploys
- * staging.open-e2ee.dev (deploy-staging.yml). A published release whose tag
+ * stage.open-e2ee.dev (deploy-staging.yml). A published release whose tag
  * commit is on main deploys open-e2ee.dev (deploy.yml). No push to main may
  * reach production, so this check holds the trigger, the guards, and the
  * deploy command of each lane. `npm test` runs it against the committed
