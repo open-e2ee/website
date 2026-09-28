@@ -60,8 +60,23 @@ test("serves the staging lane under an isolated Worker name on the staging host 
   assert.equal(stage.preview_urls, false);
 
   const datasets = (config) => config.analytics_engine_datasets.map((each) => each.dataset);
-  assert.deepEqual(datasets(stage), ["open_e2ee_website_staging"]);
+  assert.deepEqual(datasets(stage), ["website_stage"]);
   assert.equal(datasets(production).includes(datasets(stage)[0]), false);
+});
+
+test("names each Worker and dataset by role and lane, without the account name", () => {
+  const production = wranglerConfig("wrangler.jsonc");
+  const stage = wranglerConfig("wrangler.website.stage.jsonc");
+  const redirect = wranglerConfig("wrangler.redirect.jsonc");
+  const datasets = (config) => config.analytics_engine_datasets.map((each) => each.dataset);
+
+  assert.equal(production.name, "website");
+  assert.equal(production.env.preview.name, "website-preview");
+  assert.equal(stage.name, "website-stage");
+  assert.equal(redirect.name, "domain-redirect");
+  assert.deepEqual(datasets(production), ["website"]);
+  assert.deepEqual(datasets(production.env.preview), ["website_preview"]);
+  assert.deepEqual(datasets(stage), ["website_stage"]);
 });
 
 test("keeps the staging host off the redirect Worker", () => {

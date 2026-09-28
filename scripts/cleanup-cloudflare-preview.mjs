@@ -1,6 +1,6 @@
 import { pathToFileURL } from "node:url";
 
-const WORKER_PREFIX = "open-e2ee-website-pr-";
+const WORKER_PREFIX = "website-pr-";
 
 export function getPreviewWorkerName(pullNumber) {
   if (!/^[1-9]\d*$/.test(String(pullNumber))) {

@@ -7,7 +7,7 @@ import {
 } from "../scripts/cleanup-cloudflare-preview.mjs";
 
 test("derives the preview Worker name from a pull request number", () => {
-  assert.equal(getPreviewWorkerName("19"), "open-e2ee-website-pr-19");
+  assert.equal(getPreviewWorkerName("19"), "website-pr-19");
   assert.throws(
     () => getPreviewWorkerName("19-other"),
     /positive integer/,
@@ -28,12 +28,12 @@ test("deletes only the derived preview Worker", async () => {
 
   assert.deepEqual(result, {
     deleted: true,
-    workerName: "open-e2ee-website-pr-19",
+    workerName: "website-pr-19",
   });
   assert.equal(requests.length, 1);
   assert.equal(
     requests[0].url,
-    "https://api.cloudflare.com/client/v4/accounts/account-id/workers/scripts/open-e2ee-website-pr-19",
+    "https://api.cloudflare.com/client/v4/accounts/account-id/workers/scripts/website-pr-19",
   );
   assert.equal(requests[0].options.method, "DELETE");
   assert.equal(requests[0].options.headers.Authorization, "Bearer token");
