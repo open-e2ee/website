@@ -19,7 +19,7 @@ const aliases = [
   "www.opene2ee.dev",
 ];
 
-const stagingHost = "staging.open-e2ee.dev";
+const stagingHost = "stage.open-e2ee.dev";
 
 /*
  * The configs are .jsonc and do carry comments, so they cannot go straight to

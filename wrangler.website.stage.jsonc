@@ -7,7 +7,7 @@
   "preview_urls": false,
   "routes": [
     {
-      "pattern": "staging.open-e2ee.dev",
+      "pattern": "stage.open-e2ee.dev",
       "custom_domain": true
     }
   ],
