@@ -11,7 +11,6 @@
   "allow": [
     "randomUUID",
     "webcrypto",
-    "getRandomBytesAsync",
     "useSQLCipher",
     "AFTER_FIRST_UNLOCK",
     "THIS_DEVICE_ONLY",
@@ -22,7 +21,6 @@
   "$provenance": {
     "randomUUID": "Web Crypto API, and expo-crypto's re-export of it",
     "webcrypto": "node:crypto",
-    "getRandomBytesAsync": "expo-crypto",
     "useSQLCipher": "expo-sqlite config plugin property",
     "AFTER_FIRST_UNLOCK": "expo-secure-store keychain accessibility constant",
     "THIS_DEVICE_ONLY": "expo-secure-store keychain accessibility constant",

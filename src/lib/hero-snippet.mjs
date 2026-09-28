@@ -70,8 +70,8 @@ const PACKAGE = capture.packageName;
  * written, both devices in one process, which is what the recording did. With
  * the four device stores it does not: `indexedDbStore()` takes no arguments
  * and opens one fixed database name, and the Node, Expo and React Native
- * stores are the same kind of thing, so two clients in one runtime would share
- * one device's keys. That is why `ALICE_COMMENT` says each device runs its own
+ * stores are the same kind of thing, so two clients in one runtime would reach
+ * for one device's database. That is why `ALICE_COMMENT` says each device runs its own
  * half in an application. The lines stay true of any store — each is a real
  * call on a real device — and the disclosure travels with the paste.
  *
@@ -100,11 +100,12 @@ const PACKAGE = capture.packageName;
 /*
  * The device store, which is the runtime question.
  *
- * `expr` goes into `adapters.storage`. Three of the five factories are async
- * and are awaited here rather than quietly dropped — `indexedDbStore`,
- * `nodeStore` and `reactNativeStore` all return promises, and a snippet that
- * forgot the `await` would hand the client a pending promise where a store
- * belongs.
+ * `expr` goes into `adapters.storage`. Four of the five factories are async
+ * and are awaited here rather than quietly dropped — `expoStore`,
+ * `indexedDbStore`, `nodeStore` and `reactNativeStore` all return promises, and a
+ * snippet that forgot the `await` would hand the client a pending promise
+ * where a store belongs. A test holds each `await` to the SDK's declared
+ * return type.
  *
  * `experimental` is not decoration. When the installed SDK marks a store
  * experimental in ADAPTERS.md, the flag puts the word in the option's own
@@ -126,15 +127,20 @@ export const storageOptions = [
     label: 'Node',
     subpath: 'local/store/node',
     symbol: 'nodeStore',
-    expr: 'await nodeStore()',
+    /* `directory` and `vault` are the reader's own, and they have to be: the
+       store requires both, and the SDK ships no vault for a plain Node
+       process. Naming a secret manager here would be invented usage of
+       somebody else's API, so the note says whose values they are instead. */
+    expr: 'await nodeStore({ directory, vault })',
     experimental: false,
+    comment: 'directory is yours, and vault is your own SignalProtocolLocalSecretVault.',
   },
   {
     id: 'expo',
     label: 'Expo',
     subpath: 'local/store/expo',
     symbol: 'expoStore',
-    expr: 'expoStore()',
+    expr: 'await expoStore()',
     experimental: false,
   },
   {
@@ -150,15 +156,10 @@ export const storageOptions = [
     label: 'React Native',
     subpath: 'local/store/react-native',
     symbol: 'reactNativeStore',
-    /* `storage` is the reader's own object, and it has to be: the store's
-       `ReactNativeKeyValueStorage` wants `atomicWrite` and `removeMany`, which
-       AsyncStorage does not have. Naming a library here would be invented
-       usage of somebody else's API — the one kind of false claim the build
-       audit cannot catch, because the symbol would not be ours. The note says
-       whose object it is instead of guessing at a package. */
-    expr: 'await reactNativeStore({ storage })',
+    /* The store keeps its database key in the SDK's react-native-keychain
+       vault by default, so the program passes nothing. */
+    expr: 'await reactNativeStore()',
     experimental: false,
-    comment: 'storage is your own ReactNativeKeyValueStorage implementation.',
   },
 ];
 
@@ -180,12 +181,12 @@ export const storageOptions = [
  * and the `oe` CLI write. An application reads its configuration however its
  * bundler exposes one, and picking a different spelling here to look more
  * idiomatic would be guessing at somebody else's build — the same mistake
- * naming a React Native storage package would be, one option up.
+ * naming a secret manager for the Node store's vault would be, one option up.
  *
  * `aliceSignIn` and `bobSignIn` are the reader's own functions. Each returns
  * a signed assertion from the application's identity provider, and nothing
  * importable produces one, so the option discloses whose they are in a
- * comment the same way the React Native store discloses `storage`.
+ * comment the same way the Node store discloses `directory` and `vault`.
  *
  * scripts/audit-build.mjs checks module specifiers under `@open-e2ee/` only, so
  * it holds the two factories and the store subpaths to the installed types
@@ -237,8 +238,8 @@ export const relayOptions = [
  * device this is, where the keys stay, when the hook fires, what is encrypted.
  *
  * One of them also carries what used to sit under the panel in a
- * `<p class="code-note">` — that `storage`, in the bare React Native variant,
- * is an object the reader brings rather than something the SDK exports. Prose
+ * `<p class="code-note">` — that `directory` and `vault`, in the Node variant,
+ * are values the reader brings rather than something the SDK exports. Prose
  * below a copy button is read after the copy, if at all; a comment travels with
  * the paste.
  *
@@ -299,12 +300,13 @@ export const relayComment = '// Devices post and collect envelopes from the rela
  * trailing comment is spent from a width budget rather than given a line, and
  * the budget is measurable: 108 characters at 1280, 97 at 1024. Each of these
  * is written to the room left after the longest code it can land on, which is
- * React Native's 67-character adapters line.
+ * Node's 70-character adapters line.
  *
- * Nothing overruns 1280. Below it two do, and both are known: React Native's
- * adapters line is 101 characters with its comment and scrolls under a 1120px
- * viewport, and the Signal Protocol Relay's two long lines — the URL line
- * with the relay comment on it, and the sign-in disclosure — are 104 each,
+ * Nothing overruns 1280. Below it two do, and both are known: Node's
+ * adapters line is 103 characters with its comment and scrolls below about
+ * 1165px, where a line between the two budgets reaches 103 columns, and the
+ * Signal Protocol Relay's two long lines — the URL line with the relay
+ * comment on it, and the sign-in disclosure — are 104 each,
  * which the 97-column budget at 1024 does not hold either. The two budgets
  * are measured in a browser, not estimated from a font size; the line
  * lengths are counted.
@@ -417,10 +419,10 @@ export const buildSnippet = (storageId, relayId) => {
     /* The Signal Protocol Relay has no subpath: its factory is the root import
        on the first line. */
     ...(relay.subpath ? [`import { ${relay.symbol} } from ${specifier(relay.subpath)};`] : []),
-    /* An adapter may need names the SDK does not export, and they belong in the
-       import block with the rest, not in a comment underneath. Written for
-       either side because nothing about this is particular to relays; no
-       option needs one today. */
+    /* An adapter may need names from beyond its own subpath, and they belong
+       in the import block with the rest, not in a comment underneath. Written
+       for either side because nothing about this is particular to relays. No
+       option needs it today. */
     ...(store.imports ?? []),
     ...(relay.imports ?? []),
     '',
@@ -428,6 +430,9 @@ export const buildSnippet = (storageId, relayId) => {
        a construction of more than one line never has the comment describing
        its neighbor. */
     ...withTrailingComment(relay.setup, relayComment),
+    /* A store's construction comes after the relay's, in the same block: both
+       are values the two clients below are handed. */
+    ...(store.setup ? [store.setup] : []),
     '',
     /* An option's own disclosure sits directly above the first line that uses
        the names it explains, which for the Signal Protocol Relay is Alice's
@@ -441,7 +446,7 @@ export const buildSnippet = (storageId, relayId) => {
     /* Bob's block is the same four lines with a different identity, and it
        deliberately carries neither the adapters note nor the store's own
        disclosure. Both are said one block up, about the same two values; a
-       reader who needs the React Native note has already read it above the
+       reader who needs the Node note has already read it above the
        line that first uses it, which is the order the test checks.
 
        No blank line between the two, either. They are one beat — two devices
