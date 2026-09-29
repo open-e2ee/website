@@ -307,8 +307,8 @@ const ordered = projects
         <code>expo-sqlite</code> with SQLCipher, bare React Native{' '}
         <code>op-sqlite</code> with SQLCipher, and Node SQLCipher on{' '}
         <code>better-sqlite3-multiple-ciphers</code>, with its key in a vault you pass. The browser
-        uses IndexedDB scoped to the page&rsquo;s origin, or an encrypted SQLite database in the
-        origin private file system.{' '}
+        uses an encrypted SQLite database in the origin private file system, or IndexedDB scoped
+        to the page&rsquo;s origin where that file system is not available.{' '}
         <code>SignalProtocolLocalStore</code> and <code>SignalProtocolRelayServer</code> are
         documented interfaces, so you can write your own.
       </p>
