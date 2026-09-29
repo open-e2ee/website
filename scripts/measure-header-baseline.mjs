@@ -60,6 +60,7 @@ const held = { cdp: null, chrome: null, server: null, targets: [] };
 const failures = [];
 try {
   await run();
+  process.exit(0);
 } catch (error) {
   const prefix = error instanceof Red ? 'FAIL' : 'INFRASTRUCTURE FAILURE';
   console.error(`header baseline: ${prefix} — ${error.message}`);
