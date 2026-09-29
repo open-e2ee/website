@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { relayDevelopmentEnvironment, relayPlans } from '../src/data/relay-pricing.mjs';
+import { relayPlans, relaySandboxEnvironment } from '../src/data/relay-pricing.mjs';
 import {
   commercialTermsPath,
   commercialTermsUrl,
@@ -32,22 +32,22 @@ test('pins the current Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-09-10');
   assert.equal(commercialTermsPath, '/legal/terms/2026-09-10');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-09-10');
-  assert.equal(privacyVersion, '2026-09-27');
-  assert.equal(privacyPath, '/legal/privacy/2026-09-27');
-  assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-09-27');
-  assert.equal(relayTermsVersion, 'relay-2026-09-22');
-  assert.equal(relayTermsPath, '/legal/relay-terms/2026-09-22');
-  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-09-22');
-  assert.equal(relayRetentionVersion, '2026-09-27');
-  assert.equal(relayRetentionEffectiveDate, 'September 27, 2026');
-  assert.equal(relayRetentionPath, '/legal/relay-retention/2026-09-27');
-  assert.equal(relayBetaLimitsVersion, '2026-09-10');
-  assert.equal(relayBetaLimitsEffectiveDate, 'September 10, 2026');
-  assert.equal(relayBetaLimitsPath, '/legal/relay-beta-limits/2026-09-10');
-  assert.equal(dpaVersion, '2026-09-27');
-  assert.equal(dpaEffectiveDate, 'September 27, 2026');
-  assert.equal(dpaPath, '/legal/dpa/2026-09-27');
-  assert.equal(dpaUrl, 'https://open-e2ee.dev/legal/dpa/2026-09-27');
+  assert.equal(privacyVersion, '2026-09-29');
+  assert.equal(privacyPath, '/legal/privacy/2026-09-29');
+  assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-09-29');
+  assert.equal(relayTermsVersion, 'relay-2026-09-29');
+  assert.equal(relayTermsPath, '/legal/relay-terms/2026-09-29');
+  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-09-29');
+  assert.equal(relayRetentionVersion, '2026-09-29');
+  assert.equal(relayRetentionEffectiveDate, 'September 29, 2026');
+  assert.equal(relayRetentionPath, '/legal/relay-retention/2026-09-29');
+  assert.equal(relayBetaLimitsVersion, '2026-09-29');
+  assert.equal(relayBetaLimitsEffectiveDate, 'September 29, 2026');
+  assert.equal(relayBetaLimitsPath, '/legal/relay-beta-limits/2026-09-29');
+  assert.equal(dpaVersion, '2026-09-29');
+  assert.equal(dpaEffectiveDate, 'September 29, 2026');
+  assert.equal(dpaPath, '/legal/dpa/2026-09-29');
+  assert.equal(dpaUrl, 'https://open-e2ee.dev/legal/dpa/2026-09-29');
 });
 
 /*
@@ -79,7 +79,7 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
     read('../src/pages/legal/terms.astro'),
     read('../src/pages/legal/terms/2026-09-10.astro'),
     read('../src/pages/legal/relay-terms.astro'),
-    read('../src/pages/legal/relay-terms/2026-09-22.astro'),
+    read('../src/pages/legal/relay-terms/2026-09-29.astro'),
     read('../src/pages/legal/privacy.astro'),
   ]);
 
@@ -100,7 +100,7 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   assert.match(legalIndex, /href="\/legal\/relay-beta-limits"/);
   assert.match(relayTerms, /SignalProtocolRelayTerms/);
   assert.match(relayTerms, /canonical="\/legal\/relay-terms"/);
-  assert.match(relayVersion, /canonical="\/legal\/relay-terms\/2026-09-22"/);
+  assert.match(relayVersion, /canonical="\/legal\/relay-terms\/2026-09-29"/);
   assert.match(privacy, /Privacy Notice/);
   assert.match(privacy, /canonical="\/legal\/privacy"/);
   assert.match(legalIndex, /href="\/legal\/dpa"/);
@@ -125,6 +125,7 @@ test('publishes the data processing agreement at a current and a dated route', a
 const frozenDpaVersions = [
   { version: '2026-09-10', effective: 'September 10, 2026' },
   { version: '2026-09-27', effective: 'September 27, 2026' },
+  { version: '2026-09-29', effective: 'September 29, 2026' },
 ];
 
 test('keeps every dated DPA page frozen: it never reads the live agreement', async () => {
@@ -192,7 +193,7 @@ const DPA_SECTIONS = [
 
 test('carries every Article 28 section, on the live agreement and every frozen copy', async () => {
   const pages = [
-    '../src/components/DataProcessingAgreement20260927.astro',
+    '../src/components/DataProcessingAgreement20260929.astro',
     ...frozenDpaVersions.map(({ version }) => `../src/pages/legal/dpa/${version}.astro`),
   ];
 
@@ -271,6 +272,7 @@ const frozenRelayTermsVersions = [
   { version: 'relay-2026-08-26', date: '2026-08-26', effective: 'August 26, 2026' },
   { version: 'relay-2026-09-10', date: '2026-09-10', effective: 'September 10, 2026' },
   { version: 'relay-2026-09-22', date: '2026-09-22', effective: 'September 22, 2026' },
+  { version: 'relay-2026-09-29', date: '2026-09-29', effective: 'September 29, 2026' },
 ];
 
 test('keeps every dated Relay terms page frozen: it never reads the live document', async () => {
@@ -323,6 +325,7 @@ const relayPolicies = [
       { version: '2026-08-26', effective: 'August 26, 2026' },
       { version: '2026-09-10', effective: 'September 10, 2026' },
       { version: '2026-09-27', effective: 'September 27, 2026' },
+      { version: '2026-09-29', effective: 'September 29, 2026' },
     ],
   },
   {
@@ -332,6 +335,7 @@ const relayPolicies = [
     frozen: [
       { version: '2026-08-26', effective: 'August 26, 2026' },
       { version: '2026-09-10', effective: 'September 10, 2026' },
+      { version: '2026-09-29', effective: 'September 29, 2026' },
     ],
   },
 ];
@@ -399,6 +403,7 @@ const frozenPrivacyVersions = [
   { version: '2026-08-26', effective: 'August 26, 2026' },
   { version: '2026-09-10', effective: 'September 10, 2026' },
   { version: '2026-09-27', effective: 'September 27, 2026' },
+  { version: '2026-09-29', effective: 'September 29, 2026' },
 ];
 
 test('keeps every dated privacy page frozen: it never reads the live notice', async () => {
@@ -454,7 +459,7 @@ test('freezes the privacy version the notice currently publishes', () => {
  * guard rules out.
  */
 test('states every published price and included quantity in the Relay terms', async () => {
-  const terms = await flat('../src/components/SignalProtocolRelayTerms20260922.astro');
+  const terms = await flat('../src/components/SignalProtocolRelayTerms20260929.astro');
 
   /* Bounded on both sides so a shorter figure cannot be satisfied by a longer
    * one containing it: "100" must not pass on "100,000", and "$0" must not
@@ -479,9 +484,9 @@ test('states every published price and included quantity in the Relay terms', as
     }
   }
 
-  for (const [meter, value] of Object.entries(relayDevelopmentEnvironment)) {
+  for (const [meter, value] of Object.entries(relaySandboxEnvironment)) {
     if (meter === 'detail') continue;
-    states(value, `the Development environment ${meter}`);
+    states(value, `the Sandbox environment ${meter}`);
   }
 });
 
@@ -579,7 +584,7 @@ test('describes the implemented providers and managed Relay boundary', async () 
 
 test('publishes the exact Relay legal and lifecycle boundary', async () => {
   const [terms, acceptableUse, subprocessors, retention, beta] = await Promise.all([
-    flat('../src/components/SignalProtocolRelayTerms20260922.astro'),
+    flat('../src/components/SignalProtocolRelayTerms20260929.astro'),
     flat('../src/pages/legal/acceptable-use.astro'),
     flat('../src/pages/legal/subprocessors.astro'),
     flat('../src/pages/legal/relay-retention.astro'),
@@ -630,7 +635,7 @@ test('states the keyed-hash operating records in every document that bounds them
   const [privacy, retention, agreement] = await Promise.all([
     flat('../src/pages/legal/privacy.astro'),
     flat('../src/pages/legal/relay-retention.astro'),
-    flat('../src/components/DataProcessingAgreement20260927.astro'),
+    flat('../src/components/DataProcessingAgreement20260929.astro'),
   ]);
 
   assert.match(privacy, /appear only as keyed hashes made with a key that OpenE2EE holds/);
@@ -638,6 +643,34 @@ test('states the keyed-hash operating records in every document that bounds them
   assert.match(retention, /device identifiers only as keyed hashes, and no content\. They are kept for 13 months/);
   assert.match(agreement, /to measure and improve the Relay’s reliability, performance, and cost/);
   assert.match(agreement, /measuring and improving the reliability, performance, and cost of the service/);
+});
+
+/*
+ * The console, the CLI, and the Relay call each project's test environment the
+ * Sandbox environment, and `oe sandbox` creates it. Every live page and every
+ * live legal document uses that name. Only a dated legal page may keep the
+ * earlier name, because it freezes the text a customer already accepted.
+ */
+test('names the Sandbox environment everywhere except the frozen legal versions', async () => {
+  const frozen = /^pages\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$/;
+  const entries = await readdir(new URL('../src/', import.meta.url), { recursive: true });
+  const sources = entries.filter((path) => /\.(astro|mdx?|mjs|ts)$/.test(path) && !frozen.test(path));
+  assert.ok(sources.length > 50, `only ${sources.length} source files were read`);
+  for (const path of sources) {
+    const text = (await read(`../src/${path}`)).replace(/\s+/g, ' ');
+    assert.doesNotMatch(text, /Development environment|Development and production environments/, `${path} uses the earlier environment name`);
+    assert.doesNotMatch(text, /\boe dev\b/, `${path} names the retired CLI command`);
+  }
+
+  for (const path of [
+    '../src/components/SignalProtocolRelayTerms20260929.astro',
+    '../src/components/DataProcessingAgreement20260929.astro',
+    '../src/pages/legal/privacy.astro',
+    '../src/pages/legal/relay-retention.astro',
+    '../src/pages/legal/relay-beta-limits.astro',
+  ]) {
+    assert.match(await flat(path), /Sandbox environment|Sandbox and production environments/, `${path} does not name the Sandbox environment`);
+  }
 });
 
 /*

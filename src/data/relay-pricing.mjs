@@ -5,7 +5,7 @@
  * contract and Relay's `managedRelayPlanTargets`. Prices are owner-approved;
  * publication still belongs to REL1.
  */
-export const relayDevelopmentEnvironment = {
+export const relaySandboxEnvironment = {
   relayMau: '25 test accounts',
   deliveryUnits: '25,000',
   attachmentOperations: '25,000',

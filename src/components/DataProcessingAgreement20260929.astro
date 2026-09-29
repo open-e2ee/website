@@ -1,11 +1,13 @@
 ---
 /*
- * The OpenE2EE Data Processing Agreement, version 2026-09-27. It carries the
+ * The OpenE2EE Data Processing Agreement, version 2026-09-29. It carries the
  * Article 28(3) processor terms and the transfer mechanism for personal data
  * OpenE2EE processes on a Relay customer's instructions. Section 4 and Annex I
  * list measuring and improving the Relay's reliability, performance, and cost
  * as a purpose, because Relay operating records carry keyed hashes of account
- * and device identifiers. Every other clause is the 2026-09-10 text.
+ * and device identifiers. Annex II calls each project's test environment the
+ * Sandbox environment, the name that the console and the Relay use. Every
+ * other clause is the 2026-09-27 text.
  *
  * It is a component rather than a page for the reason the other two legal
  * documents are: /legal/dpa renders the live version and a dated page freezes
@@ -504,7 +506,7 @@ const { canonical } = Astro.props;
             addresses.
           </li>
           <li>
-            <strong>Separation of environments and tenants.</strong> A project’s Development and
+            <strong>Separation of environments and tenants.</strong> A project’s Sandbox and
             production environments are separated, and every stored object is scoped to the project
             that owns it so that one customer’s state cannot be reached through another’s
             credentials.
