@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # One group holds every action, so the sub-action paths of one release
+  # (for example github/codeql-action/init and /analyze) land in one pull
+  # request.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

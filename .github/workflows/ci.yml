@@ -11,13 +11,13 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # The demo smoke run launches Chrome and drives a full handshake twice,
     # which is the slowest thing in this workflow by an order of magnitude.
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -43,7 +43,7 @@ jobs:
       # reader they can verify themselves — that the round trip happens in
       # their tab, and that their sentence never leaves it — so a red run has
       # to stop the pull request. `chrome-harness.mjs` finds the Chrome that
-      # ubuntu-latest ships at /usr/bin/google-chrome, and says which paths it
+      # ubuntu-24.04 ships at /usr/bin/google-chrome, and says which paths it
       # looked at if a future image drops it. Exit 1 is the demo failing and
       # exit 2 is the harness failing; both fail this job, because a check that
       # cannot run is not a check that passed.
