@@ -5090,8 +5090,9 @@ test('keeps the space on both sides of every inline code span', async () => {
    * and generalizing from it declared a defect impossible while the site served
    * it.
    *
-   * Source-based on purpose. `.github/workflows/ci.yml` runs the suite before
-   * the build, so a guard that reads dist/ never runs there.
+   * Source-based on purpose. The cause is a line break in the .astro source,
+   * and the fix goes on that line, so the check reads the source and names the
+   * file that needs `{' '}`.
    *
    * A word character on the far side is what makes it a defect. A line opening
    * with `)` closes a JSX branch and never wanted a space, and one opening with

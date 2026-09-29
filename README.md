@@ -31,9 +31,10 @@ npm run build
 bash scripts/verify-site-redesign.sh
 ```
 
-`scripts/verify-site-redesign.sh` holds the twenty-five conditions of the UI
-redesign website contract. With no argument it reports each condition and exits
-non-zero while any one fails.
+`scripts/verify-site-redesign.sh` is the website verifier. It holds the
+conditions of the UI redesign and the funnel redesign contracts, SR-V01 onward,
+and its summary line states how many passed and failed. With no argument it
+reports each condition and exits non-zero while any one fails.
 
 CI runs it with `--ratchet` on every pull request. That mode compares the
 pass count against `scripts/redesign-baseline/passing.txt` and fails on any
