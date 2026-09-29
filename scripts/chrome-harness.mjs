@@ -167,8 +167,9 @@ export class Cdp {
     socket.addEventListener('message', (event) => {
       const message = JSON.parse(event.data);
       if (message.id && this.pending.has(message.id)) {
-        const { resolve, reject } = this.pending.get(message.id);
+        const { resolve, reject, timer } = this.pending.get(message.id);
         this.pending.delete(message.id);
+        clearTimeout(timer);
         if (message.error) reject(new Error(`${message.method}: ${message.error.message}`));
         else resolve(message.result);
         return;
@@ -191,14 +192,17 @@ export class Cdp {
   send(method, params = {}, sessionId) {
     const id = this.nextId++;
     this.socket.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
+    /* The answer clears the timer. A pending timer holds the event loop open,
+       so a harness that returns without process.exit() would wait out the
+       30 s of its last command before it exits. */
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         if (this.pending.has(id)) {
           this.pending.delete(id);
           reject(new Infra(`CDP ${method} did not answer within 30s`));
         }
       }, 30000);
+      this.pending.set(id, { resolve, reject, timer });
     });
   }
 

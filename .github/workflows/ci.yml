@@ -10,11 +10,13 @@ permissions:
   contents: read
 
 jobs:
+  # Two jobs that start together. Each one checks out the same commit and
+  # builds its own dist/, so neither reads a build from another commit, and
+  # neither waits for the other. A build takes about 20 seconds, which is less
+  # than an artifact handoff between jobs costs in wait time.
   build:
     runs-on: ubuntu-24.04
-    # The demo smoke run launches Chrome and drives a full handshake twice,
-    # which is the slowest thing in this workflow by an order of magnitude.
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -38,21 +40,49 @@ jobs:
 
       - run: npm test
 
-      # The homepage demo, driven in a real browser against the build above.
-      # It is the only check that can see the two things the page promises a
-      # reader they can verify themselves — that the round trip happens in
-      # their tab, and that their sentence never leaves it — so a red run has
-      # to stop the pull request. `chrome-harness.mjs` finds the Chrome that
-      # ubuntu-24.04 ships at /usr/bin/google-chrome, and says which paths it
-      # looked at if a future image drops it. Exit 1 is the demo failing and
-      # exit 2 is the harness failing; both fail this job, because a check that
-      # cannot run is not a check that passed.
-      - run: npm run demo:smoke
-
       - run: npm run deploy:redirect:dry-run
+
+  verify-site:
+    runs-on: ubuntu-24.04
+    # SR-V18 drives the homepage demo through five page loads, and each sent
+    # message waits out the reel that narrates it. That is about five of the
+    # six minutes this job takes.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - run: npm run build
 
       # The UI redesign contract. --ratchet compares the pass count with
       # scripts/redesign-baseline/passing.txt and fails on any difference, so
       # the conditions still open do not block unrelated work, and a change
       # that turns one green has to record the new count.
-      - run: bash scripts/verify-site-redesign.sh --ratchet
+      #
+      # SR-V18 is `npm run demo:smoke`, the homepage demo in a real browser
+      # against the build above. It is the only check that can see the two
+      # things the page promises a reader they can verify themselves — that the
+      # round trip happens in their tab, and that their sentence never leaves
+      # it — so a red run has to stop the pull request. CI runs it here only,
+      # and the verifier prints its output under a FAIL line. Exit 1 is the
+      # demo failing and exit 2 is the harness failing; both fail the
+      # condition, because a check that cannot run is not a check that passed.
+      # `chrome-harness.mjs` finds the Chrome that ubuntu-24.04 ships at
+      # /usr/bin/google-chrome, and says which paths it looked at if a future
+      # image drops it.
+      #
+      # The ratchet reads only the count, so a red SR-V18 and a condition that
+      # turns green in the same change would hold it level. The grep holds
+      # SR-V18 to a pass of its own. `shell: bash` sets pipefail, so the tee
+      # keeps the ratchet's exit status.
+      - shell: bash
+        run: |
+          bash scripts/verify-site-redesign.sh --ratchet | tee "$RUNNER_TEMP/verifier.txt"
+          grep -q '^PASS SR-V18 ' "$RUNNER_TEMP/verifier.txt" || {
+            echo '::error::SR-V18 did not pass: demo:smoke failed.'
+            exit 1
+          }
