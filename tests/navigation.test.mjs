@@ -97,7 +97,7 @@ test('renders one link set at both widths on every built page', async () => {
     );
     assert.deepEqual(sheet.slice(row.length), [
       'https://console.open-e2ee.dev',
-      'https://console.open-e2ee.dev/relay/new',
+      'https://console.open-e2ee.dev/signal-relay/new',
     ]);
   }
 });
@@ -329,7 +329,7 @@ test('only site-navigation writes the console Relay route', async () => {
       const stripped = text
         .replace(/\/\*[\s\S]*?\*\//g, '')
         .replace(/^\s*(?:\/\/|\*).*$/gm, '');
-      if (/console\.open-e2ee\.dev\/[a-z/]*relay/.test(stripped)) {
+      if (/console\.open-e2ee\.dev\/[a-z/-]*relay/.test(stripped)) {
         offenders.push(`src/${path}`);
       }
     }

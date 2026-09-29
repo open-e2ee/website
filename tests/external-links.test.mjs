@@ -24,7 +24,7 @@ test('sends off-site links to a new tab, and leaves our own pages alone', () => 
     '<a href="#cookies">Cookies</a>',
     '<a href="https://open-e2ee.dev/security">Security</a>',
     '<a href="https://docs.open-e2ee.dev">Docs</a>',
-    '<a href="https://console.open-e2ee.dev/relay/new?plan=relay_starter_v1">Start</a>',
+    '<a href="https://console.open-e2ee.dev/signal-relay/new?plan=relay_starter_v1">Start</a>',
   ]) {
     assert.equal(anchor(same), same);
   }
