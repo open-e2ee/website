@@ -86,8 +86,9 @@ export const platformMarks = {
      visual weight as the filled marks beside it.
 
      The address field is what makes it a browser rather than a window, and that
-     distinction is the claim: the entry stands for the `web` local store, which
-     is IndexedDB in any browser. No licensed mark can say that — the sets carry
+     distinction is the claim: the entry stands for the browser local stores,
+     web SQLite where the origin private file system works and IndexedDB where
+     it does not, in any browser. No licensed mark can say that — the sets carry
      particular browsers, and a Chrome or Firefox glyph would name one engine
      where the store supports all of them. One dot rather than three, because
      the terminal above lost its stoplights in an earlier round and a full set

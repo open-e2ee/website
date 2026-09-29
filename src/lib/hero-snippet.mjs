@@ -68,8 +68,8 @@ const PACKAGE = capture.packageName;
  * The two blocks are labeled as devices, and the label is doing real work
  * rather than decorating. With the in-memory store the listing runs exactly as
  * written, both devices in one process, which is what the recording did. With
- * the four device stores it does not: `indexedDbStore()` takes no arguments
- * and opens one fixed database name, and the Node, Expo and React Native
+ * the four device stores it does not: `webSqliteStore()` with no arguments
+ * opens one fixed database name, and the Node, Expo and React Native
  * stores are the same kind of thing, so two clients in one runtime would reach
  * for one device's database. That is why `ALICE_COMMENT` says each device runs its own
  * half in an application. The lines stay true of any store — each is a real
@@ -102,7 +102,7 @@ const PACKAGE = capture.packageName;
  *
  * `expr` goes into `adapters.storage`. Four of the five factories are async
  * and are awaited here rather than quietly dropped — `expoStore`,
- * `indexedDbStore`, `nodeStore` and `reactNativeStore` all return promises, and a
+ * `webSqliteStore`, `nodeStore` and `reactNativeStore` all return promises, and a
  * snippet that forgot the `await` would hand the client a pending promise
  * where a store belongs. A test holds each `await` to the SDK's declared
  * return type.
@@ -144,11 +144,11 @@ export const storageOptions = [
     experimental: false,
   },
   {
-    id: 'web',
+    id: 'web-sqlite',
     label: 'Browser',
-    subpath: 'local/store/web',
-    symbol: 'indexedDbStore',
-    expr: 'await indexedDbStore()',
+    subpath: 'local/store/web-sqlite',
+    symbol: 'webSqliteStore',
+    expr: 'await webSqliteStore()',
     experimental: false,
   },
   {
@@ -319,7 +319,7 @@ export const relayComment = '// Devices post and collect envelopes from the rela
  * Bob's label carries the disclosure rather than Alice's, and that is a change
  * of position as well as of length: two clients in one listing raise the
  * question at the second one, not the first. With a device store the second
- * block belongs on a second device — `indexedDbStore()` takes no argument and
+ * block belongs on a second device — `webSqliteStore()` with no argument
  * opens one fixed database name — and the label is where a reader is told so.
  */
 const ADAPTERS_COMMENT = '// Your keys stay in your store.';
