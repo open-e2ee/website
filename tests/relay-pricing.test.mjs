@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { relayDevelopmentEnvironment, relayMeterDefinitions, relayPlans, relayProductionRetention } from '../src/data/relay-pricing.mjs';
+import { relayMeterDefinitions, relayPlans, relayProductionRetention, relaySandboxEnvironment } from '../src/data/relay-pricing.mjs';
 import { virgilSecurityComparison } from '../src/data/virgil-security-comparison.mjs';
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -25,7 +25,7 @@ test('publishes the exact approved Relay catalog from one data module', () => {
       { id: 'relay_enterprise_v1', price: 'Custom', relayMau: 'Negotiated', deliveryUnits: 'Negotiated', attachmentOperations: 'Negotiated', storage: 'Negotiated', overage: null },
     ],
   );
-  assert.deepEqual(relayDevelopmentEnvironment, {
+  assert.deepEqual(relaySandboxEnvironment, {
     relayMau: '25 test accounts',
     deliveryUnits: '25,000',
     attachmentOperations: '25,000',

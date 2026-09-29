@@ -28,14 +28,16 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * clauses the 2026-08-26 version lacked. The relay-2026-09-22 version names
  * the product the OpenE2EE Signal Protocol Relay and removes the project
  * commercial SDK license grant, which the SDK's MIT OR Apache-2.0 licensing
- * made moot; every other clause is unchanged. The console records the URL
- * below against each activation, and its RELAY_TERMS_URL and
- * RELAY_TERMS_VERSION settings must move with these constants once the dated
- * page is live.
+ * made moot; every other clause is unchanged. The relay-2026-09-29 version
+ * calls each project's test environment the Sandbox environment, the name
+ * that the console, the CLI, and the Relay use, in place of its earlier name,
+ * Development. The console records the URL below against each activation, and
+ * its RELAY_TERMS_URL and RELAY_TERMS_VERSION settings must move with these
+ * constants once the dated page is live.
  */
-export const relayTermsVersion = 'relay-2026-09-22';
-export const relayTermsEffectiveDate = 'September 22, 2026';
-export const relayTermsPath = '/legal/relay-terms/2026-09-22';
+export const relayTermsVersion = 'relay-2026-09-29';
+export const relayTermsEffectiveDate = 'September 29, 2026';
+export const relayTermsPath = '/legal/relay-terms/2026-09-29';
 export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
 
 /*
@@ -50,13 +52,15 @@ export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
  * operating records carry project, account, and device identifiers only as
  * keyed hashes and are kept for 13 months, including after a deletion, because
  * a period that outlives a deletion is what this document exists to publish.
+ * Both documents took a 2026-09-29 version that calls each project's test
+ * environment the Sandbox environment in place of its earlier name, Development.
  */
-export const relayRetentionVersion = '2026-09-27';
-export const relayRetentionEffectiveDate = 'September 27, 2026';
+export const relayRetentionVersion = '2026-09-29';
+export const relayRetentionEffectiveDate = 'September 29, 2026';
 export const relayRetentionPath = `/legal/relay-retention/${relayRetentionVersion}`;
 
-export const relayBetaLimitsVersion = '2026-09-10';
-export const relayBetaLimitsEffectiveDate = 'September 10, 2026';
+export const relayBetaLimitsVersion = '2026-09-29';
+export const relayBetaLimitsEffectiveDate = 'September 29, 2026';
 export const relayBetaLimitsPath = `/legal/relay-beta-limits/${relayBetaLimitsVersion}`;
 
 /*
@@ -119,9 +123,13 @@ export const relayBetaLimitsPath = `/legal/relay-beta-limits/${relayBetaLimitsVe
  * and device identifiers appear only as keyed hashes, kept for 13 months. A new
  * record and a new retention period change what the notice represents, so they
  * take a new version. The marketing site's measurement does not change.
+ *
+ * The 2026-09-29 version changes no event, no category, and no period. Section
+ * 6 calls each project's test environment the Sandbox environment in place of
+ * its earlier name, Development, because the console and Relay renamed it.
  */
-export const privacyVersion = '2026-09-27';
-export const privacyEffectiveDate = 'September 27, 2026';
+export const privacyVersion = '2026-09-29';
+export const privacyEffectiveDate = 'September 29, 2026';
 export const privacyPath = `/legal/privacy/${privacyVersion}`;
 export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
 
@@ -138,8 +146,12 @@ export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
  * operating records carry keyed hashes derived from end-user device
  * identifiers, which are Customer Personal Data, so a processor may keep them
  * only for a purpose the agreement names.
+ *
+ * The 2026-09-29 version calls each project's test environment the Sandbox
+ * environment in Annex II, in place of its earlier name, Development. Every
+ * other clause is unchanged.
  */
-export const dpaVersion = '2026-09-27';
-export const dpaEffectiveDate = 'September 27, 2026';
-export const dpaPath = '/legal/dpa/2026-09-27';
+export const dpaVersion = '2026-09-29';
+export const dpaEffectiveDate = 'September 29, 2026';
+export const dpaPath = '/legal/dpa/2026-09-29';
 export const dpaUrl = `https://open-e2ee.dev${dpaPath}`;

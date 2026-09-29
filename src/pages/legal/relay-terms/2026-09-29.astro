@@ -1,26 +1,18 @@
 ---
 /*
- * The OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-09-22.
- * The relay-2026-09-10 version titled the product by its retired name and
- * granted a project-scoped SDK license in its Section 4. The SDK is MIT OR
- * Apache-2.0, so the grant no longer gives a customer anything; this version
- * removes it, says the Terms grant no license to the SDK, renumbers the later
- * sections, and names the product as the glossary settles it. The fee table
- * and every other clause are unchanged.
- *
- * `/legal/relay-terms` renders this component. The dated page under
- * `/legal/relay-terms/` holds a literal snapshot of the same text and never
- * imports this file; tests/legal-pages.test.mjs enforces that, and asserts
- * that every price and included quantity in src/data/relay-pricing.mjs is
- * stated here, so a price change cannot ship without a new version.
+ * The immutable copy of the OpenE2EE Signal Protocol Relay Service Terms,
+ * version relay-2026-09-29. Relay activation records this URL against the
+ * organization (the console's relay_terms_acceptances table) and Section 10
+ * binds an accepted order to its recorded version, so this page is a literal
+ * snapshot: the document text is inlined here and the page must never import
+ * the live SignalProtocolRelayTerms20260929 component, or an edit to
+ * /legal/relay-terms would silently rewrite the version an organization
+ * already accepted. A new version means a new dated page beside this one,
+ * never an edit. tests/legal-pages.test.mjs enforces that this source stays
+ * decoupled from the component and the live version constants.
  */
-import BaseLayout from '../layouts/BaseLayout.astro';
-import TableScroll from '../components/TableScroll.astro';
-import {
-  relayTermsEffectiveDate,
-  relayTermsPath,
-  relayTermsVersion,
-} from '../lib/legal.mjs';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import TableScroll from '../../../components/TableScroll.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -34,19 +26,17 @@ import {
   LEGAL_NOTICE,
   LEGAL_PIN,
   LEGAL_TOC,
-} from '../lib/recipes';
-
-interface Props {
-  canonical: string;
-}
-
-const { canonical } = Astro.props;
+} from '../../../lib/recipes';
 ---
 
+{/* The frozen copy exists for contract provenance, so its title and
+    description say so, and the pair of routes is not a duplicate-content
+    pair with no signal telling a reader which one they have. */}
+
 <BaseLayout
-  title="OpenE2EE Signal Protocol Relay Terms"
-  description="Versioned service terms for the OpenE2EE Signal Protocol Relay."
-  canonical={canonical}
+  title="Relay terms relay-2026-09-29"
+  description="Frozen copy of the OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-09-29."
+  canonical="/legal/relay-terms/2026-09-29"
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -54,16 +44,16 @@ const { canonical } = Astro.props;
         <a class={BACK_LINK} href="/legal">Legal</a>
         <h1>OpenE2EE Signal Protocol Relay Service Terms</h1>
         <p class={LEAD}>
-          These Terms govern a project’s Development environment and production environment on
+          These Terms govern a project’s Sandbox environment and production environment on
           the Signal Protocol Relay.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {relayTermsEffectiveDate}</span>
-          <span>Version {relayTermsVersion}</span>
+          <span>Effective September 29, 2026</span>
+          <span>Version relay-2026-09-29</span>
         </p>
         <p class={LEGAL_PIN}>
           Relay activation records the version you accept. The permanent copy of this version is at{' '}
-          <a href={relayTermsPath}><code>{relayTermsPath}</code></a>.
+          <a href="/legal/relay-terms/2026-09-29"><code>/legal/relay-terms/2026-09-29</code></a>.
         </p>
       </div>
     </header>
@@ -113,7 +103,7 @@ const { canonical } = Astro.props;
         </p>
         <p>
           Each Relay project has one qualified plan ID, a catalog version, an owner, and separate
-          credentials for its Development environment and its production environment. A signed
+          credentials for its Sandbox environment and its production environment. A signed
           order form controls over conflicting language in these Terms.
         </p>
         <p>In these Terms:</p>
@@ -133,7 +123,7 @@ const { canonical } = Astro.props;
             plan, credentials, environments, and data.
           </li>
           <li>
-            <strong>Development environment</strong> means the isolated environment created for
+            <strong>Sandbox environment</strong> means the isolated environment created for
             each project for building and testing, with its own credentials, state, and limits.
           </li>
           <li>
@@ -204,10 +194,10 @@ const { canonical } = Astro.props;
         </TableScroll>
         <p>
           Included quantities are per calendar month. Additional MAU is priced per account. Every
-          project also has a Development environment with 25 test accounts and, each calendar
+          project also has a Sandbox environment with 25 test accounts and, each calendar
           month, 25,000 delivery units, 25,000 attachment uploads, and 250 MB of storage. It keeps
           content for 24 hours by default and seven days at most, and it may be suspended after 30
-          inactive days. The Development environment has no fee and no overage.
+          inactive days. The Sandbox environment has no fee and no overage.
         </p>
 
         <h3>3.2 Meters</h3>
@@ -357,7 +347,7 @@ const { canonical } = Astro.props;
         <h2 id="availability">6. Beta availability and support</h2>
         <p>
           Relay is a pre-release beta until OpenE2EE announces a generally available service. The
-          Development environment and the Free plan include no service-level agreement. Paid beta
+          Sandbox environment and the Free plan include no service-level agreement. Paid beta
           plans include reasonable email support through{' '}
           <a href="mailto:support@open-e2ee.dev">support@open-e2ee.dev</a> and the support shown in
           the applicable order, but no uptime credit or response guarantee unless a signed order
@@ -428,7 +418,7 @@ const { canonical } = Astro.props;
           We may publish a new version for future activations and renewals. An accepted paid order
           remains under its recorded version until Customer accepts a later version or law requires
           a change. Section 3.9 governs a change to a plan’s price or included quantities. We may
-          change other Development environment and beta operating limits with reasonable notice
+          change other Sandbox environment and beta operating limits with reasonable notice
           when practicable, including to protect service integrity.
         </p>
         <p>

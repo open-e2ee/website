@@ -433,7 +433,7 @@ test('what every plan carries stands in one section of cards under the plans, li
       'Encrypted attachments',
       'Ciphertext retention',
       'Push wakes and operations',
-      'Development environment',
+      'Sandbox environment',
     ],
   );
   for (const card of cards) {
@@ -469,7 +469,7 @@ test('what every plan carries stands in one section of cards under the plans, li
   assert.equal(cards.find((card) => card.label === 'Sealed sender').detail, 'Sender certificates, access keys, and unidentified delivery to devices and groups.');
   assert.doesNotMatch(included, /anonymous|untraceable/i, 'a card applies a banned word to sealed sender');
   assert.equal((built.match(/[Zz]ero-knowledge/g) ?? []).length, 1, '"zero-knowledge" is on the page other than as the name of the group credentials card');
-  assert.equal(cards.find((card) => card.label === 'Development environment').detail, 'One with every project, at no cost and without a card.');
+  assert.equal(cards.find((card) => card.label === 'Sandbox environment').detail, 'One with every project, at no cost and without a card.');
   /* Retention is the same on every plan, so it is one card here and not a
    * row of one repeated figure, and the figure is the catalog's. */
   assert.equal(
@@ -731,19 +731,21 @@ test('the SDK commercial license table is commented out of the page and kept in 
   for (const tier of tiers) assert.match(tier.price, /^\$[\d,]+$|^Free$|^Custom$/, `${tier.name} has no price`);
 });
 
-test('the meters and the Development environment left their sections for the table and the cards', () => {
+test('the meters and the Sandbox environment left their sections for the table and the cards', () => {
   /* The founder's 2026-09-08 call: the row names define the meters on hover,
-   * so the page has no section that defines them again, and the Development
+   * so the page has no section that defines them again, and the Sandbox
    * environment is one card of what every plan carries, so it has no band of
    * its own. Every definition the catalog carries is still on the page, in a
    * tooltip of the table, and the dropped headings are gone. */
   assert.equal(built.indexOf('id="meters"'), -1, 'the meters section is still on the page');
-  assert.equal(built.indexOf('id="development"'), -1, 'the Development environment section is still on the page');
+  for (const id of ['development', 'sandbox']) {
+    assert.equal(built.indexOf(`id="${id}"`), -1, `the ${id} environment section is on the page`);
+  }
   assert.doesNotMatch(built, /What the meters count|Included with every project|defined the way the Relay service terms define them/);
   for (const meter of relayMeterDefinitions) {
     assert.ok(table.includes(meter.definition), `${meter.name} is not defined in the table`);
   }
-  assert.doesNotMatch(built, /Development environment<\/h3>/, 'the Development environment is still a tier');
+  assert.doesNotMatch(built, /(Development|Sandbox) environment<\/h3>/, 'the Sandbox environment is a tier');
 });
 
 test('no two tiers on the page answer to the same name', () => {
