@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# The website verifier. Thirty-nine conditions, SR-V01 through SR-V39.
+# The website verifier. Its conditions are SR-V01 onward.
 # Each one names the UI redesign task that added it. That plan completed on
 # 2026-09-06 and moved to archive/ui-redesign-2026-09-06/ in the workspace,
 # where proof/verifier-schedule.md records what each condition holds. This
@@ -29,14 +29,22 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 passed=0
 failed=0
 
+# A condition's own output is kept and printed under its FAIL line. CI runs
+# demo:smoke only through SR-V18, so without it a red smoke run would say
+# which condition failed and not why, and a harness fault (exit 2) would read
+# the same as a demo that failed (exit 1).
+output="$(mktemp)"
+trap 'rm -f "$output"' EXIT
+
 check() {
   local id="$1" description="$2" fn="$3"
-  if "$fn" >/dev/null 2>&1; then
+  if "$fn" >"$output" 2>&1; then
     passed=$((passed + 1))
     printf 'PASS %s  %s\n' "$id" "$description"
   else
     failed=$((failed + 1))
     printf 'FAIL %s  %s\n' "$id" "$description"
+    sed 's/^/    /' "$output"
   fi
 }
 
