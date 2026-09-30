@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# The website verifier. Thirty-nine conditions, SR-V01 through SR-V39.
+# The website verifier. Its conditions are SR-V01 onward.
 # Each one names the UI redesign task that added it. That plan completed on
 # 2026-09-06 and moved to archive/ui-redesign-2026-09-06/ in the workspace,
 # where proof/verifier-schedule.md records what each condition holds. This
