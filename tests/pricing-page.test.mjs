@@ -154,7 +154,7 @@ test('the self-service plans are the columns of one table, in catalog order', ()
     const head = columnHead(plan.id);
     assert.ok(head.includes(`>${plan.name}</h3>`), `${plan.id} is not headed ${plan.name}`);
     assert.ok(head.includes(`>${plan.price}</p>`), `${plan.id} does not print ${plan.price}`);
-    assert.match(columnFoot(plan.id), /<a class="oe-button[^"]*" href="https:\/\/console\.open-e2ee\.dev\/relay\/new/, `${plan.id} has no action under its column`);
+    assert.match(columnFoot(plan.id), /<a class="oe-button[^"]*" href="https:\/\/console\.open-e2ee\.dev\/signal-relay\/new/, `${plan.id} has no action under its column`);
   }
 
   /* Rendered from the catalog, not typed. A page that lists the plans by hand
@@ -358,7 +358,7 @@ test('what every plan carries stands in one section of cards under the plans, li
   const primary = actions[2].match(/^<a class="([^"]*)" href="([^"]+)">([^<]+)<span class="([^"]*)">([^<]+)<\/span><\/a>/);
   assert.ok(primary, 'the primary action does not lead the row as one stacked control');
   assert.equal(primary[1], 'oe-button oe-button-large oe-button-stacked');
-  assert.equal(primary[2], 'https://console.open-e2ee.dev/relay/new');
+  assert.equal(primary[2], 'https://console.open-e2ee.dev/signal-relay/new');
   assert.equal(primary[3], 'Start free ', 'the label does not end in the space that keeps it a word apart from the note in the link\u2019s name');
   assert.equal(primary[4], 'oe-button-note', 'the note is not the design package\u2019s');
   assert.equal(primary[5], 'No credit card needed');
@@ -493,7 +493,7 @@ test('every plan\'s action carries the label the founder chose for it', () => {
   for (const plan of selfServe) {
     const expected = ACTION_LABELS[plan.id];
     assert.ok(expected, `${plan.id} has no label in this test`);
-    const href = plan.id === 'relay_free_v1' ? 'https://console.open-e2ee.dev/relay/new' : `https://console.open-e2ee.dev/relay/new?plan=${plan.id}`;
+    const href = plan.id === 'relay_free_v1' ? 'https://console.open-e2ee.dev/signal-relay/new' : `https://console.open-e2ee.dev/signal-relay/new?plan=${plan.id}`;
     const labels = [...plans.matchAll(/<a class="oe-button[^"]*" href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].filter((m) => m[1] === href).map((m) => m[2]);
     assert.equal(labels.length, 2, `${plan.name} does not have one action per rendering`);
     for (const label of labels) assert.equal(label, expected, `${plan.name} action reads "${label}"`);
@@ -615,9 +615,9 @@ test('a paid plan names itself to the console, and the free plan needs no query'
     const head = columnFoot(plan.id);
     const href = head.match(/<a class="oe-button[^"]*" href="([^"]+)"/)[1];
     if (plan.id === 'relay_free_v1') {
-      assert.equal(href, 'https://console.open-e2ee.dev/relay/new');
+      assert.equal(href, 'https://console.open-e2ee.dev/signal-relay/new');
     } else {
-      assert.equal(href, `https://console.open-e2ee.dev/relay/new?plan=${plan.id}`);
+      assert.equal(href, `https://console.open-e2ee.dev/signal-relay/new?plan=${plan.id}`);
     }
     /* The console is the same product: the reader is leaving on purpose, and a
      * second tab holding the page they just read is litter. */
