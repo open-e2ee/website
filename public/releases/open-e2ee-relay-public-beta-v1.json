@@ -24,7 +24,7 @@
       "relay": "8ea7445af256771a6643059aa88342b4ecf9202b",
       "sdkInternal": "82bfffed826f2c241af6bd9318123b38b10f2100",
       "sdkPublic": "18f3979994aeeb8c207ba0667d0f9ccc9a163847",
-      "cli": "bb5f82557a138b95cce4e6ec776aaa45c075736b",
+      "cli": "30621bde4c8e2892ca705c5ccc97dbf4d36b509f",
       "design": "5d017820ced8e21ea2915a0debd55b813beab053"
     }
   },
@@ -72,22 +72,22 @@
     "checksums.txt": {
       "sha256": "4589146905e3322aca8d85db8a2f8909a04919c17e5f6d0e666cd95013207385"
     },
-    "oe_1.0.0_darwin_arm64.tar.gz": {
+    "oe_3.0.0_darwin_arm64.tar.gz": {
       "sha256": "f95f2bf0fda625590ab1014be6e44ef6d72fb1a359ce7dc06e6862a8360bcecd"
     },
-    "oe_1.0.0_darwin_amd64.tar.gz": {
+    "oe_3.0.0_darwin_amd64.tar.gz": {
       "sha256": "7089fd65d29f1988dbc3c1b9df2e5d4674587c75b333ca36268702c91821b8d7"
     },
-    "oe_1.0.0_linux_arm64.tar.gz": {
+    "oe_3.0.0_linux_arm64.tar.gz": {
       "sha256": "1e9487e54d1c5acbcbb9932ec80de59582eed1d4af7b6d222b44f5db71be0f78"
     },
-    "oe_1.0.0_linux_amd64.tar.gz": {
+    "oe_3.0.0_linux_amd64.tar.gz": {
       "sha256": "1bf27b9fd1f4aab4dfaa6c27d0944b5a06fb10838fa644cb64143e8c792f899b"
     },
-    "oe_1.0.0_windows_arm64.tar.gz": {
+    "oe_3.0.0_windows_arm64.tar.gz": {
       "sha256": "cfa708f758336f5f984a2603fc8bd98533d25a5eff699e4d33bb7019286db472"
     },
-    "oe_1.0.0_windows_amd64.tar.gz": {
+    "oe_3.0.0_windows_amd64.tar.gz": {
       "sha256": "5b0a235cef0347f0a34c91963a19ee2dd290117885d96eacfc93f47de3fdd240"
     }
   }

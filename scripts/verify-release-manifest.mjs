@@ -19,12 +19,12 @@ export const RELEASE_ARTIFACT_NAMES = [
   "sdk-sbom.cdx.json",
   "cli-sbom.cdx.json",
   "checksums.txt",
-  "oe_1.0.0_darwin_arm64.tar.gz",
-  "oe_1.0.0_darwin_amd64.tar.gz",
-  "oe_1.0.0_linux_arm64.tar.gz",
-  "oe_1.0.0_linux_amd64.tar.gz",
-  "oe_1.0.0_windows_arm64.tar.gz",
-  "oe_1.0.0_windows_amd64.tar.gz",
+  "oe_3.0.0_darwin_arm64.tar.gz",
+  "oe_3.0.0_darwin_amd64.tar.gz",
+  "oe_3.0.0_linux_arm64.tar.gz",
+  "oe_3.0.0_linux_amd64.tar.gz",
+  "oe_3.0.0_windows_arm64.tar.gz",
+  "oe_3.0.0_windows_amd64.tar.gz",
 ];
 
 export const RELEASE_SOURCE_NAMES = {
