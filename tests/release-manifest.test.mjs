@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   RELEASE_ARTIFACT_NAMES,
-  RELEASE_PACKAGE_NAMES,
+  RELEASE_PACKAGES,
   RELEASE_SOURCE_NAMES,
   validateReleaseManifest,
 } from "../scripts/verify-release-manifest.mjs";
@@ -16,7 +16,7 @@ test("keeps one exact release roster", () => {
   const candidate = fixture();
   assert.deepEqual(
     Object.keys(candidate.packages).sort(),
-    [...RELEASE_PACKAGE_NAMES].sort(),
+    Object.keys(RELEASE_PACKAGES).sort(),
   );
   assert.deepEqual(
     Object.keys(candidate.artifacts).sort(),
@@ -70,14 +70,21 @@ for (const [name, mutate, expected] of [
   [
     "wrong package version",
     (value) => {
-      value.packages["@open-e2ee/cli"].version = "1.0.1";
+      value.packages["@open-e2ee/oe"].version = "3.0.1";
     },
-    "must be version 1.0.0",
+    "must be version 3.0.0",
+  ],
+  [
+    "native package at the SDK version",
+    (value) => {
+      value.packages["@open-e2ee/oe-linux-x64"].version = "1.0.0";
+    },
+    "package @open-e2ee/oe-linux-x64 must be version 3.0.0",
   ],
   [
     "short package integrity",
     (value) => {
-      value.packages["@open-e2ee/cli"].integrity = `sha512-${"A".repeat(84)}`;
+      value.packages["@open-e2ee/oe"].integrity = `sha512-${"A".repeat(84)}`;
     },
     "must have SHA-512 registry integrity",
   ],
@@ -98,7 +105,7 @@ for (const [name, mutate, expected] of [
   [
     "prohibited identifier field",
     (value) => {
-      value.packages["@open-e2ee/cli"].token = "redacted";
+      value.packages["@open-e2ee/oe"].token = "redacted";
     },
     "manifest contains a prohibited key",
   ],
@@ -164,9 +171,9 @@ function fixture() {
       ),
     },
     packages: Object.fromEntries(
-      RELEASE_PACKAGE_NAMES.map((name) => [
+      Object.entries(RELEASE_PACKAGES).map(([name, version]) => [
         name,
-        { version: "1.0.0", integrity },
+        { version, integrity },
       ]),
     ),
     artifacts: Object.fromEntries(

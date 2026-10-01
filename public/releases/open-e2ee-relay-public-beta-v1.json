@@ -33,32 +33,32 @@
       "version": "1.0.0",
       "integrity": "sha512-AlTpi7ed3phzJSMtea5YT/uosoXbPEjiFDVyDylwwKNYxc9z/eQXtsOcmJXNZ4ROzuDxzsHMcW3HBJwdA2tWZg=="
     },
-    "@open-e2ee/cli": {
-      "version": "1.0.0",
+    "@open-e2ee/oe": {
+      "version": "3.0.0",
       "integrity": "sha512-P8EnK/JGcHjlMlE4C1CQAY6WE+WshvF4HqpK5QQT2gHNujIjgXmSVKZECd9qNcqnvgcUBiA2T7O8JvN6fwWmSw=="
     },
-    "@open-e2ee/cli-darwin-arm64": {
-      "version": "1.0.0",
+    "@open-e2ee/oe-darwin-arm64": {
+      "version": "3.0.0",
       "integrity": "sha512-0olCbgM+PVppXeOY9fMczeeUdF7hFo54/X2mS4RNMC22Z+Q0748o8HUnjoNtiF6EcIAchpjJWlL0kQatb6GNUQ=="
     },
-    "@open-e2ee/cli-darwin-x64": {
-      "version": "1.0.0",
+    "@open-e2ee/oe-darwin-x64": {
+      "version": "3.0.0",
       "integrity": "sha512-2+b7TY220dSBg5NtxdmhAqFPEcS0kgucwaGSNIzWA3cPDJfw1XkwxIxre0cXFGqGgczf/Hhj+5MY10u4R5vTow=="
     },
-    "@open-e2ee/cli-linux-arm64": {
-      "version": "1.0.0",
+    "@open-e2ee/oe-linux-arm64": {
+      "version": "3.0.0",
       "integrity": "sha512-1LtkHvyBxFxyptjuH3murZoi17db0KLMoUXEpTBMYk9zFJ58DE1ljelhxd2r4WMhicET2RUW6uiGFwbJprG79w=="
     },
-    "@open-e2ee/cli-linux-x64": {
-      "version": "1.0.0",
+    "@open-e2ee/oe-linux-x64": {
+      "version": "3.0.0",
       "integrity": "sha512-nBn/S2JWGllvyILQT4NDMO9aweQZDUtMSE3sKXK9yU0b2IGhD87KxjLPzFdHqISb1VM30DeTLKvwG0V1WNi2dw=="
     },
-    "@open-e2ee/cli-win32-arm64": {
-      "version": "1.0.0",
+    "@open-e2ee/oe-win32-arm64": {
+      "version": "3.0.0",
       "integrity": "sha512-TXih+ITEkQDgnncuBci6zu4xk329Y1f0mdAk8+0xzEHsd0DtuqjrSEpiANYu4hmc0R1oY6mkFwFJtKngXACC0g=="
     },
-    "@open-e2ee/cli-win32-x64": {
-      "version": "1.0.0",
+    "@open-e2ee/oe-win32-x64": {
+      "version": "3.0.0",
       "integrity": "sha512-03BfPgycU+ZUmIIW2TT9ifZRma5dbFvWm+0VMdqDnF8GQeWCCLXVGvcvD6dJNhmbbXE+FJjXkEstiGzjRBAvog=="
     }
   },
