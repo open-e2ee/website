@@ -647,7 +647,7 @@ test('states the keyed-hash operating records in every document that bounds them
 
 /*
  * The console, the CLI, and the Relay call each project's test environment the
- * Sandbox environment, and `oe sandbox` creates it. Every live page and every
+ * Sandbox environment, and `oe new` creates it. Every live page and every
  * live legal document uses that name. Only a dated legal page may keep the
  * earlier name, because it freezes the text a customer already accepted.
  */

@@ -63,7 +63,7 @@ for (const [name, mutate, expected] of [
   [
     "missing package",
     (value) => {
-      delete value.packages["create-oe"];
+      delete value.packages["@open-e2ee/signal-protocol-sdk"];
     },
     "packages must have the exact roster",
   ],
