@@ -37,10 +37,6 @@
       "version": "1.0.0",
       "integrity": "sha512-P8EnK/JGcHjlMlE4C1CQAY6WE+WshvF4HqpK5QQT2gHNujIjgXmSVKZECd9qNcqnvgcUBiA2T7O8JvN6fwWmSw=="
     },
-    "create-oe": {
-      "version": "1.0.0",
-      "integrity": "sha512-cgWx3516zTSvaBMNLek8g6a2r6lpL0cPFdwh4OOKCehhE3pjBalaoOJz5CXNXGvvNxccjmvsjKvExAL0vw2uIA=="
-    },
     "@open-e2ee/cli-darwin-arm64": {
       "version": "1.0.0",
       "integrity": "sha512-0olCbgM+PVppXeOY9fMczeeUdF7hFo54/X2mS4RNMC22Z+Q0748o8HUnjoNtiF6EcIAchpjJWlL0kQatb6GNUQ=="

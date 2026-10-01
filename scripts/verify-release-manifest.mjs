@@ -7,7 +7,6 @@ import { fileURLToPath } from "node:url";
 export const RELEASE_PACKAGE_NAMES = [
   "@open-e2ee/signal-protocol-sdk",
   "@open-e2ee/cli",
-  "create-oe",
   "@open-e2ee/cli-darwin-arm64",
   "@open-e2ee/cli-darwin-x64",
   "@open-e2ee/cli-linux-arm64",
