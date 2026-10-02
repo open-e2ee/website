@@ -35,31 +35,31 @@
     },
     "@open-e2ee/oe": {
       "version": "3.0.0",
-      "integrity": "sha512-P8EnK/JGcHjlMlE4C1CQAY6WE+WshvF4HqpK5QQT2gHNujIjgXmSVKZECd9qNcqnvgcUBiA2T7O8JvN6fwWmSw=="
+      "integrity": "sha512-PsNorcaNWoKpLjM8PrzkcHvuv22rUiNhI2tduiKOZWTtIs1wEuOY0QXQwVss4UiM87M9NVsPzPP30z9D8cWaqw=="
     },
     "@open-e2ee/oe-darwin-arm64": {
       "version": "3.0.0",
-      "integrity": "sha512-0olCbgM+PVppXeOY9fMczeeUdF7hFo54/X2mS4RNMC22Z+Q0748o8HUnjoNtiF6EcIAchpjJWlL0kQatb6GNUQ=="
+      "integrity": "sha512-Wf7AjW0rLEWjhswJKyWaO4l+WgQ4DVoHlLcR2QrUrH1AvlwrIV7zZ9/lPX+yu82rZRpqJA/51XlOlOn0rsPDaQ=="
     },
     "@open-e2ee/oe-darwin-x64": {
       "version": "3.0.0",
-      "integrity": "sha512-2+b7TY220dSBg5NtxdmhAqFPEcS0kgucwaGSNIzWA3cPDJfw1XkwxIxre0cXFGqGgczf/Hhj+5MY10u4R5vTow=="
+      "integrity": "sha512-E1QMJ7jJM6tyy+UwiR3wwcLaPeY6nzdzeFMQqQXgz4MdL1OEzoi6WlgvEpaOL+vfXFnFL9mthuYZw/INmwO3YQ=="
     },
     "@open-e2ee/oe-linux-arm64": {
       "version": "3.0.0",
-      "integrity": "sha512-1LtkHvyBxFxyptjuH3murZoi17db0KLMoUXEpTBMYk9zFJ58DE1ljelhxd2r4WMhicET2RUW6uiGFwbJprG79w=="
+      "integrity": "sha512-FInGiPWYi7FAb/bTXMaLUGcKGF5wzljbZFLr4vDgef6Pd44Mujac6QyGsRmNQe4vCgYQ+dgbu5a0iL8Fks5AFQ=="
     },
     "@open-e2ee/oe-linux-x64": {
       "version": "3.0.0",
-      "integrity": "sha512-nBn/S2JWGllvyILQT4NDMO9aweQZDUtMSE3sKXK9yU0b2IGhD87KxjLPzFdHqISb1VM30DeTLKvwG0V1WNi2dw=="
+      "integrity": "sha512-yl3WA75RtUqFEB0YnGYynheOqnG46Xckm08gTl9OyPXi63g+t2D6D0iJjnWpNF8svrb669pi/I7pnkxirRs41w=="
     },
     "@open-e2ee/oe-win32-arm64": {
       "version": "3.0.0",
-      "integrity": "sha512-TXih+ITEkQDgnncuBci6zu4xk329Y1f0mdAk8+0xzEHsd0DtuqjrSEpiANYu4hmc0R1oY6mkFwFJtKngXACC0g=="
+      "integrity": "sha512-kxzkfiZRr/u+Qty8gBTHmkXx2TeyctuzNK33/ziBgc2N1jP4cDUTszGNAs2YjGDa6hyXbOp/ihm4yk647+Fv8Q=="
     },
     "@open-e2ee/oe-win32-x64": {
       "version": "3.0.0",
-      "integrity": "sha512-03BfPgycU+ZUmIIW2TT9ifZRma5dbFvWm+0VMdqDnF8GQeWCCLXVGvcvD6dJNhmbbXE+FJjXkEstiGzjRBAvog=="
+      "integrity": "sha512-OJdqvLWa8fe5x8oSmLqhxaKxoQEt9EsgkQkPE3p0x2kYbN/ji3FOMdfP0P8fffnBbY2qsrjrsitcwbqzd7/Tlw=="
     }
   },
   "artifacts": {
@@ -67,28 +67,28 @@
       "sha256": "b866011875125c65e7db7ab2e46cb9809ef988b6a8f38fdef96695360d7d8498"
     },
     "cli-sbom.cdx.json": {
-      "sha256": "73a4d6ec84e2f0a9765164d83b24408767e9b3fb15eb058e09687e0abb47d2f8"
+      "sha256": "a13a58e8ce32870f672b140987a1c6ff2b2f47ff3643679e3ddf8b55bbf9d894"
     },
     "checksums.txt": {
-      "sha256": "4589146905e3322aca8d85db8a2f8909a04919c17e5f6d0e666cd95013207385"
+      "sha256": "6c13f58222c5dc563c84ae8a4d52000b1d1888019cd4294a4918949a8eab512b"
     },
     "oe_3.0.0_darwin_arm64.tar.gz": {
-      "sha256": "f95f2bf0fda625590ab1014be6e44ef6d72fb1a359ce7dc06e6862a8360bcecd"
+      "sha256": "5997902b42cca15166dc9a7c380cb0ef1fd3e2f2cfbb67f21201c8e4c7ab4809"
     },
     "oe_3.0.0_darwin_amd64.tar.gz": {
-      "sha256": "7089fd65d29f1988dbc3c1b9df2e5d4674587c75b333ca36268702c91821b8d7"
+      "sha256": "bc31bd0a618fac803c7cc2d20bbad1eb9f0f6602f0c98c3ae9bf6394ca68edd5"
     },
     "oe_3.0.0_linux_arm64.tar.gz": {
-      "sha256": "1e9487e54d1c5acbcbb9932ec80de59582eed1d4af7b6d222b44f5db71be0f78"
+      "sha256": "d75653fb084e26e0e097769015817787fecbfb199901ab00d8743cc7db1a93d4"
     },
     "oe_3.0.0_linux_amd64.tar.gz": {
-      "sha256": "1bf27b9fd1f4aab4dfaa6c27d0944b5a06fb10838fa644cb64143e8c792f899b"
+      "sha256": "a30346a461c2a1457a0fd185f243cd62ab29eac4d918009ea2000541a27790db"
     },
     "oe_3.0.0_windows_arm64.tar.gz": {
-      "sha256": "cfa708f758336f5f984a2603fc8bd98533d25a5eff699e4d33bb7019286db472"
+      "sha256": "ba77c74c6104859feb375d0d99cd7bf742489af25f1bb7c689d68ef7f527e0f0"
     },
     "oe_3.0.0_windows_amd64.tar.gz": {
-      "sha256": "5b0a235cef0347f0a34c91963a19ee2dd290117885d96eacfc93f47de3fdd240"
+      "sha256": "3e8a7f693f7a4f5d343067684ee6797e3ec5d6cd02185401e332d49d650b876f"
     }
   }
 }
