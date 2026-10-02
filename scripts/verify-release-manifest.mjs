@@ -4,27 +4,27 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-export const RELEASE_PACKAGE_NAMES = [
-  "@open-e2ee/signal-protocol-sdk",
-  "@open-e2ee/cli",
-  "@open-e2ee/cli-darwin-arm64",
-  "@open-e2ee/cli-darwin-x64",
-  "@open-e2ee/cli-linux-arm64",
-  "@open-e2ee/cli-linux-x64",
-  "@open-e2ee/cli-win32-arm64",
-  "@open-e2ee/cli-win32-x64",
-];
+export const RELEASE_PACKAGES = {
+  "@open-e2ee/signal-protocol-sdk": "1.0.0",
+  "@open-e2ee/oe": "3.0.0",
+  "@open-e2ee/oe-darwin-arm64": "3.0.0",
+  "@open-e2ee/oe-darwin-x64": "3.0.0",
+  "@open-e2ee/oe-linux-arm64": "3.0.0",
+  "@open-e2ee/oe-linux-x64": "3.0.0",
+  "@open-e2ee/oe-win32-arm64": "3.0.0",
+  "@open-e2ee/oe-win32-x64": "3.0.0",
+};
 
 export const RELEASE_ARTIFACT_NAMES = [
   "sdk-sbom.cdx.json",
   "cli-sbom.cdx.json",
   "checksums.txt",
-  "oe_1.0.0_darwin_arm64.tar.gz",
-  "oe_1.0.0_darwin_amd64.tar.gz",
-  "oe_1.0.0_linux_arm64.tar.gz",
-  "oe_1.0.0_linux_amd64.tar.gz",
-  "oe_1.0.0_windows_arm64.tar.gz",
-  "oe_1.0.0_windows_amd64.tar.gz",
+  "oe_3.0.0_darwin_arm64.tar.gz",
+  "oe_3.0.0_darwin_amd64.tar.gz",
+  "oe_3.0.0_linux_arm64.tar.gz",
+  "oe_3.0.0_linux_amd64.tar.gz",
+  "oe_3.0.0_windows_arm64.tar.gz",
+  "oe_3.0.0_windows_amd64.tar.gz",
 ];
 
 export const RELEASE_SOURCE_NAMES = {
@@ -135,16 +135,19 @@ export function validateReleaseManifest(value) {
   }
 
   expect(
-    exactKeys(value.packages, RELEASE_PACKAGE_NAMES),
+    exactKeys(value.packages, Object.keys(RELEASE_PACKAGES)),
     "packages must have the exact roster",
   );
-  for (const name of RELEASE_PACKAGE_NAMES) {
+  for (const [name, version] of Object.entries(RELEASE_PACKAGES)) {
     const entry = value.packages?.[name];
     expect(
       exactKeys(entry, ["version", "integrity"]),
       `package ${name} has invalid keys`,
     );
-    expect(entry?.version === "1.0.0", `package ${name} must be version 1.0.0`);
+    expect(
+      entry?.version === version,
+      `package ${name} must be version ${version}`,
+    );
     expect(
       isSha512Integrity(entry?.integrity),
       `package ${name} must have SHA-512 registry integrity`,
