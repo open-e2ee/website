@@ -8,9 +8,9 @@
  *
  *   node scripts/record-carrier-capture.mjs
  *
- * It runs `PROGRAM` below against the installed SDK and this site's own
- * in-memory relay, reads the envelope the relay held, and writes the JSON with
- * the program text in it.
+ * It runs `PROGRAM` below against the installed SDK and the page relay in
+ * `src/lib/demo/relay.ts`, reads the envelope the relay held, and writes the
+ * JSON with the program text in it.
  *
  * Re-record when the program stops being true of the installed package: a
  * renamed identifier, a changed factory signature, a new envelope field. A

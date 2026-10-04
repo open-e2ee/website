@@ -6,10 +6,11 @@ import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 /*
  * The proof moment. Both panes come from `src/data/carrier-capture.json`,
  * which `scripts/record-carrier-capture.mjs` writes by running two SDK clients
- * against an in-memory relay in this site and reading the envelope the relay
- * actually held. Nothing in this component is drawn, mocked up, or hand-typed:
- * if the recorded ciphertext were replaced by something plausible-looking, the
- * page would be making exactly the claim the brand exists to avoid.
+ * against the page relay (`src/lib/demo/relay.ts`) and reading the envelope
+ * the relay actually held. Nothing in this component is drawn, mocked up, or
+ * hand-typed: if the recorded ciphertext were replaced by something
+ * plausible-looking, the page would be making exactly the claim the brand
+ * exists to avoid.
  *
  * The recording path is a committed script rather than a story about how the
  * file once came to exist, which is what lets a reader run it — `npm run
@@ -123,7 +124,7 @@ const recordedAtInstalled = capture.sdkVersion === installedVersion;
         and "a real round trip" claims the second. On the one panel whose
         entire job is that the page will not overstate its evidence, that is
         the most expensive place on the site to overstate by one adjective. */}
-    <span>recorded by running the SDK against an in-memory relay</span>
+    <span>recorded by running the SDK against the page relay</span>
     <span>{capture.packageName}@{capture.sdkVersion}</span>
     {!recordedAtInstalled && (
       <span>every field shown is still in the envelope at {installedVersion}</span>

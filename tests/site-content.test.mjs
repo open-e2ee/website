@@ -134,7 +134,7 @@ test('makes the quickstart promise on /product only, and states no time', async 
 
   /* The quickstart runs the hosted client against the Relay Sandbox, so a
    * reader needs a project and an identity provider before the first message.
-   * "No account" was true of the in-memory relay and is false of the Sandbox.
+   * "No account" is false of the Sandbox.
    * What stays true is the approved Sandbox claim: it needs no card.
    *
    * No time either. The identity-provider step is the reader's own code, so a
@@ -3804,27 +3804,30 @@ test('does not overstate the one artifact that exists to not be overstated', asy
   ]);
 
   /* The caption read "recorded from a real round trip" while the disclosure
-   * five lines under it read "captured by running the documented quickstart
-   * against the in-memory relay". A fresh reader put the two together and was
-   * right: the cryptography is real, the infrastructure is simulated, and only
-   * the first of those is what "a real round trip" claims. The panel's whole
-   * function is that this page does not inflate its evidence, so an inflated
-   * adjective costs more here than anywhere else on the site.
+   * under it said the recording ran against a relay in one process. A fresh
+   * reader put the two together and was right: the cryptography is real, the
+   * infrastructure is simulated, and only the first of those is what "a real
+   * round trip" claims. The panel's whole function is that this page does not
+   * inflate its evidence, so an inflated adjective costs more here than
+   * anywhere else on the site.
    *
-   * The disclosure names the adapter rather than calling it a mock, which is
+   * The disclosure names the relay rather than calling it a mock, which is
    * both the approved vocabulary (`messaging.md` §4) and the more precise of
    * the two: nothing in that relay is a test double, and a reader who
    * discounts the exhibit as mocked has discounted real ciphertext. What it
    * simulates is the infrastructure, and that is the part the sentence has to
-   * keep admitting. */
-  assert.match(panel, /recorded by running the SDK against an in-memory relay/);
-  assert.match(index, /against an in-memory relay in this page/);
+   * keep admitting. The approved name is "the page relay", and the first
+   * mention on the page says what it is: "a relay that runs in this page".
+   * The SDK ships no relay, so the old name for it is retired. */
+  assert.match(panel, /recorded by running the SDK against the page relay/);
+  assert.match(index, /against a relay that runs in this page/);
   /* Absence is asserted against the rendered page, not the source: the comment
    * recording *why* the adjective went has to be free to quote it. */
   if (!dist) skipUnbuilt('dist/index.html');
   if (dist) {
     assert.doesNotMatch(dist, /real round trip/);
-    assert.match(dist, /recorded by running the SDK against an in-memory relay/);
+    assert.doesNotMatch(dist, /in-memory relay/i);
+    assert.match(dist, /recorded by running the SDK against the page relay/);
     /* The quickstart runs against the Relay Sandbox, and this recording does
      * not, so the caption must not name it. */
     assert.doesNotMatch(dist, /recorded by running the quickstart/);
