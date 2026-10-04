@@ -21,7 +21,7 @@
  * ------------------------------------------------------------ the pacing ---
  *
  * Dwell comes from the table below and never from the recording. The recorded
- * intervals are microseconds over an in-memory relay: pacing from them would
+ * intervals are microseconds over the page relay: pacing from them would
  * play the whole protocol inside one frame, and pacing from them *scaled* would
  * be a presentation number wearing a measurement's clothes. So the numbers here
  * are declared to be choices, and the numbers on the page are declared to be

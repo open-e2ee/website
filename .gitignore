@@ -33,6 +33,9 @@ pnpm-debug.log*
 /design*/
 /console*/
 
-# Built from the installed SDK browser example.
+# Built from playground/ by scripts/build-playground.mjs.
 /public/playground/
 /build-artifacts/
+
+# A recording in progress. scripts/record-carrier-capture.mjs deletes it.
+/.carrier-capture-*/

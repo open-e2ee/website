@@ -330,8 +330,11 @@ const differentiators: Differentiator[] = [
    *
    * The three are the SDK's own adapter roles, from the installed
    * ADAPTERS.md: `SignalProtocolRelayServer`, `SignalProtocolLocalStore`
-   * and `SignalProtocolRemoteObjectStore`, each with shipped implementations
-   * and each documented as taking "a custom implementation" instead. Three is
+   * and `SignalProtocolRemoteObjectStore`, each documented as taking a custom
+   * implementation. Storage and object storage ship adapters. The relay does
+   * not: ADAPTERS.md names the Signal Protocol Relay or a custom transport,
+   * and the package contains no relay server. So the sentence gives the relay
+   * its own two choices and does not say it has a shipped adapter. Three is
    * a count of interfaces, not of required arguments. Storage is the only one
    * the client demands, so the sentence says they are interfaces you fill and
    * does not say you must fill all of them.
@@ -365,7 +368,7 @@ const differentiators: Differentiator[] = [
    *
    * The last sentence sends the wrong reader away on purpose. A team that
    * needs server-side moderation will discover this either way, and the only
-   * variable is whether they discover it here or after the ten-minute
+   * variable is whether they discover it here or after the
    * quickstart. Only one of those two outcomes is repairable. The
    * architecture post takes the redesign of search and moderation further
    * than a cell can.
@@ -383,7 +386,7 @@ const differentiators: Differentiator[] = [
     title: 'Infrastructure you own',
     icon: 'server',
     wide: true,
-    body: 'Storage, relay, and object storage are interfaces you fill. Each has a shipped adapter, or you write your own. Self-host them on your hardware, a VPS, or your cloud; the SDK itself does not phone home. Or use the Signal Protocol Relay for encrypted delivery. A self-hosted relay holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
+    body: 'Storage, relay, and object storage are interfaces you fill. Storage and object storage have shipped adapters, or you write your own. For the relay, use the Signal Protocol Relay for encrypted delivery, or write your own relay and self-host it on your hardware, a VPS, or your cloud. The SDK itself does not phone home. A self-hosted relay holds ciphertext and routing metadata: all your backend can leak and all it can produce for a legal request. Search, moderation, and restoring a user who has lost every device stay yours to design.',
   },
 ];
 
@@ -553,14 +556,14 @@ const runtimes = [
 
           A column is the wrong thing to size a program to. The panel was the
           wide half of a 4.75/7.25 split — 645px — and the longest line of the
-          ten variants is 91 characters, so the code had to be set at 13px by a
+          five variants is 91 characters, so the code had to be set at 13px by a
           desktop-only exception to make the two meet. Down the middle the
           panel is sized to the program instead: it takes whatever the code
           needs, and the size exception now runs the other way. The panel is
           52rem because 91 characters at 15px paint 754px, not the other way
           about; global.css states the arithmetic where the rule is.
 
-          What a reader is deciding here is whether to spend ten minutes, and
+          What a reader is deciding here is whether to try the quickstart, and
           the question they ask first is what the API looks like — the
           two-column layout answered that for free by putting the panel level
           with the headline, and a single column only keeps it if the panel
@@ -701,8 +704,8 @@ const runtimes = [
               about need.
 
               `tests/site-content.test.mjs` pins the live-demo claim and "against
-              the in-memory relay": the claim and its limit belong together, and
-              the relay is the half that is simulated. `tests/demo-panel.test.mjs`
+              a relay that runs in this page": the claim and its limit belong
+              together, and the relay is the half that is simulated. `tests/demo-panel.test.mjs`
               pins "type a sentence", because the `<noscript>` inside the console
               exists to answer that offer.
 
@@ -713,7 +716,7 @@ const runtimes = [
               press" defect this band has already paid for once. */}
           <p class={MEASURE}>
             <span class="demo-offer-wide">Type a sentence and the installed SDK encrypts it</span><span class="demo-offer-narrow">A scripted conversation plays through the installed SDK</span>{' '}
-            against the in-memory relay. Keys stay on the devices. The relay never needs
+            against a relay that runs in this page. Keys stay on the devices. The relay never needs
             message plaintext or device private keys.
           </p>
         </Fragment>

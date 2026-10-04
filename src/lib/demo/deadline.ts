@@ -2,7 +2,7 @@
  * Waiting on a relay, with an end to it.
  *
  * Every demo surface here ends up awaiting something a relay owes it — the
- * stored envelope, the decrypted message. Over `inMemoryRelay()` all of those
+ * stored envelope, the decrypted message. Over `pageRelay()` all of those
  * have already arrived by the time they are awaited, because that relay
  * delivers to its subscriber inside `send()`. Nothing that crosses anything can
  * promise that, and the adapter is the reader's to swap.

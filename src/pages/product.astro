@@ -146,7 +146,7 @@ const adapters = [
   {
     role: 'Relay',
     body: 'How sealed envelopes reach the other device. Use your own backend contract or the OpenE2EE Signal Protocol Relay, which the root client reaches by URL.',
-    options: ['./remote/relay/memory', './remote/relay/types'],
+    options: ['./remote/relay', './remote/relay/types'],
   },
   {
     role: 'Object store',
@@ -211,7 +211,7 @@ const ordered = projects
       </p>
       <p class={MATURITY}>{maturityLine}</p>
       <div class={ACTIONS}>
-        <a class="oe-button oe-button-stacked" href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message{' '}<span class="oe-button-note">ten minutes · two clients · no account</span></a>
+        <a class="oe-button oe-button-stacked" href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message{' '}<span class="oe-button-note">two clients · no credit card</span></a>
         <a class="oe-button oe-button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
           SDK on GitHub
         </a>
@@ -223,17 +223,18 @@ const ordered = projects
   </header>
 
   {/*
-    "Two clients, one relay, no account" printed the whole 29-line quickstart
-    here. The homepage code panel ships ten tabbed variants of that same
-    program, including the in-memory pair, with the same identifiers and the
-    same message string, and docs.open-e2ee.dev/start/quickstart owns the
-    runnable file that the hero button already points at. A reader on this page
-    arrived through the panel, or arrived to compare.
+    A band here once printed the whole quickstart program. The homepage code
+    panel ships the variants of that program, and
+    docs.open-e2ee.dev/start/quickstart owns the runnable file that the hero
+    button already points at. A reader on this page arrived through the panel,
+    or arrived to compare.
 
-    Its one non-duplicated fact was that the in-memory adapters run the real
-    protocol and the real cryptography against simulated infrastructure. The
-    Composition band lists ./local/store/memory and ./remote/relay/memory, so
-    that fact is stated there.
+    The button note says "no credit card" and not "no account", and it states
+    no time. The quickstart uses the hosted client against the Relay Sandbox,
+    which needs a project, an identity provider, and no card. The time that
+    setup takes depends on the reader's identity provider, so no figure for it
+    is checkable. The Composition band lists ./remote/relay, the contract for
+    an application-owned relay.
 
     The `Code` component, the shared code theme, and the carrier-capture import
     that fed it left the page with the band.

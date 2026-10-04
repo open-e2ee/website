@@ -31,8 +31,8 @@ test('formatEvent reports elapsed time since the run started, to one decimal', (
 });
 
 test('formatEvent keeps a real, possibly negative, delta rather than clamping one', () => {
-  /* `stored-at-relay` can be timestamped before `encrypted` on an in-memory
-     relay — trace.ts says why — so a row before the run's first event is a
+  /* `stored-at-relay` can be timestamped before `encrypted` on a relay in
+     the page — trace.ts says why — so a row before the run's first event is a
      true row, not a bug this file should hide by flooring at zero. */
   const row = formatEvent(encryptedEvent({ atMs: 900 }), 1000);
   assert.equal(row.at, '-100.0');

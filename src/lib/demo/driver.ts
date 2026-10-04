@@ -9,7 +9,7 @@
  * cryptography is the shipped cryptography (invariant 1): real
  * `createSignalProtocolClient`, real PQXDH, real Double Ratchet. What is
  * simulated is the infrastructure around it — `inMemoryStore()` for the device
- * and `inMemoryRelay()` for the relay — which is what the disclosure beside
+ * and this site's own `pageRelay()` for the relay — which is what the disclosure beside
  * the demo has to say out loud (invariant 5).
  *
  * Nothing in here touches the DOM. It is imported dynamically by `./loader`,
@@ -35,9 +35,9 @@ import type {
 } from '@open-e2ee/signal-protocol-sdk';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import type { InMemorySignalProtocolStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
-import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
-import type { InMemorySignalProtocolRelayServer } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import { withDeadline } from './deadline.ts';
+import { pageRelay } from './relay.ts';
+import type { PageRelay } from './relay.ts';
 
 export interface DemoSessionOptions {
   /** Account that types. Shown to the reader, so callers name it. */
@@ -72,16 +72,16 @@ export interface DemoSessionOptions {
    */
   tamper?: (envelope: Envelope) => Envelope;
   /**
-   * The relay to run the session on, instead of a fresh `inMemoryRelay()`.
+   * The relay to run the session on, instead of a fresh `pageRelay()`.
    *
    * This exists as a test boundary rather than as a configuration knob. The
    * whole of `exchange()` below is a set of waits on things a relay delivers,
-   * and in-memory the relay delivers all of them inside `send()` — so a test
-   * that only ever sees `inMemoryRelay()` cannot reach the case where it does
+   * and the page relay delivers all of them inside `send()` — so a test
+   * that only ever sees `pageRelay()` cannot reach the case where it does
    * not, which is the case that matters and the case that shipped broken.
    * Passing a wrapper that defers delivery is how that case gets tested.
    */
-  relay?: InMemorySignalProtocolRelayServer;
+  relay?: PageRelay;
   /**
    * How long a send waits for the relay before giving up, in milliseconds.
    *
@@ -161,12 +161,11 @@ export interface DemoSession {
    * The relay both accounts are registered with.
    *
    * Handed over because some of what a scenario has to show is a conversation
-   * with the relay rather than with a client: linking a device is a
-   * provisioning session on the relay, and fetching a prekey bundle for a
+   * with the relay rather than with a client: fetching a prekey bundle for a
    * device the sender has never written to is a relay call the application
    * makes by hand.
    */
-  readonly relay: InMemorySignalProtocolRelayServer;
+  readonly relay: PageRelay;
   /** The sending device, for the SDK calls a scenario has to make itself. */
   readonly senderClient: DefaultSignalProtocolClient;
   /** The receiving account's primary device, and its storage. */
@@ -213,7 +212,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
 
   const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
 
-  const relay = options.relay ?? inMemoryRelay();
+  const relay = options.relay ?? pageRelay();
   await relay.registerDevice(sender, { encryptedDeviceName: new ArrayBuffer(0) });
   await relay.registerDevice(recipient, { encryptedDeviceName: new ArrayBuffer(0) });
 
@@ -263,8 +262,8 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
   /*
    * Read the relay by subscribing to it, not by draining its mailbox.
    *
-   * `getPendingMessages` is the published way to inspect the in-memory relay,
-   * and it is what `scripts/record-carrier-capture.mjs` uses — but that script
+   * `getPendingMessages` is the page relay's view of its mailbox, and it is
+   * what `scripts/record-carrier-capture.mjs` uses — but that script
    * reads the queue in the gap before any subscription starts. Here the
    * receiving client is subscribed for the whole session and deletes each
    * envelope once it has decrypted it, so a poll after `send()` resolves is a
@@ -296,7 +295,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
    * The receiving account's devices, each keeping what it decrypted.
    *
    * A device is a row here rather than a variable because the account can grow
-   * one: provisioning gives the recipient a second device part-way through a
+   * one: a second device can join the recipient part-way through a
    * conversation, and everything downstream — what `send()` waits for, what
    * `stop()` puts away, what a scenario prints as a scroll-back — has to
    * follow the account rather than a pair fixed at boot.
@@ -407,7 +406,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
      * resolves.
      *
      * It used to be cleared the moment `from.send()` returned, which was safe
-     * for exactly one reason: `inMemoryRelay()` delivers to its subscriber
+     * for exactly one reason: `pageRelay()` delivers to its subscriber
      * inside `send()`, so the envelope had always landed before the slot
      * closed. Against any relay that delivers later the envelope arrived to a
      * closed slot, went into `pending`, and this line waited on a promise

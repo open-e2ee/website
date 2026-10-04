@@ -19,11 +19,11 @@ import {
  * asked them to take that on trust and click through.
  *
  * The snippet is no longer one fixed excerpt. `src/lib/hero-snippet.mjs`
- * builds ten of them — five device stores by two relays — and all ten are
- * rendered here at build time. That is the only way this can work under the
- * CSP: `script-src 'self'` has no room for a highlighter, so a variant that
- * did not exist before the page loaded could never be colored. Ten complete
- * programs is a few kilobytes of HTML and no runtime cost at all.
+ * builds one per device store and relay, and all of them are rendered here at
+ * build time. That is the only way this can work under the CSP: `script-src
+ * 'self'` has no room for a highlighter, so a variant that did not exist
+ * before the page loaded could never be colored. Five complete programs are a
+ * few kilobytes of HTML and no runtime cost at all.
  */
 ---
 
@@ -106,21 +106,15 @@ import {
     a sentence and becomes something a reader can operate. "Your backend stays
     yours" and "Expo, React Native, browsers, and Node from one package" are
     both assertions until you change the dropdown and watch the program change
-    with it. What moves is the adapter's own lines — the import it needs and
-    the expression that builds it. What holds still is everything under
-    `createSignalProtocolClient`: the client, the hook, the send. That is the
-    argument, and the second half is the half worth being exact about.
+    with it. What moves is the store's own lines: the import it needs and the
+    expression that builds it. What holds still is everything under
+    `createHostedSignalProtocolClient`: the client, the hook, the send.
 
-    This said "one line of the program changes with it — and nothing else" for
-    several rounds, and that was never true: swapping an adapter has always
-    moved an import as well as a construction. The Signal Protocol Relay moves
-    more still — its client factory replaces the identity line with the
-    `hosted` block — so the false version of the claim would be visibly false
-    on the second dropdown a reader touches.
-
-    Two selects rather than one, because there are genuinely two choices and
-    they compose: `adapters: { storage, relay }` has two keys, and the controls
-    are shaped like the object they edit.
+    Two selects, because a client has two backends to choose: where its keys
+    live and what carries its envelopes. The Relay select has one option, the
+    OpenE2EE Signal Protocol Relay. It names the backend that the program
+    connects to, and it keeps the toolbar layout that the widths below were
+    measured against.
 
     `(experimental)` goes in the option text rather than beside the control,
     because the label is where the choice is made and a caveat placed anywhere
@@ -175,7 +169,7 @@ import {
         </select>
       </label>
     </span>
-    {/* Changing a select swaps which of ten blocks is visible, which is a
+    {/* Changing a select swaps which block is visible, which is a
         loud change on screen and a silent one otherwise: focus stays on the
         combobox, so the only thing announced is the option name — "Expo" —
         and nothing says the program changed with it. This region says what is
@@ -205,7 +199,7 @@ import {
       a keyboard user one Tab.
 
       The label names the adapters rather than saying "excerpt", which is what
-      it said while this was one. Nine of the ten are `hidden`, so only the
+      it said while this was one. All but one variant are `hidden`, so only the
       selected one is in the accessibility tree and only its label is read. */}
   {/*
     The program, and the control that takes it away.
@@ -223,8 +217,8 @@ import {
     editor surface as its own background for the same reason it has to overlap
     at all — below 48rem the program scrolls under it, and a transparent chip
     over code is unreadable. Above that width nothing runs into it: the
-    hero-snippet size solves for a 91-character line and the import on line one
-    is 76, so the code stops well short of the corner.
+    hero-snippet size solves for a 91-character line and the import on line
+    one is 82, so the code stops short of the corner.
   */}
   <div class="code-body">
     <button type="button" class="copy-button code-copy" data-code-copy>
@@ -332,7 +326,7 @@ import {
   let codeRestore: ReturnType<typeof setTimeout> | undefined;
 
   codeButton?.addEventListener('click', async () => {
-    /* Read from the visible variant rather than from an attribute: ten copies
+    /* Read from the visible variant rather than from an attribute: five copies
        of the program in `data-copy` would double the panel's weight to say
        what the panel already says. The line numbers are `::before` content, so
        they are not in `textContent` and cannot reach the clipboard. */
