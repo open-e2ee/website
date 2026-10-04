@@ -126,7 +126,7 @@ test('keeps the tagline contract: proposed lines annotated, approved lines free'
   assert.deepEqual(usingTagline, ['product/index.html']);
 });
 
-test('makes the same ten-minute promise everywhere it makes one', async () => {
+test('makes the quickstart promise on /product only, and states no time', async () => {
   const [product, groups] = await Promise.all([
     flat('../src/pages/product.astro'),
     declaration('footerGroups'),
@@ -135,19 +135,24 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
   /* The quickstart runs the hosted client against the Relay Sandbox, so a
    * reader needs a project and an identity provider before the first message.
    * "No account" was true of the in-memory relay and is false of the Sandbox.
-   * What stays true is the approved Sandbox claim: it needs no card. */
-  assert.match(product, /ten minutes · two clients · no credit card/);
+   * What stays true is the approved Sandbox claim: it needs no card.
+   *
+   * No time either. The identity-provider step is the reader's own code, so a
+   * figure for the whole setup is not checkable (docs/messaging.md §1.3). The
+   * footer link names the page and makes no promise. */
+  assert.match(product, /<span class="oe-button-note">two clients · no credit card<\/span>/);
   assert.doesNotMatch(product, /<span class="oe-button-note">[^<]*no account/);
   /* UIR5.2 moved the footer's link data into src/lib/site-navigation.ts. The
      component renders the array; the promise is in the array. */
-  assert.match(groups, /Ten-minute quickstart/);
+  assert.match(groups, /label: 'Quickstart'/);
+  assert.doesNotMatch(groups, /[Tt]en-minute/);
 
-  /* The homepage makes it nowhere. The promise argues for spending the ten
-   * minutes, so it belongs under a button a reader reaches after the evidence;
-   * the landing page's own closing ask was cut by the founder, and it now ends
-   * on the license with no second offer, so the reader who has decided meets
-   * the promise on /product. Under the hero button it would be a
-   * third line of small gray type between the offer and the proof.
+  /* The homepage makes it nowhere. The promise argues for starting the
+   * quickstart, so it belongs under a button a reader reaches after the
+   * evidence; the landing page's own closing ask was cut by the founder, and
+   * it now ends on the license with no second offer, so the reader who has
+   * decided meets the promise on /product. Under the hero button it would be
+   * a third line of small gray type between the offer and the proof.
    *
    * Read off the built page and not the source: `flat()` keeps comments, and
    * the comment over the hero actions quotes this exact sublabel in order to
@@ -158,7 +163,8 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
     () => null,
   );
   if (!dist) return skipUnbuilt('dist/index.html');
-  assert.equal((dist.match(/ten minutes · two clients · no credit card/g) ?? []).length, 0);
+  assert.equal((dist.match(/two clients · no credit card/g) ?? []).length, 0);
+  assert.doesNotMatch(dist, /ten minutes|[Tt]en-minute/);
   assert.doesNotMatch(dist, /cta-sublabel/);
 });
 
@@ -314,7 +320,6 @@ function splitComment(line) {
  */
 const HOSTED_LINES = [
   `import { createHostedSignalProtocolClient } from "${capture.packageName}";`,
-  'const relayUrl = process.env.OPEN_E2EE_RELAY_URL!;',
   'const alice = await createHostedSignalProtocolClient({',
   '  hosted: { relayUrl, getIdentityAssertion: aliceSignIn },',
   '  adapters: { storage: inMemoryStore() },',
@@ -389,11 +394,11 @@ test('compiles every hero variant against the installed SDK', async () => {
   const ts = (await import('typescript')).default;
   const root = fileURLToPath(new URL('../.hero-variants/', import.meta.url));
   const reader = [
+    'declare const relayUrl: string;',
     `declare const aliceSignIn: import("${capture.packageName}").GetIdentityAssertion;`,
     `declare const bobSignIn: import("${capture.packageName}").GetIdentityAssertion;`,
     `declare const directory: Parameters<typeof import("${capture.packageName}/local/store/node").nodeStore>[0]["directory"];`,
     `declare const vault: Parameters<typeof import("${capture.packageName}/local/store/node").nodeStore>[0]["vault"];`,
-    'declare const process: { env: Record<string, string | undefined> };',
   ].join('\n');
   const files = new Map(
     snippetVariants.map((variant) => [
@@ -469,20 +474,13 @@ test('offers every adapter as a real, complete, copyable program', () => {
       ),
       `${variant.storage}/${variant.relay} does not import its store`,
     );
-    /* Line by line rather than as one block, because the two need not be
-       adjacent: the relay's comment takes the trailing position on the
-       construction's last line where that line has room, and the line above it
-       where it does not. What must hold is that every line of the construction
-       ships — a variant that lost one would not run — and that the comment
-       ships with it, whichever of the two places it took. */
-    for (const line of relay.setup.split('\n')) {
-      assert.ok(
-        variant.code.includes(line),
-        `${variant.storage}/${variant.relay} does not construct its relay: ${line}`,
-      );
-    }
+    /* The relay has no construction line. The hosted client builds its
+       adapter from `relayUrl`, and the comment that says what the URL is and
+       what the relay does ships on a line of its own. */
+    assert.equal(relay.setup, undefined, `${variant.storage}/${variant.relay} binds the relay URL from one runtime`);
+    assert.doesNotMatch(variant.code, /process\.env|import\.meta\.env/, `${variant.storage}/${variant.relay} reads one runtime's environment`);
     assert.ok(
-      variant.code.includes(relayComment),
+      variant.code.split('\n').includes(relayComment),
       `${variant.storage}/${variant.relay} lost the comment that says what a relay does`,
     );
 
@@ -637,9 +635,12 @@ test('binds the names the reader brings, or says whose they are', async () => {
   assert.equal(rn.expr, 'await reactNativeStore()');
   assert.equal(rn.comment, undefined, 'the React Native option captions a name it does not use');
 
-  /* The Signal Protocol Relay binds `relayUrl` itself and discloses the two
-   * sign-in callbacks, which are the reader's identity-provider calls and
-   * have nothing importable behind them. It imports nothing beyond its
+  /* The Signal Protocol Relay discloses `relayUrl` and the two sign-in
+   * callbacks. The URL is the reader's configuration, and each runtime reads
+   * configuration in a different way: a browser bundle has no `process`, and
+   * Expo inlines only `EXPO_PUBLIC_` variables. The callbacks are the
+   * reader's identity-provider calls. Nothing importable stands behind any of
+   * the three. It imports nothing beyond its
    * factory: the hosted client is a root export and takes no relay subpath.
    * It is the only relay the panel offers, because SDK 9.0.0 exports no
    * relay an application can construct. */
@@ -648,7 +649,8 @@ test('binds the names the reader brings, or says whose they are', async () => {
   assert.equal(hosted.factory, 'createHostedSignalProtocolClient');
   assert.equal(hosted.subpath, undefined, 'the hosted client is reached through a relay subpath');
   assert.equal(hosted.imports, undefined, 'the hosted option imports something the SDK does not export');
-  assert.match(hosted.setup, /^const relayUrl = process\.env\.OPEN_E2EE_RELAY_URL!;$/);
+  assert.equal(hosted.setup, undefined, 'the hosted option binds relayUrl from one runtime\'s environment');
+  assert.match(relayComment, /^\/\/ relayUrl is your Relay environment's connection URL\./);
   assert.match(hosted.comment, /aliceSignIn and bobSignIn return each device's signed identity assertion/);
 
   for (const variant of snippetVariants) {
@@ -664,9 +666,10 @@ test('binds the names the reader brings, or says whose they are', async () => {
     const importsEnd = lines.indexOf('');
     const store = storageOptions.find((option) => option.id === variant.storage);
     for (const name of ['relayUrl', 'vault']) {
-      /* A name the store's own comment gives to the reader is disclosed, not
-       * bound; the disclosure check below holds its position. */
-      if (store.comment?.includes(name)) continue;
+      /* A name that the store's comment or the relay comment gives to the
+       * reader is disclosed, not bound; the disclosure checks below hold its
+       * position. */
+      if (store.comment?.includes(name) || relayComment.includes(name)) continue;
       const mentions = new RegExp(`\\b${name}\\b`);
       const bound = lines.findIndex((line) => binds(line, name));
       const used = lines.findIndex(
@@ -710,6 +713,10 @@ test('binds the names the reader brings, or says whose they are', async () => {
     const said = lines.findIndex((line) => line.includes('aliceSignIn and bobSignIn'));
     const used = lines.findIndex((line) => line.includes('getIdentityAssertion: aliceSignIn'));
     assert.ok(said !== -1 && said < used, 'the sign-in callback is used before it is explained');
+    const urlSaid = lines.indexOf(relayComment);
+    const urlUsed = lines.findIndex((line) => /\brelayUrl\b/.test(line) && !line.startsWith('//'));
+    assert.ok(urlSaid !== -1 && urlSaid < urlUsed, 'relayUrl is used before it is explained');
+    assert.ok(!lines.some((line) => /^\s*const relayUrl\b/.test(line)), 'relayUrl is both disclosed and bound');
   }
 
   /* Every comment in every variant is one the module declares, wherever on the
@@ -977,7 +984,7 @@ test('says what the phone’s first reading measured, and breaks its row cleanly
 });
 
 test('shows every metadata field the relay was recorded holding', async () => {
-  /* The panel is captioned "the row in your database" and used to render a
+  /* The panel is captioned "the stored envelope" and used to render a
    * hand-written six of the recorded ten. The two it dropped —
    * `senderDeviceId` and `serverTimestamp` — are both genuinely relay-held;
    * the capture annotates the second "Real relays assign this too." Nobody
@@ -1420,11 +1427,11 @@ test('centers the hero at the phone’s width as well as the desktop’s', async
   for (const [name, source] of Object.entries(heroes)) {
     assert.doesNotMatch(source, /CTA_SUBLABEL|<span class="oe-button">/, `${name} sets the promise outside the button, or draws a button inside a link`);
     assert.doesNotMatch(source, /Development environment · no card|Free to start · no card/, `${name} carries the old words`);
-    const stacked = source.match(/<a class=(?:"oe-button oe-button-stacked"|\{PLANS_PRIMARY\}) href=[^>]*>([^<]+)<span class="oe-button-note">(\{startPromise\}|ten minutes · two clients · no credit card)<\/span><\/a>/);
+    const stacked = source.match(/<a class=(?:"oe-button oe-button-stacked"|\{PLANS_PRIMARY\}) href=[^>]*>([^<]+)<span class="oe-button-note">(\{startPromise\}|two clients · no credit card)<\/span><\/a>/);
     assert.ok(stacked, `${name} does not carry the promise as the note inside its stacked primary`);
     assert.match(stacked[1], /\{' '\}$/, `${name} runs the label into the note in the link\u2019s name; a flex column drops the space between them, so it is written`);
     assert.equal((source.match(/oe-button-note/g) ?? []).length, 1, `${name} carries the note more than once`);
-    assert.equal(stacked[2], name === 'product' ? 'ten minutes · two clients · no credit card' : '{startPromise}', `${name} carries the wrong note`);
+    assert.equal(stacked[2], name === 'product' ? 'two clients · no credit card' : '{startPromise}', `${name} carries the wrong note`);
   }
 
   /* The strip centers itself rather than being centered by its caller. It has
@@ -2847,7 +2854,7 @@ test('enlarges the hero code without enlarging code that has no room', async () 
   );
 
   /* 1.8 is a fit constraint rather than a taste, and the margin in it is thin
-   * enough to be worth writing down. The longest of the ten variants is 91
+   * enough to be worth writing down. The longest of the five variants is 91
    * characters, the painted advance of this face is 0.552px per px of size, the
    * gutter is 4.75ch at 0.5576px per px, and the panel spends 30px on padding
    * and borders — so the code fits while size <= (panel - 30) / 52.876, which is
@@ -3007,14 +3014,12 @@ const emittedColors = async (code, themeId) => {
   return seen;
 };
 
-/* The two blocks of TypeScript the site renders through `<Code>`. Blog posts
-   go through the same themes by way of `astro.config.mjs`, and are covered by
-   the config check below rather than here: their content is prose files that
-   change, so pinning their tokens would be pinning the wrong thing. */
-const shippedSnippets = [
-  ['hero', heroCode],
-  ['product', capture.quickstartCode],
-];
+/* The TypeScript the site renders through `<Code>`: the five hero variants,
+   one per store. Blog posts go through the same themes by way of
+   `astro.config.mjs`, and are covered by the config check below rather than
+   here: their content is prose files that change, so pinning their tokens
+   would be pinning the wrong thing. */
+const shippedSnippets = snippetVariants.map((variant) => [`hero/${variant.storage}`, variant.code]);
 
 test('uses the editor themes the reader already has, at their own values', async () => {
   /* Named rather than inlined, so shiki owns the colors and an upgrade
@@ -3187,7 +3192,7 @@ test('keeps every syntax color readable on the surface it is printed on', async 
       const colors = await emittedColors(code, id);
 
       /* A snippet that stopped being highlighted would emit nothing and pass
-       * an empty loop silently. Six is the count both snippets clear today. */
+       * an empty loop silently. Six is the count every variant clears today. */
       assert.ok(colors.size >= 6, `${label}/${mode}: only ${colors.size} colors emitted`);
 
       for (const [color, sample] of colors) {
@@ -3543,8 +3548,8 @@ test('declares what the example uses', async () => {
    * them found an identifier it used without declaring. The relay was the
    * expensive one, because each of them decoded an undeclared relay as a
    * server they would have to run. So the program names its backend: the
-   * client factory says it is the hosted one, and `relayUrl` is bound from
-   * the environment before the clients use it. */
+   * client factory says it is the hosted one, and a comment says what
+   * `relayUrl` is before the clients use it. */
   assert.match(
     heroCode,
     /import \{ inMemoryStore \} from "@open-e2ee\/signal-protocol-sdk\/local\/store\/memory";/,
@@ -3553,7 +3558,7 @@ test('declares what the example uses', async () => {
     heroCode,
     /import \{ createHostedSignalProtocolClient \} from "@open-e2ee\/signal-protocol-sdk";/,
   );
-  assert.match(heroCode, /const relayUrl = process\.env\.OPEN_E2EE_RELAY_URL!;/);
+  assert.ok(heroCode.split('\n').includes(relayComment));
 
   /* No elision mark anywhere. This used to guard only the opening, because
    * the snippet was an excerpt and `…` was legitimate further down. Now the
@@ -3772,8 +3777,8 @@ test('quotes no number it did not measure', async () => {
 
   /* Every number this page prints is one it can show its working for: the
    * ciphertext lengths are read off the recording, the version comes from the
-   * capture, the date is stamped by the build, and "ten minutes · two clients"
-   * describes the quickstart it links to. One clause broke the rule — "the
+   * capture, the date is stamped by the build, and "two clients" describes the
+   * quickstart it links to. One clause broke the rule — "the
    * work teams usually discover three months in" — and two fresh readers
    * caught it independently in the same wave, one calling it an unsourced
    * vendor line and one "a made-up number in a page that is otherwise

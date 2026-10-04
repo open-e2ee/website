@@ -319,7 +319,7 @@
   max-width: 14ch;
 }
 
-/* Nine of the ten are `hidden`. The attribute is the mechanism — it takes the
+/* Four of the five are `hidden`. The attribute is the mechanism — it takes the
    variant out of the accessibility tree as well as off the page — and this is
    the guard against a later `display` rule quietly overriding it. */
 .code-variant[hidden] {
@@ -805,8 +805,8 @@
    *
    * It was 3.5ch, sized for a gutter that could hold three digits, then 2.75ch
    * when that third digit turned out to be reserved against a case this site
-   * does not have — the longest of the ten programs is 23 lines and the 29-line
-   * recording on /product is the ceiling for the whole page. 2.75ch put the
+   * does not have — the longest of the five programs is 22 lines, and the
+   * hero is the only `.code-block` on the site. 2.75ch put the
    * numbers 0.75ch from their code, which is where the complaint came from:
    * moving the column toward the panel edge shortened the wrong gap, since the
    * distance that stops a ruler competing with the program is the one between
@@ -958,8 +958,8 @@
  * from the `ch` unit, which resolves against a different font than the one the
  * glyphs paint in — 8.10 against 7.45 at 13.5px, checked:
  *
- *   91 characters      the React Native import, the longest line in the ten
- *                      variants; the other eight are 84
+ *   91 characters      the React Native import, the longest code line in the
+ *                      five variants; the others are 82 or 87
  *   0.552 px/px        painted advance per pixel of font size, constant across
  *                      the range: 8.28 at 15, 8.83 at 16, 9.94 at 18
  *   4.75ch gutter      at 0.5576 px/px, so it grows with the code

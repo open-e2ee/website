@@ -65,7 +65,7 @@
     {
       "field": "clientMessageId",
       "value": "e54a0a34-4894-4f44-a7e0-902689d0238e",
-      "note": "Sender-generated send id, a UUID, so a retry after an unknown result is recognized as the same send rather than stored twice. Set before encryption, and the relay must be able to read it to deduplicate — including under sealed sender, where it is the one field that is not anonymous."
+      "note": "Sender-generated send id, a UUID, so a retry after an unknown result is recognized as the same send rather than stored twice. Set before encryption. The relay reads it to deduplicate, so it stays visible under sealed sender."
     },
     {
       "field": "recipientRegistrationId",

@@ -211,7 +211,7 @@ const ordered = projects
       </p>
       <p class={MATURITY}>{maturityLine}</p>
       <div class={ACTIONS}>
-        <a class="oe-button oe-button-stacked" href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message{' '}<span class="oe-button-note">ten minutes · two clients · no credit card</span></a>
+        <a class="oe-button oe-button-stacked" href="https://docs.open-e2ee.dev/start/quickstart">Build your first encrypted message{' '}<span class="oe-button-note">two clients · no credit card</span></a>
         <a class="oe-button oe-button-secondary" href="https://github.com/open-e2ee/signal-protocol-js">
           SDK on GitHub
         </a>
@@ -229,10 +229,12 @@ const ordered = projects
     button already points at. A reader on this page arrived through the panel,
     or arrived to compare.
 
-    The button note says "no credit card" and not "no account". The quickstart
-    uses the hosted client against the Relay Sandbox, which needs a project
-    and needs no card. The Composition band lists ./remote/relay, the contract
-    for an application-owned relay.
+    The button note says "no credit card" and not "no account", and it states
+    no time. The quickstart uses the hosted client against the Relay Sandbox,
+    which needs a project, an identity provider, and no card. The time that
+    setup takes depends on the reader's identity provider, so no figure for it
+    is checkable. The Composition band lists ./remote/relay, the contract for
+    an application-owned relay.
 
     The `Code` component, the shared code theme, and the carrier-capture import
     that fed it left the page with the band.

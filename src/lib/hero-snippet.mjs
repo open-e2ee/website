@@ -119,16 +119,17 @@ export const storageOptions = [
  * that the reader constructs: `createHostedSignalProtocolClient`, from the
  * package root, takes the Relay's connection URL and a callback that returns
  * the device's signed identity assertion, and builds the relay adapter and
- * the identity itself. `factory` names the client factory, and `setup` is the
- * construction that comes before the clients.
+ * the identity itself. `factory` names the client factory.
  *
  * A list of one keeps the selector and its measured toolbar layout. An
  * application can also supply its own `SignalProtocolRelayServer`, but no
  * importable relay stands behind that choice, so the panel does not offer it.
  *
- * `process.env.OPEN_E2EE_RELAY_URL` is the spelling that the Relay
- * documentation and the `oe` CLI write. An application reads its
- * configuration however its bundler exposes it.
+ * `relayUrl` is the reader's own value, as it is in the SDK README. Each
+ * runtime reads configuration in a different way: a browser bundle has no
+ * `process`, and Expo inlines only `EXPO_PUBLIC_` variables. A binding from
+ * one runtime's environment would not run in the others, so `relayComment`
+ * says what the value is and the program does not bind it.
  *
  * `aliceSignIn` and `bobSignIn` are the reader's own functions. Each returns a
  * signed assertion from the application's identity provider. Nothing
@@ -140,7 +141,6 @@ export const relayOptions = [
     id: 'hosted',
     label: 'Signal Protocol Relay',
     factory: 'createHostedSignalProtocolClient',
-    setup: 'const relayUrl = process.env.OPEN_E2EE_RELAY_URL!;',
     experimental: false,
     comment:
       "aliceSignIn and bobSignIn return each device's signed identity assertion from your identity provider.",
@@ -174,11 +174,12 @@ export const relayOptions = [
  * below a copy button is read after the copy, if at all; a comment travels with
  * the paste.
  *
- * The Signal Protocol Relay option carries a disclosure of the same kind for
- * `aliceSignIn` and `bobSignIn`. A comment saying where a name comes from is
- * a weaker version of a line that binds it, so a disclosure is spent only on
- * a name with nothing importable behind it, and both of these are the
- * reader's own identity-provider calls.
+ * The Signal Protocol Relay option carries disclosures of the same kind for
+ * `relayUrl`, `aliceSignIn`, and `bobSignIn`. A comment saying where a name
+ * comes from is a weaker version of a line that binds it, so a disclosure is
+ * spent only on a name with nothing importable behind it. The URL is the
+ * reader's configuration, and the two callbacks are the reader's own
+ * identity-provider calls.
  *
  * The wording is held to design/DESIGN.md's fixed relay formula like any other
  * text on the site. It renders into the page, so `scripts/audit-build.mjs`
@@ -213,28 +214,32 @@ export const relayOptions = [
    that fails: it describes the contents rather than the sender, which is true
    and does not help a reader who meets the word before the distinction.
 
-   It rides on the line that names the Relay's URL, which is the one line of
-   the relay's construction.
+   It also says what `relayUrl` is, because the program does not bind it, and
+   that is the first thing a reader of the line below asks. The URL is the
+   connection URL of a Relay environment, which is what the Relay page and the
+   SDK README call it. "There" keeps the line at 97 characters, which is the
+   1024 budget below.
 
-   Exported, alone among the six, because its place in the listing depends on
-   the length of that construction. A test that only knew the comment existed
-   could not tell the fallback below from the comment being dropped. */
-export const relayComment = '// Devices post and collect envelopes from the relay.';
+   Exported, alone among the six, because a test holds its position: directly
+   above the sign-in disclosure, and above the first line that uses
+   `relayUrl`. */
+export const relayComment =
+  "// relayUrl is your Relay environment's connection URL. Devices post and collect envelopes there.";
 /*
  * The ones that ride on a line of code, and the width that shapes them.
  *
- * Every comment here but the send's is a trailing one, which is worth six
+ * Every comment here but the send's is a trailing one, which is worth five
  * lines of panel. The cost is that a
  * trailing comment is spent from a width budget rather than given a line, and
  * the budget is measurable: 108 characters at 1280, 97 at 1024. Each of these
  * is written to the room left after the longest code it can land on, which is
  * Node's 64-character adapters line.
  *
- * Nothing overruns 1280. Below it three lines do, and all are known: the URL
- * line with the relay comment on it and the sign-in disclosure are 104
- * characters each, and Bob's construction line is 99, so the 97-column budget
- * at 1024 holds none of them. The two budgets are measured in a browser, not
- * estimated from a font size; the line lengths are counted.
+ * Nothing overruns 1280. Below it two lines do, and both are known: the
+ * sign-in disclosure is 104 characters and Bob's construction line is 99, so
+ * the 97-column budget at 1024 holds neither of them. The relay comment is 97
+ * and fits. The two budgets are measured in a browser, not estimated from a
+ * font size; the line lengths are counted.
  *
  * So they say one thing each, and the thing they say is the one the code does
  * not. `adapters:` shows that an adapter is a value you pass, so its comment
@@ -274,40 +279,6 @@ export const defaultVariant = { storage: 'memory', relay: 'hosted' };
 const specifier = (subpath) => `"${PACKAGE}/${subpath}"`;
 
 /*
- * What fits on one line of the panel, measured rather than guessed.
- *
- * The pre is 1130px of 18px monospace at 1280 and scales down with the page,
- * so this is the widest viewport's budget: 108 characters render inside it and
- * 109 overrun it by 12px. Every width below 1280 is stricter — see the note
- * over the comments themselves.
- */
-const PANEL_COLUMNS = 108;
-
-/*
- * A block of code with `comment` on its last line, where that line has room.
- *
- * Where it does not, the comment goes on its own line directly above the line
- * it describes, which costs a line of panel and is the cheaper of the two
- * losses: a trailing comment that does not fit puts a horizontal scrollbar
- * under the program for as long as it ships, at every viewport width, because
- * the panel has a maximum width and this exceeds it there too.
- *
- * No option takes that branch today. The Signal Protocol Relay's URL line is
- * the longest construction at 50 characters and still leaves room. The branch
- * stays for the next construction that does not, and puts the comment above
- * rather than below so that it never reads as describing the line after.
- */
-const withTrailingComment = (code, comment) => {
-  const lines = code.split('\n');
-  const last = lines[lines.length - 1];
-  if (`${last} ${comment}`.length <= PANEL_COLUMNS) {
-    lines[lines.length - 1] = `${last} ${comment}`;
-    return lines;
-  }
-  return [...lines.slice(0, -1), comment, last];
-};
-
-/*
  * One program, assembled from the two choices.
  *
  * The body is fixed. What moves is the import a store needs and the
@@ -332,16 +303,9 @@ export const buildSnippet = (storageId, relayId) => {
        needs it today. */
     ...(store.imports ?? []),
     '',
-    /* The relay's comment rides on the last line of its construction, so that
-       a construction of more than one line never has the comment describing
-       its neighbor. */
-    ...withTrailingComment(relay.setup, relayComment),
-    /* A store's construction comes after the relay's, in the same block: both
-       are values the two clients below are handed. */
-    ...(store.setup ? [store.setup] : []),
-    '',
-    /* The relay's own disclosure sits directly above the first line that uses
-       the names it explains, which is Alice's `hosted` line. */
+    /* The relay's two disclosures sit directly above the first line that uses
+       the names they explain, which is Alice's `hosted` line. */
+    relayComment,
     `// ${relay.comment}`,
     `const alice = await ${relay.factory}({ ${ALICE_COMMENT}`,
     '  hosted: { relayUrl, getIdentityAssertion: aliceSignIn },',
