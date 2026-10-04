@@ -1,32 +1,26 @@
 /*
- * Records `src/data/carrier-capture.json` by running the quickstart.
+ * Records `src/data/carrier-capture.json` by running two SDK clients.
  *
  * The carrier panel is the one exhibit on this site that shows rather than
- * states, and its whole value is that nothing in it was typed by hand. That
- * held for the data and did not hold for the act of recording it: the capture
- * was produced once, out of band, and every claim about where it came from was
- * a sentence in a comment. A reader could check the ciphertext looked like
- * ciphertext and could not check anything else. This script is the missing
- * half — the recording path, committed, so "recorded by running the quickstart"
+ * states, and its whole value is that nothing in it was typed by hand. This
+ * script is the recording path, committed, so "recorded by running the SDK"
  * is a command someone can run rather than a thing we say.
  *
  *   node scripts/record-carrier-capture.mjs
  *
- * It runs `PROGRAM` below against the installed SDK, reads the envelope the
- * relay actually held, and writes the JSON. The same string is what /product
- * renders as the recorded file, so the code on the page cannot drift from the
- * code that produced the row beneath it — there is one copy and it is executed.
+ * It runs `PROGRAM` below against the installed SDK and this site's own
+ * in-memory relay, reads the envelope the relay held, and writes the JSON with
+ * the program text in it.
  *
  * Re-record when the program stops being true of the installed package: a
  * renamed identifier, a changed factory signature, a new envelope field. A
- * bump on its own does not
- * need one, and `tests/site-content.test.mjs` is what makes that safe — it
- * checks every recorded field name against the installed `Envelope` type, so a
- * release that drops a field fails the build instead of leaving the caption
- * quietly false.
+ * bump on its own does not need one, and `tests/site-content.test.mjs` is what
+ * makes that safe — it checks every recorded field name against the installed
+ * `Envelope` type, so a release that drops a field fails the build instead of
+ * leaving the caption quietly false.
  */
 
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -35,20 +29,25 @@ const OUT = new URL('../src/data/carrier-capture.json', HERE);
 const SDK = '@open-e2ee/signal-protocol-sdk';
 
 /*
- * The quickstart, exactly as /product publishes it.
+ * The recorded program.
  *
- * It drives both sides of the conversation in one process, which an
- * application does not do — that difference is what `src/lib/hero-snippet.mjs`
- * exists to explain, and it is deliberate here. The panel's claim is about
- * what a relay holds, and showing the row requires a program that reads the
- * queue before anything drains it. Hence the `getPendingMessages` call sitting
- * where it does: after the send, before the subscription starts.
+ * It drives both sides of the conversation in one process, against the
+ * relay that also runs the live demo on the homepage. The SDK ships no relay
+ * that runs offline, and the OpenE2EE Signal Protocol Relay needs a project
+ * and an identity provider, so this site's relay is the one a committed
+ * script can run. The client calls are the SDK's own; only the relay is the
+ * site's.
+ *
+ * The panel's claim is about what a relay holds, and showing the row requires
+ * a program that reads the queue before anything drains it. Hence the
+ * `getPendingMessages` call where it is: after the send, before the
+ * subscription starts.
  */
 const PROGRAM = `import { createSignalProtocolClient } from "${SDK}";
 import { inMemoryStore } from "${SDK}/local/store/memory";
-import { inMemoryRelay } from "${SDK}/remote/relay/memory";
+import { pageRelay } from "../src/lib/demo/relay.ts";
 
-const relay = inMemoryRelay();
+const relay = pageRelay();
 await relay.registerDevice("alice", { encryptedDeviceName: new ArrayBuffer(0) });
 await relay.registerDevice("bob", { encryptedDeviceName: new ArrayBuffer(0) });
 
@@ -60,9 +59,6 @@ const bob = await createSignalProtocolClient({
   identity: { userId: "bob" },
   adapters: { storage: inMemoryStore(), relay },
 });
-
-await alice.syncToServer();
-await bob.syncToServer();
 
 await alice.send("bob", "Dinner at 7. I got us the table by the window.");
 
@@ -96,12 +92,14 @@ const NOTES = {
   senderDeviceId: 'Sender device. Also blanked (0) under sealed sender.',
   messageType:
     'Outer envelope type only. prekey_bundle means this is the session-establishing X3DH/PQXDH message; later messages in the session carry ciphertext.',
+  deliveryClass:
+    'How the relay stores the envelope and whether it wakes the device. The SDK sets it from the kind of content: user-visible, background-sync, or ephemeral. It is in the clear, so the relay learns which of the three each envelope is.',
   timestamp:
     'Client timestamp set by the sender before encryption, used for retry matching and receipt correlation. Protocol-level.',
   serverTimestamp: 'Assigned by the relay on accept. Real relays assign this too.',
   clientMessageId:
     'Sender-generated send id, a UUID, so a retry after an unknown result is recognized as the same send rather than stored twice. Set before encryption, and the relay must be able to read it to deduplicate — including under sealed sender, where it is the one field that is not anonymous.',
-  id: 'Relay-assigned envelope id. The msg-N form is the in-memory relay counting sends; a production relay assigns its own id format.',
+  id: "Relay-assigned envelope id. The msg-N form is this site's relay counting sends; a production relay assigns its own id format.",
   recipientRegistrationId:
     'Recipient device registration id, sent so the relay/recipient can detect a device reinstall. Present only on prekey_bundle envelopes. Protocol-level.',
   contentHint:
@@ -114,21 +112,20 @@ const NOTES = {
  * Run the program and hand back the envelope it read.
  *
  * The one thing added to it is an `export`, appended rather than woven in, so
- * that what executes is the published text plus a line that cannot change what
- * the published text does. The file is written under `node_modules/.cache`
- * because the program imports the SDK by bare specifier, and Node resolves
- * those by walking up from the importing file — from anywhere outside this
- * tree the quickstart would not resolve at all.
+ * that what executes is the recorded text plus a line that cannot change what
+ * the recorded text does. The file is written to a temporary directory at the
+ * repository root for two reasons: Node resolves the SDK's bare specifier by
+ * walking up from the importing file, and Node strips the types of the site's
+ * `relay.ts` only outside `node_modules`.
  */
 async function run() {
-  const cache = fileURLToPath(new URL('../node_modules/.cache/', HERE));
-  await mkdir(cache, { recursive: true });
-  const dir = await mkdtemp(join(cache, 'carrier-capture-'));
+  const repo = fileURLToPath(new URL('../', HERE));
+  const dir = await mkdtemp(join(repo, '.carrier-capture-'));
   const file = join(dir, 'quickstart.mjs');
   try {
     await writeFile(file, `${PROGRAM}\n\nexport { envelope };\n`);
     const { envelope } = await import(pathToFileURL(file).href);
-    if (!envelope) throw new Error('the relay held no envelope — the quickstart did not send');
+    if (!envelope) throw new Error('the relay held no envelope — the program did not send');
     return envelope;
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -152,8 +149,7 @@ const ciphertext =
  * on this panel is the failure it exists to prevent.
  *
  * An optional field the sender left unset is dropped rather than printed. The
- * envelope object carries the key with an `undefined` value — `clientMessageId`
- * and `contentHint` both arrive that way from a plain `send()` — and JSON
+ * envelope object can carry the key with an `undefined` value, and JSON
  * serialization drops those from `relayRecord` regardless, so keeping them
  * would put a row reading "undefined" on a panel whose claim is that it shows
  * what the relay held. It did not hold them.

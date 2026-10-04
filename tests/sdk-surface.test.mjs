@@ -21,7 +21,7 @@ const PRE_RENAME = [
    * anything. When an adapter itself is renamed, its entry here must be
    * renamed with it — otherwise the list asserts against a name with no
    * export behind it rather than against the short form this gate is for. */
-  'InMemorySignalRelayServer',
+  'InMemorySignalStore',
   'SignalRemoteObjectStore',
   'ExpoSignalStore',
   'IndexedDbSignalStore',

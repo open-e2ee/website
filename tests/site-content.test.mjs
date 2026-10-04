@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import tokens from '@open-e2ee/design/tokens' with { type: 'json' };
 import capture from '../src/data/carrier-capture.json' with { type: 'json' };
 import { checks, dependencies, reporting, specifications } from '../src/lib/assurance.mjs';
@@ -131,7 +132,12 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
     declaration('footerGroups'),
   ]);
 
-  assert.match(product, /ten minutes · two clients · no account/);
+  /* The quickstart runs the hosted client against the Relay Sandbox, so a
+   * reader needs a project and an identity provider before the first message.
+   * "No account" was true of the in-memory relay and is false of the Sandbox.
+   * What stays true is the approved Sandbox claim: it needs no card. */
+  assert.match(product, /ten minutes · two clients · no credit card/);
+  assert.doesNotMatch(product, /<span class="oe-button-note">[^<]*no account/);
   /* UIR5.2 moved the footer's link data into src/lib/site-navigation.ts. The
      component renders the array; the promise is in the array. */
   assert.match(groups, /Ten-minute quickstart/);
@@ -152,7 +158,7 @@ test('makes the same ten-minute promise everywhere it makes one', async () => {
     () => null,
   );
   if (!dist) return skipUnbuilt('dist/index.html');
-  assert.equal((dist.match(/ten minutes · two clients · no account/g) ?? []).length, 0);
+  assert.equal((dist.match(/ten minutes · two clients · no credit card/g) ?? []).length, 0);
   assert.doesNotMatch(dist, /cta-sublabel/);
 });
 
@@ -296,33 +302,43 @@ function splitComment(line) {
   return { code: line.trimEnd(), comment: null };
 }
 
+/*
+ * The hero lines that the recording cannot hold, by name.
+ *
+ * The capture runs offline against this site's own relay, through
+ * `createSignalProtocolClient`. The hero shows the OpenE2EE Signal Protocol
+ * Relay through `createHostedSignalProtocolClient`, which needs a Relay
+ * project and an identity provider, so no offline recording can run it. These
+ * are the lines of that construction. Each is held instead by the type check
+ * below, which compiles every variant against the installed package.
+ */
+const HOSTED_LINES = [
+  `import { createHostedSignalProtocolClient } from "${capture.packageName}";`,
+  'const relayUrl = process.env.OPEN_E2EE_RELAY_URL!;',
+  'const alice = await createHostedSignalProtocolClient({',
+  '  hosted: { relayUrl, getIdentityAssertion: aliceSignIn },',
+  '  adapters: { storage: inMemoryStore() },',
+  'const bob = await createHostedSignalProtocolClient({',
+  '  hosted: { relayUrl, getIdentityAssertion: bobSignIn },',
+  `await alice.send(bob.userId, "${capture.plaintext}");`,
+];
+
 test('keeps the hero snippet traceable to the recording', () => {
   /* The carrier panel's rule applies to the snippet beside it: nothing on
    * this page is drawn, mocked up, or hand-typed. A hero example written to
    * read well is a claim about the API surface, and it is the one claim this
    * brand cannot afford to get wrong.
    *
-   * The rule is "every code line appears in the capture", with no licensed
-   * edit. It was weaker for a while: the panel showed one client called
-   * `signal` where the recording drives an `alice` and a `bob`, so this test
-   * had to undo that rename before it could look a line up, and a `.replace()`
-   * chain sitting in front of an assertion is a hole the next editor widens.
-   * Showing both devices closed it. An editor who pastes a "small fix" into
-   * the rendered string fails here, and there is nothing left to fix it
-   * through. */
+   * The rule is "every code line appears in the capture, or is one of the
+   * named hosted lines". An editor who pastes a "small fix" into the rendered
+   * string fails here, because the new line is in neither place. */
   /* Comments are the page's own voice and are cut off each line before it is
-   * looked up, then held to their own rule in the test below. Splitting the
-   * two is what keeps this assertion meaningful: the recording proves the API,
-   * and a comment makes no API claim, so requiring it to appear in a capture
-   * of a program that has almost no comments would only mean the panel could
-   * not have any.
+   * looked up, then held to their own rule in a test below. The recording
+   * proves the API, and a comment makes no API claim.
    *
-   * The split is by position rather than by line, which it was not before the
-   * panel put five of its six comments on the end of a line of code to save
-   * the reader five lines of scrolling. `splitComment` is what makes that
-   * cheap: the code half of every line is still matched whole, so a "small
-   * fix" pasted into the program fails here whether or not a comment follows
-   * it on the same line. */
+   * The split is by position rather than by line, because most comments sit
+   * on the end of a line of code. The code half of every line is still matched
+   * whole, so a "small fix" fails here whether or not a comment follows it. */
   const all = heroCode.split('\n').filter((line) => line.trim());
   const split = all.map(splitComment);
   assert.ok(split.some((line) => line.code));
@@ -331,60 +347,113 @@ test('keeps the hero snippet traceable to the recording', () => {
     'the panel lost the comments that explain it',
   );
 
+  const licensed = new Set(HOSTED_LINES);
   for (const { code } of split) {
     if (!code) continue;
     assert.ok(
-      capture.quickstartCode.includes(code),
-      `hero line is not in the recorded capture: ${code}`,
+      capture.quickstartCode.includes(code) || licensed.has(code),
+      `hero line is neither in the recorded capture nor a named hosted line: ${code}`,
     );
   }
 
-  /* Both devices are constructed, and they are the recording's own two. This
-   * is what the removed rename guard used to enforce in the negative, and it
-   * is the shape the founder asked the panel for: a reader sees a conversation
-   * rather than a client sending to a string. */
-  assert.match(heroCode, /const alice = await createSignalProtocolClient\(\{/);
-  assert.match(heroCode, /const bob = await createSignalProtocolClient\(\{/);
-  assert.match(heroCode, /identity: \{ userId: "alice" \},/);
-  assert.match(heroCode, /identity: \{ userId: "bob" \},/);
+  /* The license is spent only where the recording cannot reach. A named line
+   * that the capture also holds is a second, weaker proof of a line the
+   * strong one already covers, and every named line must still be in the
+   * hero, or the list keeps a license for a line that no longer ships. */
+  for (const line of HOSTED_LINES) {
+    assert.ok(!capture.quickstartCode.includes(line), `the capture holds a named hosted line: ${line}`);
+    assert.ok(all.some((shown) => splitComment(shown).code === line), `a named hosted line left the hero: ${line}`);
+  }
+
+  /* Both devices are constructed, and they are the recording's own two. A
+   * reader sees a conversation rather than a client sending to a string. */
+  assert.match(heroCode, /const alice = await createHostedSignalProtocolClient\(\{/);
+  assert.match(heroCode, /const bob = await createHostedSignalProtocolClient\(\{/);
+  assert.match(capture.quickstartCode, /const alice = await createSignalProtocolClient\(\{/);
+  assert.match(capture.quickstartCode, /const bob = await createSignalProtocolClient\(\{/);
 
   assert.equal(installCommand, `npm install ${capture.packageName}`);
 });
 
+test('compiles every hero variant against the installed SDK', async () => {
+  /* The named hosted lines above have no recording behind them, so this is
+   * their proof: every variant, as a reader copies it, type-checks against
+   * the installed package's own declarations. A wrong factory, a renamed
+   * option under `hosted`, a store that is not awaited, or a send to a
+   * property the client does not have fails here.
+   *
+   * The reader's own names are declared first, each with the type the SDK
+   * asks for, so the check holds the program to the SDK and not to a guess.
+   * The files live beside this repository's `node_modules` in memory only, so
+   * that the SDK resolves as it does for the reader. */
+  const ts = (await import('typescript')).default;
+  const root = fileURLToPath(new URL('../.hero-variants/', import.meta.url));
+  const reader = [
+    `declare const aliceSignIn: import("${capture.packageName}").GetIdentityAssertion;`,
+    `declare const bobSignIn: import("${capture.packageName}").GetIdentityAssertion;`,
+    `declare const directory: Parameters<typeof import("${capture.packageName}/local/store/node").nodeStore>[0]["directory"];`,
+    `declare const vault: Parameters<typeof import("${capture.packageName}/local/store/node").nodeStore>[0]["vault"];`,
+    'declare const process: { env: Record<string, string | undefined> };',
+  ].join('\n');
+  const files = new Map(
+    snippetVariants.map((variant) => [
+      `${root}${variant.storage}-${variant.relay}.ts`,
+      `${variant.code}\n${reader}\nexport {};\n`,
+    ]),
+  );
+  const options = {
+    strict: true,
+    noEmit: true,
+    skipLibCheck: true,
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    lib: ['lib.es2022.d.ts', 'lib.dom.d.ts'],
+    types: [],
+  };
+  const host = ts.createCompilerHost(options);
+  const getSourceFile = host.getSourceFile.bind(host);
+  host.getSourceFile = (name, version) =>
+    files.has(name) ? ts.createSourceFile(name, files.get(name), version) : getSourceFile(name, version);
+  const fileExists = host.fileExists.bind(host);
+  host.fileExists = (name) => files.has(name) || fileExists(name);
+  const readFileFromHost = host.readFile.bind(host);
+  host.readFile = (name) => files.get(name) ?? readFileFromHost(name);
+
+  const program = ts.createProgram([...files.keys()], options, host);
+  const diagnostics = ts
+    .getPreEmitDiagnostics(program)
+    .map((d) => `${d.file ? d.file.fileName.slice(root.length) : ''}: ${ts.flattenDiagnosticMessageText(d.messageText, '\n')}`);
+  assert.deepEqual(diagnostics, [], 'a hero variant does not compile against the installed SDK');
+  assert.equal(program.getRootFileNames().length, snippetVariants.length);
+});
+
 test('offers every adapter as a real, complete, copyable program', () => {
-  /* Ten variants, five stores by two relays, and the reason they are all
+  /* Five variants, five stores by one relay, and the reason they are all
    * pre-rendered is in HeroSnippet.astro: `script-src 'self'` leaves no room
    * for a runtime highlighter, so a combination that did not exist at build
    * time could never be colored. This test is what stops that fan-out
-   * becoming ten chances to ship a wrong import. */
+   * becoming five chances to ship a wrong import. */
   assert.equal(snippetVariants.length, storageOptions.length * relayOptions.length);
-  assert.equal(snippetVariants.length, 10);
+  assert.equal(snippetVariants.length, 5);
 
   for (const variant of snippetVariants) {
     const store = storageOptions.find((option) => option.id === variant.storage);
     const relay = relayOptions.find((option) => option.id === variant.relay);
 
     /* Each variant imports its client factory from the package root, its
-     * store, its relay where the relay is a subpath adapter, and whatever
-     * else an option needs to be constructible. A variant that dropped any
-     * of them would still look like a program. */
+     * store, and whatever else the store needs to be constructible. A variant
+     * that dropped any of them would still look like a program. */
     assert.ok(
       variant.code.startsWith(`import { ${relay.factory} } from "${capture.packageName}";`),
       `${variant.storage}/${variant.relay} does not open with its client factory`,
     );
-    if (relay.subpath) {
-      assert.ok(
-        variant.code.includes(`import { ${relay.symbol} } from "${capture.packageName}/${relay.subpath}";`),
-        `${variant.storage}/${variant.relay} does not import its relay`,
-      );
-    } else {
-      assert.doesNotMatch(
-        variant.code,
-        /remote\/relay/,
-        `${variant.storage}/${variant.relay} imports a relay subpath the hosted client does not take`,
-      );
-    }
-    for (const line of [...(store.imports ?? []), ...(relay.imports ?? [])]) {
+    assert.doesNotMatch(
+      variant.code,
+      /remote\/relay/,
+      `${variant.storage}/${variant.relay} imports a relay subpath the hosted client does not take`,
+    );
+    for (const line of store.imports ?? []) {
       assert.ok(
         variant.code.includes(line),
         `${variant.storage}/${variant.relay} is missing an import its adapter needs: ${line}`,
@@ -432,28 +501,27 @@ test('offers every adapter as a real, complete, copyable program', () => {
     }
   }
 
-  /* The default is the combination the capture was recorded with, so the
+  /* The default uses the store the capture was recorded with, so the
    * provenance test above is testing the snippet a reader sees first. */
   assert.equal(heroCode, buildSnippet(defaultVariant.storage, defaultVariant.relay));
   assert.equal(defaultVariant.storage, 'memory');
-  assert.equal(defaultVariant.relay, 'memory');
+  assert.equal(defaultVariant.relay, 'hosted');
 
-  assert.throws(() => buildSnippet('nope', 'memory'), /Unknown storage adapter/);
+  assert.throws(() => buildSnippet('nope', 'hosted'), /Unknown storage adapter/);
   assert.throws(() => buildSnippet('memory', 'nope'), /Unknown relay adapter/);
 });
 
-test('keeps the nine unselected variants out of the page and out of the tab order', async () => {
+test('keeps the unselected variants out of the page and out of the tab order', async () => {
   const [component, css] = await Promise.all([
     flat('../src/components/HeroSnippet.astro'),
     readFile(new URL('../src/styles/code.css', import.meta.url), 'utf8'),
   ]);
 
-  /* Ten programs are in the document and nine are `hidden`. The attribute is
-   * the mechanism, because it takes them out of the accessibility tree as
-   * well as off the page — and shiki puts `tabindex="0"` on every `<pre>` for
-   * scrollability, so nine unreachable-by-mouse scroll containers would
-   * otherwise sit in the tab order. Verified in a browser: 13 focusable
-   * candidates, 4 actually reachable. This is the rule that makes that true,
+  /* Every variant is in the document and all but one are `hidden`. The
+   * attribute is the mechanism, because it takes them out of the
+   * accessibility tree as well as off the page — and shiki puts
+   * `tabindex="0"` on every `<pre>` for scrollability, so the hidden scroll
+   * containers would otherwise sit in the tab order. This is the rule that makes that true,
    * and a later `display` declaration on `.code-variant` could quietly undo
    * it. */
   assert.match(component, /hidden=\{!variant\.isDefault\}/);
@@ -496,7 +564,7 @@ test('says the program changed, to a reader who cannot see it change', async () 
   const component = await flat('../src/components/HeroSnippet.astro');
 
   /* Focus stays on the combobox across a change, so the only thing announced
-   * is the option name. Without this the swap of ten blocks is silent. */
+   * is the option name. Without this the swap of blocks is silent. */
   assert.match(component, /role="status" data-variant-status/);
   assert.match(component, /variantStatus\.textContent = label/);
 
@@ -572,18 +640,16 @@ test('binds the names the reader brings, or says whose they are', async () => {
   /* The Signal Protocol Relay binds `relayUrl` itself and discloses the two
    * sign-in callbacks, which are the reader's identity-provider calls and
    * have nothing importable behind them. It imports nothing beyond its
-   * factory: the hosted client is a root export and takes no relay subpath. */
-  const hosted = relayOptions.find((option) => option.id === 'hosted');
+   * factory: the hosted client is a root export and takes no relay subpath.
+   * It is the only relay the panel offers, because SDK 9.0.0 exports no
+   * relay an application can construct. */
+  assert.deepEqual(relayOptions.map((option) => option.id), ['hosted']);
+  const [hosted] = relayOptions;
   assert.equal(hosted.factory, 'createHostedSignalProtocolClient');
-  assert.equal(hosted.hosted, true);
   assert.equal(hosted.subpath, undefined, 'the hosted client is reached through a relay subpath');
   assert.equal(hosted.imports, undefined, 'the hosted option imports something the SDK does not export');
   assert.match(hosted.setup, /^const relayUrl = process\.env\.OPEN_E2EE_RELAY_URL!;$/);
   assert.match(hosted.comment, /aliceSignIn and bobSignIn return each device's signed identity assertion/);
-  const memory = relayOptions.find((option) => option.id === 'memory');
-  assert.equal(memory.factory, 'createSignalProtocolClient');
-  assert.equal(memory.hosted, false);
-  assert.equal(memory.comment, undefined, 'the in-memory relay captions a name it binds');
 
   for (const variant of snippetVariants) {
     const lines = variant.code.split('\n');
@@ -631,27 +697,19 @@ test('binds the names the reader brings, or says whose they are', async () => {
       assert.ok(said !== -1 && said < used, 'the store is used before its object is explained');
     }
 
-    /* The same rule for the Signal Protocol Relay's sign-in callbacks: present
-     * exactly when the relay is the hosted one, and said above the first line
-     * that passes one. The in-memory variants name neither callback and take
-     * no `hosted` block; the hosted variants name no `identity` and pass no
-     * `relay`, because the hosted client derives the one and builds the other. */
-    const isHosted = variant.relay === 'hosted';
-    assert.equal(
-      /aliceSignIn and bobSignIn/.test(variant.code),
-      isHosted,
-      `${variant.storage}/${variant.relay} disclosure does not match its relay`,
-    );
-    assert.equal(/hosted: \{ relayUrl, getIdentityAssertion: aliceSignIn \}/.test(variant.code), isHosted);
-    assert.equal(/hosted: \{ relayUrl, getIdentityAssertion: bobSignIn \}/.test(variant.code), isHosted);
-    assert.equal(/identity: \{ userId: "alice" \}/.test(variant.code), !isHosted);
-    assert.equal(/, relay \}/.test(variant.code), !isHosted, `${variant.storage}/${variant.relay} passes a relay adapter the wrong way`);
-    assert.equal(/alice\.send\(bob\.userId, /.test(variant.code), isHosted);
-    if (isHosted) {
-      const said = lines.findIndex((line) => line.includes('aliceSignIn and bobSignIn'));
-      const used = lines.findIndex((line) => line.includes('getIdentityAssertion: aliceSignIn'));
-      assert.ok(said !== -1 && said < used, 'the sign-in callback is used before it is explained');
-    }
+    /* The same rule for the Signal Protocol Relay's sign-in callbacks: said
+     * above the first line that passes one. The variants name no `identity`
+     * and pass no `relay`, because the hosted client derives the one and
+     * builds the other. */
+    assert.match(variant.code, /aliceSignIn and bobSignIn/, `${variant.storage}/${variant.relay} lost the sign-in disclosure`);
+    assert.match(variant.code, /hosted: \{ relayUrl, getIdentityAssertion: aliceSignIn \}/);
+    assert.match(variant.code, /hosted: \{ relayUrl, getIdentityAssertion: bobSignIn \}/);
+    assert.doesNotMatch(variant.code, /identity: \{ userId:/);
+    assert.doesNotMatch(variant.code, /, relay \}/, `${variant.storage}/${variant.relay} passes a relay adapter the hosted client builds`);
+    assert.match(variant.code, /alice\.send\(bob\.userId, /);
+    const said = lines.findIndex((line) => line.includes('aliceSignIn and bobSignIn'));
+    const used = lines.findIndex((line) => line.includes('getIdentityAssertion: aliceSignIn'));
+    assert.ok(said !== -1 && said < used, 'the sign-in callback is used before it is explained');
   }
 
   /* Every comment in every variant is one the module declares, wherever on the
@@ -1362,11 +1420,11 @@ test('centers the hero at the phone’s width as well as the desktop’s', async
   for (const [name, source] of Object.entries(heroes)) {
     assert.doesNotMatch(source, /CTA_SUBLABEL|<span class="oe-button">/, `${name} sets the promise outside the button, or draws a button inside a link`);
     assert.doesNotMatch(source, /Development environment · no card|Free to start · no card/, `${name} carries the old words`);
-    const stacked = source.match(/<a class=(?:"oe-button oe-button-stacked"|\{PLANS_PRIMARY\}) href=[^>]*>([^<]+)<span class="oe-button-note">(\{startPromise\}|ten minutes · two clients · no account)<\/span><\/a>/);
+    const stacked = source.match(/<a class=(?:"oe-button oe-button-stacked"|\{PLANS_PRIMARY\}) href=[^>]*>([^<]+)<span class="oe-button-note">(\{startPromise\}|ten minutes · two clients · no credit card)<\/span><\/a>/);
     assert.ok(stacked, `${name} does not carry the promise as the note inside its stacked primary`);
     assert.match(stacked[1], /\{' '\}$/, `${name} runs the label into the note in the link\u2019s name; a flex column drops the space between them, so it is written`);
     assert.equal((source.match(/oe-button-note/g) ?? []).length, 1, `${name} carries the note more than once`);
-    assert.equal(stacked[2], name === 'product' ? 'ten minutes · two clients · no account' : '{startPromise}', `${name} carries the wrong note`);
+    assert.equal(stacked[2], name === 'product' ? 'ten minutes · two clients · no credit card' : '{startPromise}', `${name} carries the wrong note`);
   }
 
   /* The strip centers itself rather than being centered by its caller. It has
@@ -3474,36 +3532,35 @@ test('shows the receive side in the hero, not only the send', () => {
   assert.match(heroCode, /bob\.startRelaySubscription\(\);/);
 
   /* The receiving client is the one the sender addresses. Two devices in the
-   * panel make that checkable where one client and a `"bob"` string could not:
-   * a panel that subscribed on `alice` and sent to `"bob"` would print
-   * nothing, and would still have passed every assertion above. */
-  assert.match(heroCode, /await alice\.send\("bob", /);
+   * panel make that checkable where one client and a string could not: a
+   * panel that subscribed on `alice` and sent to Bob would print nothing, and
+   * would still have passed every assertion above. */
+  assert.match(heroCode, /await alice\.send\(bob\.userId, /);
 });
 
 test('declares what the example uses', async () => {
-  /* Four fresh readers sized up the shorter excerpt and every one of them
-   * found an identifier it used without declaring. `relay` was the expensive
-   * one: a bare shorthand property in `adapters`, which each of them correctly
-   * decoded as a server they would have to run — the largest line item in the
-   * estimate, left to inference. The capture already contained the answer, so
-   * the snippet now carries lines 1-5 verbatim and the specifiers disclose
-   * themselves: `/local/store/memory` and `/remote/relay/memory`. */
+  /* Four fresh readers sized up an earlier, shorter excerpt and every one of
+   * them found an identifier it used without declaring. The relay was the
+   * expensive one, because each of them decoded an undeclared relay as a
+   * server they would have to run. So the program names its backend: the
+   * client factory says it is the hosted one, and `relayUrl` is bound from
+   * the environment before the clients use it. */
   assert.match(
     heroCode,
     /import \{ inMemoryStore \} from "@open-e2ee\/signal-protocol-sdk\/local\/store\/memory";/,
   );
   assert.match(
     heroCode,
-    /import \{ inMemoryRelay \} from "@open-e2ee\/signal-protocol-sdk\/remote\/relay\/memory";/,
+    /import \{ createHostedSignalProtocolClient \} from "@open-e2ee\/signal-protocol-sdk";/,
   );
-  assert.match(heroCode, /const relay = inMemoryRelay\(\);/);
+  assert.match(heroCode, /const relayUrl = process\.env\.OPEN_E2EE_RELAY_URL!;/);
 
   /* No elision mark anywhere. This used to guard only the opening, because
    * the snippet was an excerpt and `…` was legitimate further down. Now the
-   * panel has a copy button and the marks are gone from all ten variants, so
+   * panel has a copy button and the marks are gone from every variant, so
    * the guard covers the whole program: a reader who pastes this gets
-   * something that runs, or the omission is disclosed in prose below rather
-   * than punched out of the code. */
+   * something that compiles, and each name the reader supplies is disclosed
+   * in a comment rather than punched out of the code. */
   assert.doesNotMatch(heroCode, /…|\.\.\./);
 
   /* The "Not in this example, and yours to supply" disclosure list that stood
@@ -3755,14 +3812,17 @@ test('does not overstate the one artifact that exists to not be overstated', asy
    * discounts the exhibit as mocked has discounted real ciphertext. What it
    * simulates is the infrastructure, and that is the part the sentence has to
    * keep admitting. */
-  assert.match(panel, /recorded by running the quickstart/);
-  assert.match(index, /against the in-memory relay/);
+  assert.match(panel, /recorded by running the SDK against an in-memory relay/);
+  assert.match(index, /against an in-memory relay in this page/);
   /* Absence is asserted against the rendered page, not the source: the comment
    * recording *why* the adjective went has to be free to quote it. */
   if (!dist) skipUnbuilt('dist/index.html');
   if (dist) {
     assert.doesNotMatch(dist, /real round trip/);
-    assert.match(dist, /recorded by running the quickstart/);
+    assert.match(dist, /recorded by running the SDK against an in-memory relay/);
+    /* The quickstart runs against the Relay Sandbox, and this recording does
+     * not, so the caption must not name it. */
+    assert.doesNotMatch(dist, /recorded by running the quickstart/);
   }
 
   /* And the runtime cell no longer denies a build step in the sentence that

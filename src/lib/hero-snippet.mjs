@@ -1,38 +1,22 @@
 /*
- * The quickstart, with the two adapters the reader gets to choose.
+ * The quickstart, with the device store the reader gets to choose.
  *
- * This file used to slice four segments out of the recorded capture and join
- * them with `…`. That was the right shape for an excerpt and the wrong one for
- * a panel with a copy button on it. An excerpt is read, and its elision marks
- * are honest about what was left out; but the moment a reader can copy the
- * thing, the omissions stop being disclosure and become a program that does
- * not run. Taking the marks out therefore had to take the gaps out with them.
+ * The panel has a copy button, so each variant is one complete program. Every
+ * line is true for every store that the selector offers.
  *
- * What is here is one complete program, short enough to read in a breath, in
- * which every line is true for every adapter the selector offers. That last
- * clause is the whole constraint, and it is stricter than it sounds — see
- * "Why the program is not simply the recording" below.
+ * Two checks hold the program to the SDK, and each one covers a different
+ * part of it:
  *
- * Provenance is the rule, and the rule is the strict one again: every code
- * line here is lifted verbatim from the recording. It was not, for a while.
- * The panel used to show one client called `signal`, which cost four renamed
- * lines and a reworded comment, and `tests/site-content.test.mjs` had to
- * license exactly that rename to keep checking anything. Showing both devices
- * gave the license back — `alice` and `bob` are the recording's own names, so
- * the test undoes nothing before it looks a line up.
+ * - `tests/site-content.test.mjs` type-checks every variant against the
+ *   installed package. A wrong factory, option name, or import fails there.
+ * - The same file looks up each code line in the recorded capture. The lines
+ *   that the capture cannot hold are the Signal Protocol Relay construction:
+ *   the recording runs offline against this site's own relay, and the hosted
+ *   client needs a Relay project and an identity provider. The test lists
+ *   those lines by name, so a new line that is in neither place fails.
  *
- * What that check means: every import line, the relay construction, both
- * identities, both adapters lines, the hook, the subscription and the message
- * string appear in the capture as written. Nothing about the API's shape was
- * invented for the page, and the build audit independently re-checks every
- * symbol and subpath against the installed package's own types.
- *
- * That is a statement about the default combination, which is the one the
- * capture was recorded with. The other nine swap an adapter, so a capture
- * cannot prove them: what holds those is the build audit checking every
- * `@open-e2ee/` specifier and named export against the installed types, and,
- * for the names an option needs that are nobody's export, the disclosure
- * written down beside the option itself.
+ * The build audit also checks every `@open-e2ee/` specifier and named import
+ * against the installed types.
  */
 
 import capture from '../data/carrier-capture.json' with { type: 'json' };
@@ -42,60 +26,25 @@ export const installCommand = `npm install ${capture.packageName}`;
 const PACKAGE = capture.packageName;
 
 /*
- * Why the program is not simply the recording.
+ * What the program shows.
  *
- * The recorded quickstart drives both sides of a conversation inside one
- * process: it calls `relay.registerDevice()` twice and reads the queue back
- * with `relay.getPendingMessages()`. Both belong to the in-memory relay, and
- * they exist so that a quickstart can show a round trip with no server running.
- * The Signal Protocol Relay is reached through a different client factory and
- * has neither.
+ * Two devices and one relay: construct, subscribe, send. It is the shape of
+ * the SDK's own `createHostedSignalProtocolClient` docstring, with both sides
+ * of the conversation on the page.
  *
- * So a snippet built by swapping the relay line of the recording would compile
- * in the reader's head and fail on their machine — the exact failure this site
- * spends its whole budget avoiding. The program below is the subset that is
- * true of any relay: construct, subscribe, send. It is the shape the SDK's own
- * `createHostedSignalProtocolClient` docstring uses.
+ * The two blocks are labeled as devices. With the in-memory store, both can
+ * run in one process. With a device store they cannot: `webSqliteStore()` with
+ * no arguments opens one fixed database name, and the Node, Expo, and React
+ * Native stores do the same kind of thing. So `BOB_COMMENT` says that each
+ * device runs its own half in an application.
  *
- * It shows both sides of the conversation, which an earlier draft argued
- * against — an application owns one client, so the panel showed one. That
- * reasoning answered the wrong question. A reader at the top of this page is
- * not yet writing their application; they are working out what an encrypted
- * conversation costs them, and one client sending to a string called "bob"
- * leaves the other half of that to imagination. Two clients and one relay is
- * the whole shape in nine lines.
- *
- * The two blocks are labeled as devices, and the label is doing real work
- * rather than decorating. With the in-memory store the listing runs exactly as
- * written, both devices in one process, which is what the recording did. With
- * the four device stores it does not: `webSqliteStore()` with no arguments
- * opens one fixed database name, and the Node, Expo and React Native
- * stores are the same kind of thing, so two clients in one runtime would reach
- * for one device's database. That is why `ALICE_COMMENT` says each device runs its own
- * half in an application. The lines stay true of any store — each is a real
- * call on a real device — and the disclosure travels with the paste.
- *
- * `syncToServer()` is not here, and its absence is deliberate. The recording
- * calls it twice, once per client, so an earlier draft of this snippet carried
- * it too — but `client.d.ts` says it is "called automatically by create() when
- * a relay is configured" and exists to retry a failed first sync. A hero
- * snippet that spends a line on a call the previous line already made is
- * teaching a cargo cult, and a reader who checks the types finds that out.
- * The fact it was carrying — that your public prekeys go to the relay — is a
- * claim about the model, and the page makes it in prose where it belongs.
- *
- * `await alice.send("bob", …)` needs a `bob` with published prekeys, and the
- * block above it is now what publishes them: `create()` syncs to the relay on
- * its own when one is configured, which is the same fact `syncToServer()` was
- * dropped for. So the send has its recipient in the listing rather than in the
- * reader's assumptions. The hosted variant sends to `bob.userId` instead of
- * to a string, because there the identity comes from the assertion the
+ * `syncToServer()` is not here. `create()` syncs when a relay is configured,
+ * and `syncToServer()` only retries a failed first sync. The send goes to
+ * `bob.userId`, because the identity comes from the assertion that the
  * reader's provider signs, and the program does not know it in advance.
  *
- * The round trip is still on the page in fuller form — /product carries the
- * whole 29-line recording, and the carrier panel below the fold shows the
- * ciphertext that running it produced. The hero shows the API; the capture
- * shows the result.
+ * The carrier panel below the fold shows the ciphertext that a recorded run
+ * produced. The hero shows the API; the capture shows the result.
  */
 /*
  * The device store, which is the runtime question.
@@ -166,49 +115,31 @@ export const storageOptions = [
 /*
  * The relay, which is the backend question.
  *
- * The two options differ in more than a factory name, which is why each
- * carries its whole shape. The in-memory relay is an adapter: it is imported
- * from a subpath, constructed, and passed as `adapters.relay` to
- * `createSignalProtocolClient`. The Signal Protocol Relay is not an adapter
- * the reader constructs. `createHostedSignalProtocolClient`, from the package
- * root, takes the Relay's connection URL and a callback that returns the
- * device's signed identity assertion, and builds the relay adapter and the
- * identity itself. So `factory` names the client factory, `setup` is the
- * construction that precedes the clients, and `hosted` switches the client
- * blocks between the two option shapes.
+ * The OpenE2EE Signal Protocol Relay is the one option. It is not an adapter
+ * that the reader constructs: `createHostedSignalProtocolClient`, from the
+ * package root, takes the Relay's connection URL and a callback that returns
+ * the device's signed identity assertion, and builds the relay adapter and
+ * the identity itself. `factory` names the client factory, and `setup` is the
+ * construction that comes before the clients.
  *
- * `process.env.OPEN_E2EE_RELAY_URL` is the spelling the Relay documentation
- * and the `oe` CLI write. An application reads its configuration however its
- * bundler exposes one, and picking a different spelling here to look more
- * idiomatic would be guessing at somebody else's build — the same mistake
- * naming a secret manager for the Node store's vault would be, one option up.
+ * A list of one keeps the selector and its measured toolbar layout. An
+ * application can also supply its own `SignalProtocolRelayServer`, but no
+ * importable relay stands behind that choice, so the panel does not offer it.
  *
- * `aliceSignIn` and `bobSignIn` are the reader's own functions. Each returns
- * a signed assertion from the application's identity provider, and nothing
- * importable produces one, so the option discloses whose they are in a
- * comment the same way the Node store discloses `directory` and `vault`.
+ * `process.env.OPEN_E2EE_RELAY_URL` is the spelling that the Relay
+ * documentation and the `oe` CLI write. An application reads its
+ * configuration however its bundler exposes it.
  *
- * scripts/audit-build.mjs checks module specifiers under `@open-e2ee/` only, so
- * it holds the two factories and the store subpaths to the installed types
- * and leaves the reader's names alone. That scope is right — they are not
- * ours to check — and it is why the disclosure is written down here instead.
+ * `aliceSignIn` and `bobSignIn` are the reader's own functions. Each returns a
+ * signed assertion from the application's identity provider. Nothing
+ * importable produces one, so the option says whose they are in a comment, the
+ * same way the Node store does for `directory` and `vault`.
  */
 export const relayOptions = [
-  {
-    id: 'memory',
-    label: 'In-memory relay',
-    subpath: 'remote/relay/memory',
-    symbol: 'inMemoryRelay',
-    factory: 'createSignalProtocolClient',
-    hosted: false,
-    setup: 'const relay = inMemoryRelay();',
-    experimental: false,
-  },
   {
     id: 'hosted',
     label: 'Signal Protocol Relay',
     factory: 'createHostedSignalProtocolClient',
-    hosted: true,
     setup: 'const relayUrl = process.env.OPEN_E2EE_RELAY_URL!;',
     experimental: false,
     comment:
@@ -222,8 +153,8 @@ export const relayOptions = [
  * These are the part of the panel that is not traceable to the capture, and
  * naming them here rather than inlining them in `buildSnippet` is what lets
  * `tests/site-content.test.mjs` hold the line between the two: the code half
- * of every line must be in the recording, and every comment on it must be one
- * of these. An editor who wants to say something new in the panel has to say
+ * of every line must be in the recording or in the test's named list of
+ * hosted lines, and every comment on it must be one of these. An editor who wants to say something new in the panel has to say
  * it here, where the test will notice.
  *
  * `PLAINTEXT_COMMENT` is the exception and is declared anyway. It comes from
@@ -282,34 +213,28 @@ export const relayOptions = [
    that fails: it describes the contents rather than the sender, which is true
    and does not help a reader who meets the word before the distinction.
 
-   True of both options, which is the standing constraint on a fixed comment:
-   devices post to `inMemoryRelay` in this process and to the Signal Protocol
-   Relay over the network, and collect from either the same way. On the hosted
-   option it rides on the line that names the Relay's URL, which is the one
-   line of that construction.
+   It rides on the line that names the Relay's URL, which is the one line of
+   the relay's construction.
 
-   Exported, alone among the six, because it is the one whose place in the
-   listing depends on the option chosen. A test that only knew the comment
-   existed could not tell the fallback below from the comment being dropped. */
+   Exported, alone among the six, because its place in the listing depends on
+   the length of that construction. A test that only knew the comment existed
+   could not tell the fallback below from the comment being dropped. */
 export const relayComment = '// Devices post and collect envelopes from the relay.';
 /*
  * The ones that ride on a line of code, and the width that shapes them.
  *
  * Every comment here but the send's is a trailing one, which is worth six
- * lines of panel — the program is 22 lines and was 28. The cost is that a
+ * lines of panel. The cost is that a
  * trailing comment is spent from a width budget rather than given a line, and
  * the budget is measurable: 108 characters at 1280, 97 at 1024. Each of these
  * is written to the room left after the longest code it can land on, which is
- * Node's 70-character adapters line.
+ * Node's 64-character adapters line.
  *
- * Nothing overruns 1280. Below it two do, and both are known: Node's
- * adapters line is 103 characters with its comment and scrolls below about
- * 1165px, where a line between the two budgets reaches 103 columns, and the
- * Signal Protocol Relay's two long lines — the URL line with the relay
- * comment on it, and the sign-in disclosure — are 104 each,
- * which the 97-column budget at 1024 does not hold either. The two budgets
- * are measured in a browser, not estimated from a font size; the line
- * lengths are counted.
+ * Nothing overruns 1280. Below it three lines do, and all are known: the URL
+ * line with the relay comment on it and the sign-in disclosure are 104
+ * characters each, and Bob's construction line is 99, so the 97-column budget
+ * at 1024 holds none of them. The two budgets are measured in a browser, not
+ * estimated from a font size; the line lengths are counted.
  *
  * So they say one thing each, and the thing they say is the one the code does
  * not. `adapters:` shows that an adapter is a value you pass, so its comment
@@ -343,8 +268,8 @@ export const snippetComments = [
     .map((comment) => `// ${comment}`),
 ];
 
-/** The combination the capture was recorded with, and the one shown first. */
-export const defaultVariant = { storage: 'memory', relay: 'memory' };
+/** The combination shown first. The in-memory store is the one the capture also uses. */
+export const defaultVariant = { storage: 'memory', relay: 'hosted' };
 
 const specifier = (subpath) => `"${PACKAGE}/${subpath}"`;
 
@@ -385,11 +310,11 @@ const withTrailingComment = (code, comment) => {
 /*
  * One program, assembled from the two choices.
  *
- * The body is fixed. What moves is the import an adapter needs and the
- * expression that constructs it — the conversation itself, from the hook to
- * the send, is the same nine lines for all ten — which is exactly the point
- * the selector exists to make: an adapter is a value your application passes,
- * not a fork in your application's code.
+ * The body is fixed. What moves is the import a store needs and the
+ * expression that constructs it. The conversation itself, from the hook to
+ * the send, is the same for every variant, which is the point the selector
+ * makes: an adapter is a value your application passes, not a fork in your
+ * application's code.
  */
 export const buildSnippet = (storageId, relayId) => {
   const store = storageOptions.find((option) => option.id === storageId);
@@ -397,34 +322,15 @@ export const buildSnippet = (storageId, relayId) => {
   if (!store) throw new Error(`Unknown storage adapter: ${storageId}`);
   if (!relay) throw new Error(`Unknown relay adapter: ${relayId}`);
 
-  /* The two option shapes, side by side. The in-memory relay is an adapter the
-     client is handed, so each block names its identity and passes `relay`.
-     The Signal Protocol Relay's client takes the URL and the sign-in callback
-     under `hosted` and derives the identity from the assertion, so there is
-     no `identity` line and no `relay` key. */
-  const aliceIdentity = relay.hosted
-    ? '  hosted: { relayUrl, getIdentityAssertion: aliceSignIn },'
-    : '  identity: { userId: "alice" },';
-  const bobIdentity = relay.hosted
-    ? '  hosted: { relayUrl, getIdentityAssertion: bobSignIn },'
-    : '  identity: { userId: "bob" },';
-  const adapters = relay.hosted
-    ? `  adapters: { storage: ${store.expr} },`
-    : `  adapters: { storage: ${store.expr}, relay },`;
-  const recipient = relay.hosted ? 'bob.userId' : '"bob"';
+  const adapters = `  adapters: { storage: ${store.expr} },`;
 
   return [
     `import { ${relay.factory} } from "${PACKAGE}";`,
     `import { ${store.symbol} } from ${specifier(store.subpath)};`,
-    /* The Signal Protocol Relay has no subpath: its factory is the root import
-       on the first line. */
-    ...(relay.subpath ? [`import { ${relay.symbol} } from ${specifier(relay.subpath)};`] : []),
-    /* An adapter may need names from beyond its own subpath, and they belong
-       in the import block with the rest, not in a comment underneath. Written
-       for either side because nothing about this is particular to relays. No
-       option needs it today. */
+    /* A store may need names from beyond its own subpath, and they belong in
+       the import block with the rest, not in a comment underneath. No option
+       needs it today. */
     ...(store.imports ?? []),
-    ...(relay.imports ?? []),
     '',
     /* The relay's comment rides on the last line of its construction, so that
        a construction of more than one line never has the comment describing
@@ -434,31 +340,28 @@ export const buildSnippet = (storageId, relayId) => {
        are values the two clients below are handed. */
     ...(store.setup ? [store.setup] : []),
     '',
-    /* An option's own disclosure sits directly above the first line that uses
-       the names it explains, which for the Signal Protocol Relay is Alice's
-       `hosted` line. */
-    ...(relay.comment ? [`// ${relay.comment}`] : []),
+    /* The relay's own disclosure sits directly above the first line that uses
+       the names it explains, which is Alice's `hosted` line. */
+    `// ${relay.comment}`,
     `const alice = await ${relay.factory}({ ${ALICE_COMMENT}`,
-    aliceIdentity,
+    '  hosted: { relayUrl, getIdentityAssertion: aliceSignIn },',
     ...(store.comment ? [`  // ${store.comment}`] : []),
     `${adapters} ${ADAPTERS_COMMENT}`,
     '});',
-    /* Bob's block is the same four lines with a different identity, and it
-       deliberately carries neither the adapters note nor the store's own
-       disclosure. Both are said one block up, about the same two values; a
-       reader who needs the Node note has already read it above the
-       line that first uses it, which is the order the test checks.
+    /* Bob's block is the same four lines with a different sign-in, and it
+       carries neither the adapters note nor the store's own disclosure. Both
+       are said one block up, about the same two values.
 
-       No blank line between the two, either. They are one beat — two devices
-       — and a gap made them read as two unrelated setups. */
+       No blank line between the two, either. They are one beat, two devices,
+       and a gap made them read as two unrelated setups. */
     `const bob = await ${relay.factory}({ ${BOB_COMMENT}`,
-    bobIdentity,
+    '  hosted: { relayUrl, getIdentityAssertion: bobSignIn },',
     adapters,
     '});',
     '',
     /* Receive first, then send. That is the order the SDK's own docstring uses
        (`client.d.ts`, the ServicesProvider example), and it is the order that
-       is actually correct: `startRelaySubscription` is called automatically by
+       is correct: `startRelaySubscription` is called automatically by
        `create()` only when a hook was already configured, so a hook registered
        afterwards needs the subscription started by hand. Sending last also
        puts the payoff on the last line. */
@@ -467,12 +370,11 @@ export const buildSnippet = (storageId, relayId) => {
     '});',
     'bob.startRelaySubscription();',
     '',
-    /* The send keeps its comment on a line of its own. The call is 74
-       characters with the message in it, and the claim beside it is the one
-       that has to survive at full length: what is encrypted, where, and when
-       relative to the relay. */
+    /* The send keeps its comment on a line of its own. The claim beside it is
+       the one that has to survive at full length: what is encrypted, where,
+       and when relative to the relay. */
     SEND_COMMENT,
-    `await alice.send(${recipient}, "${capture.plaintext}");`,
+    `await alice.send(bob.userId, "${capture.plaintext}");`,
   ].join('\n');
 };
 

@@ -3,7 +3,7 @@ title: Signal Protocol in React Native and Expo in 2026
 description: The official JavaScript library is archived. Its replacement is a Node native add-on, and the community port has an open trust-check bug.
 image: /social/blog/signal-protocol-react-native-expo-2026.png
 publishedAt: 2026-07-25
-updatedAt: 2026-09-28
+updatedAt: 2026-10-03
 author: OpenE2EE
 tags:
   - React Native
@@ -98,7 +98,7 @@ On first run, the client generates the identity keys and publishes the public ma
 
 The defaults are `postQuantum: 'required'` and `braid: 'required'`. PQXDH uses ML-KEM-1024 for session establishment. The braid setting requires the post-quantum ratchet. There is no public `postQuantum: 'disabled'` mode.
 
-If you have no Relay project yet, use `createSignalProtocolClient()` from the package root with `identity: { userId }` and `inMemoryRelay()` from `@open-e2ee/signal-protocol-sdk/remote/relay/memory` as the `relay` adapter. The same conversation then runs entirely in memory, against real protocol and real cryptography.
+Every Relay project opens a Sandbox environment, which needs no card. Point `relayUrl` at it while you build.
 
 ## Where the keys live
 
