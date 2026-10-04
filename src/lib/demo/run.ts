@@ -497,18 +497,17 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
    * relay, and the page relay then delivers — and the receiver decrypts —
    * before that call returns. A bracket around the whole call therefore prices
    * the trip, not the sealing. The device's own share ends at the moment the
-   * envelope reaches transport, so `boot()` wraps the relay's envelope-
-   * accepting methods to drop this mark on the way in: armed just before the
+   * envelope reaches transport, so `boot()` wraps the relay's `send` to drop
+   * this mark on the way in: armed just before the
    * send, disarmed by the first handoff, and the sealing span is start → that
    * mark. Calls the relay takes outside a send find this null and mark
    * nothing.
    */
   let handoffMark: string | null = null;
 
-  /* Wrap the relay methods a send can hand its envelope to. Every one the
-     relay has, because which one the SDK picks is the sealed-sender setting's
-     business, not ours. The multi-recipient member is optional in the relay
-     contract, and the page relay does not carry it. */
+  /* Wrap the relay method a send hands its envelope to. The page relay has
+     only `send` for that: the multi-recipient member is optional in the relay
+     contract, and this relay leaves it out, so the SDK has no other path. */
   function instrumentRelay(target: PageRelay): void {
     const wrap = <A extends unknown[], R>(fn: (...args: A) => R): ((...args: A) => R) => {
       return (...args: A) => {
@@ -520,9 +519,6 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       };
     };
     target.send = wrap(target.send.bind(target));
-    if (target.sendMultiRecipientUnidentified) {
-      target.sendMultiRecipientUnidentified = wrap(target.sendMultiRecipientUnidentified.bind(target));
-    }
   }
 
   async function makeDevice(actor: DeviceActor): Promise<Device> {
