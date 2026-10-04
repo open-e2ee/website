@@ -2,8 +2,8 @@
  * The driver is what the homepage console and the failure scenarios both run.
  * It composes the installed package's public API and nothing else — no
  * fork, no shim, no re-typed constant (invariant 1) — so these tests do a real
- * PQXDH handshake and a real Double Ratchet round trip against real
- * `inMemoryStore()` and `inMemoryRelay()` adapters. Nothing here is stubbed:
+ * PQXDH handshake and a real Double Ratchet round trip against the real
+ * `inMemoryStore()` adapter and this site's `pageRelay()`. Nothing here is stubbed:
  * the whole value of the demo is that the cryptography is the shipped
  * cryptography, and a test that mocked it would be checking a story.
  *
@@ -19,8 +19,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
+import { pageRelay } from '../src/lib/demo/relay.ts';
 
 const PROBE = 'Dinner at 7. I got us the table by the window.';
 
@@ -45,9 +45,9 @@ const declaredEnvelopeFields = await (async () => {
 })();
 
 /**
- * The real in-memory relay, made to behave like one that has to cross something.
+ * The page relay, made to behave like one that has to cross something.
  *
- * `inMemoryRelay()` hands each envelope to its subscriber inside `send()` — a
+ * `pageRelay()` hands each envelope to its subscriber inside `send()` — a
  * property no relay over a BroadcastChannel, a socket or a network has. This
  * keeps the real relay, real storage and real prekey consumption included, and
  * moves only the moment of delivery to after the send has resolved. That one
@@ -61,7 +61,7 @@ const declaredEnvelopeFields = await (async () => {
  * a function`.
  */
 function relayThatDeliversLate({ deliverAfterMs = 50, delivery = 'late' } = {}) {
-  const relay = inMemoryRelay();
+  const relay = pageRelay();
   const subscribe = relay.subscribe.bind(relay);
   const subscribers = new Map();
   relay.demoDelivery = delivery;
@@ -112,7 +112,7 @@ async function withSession(run) {
   }
 }
 
-test('boots two clients over the in-memory adapters and times the handshake', async () => {
+test('boots two clients over the page adapters and times the handshake', async () => {
   await withSession((session) => {
     assert.equal(session.sender, 'alice');
     assert.equal(session.recipient, 'bob');
@@ -366,7 +366,7 @@ test('says so when the recipient has no device, instead of a TypeError', async (
 /*
  * The three below are about a relay that does not deliver inside `send()`.
  *
- * Everything above this line runs on `inMemoryRelay()`, which does — and a
+ * Everything above this line runs on `pageRelay()`, which does — and a
  * driver can depend on that without anyone noticing, because every test passes
  * and every scenario works. It did. The envelope wait was closed the instant
  * `send()` resolved, which is correct only for a relay that has already

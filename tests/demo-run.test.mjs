@@ -1,8 +1,8 @@
 /*
  * `run.ts` is the two-device demo's engine: two clients, one relay, one
  * recording. Like `driver.ts` it composes the installed package and nothing
- * else — real PQXDH, real Double Ratchet, real `inMemoryStore()` and
- * `inMemoryRelay()` — so nothing here is stubbed. A test that mocked the
+ * else — real PQXDH, real Double Ratchet, the real `inMemoryStore()` and
+ * this site's `pageRelay()` — so nothing here is stubbed. A test that mocked the
  * cryptography would be checking a story, and the whole value of the demo is
  * that it is not one.
  *
@@ -25,8 +25,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import { createPlayback } from '../src/lib/demo/playback.ts';
+import { pageRelay } from '../src/lib/demo/relay.ts';
 import { startDemoRun } from '../src/lib/demo/run.ts';
 import { STEPS } from '../src/lib/demo/trace.ts';
 
@@ -60,9 +60,9 @@ const declaredSelectionFields = await declaredFields(
 );
 
 /**
- * The real in-memory relay, made to behave like one that has to cross something.
+ * The page relay, made to behave like one that has to cross something.
  *
- * `inMemoryRelay()` hands each envelope to its subscriber inside `send()`, a
+ * `pageRelay()` hands each envelope to its subscriber inside `send()`, a
  * property no relay over a socket or a network has. Everything real stays —
  * real storage, real prekey consumption — and only the moment of delivery moves
  * to after the send resolves. That one difference is the whole of what the
@@ -75,7 +75,7 @@ const declaredSelectionFields = await declaredFields(
  * instead fails much later, inside `stop()`.
  */
 function relayThatDeliversLate({ deliverAfterMs = 50 } = {}) {
-  const relay = inMemoryRelay();
+  const relay = pageRelay();
   const subscribe = relay.subscribe.bind(relay);
   relay.subscribe = (userId, deviceId, onEnvelope, options) =>
     subscribe(

@@ -56,10 +56,10 @@ import type {
 } from '@open-e2ee/signal-protocol-sdk/client/config';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import type { InMemorySignalProtocolStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
-import { inMemoryRelay } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
-import type { InMemorySignalProtocolRelayServer } from '@open-e2ee/signal-protocol-sdk/remote/relay/memory';
 import { ciphertextBytes } from './ciphertext.ts';
 import { withDeadline } from './deadline.ts';
+import { pageRelay } from './relay.ts';
+import type { PageRelay } from './relay.ts';
 import { createTrace } from './trace.ts';
 import type { Actor, BraidReport, Trace } from './trace.ts';
 
@@ -89,18 +89,18 @@ export interface DemoRunOptions {
    */
   protocol?: SignalProtocolConfig;
   /**
-   * How to build the relay, instead of a bare `inMemoryRelay()`.
+   * How to build the relay, instead of a bare `pageRelay()`.
    *
    * A test boundary rather than a knob, for the same reason `driver.ts` has
-   * one: in memory the relay delivers inside `send()`, so a test that only
-   * ever sees `inMemoryRelay()` cannot reach the case where delivery is late —
+   * one: the page relay delivers inside `send()`, so a test that only
+   * ever sees `pageRelay()` cannot reach the case where delivery is late —
    * which is the case that matters and the case that has shipped broken here
    * before.
    *
    * A factory rather than a relay because `reset()` needs a new one; see
    * `raiseRelay()`.
    */
-  relay?: () => InMemorySignalProtocolRelayServer;
+  relay?: () => PageRelay;
   /** How long any one wait on the relay may take before it is called a failure. */
   deadlineMs?: number;
 }
@@ -133,7 +133,7 @@ export interface DemoRun {
   /** The recording. Stable across `reset()`, so subscribers survive one. */
   readonly trace: Trace;
   /** The relay this run's devices register with. Replaced by a reset. */
-  readonly relay: InMemorySignalProtocolRelayServer;
+  readonly relay: PageRelay;
   /** Account name for an actor, for anything that has to print one. */
   userId(actor: DeviceActor): string;
   /**
@@ -388,7 +388,7 @@ function recordGeneration(
  * reporting as a zero it never observed.
  */
 async function countPublishedKeys(
-  relay: InMemorySignalProtocolRelayServer,
+  relay: PageRelay,
   userId: string,
   deviceId: number,
 ): Promise<number | null> {
@@ -466,14 +466,14 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     b: options.b ?? 'bob',
   };
   const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
-  const makeRelay = options.relay ?? inMemoryRelay;
+  const makeRelay = options.relay ?? pageRelay;
   const protocol = options.protocol;
   const trace = createTrace();
 
   /* Mutable because `reset()` replaces them. What survives a reset is the trace
      and the object the page is holding; the devices and the relay do not, and
      `raiseRelay()` says why. */
-  let relay: InMemorySignalProtocolRelayServer;
+  let relay: PageRelay;
   /* Partial because devices exist one activation at a time: a run comes up
      with neither, and each `activate()` adds its own. */
   let devices: Partial<Record<DeviceActor, Device>> = {};
@@ -494,7 +494,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
    * send is in flight.
    *
    * `client.send()` is one call that seals the message and hands it to the
-   * relay, and in memory the relay then delivers — and the receiver decrypts —
+   * relay, and the page relay then delivers — and the receiver decrypts —
    * before that call returns. A bracket around the whole call therefore prices
    * the trip, not the sealing. The device's own share ends at the moment the
    * envelope reaches transport, so `boot()` wraps the relay's envelope-
@@ -505,10 +505,11 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
    */
   let handoffMark: string | null = null;
 
-  /* Wrap the relay methods a send can hand its envelope to. Both, because
-     which one the SDK picks is the sealed-sender setting's business, not
-     ours. */
-  function instrumentRelay(target: InMemorySignalProtocolRelayServer): void {
+  /* Wrap the relay methods a send can hand its envelope to. Every one the
+     relay has, because which one the SDK picks is the sealed-sender setting's
+     business, not ours. The multi-recipient member is optional in the relay
+     contract, and the page relay does not carry it. */
+  function instrumentRelay(target: PageRelay): void {
     const wrap = <A extends unknown[], R>(fn: (...args: A) => R): ((...args: A) => R) => {
       return (...args: A) => {
         if (handoffMark !== null) {
@@ -519,7 +520,9 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       };
     };
     target.send = wrap(target.send.bind(target));
-    target.sendMultiRecipientUnidentified = wrap(target.sendMultiRecipientUnidentified.bind(target));
+    if (target.sendMultiRecipientUnidentified) {
+      target.sendMultiRecipientUnidentified = wrap(target.sendMultiRecipientUnidentified.bind(target));
+    }
   }
 
   async function makeDevice(actor: DeviceActor): Promise<Device> {
@@ -675,8 +678,8 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     /*
      * Read the relay by subscribing to it, not by draining its mailbox.
      *
-     * `getPendingMessages` is the published way to inspect the in-memory relay
-     * but it is a race here: each client is subscribed for the whole run and
+     * `getPendingMessages` is the page relay's view of its mailbox, but it is
+     * a race here: each client is subscribed for the whole run and
      * deletes an envelope once it has decrypted it, so a poll after the send
      * resolves is a poll against that delete. Subscribing gets the stored
      * envelope at the moment the relay accepts it, which is deterministic and
@@ -929,7 +932,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      *
      * Both halves of that matter and both were learned from a defect.
      * Installing after the send loses an envelope to a relay that delivers
-     * inside `send()`, which `inMemoryRelay()` does. Clearing at `send()`'s
+     * inside `send()`, which `pageRelay()` does. Clearing at `send()`'s
      * return loses it to a relay that does not — the envelope arrives to a
      * closed slot and the wait below never resolves. Holding across the wait
      * covers both, and the deadline covers what is left: an envelope that is
@@ -1025,7 +1028,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
        *before* `encrypted` above: the relay accepts the envelope inside the
        send call, so the acknowledgment we timed to is necessarily later. The
        list stays in protocol order and the timestamps stay real, which means
-       the two disagree here. That is a true fact about an in-memory relay and
+       the two disagree here. That is a true fact about a relay in the page and
        `trace.ts` says why it is recorded rather than smoothed. */
     trace.append({
       step: 'stored-at-relay',
