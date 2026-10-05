@@ -642,7 +642,7 @@ test('binds the names the reader brings, or says whose they are', async () => {
    * reader's identity-provider calls. Nothing importable stands behind any of
    * the three. It imports nothing beyond its
    * factory: the hosted client is a root export and takes no relay subpath.
-   * It is the only relay the panel offers, because SDK 9.0.0 exports no
+   * It is the only relay the panel offers, because the SDK exports no
    * relay an application can construct. */
   assert.deepEqual(relayOptions.map((option) => option.id), ['hosted']);
   const [hosted] = relayOptions;
