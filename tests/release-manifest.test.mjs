@@ -128,7 +128,7 @@ test("keeps the attestation workflow pinned and fail-closed", async () => {
   );
   for (const required of [
     "branches: [main]",
-    "public/releases/open-e2ee-relay-public-beta-v1.json",
+    "public/releases/open-e2ee-relay-v1.json",
     "id-token: write",
     "attestations: write",
     "npm run build",
@@ -153,7 +153,7 @@ function fixture() {
   const digest = "b".repeat(64);
   return {
     schemaVersion: 2,
-    releaseId: "open-e2ee-relay-public-beta-v1",
+    releaseId: "open-e2ee-relay-v1",
     createdAt: "2026-08-27T00:00:00.000Z",
     sources: {
       pullRequests: Object.fromEntries(
