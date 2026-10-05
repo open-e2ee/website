@@ -849,3 +849,28 @@ test('calls the Relay a beta on no current legal page', async () => {
     assert.ok(!hit, `${source.replace(/^.*\/src\//, 'src/')} says "${hit?.[0]}"`);
   }
 });
+
+test('lets a published version change the Relay terms and limits for every customer', async () => {
+  for (const path of [
+    '../src/components/SignalProtocolRelayTerms20261005.astro',
+    `../src/pages${relayTermsPath}.astro`,
+  ]) {
+    const terms = await flat(path);
+    assert.match(
+      terms,
+      /We may change these Terms and the Relay Service Limits at any time by publishing a new version\. A new version applies to every Customer from its effective date/,
+      path,
+    );
+    assert.match(terms, /Your continued use of the Relay after that date is your acceptance/, path);
+    assert.match(terms, /by giving at least 30 days’ notice before the change applies/, path);
+    assert.doesNotMatch(terms, /remains under its recorded version/, path);
+  }
+  for (const path of [
+    '../src/pages/legal/relay-service-limits.astro',
+    `../src/pages${relayServiceLimitsPath}.astro`,
+  ]) {
+    const limits = await flat(path);
+    assert.match(limits, /limits at any time by publishing a new version of this page/, path);
+    assert.doesNotMatch(limits, /reasonable notice when practicable/, path);
+  }
+});
