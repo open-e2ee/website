@@ -31,17 +31,20 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * made moot; every other clause is unchanged. The relay-2026-09-29 version
  * calls each project's test environment the Sandbox environment, the name
  * that the console, the CLI, and the Relay use, in place of its earlier name,
- * Development. The console records the URL below against each activation, and
- * its RELAY_TERMS_URL and RELAY_TERMS_VERSION settings must move with these
- * constants once the dated page is live.
+ * Development. The relay-2026-10-05 version states that Relay is generally
+ * available in place of calling it a pre-release beta, and names the
+ * incorporated limits document the Service Limits; its support, service-level,
+ * and change-notice terms are unchanged. The console records the URL below
+ * against each activation, and its RELAY_TERMS_URL and RELAY_TERMS_VERSION
+ * settings must move with these constants once the dated page is live.
  */
-export const relayTermsVersion = 'relay-2026-09-29';
-export const relayTermsEffectiveDate = 'September 29, 2026';
-export const relayTermsPath = '/legal/relay-terms/2026-09-29';
+export const relayTermsVersion = 'relay-2026-10-05';
+export const relayTermsEffectiveDate = 'October 5, 2026';
+export const relayTermsPath = '/legal/relay-terms/2026-10-05';
 export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
 
 /*
- * The Relay Retention Statement and the Beta Service Limits are incorporated
+ * The Relay Retention Statement and the Service Limits are incorporated
  * by the Relay terms, so a customer who filed the terms must be able to file
  * the policies they pointed at. Each version lives at a dated page beside the
  * live one, and the constants below name the version the live page carries.
@@ -54,14 +57,19 @@ export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
  * a period that outlives a deletion is what this document exists to publish.
  * Both documents took a 2026-09-29 version that calls each project's test
  * environment the Sandbox environment in place of its earlier name, Development.
+ * The limits document was the Beta Service Limits through its 2026-09-29
+ * version, and those versions stay at /legal/relay-beta-limits/<date>. Its
+ * 2026-10-05 version states that Relay is generally available, takes the name
+ * Service Limits and the /legal/relay-service-limits address, and changes no
+ * limit; public/_redirects sends the old live address to the new one.
  */
 export const relayRetentionVersion = '2026-09-29';
 export const relayRetentionEffectiveDate = 'September 29, 2026';
 export const relayRetentionPath = `/legal/relay-retention/${relayRetentionVersion}`;
 
-export const relayBetaLimitsVersion = '2026-09-29';
-export const relayBetaLimitsEffectiveDate = 'September 29, 2026';
-export const relayBetaLimitsPath = `/legal/relay-beta-limits/${relayBetaLimitsVersion}`;
+export const relayServiceLimitsVersion = '2026-10-05';
+export const relayServiceLimitsEffectiveDate = 'October 5, 2026';
+export const relayServiceLimitsPath = `/legal/relay-service-limits/${relayServiceLimitsVersion}`;
 
 /*
  * The privacy notice is versioned by date. Two versions were published on

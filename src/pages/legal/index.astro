@@ -7,10 +7,10 @@ import {
   privacyEffectiveDate,
   privacyPath,
   privacyVersion,
-  relayBetaLimitsPath,
-  relayBetaLimitsVersion,
   relayRetentionPath,
   relayRetentionVersion,
+  relayServiceLimitsPath,
+  relayServiceLimitsVersion,
   relayTermsEffectiveDate,
   relayTermsPath,
   relayTermsVersion,
@@ -50,7 +50,7 @@ import {
           <p class={LABEL}>Relay service agreement</p>
           <h3><a href="/legal/relay-terms">OpenE2EE Signal Protocol Relay Service Terms</a></h3>
           <p>
-            The project-scoped Relay service, capacity, billing, data, suspension, and beta-support
+            The project-scoped Relay service, capacity, billing, data, suspension, and support
             contract.
           </p>
           <p class:list={[LABEL, 'mt-3']}>Effective {relayTermsEffectiveDate} · {relayTermsVersion}</p>
@@ -81,7 +81,7 @@ import {
             Service safety and enforcement, plus the current{' '}
             <a href="/legal/subprocessors">subprocessor list</a>,{' '}
             <a href="/legal/relay-retention">retention statement</a>, and{' '}
-            <a href="/legal/relay-beta-limits">beta limits</a>.
+            <a href="/legal/relay-service-limits">service limits</a>.
           </p>
         </li>
         <li>
@@ -90,12 +90,13 @@ import {
           <p>
             The permanent copy the console records when an organization accepts this service
             agreement before its first Relay project. The superseded versions,{' '}
+            <a href="/legal/relay-terms/2026-09-29">relay-2026-09-29</a>,{' '}
             <a href="/legal/relay-terms/2026-09-22">relay-2026-09-22</a>,{' '}
             <a href="/legal/relay-terms/2026-09-10">relay-2026-09-10</a>, and{' '}
             <a href="/legal/relay-terms/2026-08-26">relay-2026-08-26</a>, keep their own addresses,
             and so do the policies the terms incorporate: the{' '}
             <a href={relayRetentionPath}>retention statement {relayRetentionVersion}</a> and the{' '}
-            <a href={relayBetaLimitsPath}>beta limits {relayBetaLimitsVersion}</a>.
+            <a href={relayServiceLimitsPath}>service limits {relayServiceLimitsVersion}</a>.
           </p>
         </li>
         <li>

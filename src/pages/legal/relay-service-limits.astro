@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
-  relayBetaLimitsEffectiveDate,
-  relayBetaLimitsPath,
-  relayBetaLimitsVersion,
+  relayServiceLimitsEffectiveDate,
+  relayServiceLimitsPath,
+  relayServiceLimitsVersion,
 } from '../../lib/legal.mjs';
 import {
   ARTICLE_COLUMN,
@@ -17,22 +17,22 @@ import {
 ---
 
 <BaseLayout
-  title="Relay Beta Limits"
-  description="Current launch limits and service commitments for the OpenE2EE Signal Protocol Relay beta."
+  title="Relay Service Limits"
+  description="Current operating limits and service commitments for the OpenE2EE Signal Protocol Relay."
 >
   <article>
     <header class={ARTICLE_HEADER}>
       <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
         <a class={BACK_LINK} href="/legal">Legal</a>
-        <h1>OpenE2EE Signal Protocol Relay Beta Service Limits</h1>
-        <p class={LEAD}>The launch boundary for capacity, support, and service commitments.</p>
+        <h1>OpenE2EE Signal Protocol Relay Service Limits</h1>
+        <p class={LEAD}>The operating boundary for capacity, support, and service commitments.</p>
         <p class={ARTICLE_META}>
-          <span>Effective {relayBetaLimitsEffectiveDate}</span>
-          <span>Version {relayBetaLimitsVersion}</span>
+          <span>Effective {relayServiceLimitsEffectiveDate}</span>
+          <span>Version {relayServiceLimitsVersion}</span>
         </p>
         <p class={LEGAL_PIN}>
           The Relay terms incorporate this document. The permanent copy of this version is at{' '}
-          <a href={relayBetaLimitsPath}><code>{relayBetaLimitsPath}</code></a>.
+          <a href={relayServiceLimitsPath}><code>{relayServiceLimitsPath}</code></a>.
         </p>
       </div>
     </header>
@@ -40,11 +40,10 @@ import {
       <div class="prose">
         <h2>Service status</h2>
         <p>
-          Relay remains a beta until OpenE2EE announces general availability. The Sandbox
-          environment and Free production plan have no service-level agreement. Paid beta support and operational
-          controls are those shown in the order. No uptime credit, response-time commitment, data
-          residency promise, BAA, or production recovery objective applies unless a signed order
-          form states it.
+          Relay is generally available. The Sandbox environment and Free production plan have no
+          service-level agreement. Paid-plan support and operational controls are those shown in
+          the order. No uptime credit, response-time commitment, data residency promise, BAA, or
+          production recovery objective applies unless a signed order form states it.
         </p>
 
         <h2>Plan and protocol limits</h2>
@@ -66,7 +65,7 @@ import {
         <h2>Capacity and change control</h2>
         <p>
           A hard cap rejects new work without changing already accepted encrypted content. OpenE2EE
-          can reduce abusive or unsafe traffic, repair a service incident, or change pre-release
+          can reduce abusive or unsafe traffic, repair a service incident, or change operating
           limits with reasonable notice when practicable. A material paid-plan change applies under
           the accepted service terms and recorded order.
         </p>
