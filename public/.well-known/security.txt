@@ -1,0 +1,6 @@
+Contact: mailto:security@open-e2ee.dev
+Contact: https://github.com/open-e2ee/signal-protocol-js/security/advisories/new
+Expires: 2027-10-01T00:00:00Z
+Preferred-Languages: en
+Canonical: https://open-e2ee.dev/.well-known/security.txt
+Policy: https://github.com/open-e2ee/signal-protocol-js/blob/main/SECURITY.md

@@ -92,7 +92,8 @@ test('refuses to store a path that could carry a payload', async () => {
     ['/pricing#Someone', '/pricing'],
     ['https://elsewhere.example/pricing', '/other'],
     ['/A0B1C2D3-E4F5', '/other'],
-    [`/${'x'.repeat(200)}`, '/other'],
+    /* Longer than a stored path may be, and still inside the body cap. */
+    [`/${'x'.repeat(100)}`, '/other'],
   ];
   for (const [sent] of paths) {
     await collect(beacon(`pricing_view ${sent}`), env);
@@ -132,6 +133,72 @@ test('rejects a beacon from another origin and any method but POST', async () =>
   assert.equal((await collect(crossOrigin, env)).status, 403);
   assert.equal((await collect(new Request('https://open-e2ee.dev/e'), env)).status, 405);
   assert.deepEqual(env.written, []);
+});
+
+/*
+ * A body that counts what the collector pulls from it: 1 MB in 16 KB chunks,
+ * produced only on demand, so the counts say how much of it was read.
+ */
+function countedMegabyte() {
+  const chunk = new Uint8Array(16 * 1024).fill(0x78);
+  const read = { pulls: 0, bytes: 0 };
+  read.stream = new ReadableStream(
+    {
+      pull(controller) {
+        read.pulls += 1;
+        if (read.bytes >= 1024 * 1024) return controller.close();
+        read.bytes += chunk.byteLength;
+        controller.enqueue(chunk);
+      },
+    },
+    { highWaterMark: 0 },
+  );
+  return read;
+}
+
+const streamed = (body, headers) =>
+  new Request('https://open-e2ee.dev/e', { method: 'POST', body, duplex: 'half', headers });
+
+test('rejects a beacon with no Origin before it reads the body', async () => {
+  const env = stubEnv();
+  const body = countedMegabyte();
+  const response = await collect(streamed(body.stream, {}), env);
+  assert.equal(response.status, 403);
+  assert.equal(body.pulls, 0, 'the body must not be read');
+  assert.deepEqual(env.written, []);
+});
+
+test('refuses a declared length over the cap without reading the body', async () => {
+  const env = stubEnv();
+  const body = countedMegabyte();
+  const response = await collect(
+    streamed(body.stream, { origin: 'https://open-e2ee.dev', 'content-length': String(1024 * 1024) }),
+    env,
+  );
+  assert.equal(response.status, 413);
+  assert.equal(body.pulls, 0, 'a declared 1 MB body must not be read at all');
+  assert.deepEqual(env.written, []);
+});
+
+test('stops reading an undeclared body at the cap', async () => {
+  const env = stubEnv();
+  const body = countedMegabyte();
+  const response = await collect(streamed(body.stream, { origin: 'https://open-e2ee.dev' }), env);
+  assert.equal(response.status, 413);
+  assert.equal(body.pulls, 1, 'one chunk passes the cap, so one pull is the whole read');
+  assert.deepEqual(env.written, []);
+});
+
+test('accepts a body at the cap and refuses one byte more', async () => {
+  const env = stubEnv();
+  const atCap = `pricing_view /${'x'.repeat(128 - 'pricing_view /'.length)}`;
+  assert.equal(Buffer.byteLength(atCap), 128);
+  assert.equal((await collect(beacon(atCap), env)).status, 204);
+  assert.equal((await collect(beacon(`${atCap}x`), env)).status, 413);
+  assert.deepEqual(
+    env.written.map((point) => point.blobs[1]),
+    ['/other'],
+  );
 });
 
 test('sets nothing on the device and reads nothing from it', async () => {

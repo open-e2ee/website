@@ -72,22 +72,55 @@ function scrubPath(value: string): string {
   return /^[a-z0-9/_.-]*$/.test(path.slice(1)) ? path : '/other';
 }
 
+function tooLarge(): Response {
+  return new Response('Payload too large', { status: 413 });
+}
+
+/**
+ * Reads a body as text, but stops and cancels the stream as soon as it passes
+ * `limit` bytes. Returns null for a body over the limit.
+ */
+async function readCapped(stream: ReadableStream<Uint8Array> | null, limit: number): Promise<string | null> {
+  if (!stream) return '';
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return text + decoder.decode();
+    bytes += value.byteLength;
+    if (bytes > limit) {
+      await reader.cancel();
+      return null;
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+}
+
 export async function collect(request: Request, env: Env): Promise<Response> {
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405, headers: { allow: 'POST' } });
   }
 
-  /* Browsers set Origin on beacons and cross-origin posts alike. Requiring it
-   * to be ours costs nothing and drops casual cross-site noise; it is not a
+  /* A browser sets Origin on every POST, beacons included, so a request
+   * without one did not come from a page. Requiring it to be ours costs
+   * nothing and drops casual cross-site and scripted noise; it is not a
    * security control, because anything off-browser can send whatever it likes.
    * The endpoint is unauthenticated by nature, so the dataset is a popularity
    * signal, never a source of truth. */
   const origin = request.headers.get('origin');
-  if (origin && new URL(request.url).origin !== origin) {
+  if (!origin || new URL(request.url).origin !== origin) {
     return new Response('Forbidden', { status: 403 });
   }
 
-  const body = (await request.text()).slice(0, MAX_BODY_BYTES);
+  /* A real beacon is one event name, one path, and one label, well under the
+   * cap. A declared length above the cap is refused before any read, and a
+   * body sent without a length is read only up to the cap, so no client can
+   * make the Worker buffer more than that. */
+  if (Number(request.headers.get('content-length')) > MAX_BODY_BYTES) return tooLarge();
+  const body = await readCapped(request.body, MAX_BODY_BYTES);
+  if (body === null) return tooLarge();
   const [event, path = '/', label = ''] = body.split(' ');
 
   if (EVENTS.has(event)) {
