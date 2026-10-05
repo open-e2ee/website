@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "releaseId": "open-e2ee-relay-public-beta-v1",
+  "releaseId": "open-e2ee-relay-v1",
   "createdAt": "2026-08-29T03:15:53.000Z",
   "sources": {
     "pullRequests": {

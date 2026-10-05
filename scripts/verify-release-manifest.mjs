@@ -77,8 +77,8 @@ export function validateReleaseManifest(value) {
   );
   expect(value.schemaVersion === 2, "schemaVersion must be 2");
   expect(
-    value.releaseId === "open-e2ee-relay-public-beta-v1",
-    "releaseId must name the public beta release",
+    value.releaseId === "open-e2ee-relay-v1",
+    "releaseId must name the Relay release",
   );
   expect(
     isCanonicalTime(value.createdAt),
