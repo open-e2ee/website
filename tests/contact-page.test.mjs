@@ -13,8 +13,12 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-/* A comment may name the console page. A line of code may not. */
-const code = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*(?:\/\/|\*).*$/gm, '');
+/*
+ * A comment may name the console page. A line of code or prose may not. Only
+ * a block comment and a `//` line comment are removed: a Markdown paragraph
+ * can start with `**`, so a line that starts with `*` is not a comment.
+ */
+const code = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 test('no page links the console contact page', async () => {
   const root = new URL('../src/', import.meta.url);
