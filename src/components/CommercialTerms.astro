@@ -30,18 +30,11 @@ import {
   LEGAL_PIN,
   LEGAL_TOC,
 } from '../lib/recipes';
-
-interface Props {
-  canonical: string;
-}
-
-const { canonical } = Astro.props;
 ---
 
 <BaseLayout
   title="Terms"
   description="Website terms and versioned Startup commercial license terms for OpenE2EE."
-  canonical={canonical}
 >
   <article>
     <header class={ARTICLE_HEADER}>

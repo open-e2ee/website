@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { relayPlans, relaySandboxEnvironment } from '../src/data/relay-pricing.mjs';
@@ -27,6 +28,33 @@ import {
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const flat = async (path) => (await read(path)).replace(/\s+/g, ' ');
+
+/*
+ * dist/ is absent on a clean checkout and present in CI, which builds before it
+ * tests. A bare skip would let a dist-reading assertion report a pass in the one
+ * place it is the only guard there is.
+ */
+const skipUnbuilt = (page) => {
+  assert.ok(
+    !process.env.CI,
+    `${page} is missing — CI builds before it tests, so a dist-reading assertion must never skip here`,
+  );
+};
+
+/**
+ * The built page names its own served URL, the slash form, as canonical.
+ * BaseLayout derives it from the path, so the page source carries no literal.
+ */
+async function assertCanonicalAtOwnPath(path, message) {
+  const file = new URL(`../dist${path}/index.html`, import.meta.url);
+  if (!existsSync(file)) return skipUnbuilt(`dist${path}/index.html`);
+  const html = await readFile(file, 'utf8');
+  assert.deepEqual(
+    [...html.matchAll(/<link rel="canonical" href="([^"]+)">/g)].map((match) => match[1]),
+    [`https://open-e2ee.dev${path}/`],
+    message,
+  );
+}
 
 test('pins the current Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-09-10');
@@ -83,7 +111,7 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
     read('../src/pages/legal/privacy.astro'),
   ]);
 
-  assert.match(legalIndex, /canonical="\/legal"/);
+  await assertCanonicalAtOwnPath('/legal');
   /* The SDK Commercial Terms left the index on 2026-09-22: the SDK is MIT OR
    * Apache-2.0 and no license is sold. The live and dated /legal/terms pages
    * stay published, and the footer still reaches the live one as the website
@@ -91,18 +119,18 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   assert.doesNotMatch(legalIndex, /href="\/legal\/terms/, 'the index lists the retired SDK Commercial Terms');
   assert.match(legalIndex, /href="\/legal\/privacy"/);
   assert.match(currentTerms, /CommercialTerms/);
-  assert.match(currentTerms, /canonical="\/legal\/terms"/);
-  assert.match(versionedTerms, /canonical="\/legal\/terms\/2026-09-10"/);
+  await assertCanonicalAtOwnPath('/legal/terms');
+  await assertCanonicalAtOwnPath('/legal/terms/2026-09-10');
   assert.match(legalIndex, /href="\/legal\/relay-terms"/);
   assert.match(legalIndex, /href="\/legal\/acceptable-use"/);
   assert.match(legalIndex, /href="\/legal\/subprocessors"/);
   assert.match(legalIndex, /href="\/legal\/relay-retention"/);
   assert.match(legalIndex, /href="\/legal\/relay-beta-limits"/);
   assert.match(relayTerms, /SignalProtocolRelayTerms/);
-  assert.match(relayTerms, /canonical="\/legal\/relay-terms"/);
-  assert.match(relayVersion, /canonical="\/legal\/relay-terms\/2026-09-29"/);
+  await assertCanonicalAtOwnPath('/legal/relay-terms');
+  await assertCanonicalAtOwnPath('/legal/relay-terms/2026-09-29');
   assert.match(privacy, /Privacy Notice/);
-  assert.match(privacy, /canonical="\/legal\/privacy"/);
+  await assertCanonicalAtOwnPath('/legal/privacy');
   assert.match(legalIndex, /href="\/legal\/dpa"/);
 });
 
@@ -118,8 +146,8 @@ test('publishes the data processing agreement at a current and a dated route', a
   ]);
 
   assert.match(live, /DataProcessingAgreement/);
-  assert.match(live, /canonical="\/legal\/dpa"/);
-  assert.match(dated, new RegExp(`canonical="${dpaPath}"`));
+  await assertCanonicalAtOwnPath('/legal/dpa');
+  await assertCanonicalAtOwnPath(dpaPath);
 });
 
 const frozenDpaVersions = [
@@ -152,11 +180,7 @@ test('keeps every dated DPA page frozen: it never reads the live agreement', asy
       new RegExp(`<span>Effective ${effective}</span>`),
       `${version} does not head itself as effective ${effective}`,
     );
-    assert.match(
-      page,
-      new RegExp(`canonical="/legal/dpa/${version}"`),
-      `${version} is not canonical at its own path`,
-    );
+    await assertCanonicalAtOwnPath(`/legal/dpa/${version}`, `${version} is not canonical at its own path`);
   }
 });
 
@@ -245,11 +269,7 @@ test('keeps every dated terms page frozen: it never reads the live document', as
       new RegExp(`<span>Effective ${effective}</span>`),
       `${version} does not head itself as effective ${effective}`,
     );
-    assert.match(
-      page,
-      new RegExp(`canonical="/legal/terms/${date}"`),
-      `${version} is not canonical at its own path`,
-    );
+    await assertCanonicalAtOwnPath(`/legal/terms/${date}`, `${version} is not canonical at its own path`);
   }
 });
 
@@ -291,11 +311,7 @@ test('keeps every dated Relay terms page frozen: it never reads the live documen
       new RegExp(`<span>Effective ${effective}</span>`),
       `${version} does not head itself as effective ${effective}`,
     );
-    assert.match(
-      page,
-      new RegExp(`canonical="/legal/relay-terms/${date}"`),
-      `${version} is not canonical at its own path`,
-    );
+    await assertCanonicalAtOwnPath(`/legal/relay-terms/${date}`, `${version} is not canonical at its own path`);
   }
 });
 
@@ -365,11 +381,7 @@ test('keeps every dated Relay policy page frozen: it never reads the live page',
         new RegExp(`<span>Effective ${effective}</span>`),
         `${label} does not head itself as effective ${effective}`,
       );
-      assert.match(
-        page,
-        new RegExp(`canonical="/legal/${slug}/${version}"`),
-        `${label} is not canonical at its own path`,
-      );
+      await assertCanonicalAtOwnPath(`/legal/${slug}/${version}`, `${label} is not canonical at its own path`);
     }
   }
 });
@@ -428,11 +440,7 @@ test('keeps every dated privacy page frozen: it never reads the live notice', as
       new RegExp(`<span>Effective ${effective}</span>`),
       `${version} does not head itself as effective ${effective}`,
     );
-    assert.match(
-      page,
-      new RegExp(`canonical="/legal/privacy/${version}"`),
-      `${version} is not canonical at its own path`,
-    );
+    await assertCanonicalAtOwnPath(`/legal/privacy/${version}`, `${version} is not canonical at its own path`);
   }
 });
 
