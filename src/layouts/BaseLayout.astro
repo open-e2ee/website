@@ -9,6 +9,7 @@ import '../styles/demo.css';
 import '../styles/prose.css';
 import '../styles/article.css';
 import PageChrome from '../components/PageChrome.astro';
+import { serializeJsonLd, structuredData as structuredDataFor } from '../lib/structured-data.mjs';
 
 /*
  * The one face that is on every page, in every heading, from the first paint.
@@ -41,6 +42,11 @@ interface Props {
   publishedTime?: Date;
   modifiedTime?: Date;
   author?: string;
+  /**
+   * The entity this page describes to search and answer engines, as one
+   * JSON-LD block. src/data/entity.mjs owns every entity value.
+   */
+  structuredData?: 'home' | 'product' | 'article';
 }
 
 const {
@@ -52,6 +58,7 @@ const {
   publishedTime,
   modifiedTime,
   author,
+  structuredData,
 } = Astro.props;
 /* Every page spends this field, the homepage included. It used to pass
  * title="OpenE2EE" and this expression suppressed the suffix, so the one page
@@ -73,6 +80,18 @@ const servedPath =
   pagePath.endsWith('/') || pagePath.split('/').at(-1)?.includes('.') ? pagePath : `${pagePath}/`;
 const canonicalUrl = new URL(servedPath, Astro.site);
 const imageUrl = new URL(image, Astro.site);
+const jsonLd =
+  structuredData &&
+  serializeJsonLd(
+    structuredDataFor(structuredData, {
+      url: canonicalUrl,
+      title,
+      description,
+      image: imageUrl,
+      publishedTime,
+      modifiedTime,
+    }),
+  );
 ---
 
 <!doctype html>
@@ -142,6 +161,9 @@ const imageUrl = new URL(image, Astro.site);
     <link rel="icon" href="/brand/open-e2ee-favicon.svg" type="image/svg+xml" sizes="any" />
     <link rel="apple-touch-icon" href="/brand/open-e2ee-app-icon-180.png" sizes="180x180" />
     <title>{siteTitle}</title>
+    {/* A data block, not a script: the CSP's script-src does not apply to it,
+        and scripts/audit-build.mjs exempts it from the inline-script check. */}
+    {jsonLd && <script type="application/ld+json" is:inline set:html={jsonLd} />}
   </head>
   <body>
     <PageChrome>
