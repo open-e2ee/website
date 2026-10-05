@@ -142,7 +142,7 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
       <dl class={DEFINITION_ROWS}>
         <div><dt>Sandbox</dt><dd>Every project opens one automatically, with isolated state and credentials. <code>oe new</code> writes its connection.</dd></div>
         <div><dt>Production</dt><dd><code>oe config push</code> writes the production connection. Production roots and hard capacity caps, with no automatic charge on the free plan.</dd></div>
-        <div><dt>One variable</dt><dd>Both write <code>OPEN_E2EE_RELAY_URL</code>, so the application source does not change between them.</dd></div>
+        <div><dt>One variable</dt><dd>Both write <code>OPEN_E2EE_RELAY_URL</code>, with the <code>NEXT_PUBLIC_</code>, <code>EXPO_PUBLIC_</code>, or <code>VITE_</code> prefix that a Next.js, Expo, or Vite app reads, so the application source does not change between them.</dd></div>
         <div><dt>No pairing step</dt><dd>You do not select a Relay hostname or pair it with a second key.</dd></div>
       </dl>
       <p class={TEXT_LINKS}>
