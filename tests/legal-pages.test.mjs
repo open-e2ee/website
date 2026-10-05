@@ -800,9 +800,11 @@ test('permanently redirects short and historical legal paths to one hierarchy', 
 /*
  * Relay is generally available. A current legal page that calls it a beta, or
  * pre-release, misstates the service a customer accepts. The current pages are
- * the undated routes under src/pages/legal and the components they render;
- * only a dated page may keep that wording, because it freezes text a customer
- * already accepted. Comments and markup attributes are stripped first: a
+ * the undated routes under src/pages/legal, the components they render, and
+ * the dated copy of each current version, which is the address the console
+ * records when a customer accepts. Only a superseded dated page may keep that
+ * wording, because it freezes text a customer already accepted. Comments and
+ * markup attributes are stripped first: a
  * comment may record what an earlier version said, and the dated beta limits
  * copies keep an address that says beta.
  */
@@ -819,6 +821,18 @@ test('calls the Relay a beta on no current legal page', async () => {
     }
   }
   assert.ok(pages.length >= 9, `only ${pages.length} current legal pages were read`);
+  for (const path of [
+    commercialTermsPath,
+    dpaPath,
+    privacyPath,
+    relayRetentionPath,
+    relayServiceLimitsPath,
+    relayTermsPath,
+  ]) {
+    const page = new URL(`../src/pages${path}.astro`, import.meta.url);
+    assert.ok(existsSync(page), `${path} has no dated page`);
+    sources.add(String(page));
+  }
   assert.ok(
     sources.has(String(new URL('../src/components/SignalProtocolRelayTerms20261005.astro', import.meta.url))),
     'the guard does not read the live Relay terms',
