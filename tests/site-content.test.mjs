@@ -3724,7 +3724,7 @@ test('quotes the entry price from the module on every marketing page', async () 
   /* And the exemption is real: a sweep that reported nothing in the legal tree
    * would mean the walk had missed the figure rather than that it was clean.
    * The page itself is a two-line delegation — src/pages/legal/terms.astro
-   * renders <CommercialTerms canonical="/legal/terms" /> — so the figure lives
+   * renders <CommercialTerms /> — so the figure lives
    * in the component, and that is what has to still carry it. */
   assert.match(await read('../src/pages/legal/terms.astro'), /CommercialTerms/);
   assert.match(await read('../src/components/CommercialTerms.astro'), /\$[\d,]+ per year/);

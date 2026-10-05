@@ -17,3 +17,8 @@
 
 /playground/
   Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+# The staging lane serves this same build from its own Worker. Only the staging
+# host matches this rule, so production responses never carry the header.
+https://stage.open-e2ee.dev/*
+  X-Robots-Tag: noindex

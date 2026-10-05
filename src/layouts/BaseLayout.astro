@@ -36,7 +36,6 @@ interface Props {
    * site-wide card; a page that overrides `image` should override this too.
    */
   imageAlt?: string;
-  canonical?: string;
   /** `article` on blog posts so shares render as writing rather than a product page. */
   ogType?: 'website' | 'article';
   publishedTime?: Date;
@@ -49,7 +48,6 @@ const {
   description,
   image = '/brand/social/open-e2ee-website-og.png',
   imageAlt = 'The OpenE2EE mark and wordmark over the line: open-source, protocol-level end-to-end encryption SDKs for TypeScript developers.',
-  canonical = Astro.url.pathname,
   ogType = 'website',
   publishedTime,
   modifiedTime,
@@ -63,7 +61,17 @@ const {
  * Grow Your Revenue", "Vercel: Build and deploy the best web experiences with
  * the AI Cloud", "Supabase | The Postgres Development Platform". */
 const siteTitle = `${title} · OpenE2EE`;
-const canonicalUrl = new URL(canonical, Astro.site);
+/* The canonical is the URL the site serves, and a page cannot name another.
+ * The build writes each page as a directory index, and the asset server
+ * answers a path without its slash with a 307 to the slash form. So every page
+ * path ends in a slash here, which also gives `astro dev`, where the request
+ * path can lack it, the same canonical as the build. A path whose last segment
+ * names a file keeps its form. A canonical that redirects tells a search
+ * engine that the page it fetched is not the page to index. */
+const pagePath = Astro.url.pathname;
+const servedPath =
+  pagePath.endsWith('/') || pagePath.split('/').at(-1)?.includes('.') ? pagePath : `${pagePath}/`;
+const canonicalUrl = new URL(servedPath, Astro.site);
 const imageUrl = new URL(image, Astro.site);
 ---
 

@@ -34,18 +34,11 @@ import {
   LEGAL_PIN,
   LEGAL_TOC,
 } from '../lib/recipes';
-
-interface Props {
-  canonical: string;
-}
-
-const { canonical } = Astro.props;
 ---
 
 <BaseLayout
   title="Data Processing Agreement"
   description="Article 28 processor terms and transfer mechanism for personal data OpenE2EE processes for Relay customers."
-  canonical={canonical}
 >
   <article>
     <header class={ARTICLE_HEADER}>

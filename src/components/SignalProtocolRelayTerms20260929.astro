@@ -33,18 +33,11 @@ import {
   LEGAL_PIN,
   LEGAL_TOC,
 } from '../lib/recipes';
-
-interface Props {
-  canonical: string;
-}
-
-const { canonical } = Astro.props;
 ---
 
 <BaseLayout
   title="OpenE2EE Signal Protocol Relay Terms"
   description="Versioned service terms for the OpenE2EE Signal Protocol Relay."
-  canonical={canonical}
 >
   <article>
     <header class={ARTICLE_HEADER}>
