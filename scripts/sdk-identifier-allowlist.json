@@ -16,7 +16,10 @@
     "THIS_DEVICE_ONLY",
     "AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY",
     "UNNotificationServiceExtension",
-    "OPEN_E2EE_RELAY_URL"
+    "OPEN_E2EE_RELAY_URL",
+    "NEXT_PUBLIC_",
+    "EXPO_PUBLIC_",
+    "VITE_"
   ],
   "$provenance": {
     "randomUUID": "Web Crypto API, and expo-crypto's re-export of it",
@@ -26,6 +29,9 @@
     "THIS_DEVICE_ONLY": "expo-secure-store keychain accessibility constant",
     "AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY": "expo-secure-store; the value the SDK's vault pins in SIGNAL_PROTOCOL_SECURE_STORE_OPTIONS",
     "UNNotificationServiceExtension": "Apple UserNotifications framework",
-    "OPEN_E2EE_RELAY_URL": "OpenE2EE CLI generated public deployment configuration"
+    "OPEN_E2EE_RELAY_URL": "OpenE2EE CLI generated public deployment configuration",
+    "NEXT_PUBLIC_": "Next.js prefix for an environment variable that client code reads",
+    "EXPO_PUBLIC_": "Expo prefix for an environment variable that client code reads",
+    "VITE_": "Vite prefix for an environment variable that client code reads"
   }
 }
