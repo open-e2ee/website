@@ -6,11 +6,11 @@
  *
  * A pull request deploys a preview (preview.yml). A push to main deploys
  * stage.open-e2ee.dev (deploy-staging.yml). A published release whose tag
- * commit is on main deploys open-e2ee.dev (deploy.yml). No push to main may
- * reach production, so this check holds the trigger, the guards, and the
- * deploy command of each lane. `npm test` runs it against the committed
- * workflows. The directory argument lets it read another copy, for example a
- * workflow from an earlier commit.
+ * commit is on main deploys open-e2ee.dev (deploy.yml), then pings IndexNow.
+ * No push to main may reach production, so this check holds the trigger, the
+ * guards, and the deploy command of each lane. `npm test` runs it against the
+ * committed workflows. The directory argument lets it read another copy, for
+ * example a workflow from an earlier commit.
  *
  * The checks read the workflow text, because the repository has no YAML
  * parser. Each check reads one section of the file (the `on:` block, or one
@@ -29,6 +29,7 @@ const WORKFLOWS =
 const TAG_PATTERN = String.raw`^v20[0-9]{2}\.[0-9]{2}\.[0-9]{2}(-[0-9]+)?$`;
 const STAGE_DEPLOY = 'command: deploy --config wrangler.website.stage.jsonc --env=""';
 const WRANGLER_ACTION = 'uses: cloudflare/wrangler-action@';
+const INDEXNOW_PING = 'run: node scripts/indexnow-ping.mjs';
 
 const read = (name) => readFileSync(join(WORKFLOWS, name), 'utf8');
 
@@ -120,6 +121,21 @@ test('deploy.yml builds, tests, and deploys the production config', () => {
   const deploy = stepIndex(all, (step) => step.includes(WRANGLER_ACTION), 'that deploys');
   assert.ok(build < unitTest && unitTest < deploy, 'build, then test, then deploy');
   assert.doesNotMatch(all[deploy], /command:/, 'production deploys wrangler.jsonc as is');
+});
+
+test('deploy.yml pings IndexNow after the deploy, and no other lane pings it', () => {
+  const all = steps(read('deploy.yml'));
+  const deploy = stepIndex(all, (step) => step.includes(WRANGLER_ACTION), 'that deploys');
+  const ping = stepIndex(all, (step) => step.includes(INDEXNOW_PING), 'that pings IndexNow');
+  assert.ok(deploy < ping, 'the ping must follow the deploy');
+  assert.match(all[ping], /^ {8}continue-on-error: true$/m, 'the ping must not fail the release');
+  assert.match(all[ping], /^ {8}timeout-minutes: \d+$/m);
+  assert.match(all[ping], / https:\/\/open-e2ee\.dev\/sitemap-index\.xml$/m, 'the ping reads the production sitemap');
+
+  const pinging = readdirSync(WORKFLOWS)
+    .filter((name) => /\.ya?ml$/.test(name))
+    .filter((name) => read(name).includes(INDEXNOW_PING));
+  assert.deepEqual(pinging, ['deploy.yml'], 'only the production lane pings IndexNow');
 });
 
 test('deploy-staging.yml deploys the stage config from each push to main', () => {

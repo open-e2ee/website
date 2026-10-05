@@ -74,3 +74,11 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # IndexNow tells Bing and the other participating engines that the site
+      # changed. The deploy is complete here, so the ping must never fail the
+      # release: the script reports each failure as a warning and exits 0.
+      - name: Ping IndexNow
+        continue-on-error: true
+        timeout-minutes: 2
+        run: node scripts/indexnow-ping.mjs https://open-e2ee.dev/sitemap-index.xml
