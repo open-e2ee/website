@@ -59,3 +59,11 @@
 # console docs linked it.
 /relay/pricing /pricing/#relay-plans 308
 /relay/pricing/ /pricing/#relay-plans 308
+# /legal/relay-beta-limits was the live Relay limits document while Relay was a
+# beta. Relay is generally available, and the document is now the Service
+# Limits at /legal/relay-service-limits. Every frozen Relay terms version up to
+# relay-2026-09-29 links the old address, and those pages are never edited, so
+# the rule keeps their link working. The rules are exact: the dated copies under
+# /legal/relay-beta-limits/<date> are permanent addresses and still serve.
+/legal/relay-beta-limits /legal/relay-service-limits/ 308
+/legal/relay-beta-limits/ /legal/relay-service-limits/ 308

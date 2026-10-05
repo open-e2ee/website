@@ -252,6 +252,23 @@ for (const file of files) {
   pages.add(rel.endsWith('/') && rel !== '/' ? rel.slice(0, -1) : rel);
 }
 
+/*
+ * A frozen legal page can link a route that has since moved, and it may never
+ * be edited to follow the move. An exact rule in `_redirects` whose destination
+ * is a built page resolves such a link. A rule to a missing page, or a splat or
+ * placeholder rule, resolves nothing here, so a link to a removed route still
+ * fails.
+ */
+const redirectsFile = join(DIST, '_redirects');
+if (existsSync(redirectsFile)) {
+  for (const line of (await readFile(redirectsFile, 'utf8')).split('\n')) {
+    const [from, to] = line.trim().split(/\s+/);
+    if (!from?.startsWith('/') || !to?.startsWith('/') || /[*:]/.test(from)) continue;
+    const target = to.split('#')[0].split('?')[0].replace(/\/$/, '') || '/';
+    if (pages.has(target)) pages.add(from.replace(/\/$/, '') || '/');
+  }
+}
+
 for (const [rel, text] of prose) {
   for (const pattern of BANNED) {
     const hit = text.match(pattern);

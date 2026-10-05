@@ -15,12 +15,12 @@ import {
   privacyPath,
   privacyUrl,
   privacyVersion,
-  relayBetaLimitsEffectiveDate,
-  relayBetaLimitsPath,
-  relayBetaLimitsVersion,
   relayRetentionEffectiveDate,
   relayRetentionPath,
   relayRetentionVersion,
+  relayServiceLimitsEffectiveDate,
+  relayServiceLimitsPath,
+  relayServiceLimitsVersion,
   relayTermsPath,
   relayTermsUrl,
   relayTermsVersion,
@@ -63,15 +63,15 @@ test('pins the current Startup terms to an immutable canonical URL', () => {
   assert.equal(privacyVersion, '2026-09-29');
   assert.equal(privacyPath, '/legal/privacy/2026-09-29');
   assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-09-29');
-  assert.equal(relayTermsVersion, 'relay-2026-09-29');
-  assert.equal(relayTermsPath, '/legal/relay-terms/2026-09-29');
-  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-09-29');
+  assert.equal(relayTermsVersion, 'relay-2026-10-05');
+  assert.equal(relayTermsPath, '/legal/relay-terms/2026-10-05');
+  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-10-05');
   assert.equal(relayRetentionVersion, '2026-09-29');
   assert.equal(relayRetentionEffectiveDate, 'September 29, 2026');
   assert.equal(relayRetentionPath, '/legal/relay-retention/2026-09-29');
-  assert.equal(relayBetaLimitsVersion, '2026-09-29');
-  assert.equal(relayBetaLimitsEffectiveDate, 'September 29, 2026');
-  assert.equal(relayBetaLimitsPath, '/legal/relay-beta-limits/2026-09-29');
+  assert.equal(relayServiceLimitsVersion, '2026-10-05');
+  assert.equal(relayServiceLimitsEffectiveDate, 'October 5, 2026');
+  assert.equal(relayServiceLimitsPath, '/legal/relay-service-limits/2026-10-05');
   assert.equal(dpaVersion, '2026-09-29');
   assert.equal(dpaEffectiveDate, 'September 29, 2026');
   assert.equal(dpaPath, '/legal/dpa/2026-09-29');
@@ -107,7 +107,7 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
     read('../src/pages/legal/terms.astro'),
     read('../src/pages/legal/terms/2026-09-10.astro'),
     read('../src/pages/legal/relay-terms.astro'),
-    read('../src/pages/legal/relay-terms/2026-09-29.astro'),
+    read('../src/pages/legal/relay-terms/2026-10-05.astro'),
     read('../src/pages/legal/privacy.astro'),
   ]);
 
@@ -125,10 +125,11 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   assert.match(legalIndex, /href="\/legal\/acceptable-use"/);
   assert.match(legalIndex, /href="\/legal\/subprocessors"/);
   assert.match(legalIndex, /href="\/legal\/relay-retention"/);
-  assert.match(legalIndex, /href="\/legal\/relay-beta-limits"/);
+  assert.match(legalIndex, /href="\/legal\/relay-service-limits"/);
+  assert.doesNotMatch(legalIndex, /href="\/legal\/relay-beta-limits"/, 'the index links the retired live limits address');
   assert.match(relayTerms, /SignalProtocolRelayTerms/);
   await assertCanonicalAtOwnPath('/legal/relay-terms');
-  await assertCanonicalAtOwnPath('/legal/relay-terms/2026-09-29');
+  await assertCanonicalAtOwnPath('/legal/relay-terms/2026-10-05');
   assert.match(privacy, /Privacy Notice/);
   await assertCanonicalAtOwnPath('/legal/privacy');
   assert.match(legalIndex, /href="\/legal\/dpa"/);
@@ -293,6 +294,7 @@ const frozenRelayTermsVersions = [
   { version: 'relay-2026-09-10', date: '2026-09-10', effective: 'September 10, 2026' },
   { version: 'relay-2026-09-22', date: '2026-09-22', effective: 'September 22, 2026' },
   { version: 'relay-2026-09-29', date: '2026-09-29', effective: 'September 29, 2026' },
+  { version: 'relay-2026-10-05', date: '2026-10-05', effective: 'October 5, 2026' },
 ];
 
 test('keeps every dated Relay terms page frozen: it never reads the live document', async () => {
@@ -324,13 +326,17 @@ test('freezes the Relay terms version the site currently publishes', () => {
 });
 
 /*
- * Section 5 and Section 7 of the Relay terms incorporate the retention
- * statement and the beta limits, so a customer who filed the terms must be
+ * Section 4 and Section 6 of the Relay terms incorporate the retention
+ * statement and the service limits, so a customer who filed the terms must be
  * able to file the policies the terms pointed at. Each live page reads its
  * version from the constants, and each version it has carried is frozen at a
  * dated page. The two documents are versioned independently, so each lists
  * its own frozen versions, written out for the reason the privacy list gives
  * below.
+ *
+ * The limits document was the Beta Service Limits at /legal/relay-beta-limits
+ * through its 2026-09-29 version. Those copies keep the address and the title
+ * they were published under, so a frozen entry can name its own slug and title.
  */
 const relayPolicies = [
   {
@@ -345,25 +351,26 @@ const relayPolicies = [
     ],
   },
   {
-    slug: 'relay-beta-limits',
-    current: relayBetaLimitsVersion,
-    title: 'Beta Service Limits',
+    slug: 'relay-service-limits',
+    current: relayServiceLimitsVersion,
+    title: 'Service Limits',
     frozen: [
-      { version: '2026-08-26', effective: 'August 26, 2026' },
-      { version: '2026-09-10', effective: 'September 10, 2026' },
-      { version: '2026-09-29', effective: 'September 29, 2026' },
+      { slug: 'relay-beta-limits', title: 'Beta Service Limits', version: '2026-08-26', effective: 'August 26, 2026' },
+      { slug: 'relay-beta-limits', title: 'Beta Service Limits', version: '2026-09-10', effective: 'September 10, 2026' },
+      { slug: 'relay-beta-limits', title: 'Beta Service Limits', version: '2026-09-29', effective: 'September 29, 2026' },
+      { version: '2026-10-05', effective: 'October 5, 2026' },
     ],
   },
 ];
 
 test('keeps every dated Relay policy page frozen: it never reads the live page', async () => {
-  for (const { slug, title, frozen } of relayPolicies) {
-    for (const { version, effective } of frozen) {
+  for (const { slug: liveSlug, title: liveTitle, frozen } of relayPolicies) {
+    for (const { slug = liveSlug, title = liveTitle, version, effective } of frozen) {
       const page = await read(`../src/pages/legal/${slug}/${version}.astro`);
       const label = `${slug} ${version}`;
 
       assert.doesNotMatch(page, /lib\/legal(\.mjs)?/, `${label} reads the live version constants`);
-      assert.doesNotMatch(page, new RegExp(`legal/${slug}\\.astro`), `${label} renders the live page`);
+      assert.doesNotMatch(page, new RegExp(`legal/${liveSlug}\\.astro`), `${label} renders the live page`);
       /* Each copy titles the product by the name it had while that version
        * was current. */
       assert.match(
@@ -467,7 +474,7 @@ test('freezes the privacy version the notice currently publishes', () => {
  * guard rules out.
  */
 test('states every published price and included quantity in the Relay terms', async () => {
-  const terms = await flat('../src/components/SignalProtocolRelayTerms20260929.astro');
+  const terms = await flat('../src/components/SignalProtocolRelayTerms20261005.astro');
 
   /* Bounded on both sides so a shorter figure cannot be satisfied by a longer
    * one containing it: "100" must not pass on "100,000", and "$0" must not
@@ -592,11 +599,11 @@ test('describes the implemented providers and managed Relay boundary', async () 
 
 test('publishes the exact Relay legal and lifecycle boundary', async () => {
   const [terms, acceptableUse, subprocessors, retention, beta] = await Promise.all([
-    flat('../src/components/SignalProtocolRelayTerms20260929.astro'),
+    flat('../src/components/SignalProtocolRelayTerms20261005.astro'),
     flat('../src/pages/legal/acceptable-use.astro'),
     flat('../src/pages/legal/subprocessors.astro'),
     flat('../src/pages/legal/relay-retention.astro'),
-    flat('../src/pages/legal/relay-beta-limits.astro'),
+    flat('../src/pages/legal/relay-service-limits.astro'),
   ]);
 
   /* The SDK is MIT OR Apache-2.0 from 3.0.0. The Relay terms grant no license
@@ -671,11 +678,11 @@ test('names the Sandbox environment everywhere except the frozen legal versions'
   }
 
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20260929.astro',
+    '../src/components/SignalProtocolRelayTerms20261005.astro',
     '../src/components/DataProcessingAgreement20260929.astro',
     '../src/pages/legal/privacy.astro',
     '../src/pages/legal/relay-retention.astro',
-    '../src/pages/legal/relay-beta-limits.astro',
+    '../src/pages/legal/relay-service-limits.astro',
   ]) {
     assert.match(await flat(path), /Sandbox environment|Sandbox and production environments/, `${path} does not name the Sandbox environment`);
   }
@@ -773,4 +780,97 @@ test('permanently redirects short and historical legal paths to one hierarchy', 
   assert.match(redirects, /^\/privacy \/legal\/privacy\/ 308$/m);
   assert.match(redirects, /^\/terms\/2026-07-23 \/legal\/terms\/2026-07-23\/ 308$/m);
   assert.match(redirects, /^\/terms\/2026-09-10 \/legal\/terms\/2026-09-10\/ 308$/m);
+
+  /* Every frozen Relay terms version up to relay-2026-09-29 links the old live
+   * limits address, and none of them may be edited to follow the rename. The
+   * rules are exact, so the dated copies under it still serve. */
+  assert.match(redirects, /^\/legal\/relay-beta-limits \/legal\/relay-service-limits\/ 308$/m);
+  assert.match(redirects, /^\/legal\/relay-beta-limits\/ \/legal\/relay-service-limits\/ 308$/m);
+  assert.doesNotMatch(redirects, /^\/legal\/relay-beta-limits\/\*/m, 'a splat rule would hide the dated beta limits copies');
+  assert.ok(
+    existsSync(new URL('../src/pages/legal/relay-service-limits.astro', import.meta.url)),
+    'the limits redirect points at a page this repo does not have',
+  );
+  assert.ok(
+    !existsSync(new URL('../src/pages/legal/relay-beta-limits.astro', import.meta.url)),
+    'a live page at the old limits address would shadow the redirect',
+  );
+});
+
+/*
+ * Relay is generally available. A current legal page that calls it a beta, or
+ * pre-release, misstates the service a customer accepts. The current pages are
+ * the undated routes under src/pages/legal, the components they render, and
+ * the dated copy of each current version, which is the address the console
+ * records when a customer accepts. Only a superseded dated page may keep that
+ * wording, because it freezes text a customer already accepted. Comments and
+ * markup attributes are stripped first: a
+ * comment may record what an earlier version said, and the dated beta limits
+ * copies keep an address that says beta.
+ */
+test('calls the Relay a beta on no current legal page', async () => {
+  const legal = new URL('../src/pages/legal/', import.meta.url);
+  const pages = (await readdir(legal, { withFileTypes: true }))
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.astro'))
+    .map((entry) => new URL(entry.name, legal));
+  const sources = new Set(pages.map(String));
+  for (const page of pages) {
+    const text = await readFile(page, 'utf8');
+    for (const [, component] of text.matchAll(/from '(\.\.\/\.\.\/components\/\w+\.astro)'/g)) {
+      sources.add(String(new URL(component, page)));
+    }
+  }
+  assert.ok(pages.length >= 9, `only ${pages.length} current legal pages were read`);
+  for (const path of [
+    commercialTermsPath,
+    dpaPath,
+    privacyPath,
+    relayRetentionPath,
+    relayServiceLimitsPath,
+    relayTermsPath,
+  ]) {
+    const page = new URL(`../src/pages${path}.astro`, import.meta.url);
+    assert.ok(existsSync(page), `${path} has no dated page`);
+    sources.add(String(page));
+  }
+  assert.ok(
+    sources.has(String(new URL('../src/components/SignalProtocolRelayTerms20261005.astro', import.meta.url))),
+    'the guard does not read the live Relay terms',
+  );
+
+  for (const source of sources) {
+    const shown = (await readFile(new URL(source), 'utf8'))
+      .replace(/^---[\s\S]*?\n---/, ' ')
+      .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ');
+    const hit = shown.match(/.{0,40}\b(beta|pre-?release)\b.{0,40}/i);
+    assert.ok(!hit, `${source.replace(/^.*\/src\//, 'src/')} says "${hit?.[0]}"`);
+  }
+});
+
+test('lets a published version change the Relay terms and limits for every customer', async () => {
+  for (const path of [
+    '../src/components/SignalProtocolRelayTerms20261005.astro',
+    `../src/pages${relayTermsPath}.astro`,
+  ]) {
+    const terms = await flat(path);
+    assert.match(
+      terms,
+      /We may change these Terms and the Relay Service Limits at any time by publishing a new version\. A new version applies to every Customer from its effective date/,
+      path,
+    );
+    assert.match(terms, /Your continued use of the Relay after that date is your acceptance/, path);
+    assert.match(terms, /by giving at least 30 days’ notice before the change applies/, path);
+    assert.doesNotMatch(terms, /remains under its recorded version/, path);
+  }
+  for (const path of [
+    '../src/pages/legal/relay-service-limits.astro',
+    `../src/pages${relayServiceLimitsPath}.astro`,
+  ]) {
+    const limits = await flat(path);
+    assert.match(limits, /limits at any time by publishing a new version of this page/, path);
+    assert.doesNotMatch(limits, /reasonable notice when practicable/, path);
+  }
 });
