@@ -1976,6 +1976,11 @@ test('gives the SDK license agreement one name wherever a page links it', async 
  * describes a product rather than titling a document, and a source file has no
  * occasion to write it at all.
  *
+ * "hosted Relay" is banned with either case of its first letter, because a
+ * heading or the start of a sentence writes it "Hosted Relay". "self-hosted
+ * Relay" is not a retired name. It names the dormant offer of a license to run
+ * the Relay on a customer's own servers, and it can also start a sentence.
+ *
  * Frozen dated legal pages and the dated components they render are exempt.
  * /legal/privacy/2026-08-26 is the text that was published under that name, it
  * is served as an immutable copy of a document a customer may have accepted,
@@ -1999,7 +2004,7 @@ test('calls the Relay by the name the glossary settles on', async () => {
   assert.ok(live.length > 30, `every source read as a frozen page, found ${live.length} live files`);
   assert.ok(sources.length - live.length >= 4, `the frozen set is ${sources.length - live.length} files; the dated components are not in it`);
 
-  const retired = /Managed Relay|OpenE2EE Relay(?! Service Terms)|(?<!self-)hosted Relay|Signal Relay\b/;
+  const retired = /Managed Relay|OpenE2EE Relay(?! Service Terms)|(?<![Ss]elf-)[Hh]osted Relay|Signal Relay\b/;
   for (const source of live) {
     const text = await read(source);
     const hit = text.match(retired);
