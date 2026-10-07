@@ -59,8 +59,6 @@ const CARRIED = new Set([
   'publishPlannedPreKeys',
   'getEcSignedPreKeyMetadata',
   'getKemLastResortPreKeyMetadata',
-  'sendRetryRequest',
-  'subscribeRetryRequests',
 ]);
 
 /** The contract members this relay refuses. */
@@ -276,21 +274,30 @@ test('a listener that throws does not stop the others, and its error is not lost
   assert.throws(rethrown[0], /listener failed/);
 });
 
-test('a retry request reaches the original sender, now or when it subscribes', async () => {
+test('a retry request is a mailbox envelope that keeps its client message id', async () => {
   const relay = pageRelay();
-  const request = { originalSenderUserId: 'alice', originalSenderDeviceId: 1, failedTimestamp: 5 };
-  await relay.sendRetryRequest(request);
+  const request = envelope({
+    targetUserId: 'alice',
+    senderUserId: 'bob',
+    messageType: 'retry_request',
+    deliveryClass: 'background-sync',
+    clientMessageId: 'r-1:retry-request',
+  });
+  await relay.send(request);
+
+  /* The sender reads the request attempt from the client message id, so each
+     delivery path carries it with the envelope. */
+  const [queued] = relay.getPendingMessages('alice', 1);
+  assert.equal(queued.messageType, 'retry_request');
+  assert.equal(queued.clientMessageId, 'r-1:retry-request');
 
   const heard = [];
-  const unsubscribe = relay.subscribeRetryRequests('alice', 1, async (r) => heard.push(r.failedTimestamp));
-  assert.equal(typeof unsubscribe, 'function');
-  assert.deepEqual(heard, [5]);
+  const unsubscribe = relay.subscribe('alice', 1, (delivered) => heard.push(delivered.clientMessageId));
+  assert.deepEqual(heard, ['r-1:retry-request']);
 
-  await relay.sendRetryRequest({ ...request, failedTimestamp: 6 });
-  assert.deepEqual(heard, [5, 6]);
+  await relay.send({ ...request, clientMessageId: 'r-1:retry-request:2' });
+  assert.deepEqual(heard, ['r-1:retry-request', 'r-1:retry-request:2']);
   unsubscribe();
-  await relay.sendRetryRequest({ ...request, failedTimestamp: 7 });
-  assert.deepEqual(heard, [5, 6]);
 });
 
 /**
@@ -330,13 +337,15 @@ const quiet = { debug() {}, info() {}, warn() {}, error() {} };
 
 test('the one-to-one session path calls only what the page relay carries', async () => {
   const called = new Set();
+  const types = [];
   let corrupted = false;
   const session = await startDemoSession({
     relay: recordedRelay(called),
     logger: { sender: quiet, recipient: quiet },
     /* One corrupted envelope makes the receiving device ask for a resend, so
-       the retry members are on the path too. */
+       the retry request and the resend are on the path too. */
     tamper: (sent) => {
+      types.push(sent.messageType);
       if (corrupted) return sent;
       corrupted = true;
       return { ...sent, ciphertext: btoa(btoa('not the ciphertext')) };
@@ -349,9 +358,10 @@ test('the one-to-one session path calls only what the page relay carries', async
     await session.stop();
   }
   assert.deepEqual(uncarried(called), []);
-  for (const member of ['send', 'subscribe', 'registerDevice', 'sendRetryRequest', 'subscribeRetryRequests']) {
+  for (const member of ['send', 'subscribe', 'registerDevice', 'markDelivered']) {
     assert.ok(called.has(member), `${member} was never called, so this path does not prove it`);
   }
+  assert.ok(types.includes('retry_request'), `no retry request was sent, so this path does not prove it: ${types}`);
 });
 
 test('the two-device run calls only what the page relay carries', async () => {

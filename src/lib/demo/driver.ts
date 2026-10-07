@@ -329,6 +329,16 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
 
   watch(to);
 
+  /* The sending device reads its own mailbox too. When a message fails to
+   * decrypt, the receiving device sends a `retry_request` envelope to the
+   * sender device, and the sender resends only after its relay subscription
+   * delivers that envelope. The SDK starts a relay subscription only for a
+   * client with an `onMessageDecrypted` hook. The session sends in one
+   * direction, so no application message comes to the sender, and its hook
+   * does nothing. */
+  from.registerHook('onMessageDecrypted', () => {});
+  from.startRelaySubscription();
+
   performance.mark('oe-demo:boot:end');
   const bootMs = measure('oe-demo:boot', 'oe-demo:boot:start', 'oe-demo:boot:end');
 

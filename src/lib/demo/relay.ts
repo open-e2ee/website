@@ -9,10 +9,11 @@
  *
  * It carries one-to-one messages only. The members that a one-to-one exchange
  * calls are real: delivery, the device registry, account identity, prekeys,
- * the prekey inventory, and retry requests. The group, ZK credential, and
- * device-provisioning members throw `PageRelayUnsupportedError`. The optional
- * sealed-sender members are absent, so a client that the demo configures
- * without sealed sender never reaches for them.
+ * and the prekey inventory. A retry request is an envelope like any other, so
+ * `send()` carries it. The group, ZK credential, and device-provisioning
+ * members throw `PageRelayUnsupportedError`. The optional sealed-sender
+ * members are absent, so a client that the demo configures without sealed
+ * sender never reaches for them.
  *
  * Delivery is synchronous. `send()` hands an envelope to every live
  * subscriber before it returns, and the demo's handoff mark depends on that
@@ -36,7 +37,6 @@ import type {
   PreKeyPublicationPlan,
   PreKeyUpload,
   RelayConnectionState,
-  RetryRequest,
   SignalProtocolRelayServer,
   Unsubscribe,
 } from '@open-e2ee/signal-protocol-sdk/remote/relay/types';
@@ -142,9 +142,6 @@ export class PageRelay implements SignalProtocolRelayServer {
   private readonly consumedKemPreKeyIds = new Map<string, Set<number>>();
   private readonly ecSignedPreKeyMetadata = new Map<string, PreKeyMetadata>();
   private readonly kemLastResortPreKeyMetadata = new Map<string, PreKeyMetadata>();
-
-  private readonly retryRequests = new Map<string, RetryRequest[]>();
-  private readonly retrySubscriptions = new Map<string, Array<(request: RetryRequest) => Promise<void>>>();
 
   // --------------------------------------------------------------------------
   // Delivery
@@ -481,39 +478,6 @@ export class PageRelay implements SignalProtocolRelayServer {
   ): Promise<PreKeyMetadata | null> {
     const metadata = this.kemLastResortPreKeyMetadata.get(keyStoreKey(userId, deviceId, identityType));
     return metadata ? copy(metadata) : null;
-  }
-
-  // --------------------------------------------------------------------------
-  // Retry requests
-  // --------------------------------------------------------------------------
-
-  async sendRetryRequest(request: RetryRequest): Promise<void> {
-    const target = rowKey(request.originalSenderUserId, request.originalSenderDeviceId);
-    const queue = this.retryRequests.get(target) ?? [];
-    queue.push(copy(request));
-    this.retryRequests.set(target, queue);
-    for (const handler of [...(this.retrySubscriptions.get(target) ?? [])]) {
-      await handler(copy(request));
-    }
-  }
-
-  subscribeRetryRequests(
-    userId: string,
-    deviceId: number,
-    handler: (request: RetryRequest) => Promise<void>
-  ): Unsubscribe {
-    const target = rowKey(userId, deviceId);
-    const handlers = this.retrySubscriptions.get(target) ?? [];
-    handlers.push(handler);
-    this.retrySubscriptions.set(target, handlers);
-    for (const request of this.retryRequests.get(target) ?? []) {
-      void handler(copy(request));
-    }
-    return () => {
-      const current = this.retrySubscriptions.get(target) ?? [];
-      const index = current.indexOf(handler);
-      if (index >= 0) current.splice(index, 1);
-    };
   }
 
   // --------------------------------------------------------------------------
