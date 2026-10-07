@@ -70,9 +70,9 @@ const declaredSelectionFields = await declaredFields(
  * plain relay cannot reach.
  *
  * `subscribe` is wrapped rather than replaced, and its unsubscribe function is
- * returned synchronously: `subscribe` and `subscribeRetryRequests` both hand
- * back a function rather than a promise of one, and a client given a promise
- * instead fails much later, inside `stop()`.
+ * returned synchronously: `subscribe` hands back a function rather than a
+ * promise of one, and a client given a promise instead fails much later,
+ * inside `stop()`.
  */
 function relayThatDeliversLate({ deliverAfterMs = 50 } = {}) {
   const relay = pageRelay();

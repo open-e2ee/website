@@ -55,10 +55,8 @@ const declaredEnvelopeFields = await (async () => {
  *
  * `subscribe` is wrapped rather than replaced, and its `Unsubscribe` is
  * returned synchronously. Making relay methods `async` wholesale is a trap:
- * `subscribe` and `subscribeRetryRequests` both return their unsubscribe
- * function rather than a promise of one, and a client handed a promise instead
- * fails much later, in `stop()`, complaining that `this.retryUnsubscribe is not
- * a function`.
+ * `subscribe` returns its unsubscribe function rather than a promise of one,
+ * and a client handed a promise instead fails much later, in `stop()`.
  */
 function relayThatDeliversLate({ deliverAfterMs = 50, delivery = 'late' } = {}) {
   const relay = pageRelay();
@@ -266,6 +264,7 @@ test('carries a second message on the established session', async () => {
  */
 test('reports the envelope its own send produced, not one a retry left behind', async () => {
   const handed = [];
+  const types = [];
   let corrupted = false;
 
   /* A failed decryption is a loud event, and the SDK's default logger writes
@@ -277,6 +276,7 @@ test('reports the envelope its own send produced, not one a retry left behind', 
     logger: { sender: quiet, recipient: quiet },
     tamper: (envelope) => {
       handed.push(envelope.ciphertext);
+      types.push(envelope.messageType);
       if (corrupted) return envelope;
       corrupted = true;
       return { ...envelope, ciphertext: btoa(btoa('not the ciphertext you were looking for')) };
@@ -287,10 +287,11 @@ test('reports the envelope its own send produced, not one a retry left behind', 
     await session.send(PROBE);
     const second = await session.send('And the second one, after the retry.');
 
-    /* Three envelopes: the corrupted first, the resend the receiving device
-       asked for, and this send's own. The middle one is the one that used to
-       be handed back here. */
-    assert.equal(handed.length, 3, `the retry did not happen: ${handed.length} envelope(s)`);
+    /* Four envelopes: the corrupted first, the retry request from the
+       receiving device, the resend it asked for, and this send's own. The
+       resend is the one that used to be handed back here. */
+    assert.equal(handed.length, 4, `the retry did not happen: ${handed.length} envelope(s)`);
+    assert.equal(types[1], 'retry_request', `envelope 2 is not the retry request: ${types}`);
     assert.equal(second.decrypted.content, 'And the second one, after the retry.');
 
     /* Compared by position rather than by value: these are 3.5 KB base64
@@ -301,7 +302,7 @@ test('reports the envelope its own send produced, not one a retry left behind', 
       reported,
       handed.length - 1,
       `the second send reported envelope ${reported + 1} of ${handed.length} as its own. ` +
-        `Envelope 2 is the resend\n  the receiving device asked for when the first message ` +
+        `Envelope 3 is the resend\n  the receiving device asked for when the first message ` +
         `failed — it carries the first sentence, and\n  a send that hands it back reports the ` +
         `previous message's ciphertext as this one's.`,
     );
