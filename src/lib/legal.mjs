@@ -34,13 +34,18 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * Development. The relay-2026-10-05 version states that Relay is generally
  * available in place of calling it a pre-release beta, and names the
  * incorporated limits document the Service Limits; its support, service-level,
- * and change-notice terms are unchanged. The console records the URL below
- * against each activation, and its RELAY_TERMS_URL and RELAY_TERMS_VERSION
- * settings must move with these constants once the dated page is live.
+ * and change-notice terms are unchanged. The relay-2026-10-08 version counts
+ * one stored Relay delivery receipt for one sender device as a delivery unit,
+ * and limits the no-charge rule for an exact retry to the time Relay stores
+ * the message, because Relay keeps a bounded record of removed messages and a
+ * later retry is a new delivery; every other clause is unchanged. The console
+ * records the URL below against each activation, and its RELAY_TERMS_URL and
+ * RELAY_TERMS_VERSION settings must move with these constants once the dated
+ * page is live.
  */
-export const relayTermsVersion = 'relay-2026-10-05';
-export const relayTermsEffectiveDate = 'October 5, 2026';
-export const relayTermsPath = '/legal/relay-terms/2026-10-05';
+export const relayTermsVersion = 'relay-2026-10-08';
+export const relayTermsEffectiveDate = 'October 8, 2026';
+export const relayTermsPath = '/legal/relay-terms/2026-10-08';
 export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
 
 /*
@@ -61,10 +66,13 @@ export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
  * version, and those versions stay at /legal/relay-beta-limits/<date>. Its
  * 2026-10-05 version states that Relay is generally available, takes the name
  * Service Limits and the /legal/relay-service-limits address, and changes no
- * limit; public/_redirects sends the old live address to the new one.
+ * limit; public/_redirects sends the old live address to the new one. The
+ * retention statement's 2026-10-08 version states that delivery status Relay
+ * records for a sender uses the message retention period, counted from the
+ * time Relay records it.
  */
-export const relayRetentionVersion = '2026-09-29';
-export const relayRetentionEffectiveDate = 'September 29, 2026';
+export const relayRetentionVersion = '2026-10-08';
+export const relayRetentionEffectiveDate = 'October 8, 2026';
 export const relayRetentionPath = `/legal/relay-retention/${relayRetentionVersion}`;
 
 export const relayServiceLimitsVersion = '2026-10-05';
@@ -135,9 +143,13 @@ export const relayServiceLimitsPath = `/legal/relay-service-limits/${relayServic
  * The 2026-09-29 version changes no event, no category, and no period. Section
  * 6 calls each project's test environment the Sandbox environment in place of
  * its earlier name, Development, because the console and Relay renamed it.
+ *
+ * The 2026-10-08 version changes no event and no period. Section 6 states that
+ * delivery status Relay records follows the project retention setting, the
+ * same setting as Relay ciphertext.
  */
-export const privacyVersion = '2026-09-29';
-export const privacyEffectiveDate = 'September 29, 2026';
+export const privacyVersion = '2026-10-08';
+export const privacyEffectiveDate = 'October 8, 2026';
 export const privacyPath = `/legal/privacy/${privacyVersion}`;
 export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
 

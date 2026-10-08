@@ -1,11 +1,10 @@
 ---
 /*
- * The OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-10-05.
- * The relay-2026-09-29 version called Relay a pre-release beta. Relay is
- * generally available, so Section 6 says so. Sections 6 and 10 drop the word
- * beta from the paid plans, the operating limits, and the incorporated limits
- * document, which is now the Service Limits. The support, service-level, and
- * change-notice terms, the fee table, and every other clause are unchanged.
+ * The OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-10-08.
+ * Section 3.2 counts one stored Relay delivery receipt for one sender device
+ * as a delivery unit, and states that an exact retry is not charged again
+ * while Relay stores the message. The fee table and every other clause are
+ * unchanged.
  *
  * `/legal/relay-terms` renders this component. The dated page under
  * `/legal/relay-terms/` holds a literal snapshot of the same text and never
@@ -212,7 +211,8 @@ import {
           </li>
           <li>
             <strong>Delivery unit.</strong> One accepted encrypted envelope or shared-body
-            reference for one destination device.
+            reference for one destination device, or one stored Relay delivery receipt for one
+            sender device.
           </li>
           <li>
             <strong>Attachment upload.</strong> One accepted upload authorization for one stable
@@ -225,8 +225,8 @@ import {
           </li>
         </ul>
         <p>
-          An exact retry that carries the same stable operation identifier is not charged twice on
-          any meter.
+          While Relay stores the message, an exact retry that carries the same stable operation
+          identifier is not charged again on any meter.
         </p>
 
         <h3>3.3 Billing</h3>
