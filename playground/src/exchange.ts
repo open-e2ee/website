@@ -40,7 +40,7 @@ export async function runExchange(message: string, log: (line: string) => void):
     async function deliver(sender: Client, receiver: Client, recipient: string, deviceId: number, text: string) {
       await sender.send(recipient, text);
       const envelopes = relay.getPendingMessages(recipient, deviceId);
-      const envelope = envelopes.find((item) => item.messageType !== 'server_delivery_receipt');
+      const envelope = envelopes.find((item) => item.contentKind !== 'receipt');
       if (!envelope) throw new Error('The relay did not receive an encrypted envelope.');
       const payload = envelope.ciphertext;
       const preview = typeof payload === 'string'

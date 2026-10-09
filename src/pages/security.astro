@@ -158,7 +158,8 @@ const notHidden = [
       <p class:list={['text-text-3', MEASURE]}>
         Some fields appear only in context: <code>recipientRegistrationId</code> accompanies the
         initial handshake envelope. <code>contentHint</code> is optional.{' '}
-        <code>deliveryClass</code> selects durable delivery or an online-only hint.
+        <code>deliveryClass</code> selects durable delivery or an online-only hint.{' '}
+        <code>contentKind</code> marks each end-to-end receipt, so your relay can tell a receipt from a message.
         Your relay also assigns its own message identifier and server timestamp.
       </p>
     </div>
