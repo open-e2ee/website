@@ -98,7 +98,7 @@ export const relayMeterDefinitions = [
   },
   {
     name: 'Delivery unit',
-    definition: 'One accepted encrypted envelope or shared-body reference for one destination device. An exact retry with the same stable operation identifier does not charge twice.',
+    definition: 'One accepted encrypted envelope or shared-body reference for one destination device, or one stored Relay delivery receipt for one sender device. While Relay stores the message, an exact retry with the same stable operation identifier does not charge again.',
   },
   {
     name: 'Attachment upload',

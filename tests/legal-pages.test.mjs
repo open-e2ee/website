@@ -60,15 +60,15 @@ test('pins the current Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-09-10');
   assert.equal(commercialTermsPath, '/legal/terms/2026-09-10');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-09-10');
-  assert.equal(privacyVersion, '2026-09-29');
-  assert.equal(privacyPath, '/legal/privacy/2026-09-29');
-  assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-09-29');
-  assert.equal(relayTermsVersion, 'relay-2026-10-05');
-  assert.equal(relayTermsPath, '/legal/relay-terms/2026-10-05');
-  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-10-05');
-  assert.equal(relayRetentionVersion, '2026-09-29');
-  assert.equal(relayRetentionEffectiveDate, 'September 29, 2026');
-  assert.equal(relayRetentionPath, '/legal/relay-retention/2026-09-29');
+  assert.equal(privacyVersion, '2026-10-08');
+  assert.equal(privacyPath, '/legal/privacy/2026-10-08');
+  assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-10-08');
+  assert.equal(relayTermsVersion, 'relay-2026-10-08');
+  assert.equal(relayTermsPath, '/legal/relay-terms/2026-10-08');
+  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-10-08');
+  assert.equal(relayRetentionVersion, '2026-10-08');
+  assert.equal(relayRetentionEffectiveDate, 'October 8, 2026');
+  assert.equal(relayRetentionPath, '/legal/relay-retention/2026-10-08');
   assert.equal(relayServiceLimitsVersion, '2026-10-05');
   assert.equal(relayServiceLimitsEffectiveDate, 'October 5, 2026');
   assert.equal(relayServiceLimitsPath, '/legal/relay-service-limits/2026-10-05');
@@ -107,7 +107,7 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
     read('../src/pages/legal/terms.astro'),
     read('../src/pages/legal/terms/2026-09-10.astro'),
     read('../src/pages/legal/relay-terms.astro'),
-    read('../src/pages/legal/relay-terms/2026-10-05.astro'),
+    read('../src/pages/legal/relay-terms/2026-10-08.astro'),
     read('../src/pages/legal/privacy.astro'),
   ]);
 
@@ -129,7 +129,7 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   assert.doesNotMatch(legalIndex, /href="\/legal\/relay-beta-limits"/, 'the index links the retired live limits address');
   assert.match(relayTerms, /SignalProtocolRelayTerms/);
   await assertCanonicalAtOwnPath('/legal/relay-terms');
-  await assertCanonicalAtOwnPath('/legal/relay-terms/2026-10-05');
+  await assertCanonicalAtOwnPath('/legal/relay-terms/2026-10-08');
   assert.match(privacy, /Privacy Notice/);
   await assertCanonicalAtOwnPath('/legal/privacy');
   assert.match(legalIndex, /href="\/legal\/dpa"/);
@@ -295,6 +295,7 @@ const frozenRelayTermsVersions = [
   { version: 'relay-2026-09-22', date: '2026-09-22', effective: 'September 22, 2026' },
   { version: 'relay-2026-09-29', date: '2026-09-29', effective: 'September 29, 2026' },
   { version: 'relay-2026-10-05', date: '2026-10-05', effective: 'October 5, 2026' },
+  { version: 'relay-2026-10-08', date: '2026-10-08', effective: 'October 8, 2026' },
 ];
 
 test('keeps every dated Relay terms page frozen: it never reads the live document', async () => {
@@ -348,6 +349,7 @@ const relayPolicies = [
       { version: '2026-09-10', effective: 'September 10, 2026' },
       { version: '2026-09-27', effective: 'September 27, 2026' },
       { version: '2026-09-29', effective: 'September 29, 2026' },
+      { version: '2026-10-08', effective: 'October 8, 2026' },
     ],
   },
   {
@@ -423,6 +425,7 @@ const frozenPrivacyVersions = [
   { version: '2026-09-10', effective: 'September 10, 2026' },
   { version: '2026-09-27', effective: 'September 27, 2026' },
   { version: '2026-09-29', effective: 'September 29, 2026' },
+  { version: '2026-10-08', effective: 'October 8, 2026' },
 ];
 
 test('keeps every dated privacy page frozen: it never reads the live notice', async () => {
@@ -474,7 +477,7 @@ test('freezes the privacy version the notice currently publishes', () => {
  * guard rules out.
  */
 test('states every published price and included quantity in the Relay terms', async () => {
-  const terms = await flat('../src/components/SignalProtocolRelayTerms20261005.astro');
+  const terms = await flat('../src/components/SignalProtocolRelayTerms20261008.astro');
 
   /* Bounded on both sides so a shorter figure cannot be satisfied by a longer
    * one containing it: "100" must not pass on "100,000", and "$0" must not
@@ -558,6 +561,7 @@ test('keeps the privacy version history truthful about when each event arrived',
   assert.match(privacy, /<strong>Version 2026-08-07\.2:<\/strong>[^<]{0,240}eleventh event/);
   assert.match(privacy, /<strong>Version 2026-08-09:<\/strong> no new event/);
   assert.match(privacy, /<strong>Version 2026-09-10:<\/strong> no new event/);
+  assert.match(privacy, /<strong>Version 2026-09-29:<\/strong> no new event/);
 
   /*
    * Exactly one entry may interpolate the constant, and this is the whole rule.
@@ -599,7 +603,7 @@ test('describes the implemented providers and managed Relay boundary', async () 
 
 test('publishes the exact Relay legal and lifecycle boundary', async () => {
   const [terms, acceptableUse, subprocessors, retention, beta] = await Promise.all([
-    flat('../src/components/SignalProtocolRelayTerms20261005.astro'),
+    flat('../src/components/SignalProtocolRelayTerms20261008.astro'),
     flat('../src/pages/legal/acceptable-use.astro'),
     flat('../src/pages/legal/subprocessors.astro'),
     flat('../src/pages/legal/relay-retention.astro'),
@@ -661,6 +665,25 @@ test('states the keyed-hash operating records in every document that bounds them
 });
 
 /*
+ * Relay records delivery status for a sender, and that record carries the
+ * message retention period. The privacy notice and the retention statement
+ * each bound it. Neither names a row, a table, or a count, so a change to the
+ * receipt shape does not force a new version.
+ */
+test('states the delivery-status retention in every document that bounds it', async () => {
+  const [privacy, retention] = await Promise.all([
+    flat('../src/pages/legal/privacy.astro'),
+    flat('../src/pages/legal/relay-retention.astro'),
+  ]);
+
+  assert.match(privacy, /Relay ciphertext and delivery status follow the project retention setting/);
+  assert.match(
+    retention,
+    /Delivery status that Relay records for a sender uses the same retention period as the message, counted from the time Relay records it\./,
+  );
+});
+
+/*
  * The console, the CLI, and the Relay call each project's test environment the
  * Sandbox environment, and `oe new` creates it. Every live page and every
  * live legal document uses that name. Only a dated legal page may keep the
@@ -678,7 +701,7 @@ test('names the Sandbox environment everywhere except the frozen legal versions'
   }
 
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20261005.astro',
+    '../src/components/SignalProtocolRelayTerms20261008.astro',
     '../src/components/DataProcessingAgreement20260929.astro',
     '../src/pages/legal/privacy.astro',
     '../src/pages/legal/relay-retention.astro',
@@ -834,7 +857,7 @@ test('calls the Relay a beta on no current legal page', async () => {
     sources.add(String(page));
   }
   assert.ok(
-    sources.has(String(new URL('../src/components/SignalProtocolRelayTerms20261005.astro', import.meta.url))),
+    sources.has(String(new URL('../src/components/SignalProtocolRelayTerms20261008.astro', import.meta.url))),
     'the guard does not read the live Relay terms',
   );
 
@@ -852,7 +875,7 @@ test('calls the Relay a beta on no current legal page', async () => {
 
 test('lets a published version change the Relay terms and limits for every customer', async () => {
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20261005.astro',
+    '../src/components/SignalProtocolRelayTerms20261008.astro',
     `../src/pages${relayTermsPath}.astro`,
   ]) {
     const terms = await flat(path);

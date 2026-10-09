@@ -160,7 +160,7 @@ test('holds the wide drawing to a legible floor', async () => {
 test('publishes all four Relay boundary statements together', async () => {
   const text = (await builtPage()).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
   const statements = [
-    'The Signal Protocol Relay stores ciphertext and the account, device, route, timing, size, quota, and abuse metadata that delivery requires.',
+    'The Signal Protocol Relay stores ciphertext, delivery status, and the account, device, route, timing, size, quota, and abuse metadata that delivery requires.',
     'The relay never needs message plaintext or device private keys.',
     'The OpenE2EE Signal Protocol SDK works with the Signal Protocol Relay or another adapter. The Signal Protocol Relay is the shortest hosted path, not a requirement of the SDK.',
     'A self-hosted adapter keeps relay metadata in infrastructure the developer operates. A managed project places the required relay metadata with OpenE2EE.',
