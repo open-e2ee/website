@@ -45,7 +45,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
-    "@open-e2ee/signal-protocol-sdk": "9.5.0",
+    "@open-e2ee/signal-protocol-sdk": "10.0.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "tailwindcss": "^4.3.3",
