@@ -313,7 +313,7 @@ test('describes the measurement in the privacy notice it points at', async () =>
   assert.match(privacy, /neither the sentence nor anything derived from it/i);
   assert.match(privacy, /one is sent per page, not per sentence/i);
   assert.match(privacy, /IP address is not recorded/i);
-  assert.match(privacy, /no third-party analytics service receives it/i);
+  assert.match(privacy, /No third-party analytics or advertising service receives them/i);
   /* The old text claimed the site measured nothing at all. */
   assert.doesNotMatch(privacy, /does not currently use advertising cookies/i);
 });

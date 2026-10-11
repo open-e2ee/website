@@ -246,8 +246,8 @@ import {
           meter and never incurs an automatic charge. A paid plan may reserve approved overage
           spend up to the project spend limit. Relay may refuse new work or enter a drain state
           when a hard cap, a spend limit, a payment failure, a policy change, or a security control
-          requires it. A drain does not make Stripe or another billing provider the authority for
-          message delivery.
+          requires it. Stripe or another billing provider does not decide which messages Relay
+          delivers.
         </p>
 
         <h3>3.5 Changing plans</h3>
@@ -287,7 +287,7 @@ import {
         <h3>3.8 Deleting a project</h3>
         <p>
           Deleting a project is not the same as cancelling a plan. Deletion ends the paid plan
-          immediately with no refund and purges the project’s encrypted service data under
+          immediately with no refund and deletes the project’s encrypted service data under
           Section 4. Cancelling a paid plan keeps the project and its data on the Free plan.
         </p>
 
@@ -318,9 +318,9 @@ import {
         <p>
           Account deletion removes the account-owned inbound mailbox and objects. It does not recall
           messages from another recipient’s mailbox or delete shared group ciphertext only because
-          one member leaves. Project deletion enters a fenced drain and purge process. Narrow
-          security, billing, reconciliation, and legal records may survive payload deletion for the
-          periods stated in the Relay Retention Statement.
+          one member leaves. Project deletion stops new work for the project, then removes its data.
+          Narrow security, billing, reconciliation, and legal records may survive payload deletion
+          for the periods stated in the Relay Retention Statement.
         </p>
 
         <h2 id="security">5. Security, acceptable use, and export</h2>
@@ -395,7 +395,7 @@ import {
         </p>
         <p>
           After termination, Customer must stop using Relay credentials. Data follows the documented
-          drain, retention, and deletion process. Accrued fees and provisions that by their nature
+          retention and deletion process. Accrued fees and provisions that by their nature
           should survive remain in effect, including Sections 4, 7, 9, and 10.
         </p>
 
