@@ -3879,7 +3879,14 @@ test('does not deny a build step in the /product lead the page later explains', 
 
   if (!dist) return skipUnbuilt('dist/product/index.html');
   assert.doesNotMatch(dist, /No native modules\. No\s*prebuild step\./);
-  assert.match(dist, /needs a development build, because SQLCipher is not available in Expo Go/);
+  assert.match(dist, /needs a development build, because its encrypted database is not available in Expo Go/);
+  /* The storage band states where each store keeps its data and who can read
+   * it, not which engine runs it (docs/decisions.md §2). */
+  assert.doesNotMatch(
+    dist,
+    /SQLCipher|expo-sqlite|op-sqlite|better-sqlite3|IndexedDB|origin private file system/,
+    '/product names an on-device storage engine',
+  );
 });
 
 test('names the cost of E2EE in the deck that lists the benefits', async () => {

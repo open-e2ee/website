@@ -22,7 +22,7 @@ TLS stops a coffee-shop network from reading your users' messages. It does not s
 
 TLS secures one connection between two endpoints. A load balancer, CDN edge, or application process usually terminates that connection. The terminating endpoint holds the key and decrypts the ciphertext. This behavior lets the server read and serve the request.
 
-Under TLS alone, a server decrypts an incoming message and encrypts it again for the next connection. Between those operations, plaintext can reach memory, request logs, and the Postgres row. Copies can also reach the search index, analytics pipeline, nightly backup, and crash dump.
+Under TLS alone, a server decrypts an incoming message and encrypts it again for the next connection. Between those operations, plaintext can reach memory, request logs, and the database row. Copies can also reach the search index, analytics pipeline, nightly backup, and crash dump.
 
 "Encryption at rest" does not change this boundary. Disk-level or column-level encryption protects a stolen drive. Your application holds the decryption key and uses it on every read. A leaked credential or misconfigured internal tool can therefore expose the contents. A subpoena or an engineer's misuse can also reach readable data.
 
