@@ -332,7 +332,7 @@ import {
         <p>
           Deletion follows the boundaries and periods published in the{' '}
           <a href="/legal/relay-retention">Relay Retention Statement</a>, which describes what
-          project deletion purges and which narrow security, billing, reconciliation, and legal
+          project deletion removes and which narrow security, billing, reconciliation, and legal
           records survive payload deletion, for how long, and why. Those records use opaque
           identifiers and contain no message content. Backups roll off on their documented cycle
           rather than being edited in place.
@@ -512,13 +512,14 @@ import {
           <li>
             <strong>Availability and resilience.</strong> The service runs on providers with
             redundant infrastructure, with availability monitoring and a public status page.
-            Retention and expiry boundaries are enforced by the service itself, with storage
-            lifecycle rules as a backstop.
+            The service enforces retention and expiry limits itself, and retries a deletion that
+            fails.
           </li>
           <li>
-            <strong>Deletion.</strong> Project deletion fences new work, drains accepted work,
-            purges project-owned state, and verifies the deletion generation before completing. The
-            published retention statement states what survives and for how long.
+            <strong>Deletion.</strong> Project deletion first stops new work for the project. It
+            then removes the project data, including work accepted before the deletion. Deletion is
+            reported complete only after these steps finish. The published retention statement
+            states what survives and for how long.
           </li>
           <li>
             <strong>Incident handling.</strong> Suspected compromise is reported to{' '}

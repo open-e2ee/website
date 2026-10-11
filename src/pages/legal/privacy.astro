@@ -148,7 +148,7 @@ import {
           Our hosting and security providers may process IP address, request time, URL, referring
           page, browser and device information, authentication and session events, request size and
           timing, error information, and security signals. Relay also processes bounded operational
-          telemetry, such as delivery state, queue lag, retry, capacity, and lifecycle outcomes. The
+          telemetry, such as delivery state, delivery delay, retry, capacity, and lifecycle outcomes. The
           console uses signed, secure cookies needed for authentication, request integrity, and
           account access. The marketing site additionally records a small set of anonymous events
           with no identifier attached, described in full in{' '}
@@ -249,8 +249,9 @@ import {
           there is nothing that distinguishes one visitor from another, these events cannot be
           linked to you, to each other, or into a journey through the site, either by us or by
           anyone who obtained the data. What they show is how many people took each step, and
-          nothing else. The measurement is handled by our own code running on Cloudflare, our
-          hosting provider, and no third-party analytics service receives it.
+          nothing else. The site sends each measurement event only to its own address. Our hosting
+          provider stores these events for us in our own account. No third-party analytics or
+          advertising service receives them.
         </p>
         <p>
           The console uses essential authentication, security, and session cookies. Cloudflare,
@@ -306,7 +307,7 @@ import {
         </ul>
         <p>
           The <a href="/legal/relay-retention">Relay Retention Statement</a> explains account and
-          project deletion, recipient mailbox boundaries, group state, and lifecycle backstops.
+          project deletion, recipient mailbox boundaries, group state, and attachment expiry.
         </p>
         <p>
           We use administrative, technical, and organizational safeguards appropriate to the nature

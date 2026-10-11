@@ -291,10 +291,13 @@ const ordered = projects
           </div>
         ))}
       </dl>
-      {/* The second sentence here ran 57 words listing four stores and the
-          conformance kit. It is four clauses now. "expo-sqlite with SQLCipher"
-          was stated in it and again in the callout four lines below, so this
-          keeps the store name and the callout keeps the consequence.
+      {/* This paragraph names each store's engine, because the SDK is open
+          code and a developer needs the engines to set it up (docs/decisions.md
+          §2, scope of the capabilities rule). Encryption at rest is a default,
+          not a guarantee, so "By default" covers Node as well. The Node store
+          makes its folder owner-only only when it creates the folder, so the
+          page claims no file permission number. "expo-sqlite with SQLCipher" is
+          stated here and the callout below keeps the consequence.
 
           "npx expo prebuild is not involved" is gone rather than defended.
           messaging.md §5 lists native project generation as a requirement of
@@ -305,12 +308,14 @@ const ordered = projects
       <p class:list={['text-text-3', MEASURE]}>
         The Expo, Node, browser, and bare React Native stores implement{' '}
         <code>SignalProtocolLocalStore</code> in full, so groups and multi-device work on any of
-        them. They differ in where the bytes land. Expo uses{' '}
-        <code>expo-sqlite</code> with SQLCipher, bare React Native{' '}
-        <code>op-sqlite</code> with SQLCipher, and Node SQLCipher on{' '}
-        <code>better-sqlite3-multiple-ciphers</code>, with its key in a vault you pass. The browser
-        uses an encrypted SQLite database in the origin private file system, or IndexedDB scoped
-        to the page&rsquo;s origin where that file system is not available.{' '}
+        them. They differ in where the bytes land. By default, Expo uses{' '}
+        <code>expo-sqlite</code> with SQLCipher, and bare React Native uses{' '}
+        <code>op-sqlite</code> with SQLCipher. By default, Node keeps one SQLCipher database file on{' '}
+        <code>better-sqlite3-multiple-ciphers</code>, with its key in a vault you pass. If its
+        folder does not exist, the Node store creates it with access for the owning user only. The
+        browser uses an encrypted SQLite database in the origin private file system. Without that
+        file system, it uses IndexedDB. Both are scoped to the page&rsquo;s origin, so code that
+        runs in that origin can read the data.{' '}
         <code>SignalProtocolLocalStore</code> and <code>SignalProtocolRelayServer</code> are
         documented interfaces, so you can write your own.
       </p>
