@@ -1,0 +1,90 @@
+---
+/* Immutable copy of the Relay Retention Statement, version 2026-10-19. */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CONTAINER,
+  LEAD,
+  LEGAL_PIN,
+} from '../../../lib/recipes';
+---
+
+<BaseLayout
+  title="Retention 2026-10-19"
+  description="Frozen copy of the OpenE2EE Signal Protocol Relay Retention Statement, version 2026-10-19."
+>
+  <article>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/legal">Legal</a>
+        <h1>OpenE2EE Signal Protocol Relay Retention Statement</h1>
+        <p class={LEAD}>What Relay keeps, for how long, and what deletion can and cannot recall.</p>
+        <p class={ARTICLE_META}>
+          <span>Effective October 19, 2026</span>
+          <span>Version 2026-10-19</span>
+        </p>
+        <p class={LEGAL_PIN}>
+          The Relay terms incorporate this document. The permanent copy of this version is at{' '}
+          <a href="/legal/relay-retention/2026-10-19"><code>/legal/relay-retention/2026-10-19</code></a>.
+        </p>
+      </div>
+    </header>
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+      <div class="prose">
+        <h2>Encrypted delivery content</h2>
+        <ul>
+          <li>A project's Sandbox environment uses 24-hour retention by default and permits no more than seven days.</li>
+          <li>Production projects can select a shorter period, up to a 30-day maximum.</li>
+          <li>Mailbox expiry removes unacknowledged ciphertext at the configured boundary.</li>
+          <li>A mailbox can hold no more than 3,000 accepted messages.</li>
+          <li>Delivery status that Relay records for a sender uses the same retention period as the message, counted from the time Relay records it.</li>
+        </ul>
+
+        <h2>Attachments</h2>
+        <ul>
+          <li>An upload authorization is never valid for more than 15 minutes. The current window is shorter.</li>
+          <li>An incomplete upload expires after 24 hours.</li>
+          <li>A completed attachment has a 30-day maximum retention.</li>
+          <li>The 30-day period starts when the upload starts.</li>
+          <li>Relay deletes the stored bytes when you remove an attachment, cancel its upload, or its retention ends.</li>
+          <li>If a deletion fails, Relay tries again later.</li>
+          <li>If an upload completes after its attachment is deleted, Relay deletes those bytes within 31 days of arrival.</li>
+        </ul>
+
+        <h2>Inactive Sandbox environments</h2>
+        <p>
+          A project's Sandbox environment can be suspended after 30 inactive days. The console shows
+          the state and the available recovery or deletion action.
+        </p>
+
+        <h2>Usage, billing, security, and recovery records</h2>
+        <p>
+          Relay keeps exact usage for the current billing period. Closed-period usage totals, billing
+          reconciliation records, and narrow security and deletion records can remain after encrypted
+          payload deletion. These records use opaque identifiers and do not contain message content,
+          account social graphs, provider subjects, device proofs, or protocol private material.
+          OpenE2EE keeps each category only for its documented retry, reconciliation, security,
+          accounting, legal, and restore period. Operating records that measure the Relay's
+          reliability, cost, and use carry project, account, and device identifiers only as keyed
+          hashes, and no content. They are kept for 380 days, including after account or project
+          deletion.
+        </p>
+
+        <h2>Deletion boundary</h2>
+        <p>
+          Account deletion removes that account’s inbound mailbox and account-owned objects. It does
+          not recall a sent envelope from another recipient’s mailbox. Leaving a group revokes future
+          access but does not erase shared ciphertext only because one member left. When you delete a
+          project, Relay stops new work for that project. Relay then removes the project data,
+          including work that it accepted before the deletion. Relay shows the project as deleting
+          until all removal steps are complete. Relay reports the deletion as complete only after
+          these steps finish. Some security, billing, and legal records stay after deletion for the
+          periods stated above.
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>
