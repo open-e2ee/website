@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "relay_managed_2026_10_18_v1",
+  "currency": "USD",
+  "recurrence": "month",
+  "plans": [
+    {
+      "attachmentOperations": 20000,
+      "deliveryUnits": 100000,
+      "monthlyActiveUsers": 100,
+      "monthlyPriceMicrounits": "0",
+      "planId": "relay_free_v1",
+      "storageBytes": 1000000000,
+      "rateCardId": null,
+      "overageRates": null
+    },
+    {
+      "attachmentOperations": 100000,
+      "deliveryUnits": 500000,
+      "monthlyActiveUsers": 1000,
+      "monthlyPriceMicrounits": "99000000",
+      "planId": "relay_starter_v1",
+      "storageBytes": 10000000000,
+      "rateCardId": "relay_starter_overage_v2",
+      "overageRates": {
+        "delivery_units": {
+          "numerator": "200",
+          "denominator": "1"
+        },
+        "relay_mau": {
+          "numerator": "50000",
+          "denominator": "1"
+        },
+        "storage_byte_month": {
+          "numerator": "1",
+          "denominator": "1000"
+        }
+      }
+    },
+    {
+      "attachmentOperations": 500000,
+      "deliveryUnits": 2500000,
+      "monthlyActiveUsers": 5000,
+      "monthlyPriceMicrounits": "499000000",
+      "planId": "relay_growth_v1",
+      "storageBytes": 50000000000,
+      "rateCardId": "relay_growth_overage_v2",
+      "overageRates": {
+        "delivery_units": {
+          "numerator": "100",
+          "denominator": "1"
+        },
+        "relay_mau": {
+          "numerator": "30000",
+          "denominator": "1"
+        },
+        "storage_byte_month": {
+          "numerator": "3",
+          "denominator": "4000"
+        }
+      }
+    },
+    {
+      "attachmentOperations": 2500000,
+      "deliveryUnits": 12500000,
+      "monthlyActiveUsers": 25000,
+      "monthlyPriceMicrounits": "999000000",
+      "planId": "relay_business_v1",
+      "storageBytes": 250000000000,
+      "rateCardId": "relay_business_overage_v2",
+      "overageRates": {
+        "delivery_units": {
+          "numerator": "60",
+          "denominator": "1"
+        },
+        "relay_mau": {
+          "numerator": "20000",
+          "denominator": "1"
+        },
+        "storage_byte_month": {
+          "numerator": "11",
+          "denominator": "20000"
+        }
+      }
+    }
+  ],
+  "sandbox": {
+    "attachmentOperations": 25000,
+    "deliveryUnits": 25000,
+    "monthlyActiveUsers": 25,
+    "storageBytes": 250000000
+  },
+  "sourceRevision": "3d74de4ec7859e6d15c0c38ce4203e4e07d52b49"
+}

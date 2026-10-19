@@ -1,10 +1,8 @@
 ---
 /*
- * The OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-10-08.
- * Section 3.2 counts one stored Relay delivery receipt for one sender device
- * as a delivery unit, and states that an exact retry is not charged again
- * while Relay stores the message. The fee table and every other clause are
- * unchanged.
+ * The OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-10-18.
+ * Section 3.1 publishes the pinned service catalog. Section 3.9 retains the
+ * existing 30-day notice requirement for existing projects.
  *
  * `/legal/relay-terms` renders this component. The dated page under
  * `/legal/relay-terms/` holds a literal snapshot of the same text and never
@@ -185,10 +183,10 @@ import {
               </tr>
             </thead>
             <tbody>
-              <tr><th scope="row">Free</th><td>$0</td><td>100</td><td>100,000</td><td>100,000</td><td>1 GB</td><td>Hard cap</td><td>Hard cap</td><td>Hard cap</td></tr>
-              <tr><th scope="row">Starter</th><td>$99</td><td>1,000</td><td>500,000</td><td>500,000</td><td>10 GB</td><td>$0.05</td><td>$55 per million</td><td>$0.50 per GB-month</td></tr>
-              <tr><th scope="row">Growth</th><td>$299</td><td>5,000</td><td>2,500,000</td><td>2,500,000</td><td>50 GB</td><td>$0.03</td><td>$55 per million</td><td>$0.50 per GB-month</td></tr>
-              <tr><th scope="row">Business</th><td>$899</td><td>25,000</td><td>12,500,000</td><td>12,500,000</td><td>250 GB</td><td>$0.02</td><td>$55 per million</td><td>$0.50 per GB-month</td></tr>
+              <tr><th scope="row">Free</th><td>$0</td><td>100</td><td>100,000</td><td>20,000</td><td>1 GB</td><td>Hard cap</td><td>Hard cap</td><td>Hard cap</td></tr>
+              <tr><th scope="row">Starter</th><td>$99</td><td>1,000</td><td>500,000</td><td>100,000</td><td>10 GB</td><td>$0.05</td><td>$200 per million</td><td>$1.00 per GB-month</td></tr>
+              <tr><th scope="row">Growth</th><td>$499</td><td>5,000</td><td>2,500,000</td><td>500,000</td><td>50 GB</td><td>$0.03</td><td>$100 per million</td><td>$0.75 per GB-month</td></tr>
+              <tr><th scope="row">Business</th><td>$999</td><td>25,000</td><td>12,500,000</td><td>2,500,000</td><td>250 GB</td><td>$0.02</td><td>$60 per million</td><td>$0.55 per GB-month</td></tr>
               <tr><th scope="row">Enterprise</th><td>Custom</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td></tr>
             </tbody>
           </table>
@@ -221,7 +219,7 @@ import {
           <li>
             <strong>Storage.</strong> Live customer ciphertext plus attachment bytes, integrated
             from exact byte changes over time. Internal identifiers, indexes, and bookkeeping are
-            not billable bytes.
+            not billable bytes. One GB is 1,000,000,000 bytes. One GB-month uses the actual UTC calendar month.
           </li>
         </ul>
         <p>
@@ -296,7 +294,10 @@ import {
           We may change a plan’s price or its included quantities by giving at least 30 days’
           notice before the change applies to your project. Notice is given to the project owner’s
           console email and by publishing an updated version of these Terms. If you do not agree,
-          cancel the paid plan before the change takes effect. Enterprise pricing and commitments
+          cancel the paid plan before the change takes effect. For a project that exists before this
+          version’s effective date, the previous prices and included quantities apply until the
+          notice period for that project ends. Publication alone does not start that period.
+          Enterprise pricing and commitments
           require a signed order form, and a signed order form controls over this Section. Send
           enterprise inquiries to <a href="mailto:sales@open-e2ee.dev">sales@open-e2ee.dev</a>.
         </p>

@@ -1421,7 +1421,7 @@ test('centers the hero at the phone’s width as well as the desktop’s', async
    * console's promise read the words from one place, and /product carries its
    * own line the same way. */
   assert.doesNotMatch(recipes, /CTA_PRIMARY|CTA_SUBLABEL/, 'a recipe for a promise outside the button is back');
-  assert.match(navigation, /export const startPromise = 'No credit card needed';/, 'the console\u2019s promise is not one string');
+  assert.match(navigation, /export const startPromise = 'Sandbox · no credit card needed';/, 'the console\u2019s promise is not one string');
   assert.match(pricing, /const PLANS_PRIMARY = 'oe-button oe-button-large oe-button-stacked';/, 'the pricing primary is not the large stacked button');
   const heroes = { index, pricing, relay, product, nextStep };
   for (const [name, source] of Object.entries(heroes)) {

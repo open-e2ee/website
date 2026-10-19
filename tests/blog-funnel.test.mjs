@@ -154,6 +154,8 @@ test('prints the same reading time the post page prints', async () => {
   const expected = [];
   for (const file of bodies) {
     const source = await read(`../src/content/blog/${file}`);
+    const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(source)?.[1] ?? '';
+    if (/^draft:\s*true\s*$/m.test(frontmatter)) continue;
     expected.push(readingMinutes(source.replace(/^---\n[\s\S]*?\n---\n/, '')));
   }
   assert.deepEqual([...onPosts].sort(), expected.sort(), 'the printed time is not the computed one');

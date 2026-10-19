@@ -99,7 +99,7 @@ export const startAction: NavigationLink = {
  * opening a project asks for no card. One string, so the heroes that carry it
  * cannot drift.
  */
-export const startPromise = 'No credit card needed';
+export const startPromise = 'Sandbox · no credit card needed';
 
 /*
  * The returning reader's route, and it stays a word beside the control above.

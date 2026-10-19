@@ -173,7 +173,7 @@ test('monthly active users lead the rows, their overage follows, and every cell 
    * not a row. */
   assert.deepEqual(
     capacityRows.map((row) => row.label),
-    ['Monthly Active Users', 'Additional MAU', 'Message Delivery Units', 'Attachment Uploads', 'Encrypted Storage'],
+    ['Monthly Active Users', 'Additional MAU', 'Message Delivery Units', 'Additional Delivery Units', 'Attachment Uploads', 'Encrypted Storage', 'Additional Storage'],
   );
   /* The founder's 2026-09-08 call: the row name stands on its own, with no
    * abbreviation on a second line. The row under it says "MAU", and the
@@ -248,13 +248,8 @@ test('monthly active users lead the rows, their overage follows, and every cell 
    * links under it, and then the How buying works band. The terms stand in
    * the footer of every page, and the console binds them at checkout. A row
    * label that says "per month" is the explainer this page shed. */
-  const paid = selfServe.filter((plan) => plan.overage);
-  const delivery = capacityRows.find((row) => row.label === 'Message Delivery Units');
-  const storage = capacityRows.find((row) => row.label === 'Encrypted Storage');
-  for (const plan of paid) {
-    assert.ok(delivery.head.includes(`additional units are ${plan.overage.delivery} on every paid plan`), `the delivery row does not price its overage at ${plan.overage.delivery}`);
-    assert.ok(storage.head.includes(`additional storage is ${plan.overage.storage} on every paid plan`), `the storage row does not price its overage at ${plan.overage.storage}`);
-  }
+  assert.deepEqual(cells('Additional Delivery Units').slice(1), selfServe.slice(1).map((plan) => plan.overage.delivery));
+  assert.deepEqual(cells('Additional Storage').slice(1), selfServe.slice(1).map((plan) => plan.overage.storage));
   const underTable = built.slice(built.indexOf('</table>'), built.indexOf('<section id="included"'));
   assert.doesNotMatch(underTable, /Prefer to operate the delivery layer|allowances are monthly|Free stops at every cap/, 'a note the founder removed still stands under the table');
   assert.doesNotMatch(underTable, /href="\/relay"|href="\/compare\/virgil-security"/, 'a link the founder removed still stands under the table');
@@ -269,16 +264,11 @@ test('every row that differs by plan is headed by a name that defines itself', (
    * hover and focus by CSS and on a tap by the one script the component
    * ships, and the ids that bind them are unique on the page. */
   const define = (name) => relayMeterDefinitions.find((meter) => meter.name === name).definition;
-  const rate = (key) => {
-    const rates = new Set(selfServe.flatMap((plan) => (plan.overage ? [plan.overage[key]] : [])));
-    assert.equal(rates.size, 1, `paid plans price ${key} overage more than one way, so one sentence cannot state it`);
-    return [...rates][0];
-  };
   const expected = {
     'Monthly Active Users': define('Relay MAU'),
-    'Message Delivery Units': `${define('Delivery unit')} Once overage is on, additional units are ${rate('delivery')} on every paid plan.`,
-    'Attachment Uploads': `${define('Attachment upload')} A hard cap on every plan.`,
-    'Encrypted Storage': `${define('Storage')} Once overage is on, additional storage is ${rate('storage')} on every paid plan.`,
+    'Message Delivery Units': define('Delivery unit'),
+    'Attachment Uploads': `${define('Attachment upload')} A fixed plan allowance with no paid overage.`,
+    'Encrypted Storage': define('Storage'),
   };
   for (const row of capacityRows) {
     const trigger = row.head.match(/<button type="button" class="([^"]*)" aria-describedby="([^"]+)">(.*?)<\/button>/);
@@ -361,8 +351,8 @@ test('what every plan carries stands in one section of cards under the plans, li
   assert.equal(primary[2], 'https://console.open-e2ee.dev/signal-relay/new');
   assert.equal(primary[3], 'Start free ', 'the label does not end in the space that keeps it a word apart from the note in the link\u2019s name');
   assert.equal(primary[4], 'oe-button-note', 'the note is not the design package\u2019s');
-  assert.equal(primary[5], 'No credit card needed');
-  assert.equal((head.match(/No credit card needed/g) ?? []).length, 1, 'the promise is on the head more than once');
+  assert.equal(primary[5], 'Sandbox · no credit card needed');
+  assert.equal((head.match(/Sandbox · no credit card needed/g) ?? []).length, 1, 'the promise is on the head more than once');
   assert.doesNotMatch(head.slice(head.indexOf('data-actions="pricing"')), /<p /, 'a line still stands under the action row');
   assert.doesNotMatch(built, /Development environment · no card/, 'the old promise is still on the page');
   const linkPattern = /<a class="([^"]*)" href="([^"]+)" rel="noopener" target="_blank">Schedule a demo<span class="oe-visually-hidden"> \(opens in a new tab\)<\/span><\/a>/g;
