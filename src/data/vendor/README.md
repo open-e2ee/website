@@ -19,8 +19,9 @@ To update the catalog:
 5. Update the agreement as a new dated version.
 6. Run the catalog, pricing, and legal tests after the website build.
 
-The terms version `relay-2026-10-18` preserves Section 3.9 for existing projects.
-OpenE2EE must send at least 30 days' notice to the project owner's Console email before changed prices or included quantities apply.
-Publication alone does not start that period.
-The coordinated release must verify each existing project's applicable catalog and notice record.
+The terms version `relay-2026-10-18` applies the current catalog immediately to every project.
+The founder approved this change because there are no paying customers.
+This catalog has no grandfathered allowances or notice waiting period.
+For future price or allowance changes, Section 3.9 retains the 30-day notice rule.
+The six older dated agreements and all existing acceptance records stay unchanged.
 This website change sends no notices and changes no subscriptions or project policies.

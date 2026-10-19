@@ -899,10 +899,12 @@ test('lets a published version change the Relay terms and limits for every custo
   }
 });
 
-test('preserves the existing-project price notice period in the current and dated agreement', async () => {
+test('applies the current catalog immediately and retains notice for future changes in both agreements', async () => {
   for (const path of ['../src/components/SignalProtocolRelayTerms20261018.astro', `../src/pages${relayTermsPath}.astro`]) {
     const terms = await flat(path);
-    assert.match(terms, /previous prices and included quantities apply until the notice period for that project ends/);
-    assert.match(terms, /Publication alone does not start that period/);
+    assert.match(terms, /prices, included quantities, and overage rates in Section 3\.1 apply to every project from this version’s effective date/);
+    assert.match(terms, /This catalog applies immediately without a notice waiting period or grandfathered allowances/);
+    assert.match(terms, /For future changes, we may change a plan’s price or its included quantities by giving at least 30 days’ notice/);
+    assert.doesNotMatch(terms, /previous prices and included quantities apply until|Publication alone does not start that period/);
   }
 });
