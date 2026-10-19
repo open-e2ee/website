@@ -60,15 +60,15 @@ test('pins the current Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-09-10');
   assert.equal(commercialTermsPath, '/legal/terms/2026-09-10');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-09-10');
-  assert.equal(privacyVersion, '2026-10-08');
-  assert.equal(privacyPath, '/legal/privacy/2026-10-08');
-  assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-10-08');
+  assert.equal(privacyVersion, '2026-10-19');
+  assert.equal(privacyPath, '/legal/privacy/2026-10-19');
+  assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-10-19');
   assert.equal(relayTermsVersion, 'relay-2026-10-18');
   assert.equal(relayTermsPath, '/legal/relay-terms/2026-10-18');
   assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-10-18');
-  assert.equal(relayRetentionVersion, '2026-10-08');
-  assert.equal(relayRetentionEffectiveDate, 'October 8, 2026');
-  assert.equal(relayRetentionPath, '/legal/relay-retention/2026-10-08');
+  assert.equal(relayRetentionVersion, '2026-10-19');
+  assert.equal(relayRetentionEffectiveDate, 'October 19, 2026');
+  assert.equal(relayRetentionPath, '/legal/relay-retention/2026-10-19');
   assert.equal(relayServiceLimitsVersion, '2026-10-05');
   assert.equal(relayServiceLimitsEffectiveDate, 'October 5, 2026');
   assert.equal(relayServiceLimitsPath, '/legal/relay-service-limits/2026-10-05');
@@ -351,6 +351,7 @@ const relayPolicies = [
       { version: '2026-09-27', effective: 'September 27, 2026' },
       { version: '2026-09-29', effective: 'September 29, 2026' },
       { version: '2026-10-08', effective: 'October 8, 2026' },
+      { version: '2026-10-19', effective: 'October 19, 2026' },
     ],
   },
   {
@@ -427,6 +428,7 @@ const frozenPrivacyVersions = [
   { version: '2026-09-27', effective: 'September 27, 2026' },
   { version: '2026-09-29', effective: 'September 29, 2026' },
   { version: '2026-10-08', effective: 'October 8, 2026' },
+  { version: '2026-10-19', effective: 'October 19, 2026' },
 ];
 
 test('keeps every dated privacy page frozen: it never reads the live notice', async () => {
@@ -659,8 +661,8 @@ test('states the keyed-hash operating records in every document that bounds them
   ]);
 
   assert.match(privacy, /appear only as keyed hashes made with a key that OpenE2EE holds/);
-  assert.match(privacy, /analytics records described in section 2 are kept for 13 months/);
-  assert.match(retention, /device identifiers only as keyed hashes, and no content\. They are kept for 13 months/);
+  assert.match(privacy, /analytics records described in section 2 are kept for 380 days/);
+  assert.match(retention, /device identifiers only as keyed hashes, and no content\. They are kept for 380 days/);
   assert.match(agreement, /to measure and improve the Relay’s reliability, performance, and cost/);
   assert.match(agreement, /measuring and improving the reliability, performance, and cost of the service/);
 });
@@ -906,5 +908,33 @@ test('applies the current catalog immediately and retains notice for future chan
     assert.match(terms, /This catalog applies immediately without a notice waiting period or grandfathered allowances/);
     assert.match(terms, /For future changes, we may change a plan’s price or its included quantities by giving at least 30 days’ notice/);
     assert.doesNotMatch(terms, /previous prices and included quantities apply until|Publication alone does not start that period/);
+  }
+});
+
+test('bounds Console onboarding measurement in the current and dated privacy notices', async () => {
+  for (const path of ['../src/pages/legal/privacy.astro', '../src/pages/legal/privacy/2026-10-19.astro']) {
+    const privacy = await flat(path);
+    assert.match(privacy, /Browser observations record setup arrival, runtime choice, snippet copying, payment-form arrival, payment submission, and reported payment results/);
+    assert.match(privacy, /Verified service observations separately record project creation, Production activation, payment setup, the first registered device, the first accepted delivery, and the first acknowledged delivery/);
+    assert.match(privacy, /Browser actions do not prove these service milestones/);
+    assert.match(privacy, /These current-state observations do not establish payment eligibility, future payment success, or application integration readiness/);
+    assert.match(privacy, /Organization, project, and event identifiers appear only as keyed hashes that our servers produce/);
+    assert.match(privacy, /These records contain no user identifier or user hash/);
+    assert.match(privacy, /They contain no message content, copied code, keys, tokens, raw provider subjects, raw identifiers, or free text/);
+    assert.match(privacy, /We do not join these records to anonymous marketing-site events/);
+    assert.match(privacy, /This measurement adds no CLI telemetry/);
+    assert.match(privacy, /Production collection starts only after we publish this notice/);
+    assert.match(privacy, /Organization erasure removes that Organization’s raw onboarding records/);
+    assert.match(privacy, /Cohort reports contain aggregate counts without Organization, user, project, device, or event identifiers/);
+    assert.match(privacy, /onboarding records follow the same 380-day raw retention/);
+  }
+});
+
+
+test('the current and dated retention statement state the exact operating-record period', async () => {
+  for (const path of ['../src/pages/legal/relay-retention.astro', '../src/pages/legal/relay-retention/2026-10-19.astro']) {
+    const retention = await flat(path);
+    assert.match(retention, /They are kept for 380 days, including after account or project deletion/);
+    assert.doesNotMatch(retention, /13 months/);
   }
 });

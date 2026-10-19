@@ -163,6 +163,32 @@ import {
           email address, or payment-card data.
         </p>
 
+        <h3>Console onboarding measurement</h3>
+        <p>
+          When we enable Console onboarding measurement, we record where Organizations complete setup or encounter friction.
+          Browser observations record setup arrival, runtime choice, snippet copying, payment-form arrival,
+          payment submission, and reported payment results.
+          Verified service observations separately record project creation, Production activation, payment setup,
+          the first registered device, the first accepted delivery, and the first acknowledged delivery.
+          Service observations also record the Stripe Customer default payment method category and readiness under Relay service policy.
+          These current-state observations do not establish payment eligibility, future payment success, or application integration readiness.
+          Browser actions do not prove these service milestones.
+        </p>
+        <p>
+          Each record contains an event type, time, deployment lane, Sandbox or Production selection,
+          and a result category from fixed lists.
+          Organization, project, and event identifiers appear only as keyed hashes that our servers produce.
+          These records contain no user identifier or user hash.
+          They contain no message content, copied code, keys, tokens, raw provider subjects, raw identifiers,
+          or free text. They also exclude email addresses, IP addresses, and browser user-agent strings.
+        </p>
+        <p>
+          This measurement uses no persistent browser identifier and stores nothing in browser storage.
+          We do not join these records to anonymous marketing-site events.
+          This measurement adds no CLI telemetry.
+          Production collection starts only after we publish this notice.
+        </p>
+
         <h2 id="use">3. How and why we use information</h2>
         <p>We use personal information to:</p>
         <ul>
@@ -296,7 +322,7 @@ import {
             maintain appropriate records;
           </li>
           <li>
-            analytics records described in section 2 are kept for 13 months; summary tables built
+            analytics records described in section 2 are kept for 380 days; summary tables built
             from them, which identify nothing more specific than a project, are kept while they
             remain useful for planning the business; and
           </li>
@@ -305,6 +331,11 @@ import {
             operational and provider settings, unless needed to investigate an incident.
           </li>
         </ul>
+        <p>
+          Console onboarding records follow the same 380-day raw retention.
+          Organization erasure removes that Organization’s raw onboarding records.
+          Cohort reports contain aggregate counts without Organization, user, project, device, or event identifiers.
+        </p>
         <p>
           The <a href="/legal/relay-retention">Relay Retention Statement</a> explains account and
           project deletion, recipient mailbox boundaries, group state, and attachment expiry.
@@ -376,7 +407,8 @@ import {
           <a href="/legal/privacy/2026-09-10">2026-09-10</a>,{' '}
           <a href="/legal/privacy/2026-09-27">2026-09-27</a>,{' '}
           <a href="/legal/privacy/2026-09-29">2026-09-29</a>,{' '}
-          <a href="/legal/privacy/2026-10-08">2026-10-08</a>.
+          <a href="/legal/privacy/2026-10-08">2026-10-08</a>,{' '}
+          <a href="/legal/privacy/2026-10-19">2026-10-19</a>.
         </p>
         <p>
           <strong>Version 2026-07-28:</strong> the marketing site began recording the anonymous
@@ -455,8 +487,14 @@ import {
           not change.
         </p>
         <p>
-          <strong>Version {privacyVersion}:</strong> no new event. Section 6 adds delivery status
+          <strong>Version 2026-10-08:</strong> no new event. Section 6 adds delivery status
           to the Relay data that follows the project retention setting. No retention period changed.
+        </p>
+        <p>
+          <strong>Version {privacyVersion}:</strong> adds the Console onboarding measurement in section 2,
+          its Organization erasure rule, and its aggregate reports in section 6.
+          Section 6 states the existing raw analytics retention rule as exactly 380 days.
+          The marketing site’s anonymous measurement does not change.
         </p>
         <p>
           For privacy questions or requests, email{' '}

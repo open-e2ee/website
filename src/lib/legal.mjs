@@ -72,10 +72,11 @@ export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
  * limit; public/_redirects sends the old live address to the new one. The
  * retention statement's 2026-10-08 version states that delivery status Relay
  * records for a sender uses the message retention period, counted from the
- * time Relay records it.
+ * time Relay records it. Its 2026-10-19 version states the existing operating
+ * record retention as exactly 380 days. Content and deletion rules do not change.
  */
-export const relayRetentionVersion = '2026-10-08';
-export const relayRetentionEffectiveDate = 'October 8, 2026';
+export const relayRetentionVersion = '2026-10-19';
+export const relayRetentionEffectiveDate = 'October 19, 2026';
 export const relayRetentionPath = `/legal/relay-retention/${relayRetentionVersion}`;
 
 export const relayServiceLimitsVersion = '2026-10-05';
@@ -150,9 +151,14 @@ export const relayServiceLimitsPath = `/legal/relay-service-limits/${relayServic
  * The 2026-10-08 version changes no event and no period. Section 6 states that
  * delivery status Relay records follows the project retention setting, the
  * same setting as Relay ciphertext.
+ *
+ * The 2026-10-19 version discloses Console onboarding observations and their
+ * keyed Organization, project, and event hashes. It states the existing raw
+ * retention rule as exactly 380 days and describes Organization erasure and
+ * aggregate cohort reports. Marketing measurement does not change.
  */
-export const privacyVersion = '2026-10-08';
-export const privacyEffectiveDate = 'October 8, 2026';
+export const privacyVersion = '2026-10-19';
+export const privacyEffectiveDate = 'October 19, 2026';
 export const privacyPath = `/legal/privacy/${privacyVersion}`;
 export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
 
