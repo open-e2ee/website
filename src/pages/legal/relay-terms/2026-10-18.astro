@@ -1,24 +1,7 @@
 ---
-/*
- * The OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-10-08.
- * Section 3.2 counts one stored Relay delivery receipt for one sender device
- * as a delivery unit, and states that an exact retry is not charged again
- * while Relay stores the message. The fee table and every other clause are
- * unchanged.
- *
- * `/legal/relay-terms` renders this component. The dated page under
- * `/legal/relay-terms/` holds a literal snapshot of the same text and never
- * imports this file; tests/legal-pages.test.mjs enforces that, and asserts
- * that every price and included quantity in src/data/relay-pricing.mjs is
- * stated here, so a price change cannot ship without a new version.
- */
-import BaseLayout from '../layouts/BaseLayout.astro';
-import TableScroll from '../components/TableScroll.astro';
-import {
-  relayTermsEffectiveDate,
-  relayTermsPath,
-  relayTermsVersion,
-} from '../lib/legal.mjs';
+/* Immutable literal copy of relay-2026-10-18. Do not edit this accepted version. */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import TableScroll from '../../../components/TableScroll.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -32,7 +15,7 @@ import {
   LEGAL_NOTICE,
   LEGAL_PIN,
   LEGAL_TOC,
-} from '../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
@@ -49,12 +32,12 @@ import {
           the Signal Protocol Relay.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {relayTermsEffectiveDate}</span>
-          <span>Version {relayTermsVersion}</span>
+          <span>Effective October 18, 2026</span>
+          <span>Version relay-2026-10-18</span>
         </p>
         <p class={LEGAL_PIN}>
           The current version of these Terms applies to every Customer. The permanent copy of this version is at{' '}
-          <a href={relayTermsPath}><code>{relayTermsPath}</code></a>.
+          <a href="/legal/relay-terms/2026-10-18"><code>/legal/relay-terms/2026-10-18</code></a>.
         </p>
       </div>
     </header>
@@ -185,10 +168,10 @@ import {
               </tr>
             </thead>
             <tbody>
-              <tr><th scope="row">Free</th><td>$0</td><td>100</td><td>100,000</td><td>100,000</td><td>1 GB</td><td>Hard cap</td><td>Hard cap</td><td>Hard cap</td></tr>
-              <tr><th scope="row">Starter</th><td>$99</td><td>1,000</td><td>500,000</td><td>500,000</td><td>10 GB</td><td>$0.05</td><td>$55 per million</td><td>$0.50 per GB-month</td></tr>
-              <tr><th scope="row">Growth</th><td>$299</td><td>5,000</td><td>2,500,000</td><td>2,500,000</td><td>50 GB</td><td>$0.03</td><td>$55 per million</td><td>$0.50 per GB-month</td></tr>
-              <tr><th scope="row">Business</th><td>$899</td><td>25,000</td><td>12,500,000</td><td>12,500,000</td><td>250 GB</td><td>$0.02</td><td>$55 per million</td><td>$0.50 per GB-month</td></tr>
+              <tr><th scope="row">Free</th><td>$0</td><td>100</td><td>100,000</td><td>20,000</td><td>1 GB</td><td>Hard cap</td><td>Hard cap</td><td>Hard cap</td></tr>
+              <tr><th scope="row">Starter</th><td>$99</td><td>1,000</td><td>500,000</td><td>100,000</td><td>10 GB</td><td>$0.05</td><td>$200 per million</td><td>$1.00 per GB-month</td></tr>
+              <tr><th scope="row">Growth</th><td>$499</td><td>5,000</td><td>2,500,000</td><td>500,000</td><td>50 GB</td><td>$0.03</td><td>$100 per million</td><td>$0.75 per GB-month</td></tr>
+              <tr><th scope="row">Business</th><td>$999</td><td>25,000</td><td>12,500,000</td><td>2,500,000</td><td>250 GB</td><td>$0.02</td><td>$60 per million</td><td>$0.55 per GB-month</td></tr>
               <tr><th scope="row">Enterprise</th><td>Custom</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td><td>Negotiated</td></tr>
             </tbody>
           </table>
@@ -221,7 +204,7 @@ import {
           <li>
             <strong>Storage.</strong> Live customer ciphertext plus attachment bytes, integrated
             from exact byte changes over time. Internal identifiers, indexes, and bookkeeping are
-            not billable bytes.
+            not billable bytes. One GB is 1,000,000,000 bytes. One GB-month uses the actual UTC calendar month.
           </li>
         </ul>
         <p>
@@ -293,10 +276,16 @@ import {
 
         <h3>3.9 Price changes</h3>
         <p>
-          We may change a plan’s price or its included quantities by giving at least 30 days’
-          notice before the change applies to your project. Notice is given to the project owner’s
-          console email and by publishing an updated version of these Terms. If you do not agree,
-          cancel the paid plan before the change takes effect. Enterprise pricing and commitments
+          The prices, included quantities, and overage rates in Section 3.1 apply to every project
+          from this version’s effective date. This catalog applies immediately without a notice
+          waiting period or grandfathered allowances.
+        </p>
+        <p>
+          For future changes, we may change a plan’s price or its included quantities by giving
+          at least 30 days’ notice before the change applies to your project. Notice is given to
+          the project owner’s console email and by publishing an updated version of these Terms.
+          If you do not agree, cancel the paid plan before the change takes effect.
+          Enterprise pricing and commitments
           require a signed order form, and a signed order form controls over this Section. Send
           enterprise inquiries to <a href="mailto:sales@open-e2ee.dev">sales@open-e2ee.dev</a>.
         </p>

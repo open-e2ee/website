@@ -63,9 +63,9 @@ test('pins the current Startup terms to an immutable canonical URL', () => {
   assert.equal(privacyVersion, '2026-10-08');
   assert.equal(privacyPath, '/legal/privacy/2026-10-08');
   assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-10-08');
-  assert.equal(relayTermsVersion, 'relay-2026-10-08');
-  assert.equal(relayTermsPath, '/legal/relay-terms/2026-10-08');
-  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-10-08');
+  assert.equal(relayTermsVersion, 'relay-2026-10-18');
+  assert.equal(relayTermsPath, '/legal/relay-terms/2026-10-18');
+  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-10-18');
   assert.equal(relayRetentionVersion, '2026-10-08');
   assert.equal(relayRetentionEffectiveDate, 'October 8, 2026');
   assert.equal(relayRetentionPath, '/legal/relay-retention/2026-10-08');
@@ -296,6 +296,7 @@ const frozenRelayTermsVersions = [
   { version: 'relay-2026-09-29', date: '2026-09-29', effective: 'September 29, 2026' },
   { version: 'relay-2026-10-05', date: '2026-10-05', effective: 'October 5, 2026' },
   { version: 'relay-2026-10-08', date: '2026-10-08', effective: 'October 8, 2026' },
+  { version: 'relay-2026-10-18', date: '2026-10-18', effective: 'October 18, 2026' },
 ];
 
 test('keeps every dated Relay terms page frozen: it never reads the live document', async () => {
@@ -477,7 +478,7 @@ test('freezes the privacy version the notice currently publishes', () => {
  * guard rules out.
  */
 test('states every published price and included quantity in the Relay terms', async () => {
-  const terms = await flat('../src/components/SignalProtocolRelayTerms20261008.astro');
+  const terms = await flat('../src/components/SignalProtocolRelayTerms20261018.astro');
 
   /* Bounded on both sides so a shorter figure cannot be satisfied by a longer
    * one containing it: "100" must not pass on "100,000", and "$0" must not
@@ -603,7 +604,7 @@ test('describes the implemented providers and managed Relay boundary', async () 
 
 test('publishes the exact Relay legal and lifecycle boundary', async () => {
   const [terms, acceptableUse, subprocessors, retention, beta] = await Promise.all([
-    flat('../src/components/SignalProtocolRelayTerms20261008.astro'),
+    flat('../src/components/SignalProtocolRelayTerms20261018.astro'),
     flat('../src/pages/legal/acceptable-use.astro'),
     flat('../src/pages/legal/subprocessors.astro'),
     flat('../src/pages/legal/relay-retention.astro'),
@@ -701,7 +702,7 @@ test('names the Sandbox environment everywhere except the frozen legal versions'
   }
 
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20261008.astro',
+    '../src/components/SignalProtocolRelayTerms20261018.astro',
     '../src/components/DataProcessingAgreement20260929.astro',
     '../src/pages/legal/privacy.astro',
     '../src/pages/legal/relay-retention.astro',
@@ -857,7 +858,7 @@ test('calls the Relay a beta on no current legal page', async () => {
     sources.add(String(page));
   }
   assert.ok(
-    sources.has(String(new URL('../src/components/SignalProtocolRelayTerms20261008.astro', import.meta.url))),
+    sources.has(String(new URL('../src/components/SignalProtocolRelayTerms20261018.astro', import.meta.url))),
     'the guard does not read the live Relay terms',
   );
 
@@ -875,7 +876,7 @@ test('calls the Relay a beta on no current legal page', async () => {
 
 test('lets a published version change the Relay terms and limits for every customer', async () => {
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20261008.astro',
+    '../src/components/SignalProtocolRelayTerms20261018.astro',
     `../src/pages${relayTermsPath}.astro`,
   ]) {
     const terms = await flat(path);
@@ -895,5 +896,15 @@ test('lets a published version change the Relay terms and limits for every custo
     const limits = await flat(path);
     assert.match(limits, /limits at any time by publishing a new version of this page/, path);
     assert.doesNotMatch(limits, /reasonable notice when practicable/, path);
+  }
+});
+
+test('applies the current catalog immediately and retains notice for future changes in both agreements', async () => {
+  for (const path of ['../src/components/SignalProtocolRelayTerms20261018.astro', `../src/pages${relayTermsPath}.astro`]) {
+    const terms = await flat(path);
+    assert.match(terms, /prices, included quantities, and overage rates in Section 3\.1 apply to every project from this version’s effective date/);
+    assert.match(terms, /This catalog applies immediately without a notice waiting period or grandfathered allowances/);
+    assert.match(terms, /For future changes, we may change a plan’s price or its included quantities by giving at least 30 days’ notice/);
+    assert.doesNotMatch(terms, /previous prices and included quantities apply until|Publication alone does not start that period/);
   }
 });

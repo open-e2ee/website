@@ -274,8 +274,7 @@ const ENTERPRISE_ACTION = {
  * two numbers a buyer does arithmetic on are read together. Every row is named
  * by what the plan provides, in the founder's words of 2026-09-08, with no
  * unit line under it, and each name defines itself on hover. Delivery and storage
- * overage price the same on every paid plan, so each is a sentence in the
- * definition of its row rather than a row of one repeated figure. Allowances
+ * overage rates differ by plan, so each has a separate row. Allowances
  * are monthly, which the price under each name already reads as "per month".
  * Free has no overage, so its overage cell reads as the cap it is.
  * Retention is the same on every plan, so it sits with what every plan carries.
@@ -292,36 +291,28 @@ const define = (name: string) => {
   return meter.definition;
 };
 
-/* The definitions price delivery and storage overage once each, which holds
- * only while every paid plan prices them the same. */
-const overageRates = (key: 'delivery' | 'storage') => {
-  const rates = new Set(selfServe.flatMap((plan) => (plan.overage ? [plan.overage[key]] : [])));
-  if (rates.size !== 1) throw new Error(`pricing.astro: paid plans price ${key} overage ${rates.size} ways; the row definition states one`);
-  return [...rates][0];
-};
-const deliveryOverage = overageRates('delivery');
-const storageOverage = overageRates('storage');
-
 type RowShape = { label: string; definition: string; lead?: boolean };
 type Row = RowShape & { value: (plan: Plan) => string };
 const rows: Row[] = [
   { label: 'Monthly Active Users', lead: true, definition: define('Relay MAU'), value: (plan) => plan.relayMau },
   {
     label: 'Additional MAU',
-    definition: 'Each Relay MAU beyond the plan allowance in a month, charged only once overage is on. Free has no overage and stops at its cap.',
+    definition: 'Each additional monthly active account, after explicit overage acceptance. Other allowances do not increase. Free has no paid overage.',
     value: (plan) => plan.overage?.relayMau ?? NO_OVERAGE,
   },
   {
     label: 'Message Delivery Units',
-    definition: `${define('Delivery unit')} Once overage is on, additional units are ${deliveryOverage} on every paid plan.`,
+    definition: define('Delivery unit'),
     value: (plan) => plan.deliveryUnits,
   },
-  { label: 'Attachment Uploads', definition: `${define('Attachment upload')} A hard cap on every plan.`, value: (plan) => plan.attachmentOperations },
+  { label: 'Additional Delivery Units', definition: 'The price per million additional delivery units after explicit overage acceptance.', value: (plan) => plan.overage?.delivery ?? NO_OVERAGE },
+  { label: 'Attachment Uploads', definition: `${define('Attachment upload')} A fixed plan allowance with no paid overage.`, value: (plan) => plan.attachmentOperations },
   {
     label: 'Encrypted Storage',
-    definition: `${define('Storage')} Once overage is on, additional storage is ${storageOverage} on every paid plan.`,
+    definition: define('Storage'),
     value: (plan) => plan.storage,
   },
+  { label: 'Additional Storage', definition: 'The price per additional exact GB-month after explicit overage acceptance.', value: (plan) => plan.overage?.storage ?? NO_OVERAGE },
   /*
    * Commented out 2026-09-22: see the rationale above the row definitions.
    *

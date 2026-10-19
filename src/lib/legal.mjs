@@ -39,13 +39,16 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * and limits the no-charge rule for an exact retry to the time Relay stores
  * the message, because Relay keeps a bounded record of removed messages and a
  * later retry is a new delivery; every other clause is unchanged. The console
- * records the URL below against each activation, and its RELAY_TERMS_URL and
- * RELAY_TERMS_VERSION settings must move with these constants once the dated
+ * records the URL below against each activation. The relay-2026-10-18 version
+ * publishes the replacement catalog, defines decimal GB-months, and applies
+ * the catalog immediately to every project. Section 3.9 retains notice for
+ * future changes. The Console RELAY_TERMS_URL and RELAY_TERMS_VERSION settings
+ * must move with these constants once the dated
  * page is live.
  */
-export const relayTermsVersion = 'relay-2026-10-08';
-export const relayTermsEffectiveDate = 'October 8, 2026';
-export const relayTermsPath = '/legal/relay-terms/2026-10-08';
+export const relayTermsVersion = 'relay-2026-10-18';
+export const relayTermsEffectiveDate = 'October 18, 2026';
+export const relayTermsPath = '/legal/relay-terms/2026-10-18';
 export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
 
 /*
