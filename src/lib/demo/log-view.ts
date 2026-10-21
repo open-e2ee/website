@@ -82,19 +82,12 @@ export function summarize(event: TraceEvent): string {
         | {
             selection?: {
               usedPQXDH?: boolean;
-              usedClassicalFallback?: boolean;
               usedTripleRatchet?: boolean;
             } | null;
           }
         | undefined;
       const selection = detail?.selection;
-      const agreement = selection
-        ? selection.usedClassicalFallback
-          ? 'classical fallback'
-          : selection.usedPQXDH
-            ? 'PQXDH'
-            : 'key agreement'
-        : 'key agreement';
+      const agreement = selection?.usedPQXDH ? 'PQXDH' : 'key agreement';
       /* The handshake and the ongoing ratchet are two separate choices and the
          event reports them separately, so the line names both rather than
          letting "PQXDH" stand in for a ratchet it says nothing about. Omitted

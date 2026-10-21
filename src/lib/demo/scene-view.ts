@@ -144,10 +144,8 @@ export interface SceneNames {
  * The two switches the reader may throw.
  *
  * Post-quantum protection is not among them, and its absence is a decision
- * rather than an omission. The SDK's post-quantum setting is `required` or
- * `compatible`, and `compatible` is not "off" — it still runs PQXDH against any
- * peer carrying ML-KEM material, which both devices here do. A checkbox marked
- * post-quantum would therefore have drawn a difference the run does not contain.
+ * rather than an omission. `required` is the SDK's only post-quantum setting,
+ * so a checkbox marked post-quantum would have had one position.
  * The demo runs `required` and shows the protection where it is real: in the
  * PQXDH key agreement, and in the wheel captioned with the ratchet the SDK
  * reports it selected.

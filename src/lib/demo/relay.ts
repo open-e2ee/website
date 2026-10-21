@@ -10,10 +10,10 @@
  * It carries one-to-one messages only. The members that a one-to-one exchange
  * calls are real: delivery, the device registry, account identity, prekeys,
  * and the prekey inventory. A retry request is an envelope like any other, so
- * `send()` carries it. The group, ZK credential, and device-provisioning
- * members throw `PageRelayUnsupportedError`. The optional sealed-sender
- * members are absent, so a client that the demo configures without sealed
- * sender never reaches for them.
+ * `send()` carries it. The group and ZK credential members throw
+ * `PageRelayUnsupportedError`. The optional sealed-sender members are absent,
+ * so a client that the demo configures without sealed sender never reaches
+ * for them.
  *
  * Delivery is synchronous. `send()` hands an envelope to every live
  * subscriber before it returns, and the demo's handoff mark depends on that
@@ -506,38 +506,6 @@ export class PageRelay implements SignalProtocolRelayServer {
 
   issueAuthCredential(): Promise<never> {
     return unsupported('issueAuthCredential');
-  }
-
-  createProvisioningSession(): Promise<never> {
-    return unsupported('createProvisioningSession');
-  }
-
-  connectNewDevice(): Promise<never> {
-    return unsupported('connectNewDevice');
-  }
-
-  sendProvisioningMessage(): Promise<never> {
-    return unsupported('sendProvisioningMessage');
-  }
-
-  getProvisioningMessage(): Promise<never> {
-    return unsupported('getProvisioningMessage');
-  }
-
-  completeProvisioning(): Promise<never> {
-    return unsupported('completeProvisioning');
-  }
-
-  acknowledgeProvisioning(): Promise<never> {
-    return unsupported('acknowledgeProvisioning');
-  }
-
-  rollbackProvisioning(): Promise<never> {
-    return unsupported('rollbackProvisioning');
-  }
-
-  deleteProvisioningSession(): Promise<never> {
-    return unsupported('deleteProvisioningSession');
   }
 
   // --------------------------------------------------------------------------

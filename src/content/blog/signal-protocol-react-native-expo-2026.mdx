@@ -3,7 +3,7 @@ title: Signal Protocol in React Native and Expo in 2026
 description: The official JavaScript library is archived. Its replacement is a Node native add-on, and the community port has an open trust-check bug.
 image: /social/blog/signal-protocol-react-native-expo-2026.png
 publishedAt: 2026-07-25
-updatedAt: 2026-10-05
+updatedAt: 2026-10-20
 author: OpenE2EE
 tags:
   - React Native
@@ -154,11 +154,11 @@ For a headless task or push handler, call `rotateKeysHeadless(relay, userId, dev
 
 ## The second device, and first contact
 
-A linked device does not hold the session keys that encrypted past messages. Provisioning transfers existing account identity material, but not sessions or message history. Device 1 is the primary. The relay allocates ids from 2 through 5 to linked devices.
+A linked device does not hold the session keys that encrypted past messages. Device transfer copies the account identity, but not sessions or message history. Device 1 is the primary. The relay allocates ids from 2 through 5 to linked devices.
 
-The primary device uses `generateProvisioningQR`. The new device uses `parseProvisioningQR` and `receiveProvisioningMessage`. Import these functions from `@open-e2ee/signal-protocol-sdk/device/provisioning`.
+State transfer uses `prepareOldDeviceTransfer` and `restoreDeviceBackup` from `@open-e2ee/signal-protocol-sdk/device`. Transfer copies the identity private key. It copies no prekeys, ratchet sessions, or message state. The new device generates its own prekeys and starts its own sessions. After a transfer, two devices hold the same identity private key. The [deviations document](https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/DEVIATIONS.md#54-extensions-transfer-device-names) records this model.
 
-State transfer uses `prepareOldDeviceTransfer` and `restoreDeviceBackup` from `@open-e2ee/signal-protocol-sdk/device`. Transfer clones the identity private key and live ratchet state. If both devices remain active, a peer message that one device decrypts desynchronizes the other. Cloned state also weakens the forward-secrecy bound because one endpoint compromise exposes state that the other device shares. The [deviations document](https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/DEVIATIONS.md#54-extensions-provisioning-transfer-device-names) records both limits. Your product policy must choose between fresh provisioning and state transfer.
+`linkHostedRelayDevice` from `@open-e2ee/signal-protocol-sdk` links the new device to its Signal Protocol Relay account. The new device's store must already hold the account identity, from a device transfer or from a channel that your app owns. The call runs in one process that holds the stores of both devices. It sends no private key to the Relay.
 
 The SDK records trust on first use (TOFU) as `UNVERIFIED_TOFU`. It pins one composite X25519 and Ed25519 identity tuple per `(userId, identityType)`. If either component changes, the SDK fails closed until the app calls `acceptIdentityRotation`. Pinning detects a later change. It does not prove who was present at first contact.
 

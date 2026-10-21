@@ -350,11 +350,9 @@ const notHidden = [
         <div>
           <dt>Post-quantum means confidentiality, not signatures</dt>
           <dd>
-            Post-quantum key agreement is the default and fails closed, using ML-KEM-1024 for PQXDH
-            and an ML-KEM Braid ratchet. One explicit opt-in,{' '}
-            <code>protocol.postQuantum: 'compatible'</code>, permits a classical session only when a
-            peer advertises no post-quantum material. Identity signatures remain classical Ed25519
-            and X25519.
+            Post-quantum key agreement is required and fails closed, using ML-KEM-1024 for PQXDH
+            and an ML-KEM Braid ratchet. No setting permits a classical session. Identity
+            signatures remain classical Ed25519 and X25519.
             The protection is against harvest-now-decrypt-later, not against a quantum adversary
             forging identities.
           </dd>

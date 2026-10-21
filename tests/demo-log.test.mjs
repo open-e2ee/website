@@ -100,22 +100,18 @@ test('the key-agreement line names the ratchet as well as the handshake', () => 
     detail: { selection },
   });
 
-  const triple = summarize(
-    established({ usedPQXDH: true, usedClassicalFallback: false, usedTripleRatchet: true }),
-  );
+  const triple = summarize(established({ usedPQXDH: true, usedTripleRatchet: true }));
   assert.match(triple, /PQXDH/);
   assert.match(triple, /triple ratchet/);
 
   /* The other answer is printed as readily. A line that could only ever say
      "triple" would be a claim wearing a reading's clothes. */
-  const double = summarize(
-    established({ usedPQXDH: true, usedClassicalFallback: false, usedTripleRatchet: false }),
-  );
+  const double = summarize(established({ usedPQXDH: true, usedTripleRatchet: false }));
   assert.match(double, /double ratchet/);
 
   /* Said nothing is not the same as said no: an event with no opinion about the
      ratchet leaves the line quiet rather than captioning it "double". */
-  const quiet = summarize(established({ usedPQXDH: true, usedClassicalFallback: false }));
+  const quiet = summarize(established({ usedPQXDH: true }));
   assert.doesNotMatch(quiet, /ratchet/);
 });
 
