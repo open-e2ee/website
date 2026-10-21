@@ -91,7 +91,7 @@ const NOTES = {
     'Sender account, visible on the identified-delivery path. Sealed sender replaces this with an empty string and messageType unidentified_sender.',
   senderDeviceId: 'Sender device. Also blanked (0) under sealed sender.',
   messageType:
-    'Outer envelope type only. prekey_bundle means this is the session-establishing X3DH/PQXDH message; later messages in the session carry ciphertext.',
+    'Outer envelope type only. prekey_bundle means this is the session-establishing PQXDH message; later messages in the session carry ciphertext.',
   deliveryClass:
     'How the relay stores the envelope and whether it wakes the device. The SDK sets it from the kind of content: user-visible, background-sync, or ephemeral. It is in the clear, so the relay learns which of the three each envelope is.',
   timestamp:

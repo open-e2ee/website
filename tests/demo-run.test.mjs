@@ -304,7 +304,6 @@ test('the key agreement step carries what the protocol chose, from the protocol'
       true,
       'the demo agreed a key without post-quantum key exchange',
     );
-    assert.equal(selection.usedClassicalFallback, false);
     assert.equal(typeof selection.usedTripleRatchet, 'boolean');
 
     /* Handed over whole, so every field is one the installed package declares

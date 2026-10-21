@@ -378,7 +378,7 @@ function recordGeneration(
  * above exist for exactly this — inspecting what a device has published
  * without taking any of it.
  *
- * An identity contributes two: the X25519 key X3DH/PQXDH uses and the
+ * An identity contributes two: the X25519 key PQXDH uses and the
  * Ed25519 key that signs prekeys. `registrationId` and `deviceId`, which a
  * fetched bundle also carries, are identifiers rather than keys and are not
  * counted, so a number captioned "public keys" only ever counts keys.
@@ -530,8 +530,8 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      *
      * `onProtocolSelected` is the only place the choice is stated: it fires once
      * key agreement completes and before anything is encrypted, and it carries
-     * whether PQXDH ran, whether the Triple Ratchet is on, and whether the
-     * classical fallback was taken and why. Nothing else on the client says. The
+     * whether PQXDH ran and whether the Triple Ratchet is on. Nothing else on
+     * the client says. The
      * nearest candidate, `getSessionHealth`, reports that a session exists and
      * how many messages have crossed it, and knows nothing about either.
      *
@@ -621,7 +621,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      * onProtocolSelected}` is just `{onProtocolSelected}`. The real merge of
      * policy and callback happens one call later, inside
      * `DefaultSignalProtocolClient.create()`: it folds whatever `protocolStrategy`
-     * it is handed together with the `allowClassicalFallback`/`sckaMode`
+     * it is handed together with the `sckaMode`
      * `resolveSignalProtocolStrategy()` derives from `protocol`, callback
      * included, which is why `onProtocolSelected` keeps firing with a
      * `protocol` policy set. The spread stays anyway, as the cheap guard

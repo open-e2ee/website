@@ -180,7 +180,7 @@ export interface DemoSession {
    *
    * The client is built by the caller, because building it is the point of the
    * scenario that does this — a linked device is created against storage
-   * provisioning has already written the account identity into, and hiding
+   * that already holds the account identity, and hiding
    * that call in here would hide the thing worth showing. Once handed over,
    * the session stops it with the rest.
    */
@@ -243,7 +243,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
     }),
   ]);
 
-  /* Publishing prekey bundles is what makes the first send an X3DH/PQXDH
+  /* Publishing prekey bundles is what makes the first send a PQXDH
    * handshake rather than a failure; both sides do it because both sides are
    * running in this tab. */
   await Promise.all([from.syncToServer(), to.syncToServer()]);

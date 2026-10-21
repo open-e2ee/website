@@ -3,6 +3,7 @@ title: E2EE changes your application architecture
 description: The crypto is the small part. Search, notifications, moderation, and recovery all move to the device. Every feature that read message bodies changes.
 image: /social/blog/e2ee-changes-your-application-architecture.png
 publishedAt: 2026-07-25
+updatedAt: 2026-10-20
 author: OpenE2EE
 tags:
   - Architecture
@@ -114,7 +115,7 @@ Pick a named profile deliberately:
   </figcaption>
 </figure>
 
-The SDK provides device-to-device transfer, encrypted backup primitives, and QR-based provisioning for linked devices. [Signal Protocol in React Native and Expo in 2026](/blog/signal-protocol-react-native-expo-2026/) records the limits on state transfer.
+The SDK provides device-to-device transfer, encrypted backup primitives, and a managed device link for the Signal Protocol Relay. [Signal Protocol in React Native and Expo in 2026](/blog/signal-protocol-react-native-expo-2026/) records the limits on state transfer.
 
 The SDK does not choose the recovery policy. That product policy determines what users lose. [Recovery, backup, and migration](https://docs.open-e2ee.dev/build/recovery-backup-migration) compares the profiles.
 

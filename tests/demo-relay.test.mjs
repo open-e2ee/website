@@ -2,14 +2,16 @@
  * `relay.ts` is the relay inside this page: the demo, the playground, and the
  * carrier capture all run the installed SDK against it. It implements the
  * SDK's `SignalProtocolRelayServer` contract for one-to-one messages only, so
- * these tests hold it to three things.
+ * these tests hold it to four things.
  *
  * What it carries works the way the contract says: delivery, the mailbox,
  * the device registry, identity, and prekeys.
  *
- * What it does not carry fails loudly. A group, credential, or provisioning
- * call rejects with an error that names the member, rather than resolving
- * with nothing.
+ * What it does not carry fails loudly. A group or credential call rejects
+ * with an error that names the member, rather than resolving with nothing.
+ *
+ * The three lists below name each member of the installed contract once, and
+ * no other member. An SDK release that adds or removes a member fails here.
  *
  * And the split between the two is not a guess. The last tests wrap the relay
  * in a recorder and drive both demo engines through every path the page has,
@@ -18,10 +20,12 @@
  */
 
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
 import { PageRelay, PageRelayUnsupportedError, pageRelay } from '../src/lib/demo/relay.ts';
 import { startDemoRun } from '../src/lib/demo/run.ts';
+import { flipOneByte } from './tamper.mjs';
 
 function envelope(overrides = {}) {
   return {
@@ -69,14 +73,6 @@ const REFUSED = [
   'getGroupChanges',
   'submitGroupChange',
   'issueAuthCredential',
-  'createProvisioningSession',
-  'connectNewDevice',
-  'sendProvisioningMessage',
-  'getProvisioningMessage',
-  'completeProvisioning',
-  'acknowledgeProvisioning',
-  'rollbackProvisioning',
-  'deleteProvisioningSession',
 ];
 
 /** The optional members of the contract that this relay leaves out. */
@@ -213,7 +209,40 @@ test('a prekey bundle spends one one-time key of each kind', async () => {
   assert.equal((await relay.getEcSignedPreKeyMetadata('bob', 1)).keyId, 1);
 });
 
-test('a group, credential, or provisioning call rejects and names the member', async () => {
+/**
+ * The members that an interface declares, read out of the installed package.
+ * A member is a line at the first indent of the interface body.
+ */
+async function declaredMembers(interfaceName) {
+  const types = await readFile(
+    new URL('../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay/types.d.ts', import.meta.url),
+    'utf8',
+  );
+  const block = types.match(new RegExp(`export interface ${interfaceName} (?:extends \\w+ )?\\{[\\s\\S]*?\\n\\}`));
+  assert.ok(block, `no ${interfaceName} interface in the installed type declarations`);
+  return block[0]
+    .split('\n')
+    .map((line) => line.match(/^ {4}(?:readonly )?(\w+)\??[(:]/))
+    .filter(Boolean)
+    .map((match) => match[1]);
+}
+
+test('the three member lists cover the installed relay contract exactly', async () => {
+  const declared = [
+    ...(await declaredMembers('SignalProtocolRelayServer')),
+    ...(await declaredMembers('KeyRotationService')),
+  ];
+  assert.ok(declared.includes('send'), 'the declaration reader found no send member');
+  assert.ok(
+    declared.includes('getKemLastResortPreKeyMetadata'),
+    'the declaration reader found no KeyRotationService member',
+  );
+  const listed = [...CARRIED, ...REFUSED, ...ABSENT];
+  assert.equal(new Set(listed).size, listed.length, 'a member is in more than one list');
+  assert.deepEqual([...listed].sort(), [...new Set(declared)].sort());
+});
+
+test('a group or credential call rejects and names the member', async () => {
   const relay = pageRelay();
   for (const member of REFUSED) {
     await assert.rejects(
@@ -342,17 +371,20 @@ test('the one-to-one session path calls only what the page relay carries', async
   const session = await startDemoSession({
     relay: recordedRelay(called),
     logger: { sender: quiet, recipient: quiet },
-    /* One corrupted envelope makes the receiving device ask for a resend, so
-       the retry request and the resend are on the path too. */
+    deadlineMs: 2_000,
+    /* One flipped byte fails the message authentication, so the receiving
+       device asks for a retry, and the retry request and the sender's answer
+       are on the path too. The in-memory store keeps no content to resend, so
+       the answer is a session reset and the first message is lost. */
     tamper: (sent) => {
       types.push(sent.messageType);
       if (corrupted) return sent;
       corrupted = true;
-      return { ...sent, ciphertext: btoa(btoa('not the ciphertext')) };
+      return { ...sent, ciphertext: flipOneByte(sent.ciphertext) };
     },
   });
   try {
-    await session.send('first');
+    await assert.rejects(session.send('first'), /never delivered the decrypted message/);
     await session.send('second');
   } finally {
     await session.stop();

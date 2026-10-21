@@ -21,6 +21,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
 import { pageRelay } from '../src/lib/demo/relay.ts';
+import { flipOneByte } from './tamper.mjs';
 
 const PROBE = 'Dinner at 7. I got us the table by the window.';
 
@@ -250,17 +251,19 @@ test('carries a second message on the established session', async () => {
  * `exchange()` used to drain its pending-envelope queue with `shift()`, on the
  * reading that an envelope could arrive before the wait was installed. It
  * cannot. What does arrive outside a send is a *second* envelope for a send
- * that already resolved: a message that fails to decrypt makes the receiving
- * device archive the session and ask the sender to send it again, and that
- * resend lands after `onEnvelope` has been cleared. `shift()` then handed the
- * stale envelope to the next send, which reported the previous sentence's
- * ciphertext as its own.
+ * that already ended: a message that fails to decrypt makes the receiving
+ * device ask the sender for a retry, and the sender's answer lands after
+ * `onEnvelope` has been cleared. `shift()` then handed the stale envelope to
+ * the next send, which reported the earlier envelope as its own.
  *
  * No scenario before `flip-a-byte` ever produced a second envelope outside a
- * send, so the whole suite stayed green with the bug in place. The corruption here is
- * deliberately blunt — a replacement ciphertext rather than a flipped byte,
- * because this test is about the driver's bookkeeping and not about which error
- * the protocol names.
+ * send, so the whole suite stayed green with the bug in place. One flipped
+ * byte fails the message authentication, and that failure asks for a retry.
+ *
+ * The in-memory store has no encryption at rest, so the sender keeps no
+ * content to resend. It answers the retry request with a session reset and a
+ * null message, and the first sentence is lost. Its send ends at the
+ * deadline.
  */
 test('reports the envelope its own send produced, not one a retry left behind', async () => {
   const handed = [];
@@ -274,22 +277,23 @@ test('reports the envelope its own send produced, not one a retry left behind', 
 
   const session = await startDemoSession({
     logger: { sender: quiet, recipient: quiet },
+    deadlineMs: 2_000,
     tamper: (envelope) => {
       handed.push(envelope.ciphertext);
       types.push(envelope.messageType);
       if (corrupted) return envelope;
       corrupted = true;
-      return { ...envelope, ciphertext: btoa(btoa('not the ciphertext you were looking for')) };
+      return { ...envelope, ciphertext: flipOneByte(envelope.ciphertext) };
     },
   });
 
   try {
-    await session.send(PROBE);
+    await assert.rejects(session.send(PROBE), /never delivered the decrypted message/);
     const second = await session.send('And the second one, after the retry.');
 
     /* Four envelopes: the corrupted first, the retry request from the
-       receiving device, the resend it asked for, and this send's own. The
-       resend is the one that used to be handed back here. */
+       receiving device, the sender's answer to it, and this send's own. The
+       answer is the one that used to be handed back here. */
     assert.equal(handed.length, 4, `the retry did not happen: ${handed.length} envelope(s)`);
     assert.equal(types[1], 'retry_request', `envelope 2 is not the retry request: ${types}`);
     assert.equal(second.decrypted.content, 'And the second one, after the retry.');
@@ -302,9 +306,8 @@ test('reports the envelope its own send produced, not one a retry left behind', 
       reported,
       handed.length - 1,
       `the second send reported envelope ${reported + 1} of ${handed.length} as its own. ` +
-        `Envelope 3 is the resend\n  the receiving device asked for when the first message ` +
-        `failed — it carries the first sentence, and\n  a send that hands it back reports the ` +
-        `previous message's ciphertext as this one's.`,
+        `Envelope 3 is the sender's answer\n  to the retry request that the failed first message ` +
+        `caused, and\n  a send that hands it back reports an earlier envelope as its own.`,
     );
   } finally {
     await session.stop();

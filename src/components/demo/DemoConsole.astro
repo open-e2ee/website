@@ -78,13 +78,10 @@ const NAMES = { a: 'Alice', b: 'Bob' } as const;
 /*
  * The two switches.
  *
- * There is no "Post-quantum required" switch, because it would draw no
- * difference here. The SDK's setting is `required` or `compatible`, and
- * `compatible` still runs PQXDH against any peer that carries ML-KEM material.
- * Both devices on this page carry it. The setting only decides whether the SDK
- * refuses a peer that carries none, and this page has no such peer. A checkbox
- * whose two positions produce the same session teaches something false about
- * what it controls.
+ * There is no "Post-quantum required" switch, because there is nothing to
+ * switch. `required` is the SDK's only post-quantum setting, and every session
+ * it starts uses PQXDH. A checkbox with one position teaches something false
+ * about what it controls.
  *
  * Post-quantum protection is not a switch on this page, it is the run: the
  * demo asks for `required`, the key agreement is PQXDH, and each wheel is
@@ -785,11 +782,8 @@ const TOGGLES = [
          * a time, against the policy captured here.
          *
          * `postQuantum` is not a switch on this page and is asked for outright.
-         * `compatible` would not have been "post-quantum off": it still runs
-         * PQXDH against a peer that has KEM material, and both peers here do, so
-         * the two settings would have produced the same session and a control
-         * offering them would have taught a reader something false. See the
-         * `TOGGLES` note above.
+         * `required` is the only value the SDK accepts. See the `TOGGLES` note
+         * above.
          */
         const started = await parts.run.startDemoRun({
           a: names.a,
@@ -1012,9 +1006,8 @@ const TOGGLES = [
        *
        * `run.ts` puts the `ProtocolSelectionEvent` on this step, and this is the
        * one place the demo can honestly caption the wheel: the switches say what
-       * was asked for, and the selection says what was agreed. They can differ —
-       * `postQuantum: 'compatible'` against a peer with no ML-KEM is exactly the
-       * case where they do — and the caption has to follow the second.
+       * was asked for, and the selection says what was agreed. The caption
+       * follows the second.
        *
        * Nullable all the way down and left that way. A callback that stops
        * firing leaves the wheel captioned plainly rather than captioned wrongly,
