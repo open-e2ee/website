@@ -350,9 +350,11 @@ const notHidden = [
         <div>
           <dt>Post-quantum means confidentiality, not signatures</dt>
           <dd>
-            Post-quantum key agreement is required and fails closed, using ML-KEM-1024 for PQXDH
-            and an ML-KEM Braid ratchet. No setting permits a classical session. Identity
-            signatures remain classical Ed25519 and X25519.
+            Every new session requires PQXDH with ML-KEM-1024. A peer without ML-KEM
+            prekeys fails closed. The default message ratchet uses ML-KEM Braid.
+            SDK {maturityLine} permits no classical handshake. Stored 11.x classical sessions
+            continue as Double Ratchet sessions. Identity keys remain classical
+            Ed25519 and X25519.
             The protection is against harvest-now-decrypt-later, not against a quantum adversary
             forging identities.
           </dd>
