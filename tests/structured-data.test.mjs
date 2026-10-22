@@ -252,3 +252,22 @@ test('escapes markup in the serialized JSON-LD', async () => {
   assert.doesNotMatch(serialized, /</);
   assert.deepEqual(JSON.parse(serialized), value);
 });
+
+test('built pricing exposes Relay service offers without merchant Product markup', async () => {
+  if (!existsSync(new URL('dist/pricing/index.html', root))) {
+    return skipUnbuilt('dist/pricing/index.html');
+  }
+  const html = await read('dist/pricing/index.html');
+  const { relayPlans } = await import('../src/data/relay-pricing.mjs');
+  assert.doesNotMatch(html, /itemtype="https:\/\/schema.org\/Product"/);
+  const table = html.match(/<table[^>]*itemtype="https:\/\/schema.org\/Service"[^>]*>([\s\S]*?)<\/table>/)?.[1];
+  assert.ok(table, 'the rendered plan table describes the hosted service');
+  const offers = table.split('<th ').filter((cell) => cell.includes('itemtype="https://schema.org/Offer"')).map((cell) => cell.split('</th>')[0]);
+  const plans = relayPlans.filter((plan) => plan.monthlyPriceUsd !== null);
+  assert.equal(offers.length, plans.length);
+  for (const [index, offer] of offers.entries()) {
+    assert.match(offer, /itemprop="priceCurrency" content="USD"/);
+    assert.ok(offer.includes(`itemprop="price" content="${plans[index].monthlyPriceUsd}"`));
+    assert.ok(offer.includes(plans[index].name));
+  }
+});
