@@ -23,7 +23,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 
-import { relayMeterDefinitions, relayPlans, relayProductionRetention } from '../src/data/relay-pricing.mjs';
+import { relayLimitsChange, relayMeterDefinitions, relayPlans, relayProductionRetention } from '../src/data/relay-pricing.mjs';
 import { tiers } from '../src/data/pricing.mjs';
 import { iconPaths } from '@open-e2ee/design/icons';
 
@@ -148,6 +148,17 @@ test('the self-service plans are the columns of one table, in catalog order', ()
     columns,
     selfServe.map((plan) => plan.id),
     'the table columns are not the self-service catalog, in catalog order',
+  );
+  /* Hobby stands between Free and Starter, in the Relay catalog's order. */
+  assert.deepEqual(
+    columns,
+    ['relay_free_v1', 'relay_hobby_v1', 'relay_starter_v1', 'relay_growth_v1', 'relay_business_v1'],
+    'the table columns are not Free, Hobby, Starter, Growth, and Business',
+  );
+  assert.deepEqual(
+    [...built.matchAll(/data-relay-plan-compact="([^"]+)"/g)].map((m) => m[1]),
+    columns,
+    'the narrow blocks do not follow the table columns',
   );
 
   for (const plan of selfServe) {
@@ -473,6 +484,7 @@ test('what every plan carries stands in one section of cards under the plans, li
  * keeps its name in its heading; the action under the rows is the invitation. */
 const ACTION_LABELS = {
   relay_free_v1: 'Fun &amp; Free',
+  relay_hobby_v1: 'Happy Hobby',
   relay_starter_v1: 'Startup Starter',
   relay_growth_v1: 'Get Growing',
   relay_business_v1: 'Big Business',
@@ -494,6 +506,32 @@ test('every plan\'s action carries the label the founder chose for it', () => {
    * action reads it. */
   assert.equal((plans.match(/>Start free\b/g) ?? []).length, 1, 'the plans carry "Start free" other than once, in the hero');
   assert.ok(plans.indexOf('>Start free<') < plans.indexOf('<table'), 'the hero is not where "Start free" stands');
+});
+
+/*
+ * Relay lowers the Free and Sandbox limits at 2026-11-01T00:00:00Z. A page
+ * built before that instant shows the limits Relay enforces then, and one
+ * note under the plans names the new limits and the date. A page built from
+ * that instant shows the new limits and no note. The data module resolves
+ * both at the build instant, so this reads the same answer the page did.
+ */
+test('names the new Free and Sandbox limits under the plans only before 2026-11-01 UTC', () => {
+  const notes = [...built.matchAll(/<p class="([^"]*)" data-relay-limits-change>([^<]*)<\/p>/g)];
+  if (relayLimitsChange === null) {
+    assert.equal(notes.length, 0, 'the page still names a limits change that is in effect');
+    assert.equal(built.indexOf('data-relay-limits-change'), -1);
+    return;
+  }
+  assert.equal(notes.length, 1, 'the page does not carry exactly one limits note');
+  const [note] = notes;
+  assert.equal(note[2], relayLimitsChange.note);
+  assert.match(note[2], /November 1, 2026 UTC/);
+  assert.match(note[1], /\btext-text-3\b/, 'the note does not recede like the other secondary text');
+  /* It stands under the plans: after the Enterprise band, before the cards. */
+  assert.ok(note.index > built.indexOf(`data-relay-plan="${enterprise.id}"`), 'the note stands above the Enterprise band');
+  assert.ok(note.index < built.indexOf('<section id="included"'), 'the note left the plans section');
+  /* The table shows the limits in effect at the build instant, not the note's. */
+  assert.deepEqual(cells('Monthly Active Users')[0], relayPlans[0].relayMau);
 });
 
 test('one plan is marked, and it alone carries the filled action', () => {

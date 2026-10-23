@@ -1,39 +1,131 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { relayMeterDefinitions, relayPlans, relayProductionRetention, relaySandboxEnvironment } from '../src/data/relay-pricing.mjs';
-import { virgilSecurityComparison } from '../src/data/virgil-security-comparison.mjs';
+import {
+  relayLimitsChange,
+  relayLimitsEffectiveAt,
+  relayMeterDefinitions,
+  relayPlans,
+  relayPricingAt,
+  relayPricingInstant,
+  relayProductionRetention,
+  relaySandboxEnvironment,
+} from '../src/data/relay-pricing.mjs';
+import { virgilSecurityComparison, virgilSecurityComparisonAt } from '../src/data/virgil-security-comparison.mjs';
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
+/*
+ * Relay catalog relay_managed_2026_11_01_v1 lowers the Free and Sandbox limits
+ * from 2026-11-01T00:00:00Z. Before that instant Relay enforces the Free and
+ * Sandbox limits of relay_managed_2026_10_18_v1. Hobby and the other paid
+ * plans are the same at every instant. Each assertion names its instant, so no
+ * result depends on the day the suite runs.
+ */
+const beforeCut = new Date('2026-10-31T23:59:59.999Z');
+const atCut = new Date('2026-11-01T00:00:00.000Z');
+
+const figures = ({ id, price, relayMau, deliveryUnits, attachmentOperations, storage, overage }) => ({
+  id,
+  price,
+  relayMau,
+  deliveryUnits,
+  attachmentOperations,
+  storage,
+  overage,
+});
+
+const earlierFree = { id: 'relay_free_v1', price: '$0', relayMau: '100', deliveryUnits: '100,000', attachmentOperations: '20,000', storage: '1 GB', overage: null };
+const currentFree = { id: 'relay_free_v1', price: '$0', relayMau: '25', deliveryUnits: '12,500', attachmentOperations: '2,500', storage: '250 MB', overage: null };
+const hobby = { id: 'relay_hobby_v1', price: '$9', relayMau: '100', deliveryUnits: '50,000', attachmentOperations: '10,000', storage: '1 GB', overage: { relayMau: '$0.10', delivery: '$400 per million', storage: '$2.00 per GB-month' } };
+const paidAndEnterprise = [
+  { id: 'relay_starter_v1', price: '$99', relayMau: '1,000', deliveryUnits: '500,000', attachmentOperations: '100,000', storage: '10 GB', overage: { relayMau: '$0.05', delivery: '$200 per million', storage: '$1.00 per GB-month' } },
+  { id: 'relay_growth_v1', price: '$499', relayMau: '5,000', deliveryUnits: '2,500,000', attachmentOperations: '500,000', storage: '50 GB', overage: { relayMau: '$0.03', delivery: '$100 per million', storage: '$0.75 per GB-month' } },
+  { id: 'relay_business_v1', price: '$999', relayMau: '25,000', deliveryUnits: '12,500,000', attachmentOperations: '2,500,000', storage: '250 GB', overage: { relayMau: '$0.02', delivery: '$60 per million', storage: '$0.55 per GB-month' } },
+  { id: 'relay_enterprise_v1', price: 'Custom', relayMau: 'Negotiated', deliveryUnits: 'Negotiated', attachmentOperations: 'Negotiated', storage: 'Negotiated', overage: null },
+];
+
+const sandboxDetail = 'Created automatically for each project. It uses isolated state and credentials, 24-hour default retention, a seven-day retention maximum, and suspension after 30 inactive days.';
+const earlierSandbox = { relayMau: '25 test accounts', deliveryUnits: '25,000', attachmentOperations: '25,000', storage: '250 MB', detail: sandboxDetail };
+const currentSandbox = { relayMau: '5 test accounts', deliveryUnits: '10,000', attachmentOperations: '2,500', storage: '100 MB', detail: sandboxDetail };
+
 test('publishes the exact approved Relay catalog from one data module', () => {
-  assert.deepEqual(
-    relayPlans.map(({ id, price, relayMau, deliveryUnits, attachmentOperations, storage, overage }) => ({
-      id,
-      price,
-      relayMau,
-      deliveryUnits,
-      attachmentOperations,
-      storage,
-      overage,
-    })),
-    [
-      { id: 'relay_free_v1', price: '$0', relayMau: '100', deliveryUnits: '100,000', attachmentOperations: '20,000', storage: '1 GB', overage: null },
-      { id: 'relay_starter_v1', price: '$99', relayMau: '1,000', deliveryUnits: '500,000', attachmentOperations: '100,000', storage: '10 GB', overage: { relayMau: '$0.05', delivery: '$200 per million', storage: '$1.00 per GB-month' } },
-      { id: 'relay_growth_v1', price: '$499', relayMau: '5,000', deliveryUnits: '2,500,000', attachmentOperations: '500,000', storage: '50 GB', overage: { relayMau: '$0.03', delivery: '$100 per million', storage: '$0.75 per GB-month' } },
-      { id: 'relay_business_v1', price: '$999', relayMau: '25,000', deliveryUnits: '12,500,000', attachmentOperations: '2,500,000', storage: '250 GB', overage: { relayMau: '$0.02', delivery: '$60 per million', storage: '$0.55 per GB-month' } },
-      { id: 'relay_enterprise_v1', price: 'Custom', relayMau: 'Negotiated', deliveryUnits: 'Negotiated', attachmentOperations: 'Negotiated', storage: 'Negotiated', overage: null },
-    ],
-  );
-  assert.deepEqual(relaySandboxEnvironment, {
-    relayMau: '25 test accounts',
-    deliveryUnits: '25,000',
-    attachmentOperations: '25,000',
-    storage: '250 MB',
-    detail: 'Created automatically for each project. It uses isolated state and credentials, 24-hour default retention, a seven-day retention maximum, and suspension after 30 inactive days.',
-  });
+  assert.deepEqual(relayPricingAt(beforeCut).plans.map(figures), [earlierFree, hobby, ...paidAndEnterprise]);
+  assert.deepEqual(relayPricingAt(atCut).plans.map(figures), [currentFree, hobby, ...paidAndEnterprise]);
+  assert.deepEqual(relayPricingAt(beforeCut).sandboxEnvironment, earlierSandbox);
+  assert.deepEqual(relayPricingAt(atCut).sandboxEnvironment, currentSandbox);
   assert.equal(relayMeterDefinitions.length, 4);
   assert.equal(relayProductionRetention, 'Up to 30 days');
+});
+
+test('the module exports are the catalog at the build instant', () => {
+  assert.ok(relayPricingInstant instanceof Date && !Number.isNaN(relayPricingInstant.getTime()));
+  const atBuild = relayPricingAt(relayPricingInstant);
+  assert.deepEqual(relayPlans, atBuild.plans);
+  assert.deepEqual(relaySandboxEnvironment, atBuild.sandboxEnvironment);
+  assert.deepEqual(relayLimitsChange, atBuild.limitsChange);
+});
+
+test('orders the plans Free, Hobby, Starter, Growth, Business, then Enterprise at every instant', () => {
+  for (const at of [new Date('2026-10-23T00:00:00Z'), beforeCut, atCut, new Date('2027-01-01T00:00:00Z')]) {
+    const { plans } = relayPricingAt(at);
+    assert.deepEqual(plans.map(({ name }) => name), ['Free', 'Hobby', 'Starter', 'Growth', 'Business', 'Enterprise'], at.toISOString());
+    assert.deepEqual(plans.map(({ id }) => id), ['relay_free_v1', 'relay_hobby_v1', 'relay_starter_v1', 'relay_growth_v1', 'relay_business_v1', 'relay_enterprise_v1'], at.toISOString());
+  }
+});
+
+test('publishes Hobby at 9 USD per month with its allowances and overage rates', () => {
+  for (const at of [beforeCut, atCut]) {
+    const plan = relayPricingAt(at).plans.find(({ id }) => id === 'relay_hobby_v1');
+    assert.deepEqual(figures(plan), hobby, at.toISOString());
+    assert.equal(plan.name, 'Hobby');
+    assert.equal(plan.monthlyPriceUsd, 9);
+    assert.equal(plan.detail, 'Per month. Optional overage needs explicit acceptance and a spend limit.');
+  }
+});
+
+test('Free and Sandbox change their limits at 2026-11-01T00:00:00Z and at no other instant', () => {
+  assert.equal(relayLimitsEffectiveAt.toISOString(), '2026-11-01T00:00:00.000Z');
+  const free = (at) => figures(relayPricingAt(at).plans[0]);
+  for (const at of [new Date('2026-10-18T00:00:00Z'), new Date('2026-10-23T12:00:00Z'), beforeCut]) {
+    assert.deepEqual(free(at), earlierFree, at.toISOString());
+    assert.deepEqual(relayPricingAt(at).sandboxEnvironment, earlierSandbox, at.toISOString());
+  }
+  for (const at of [atCut, new Date('2026-11-01T00:00:00.001Z'), new Date('2027-06-01T00:00:00Z')]) {
+    assert.deepEqual(free(at), currentFree, at.toISOString());
+    assert.deepEqual(relayPricingAt(at).sandboxEnvironment, currentSandbox, at.toISOString());
+  }
+  /* The paid plans do not move at the cut. */
+  assert.deepEqual(relayPricingAt(beforeCut).plans.slice(1), relayPricingAt(atCut).plans.slice(1));
+  assert.equal(relayPricingAt(beforeCut).plans[0].detail, relayPricingAt(atCut).plans[0].detail);
+});
+
+test('names the new Free and Sandbox limits and their date only before the cut', () => {
+  assert.deepEqual(relayPricingAt(beforeCut).limitsChange, {
+    effectiveAt: '2026-11-01T00:00:00.000Z',
+    date: 'November 1, 2026',
+    free: { relayMau: '25', deliveryUnits: '12,500', attachmentOperations: '2,500', storage: '250 MB' },
+    sandbox: { relayMau: '5 test accounts', deliveryUnits: '10,000', attachmentOperations: '2,500', storage: '100 MB' },
+    note: 'Free and Sandbox limits change on November 1, 2026 UTC. '
+      + 'Free then includes 25 Relay MAU, 12,500 delivery units, 2,500 attachment uploads, and 250 MB storage. '
+      + 'Sandbox then includes 5 test accounts, 10,000 delivery units, 2,500 attachment uploads, and 100 MB storage.',
+  });
+  assert.equal(relayPricingAt(atCut).limitsChange, null);
+  assert.equal(relayPricingAt(new Date('2027-01-01T00:00:00Z')).limitsChange, null);
+});
+
+test('prices the comparison rows from the plans in effect at each instant', () => {
+  assert.deepEqual(virgilSecurityComparison, virgilSecurityComparisonAt(relayPricingInstant));
+  const before = virgilSecurityComparisonAt(beforeCut).stickerPrices;
+  const after = virgilSecurityComparisonAt(atCut).stickerPrices;
+  /* 100 Relay MAU fit Free before the cut and need Hobby from the cut. */
+  assert.deepEqual(before[0], ['100', 'Free', 'Free', 'Virgil counts registered users; OpenE2EE counts monthly active accounts.']);
+  assert.deepEqual(after[0], ['100', 'Free', '$9', 'Virgil counts registered users; OpenE2EE counts monthly active accounts.']);
+  for (const rows of [before, after]) {
+    assert.deepEqual(rows[1], ['250', 'Free', '$99', 'OpenE2EE Hobby ends at 100 Relay MAU because Relay also supplies delivery infrastructure.']);
+    assert.deepEqual(rows.slice(2).map((row) => row[2]), ['$99', '$499', '$999']);
+  }
+  assert.deepEqual(before.slice(1), after.slice(1));
 });
 
 test('keeps the comparison factual, dated, sourced, and explicit about the 5,000-user ambiguity', async () => {
