@@ -9,15 +9,15 @@ const starterAt5000 = formatRelayRate({
 }, 1n, 0);
 
 /*
- * The sticker rows use the plans in effect at one instant. A row names the
- * lowest-priced self-serve plan that includes its Relay MAU.
+ * The sticker rows use the published plans in effect at one instant. The
+ * first row names the lowest-priced self-serve plan that includes 100 Relay MAU.
  */
 export function virgilSecurityComparisonAt(at) {
   const plans = relayPricingAt(at).plans.filter(({ monthlyPriceUsd }) => monthlyPriceUsd !== null);
   const price = (id) => plans.find((plan) => plan.id === id).price;
   const lowestFor = (mau) => plans.find((plan) => Number(plan.relayMau.replaceAll(',', '')) >= mau);
   const at100 = lowestFor(100);
-  const hobby = plans.find(({ id }) => id === 'relay_hobby_v1');
+  const free = plans.find(({ monthlyPriceUsd }) => monthlyPriceUsd === 0);
   return {
     verifiedAt: '2026-08-26',
     reviewOwner: 'OpenE2EE market-fact review',
@@ -43,7 +43,7 @@ export function virgilSecurityComparisonAt(at) {
     ],
     stickerPrices: [
       ['100', 'Free', at100.monthlyPriceUsd === 0 ? 'Free' : at100.price, 'Virgil counts registered users; OpenE2EE counts monthly active accounts.'],
-      ['250', 'Free', price('relay_starter_v1'), `OpenE2EE Hobby ends at ${hobby.relayMau} Relay MAU because Relay also supplies delivery infrastructure.`],
+      ['250', 'Free', price('relay_starter_v1'), `OpenE2EE Free ends at ${free.relayMau} Relay MAU because Relay also supplies delivery infrastructure.`],
       ['1,000', '$99', price('relay_starter_v1'), 'The sticker price matches, but the products include different infrastructure.'],
       ['5,000', 'About $95–$99', price('relay_growth_v1'), `Virgil lists two bands that both include 5,000 users. OpenE2EE Growth includes this activity. Starter plus accepted MAU overage is ${starterAt5000} if its other allowances fit.`],
       ['25,000', 'About $475', price('relay_business_v1'), 'Compare the complete application stack, not only vendor fees.'],

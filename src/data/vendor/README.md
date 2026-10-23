@@ -1,10 +1,11 @@
 # Relay service catalog
 
-`relay-service-catalog.json` is the exact artifact from Relay pull request 273 at commit
-`4c2ba9ffb0c4d6e1f4397bd8e7cbedafae614a67`.
+`relay-service-catalog.json` is the exact artifact from Relay commit
+`b6db5bb4d24f0bff4a0dcb13f91e4765b84f5a06`, the merge of pull request 273.
 Its catalog version is `relay_managed_2026_11_01_v1`.
 Its SHA256, including the final newline, is
-`13dd29d0558e7ac64980f256034a0c8e9127465ee39814b0aeed317eee853e4a`.
+`ddaf69635969ef8123c2361852572cfd63d334bda4361ef5108ab95ce081a967`.
+The site does not publish its Hobby plan until a dated Relay terms version states it.
 
 `relay-service-catalog-2026-10-18.json` is the exact artifact from Relay pull request 234 at commit
 `3d74de4ec7859e6d15c0c38ce4203e4e07d52b49`.

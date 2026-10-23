@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 // The repository build runs from its root. Read the source artifact because
 // Astro relocates this module when it renders static pages. No runtime fetch.
 export const relayCatalogPin = Object.freeze({
-  sourceRevision: '4c2ba9ffb0c4d6e1f4397bd8e7cbedafae614a67',
+  sourceRevision: 'b6db5bb4d24f0bff4a0dcb13f91e4765b84f5a06',
   catalogVersion: 'relay_managed_2026_11_01_v1',
-  sha256: '13dd29d0558e7ac64980f256034a0c8e9127465ee39814b0aeed317eee853e4a',
+  sha256: 'ddaf69635969ef8123c2361852572cfd63d334bda4361ef5108ab95ce081a967',
 });
 
 // Relay enforces the Free and Sandbox limits of this earlier catalog until

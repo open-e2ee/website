@@ -7,7 +7,7 @@ const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB
  * Relay catalog relay_managed_2026_11_01_v1 lowers the Free and Sandbox limits
  * from this instant. Relay's catalog-effective-targets.ts holds the same
  * instant. Before it, Relay enforces the Free and Sandbox limits of the earlier
- * catalog. Every other plan is the same at every instant.
+ * catalog. Every paid plan is the same at every instant.
  */
 export const relayLimitsEffectiveAt = new Date(Date.UTC(2026, 10, 1));
 
@@ -61,6 +61,18 @@ const enterprise = {
   detail: 'Negotiated capacity, support, and service level.',
 };
 
+/*
+ * A catalog plan that no dated Relay terms version states yet, with the terms
+ * version it waits for. The site does not publish it. The pull request that
+ * adds the dated terms version removes the plan from this map, and the plan
+ * then takes its catalog place in relayPlans.
+ */
+const awaitingTerms = new Map([['relay_hobby_v1', null]]);
+
+export const upcomingRelayPlans = relayServiceCatalog.plans
+  .filter(({ planId }) => awaitingTerms.has(planId))
+  .map((plan) => ({ ...relayPlan(plan), termsVersion: awaitingTerms.get(plan.planId) }));
+
 const freePlanId = 'relay_free_v1';
 const currentFree = relayPlan(relayServiceCatalog.plans.find(({ planId }) => planId === freePlanId));
 const currentSandbox = sandboxEnvironment(relayServiceCatalog.sandbox);
@@ -80,8 +92,9 @@ const limitsChange = {
 };
 
 /*
- * The plans, the Sandbox limits, and the pending limits change in effect at
- * one instant. Before the cut, Free and Sandbox come from the earlier catalog.
+ * The published plans, the Sandbox limits, and the pending limits change in
+ * effect at one instant. Before the cut, Free and Sandbox come from the
+ * earlier catalog.
  */
 export function relayPricingAt(at) {
   const earlier = at.getTime() < relayLimitsEffectiveAt.getTime();
@@ -89,7 +102,9 @@ export function relayPricingAt(at) {
     ? relayPlan(relayEarlierServiceCatalog.plans.find(({ planId }) => planId === freePlanId)) : currentFree;
   return {
     plans: [
-      ...relayServiceCatalog.plans.map((plan) => plan.planId === freePlanId ? free : relayPlan(plan)),
+      ...relayServiceCatalog.plans
+        .filter(({ planId }) => !awaitingTerms.has(planId))
+        .map((plan) => plan.planId === freePlanId ? free : relayPlan(plan)),
       enterprise,
     ],
     sandboxEnvironment: earlier ? sandboxEnvironment(relayEarlierServiceCatalog.sandbox) : currentSandbox,
