@@ -14,12 +14,13 @@ Each meter measures a different part of the service. The [pricing table](/pricin
 
 ## The base price includes active accounts
 
-Free includes 100 monthly active accounts. Starter includes 1,000, Growth includes 5,000, and Business includes 25,000.
-The monthly base prices are $0, $99, $499, and $999.
+Free includes 25 monthly active accounts. Hobby includes 100, Starter includes 1,000, Growth includes 5,000, and Business includes 25,000.
+The monthly base prices are $0, $9, $99, $499, and $999.
+Before November 1, 2026 UTC, Free includes 100 accounts, 100,000 delivery units, 20,000 uploads, and 1 GB.
 
 Starter with 1,000 active accounts costs $99 when the other meters remain within their allowances.
 With accepted MAU overage, Starter with 2,000 active accounts costs $149 under the same condition.
-Each additional active account costs $0.05 on Starter, $0.03 on Growth, or $0.02 on Business.
+Each additional active account costs $0.10 on Hobby, $0.05 on Starter, $0.03 on Growth, or $0.02 on Business.
 Additional active accounts do not increase the other allowances.
 
 ## One message can use several delivery units
@@ -28,19 +29,20 @@ One accepted encrypted envelope or shared-body reference uses one delivery unit 
 One stored Relay delivery receipt for one sender device also uses one delivery unit.
 A send to two destination devices uses two units. While Relay stores the message, an exact retry with the same stable operation identifier does not charge again.
 
-Included delivery units are 100,000 on Free, 500,000 on Starter, 2.5 million on Growth, and 12.5 million on Business.
-Paid excess delivery costs $200, $100, or $60 per million units, respectively.
+Included delivery units are 12,500 on Free, 50,000 on Hobby, and 500,000 on Starter.
+Growth includes 2.5 million, and Business includes 12.5 million.
+Paid excess delivery costs $400, $200, $100, or $60 per million units, respectively.
 
 ## Uploads and storage are separate
 
 An attachment upload counts when Relay accepts its upload authorization. Exact retries do not count again.
-Free includes 20,000 authorizations, Starter 100,000, Growth 500,000, and Business 2.5 million. There is no paid upload overage.
+Free includes 2,500 authorizations, Hobby 10,000, Starter 100,000, Growth 500,000, and Business 2.5 million. There is no paid upload overage.
 These fixed allowances do not require a percentage of messages with attachments.
 
 Live encrypted storage includes customer ciphertext and attachment bytes. It excludes internal indexes and bookkeeping.
-The included capacities are 1 GB, 10 GB, 50 GB, and 250 GB.
+The included capacities are 250 MB, 1 GB, 10 GB, 50 GB, and 250 GB.
 
-Paid excess storage costs $1.00, $0.75, or $0.55 per exact GB-month on Starter, Growth, or Business.
+Paid excess storage costs $2.00, $1.00, $0.75, or $0.55 per exact GB-month on Hobby, Starter, Growth, or Business.
 One GB is 1,000,000,000 bytes. One GB-month uses the actual UTC calendar month.
 One excess GB held for all of February or March costs the same listed monthly rate.
 Retention changes storage usage. A large upload that remains for a month consumes more byte-time than one removed promptly.

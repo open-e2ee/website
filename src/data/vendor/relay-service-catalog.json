@@ -1,18 +1,41 @@
 {
   "schemaVersion": 1,
-  "catalogVersion": "relay_managed_2026_10_18_v1",
+  "catalogVersion": "relay_managed_2026_11_01_v1",
   "currency": "USD",
   "recurrence": "month",
   "plans": [
     {
-      "attachmentOperations": 20000,
-      "deliveryUnits": 100000,
-      "monthlyActiveUsers": 100,
+      "attachmentOperations": 2500,
+      "deliveryUnits": 12500,
+      "monthlyActiveUsers": 25,
       "monthlyPriceMicrounits": "0",
       "planId": "relay_free_v1",
-      "storageBytes": 1000000000,
+      "storageBytes": 250000000,
       "rateCardId": null,
       "overageRates": null
+    },
+    {
+      "attachmentOperations": 10000,
+      "deliveryUnits": 50000,
+      "monthlyActiveUsers": 100,
+      "monthlyPriceMicrounits": "9000000",
+      "planId": "relay_hobby_v1",
+      "storageBytes": 1000000000,
+      "rateCardId": "relay_hobby_overage_v2",
+      "overageRates": {
+        "delivery_units": {
+          "numerator": "400",
+          "denominator": "1"
+        },
+        "relay_mau": {
+          "numerator": "100000",
+          "denominator": "1"
+        },
+        "storage_byte_month": {
+          "numerator": "1",
+          "denominator": "500"
+        }
+      }
     },
     {
       "attachmentOperations": 100000,
@@ -85,10 +108,10 @@
     }
   ],
   "sandbox": {
-    "attachmentOperations": 25000,
-    "deliveryUnits": 25000,
-    "monthlyActiveUsers": 25,
-    "storageBytes": 250000000
+    "attachmentOperations": 2500,
+    "deliveryUnits": 10000,
+    "monthlyActiveUsers": 5,
+    "storageBytes": 100000000
   },
-  "sourceRevision": "3d74de4ec7859e6d15c0c38ce4203e4e07d52b49"
+  "sourceRevision": "4c2ba9ffb0c4d6e1f4397bd8e7cbedafae614a67"
 }
