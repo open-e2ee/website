@@ -1,13 +1,13 @@
 # Relay service catalog
 
-`relay-service-catalog.json` is the exact artifact from Relay commit
-`4c2ba9ffb0c4d6e1f4397bd8e7cbedafae614a67` (pull request 273).
+`relay-service-catalog.json` is the exact artifact from Relay pull request 273 at commit
+`4c2ba9ffb0c4d6e1f4397bd8e7cbedafae614a67`.
 Its catalog version is `relay_managed_2026_11_01_v1`.
 Its SHA256, including the final newline, is
 `13dd29d0558e7ac64980f256034a0c8e9127465ee39814b0aeed317eee853e4a`.
 
-`relay-service-catalog-2026-10-18.json` is the exact artifact from Relay commit
-`3d74de4ec7859e6d15c0c38ce4203e4e07d52b49` (pull request 234).
+`relay-service-catalog-2026-10-18.json` is the exact artifact from Relay pull request 234 at commit
+`3d74de4ec7859e6d15c0c38ce4203e4e07d52b49`.
 Its catalog version is `relay_managed_2026_10_18_v1`.
 Its SHA256, including the final newline, is
 `a5b4156e8bb9c15a1734e9647235820cbdd85c7878c5cae72bdde0e743b72da8`.
