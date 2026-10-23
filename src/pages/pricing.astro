@@ -4,6 +4,7 @@ import Icon, { type IconName } from '../components/Icon.astro';
 import Term from '../components/Term.astro';
 import PlanValue from '../components/PlanValue.astro';
 import {
+  relayLimitsChange,
   relayMeterDefinitions,
   relayPlans,
   relayProductionRetention,
@@ -174,6 +175,14 @@ const INCLUDED_CARD_DETAIL = 'm-0 mt-2 text-[0.9375rem] leading-[1.5] text-text-
 const ENTERPRISE_BAND = 'mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 rule bg-ground-panel px-5 py-3 max-[34rem]:px-4';
 
 const ENTERPRISE_DETAIL = 'm-0 text-[0.9375rem] text-text-3';
+
+/*
+ * Before 2026-11-01 UTC the table shows the Free limits in effect, and one
+ * line under the Enterprise band names the new Free and Sandbox limits and
+ * their date. A build at or after that instant shows the new limits and no
+ * line. The line takes the Enterprise detail's size and muted color.
+ */
+const LIMITS_NOTE = `${ENTERPRISE_DETAIL} mt-4`;
 
 /* The action keeps to the end of the row now that the band's link down to the
  * SDK license table is commented out; the link carried the margin before. */
@@ -535,6 +544,7 @@ const INCLUDED_ANCHOR = 'included';
           */}
         <a class={ENTERPRISE_ACTION_CLASS} href={ENTERPRISE_ACTION.href}>{ENTERPRISE_ACTION.label}</a>
       </div>
+      {relayLimitsChange && <p class={LIMITS_NOTE} data-relay-limits-change>{relayLimitsChange.note}</p>}
     </div>
   </section>
 
