@@ -23,7 +23,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 
-import { relayLimitsChange, relayMeterDefinitions, relayPlans, relayProductionRetention } from '../src/data/relay-pricing.mjs';
+import { relayLimitsChange, relayMeterDefinitions, relayPlans, relayProductionRetention, upcomingRelayPlans } from '../src/data/relay-pricing.mjs';
 import { tiers } from '../src/data/pricing.mjs';
 import { iconPaths } from '@open-e2ee/design/icons';
 
@@ -149,11 +149,11 @@ test('the self-service plans are the columns of one table, in catalog order', ()
     selfServe.map((plan) => plan.id),
     'the table columns are not the self-service catalog, in catalog order',
   );
-  /* Hobby stands between Free and Starter, in the Relay catalog's order. */
+  /* Hobby waits for a dated Relay terms version that states it. */
   assert.deepEqual(
     columns,
-    ['relay_free_v1', 'relay_hobby_v1', 'relay_starter_v1', 'relay_growth_v1', 'relay_business_v1'],
-    'the table columns are not Free, Hobby, Starter, Growth, and Business',
+    ['relay_free_v1', 'relay_starter_v1', 'relay_growth_v1', 'relay_business_v1'],
+    'the table columns are not Free, Starter, Growth, and Business',
   );
   assert.deepEqual(
     [...built.matchAll(/data-relay-plan-compact="([^"]+)"/g)].map((m) => m[1]),
@@ -484,7 +484,6 @@ test('what every plan carries stands in one section of cards under the plans, li
  * keeps its name in its heading; the action under the rows is the invitation. */
 const ACTION_LABELS = {
   relay_free_v1: 'Fun &amp; Free',
-  relay_hobby_v1: 'Happy Hobby',
   relay_starter_v1: 'Startup Starter',
   relay_growth_v1: 'Get Growing',
   relay_business_v1: 'Big Business',
@@ -532,6 +531,18 @@ test('names the new Free and Sandbox limits under the plans only before 2026-11-
   assert.ok(note.index < built.indexOf('<section id="included"'), 'the note left the plans section');
   /* The table shows the limits in effect at the build instant, not the note's. */
   assert.deepEqual(cells('Monthly Active Users')[0], relayPlans[0].relayMau);
+});
+
+/*
+ * A plan that waits for a dated Relay terms version is not on sale. The page
+ * prints no column, block, action, or name for it until the terms state it.
+ */
+test('prints no plan that waits for a dated Relay terms version', () => {
+  assert.deepEqual(upcomingRelayPlans.map(({ id }) => id), ['relay_hobby_v1']);
+  for (const plan of upcomingRelayPlans) {
+    assert.equal(built.indexOf(plan.id), -1, `the page names ${plan.id}`);
+    assert.doesNotMatch(built, new RegExp(`\\b${plan.name}\\b`), `the page prints ${plan.name}`);
+  }
 });
 
 test('one plan is marked, and it alone carries the filled action', () => {

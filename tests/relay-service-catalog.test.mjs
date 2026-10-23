@@ -15,9 +15,9 @@ const artifact = new URL('../src/data/vendor/relay-service-catalog.json', import
 const earlierArtifact = new URL('../src/data/vendor/relay-service-catalog-2026-10-18.json', import.meta.url);
 
 test('pins the merged Relay revision, version, and exact catalog bytes', async () => {
-  assert.equal(relayCatalogPin.sourceRevision, '4c2ba9ffb0c4d6e1f4397bd8e7cbedafae614a67');
+  assert.equal(relayCatalogPin.sourceRevision, 'b6db5bb4d24f0bff4a0dcb13f91e4765b84f5a06');
   assert.equal(relayCatalogPin.catalogVersion, 'relay_managed_2026_11_01_v1');
-  assert.equal(relayCatalogPin.sha256, '13dd29d0558e7ac64980f256034a0c8e9127465ee39814b0aeed317eee853e4a');
+  assert.equal(relayCatalogPin.sha256, 'ddaf69635969ef8123c2361852572cfd63d334bda4361ef5108ab95ce081a967');
   assert.deepEqual(parsePinnedRelayCatalog(await readFile(artifact)), relayServiceCatalog);
   assert.deepEqual(relayServiceCatalog.plans.map(({ planId }) => planId), ['relay_free_v1', 'relay_hobby_v1', 'relay_starter_v1', 'relay_growth_v1', 'relay_business_v1']);
 });
