@@ -62,9 +62,12 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: steps.revision.outputs.current == 'true'
         with:
-          node-version: 26
+          node-version: "26.12.1"
           cache: npm
 
+      - name: Show Node.js version
+        if: steps.revision.outputs.current == 'true'
+        run: node --version
       - name: Install from the committed lockfile
         if: steps.revision.outputs.current == 'true'
         run: npm ci
