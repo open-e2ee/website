@@ -76,9 +76,12 @@ export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
  * records for a sender uses the message retention period, counted from the
  * time Relay records it. Its 2026-10-19 version states the existing operating
  * record retention as exactly 380 days. Content and deletion rules do not change.
+ * Its 2026-10-24 version states that deleted data can stay in a recovery window
+ * of up to 30 days and that Relay never restores a mailbox from that window. No
+ * retention period and no deletion step changes.
  */
-export const relayRetentionVersion = '2026-10-19';
-export const relayRetentionEffectiveDate = 'October 19, 2026';
+export const relayRetentionVersion = '2026-10-24';
+export const relayRetentionEffectiveDate = 'October 24, 2026';
 export const relayRetentionPath = `/legal/relay-retention/${relayRetentionVersion}`;
 
 export const relayServiceLimitsVersion = '2026-10-05';
