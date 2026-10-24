@@ -146,7 +146,7 @@ test('describes the organization and the site on the home page', async () => {
   const organization = nodeOfType(graph, 'Organization');
   assert.ok(organization, 'the home page has no Organization');
   assert.equal(organization.name, 'OpenE2EE');
-  assert.equal(organization.legalName, 'OpenE2EE LLC');
+  assert.equal(organization.legalName, 'OpenE2EE, Inc.');
   assert.equal(organization.url, `${site}/`);
   assert.equal(organization.url, canonicalOf(html), 'the organization url is not the home canonical');
   assert.equal(organization.logo, `${site}/brand/open-e2ee-app-icon-512.png`);

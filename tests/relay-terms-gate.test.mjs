@@ -7,7 +7,7 @@ import { relayLimitsEffectiveAt, relayPricingAt, upcomingRelayPlans } from '../s
  * The terms gate.
  *
  * Relay lowers the Free and Sandbox limits at 2026-11-01T00:00:00Z, and the
- * Relay catalog sells Hobby. The dated Relay terms relay-2026-10-18 state
+ * Relay catalog sells Hobby. The dated Relay terms relay-2026-10-24 state
  * neither. Two guards compare the published plans with the dated terms:
  *
  *   tests/legal-pages.test.mjs
@@ -24,7 +24,7 @@ import { relayLimitsEffectiveAt, relayPricingAt, upcomingRelayPlans } from '../s
  * When that version lands, name its component in TERMS. The expected list is
  * then empty, and Hobby moves from upcomingRelayPlans into relayPlans.
  */
-const TERMS = 'src/components/SignalProtocolRelayTerms20261018.astro';
+const TERMS = 'src/components/SignalProtocolRelayTerms20261024.astro';
 const beforeCut = new Date('2026-10-31T23:59:59.999Z');
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');

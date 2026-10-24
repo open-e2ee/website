@@ -1,22 +1,7 @@
 ---
-/*
- * The OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-10-18.
- * Section 3.9 applies the pinned catalog immediately to all projects.
- * Future catalog changes retain the 30-day notice requirement.
- *
- * `/legal/relay-terms` renders this component. The dated page under
- * `/legal/relay-terms/` holds a literal snapshot of the same text and never
- * imports this file; tests/legal-pages.test.mjs enforces that, and asserts
- * that every price and included quantity in src/data/relay-pricing.mjs is
- * stated here, so a price change cannot ship without a new version.
- */
-import BaseLayout from '../layouts/BaseLayout.astro';
-import TableScroll from '../components/TableScroll.astro';
-import {
-  relayTermsEffectiveDate,
-  relayTermsPath,
-  relayTermsVersion,
-} from '../lib/legal.mjs';
+/* Immutable copy of relay-2026-10-24. Do not edit this published version. */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import TableScroll from '../../../components/TableScroll.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -30,12 +15,12 @@ import {
   LEGAL_NOTICE,
   LEGAL_PIN,
   LEGAL_TOC,
-} from '../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
-  title="OpenE2EE Signal Protocol Relay Terms"
-  description="Versioned service terms for the OpenE2EE Signal Protocol Relay."
+  title="Relay terms relay-2026-10-24"
+  description="Frozen copy of the OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-10-24."
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -47,12 +32,12 @@ import {
           the Signal Protocol Relay.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {relayTermsEffectiveDate}</span>
-          <span>Version {relayTermsVersion}</span>
+          <span>Effective October 24, 2026</span>
+          <span>Version relay-2026-10-24</span>
         </p>
         <p class={LEGAL_PIN}>
-          The current version of these Terms applies to every Customer. The permanent copy of this version is at{' '}
-          <a href={relayTermsPath}><code>{relayTermsPath}</code></a>.
+          This is the permanent copy of this version. The terms offered now are the{' '}
+          <a href="/legal/relay-terms">current Relay terms</a>.
         </p>
       </div>
     </header>
@@ -85,8 +70,8 @@ import {
 
         <h2 id="agreement">1. Agreement, eligibility, and definitions</h2>
         <p>
-          These Terms are a binding agreement between OpenE2EE LLC, a Minnesota limited liability
-          company (“OpenE2EE,” “we,” “us,” or “our”), and the organization in whose console
+          These Terms are a binding agreement between OpenE2EE, Inc., a Delaware corporation
+          (“OpenE2EE,” “we,” “us,” or “our”), and the organization in whose console
           account a Relay project is created (“Customer,” “you,” or “your”). The organization is
           the counterparty, not the individual who accepts. You accept these Terms when a person
           acting for the organization activates a Relay project or accepts a paid Relay order. That
@@ -428,7 +413,7 @@ import {
           included quantities.
         </p>
         <p>
-          Send legal notices to OpenE2EE LLC by email to{' '}
+          Send legal notices to OpenE2EE, Inc. by email to{' '}
           <a href="mailto:legal@open-e2ee.dev">legal@open-e2ee.dev</a>. We may send legal and
           operational notices to the console or Stripe email associated with your account, and
           those are given when sent. You are responsible for keeping that address current.

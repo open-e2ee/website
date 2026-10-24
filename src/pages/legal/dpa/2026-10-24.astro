@@ -1,27 +1,6 @@
 ---
-/*
- * The OpenE2EE Data Processing Agreement, version 2026-09-29. It carries the
- * Article 28(3) processor terms and the transfer mechanism for personal data
- * OpenE2EE processes on a Relay customer's instructions. Section 4 and Annex I
- * list measuring and improving the Relay's reliability, performance, and cost
- * as a purpose, because Relay operating records carry keyed hashes of account
- * and device identifiers. Annex II calls each project's test environment the
- * Sandbox environment, the name that the console and the Relay use. Every
- * other clause is the 2026-09-27 text.
- *
- * It is a component rather than a page for the reason the other two legal
- * documents are: /legal/dpa renders the live version and a dated page freezes
- * each published one, and both need the same text without a second copy of it
- * drifting. The dated page holds a literal snapshot and never imports this
- * file — tests/legal-pages.test.mjs enforces that.
- *
- * The document is auto-incorporated: it binds when the Relay terms are
- * accepted, and no peer of this size asks for a signature. What it may claim is
- * bounded by docs/messaging.md — no certification, no compliance guarantee, and
- * no security-review claim.
- */
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { dpaEffectiveDate, dpaPath, dpaVersion } from '../lib/legal.mjs';
+/* Immutable copy of 2026-10-24. Do not edit this published version. */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -33,12 +12,12 @@ import {
   LEAD,
   LEGAL_PIN,
   LEGAL_TOC,
-} from '../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
-  title="Data Processing Agreement"
-  description="Article 28 processor terms and transfer mechanism for personal data OpenE2EE processes for Relay customers."
+  title="Data Processing Agreement 2026-10-24"
+  description="Frozen copy of the OpenE2EE Data Processing Agreement, version 2026-10-24."
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -50,12 +29,12 @@ import {
           instructions. It is part of the Relay Service Terms and takes effect with them.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {dpaEffectiveDate}</span>
-          <span>Version {dpaVersion}</span>
+          <span>Effective October 24, 2026</span>
+          <span>Version 2026-10-24</span>
         </p>
         <p class={LEGAL_PIN}>
-          The permanent copy of this version is at{' '}
-          <a href={dpaPath}><code>{dpaPath}</code></a>.
+          This is the permanent copy of this version. The agreement offered now is the{' '}
+          <a href="/legal/dpa">current Data Processing Agreement</a>.
         </p>
       </div>
     </header>
@@ -94,8 +73,8 @@ import {
 
         <h2 id="parties">1. Parties and incorporation</h2>
         <p>
-          This Data Processing Agreement is between OpenE2EE LLC, a Minnesota limited liability
-          company (“OpenE2EE,” “we,” or “us”), and the organization that accepts the{' '}
+          This Data Processing Agreement is between OpenE2EE, Inc., a Delaware corporation
+          (“OpenE2EE,” “we,” or “us”), and the organization that accepts the{' '}
           <a href="/legal/relay-terms">OpenE2EE Relay Service Terms</a> (“Customer,” “you”). It
           forms part of those Terms.
         </p>
@@ -109,7 +88,7 @@ import {
           Where this agreement and the Terms say different things about the processing of personal
           data, this agreement governs. Everything else about the service, including fees,
           liability, and termination, stays with the Terms. Send legal notices under this agreement
-          by email to OpenE2EE LLC at{' '}
+          by email to OpenE2EE, Inc. at{' '}
           <a href="mailto:legal@open-e2ee.dev">legal@open-e2ee.dev</a>. We may send notices under
           this agreement to the project owner’s console email, and those are given when sent.
         </p>
@@ -355,7 +334,7 @@ import {
             <strong>European Economic Area.</strong> The SCCs, incorporated by reference. Module Two
             (controller to processor) applies where you are a controller. Module Three (processor to
             processor) applies where you are a processor acting for another controller. You are the
-            data exporter and OpenE2EE LLC is the data importer. In Clause 7, the optional docking
+            data exporter and OpenE2EE, Inc. is the data importer. In Clause 7, the optional docking
             clause applies. In Clause 9, Option 2, general written authorization, applies with the
             notice period in section 7. In Clause 11, the optional independent dispute resolution
             body does not apply. In Clause 17, Option 1 applies and the governing law is the law of
@@ -396,7 +375,7 @@ import {
           application that uses the OpenE2EE Signal Protocol SDK with Relay for delivery.
         </p>
         <p>
-          <strong>Data importer.</strong> OpenE2EE LLC, a Minnesota limited liability company,
+          <strong>Data importer.</strong> OpenE2EE, Inc., a Delaware corporation,
           acting as processor. Contact:{' '}
           <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>. Activities relevant to
           the transfer: providing, securing, metering, and supporting the console and OpenE2EE
