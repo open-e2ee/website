@@ -66,9 +66,9 @@ test('pins the current Startup terms to an immutable canonical URL', () => {
   assert.equal(relayTermsVersion, 'relay-2026-10-24');
   assert.equal(relayTermsPath, '/legal/relay-terms/2026-10-24');
   assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-10-24');
-  assert.equal(relayRetentionVersion, '2026-10-19');
-  assert.equal(relayRetentionEffectiveDate, 'October 19, 2026');
-  assert.equal(relayRetentionPath, '/legal/relay-retention/2026-10-19');
+  assert.equal(relayRetentionVersion, '2026-10-24');
+  assert.equal(relayRetentionEffectiveDate, 'October 24, 2026');
+  assert.equal(relayRetentionPath, '/legal/relay-retention/2026-10-24');
   assert.equal(relayServiceLimitsVersion, '2026-10-05');
   assert.equal(relayServiceLimitsEffectiveDate, 'October 5, 2026');
   assert.equal(relayServiceLimitsPath, '/legal/relay-service-limits/2026-10-05');
@@ -355,6 +355,7 @@ const relayPolicies = [
       { version: '2026-09-29', effective: 'September 29, 2026' },
       { version: '2026-10-08', effective: 'October 8, 2026' },
       { version: '2026-10-19', effective: 'October 19, 2026' },
+      { version: '2026-10-24', effective: 'October 24, 2026' },
     ],
   },
   {
@@ -966,4 +967,23 @@ test('the current and dated retention statement state the exact operating-record
     assert.match(retention, /They are kept for 380 days, including after account or project deletion/);
     assert.doesNotMatch(retention, /13 months/);
   }
+});
+
+/*
+ * A complete deletion removes the live data, but deleted data can stay in a
+ * recovery window for up to 30 days, and Relay has no path that restores a
+ * mailbox from it. The statement says so as a capability. The 2026-10-19 copy
+ * stays as it was published without the sentence.
+ */
+test('the current and dated retention statement state the deletion recovery window', async () => {
+  for (const path of ['../src/pages/legal/relay-retention.astro', '../src/pages/legal/relay-retention/2026-10-24.astro']) {
+    const retention = await flat(path);
+    assert.match(
+      retention,
+      /Relay reports the deletion as complete only after these steps finish\. Deleted data can stay in a recovery window of up to 30 days\. Relay never restores a mailbox from that recovery window\./,
+      path,
+    );
+  }
+  const superseded = await flat('../src/pages/legal/relay-retention/2026-10-19.astro');
+  assert.doesNotMatch(superseded, /recovery window/);
 });
