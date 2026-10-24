@@ -8,12 +8,13 @@
  * new version gets a new date, a new path, and a new constant here. The
  * console's COMMERCIAL_TERMS_URL and COMMERCIAL_TERMS_VERSION settings and the
  * Stripe checkout terms-of-service link must move with these constants once
- * the dated page is live.
+ * the dated page is live. The 2026-10-24 version names OpenE2EE, Inc. as the
+ * counterparty.
  */
 
-export const commercialTermsVersion = 'startup-2026-09-10';
-export const commercialTermsEffectiveDate = 'September 10, 2026';
-export const commercialTermsPath = '/legal/terms/2026-09-10';
+export const commercialTermsVersion = 'startup-2026-10-24';
+export const commercialTermsEffectiveDate = 'October 24, 2026';
+export const commercialTermsPath = '/legal/terms/2026-10-24';
 export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
 
 /*
@@ -44,11 +45,12 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * the catalog immediately to every project. Section 3.9 retains notice for
  * future changes. The Console RELAY_TERMS_URL and RELAY_TERMS_VERSION settings
  * must move with these constants once the dated
- * page is live.
+ * page is live. The 2026-10-24 version names OpenE2EE, Inc. as the
+ * counterparty.
  */
-export const relayTermsVersion = 'relay-2026-10-18';
-export const relayTermsEffectiveDate = 'October 18, 2026';
-export const relayTermsPath = '/legal/relay-terms/2026-10-18';
+export const relayTermsVersion = 'relay-2026-10-24';
+export const relayTermsEffectiveDate = 'October 24, 2026';
+export const relayTermsPath = '/legal/relay-terms/2026-10-24';
 export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
 
 /*
@@ -156,9 +158,11 @@ export const relayServiceLimitsPath = `/legal/relay-service-limits/${relayServic
  * keyed Organization, project, and event hashes. It states the existing raw
  * retention rule as exactly 380 days and describes Organization erasure and
  * aggregate cohort reports. Marketing measurement does not change.
+ * The 2026-10-24 version names OpenE2EE, Inc. as the responsible party and
+ * legal-notice recipient. Data practices and retention periods do not change.
  */
-export const privacyVersion = '2026-10-19';
-export const privacyEffectiveDate = 'October 19, 2026';
+export const privacyVersion = '2026-10-24';
+export const privacyEffectiveDate = 'October 24, 2026';
 export const privacyPath = `/legal/privacy/${privacyVersion}`;
 export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
 
@@ -178,9 +182,10 @@ export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
  *
  * The 2026-09-29 version calls each project's test environment the Sandbox
  * environment in Annex II, in place of its earlier name, Development. Every
- * other clause is unchanged.
+ * other clause is unchanged. The 2026-10-24 version names OpenE2EE, Inc. as
+ * the processor and data importer.
  */
-export const dpaVersion = '2026-09-29';
-export const dpaEffectiveDate = 'September 29, 2026';
-export const dpaPath = '/legal/dpa/2026-09-29';
+export const dpaVersion = '2026-10-24';
+export const dpaEffectiveDate = 'October 24, 2026';
+export const dpaPath = '/legal/dpa/2026-10-24';
 export const dpaUrl = `https://open-e2ee.dev${dpaPath}`;

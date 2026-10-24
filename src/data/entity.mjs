@@ -10,7 +10,7 @@ export const organization = {
   name: 'OpenE2EE',
   /* docs/identity.md §1: the entity name is for legal identification, so this
    * field is its one place in the structured data. */
-  legalName: 'OpenE2EE LLC',
+  legalName: 'OpenE2EE, Inc.',
   url: 'https://open-e2ee.dev/',
   /* The carrier mark on the canvas, a square PNG that public/brand serves. */
   logo: '/brand/open-e2ee-app-icon-512.png',

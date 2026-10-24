@@ -1,15 +1,15 @@
 ---
 /*
- * The Startup commercial terms, version startup-2026-09-10. `/legal/terms` is
+ * The Startup commercial terms, version startup-2026-10-24. `/legal/terms` is
  * what a new order accepts and renders this component. Each dated page under
  * `/legal/terms/` is the immutable copy an existing order is bound to: a literal
  * snapshot that never imports this file, which tests/legal-pages.test.mjs
  * enforces. Publishing a new version means a new dated page, not an edit.
  *
- * This version replaces the cancellation path the 2026-07-23 text promised (a
+ * The 2026-09-10 version replaced the cancellation path the 2026-07-23 text promised (a
  * Stripe-hosted billing portal the console never offered) with the license
  * page in the console, gives the notice clause an address, and adds a mutual
- * confidentiality section.
+ * confidentiality section. This version names OpenE2EE, Inc. as counterparty.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import {
@@ -86,8 +86,8 @@ import {
 
         <h2 id="agreement">1. Agreement and authority</h2>
         <p>
-          These Terms are a binding agreement between OpenE2EE LLC, a Minnesota limited liability
-          company (“OpenE2EE,” “we,” “us,” or “our”), and the person or legal entity using the
+          These Terms are a binding agreement between OpenE2EE, Inc., a Delaware corporation
+          (“OpenE2EE,” “we,” “us,” or “our”), and the person or legal entity using the
           Services or identified as the licensee in a Startup checkout order (“Customer,” “you,” or
           “your”). “Services” means the OpenE2EE websites, documentation, console, billing and
           licensing services, and related communications.
@@ -288,7 +288,11 @@ import {
         </p>
         <ul>
           <li>
-            <strong>Version {commercialTermsVersion}:</strong> Section 4 names the console license
+            <strong>Version {commercialTermsVersion}:</strong> The counterparty is named
+            OpenE2EE, Inc. No fee, grant, or restriction changed.
+          </li>
+          <li>
+            <strong>Version startup-2026-09-10:</strong> Section 4 names the console license
             page as where renewal is cancelled, replacing a billing portal the console did not
             offer; Section 10 adds mutual confidentiality; Section 11 gives legal notices an
             address. No fee, grant, or restriction changed.
@@ -341,7 +345,7 @@ import {
           subject.
         </p>
         <p>
-          Send legal notices to OpenE2EE LLC by email to{' '}
+          Send legal notices to OpenE2EE, Inc. by email to{' '}
           <a href="mailto:legal@open-e2ee.dev">legal@open-e2ee.dev</a>. We may send legal and
           operational notices to the console or Stripe email associated with your account, and
           those are given when sent. You are responsible for keeping that address current. Send

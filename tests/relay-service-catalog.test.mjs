@@ -82,7 +82,7 @@ test('formats exact rational microunits for customer-facing rates', () => {
 });
 
 test('both current and immutable terms state the exact catalog rows', async () => {
-  for (const path of ['src/components/SignalProtocolRelayTerms20261018.astro', 'src/pages/legal/relay-terms/2026-10-18.astro']) {
+  for (const path of ['src/components/SignalProtocolRelayTerms20261024.astro', 'src/pages/legal/relay-terms/2026-10-24.astro']) {
     const terms = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
     const rows = [...terms.matchAll(/<tr><th scope="row">([^<]+)<\/th>(.*?)<\/tr>/g)];
     for (const plan of relayPlans.filter(({ monthlyPriceUsd }) => monthlyPriceUsd !== null)) {

@@ -1,0 +1,513 @@
+---
+/* Immutable copy of 2026-10-24. Do not edit this published version. */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import {
+  ARTICLE_COLUMN,
+  ARTICLE_HEADER,
+  ARTICLE_META,
+  BACK_LINK,
+  CALLOUT,
+  CONTAINER,
+  LABEL,
+  LEAD,
+  LEGAL_TOC,
+} from '../../../lib/recipes';
+---
+
+<BaseLayout
+  title="Privacy 2026-10-24"
+  description="Frozen copy of the OpenE2EE Privacy Notice, version 2026-10-24."
+>
+  <article>
+    <header class={ARTICLE_HEADER}>
+      <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+        <a class={BACK_LINK} href="/legal">Legal</a>
+        <h1>Privacy Notice</h1>
+        <p class={LEAD}>
+          This notice explains how OpenE2EE handles personal information across the website,
+          documentation, console, the OpenE2EE Signal Protocol Relay, licensing, billing, and
+          communications.
+        </p>
+        <p class={ARTICLE_META}>
+          <span>Effective October 24, 2026</span>
+          <span>Version 2026-10-24</span>
+        </p>
+      </div>
+    </header>
+
+    <div class:list={[CONTAINER, ARTICLE_COLUMN]}>
+      <div class="prose">
+        <aside class={CALLOUT} aria-label="Encryption boundary">
+          <p class={LABEL}>Encryption boundary</p>
+          <p>
+            The OpenE2EE Signal Protocol SDK runs cryptography on your devices. The Signal Protocol
+            Relay processes customer-encrypted content and delivery state, but OpenE2EE does not receive
+            message plaintext, device private keys, ratchet state, or attachment keys.
+          </p>
+        </aside>
+
+        <nav class={LEGAL_TOC} aria-label="Privacy contents">
+          <p class={LABEL}>Contents</p>
+          <ol>
+            <li><a href="#scope">Scope and controller</a></li>
+            <li><a href="#collect">Information we collect</a></li>
+            <li><a href="#use">How and why we use it</a></li>
+            <li><a href="#share">How we disclose it</a></li>
+            <li><a href="#cookies">Cookies and analytics</a></li>
+            <li><a href="#retention">Retention and security</a></li>
+            <li><a href="#rights">Your privacy rights</a></li>
+            <li><a href="#international">International transfers</a></li>
+            <li><a href="#changes">Changes and contact</a></li>
+          </ol>
+        </nav>
+
+        <h2 id="scope">1. Scope and controller</h2>
+        <p>
+          OpenE2EE, Inc. (“OpenE2EE,” “we,” “us,” or “our”) is responsible for personal information
+          covered by this notice. It applies to <code>open-e2ee.dev</code>, the OpenE2EE
+          documentation and console, the Signal Protocol Relay, licensing and billing, support and
+          sales communications, and related security operations.
+        </p>
+        <p>
+          This notice does not govern information processed solely inside software that you operate.
+          When a customer uses the SDK in its own product, that customer determines its application
+          data practices and is responsible for its notices. For the Signal Protocol Relay, OpenE2EE processes
+          the service data described below on that customer’s instructions.
+        </p>
+        <p>
+          Send legal notices to OpenE2EE, Inc. by email to{' '}
+          <a href="mailto:legal@open-e2ee.dev">legal@open-e2ee.dev</a>. We may send legal and
+          operational notices to the console or Stripe email associated with your account, and those
+          are given when sent. You are responsible for keeping that address current.
+        </p>
+
+        <h2 id="collect">2. Information we collect</h2>
+        <h3>Information you or your organization provides</h3>
+        <ul>
+          <li>
+            contact information, such as name, business email, organization, and communication
+            content;
+          </li>
+          <li>
+            commercial-license information, including licensee, covered product, plan, and support
+            requests;
+          </li>
+          <li>billing information, such as billing address and tax identifier; and</li>
+          <li>security reports, feedback, and other information you choose to send.</li>
+        </ul>
+
+        <h3>Information from connected services</h3>
+        <ul>
+          <li>
+            <strong>WorkOS:</strong> when you sign in, WorkOS provides an account identifier,
+            authentication events, organization information, and available profile information such
+            as name and email.
+          </li>
+          <li>
+            <strong>Stripe:</strong> Stripe provides customer, subscription, invoice,
+            payment-status, billing, and tax information needed to complete and administer a
+            license. OpenE2EE does not intentionally receive or store complete payment-card numbers.
+          </li>
+          <li>
+            <strong>Your organization:</strong> an authorized purchaser or administrator may provide
+            information about license users, billing contacts, or the covered product.
+          </li>
+        </ul>
+
+        <h3>Relay information</h3>
+        <ul>
+          <li>
+            customer-encrypted envelopes, shared encrypted group bodies, and encrypted attachment
+            bytes;
+          </li>
+          <li>
+            public key material and signed public certificates needed for device registration and
+            authenticated or sealed-sender delivery;
+          </li>
+          <li>
+            opaque project, account, device, mailbox, operation, routing, usage, lifecycle,
+            recovery, and deletion identifiers and state;
+          </li>
+          <li>
+            push-provider tokens and generic best-effort wake requests, which may include a generic
+            encrypted-message alert but no message plaintext; and
+          </li>
+          <li>
+            exact aggregate usage, plan, spend-limit, billing, reconciliation, security, and audit
+            records needed to operate the service.
+          </li>
+        </ul>
+        <p>
+          Relay does not need message plaintext, device private keys, ratchet state, attachment
+          keys, decrypted attachment content, or a server-side social graph. Network providers can
+          process the request metadata inherent in carrying traffic.
+        </p>
+
+        <h3>Technical information</h3>
+        <p>
+          Our hosting and security providers may process IP address, request time, URL, referring
+          page, browser and device information, authentication and session events, request size and
+          timing, error information, and security signals. Relay also processes bounded operational
+          telemetry, such as delivery state, delivery delay, retry, capacity, and lifecycle outcomes. The
+          console uses signed, secure cookies needed for authentication, request integrity, and
+          account access. The marketing site additionally records a small set of anonymous events
+          with no identifier attached, described in full in{' '}
+          <a href="#cookies">Cookies and analytics</a>.
+        </p>
+        <p>
+          We also keep analytics records about how the Services perform and are used: the type and
+          time of an event, plan and billing amounts, project and usage counts, the size, speed, and
+          outcome of Relay requests in broad classes, and the region that handled a request. In
+          these records, console user, organization, project, and Relay device identifiers appear
+          only as keyed hashes made with a key that OpenE2EE holds. They contain no message content,
+          email address, or payment-card data.
+        </p>
+
+        <h3>Console onboarding measurement</h3>
+        <p>
+          When we enable Console onboarding measurement, we record where Organizations complete setup or encounter friction.
+          Browser observations record setup arrival, runtime choice, snippet copying, payment-form arrival,
+          payment submission, and reported payment results.
+          Verified service observations separately record project creation, Production activation, payment setup,
+          the first registered device, the first accepted delivery, and the first acknowledged delivery.
+          Service observations also record the Stripe Customer default payment method category and readiness under Relay service policy.
+          These current-state observations do not establish payment eligibility, future payment success, or application integration readiness.
+          Browser actions do not prove these service milestones.
+        </p>
+        <p>
+          Each record contains an event type, time, deployment lane, Sandbox or Production selection,
+          and a result category from fixed lists.
+          Organization, project, and event identifiers appear only as keyed hashes that our servers produce.
+          These records contain no user identifier or user hash.
+          They contain no message content, copied code, keys, tokens, raw provider subjects, raw identifiers,
+          or free text. They also exclude email addresses, IP addresses, and browser user-agent strings.
+        </p>
+        <p>
+          This measurement uses no persistent browser identifier and stores nothing in browser storage.
+          We do not join these records to anonymous marketing-site events.
+          This measurement adds no CLI telemetry.
+          Production collection starts only after we publish this notice.
+        </p>
+
+        <h2 id="use">3. How and why we use information</h2>
+        <p>We use personal information to:</p>
+        <ul>
+          <li>authenticate users and operate the website, documentation, console, Relay, and billing portal;</li>
+          <li>create, fulfill, document, renew, support, and enforce commercial licenses;</li>
+          <li>process payments, invoices, taxes, cancellations, and accounting records;</li>
+          <li>answer support, sales, licensing, privacy, and security communications;</li>
+          <li>protect the Services, investigate abuse, debug failures, and prevent fraud;</li>
+          <li>
+            improve documentation, reliability, and product experience, and measure the
+            reliability, cost, adoption, and revenue of the Services; and
+          </li>
+          <li>comply with law and establish, exercise, or defend legal claims.</li>
+        </ul>
+        <p>
+          Where the law requires a legal basis, we rely on performance of a contract, steps requested
+          before entering a contract, compliance with legal obligations, our legitimate interests in
+          operating and securing the Services, and consent where required. You may withdraw consent
+          for future processing when consent is the basis.
+        </p>
+
+        <h2 id="share">4. How we disclose information</h2>
+        <p>We disclose information only as reasonably necessary to:</p>
+        <ul>
+          <li>
+            <strong>Service providers:</strong> Cloudflare for Relay, encrypted storage, the public
+            site, DNS, TLS, and security; Vercel for the console and documentation; Neon for the
+            console database that holds organization, project, licensing, and terms-acceptance
+            records; WorkOS for authentication and organization identity; Stripe for payments,
+            subscriptions, tax information, and the billing portal; Expo, Apple, Google, and browser
+            push services for best-effort device wakes; Better Stack for availability monitoring and
+            public status; and Google Workspace for business email. The current list is at{' '}
+            <a href="/legal/subprocessors">Subprocessors</a>.
+          </li>
+          <li>
+            <strong>Professional advisers:</strong> accountants, lawyers, insurers, auditors, and
+            security specialists subject to appropriate duties.
+          </li>
+          <li>
+            <strong>Legal and safety recipients:</strong> authorities or other parties when
+            reasonably necessary to comply with law, protect rights and safety, investigate fraud or
+            abuse, or respond to lawful process.
+          </li>
+          <li>
+            <strong>Business transactions:</strong> a buyer, successor, or adviser in a financing,
+            reorganization, acquisition, or sale, subject to appropriate confidentiality and
+            continued protection.
+          </li>
+        </ul>
+        <p>
+          We do not sell personal information. We do not share personal information for
+          cross-context behavioral advertising or use it for targeted advertising, and we have not
+          done so during the preceding 12 months. We do not use personal information for automated
+          decisions that produce legal or similarly significant effects.
+        </p>
+
+        <h2 id="cookies">5. Cookies and analytics</h2>
+        <p>
+          The public marketing site sets no cookies, stores nothing in your browser, and uses no
+          advertising or cross-site behavioral analytics. It does measure which parts of the site
+          people use, and this section describes that measurement exactly, because a privacy notice
+          that describes it vaguely is not worth reading.
+        </p>
+        <p>
+          The site sends a short message to our own servers when one of ten things happens: you
+          run the live demo on the home page, open the quickstart, choose a runtime, copy the
+          install command, follow the closing link of an article or the architecture guide, open
+          one of our GitHub repositories, view the security model page, view the pricing page, open
+          the console, or begin an enterprise enquiry. Each message contains the name of the event,
+          the path of the page it happened on, and one further word on a single one of them: which
+          of the three runtimes a runtime choice was. That is the whole message.
+        </p>
+        <p>
+          The live demo is the one place on this site where you type something. What you type is
+          encrypted and decrypted inside your own browser tab and never leaves it, and the message
+          that records the run carries neither the sentence nor anything derived from it — not its
+          length, not the size of the ciphertext, not how long the encryption took. The message
+          reads <code>demo_run /</code>, and one is sent per page, not per sentence.
+        </p>
+        <p>
+          It contains no identifier of any kind. We set no cookie, read no cookie, and write nothing
+          to local storage; we do not fingerprint your browser or device; we assign you no visitor
+          or session identifier; and your IP address is not recorded alongside these events. Because
+          there is nothing that distinguishes one visitor from another, these events cannot be
+          linked to you, to each other, or into a journey through the site, either by us or by
+          anyone who obtained the data. What they show is how many people took each step, and
+          nothing else. The site sends each measurement event only to its own address. Our hosting
+          provider stores these events for us in our own account. No third-party analytics or
+          advertising service receives them.
+        </p>
+        <p>
+          The console uses essential authentication, security, and session cookies. Cloudflare,
+          Vercel, WorkOS, and Stripe may use their own necessary security or service cookies when
+          you interact with their infrastructure or hosted pages.
+        </p>
+        <p>
+          Because we do not sell or share information for targeted advertising, there is no
+          advertising opt-out needed for the current Services. We will honor legally required
+          browser signals if our practices change in a way that makes them applicable.
+        </p>
+
+        <h2 id="retention">6. Retention and security</h2>
+        <p>
+          We retain personal information only as long as reasonably necessary for the purposes
+          above. Retention depends on the record:
+        </p>
+        <ul>
+          <li>
+            console authentication data is primarily maintained in signed session cookies and
+            connected-provider records;
+          </li>
+          <li>
+            Relay ciphertext and delivery status follow the project retention setting: the Sandbox
+            environment uses 24 hours by default and permits no more than seven days, while
+            production permits no more than 30 days;
+          </li>
+          <li>
+            incomplete attachment uploads expire after 24 hours and completed attachments have a
+            30-day maximum retention;
+          </li>
+          <li>
+            opaque usage, billing, reconciliation, security, recovery, and deletion records follow
+            their documented retry, accounting, audit, and legal periods after payload deletion;
+          </li>
+          <li>
+            license, subscription, invoice, and transaction records may be kept for the relationship
+            and up to seven years afterward for accounting, tax, audit, and dispute purposes;
+          </li>
+          <li>
+            support, sales, and security communications are kept as needed to resolve the matter and
+            maintain appropriate records;
+          </li>
+          <li>
+            analytics records described in section 2 are kept for 380 days; summary tables built
+            from them, which identify nothing more specific than a project, are kept while they
+            remain useful for planning the business; and
+          </li>
+          <li>
+            request and security logs are generally kept for shorter periods determined by
+            operational and provider settings, unless needed to investigate an incident.
+          </li>
+        </ul>
+        <p>
+          Console onboarding records follow the same 380-day raw retention.
+          Organization erasure removes that Organization’s raw onboarding records.
+          Cohort reports contain aggregate counts without Organization, user, project, device, or event identifiers.
+        </p>
+        <p>
+          The <a href="/legal/relay-retention">Relay Retention Statement</a> explains account and
+          project deletion, recipient mailbox boundaries, group state, and attachment expiry.
+        </p>
+        <p>
+          We use administrative, technical, and organizational safeguards appropriate to the nature
+          of the information, including encrypted transport, restricted credentials, least-privilege
+          service keys, secure session cookies, and access controls. No system is perfectly secure,
+          and we cannot guarantee absolute security.
+        </p>
+
+        <h2 id="rights">7. Your privacy rights</h2>
+        <p>
+          Depending on where you live, you may have rights to request access, correction, deletion,
+          portability, or a copy of personal information; to object to or restrict certain
+          processing; to withdraw consent; and to appeal a decision. You may also have the right not
+          to receive discriminatory treatment for exercising a privacy right.
+        </p>
+        <p>
+          California residents may request the categories and specific pieces of personal
+          information collected, the sources, purposes, and disclosure categories; request
+          correction or deletion subject to exceptions; and receive equal service when exercising
+          these rights. OpenE2EE does not sell or share personal information as those terms are
+          defined by California law.
+        </p>
+        <p>
+          Submit a request to{' '}
+          <a href="mailto:privacy@open-e2ee.dev?subject=Privacy%20request">privacy@open-e2ee.dev</a>.
+          Describe the request and the account or email involved. We may need to verify your
+          identity and authority before acting. An authorized agent may submit a request where
+          applicable. You may appeal a denial by replying with “Privacy appeal” in the subject. You
+          may also complain to your local data-protection authority.
+        </p>
+
+        <h3>Children</h3>
+        <p>
+          The Services are intended for developers and businesses and are not directed to children
+          under 13. We do not knowingly collect personal information from children under 13. Contact
+          us if you believe a child provided it.
+        </p>
+
+        <h2 id="international">8. International transfers</h2>
+        <p>
+          OpenE2EE is based in the United States, and service providers may process information in
+          the United States and other countries. Those countries may have different data-protection
+          laws. Where required, we rely on recognized transfer mechanisms and contractual safeguards
+          made available through our providers.
+        </p>
+        <p>
+          For personal information we process on a Relay customer’s instructions, the transfer terms
+          are in the <a href="/legal/dpa">Data Processing Agreement</a>, which incorporates the
+          European Commission’s standard contractual clauses, the UK addendum, and the Swiss
+          amendments. It binds when the customer accepts the Relay terms, and needs no signature.
+        </p>
+
+        <h2 id="changes">9. Changes and contact</h2>
+        <p>
+          We may update this notice as our practices or legal obligations change. We will publish a
+          new effective date and provide additional notice when a change is material. We will not
+          apply a materially more permissive use or disclosure practice retroactively to previously
+          collected information without appropriate notice and consent where required.
+        </p>
+        <p>
+          From version 2026-08-26 onward, each version is also published at a permanent address of
+          its own, and that copy does not change when this page does. The versions before it were
+          published without one, so the entries below are the only record of what they said.
+          Archived versions:{' '}
+          <a href="/legal/privacy/2026-08-26">2026-08-26</a>,{' '}
+          <a href="/legal/privacy/2026-09-10">2026-09-10</a>,{' '}
+          <a href="/legal/privacy/2026-09-27">2026-09-27</a>,{' '}
+          <a href="/legal/privacy/2026-09-29">2026-09-29</a>,{' '}
+          <a href="/legal/privacy/2026-10-08">2026-10-08</a>,{' '}
+          <a href="/legal/privacy/2026-10-19">2026-10-19</a>,{' '}
+          <a href="/legal/privacy/2026-10-24">2026-10-24</a>.
+        </p>
+        <p>
+          <strong>Version 2026-07-28:</strong> the marketing site began recording the anonymous
+          usage events described in <a href="#cookies">Cookies and analytics</a>, nine of them at
+          that date. No cookie, storage, identifier, or IP-address record was introduced with them,
+          and nothing collected under an earlier version of this notice is affected.
+        </p>
+        <p>
+          <strong>Version 2026-08-07:</strong> a tenth event was added, recording that the
+          live demo on the home page was run. It carries nothing about what was typed into the
+          demo, as described in <a href="#cookies">Cookies and analytics</a>. Nothing else about
+          the measurement changed: still no cookie, no storage, no identifier, and no IP-address
+          record.
+        </p>
+        <p>
+          <strong>Version 2026-08-07.2:</strong> a second change on the same day, and the
+          reason that version carries a suffix rather than a later date. An eleventh event was
+          added, recording which scenario was opened. The name of the scenario is
+          the second and last word any event on this site carries, and it describes the page
+          rather than the visitor, as described in <a href="#cookies">Cookies and analytics</a>.
+          Nothing else about the measurement changed: still no cookie, no storage, no identifier,
+          and no IP-address record.
+        </p>
+        <p>
+          <strong>Version 2026-08-09:</strong> no new event, no new category of information,
+          and nothing additional collected. The failure scenarios moved from a page of their own
+          onto the home page, and the message that records one names the page it happened on, so
+          the path in that message changed with the move — it then read <code>scenario_opened /</code>{' '}
+          followed by the name of the scenario. This notice is versioned for it because the words
+          the site transmits changed, and a notice that quotes those words exactly, as this one
+          does, cannot describe them and stay unversioned. Still no cookie, no storage, no
+          identifier, and no IP-address record.
+        </p>
+        <p>
+          <strong>Version 2026-08-16:</strong> an event was removed. The failure scenarios
+          left the site, and the message that recorded one — <code>scenario_opened /</code> followed
+          by the name of the scenario — is no longer sent at all. The site now records ten things
+          rather than eleven, and no event carries a scenario name. The name of a
+          scenario was the only label any event but a runtime choice ever carried, so a runtime
+          choice is now the one event on this site that carries a second word at all. Nothing was
+          added, no category of information is new, and nothing already collected is affected:
+          still no cookie, no storage, no identifier, and no IP-address record.
+        </p>
+        <p>
+          <strong>Version 2026-08-26:</strong> the Relay was added to the service scope.
+          This version identifies the encrypted content, public key material, opaque routing and
+          usage state, push tokens, providers, and retention boundaries that encrypted delivery
+          requires. It also corrects the console authentication provider from GitHub to WorkOS. The
+          anonymous website measurement did not change.
+        </p>
+        <p>
+          <strong>Version 2026-09-10:</strong> no new event, no new category of information,
+          and nothing additional collected. Neon, which runs the console database, was named in{' '}
+          <a href="#share">How we disclose information</a>; it was already processing the records
+          described there, and the earlier version listed the providers around it without listing
+          it. Section 5 now says where the anonymous measurement runs — our own code on Cloudflare,
+          our hosting provider — rather than calling it our own infrastructure, which read as though
+          we operated the machines. The service is named consistently throughout, replacing two
+          uses of an earlier name for it. Privacy requests go to a mailbox of their own,{' '}
+          <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>, rather than to support.
+          Section 1 now says where to send a legal notice, and section 8 points at the{' '}
+          <a href="/legal/dpa">Data Processing Agreement</a> for the transfer terms that apply to a
+          Relay customer’s data. Nothing about what is collected changed: still no cookie, no
+          storage, no identifier, and no IP-address record.
+        </p>
+        <p>
+          <strong>Version 2026-09-27:</strong> added the analytics records described in
+          section 2 and their 13-month retention in section 6. They use keyed hashes in place of
+          identifiers and contain no message content. No cookie, no storage, and no identifier was
+          added to the marketing site’s measurement.
+        </p>
+        <p>
+          <strong>Version 2026-09-29:</strong> no new event, no new category of information,
+          and nothing additional collected. Section 6 calls each project’s test environment the
+          Sandbox environment, the name that the console and Relay use. Its retention periods did
+          not change.
+        </p>
+        <p>
+          <strong>Version 2026-10-08:</strong> no new event. Section 6 adds delivery status
+          to the Relay data that follows the project retention setting. No retention period changed.
+        </p>
+        <p>
+          <strong>Version 2026-10-19:</strong> adds the Console onboarding measurement in section 2,
+          its Organization erasure rule, and its aggregate reports in section 6.
+          Section 6 states the existing raw analytics retention rule as exactly 380 days.
+          The marketing site’s anonymous measurement does not change.
+        </p>
+        <p>
+          <strong>Version 2026-10-24:</strong> names OpenE2EE, Inc. as the responsible party
+          and legal-notice recipient. Data practices and retention periods did not change.
+        </p>
+        <p>
+          For privacy questions or requests, email{' '}
+          <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>. For suspected
+          vulnerabilities or security incidents, email{' '}
+          <a href="mailto:security@open-e2ee.dev">security@open-e2ee.dev</a>.
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>
