@@ -1,5 +1,5 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "signal-protocol-js*", "design*", "console*", "public/playground"]
+  "exclude": ["dist", "signal-protocol-js*", "design*", "console*", "public/playground", "public/analytics"]
 }

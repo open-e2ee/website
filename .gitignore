@@ -39,3 +39,6 @@ pnpm-debug.log*
 
 # A recording in progress. scripts/record-carrier-capture.mjs deletes it.
 /.carrier-capture-*/
+
+# Generated status analytics entry and SDK chunks.
+/public/analytics/

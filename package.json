@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "predev": "npm run brand:sync && npm run playground:build",
+    "predev": "npm run brand:sync && npm run playground:build && npm run analytics:build",
     "dev": "astro dev",
     "dev:lan": "node scripts/dev-lan.mjs",
-    "build": "npm run playground:build && npm run brand:check && npm run blog:cards:check && npm run demo:css:check && astro check && astro build && npm run audit",
+    "build": "npm run analytics:build && npm run playground:build && npm run brand:check && npm run blog:cards:check && npm run demo:css:check && astro check && astro build && npm run audit",
     "audit": "node scripts/audit-build.mjs dist",
     "preview": "astro preview",
-    "check": "npm run playground:build && npm run brand:check && npm run blog:cards:check && npm run demo:css:check && astro check",
+    "check": "npm run analytics:build && npm run playground:build && npm run brand:check && npm run blog:cards:check && npm run demo:css:check && astro check",
     "test": "node --test tests/*.test.mjs scripts/check-deploy-workflows.mjs",
     "brand:sync": "oe-design export public/brand && cp public/brand/open-e2ee-favicon.ico public/favicon.ico && cp public/brand/open-e2ee-favicon.svg public/favicon.svg",
     "brand:check": "oe-design check public/brand",
@@ -29,7 +29,9 @@
     "deploy:redirect": "npm test && wrangler deploy --config wrangler.redirect.jsonc --env=\"\"",
     "deploy:redirect:dry-run": "npm test && wrangler deploy --config wrangler.redirect.jsonc --env=\"\" --dry-run",
     "playground:build": "node scripts/build-playground.mjs",
-    "analytics:smoke": "node scripts/analytics-smoke.mjs"
+    "analytics:smoke": "node scripts/analytics-smoke.mjs",
+    "analytics:build": "node scripts/build-status-analytics.mjs",
+    "analytics:status:smoke": "node scripts/status-analytics-smoke.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "7.0.3",
@@ -52,6 +54,7 @@
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
+    "vite": "8.1.4",
     "wrangler": "4.126.0"
   },
   "engines": {

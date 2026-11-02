@@ -50,3 +50,18 @@ test('CTA properties use selected actions without copied text, keys, paths, or l
   assert.deepEqual(classifyCta(target(null, true), location), { cta: 'install_copy' });
   assert.equal(classifyCta(target('https://evil.example/?next=console.open-e2ee.dev'), location), null);
 });
+
+test('status paths and pageviews never expose incident identifiers or subscriber content', async () => {
+  const { STATUS_ROUTES, statusRoute, statusPageProperties } = await import('../src/lib/analytics/contract.mjs');
+  for (const [path, bucket] of [['/', '/'], ['/incidents/', '/incidents'], ['/maintenance', '/maintenance'], ['/incident/private-123', '/incident/:incident'], ['/subscriber/secret@example.com', '/other']]) {
+    assert.equal(statusRoute(path), bucket);
+    const props = statusPageProperties({ pathname: path, search: '?email=secret@example.com&utm_source=reddit' }, 'https://example.com/private/token');
+    assert.equal(props.page_path, bucket);
+    const safe = sanitizeEvent(event({ ...props, incident: 'secret incident title', subscriber: 'secret@example.com' }), true, STATUS_ROUTES, 'status');
+    assert.equal(safe.properties.surface, 'status');
+    assert.equal(safe.properties.$host, 'status.open-e2ee.dev');
+    assert.equal(safe.properties.$current_url, `https://status.open-e2ee.dev${bucket}`);
+    assert.equal(JSON.stringify(safe).includes('secret'), false);
+    assert.equal(sanitizeEvent(event({ ...props, cta: 'signup_start' }, 'website_cta'), true, STATUS_ROUTES, 'status'), null);
+  }
+});
