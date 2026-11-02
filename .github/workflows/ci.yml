@@ -62,6 +62,9 @@ jobs:
 
       - run: npm run build
 
+      - name: Verify analytics consent in the browser
+        run: npm run analytics:smoke
+
       # The UI redesign contract. --ratchet compares the pass count with
       # scripts/redesign-baseline/passing.txt and fails on any difference, so
       # the conditions still open do not block unrelated work, and a change
