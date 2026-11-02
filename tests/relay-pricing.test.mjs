@@ -3,7 +3,6 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   relayLimitsChange,
-  relayLimitsEffectiveAt,
   relayMeterDefinitions,
   relayPlans,
   relayPricingAt,
@@ -17,15 +16,14 @@ import { virgilSecurityComparison, virgilSecurityComparisonAt } from '../src/dat
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 /*
- * Relay catalog relay_managed_2026_11_01_v1 lowers the Free and Sandbox limits
- * from 2026-11-01T00:00:00Z. Before that instant Relay enforces the Free and
- * Sandbox limits of relay_managed_2026_10_18_v1. The paid plans are the same
- * at every instant. Hobby waits outside the published plans until a dated
- * Relay terms version states it. Each assertion names its instant, so no
- * result depends on the day the suite runs.
+ * Free and Sandbox retain their qualified targets before and after the former
+ * November 1 cut. Date changes do not qualify a new public catalog or terms.
  */
 const beforeCut = new Date('2026-10-31T23:59:59.999Z');
 const atCut = new Date('2026-11-01T00:00:00.000Z');
+const afterCut = new Date('2026-11-01T00:00:00.001Z');
+const futureBuild = new Date('2030-01-01T00:00:00Z');
+const buildInstants = [new Date('2026-10-18T00:00:00Z'), beforeCut, atCut, afterCut, futureBuild];
 
 const figures = ({ id, price, relayMau, deliveryUnits, attachmentOperations, storage, overage }) => ({
   id,
@@ -38,7 +36,6 @@ const figures = ({ id, price, relayMau, deliveryUnits, attachmentOperations, sto
 });
 
 const earlierFree = { id: 'relay_free_v1', price: '$0', relayMau: '100', deliveryUnits: '100,000', attachmentOperations: '20,000', storage: '1 GB', overage: null };
-const currentFree = { id: 'relay_free_v1', price: '$0', relayMau: '25', deliveryUnits: '12,500', attachmentOperations: '2,500', storage: '250 MB', overage: null };
 const hobby = { id: 'relay_hobby_v1', price: '$9', relayMau: '100', deliveryUnits: '50,000', attachmentOperations: '10,000', storage: '1 GB', overage: { relayMau: '$0.10', delivery: '$400 per million', storage: '$2.00 per GB-month' } };
 const paidAndEnterprise = [
   { id: 'relay_starter_v1', price: '$99', relayMau: '1,000', deliveryUnits: '500,000', attachmentOperations: '100,000', storage: '10 GB', overage: { relayMau: '$0.05', delivery: '$200 per million', storage: '$1.00 per GB-month' } },
@@ -49,14 +46,13 @@ const paidAndEnterprise = [
 
 const sandboxDetail = 'Created automatically for each project. It uses isolated state and credentials, 24-hour default retention, a seven-day retention maximum, and suspension after 30 inactive days.';
 const earlierSandbox = { relayMau: '25 test accounts', deliveryUnits: '25,000', attachmentOperations: '25,000', storage: '250 MB', detail: sandboxDetail };
-const currentSandbox = { relayMau: '5 test accounts', deliveryUnits: '10,000', attachmentOperations: '2,500', storage: '100 MB', detail: sandboxDetail };
 
 test('publishes the exact approved Relay catalog from one data module', () => {
   assert.deepEqual(relayPricingAt(beforeCut).plans.map(figures), [earlierFree, ...paidAndEnterprise]);
-  assert.deepEqual(relayPricingAt(atCut).plans.map(figures), [currentFree, ...paidAndEnterprise]);
+  assert.deepEqual(relayPricingAt(atCut).plans.map(figures), [earlierFree, ...paidAndEnterprise]);
   assert.deepEqual(upcomingRelayPlans.map(figures), [hobby]);
   assert.deepEqual(relayPricingAt(beforeCut).sandboxEnvironment, earlierSandbox);
-  assert.deepEqual(relayPricingAt(atCut).sandboxEnvironment, currentSandbox);
+  assert.deepEqual(relayPricingAt(atCut).sandboxEnvironment, earlierSandbox);
   assert.equal(relayMeterDefinitions.length, 4);
   assert.equal(relayProductionRetention, 'Up to 30 days');
 });
@@ -78,7 +74,7 @@ test('orders the plans Free, Starter, Growth, Business, then Enterprise at every
 });
 
 /*
- * The Relay catalog sells Hobby, but the dated Relay terms relay-2026-10-18
+ * The Relay catalog sells Hobby, but the dated Relay terms relay-2026-10-24
  * do not state it. Hobby waits in its own export until a dated terms version
  * states it. The pull request that adds that version moves Hobby into the
  * published plans between Free and Starter.
@@ -119,50 +115,25 @@ test('the terms guards scan the published plans only', async () => {
   }
 });
 
-test('Free and Sandbox change their limits at 2026-11-01T00:00:00Z and at no other instant', () => {
-  assert.equal(relayLimitsEffectiveAt.toISOString(), '2026-11-01T00:00:00.000Z');
-  const free = (at) => figures(relayPricingAt(at).plans[0]);
-  for (const at of [new Date('2026-10-18T00:00:00Z'), new Date('2026-10-23T12:00:00Z'), beforeCut]) {
-    assert.deepEqual(free(at), earlierFree, at.toISOString());
+test('a build date cannot qualify smaller Free or Sandbox limits', () => {
+  for (const at of buildInstants) {
+    assert.deepEqual(relayPricingAt(at).plans.map(figures), [earlierFree, ...paidAndEnterprise], at.toISOString());
     assert.deepEqual(relayPricingAt(at).sandboxEnvironment, earlierSandbox, at.toISOString());
   }
-  for (const at of [atCut, new Date('2026-11-01T00:00:00.001Z'), new Date('2027-06-01T00:00:00Z')]) {
-    assert.deepEqual(free(at), currentFree, at.toISOString());
-    assert.deepEqual(relayPricingAt(at).sandboxEnvironment, currentSandbox, at.toISOString());
-  }
-  /* The paid plans do not move at the cut. */
-  assert.deepEqual(relayPricingAt(beforeCut).plans.slice(1), relayPricingAt(atCut).plans.slice(1));
-  assert.equal(relayPricingAt(beforeCut).plans[0].detail, relayPricingAt(atCut).plans[0].detail);
 });
 
-test('names the new Free and Sandbox limits and their date only before the cut', () => {
-  assert.deepEqual(relayPricingAt(beforeCut).limitsChange, {
-    effectiveAt: '2026-11-01T00:00:00.000Z',
-    date: 'November 1, 2026',
-    free: { relayMau: '25', deliveryUnits: '12,500', attachmentOperations: '2,500', storage: '250 MB' },
-    sandbox: { relayMau: '5 test accounts', deliveryUnits: '10,000', attachmentOperations: '2,500', storage: '100 MB' },
-    note: 'Free and Sandbox limits change on November 1, 2026 UTC. '
-      + 'Free then includes 25 Relay MAU, 12,500 delivery units, 2,500 attachment uploads, and 250 MB storage. '
-      + 'Sandbox then includes 5 test accounts, 10,000 delivery units, 2,500 attachment uploads, and 100 MB storage.',
-  });
-  assert.equal(relayPricingAt(atCut).limitsChange, null);
-  assert.equal(relayPricingAt(new Date('2027-01-01T00:00:00Z')).limitsChange, null);
+test('publishes no date-only limits announcement before or after the withdrawn cut', () => {
+  for (const at of buildInstants) assert.equal(relayPricingAt(at).limitsChange, null, at.toISOString());
+  assert.equal(relayLimitsChange, null);
 });
 
-test('prices the comparison rows from the plans in effect at each instant', () => {
+test('prices the comparison rows from the qualified plans at every build instant', () => {
   assert.deepEqual(virgilSecurityComparison, virgilSecurityComparisonAt(relayPricingInstant));
-  const before = virgilSecurityComparisonAt(beforeCut).stickerPrices;
-  const after = virgilSecurityComparisonAt(atCut).stickerPrices;
-  /* 100 Relay MAU fit Free before the cut. From the cut the lowest published
-     plan that includes them is Starter, because Hobby is not published. */
-  assert.deepEqual(before[0], ['100', 'Free', 'Free', 'Virgil counts registered users; OpenE2EE counts monthly active accounts.']);
-  assert.deepEqual(after[0], ['100', 'Free', '$99', 'Virgil counts registered users; OpenE2EE counts monthly active accounts.']);
-  assert.deepEqual(before[1], ['250', 'Free', '$99', 'OpenE2EE Free ends at 100 Relay MAU because Relay also supplies delivery infrastructure.']);
-  assert.deepEqual(after[1], ['250', 'Free', '$99', 'OpenE2EE Free ends at 25 Relay MAU because Relay also supplies delivery infrastructure.']);
-  for (const rows of [before, after]) {
-    assert.deepEqual(rows.slice(2).map((row) => row[2]), ['$99', '$499', '$999']);
-  }
-  assert.deepEqual(before.slice(2), after.slice(2));
+  const expected = virgilSecurityComparisonAt(beforeCut).stickerPrices;
+  assert.deepEqual(expected[0], ['100', 'Free', 'Free', 'Virgil counts registered users; OpenE2EE counts monthly active accounts.']);
+  assert.deepEqual(expected[1], ['250', 'Free', '$99', 'OpenE2EE Free ends at 100 Relay MAU because Relay also supplies delivery infrastructure.']);
+  assert.deepEqual(expected.slice(2).map((row) => row[2]), ['$99', '$499', '$999']);
+  for (const at of buildInstants) assert.deepEqual(virgilSecurityComparisonAt(at).stickerPrices, expected, at.toISOString());
 });
 
 test('keeps the comparison factual, dated, sourced, and explicit about the 5,000-user ambiguity', async () => {

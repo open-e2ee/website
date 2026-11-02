@@ -4,12 +4,11 @@ const count = (value) => value.toLocaleString('en-US');
 const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB` : `${bytes / 1_000_000} MB`;
 
 /*
- * Relay catalog relay_managed_2026_11_01_v1 lowers the Free and Sandbox limits
- * from this instant. Relay's catalog-effective-targets.ts holds the same
- * instant. Before it, Relay enforces the Free and Sandbox limits of the earlier
- * catalog. Every paid plan is the same at every instant.
+ * The released Relay keeps the earlier Free and Sandbox targets until qualified
+ * Organization and original-period authority selects new terms. A build date
+ * cannot select that change. The public catalog and dated terms change in the
+ * same qualified release. Paid prices retain the pinned catalog values.
  */
-export const relayLimitsEffectiveAt = new Date(Date.UTC(2026, 10, 1));
 
 /* Production ciphertext retention on every production plan. */
 export const relayProductionRetention = 'Up to 30 days';
@@ -74,49 +73,28 @@ export const upcomingRelayPlans = relayServiceCatalog.plans
   .map((plan) => ({ ...relayPlan(plan), termsVersion: awaitingTerms.get(plan.planId) }));
 
 const freePlanId = 'relay_free_v1';
-const currentFree = relayPlan(relayServiceCatalog.plans.find(({ planId }) => planId === freePlanId));
-const currentSandbox = sandboxEnvironment(relayServiceCatalog.sandbox);
-const limitsDate = relayLimitsEffectiveAt.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' });
-const limits = ({ relayMau, deliveryUnits, attachmentOperations, storage }) => ({ relayMau, deliveryUnits, attachmentOperations, storage });
-
-const limitsChange = {
-  effectiveAt: relayLimitsEffectiveAt.toISOString(),
-  date: limitsDate,
-  free: limits(currentFree),
-  sandbox: limits(currentSandbox),
-  note: `Free and Sandbox limits change on ${limitsDate} UTC. `
-    + `Free then includes ${currentFree.relayMau} Relay MAU, ${currentFree.deliveryUnits} delivery units, `
-    + `${currentFree.attachmentOperations} attachment uploads, and ${currentFree.storage} storage. `
-    + `Sandbox then includes ${currentSandbox.relayMau}, ${currentSandbox.deliveryUnits} delivery units, `
-    + `${currentSandbox.attachmentOperations} attachment uploads, and ${currentSandbox.storage} storage.`,
-};
+const publishedFree = relayPlan(relayEarlierServiceCatalog.plans.find(({ planId }) => planId === freePlanId));
+const publishedSandbox = sandboxEnvironment(relayEarlierServiceCatalog.sandbox);
 
 /*
- * The published plans, the Sandbox limits, and the pending limits change in
- * effect at one instant. Before the cut, Free and Sandbox come from the
- * earlier catalog.
+ * Keep the date parameter for the comparison caller. Dates do not qualify new
+ * Free or Sandbox terms. This matches Relay's unqualified catalog selection.
  */
 export function relayPricingAt(at) {
-  const earlier = at.getTime() < relayLimitsEffectiveAt.getTime();
-  const free = earlier
-    ? relayPlan(relayEarlierServiceCatalog.plans.find(({ planId }) => planId === freePlanId)) : currentFree;
+  void at;
   return {
     plans: [
       ...relayServiceCatalog.plans
         .filter(({ planId }) => !awaitingTerms.has(planId))
-        .map((plan) => plan.planId === freePlanId ? free : relayPlan(plan)),
+        .map((plan) => plan.planId === freePlanId ? publishedFree : relayPlan(plan)),
       enterprise,
     ],
-    sandboxEnvironment: earlier ? sandboxEnvironment(relayEarlierServiceCatalog.sandbox) : currentSandbox,
-    limitsChange: earlier ? limitsChange : null,
+    sandboxEnvironment: publishedSandbox,
+    limitsChange: null,
   };
 }
 
-/*
- * The site has no runtime: each build prints the prices in effect when it
- * runs. A build before the cut names the new limits and their date. Production
- * needs a new build at or after the cut to drop that note.
- */
+/* Record the build instant without using it as catalog authority. */
 export const relayPricingInstant = new Date();
 
 const atBuild = relayPricingAt(relayPricingInstant);
