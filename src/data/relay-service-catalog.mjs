@@ -9,9 +9,9 @@ export const relayCatalogPin = Object.freeze({
   sha256: 'ddaf69635969ef8123c2361852572cfd63d334bda4361ef5108ab95ce081a967',
 });
 
-// Relay enforces the Free and Sandbox limits of this earlier catalog until
-// relayLimitsEffectiveAt in relay-pricing.mjs. Its exact bytes stay pinned so
-// the page reads those limits from the catalog and not from typed figures.
+// Relay keeps these Free and Sandbox targets until qualified original authority
+// selects new terms. The website reads their exact pinned bytes. A build date
+// cannot qualify the newer catalog.
 export const relayEarlierCatalogPin = Object.freeze({
   sourceRevision: '3d74de4ec7859e6d15c0c38ce4203e4e07d52b49',
   catalogVersion: 'relay_managed_2026_10_18_v1',

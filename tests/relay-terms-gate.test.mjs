@@ -1,28 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { relayLimitsEffectiveAt, relayPricingAt, upcomingRelayPlans } from '../src/data/relay-pricing.mjs';
+import { relayPricingAt, upcomingRelayPlans } from '../src/data/relay-pricing.mjs';
+import { relayServiceCatalog } from '../src/data/relay-service-catalog.mjs';
 
 /*
- * The terms gate.
- *
- * Relay lowers the Free and Sandbox limits at 2026-11-01T00:00:00Z, and the
- * Relay catalog sells Hobby. The dated Relay terms relay-2026-10-24 state
- * neither. Two guards compare the published plans with the dated terms:
- *
- *   tests/legal-pages.test.mjs
- *     states every published price and included quantity in the Relay terms
- *   tests/relay-service-catalog.test.mjs
- *     both current and immutable terms state the exact catalog rows
- *
- * A build at or after the cut publishes the new Free and Sandbox limits, so
- * both guards fail on it until a new dated terms version states them. This
- * test runs the same two checks against the values in effect at the cut, with
- * Hobby added, and pins every value the named terms do not state. The list is
- * what the next dated terms version must state.
- *
- * When that version lands, name its component in TERMS. The expected list is
- * then empty, and Hobby moves from upcomingRelayPlans into relayPlans.
+ * The public guards compare the qualified plans with the dated terms. A date
+ * cannot activate the proposed smaller limits or Hobby. Keep the exact missing
+ * values below as evidence for the next qualified catalog and terms release.
  */
 const TERMS = 'src/components/SignalProtocolRelayTerms20261024.astro';
 const beforeCut = new Date('2026-10-31T23:59:59.999Z');
@@ -70,20 +55,30 @@ function unstatedRows(terms, plans) {
   return mismatched;
 }
 
-test('terms gate: the mirrored guard checks pass on the values the guards read before the cut', async () => {
+test('terms gate: the published catalog matches the dated terms at every build instant', async () => {
   const terms = await read(TERMS);
-  const { plans, sandboxEnvironment } = relayPricingAt(beforeCut);
-  assert.deepEqual(unstatedValues(terms, plans, sandboxEnvironment), []);
-  assert.deepEqual(unstatedRows(terms, plans), []);
+  for (const at of [beforeCut, new Date('2026-11-01T00:00:00Z'), new Date('2030-01-01T00:00:00Z')]) {
+    const { plans, sandboxEnvironment } = relayPricingAt(at);
+    assert.deepEqual(unstatedValues(terms, plans, sandboxEnvironment), [], at.toISOString());
+    assert.deepEqual(unstatedRows(terms, plans), [], at.toISOString());
+  }
 });
 
-test('terms gate: names every value from 2026-11-01 that the dated Relay terms do not state', async () => {
+test('terms gate: names every proposed catalog value the dated Relay terms do not state', async () => {
   const terms = await read(TERMS);
-  const { plans, sandboxEnvironment } = relayPricingAt(relayLimitsEffectiveAt);
-  const due = [plans[0], ...upcomingRelayPlans, ...plans.slice(1)];
+  const { plans, sandboxEnvironment } = relayPricingAt(beforeCut);
+  const count = (value) => value.toLocaleString('en-US');
+  const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB` : `${bytes / 1_000_000} MB`;
+  const free = relayServiceCatalog.plans.find(({ planId }) => planId === 'relay_free_v1');
+  const proposedFree = { ...plans[0], relayMau: count(free.monthlyActiveUsers), deliveryUnits: count(free.deliveryUnits),
+    attachmentOperations: count(free.attachmentOperations), storage: storage(free.storageBytes) };
+  const proposedSandbox = { ...sandboxEnvironment, relayMau: `${count(relayServiceCatalog.sandbox.monthlyActiveUsers)} test accounts`,
+    deliveryUnits: count(relayServiceCatalog.sandbox.deliveryUnits), attachmentOperations: count(relayServiceCatalog.sandbox.attachmentOperations),
+    storage: storage(relayServiceCatalog.sandbox.storageBytes) };
+  const due = [proposedFree, ...upcomingRelayPlans, ...plans.slice(1)];
   /* The value check finds "25" and "250 MB" elsewhere in the terms text. The
      row check names the complete Free and Hobby rows. */
-  assert.deepEqual(unstatedValues(terms, due, sandboxEnvironment), [
+  assert.deepEqual(unstatedValues(terms, due, proposedSandbox), [
     'the Free delivery units: 12,500',
     'the Free attachment uploads: 2,500',
     'the Hobby price: $9',

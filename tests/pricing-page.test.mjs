@@ -507,29 +507,10 @@ test('every plan\'s action carries the label the founder chose for it', () => {
   assert.ok(plans.indexOf('>Start free<') < plans.indexOf('<table'), 'the hero is not where "Start free" stands');
 });
 
-/*
- * Relay lowers the Free and Sandbox limits at 2026-11-01T00:00:00Z. A page
- * built before that instant shows the limits Relay enforces then, and one
- * note under the plans names the new limits and the date. A page built from
- * that instant shows the new limits and no note. The data module resolves
- * both at the build instant, so this reads the same answer the page did.
- */
-test('names the new Free and Sandbox limits under the plans only before 2026-11-01 UTC', () => {
-  const notes = [...built.matchAll(/<p class="([^"]*)" data-relay-limits-change>([^<]*)<\/p>/g)];
-  if (relayLimitsChange === null) {
-    assert.equal(notes.length, 0, 'the page still names a limits change that is in effect');
-    assert.equal(built.indexOf('data-relay-limits-change'), -1);
-    return;
-  }
-  assert.equal(notes.length, 1, 'the page does not carry exactly one limits note');
-  const [note] = notes;
-  assert.equal(note[2], relayLimitsChange.note);
-  assert.match(note[2], /November 1, 2026 UTC/);
-  assert.match(note[1], /\btext-text-3\b/, 'the note does not recede like the other secondary text');
-  /* It stands under the plans: after the Enterprise band, before the cards. */
-  assert.ok(note.index > built.indexOf(`data-relay-plan="${enterprise.id}"`), 'the note stands above the Enterprise band');
-  assert.ok(note.index < built.indexOf('<section id="included"'), 'the note left the plans section');
-  /* The table shows the limits in effect at the build instant, not the note's. */
+/* A rebuild cannot announce an unqualified date-only limits change. */
+test('publishes no date-only limits announcement under the plans', () => {
+  assert.equal(relayLimitsChange, null);
+  assert.doesNotMatch(built, /data-relay-limits-change|Free and Sandbox limits change on November 1, 2026 UTC/);
   assert.deepEqual(cells('Monthly Active Users')[0], relayPlans[0].relayMau);
 });
 

@@ -22,10 +22,9 @@ test('pins the merged Relay revision, version, and exact catalog bytes', async (
   assert.deepEqual(relayServiceCatalog.plans.map(({ planId }) => planId), ['relay_free_v1', 'relay_hobby_v1', 'relay_starter_v1', 'relay_growth_v1', 'relay_business_v1']);
 });
 
-/* Relay enforces the Free and Sandbox limits of the earlier catalog until
- * 2026-11-01T00:00:00Z. The website reads them from that catalog's exact
- * bytes, under its own pin, and not from typed figures. */
-test('pins the earlier Relay catalog that holds the Free and Sandbox limits before the cut', async () => {
+/* Relay keeps these Free and Sandbox targets until qualified original
+ * authority selects new terms. The website reads their exact pinned bytes. */
+test('pins the earlier Relay catalog that still supplies qualified Free and Sandbox limits', async () => {
   assert.equal(relayEarlierCatalogPin.sourceRevision, '3d74de4ec7859e6d15c0c38ce4203e4e07d52b49');
   assert.equal(relayEarlierCatalogPin.catalogVersion, 'relay_managed_2026_10_18_v1');
   assert.equal(relayEarlierCatalogPin.sha256, 'a5b4156e8bb9c15a1734e9647235820cbdd85c7878c5cae72bdde0e743b72da8');

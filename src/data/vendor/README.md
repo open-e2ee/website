@@ -12,13 +12,13 @@ The site does not publish its Hobby plan until a dated Relay terms version state
 Its catalog version is `relay_managed_2026_10_18_v1`.
 Its SHA256, including the final newline, is
 `a5b4156e8bb9c15a1734e9647235820cbdd85c7878c5cae72bdde0e743b72da8`.
-Relay enforces its Free and Sandbox limits until 2026-11-01T00:00:00Z.
+The released Relay keeps its Free and Sandbox limits until qualified original authority selects new terms.
 The website reads only those limits from it.
-Remove it after a production build at or after that instant.
+Keep this artifact until the qualified runtime and current dated terms select its replacement.
 
 The website checks each digest before it parses that artifact.
 The static build derives prices, capacities, Sandbox limits, and rational overage rates from these files.
-It uses the limits in effect at the build instant.
+A build date cannot qualify a catalog change.
 It does not fetch a catalog from a service.
 
 To update the catalog:
@@ -27,7 +27,7 @@ To update the catalog:
 2. Run `npm run catalog:export -- --output /tmp/relay-service-catalog.json` there with Node.js 26.
 3. Copy its exact bytes here.
 4. Update the revision, version, and digest in `../relay-service-catalog.mjs`.
-5. Update the agreement as a new dated version.
+5. Qualify the runtime catalog and update the agreement as a new dated version.
 6. Run the catalog, pricing, and legal tests after the website build.
 
 The terms version `relay-2026-10-18` applies the 2026-10-18 catalog immediately to every project.
