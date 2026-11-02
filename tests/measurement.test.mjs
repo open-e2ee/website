@@ -306,14 +306,14 @@ test('describes the measurement in the privacy notice it points at', async () =>
   ]);
 
   assert.match(script, /\/legal\/privacy/);
-  assert.match(privacy, /sets no cookie/i);
+  assert.match(privacy, /sets no cookies/i);
   assert.match(privacy, new RegExp(`${NUMBER_WORDS[EVENTS.size]} things`, 'i'));
   /* The demo's own paragraph, which is the only measurement claim on the site
    * made in front of something a reader typed. */
   assert.match(privacy, /neither the sentence nor anything derived from it/i);
   assert.match(privacy, /one is sent per page, not per sentence/i);
   assert.match(privacy, /IP address is not recorded/i);
-  assert.match(privacy, /No third-party analytics or advertising service receives them/i);
+  assert.match(privacy, /No third-party analytics service receives these anonymous events/i);
   /* The old text claimed the site measured nothing at all. */
   assert.doesNotMatch(privacy, /does not currently use advertising cookies/i);
 });

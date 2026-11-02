@@ -46,11 +46,12 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * future changes. The Console RELAY_TERMS_URL and RELAY_TERMS_VERSION settings
  * must move with these constants once the dated
  * page is live. The 2026-10-24 version names OpenE2EE, Inc. as the
- * counterparty.
+ * counterparty. The 2026-11-02 version discloses limited account-linked Console
+ * usage and keeps optional browser analytics consent separate.
  */
-export const relayTermsVersion = 'relay-2026-10-24';
-export const relayTermsEffectiveDate = 'October 24, 2026';
-export const relayTermsPath = '/legal/relay-terms/2026-10-24';
+export const relayTermsVersion = 'relay-2026-11-02';
+export const relayTermsEffectiveDate = 'November 2, 2026';
+export const relayTermsPath = '/legal/relay-terms/2026-11-02';
 export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
 
 /*
@@ -163,9 +164,11 @@ export const relayServiceLimitsPath = `/legal/relay-service-limits/${relayServic
  * aggregate cohort reports. Marketing measurement does not change.
  * The 2026-10-24 version names OpenE2EE, Inc. as the responsible party and
  * legal-notice recipient. Data practices and retention periods do not change.
+ * The 2026-11-02 version adds optional discovery analytics and limited
+ * account-linked Console usage. It states their separate consent boundaries.
  */
-export const privacyVersion = '2026-10-24';
-export const privacyEffectiveDate = 'October 24, 2026';
+export const privacyVersion = '2026-11-02';
+export const privacyEffectiveDate = 'November 2, 2026';
 export const privacyPath = `/legal/privacy/${privacyVersion}`;
 export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
 

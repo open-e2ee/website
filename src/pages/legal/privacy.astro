@@ -189,6 +189,24 @@ import {
           Production collection starts only after we publish this notice.
         </p>
 
+        <h3>Account-linked Console usage</h3>
+        <p>
+          When you use Console while signed in, we record limited account-linked service usage
+          by default to operate, secure, support, and improve the Services. A server observation
+          records successful authenticated Console access using a separate opaque account identifier,
+          the event type, time, and deployment lane. PostHog processes these records for us in the
+          United States. These records contain no email address, name, raw account identifier,
+          browser identifier, message content, keys, tokens, copied code, or form text.
+        </p>
+        <p>
+          We rely on our legitimate interests for these limited service observations where that
+          basis applies. Optional browser consent is separate: refusing or withdrawing it does not
+          stop this disclosed account-linked service measurement, and does not block Console access.
+          You can object to this processing or request deletion at
+          <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a>. We assess each request
+          under the applicable rights and retention requirements.
+        </p>
+
         <h2 id="use">3. How and why we use information</h2>
         <p>We use personal information to:</p>
         <ul>
@@ -217,7 +235,8 @@ import {
             <strong>Service providers:</strong> Cloudflare for Relay, encrypted storage, the public
             site, DNS, TLS, and security; Vercel for the console and documentation; Neon for the
             console database that holds organization, project, licensing, and terms-acceptance
-            records; WorkOS for authentication and organization identity; Stripe for payments,
+            records; PostHog for optional discovery analytics and limited account-linked Console usage
+            in the United States; WorkOS for authentication and organization identity; Stripe for payments,
             subscriptions, tax information, and the billing portal; Expo, Apple, Google, and browser
             push services for best-effort device wakes; Better Stack for availability monitoring and
             public status; and Google Workspace for business email. The current list is at{' '}
@@ -247,13 +266,12 @@ import {
 
         <h2 id="cookies">5. Cookies and analytics</h2>
         <p>
-          The public marketing site sets no cookies, stores nothing in your browser, and uses no
-          advertising or cross-site behavioral analytics. It does measure which parts of the site
-          people use, and this section describes that measurement exactly, because a privacy notice
-          that describes it vaguely is not worth reading.
+          The public marketing site has two separate measurement systems. The anonymous measurement
+          below sets no cookies and has no visitor identifier. Optional discovery analytics use
+          PostHog only after you accept analytics. Neither system is used for advertising.
         </p>
         <p>
-          The site sends a short message to our own servers when one of ten things happens: you
+          The anonymous system sends a short message to our own servers when one of ten things happens: you
           run the live demo on the home page, open the quickstart, choose a runtime, copy the
           install command, follow the closing link of an article or the architecture guide, open
           one of our GitHub repositories, view the security model page, view the pricing page, open
@@ -269,25 +287,53 @@ import {
           reads <code>demo_run /</code>, and one is sent per page, not per sentence.
         </p>
         <p>
-          It contains no identifier of any kind. We set no cookie, read no cookie, and write nothing
+          The anonymous message contains no identifier of any kind. This system sets no cookie, reads no cookie, and writes nothing
           to local storage; we do not fingerprint your browser or device; we assign you no visitor
           or session identifier; and your IP address is not recorded alongside these events. Because
           there is nothing that distinguishes one visitor from another, these events cannot be
           linked to you, to each other, or into a journey through the site, either by us or by
           anyone who obtained the data. What they show is how many people took each step, and
           nothing else. The site sends each measurement event only to its own address. Our hosting
-          provider stores these events for us in our own account. No third-party analytics or
-          advertising service receives them.
+          provider stores these events for us in our own account. No third-party analytics service receives these anonymous events.
         </p>
         <p>
           The console uses essential authentication, security, and session cookies. Cloudflare,
           Vercel, WorkOS, and Stripe may use their own necessary security or service cookies when
           you interact with their infrastructure or hosted pages.
         </p>
+        <h3>Optional discovery analytics</h3>
         <p>
-          Because we do not sell or share information for targeted advertising, there is no
-          advertising opt-out needed for the current Services. We will honor legally required
-          browser signals if our practices change in a way that makes them applicable.
+          If you accept analytics, PostHog, Inc. processes selected page visits and actions for us
+          in the United States. These observations help us understand how visitors find the SDK,
+          read documentation, and reach Console. We record a known page path, a referring host,
+          and campaign labels from fixed public lists. We discard URL queries, fragments, raw
+          referring paths, search text, copied content, form values, email addresses, and keys.
+          We do not use session replay, heatmaps, automatic interaction capture, or advertising tracking.
+        </p>
+        <p>
+          PostHog uses an opaque browser identifier shared across our website, documentation, and
+          Console. If you sign in while analytics are accepted, we can link your opted-in visits to
+          your signed-in account through a separate opaque account identifier. We do not send your
+          name or email address to PostHog. Signing in and accepting service terms do not grant
+          analytics consent. The separate anonymous measurement above is never joined to an account.
+        </p>
+        <p>
+          Before your choice, we do not load the PostHog SDK or send it analytics. Your choice is
+          stored in an essential cookie for 180 days across <code>open-e2ee.dev</code> subdomains.
+          After acceptance, analytics identity is stored in a secure cookie for up to 180 days;
+          the SDK also uses local storage and session storage after acceptance. You can use every page without accepting.
+          Accept and reject have equal controls.
+        </p>
+        <p>
+          Open <button type="button" data-analytics-preferences class="underline">Analytics preferences</button>
+          on this page or in the footer to reject analytics or withdraw consent. This stops future
+          optional collection and clears analytics state in this browser. Previously accepted events may
+          finish delivery. Signing out of Console also stops optional browser measurement in this
+          browser until you accept analytics again. Console also lets you
+          disconnect analytics account linking. Withdrawal does not delete records already sent;
+          email <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a> to request deletion.
+          Do Not Track and Global Privacy Control keep optional analytics off even if an earlier
+          choice accepted them.
         </p>
 
         <h2 id="retention">6. Retention and security</h2>
@@ -322,7 +368,7 @@ import {
             maintain appropriate records;
           </li>
           <li>
-            analytics records described in section 2 are kept for 380 days; summary tables built
+            operational analytics records described in section 2 are kept for 380 days; summary tables built
             from them, which identify nothing more specific than a project, are kept while they
             remain useful for planning the business; and
           </li>
@@ -331,6 +377,11 @@ import {
             operational and provider settings, unless needed to investigate an incident.
           </li>
         </ul>
+        <p>
+          PostHog discovery and account-linked Console usage records follow the retention settings of our analytics project.
+          The 380-day operational retention above does not set their retention. Contact
+          <a href="mailto:privacy@open-e2ee.dev">privacy@open-e2ee.dev</a> for retention or deletion requests.
+        </p>
         <p>
           Console onboarding records follow the same 380-day raw retention.
           Organization erasure removes that Organization’s raw onboarding records.
@@ -498,8 +549,14 @@ import {
           The marketing site’s anonymous measurement does not change.
         </p>
         <p>
-          <strong>Version {privacyVersion}:</strong> names OpenE2EE, Inc. as the responsible party
+          <strong>Version 2026-10-24:</strong> names OpenE2EE, Inc. as the responsible party
           and legal-notice recipient. Data practices and retention periods did not change.
+        </p>
+        <p>
+          <strong>Version {privacyVersion}:</strong> adds optional PostHog discovery analytics,
+          shared consent, opaque account linking after sign-in, limited default account-linked Console usage, withdrawal controls, and browser
+          privacy-signal handling. The anonymous Cloudflare measurement does not change.
+          The <a href="/legal/privacy/2026-10-24">previous notice</a> stays available at its dated URL.
         </p>
         <p>
           For privacy questions or requests, email{' '}

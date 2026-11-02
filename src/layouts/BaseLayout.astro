@@ -9,6 +9,7 @@ import '../styles/demo.css';
 import '../styles/prose.css';
 import '../styles/article.css';
 import PageChrome from '../components/PageChrome.astro';
+import AnalyticsConsent from '../components/AnalyticsConsent.astro';
 import { serializeJsonLd, structuredData as structuredDataFor } from '../lib/structured-data.mjs';
 
 /*
@@ -169,5 +170,6 @@ const jsonLd =
     <PageChrome>
       <slot />
     </PageChrome>
+    <AnalyticsConsent />
   </body>
 </html>
