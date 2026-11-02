@@ -9,7 +9,7 @@ import { relayServiceCatalog } from '../src/data/relay-service-catalog.mjs';
  * cannot activate the proposed smaller limits or Hobby. Keep the exact missing
  * values below as evidence for the next qualified catalog and terms release.
  */
-const TERMS = 'src/components/SignalProtocolRelayTerms20261024.astro';
+const TERMS = 'src/components/SignalProtocolRelayTerms20261102.astro';
 const beforeCut = new Date('2026-10-31T23:59:59.999Z');
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');

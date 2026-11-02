@@ -28,7 +28,8 @@
     "deploy:dry-run": "npm run build && wrangler deploy --env=\"\" --dry-run",
     "deploy:redirect": "npm test && wrangler deploy --config wrangler.redirect.jsonc --env=\"\"",
     "deploy:redirect:dry-run": "npm test && wrangler deploy --config wrangler.redirect.jsonc --env=\"\" --dry-run",
-    "playground:build": "node scripts/build-playground.mjs"
+    "playground:build": "node scripts/build-playground.mjs",
+    "analytics:smoke": "node scripts/analytics-smoke.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "7.0.3",
@@ -40,6 +41,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "astro": "7.1.3",
+    "posthog-js": "1.444.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

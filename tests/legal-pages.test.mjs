@@ -60,12 +60,12 @@ test('pins the current Startup terms to an immutable canonical URL', () => {
   assert.equal(commercialTermsVersion, 'startup-2026-10-24');
   assert.equal(commercialTermsPath, '/legal/terms/2026-10-24');
   assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-10-24');
-  assert.equal(privacyVersion, '2026-10-24');
-  assert.equal(privacyPath, '/legal/privacy/2026-10-24');
-  assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-10-24');
-  assert.equal(relayTermsVersion, 'relay-2026-10-24');
-  assert.equal(relayTermsPath, '/legal/relay-terms/2026-10-24');
-  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-10-24');
+  assert.equal(privacyVersion, '2026-11-02');
+  assert.equal(privacyPath, '/legal/privacy/2026-11-02');
+  assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-11-02');
+  assert.equal(relayTermsVersion, 'relay-2026-11-02');
+  assert.equal(relayTermsPath, '/legal/relay-terms/2026-11-02');
+  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-11-02');
   assert.equal(relayRetentionVersion, '2026-10-24');
   assert.equal(relayRetentionEffectiveDate, 'October 24, 2026');
   assert.equal(relayRetentionPath, '/legal/relay-retention/2026-10-24');
@@ -300,6 +300,7 @@ const frozenRelayTermsVersions = [
   { version: 'relay-2026-10-08', date: '2026-10-08', effective: 'October 8, 2026' },
   { version: 'relay-2026-10-18', date: '2026-10-18', effective: 'October 18, 2026' },
   { version: 'relay-2026-10-24', date: '2026-10-24', effective: 'October 24, 2026' },
+  { version: 'relay-2026-11-02', date: '2026-11-02', effective: 'November 2, 2026' },
 ];
 
 test('keeps every dated Relay terms page frozen: it never reads the live document', async () => {
@@ -434,6 +435,7 @@ const frozenPrivacyVersions = [
   { version: '2026-10-08', effective: 'October 8, 2026' },
   { version: '2026-10-19', effective: 'October 19, 2026' },
   { version: '2026-10-24', effective: 'October 24, 2026' },
+  { version: '2026-11-02', effective: 'November 2, 2026' },
 ];
 
 test('keeps every dated privacy page frozen: it never reads the live notice', async () => {
@@ -485,7 +487,7 @@ test('freezes the privacy version the notice currently publishes', () => {
  * guard rules out.
  */
 test('states every published price and included quantity in the Relay terms', async () => {
-  const terms = await flat('../src/components/SignalProtocolRelayTerms20261024.astro');
+  const terms = await flat('../src/components/SignalProtocolRelayTerms20261102.astro');
 
   /* Bounded on both sides so a shorter figure cannot be satisfied by a longer
    * one containing it: "100" must not pass on "100,000", and "$0" must not
@@ -528,7 +530,7 @@ test('makes privacy and terms available from the site footer', async () => {
 test('names the selected counterparty in current documents and preserves accepted copies', async () => {
   for (const path of [
     '../src/components/CommercialTerms.astro',
-    '../src/components/SignalProtocolRelayTerms20261024.astro',
+    '../src/components/SignalProtocolRelayTerms20261102.astro',
     '../src/components/DataProcessingAgreement20261024.astro',
     '../src/pages/legal/privacy.astro',
     '../src/pages/legal/terms/2026-10-24.astro',
@@ -636,7 +638,7 @@ test('describes the implemented providers and managed Relay boundary', async () 
 
 test('publishes the exact Relay legal and lifecycle boundary', async () => {
   const [terms, acceptableUse, subprocessors, retention, beta] = await Promise.all([
-    flat('../src/components/SignalProtocolRelayTerms20261024.astro'),
+    flat('../src/components/SignalProtocolRelayTerms20261102.astro'),
     flat('../src/pages/legal/acceptable-use.astro'),
     flat('../src/pages/legal/subprocessors.astro'),
     flat('../src/pages/legal/relay-retention.astro'),
@@ -734,7 +736,7 @@ test('names the Sandbox environment everywhere except the frozen legal versions'
   }
 
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20261024.astro',
+    '../src/components/SignalProtocolRelayTerms20261102.astro',
     '../src/components/DataProcessingAgreement20261024.astro',
     '../src/pages/legal/privacy.astro',
     '../src/pages/legal/relay-retention.astro',
@@ -766,7 +768,7 @@ test('publishes the subprocessor list the agreement points at', async () => {
     [...row.matchAll(/<td>([\s\S]*?)<\/td>/g)].map(([, cell]) => cell.trim()),
   );
 
-  assert.equal(rows.length, 8, `the list publishes ${rows.length} providers`);
+  assert.equal(rows.length, 9, `the list publishes ${rows.length} providers`);
   assert.match(page, /<th>Location<\/th>/, 'the list publishes no location column');
   for (const cells of rows) {
     assert.equal(
@@ -780,6 +782,8 @@ test('publishes the subprocessor list the agreement points at', async () => {
     rows.some(([provider]) => provider === 'Neon'),
     'the console database provider is not on the list',
   );
+
+  assert.ok(rows.some(([provider, , boundary]) => provider === 'PostHog' && /no message content, keys, or email addresses/.test(boundary)));
 
   assert.match(
     prose,
@@ -890,7 +894,7 @@ test('calls the Relay a beta on no current legal page', async () => {
     sources.add(String(page));
   }
   assert.ok(
-    sources.has(String(new URL('../src/components/SignalProtocolRelayTerms20261024.astro', import.meta.url))),
+    sources.has(String(new URL('../src/components/SignalProtocolRelayTerms20261102.astro', import.meta.url))),
     'the guard does not read the live Relay terms',
   );
 
@@ -908,7 +912,7 @@ test('calls the Relay a beta on no current legal page', async () => {
 
 test('lets a published version change the Relay terms and limits for every customer', async () => {
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20261024.astro',
+    '../src/components/SignalProtocolRelayTerms20261102.astro',
     `../src/pages${relayTermsPath}.astro`,
   ]) {
     const terms = await flat(path);
@@ -932,7 +936,7 @@ test('lets a published version change the Relay terms and limits for every custo
 });
 
 test('applies the current catalog immediately and retains notice for future changes in both agreements', async () => {
-  for (const path of ['../src/components/SignalProtocolRelayTerms20261024.astro', `../src/pages${relayTermsPath}.astro`]) {
+  for (const path of ['../src/components/SignalProtocolRelayTerms20261102.astro', `../src/pages${relayTermsPath}.astro`]) {
     const terms = await flat(path);
     assert.match(terms, /prices, included quantities, and overage rates in Section 3\.1 apply to every project from this version’s effective date/);
     assert.match(terms, /This catalog applies immediately without a notice waiting period or grandfathered allowances/);
@@ -986,4 +990,29 @@ test('the current and dated retention statement state the deletion recovery wind
   }
   const superseded = await flat('../src/pages/legal/relay-retention/2026-10-19.astro');
   assert.doesNotMatch(superseded, /recovery window/);
+});
+
+test('separates default account-linked Console usage from optional browser consent in the current and new dated notice', async () => {
+  for (const path of ['../src/pages/legal/privacy.astro', '../src/pages/legal/privacy/2026-11-02.astro']) {
+    const notice = await flat(path);
+    assert.match(notice, /account-linked service usage by default/);
+    assert.match(notice, /A server observation records successful authenticated Console access/);
+    assert.match(notice, /We rely on our legitimate interests/);
+    assert.match(notice, /PostHog.*United States/);
+    assert.match(notice, /Signing in and accepting service terms do not grant analytics consent/);
+    assert.match(notice, /local storage and session storage after acceptance/);
+    assert.match(notice, /Signing out of Console also stops optional browser measurement/);
+    assert.match(notice, /Do Not Track and Global Privacy Control keep optional analytics off/);
+    assert.match(notice, /You can object to this processing or request deletion/);
+    assert.match(notice, /The separate anonymous measurement above is never joined to an account/);
+  }
+});
+
+test('new Relay terms disclose limited Console usage without bundling optional browser consent', async () => {
+  for (const path of ['../src/components/SignalProtocolRelayTerms20261102.astro', '../src/pages/legal/relay-terms/2026-11-02.astro']) {
+    const terms = await flat(path);
+    assert.match(terms, /records limited account-linked Console usage/);
+    assert.match(terms, /Optional analytics that connect public browsing to an account require separate consent/);
+    assert.match(terms, /withdrawing that optional consent does not prevent access to the Services/);
+  }
 });
