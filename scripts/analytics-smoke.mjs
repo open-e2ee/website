@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { once } from 'node:events';
 import { rmSync, writeFileSync } from 'node:fs';
 import { Cdp, launchChrome, productionHeaders, serve } from './chrome-harness.mjs';
 import { ANALYTICS_COOKIE, CONSENT_COOKIE, PROJECT_KEY } from '../src/lib/analytics/contract.mjs';
@@ -201,9 +202,15 @@ try {
   if (errors.length) throw errors[0];
   console.log('Analytics browser smoke passed: no SDK or PostHog traffic before consent; bounded pageviews and CTA; stable anonymous ID across navigation; withdrawal clears state; DNT and GPC override acceptance. All network requests intercepted; no live analytics sent.');
 } finally {
-  cdp?.socket.close();
-  chrome.child.kill('SIGTERM');
-  server.close();
-  await new Promise(resolve => chrome.child.exitCode !== null ? resolve() : chrome.child.once('exit', resolve));
+  const closed = chrome.child.exitCode !== null && chrome.child.stderr.destroyed
+    ? Promise.resolve()
+    : once(chrome.child, 'close', { signal: AbortSignal.timeout(10000) });
+  try {
+    const closing = cdp ? cdp.send('Browser.close').catch(() => chrome.child.kill('SIGTERM')) : chrome.child.kill('SIGTERM');
+    await Promise.all([closed, closing]);
+  } finally {
+    cdp?.socket.close();
+    server.close();
+  }
   rmSync(chrome.profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
