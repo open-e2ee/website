@@ -190,10 +190,10 @@ import {
 
         <h3>Account-linked Console usage</h3>
         <p>
-          When you use Console while signed in, we record limited account-linked service usage
-          by default to operate, secure, support, and improve the Services. A server observation
-          records successful authenticated Console access using a separate opaque account identifier,
-          the event type, time, and deployment lane. PostHog processes these records for us in the
+          When you create an account or use Console while signed in, we record limited account-linked service usage
+          by default. These records help us operate, secure, support, and improve the Services. Server observations
+          record verified account creation and successful authenticated Console access. They include
+          a separate opaque account identifier, the event type, time, and source. PostHog processes these records for us in the
           United States. These records contain no email address, name, raw account identifier,
           browser identifier, message content, keys, tokens, copied code, or form text.
         </p>
@@ -310,7 +310,7 @@ import {
           We do not use session replay, heatmaps, automatic interaction capture, or advertising tracking.
         </p>
         <p>
-          PostHog uses an opaque browser identifier shared across our website, documentation, and
+          PostHog uses an opaque browser identifier shared across our website, documentation, status page, and
           Console. If you sign in while analytics are accepted, we can link your opted-in visits to
           your signed-in account through a separate opaque account identifier. We do not send your
           name or email address to PostHog. Signing in and accepting service terms do not grant

@@ -996,7 +996,7 @@ test('separates default account-linked Console usage from optional browser conse
   for (const path of ['../src/pages/legal/privacy.astro', '../src/pages/legal/privacy/2026-11-02.astro']) {
     const notice = await flat(path);
     assert.match(notice, /account-linked service usage by default/);
-    assert.match(notice, /A server observation records successful authenticated Console access/);
+    assert.match(notice, /Server observations record verified account creation and successful authenticated Console access/);
     assert.match(notice, /We rely on our legitimate interests/);
     assert.match(notice, /PostHog.*United States/);
     assert.match(notice, /Signing in and accepting service terms do not grant analytics consent/);
