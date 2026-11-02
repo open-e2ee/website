@@ -17,9 +17,9 @@ export function hasConsent(doc, nav) {
   return !privacySignal(nav) && doc.cookie.split(';').some((part) => part.trim() === `${CONSENT_COOKIE}=v1.accepted`);
 }
 
-export function pageProperties(location, referrer, routes) {
+export function pageProperties(location, referrer, routes, surface = 'website') {
   const path = location.pathname.replace(/\/$/, '') || '/';
-  const props = { surface: 'website', page_path: routes.has(path) ? path : '/other' };
+  const props = { surface, page_path: routes.has(path) ? path : '/other' };
   try {
     const host = new URL(referrer).hostname;
     if (/^[a-z0-9.-]{1,253}$/.test(host)) props.referrer_host = host;
@@ -32,11 +32,13 @@ export function pageProperties(location, referrer, routes) {
   return props;
 }
 
-export function sanitizeEvent(event, allowed, routes) {
+export function sanitizeEvent(event, allowed, routes, surface = 'website') {
+  const host = surface === 'website' ? 'open-e2ee.dev' : surface === 'status' ? 'status.open-e2ee.dev' : null;
+  if (!host || (surface === 'status' && event?.event !== '$pageview')) return null;
   if (!allowed || !event || !UUID.test(event.uuid ?? '') || !['$pageview', 'website_cta'].includes(event.event)) return null;
   const input = event.properties ?? {};
   const path = routes.has(input.page_path) ? input.page_path : '/other';
-  const properties = { surface: 'website', page_path: path, $host: 'open-e2ee.dev', $pathname: path, $current_url: `https://open-e2ee.dev${path}` };
+  const properties = { surface, page_path: path, $host: host, $pathname: path, $current_url: `https://${host}${path}` };
   if (event.event === 'website_cta') {
     if (!CTA_NAMES.has(input.cta)) return null;
     properties.cta = input.cta;
@@ -77,4 +79,17 @@ export function classifyCta(target, location) {
   if (url.origin === 'https://calendar.app.google' && url.pathname === '/ZpFdxaL9HZh9J7x97') return { cta: 'enterprise_contact' };
   if (url.hostname === 'github.com' && /^\/open-e2ee(?:\/|$)/.test(url.pathname)) return { cta: 'github_open' };
   return null;
+}
+
+export const STATUS_ROUTES = new Set(['/', '/incidents', '/maintenance', '/incident/:incident', '/other']);
+
+export function statusRoute(pathname) {
+  const path = pathname.replace(/\/$/, '') || '/';
+  if (['/', '/incidents', '/maintenance'].includes(path)) return path;
+  if (/^\/incident\/[^/]+$/.test(path)) return '/incident/:incident';
+  return '/other';
+}
+
+export function statusPageProperties(location, referrer) {
+  return pageProperties({ pathname: statusRoute(location.pathname), search: location.search }, referrer, STATUS_ROUTES, 'status');
 }

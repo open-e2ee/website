@@ -22,3 +22,13 @@
 # host matches this rule, so production responses never carry the header.
 https://stage.open-e2ee.dev/*
   X-Robots-Tag: noindex
+
+/analytics/status-v1.js
+  Cache-Control: public, max-age=300, must-revalidate
+  Access-Control-Allow-Origin: https://status.open-e2ee.dev
+  Referrer-Policy: no-referrer
+
+/analytics/status-v1/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: https://status.open-e2ee.dev
+  Referrer-Policy: no-referrer
