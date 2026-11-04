@@ -35,14 +35,14 @@ jobs:
       # read, and the suite fails in CI (process.env.CI) if dist/ is absent,
       # so this ordering cannot silently regress.
       #
-      # The suite is still its own step, not a side effect of the Wrangler dry
-      # run below — `deploy:redirect:dry-run` starts with `npm test`, and
-      # trimming that `&&` must not take the suite with it.
+      # The suite is its own step. The Wrangler dry run below calls wrangler
+      # directly, not `npm run deploy:redirect:dry-run`, because that script
+      # starts with `npm test` and would run the suite a second time.
       - run: npm run build
 
       - run: npm test
 
-      - run: npm run deploy:redirect:dry-run
+      - run: npx wrangler deploy --config wrangler.redirect.jsonc --env="" --dry-run
 
   verify-site:
     runs-on: ubuntu-24.04
