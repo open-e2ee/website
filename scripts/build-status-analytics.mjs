@@ -2,12 +2,14 @@ import { build } from 'vite';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
+// Vite resolves a relative output directory against the website root.
+const outDir = process.argv[2] ?? 'public/analytics';
 await build({
   configFile: false,
   publicDir: false,
   root,
   build: {
-    outDir: 'public/analytics',
+    outDir,
     emptyOutDir: true,
     assetsInlineLimit: 0,
     lib: {
