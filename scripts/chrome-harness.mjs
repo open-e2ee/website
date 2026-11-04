@@ -122,7 +122,15 @@ export function findChrome() {
   return found;
 }
 
-export async function launchChrome(profilePrefix = 'oe-harness-') {
+/*
+ * `unthrottled` is for a harness that drives several pages at once. Chrome
+ * slows the timers and lowers the priority of a page it thinks nobody is
+ * looking at, and with more than one window open only one of them has focus.
+ * These flags keep every page at the pace of a foreground one, so a timing a
+ * concurrent harness reads is the page's own. It is off by default, because a
+ * harness that drives one page at a time has no use for it.
+ */
+export async function launchChrome(profilePrefix = 'oe-harness-', { unthrottled = false } = {}) {
   const profile = mkdtempSync(join(tmpdir(), profilePrefix));
   const child = spawn(
     findChrome(),
@@ -134,6 +142,13 @@ export async function launchChrome(profilePrefix = 'oe-harness-') {
       '--no-default-browser-check',
       '--disable-gpu',
       '--disable-extensions',
+      ...(unthrottled
+        ? [
+            '--disable-background-timer-throttling',
+            '--disable-renderer-backgrounding',
+            '--disable-backgrounding-occluded-windows',
+          ]
+        : []),
       'about:blank',
     ],
     { stdio: ['ignore', 'ignore', 'pipe'] },
