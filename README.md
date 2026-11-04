@@ -33,13 +33,11 @@ bash scripts/verify-site-redesign.sh
 
 `scripts/verify-site-redesign.sh` is the website verifier. It holds the
 conditions of the UI redesign and the funnel redesign contracts, SR-V01 onward,
-and its summary line states how many passed and failed. With no argument it
-reports each condition and exits non-zero while any one fails.
+and its summary line states how many passed and failed. It reports each
+condition and exits non-zero while any one fails.
 
-CI runs it with `--ratchet` on every pull request. That mode compares the
-pass count against `scripts/redesign-baseline/passing.txt` and fails on any
-difference, so an open condition does not block unrelated work. A change
-that turns a condition green records the new count in the same commit.
+CI runs it on every pull request, and every condition must pass. A failed
+condition fails the pull request, and its FAIL line names it.
 
 ## Brand source
 

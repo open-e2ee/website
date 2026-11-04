@@ -17,11 +17,9 @@
 # conditions: the demos, the content security policy, and the self-hosted fonts
 # are asserted inside the shipped stylesheet.
 #
-# Two modes. With no argument the script exits non-zero while any condition
-# fails, and it names every failure. With --ratchet it compares the pass count
-# against the number recorded in scripts/redesign-baseline/passing.txt and
-# fails on any difference. CI runs the second mode, so a change that turns a
-# passing condition red fails the pull request.
+# Every condition must pass. The script exits non-zero while any condition
+# fails, and it names every failure. CI runs it on every pull request, so a
+# change that turns a condition red fails the pull request.
 
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -502,16 +500,5 @@ check SR-V39 'FR16  No dark ground exceeds four percent saturation' sr_v39
 check SR-V40 'FR9  The wordmark sits on the navigation baseline' sr_v40
 
 printf 'Summary: %d passed, %d failed\n' "$passed" "$failed"
-
-if [ "${1:-}" = '--ratchet' ]; then
-  recorded="$(cat "$BASELINE/passing.txt")"
-  if [ "$passed" -ne "$recorded" ]; then
-    printf 'Ratchet: %s records %s passed, this run reports %d.\n' \
-      "$BASELINE/passing.txt" "$recorded" "$passed" >&2
-    printf 'A task that changes the count records it in the same commit.\n' >&2
-    exit 1
-  fi
-  exit 0
-fi
 
 [ "$failed" -eq 0 ]

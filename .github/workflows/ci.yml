@@ -67,10 +67,9 @@ jobs:
           npm run analytics:smoke
           npm run analytics:status:smoke
 
-      # The UI redesign contract. --ratchet compares the pass count with
-      # scripts/redesign-baseline/passing.txt and fails on any difference, so
-      # the conditions still open do not block unrelated work, and a change
-      # that turns one green has to record the new count.
+      # The website verifier. Every condition must pass. The script exits
+      # non-zero while any condition fails, and it prints a FAIL line that
+      # names each failed condition.
       #
       # SR-V18 is `npm run demo:smoke`, the homepage demo in a real browser
       # against the build above. It is the only check that can see the two
@@ -83,15 +82,4 @@ jobs:
       # `chrome-harness.mjs` finds the Chrome that ubuntu-24.04 ships at
       # /usr/bin/google-chrome, and says which paths it looked at if a future
       # image drops it.
-      #
-      # The ratchet reads only the count, so a red SR-V18 and a condition that
-      # turns green in the same change would hold it level. The grep holds
-      # SR-V18 to a pass of its own. `shell: bash` sets pipefail, so the tee
-      # keeps the ratchet's exit status.
-      - shell: bash
-        run: |
-          bash scripts/verify-site-redesign.sh --ratchet | tee "$RUNNER_TEMP/verifier.txt"
-          grep -q '^PASS SR-V18 ' "$RUNNER_TEMP/verifier.txt" || {
-            echo '::error::SR-V18 did not pass: demo:smoke failed.'
-            exit 1
-          }
+      - run: bash scripts/verify-site-redesign.sh
