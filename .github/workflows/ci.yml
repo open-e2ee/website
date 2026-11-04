@@ -46,9 +46,9 @@ jobs:
 
   verify-site:
     runs-on: ubuntu-24.04
-    # SR-V18 drives the homepage demo through five page loads, and each sent
-    # message waits out the reel that narrates it. That is about five of the
-    # six minutes this job takes.
+    # SR-V18 drives the homepage demo through five page loads at the same
+    # time, and each sent message waits out the reel that narrates it. The
+    # slowest load, about three minutes, sets the length of that step.
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

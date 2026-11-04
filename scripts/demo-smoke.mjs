@@ -1252,6 +1252,11 @@ async function teardown(held) {
       await held.cdp.send('Target.closeTarget', { targetId });
     } catch {}
   }
+  for (const browserContextId of held.contexts) {
+    try {
+      await held.cdp.send('Target.disposeBrowserContext', { browserContextId });
+    } catch {}
+  }
   if (held.chrome) {
     try {
       const exited = new Promise((resolve) => held.chrome.child.once('exit', resolve));
@@ -1284,9 +1289,19 @@ async function teardown(held) {
  *
  * `blocked` is the list of URLs Chrome refuses before the page loads, which is
  * how the homepage's second pass makes the demo's chunks never arrive.
+ *
+ * Each tab has a browser context of its own, so the visits that run at the
+ * same time share no storage and no HTTP cache, and each has a window of its
+ * own, so none of them is a background tab behind another.
  */
 async function openTab(cdp, held, { blocked = [] } = {}) {
-  const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
+  const { browserContextId } = await cdp.send('Target.createBrowserContext');
+  held.contexts.push(browserContextId);
+  const { targetId } = await cdp.send('Target.createTarget', {
+    url: 'about:blank',
+    browserContextId,
+    newWindow: true,
+  });
   held.targets.push(targetId);
   const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
 
@@ -1636,6 +1651,17 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
        homepage did not render, nothing below would mean anything. */
     const title = await evaluate(cdp, sessionId, 'document.title');
     if (!title) throw new Infra('the homepage rendered no title — the served build looks wrong');
+
+    /* A hidden page has its timers clamped to a second or more, and every wait
+       and every reel below runs on timers. A run in one would time a throttle,
+       not the demo. */
+    const visibility = await evaluate(cdp, sessionId, 'document.visibilityState');
+    if (visibility !== 'visible') {
+      throw new Infra(
+        `the homepage tab reads document.visibilityState ${JSON.stringify(visibility)} after ` +
+          `load, so Chrome is throttling its timers and no wait in this visit would be real`,
+      );
+    }
 
     if (!(await evaluate(cdp, sessionId, present(CONSOLE)))) {
       throw new Red(
@@ -3518,11 +3544,11 @@ async function main() {
 
   const expected = await expectedAddressing(envelopeFields);
 
-  const held = { server: null, chrome: null, cdp: null, targets: [] };
+  const held = { server: null, chrome: null, cdp: null, targets: [], contexts: [] };
   try {
     const { server, origin } = await serve(DIST, productionHeaders());
     held.server = server;
-    const chrome = await launchChrome('demo-smoke-');
+    const chrome = await launchChrome('demo-smoke-', { unthrottled: true });
     held.chrome = chrome;
 
     const { webSocketDebuggerUrl } = await fetch(
@@ -3531,16 +3557,23 @@ async function main() {
     const cdp = await Cdp.connect(webSocketDebuggerUrl);
     held.cdp = cdp;
 
-    const live = await visit(cdp, origin, held, { repeat: true });
-    const { spend } = checkRoundTrip(live, origin, envelopeFields, expected);
+    /*
+     * The five visits, at the same time.
+     *
+     * Each opens a window in a browser context of its own, so no page shares
+     * storage, a cache or a turn in the foreground with another, and the run
+     * takes about as long as its slowest visit rather than the sum of all five.
+     * Only the starved visit needs another's result, so it starts when the live
+     * one ends.
+     */
+    const liveVisit = visit(cdp, origin, held, { repeat: true });
 
     /* Block every chunk the interaction asked for, so the dynamic import cannot
        resolve however Vite chose to split it. Taking only the first request
        would depend on whether a preload or the chunk itself won the race. */
-    const starved = await visit(cdp, origin, held, {
-      blocked: live.after.map((script) => script.url),
-    });
-    checkFallback(starved);
+    const starvedVisit = liveVisit.then((page) =>
+      visit(cdp, origin, held, { blocked: page.after.map((script) => script.url) }),
+    );
 
     /*
      * The same page again under each braid setting, one sentence per run.
@@ -3550,29 +3583,53 @@ async function main() {
      * way to see what it changes is to run the page twice. One sentence each,
      * so the two columns are drawing the same message of the conversation and
      * not the first against the second.
-     *
-     * Last of everything, so a failure here is about the drawing. Every other
-     * claim this harness makes has already been made by the time these run.
      */
-    const braidOff = await visit(cdp, origin, held, { braid: false });
-    const braidOn = await visit(cdp, origin, held, { braid: true });
-    const braid = checkBraidDrawing(braidOff, braidOn);
+    const braidOffVisit = visit(cdp, origin, held, { braid: false });
+    const braidOnVisit = visit(cdp, origin, held, { braid: true });
 
     /*
      * And a third run, long enough to watch the chunk counts climb.
      *
      * Its own run rather than more sentences on either of the two above. The
-     * check before it measures those two against each other, and a run carrying
-     * ten more messages would be drawing a different message of a different
-     * length — so the pair it reads is left exactly as it was.
+     * check that reads those two measures them against each other, and a run
+     * carrying ten more messages would be drawing a different message of a
+     * different length — so the pair it reads is left exactly as it was.
      *
-     * This is the slowest pass here, because every sentence in it waits out the
-     * reel that narrates the one before it.
+     * This is the slowest visit here, and so the length of the whole run,
+     * because every sentence in it waits out the reel that narrates the one
+     * before it. Its time is taken around this visit alone.
      */
     const driveStartedAt = Date.now();
-    const driven = await visit(cdp, origin, held, { braid: true, drive: true });
+    let driveSeconds;
+    const drivenVisit = visit(cdp, origin, held, { braid: true, drive: true }).then((page) => {
+      driveSeconds = ((Date.now() - driveStartedAt) / 1000).toFixed(1);
+      return page;
+    });
+
+    /*
+     * Every visit settles before anything is reported, and the first failure is
+     * taken in this fixed order rather than the order the visits ended in, so
+     * which visit a red run names does not depend on which page was faster. A
+     * live visit that failed fails the starved one with it, and is named first.
+     */
+    const settled = await Promise.allSettled([
+      liveVisit,
+      starvedVisit,
+      braidOffVisit,
+      braidOnVisit,
+      drivenVisit,
+    ]);
+    const failed = settled.find((result) => result.status === 'rejected');
+    if (failed) throw failed.reason;
+    const [live, starved, braidOff, braidOn, driven] = settled.map((result) => result.value);
+
+    const { spend } = checkRoundTrip(live, origin, envelopeFields, expected);
+    checkFallback(starved);
+
+    /* Last of everything, so a failure here is about the drawing. Every other
+       claim this harness makes has already been made by the time these run. */
+    const braid = checkBraidDrawing(braidOff, braidOn);
     const progress = checkBraidProgress(driven);
-    const driveSeconds = ((Date.now() - driveStartedAt) / 1000).toFixed(1);
 
     /* Say which of the two things happened. Claiming a quiet window we never
        got would overstate the egress evidence on exactly the chatty pages
