@@ -6,8 +6,7 @@
 # (or the payments plan for PP52) that removes the hit. Remove an entry in
 # the commit that removes its hit. In a pull request the guard fails on an
 # entry or directive that the base branch does not hold, so this list only
-# shrinks. The owner UNOWNED marks a hit that has no open task yet. Replace
-# it with the task that the plan assigns.
+# shrinks.
 #
 # The guard skips dist/, build/, node_modules/, and the lockfiles itself, and
 # .gitignore covers .astro/ and the other generated output, so this file has
@@ -17,20 +16,20 @@ NM3.3 .gauntlet-workbench.md ./remote/relay
 NM3.3 .gauntlet-workbench.md /remote/relay
 NM3.3 .gauntlet-workbench.md convexRelay
 NM3.3 .gauntlet-workbench.md dist/remote/relay
-UNOWNED .gauntlet-workbench.md mock-relay
-UNOWNED .gauntlet-workbench.md mockRelay
+NM1.12 .gauntlet-workbench.md mock-relay
+NM1.12 .gauntlet-workbench.md mockRelay
 NM3.3 .gauntlet-workbench.md relay
-UNOWNED .gauntlet-workbench.md RELAY_COMMENT
-UNOWNED .gauntlet-workbench.md relay-carries-
+NM1.12 .gauntlet-workbench.md RELAY_COMMENT
+NM1.12 .gauntlet-workbench.md relay-carries-
 NM3.3 .gauntlet-workbench.md relay.getPendingMessages
 NM3.3 .gauntlet-workbench.md relay.registerDevice
 NM3.3 .gauntlet-workbench.md relay.send
 NM3.3 .gauntlet-workbench.md relay.subscribe
 NM3.3 .gauntlet-workbench.md remote/relay
 NM3.3 .gauntlet-workbench.md remote/relay/convex/relay.ts
-UNOWNED .gauntlet-workbench.md storage-and-relay
+NM1.12 .gauntlet-workbench.md storage-and-relay
 NM2.16 .github/workflows/release-manifest.yml open-e2ee-relay-v1
-UNOWNED docs/reddit-drafts.md relay
+NM1.12 docs/reddit-drafts.md relay
 NM4.4 playground/index.html /relay
 NM3.3 playground/src/exchange.ts relay
 NM3.3 playground/src/exchange.ts relay.getPendingMessages
@@ -53,14 +52,14 @@ NM3.3 scripts/record-carrier-capture.mjs relay
 NM3.3 scripts/record-carrier-capture.mjs relay.getPendingMessages
 NM3.3 scripts/record-carrier-capture.mjs relay.registerDevice
 NM3.3 scripts/record-carrier-capture.mjs startRelaySubscription
-UNOWNED scripts/sdk-identifier-allowlist.json OPEN_E2EE_RELAY_URL
+NM1.12 scripts/sdk-identifier-allowlist.json OPEN_E2EE_RELAY_URL
 NM2.16 scripts/verify-release-manifest.mjs open-e2ee-relay-v1
 NM4.5 scripts/verify-release-manifest.mjs relay
 NM4.4 scripts/verify-site-redesign.sh src/pages/relay
 NM-FD19 src/components/DataProcessingAgreement20261024.astro OpenE2EE Relay
 NM2.15 src/components/DataProcessingAgreement20261024.astro relay-retention
 NM2.15 src/components/DataProcessingAgreement20261024.astro relay-terms
-UNOWNED src/components/demo/DemoLog.astro relay
+NM1.12 src/components/demo/DemoLog.astro relay
 NM3.3 src/components/HeroSnippet.astro relay
 NM4.4 src/components/NextStep.astro //docs.open-e2ee.dev/relay
 NM4.4 src/components/NextStep.astro /relay
@@ -68,12 +67,12 @@ NM2.15 src/components/SignalProtocolRelayTerms20261105.astro RELAY
 NM4.4 src/components/SignalProtocolRelayTerms20261105.astro relay-plans
 NM3.3 src/content/blog/e2ee-changes-your-application-architecture.mdx relay
 NM4.4 src/content/blog/signal-protocol-react-native-expo-2026.mdx //docs.open-e2ee.dev/relay
-UNOWNED src/content/blog/signal-protocol-react-native-expo-2026.mdx EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
+NM1.12 src/content/blog/signal-protocol-react-native-expo-2026.mdx EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
 NM3.3 src/content/blog/signal-protocol-react-native-expo-2026.mdx linkHostedRelayDevice
 NM3.3 src/content/blog/signal-protocol-react-native-expo-2026.mdx relay
 NM3.3 src/content/blog/signal-protocol-react-native-expo-2026.mdx relayUrl
 NM3.3 src/content/blog/signal-protocol-react-native-expo-2026.mdx startRelaySubscription
-UNOWNED src/content/blog/tls-is-not-end-to-end-encryption.mdx OPEN_E2EE_RELAY_URL
+NM1.12 src/content/blog/tls-is-not-end-to-end-encryption.mdx OPEN_E2EE_RELAY_URL
 NM3.3 src/content/blog/tls-is-not-end-to-end-encryption.mdx relayUrl
 NM3.3 src/content/blog/tls-is-not-end-to-end-encryption.mdx startRelaySubscription
 NM3.3 src/data/carrier-capture.json relay
@@ -268,15 +267,15 @@ NM4.4 src/pages/pricing.astro relay-plans
 NM3.3 src/pages/product.astro ./remote/relay
 NM4.4 src/pages/product.astro /relay
 NM4.4 src/pages/relay/index.astro //docs.open-e2ee.dev/relay
-UNOWNED src/pages/relay/index.astro OPEN_E2EE_RELAY_URL
+NM1.12 src/pages/relay/index.astro OPEN_E2EE_RELAY_URL
 PP52 src/pages/relay/index.astro relay_free_v1
 NM4.4 src/pages/relay/index.astro relay-plans
 NM3.3 src/pages/security.astro remote/relay
-UNOWNED tests/ relay-connection.test.mjs
-UNOWNED tests/ relay-terms-gate.test.mjs
+NM1.12 tests/ relay-connection.test.mjs
+NM1.12 tests/ relay-terms-gate.test.mjs
 NM3.3 tests/demo-driver.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
 NM3.3 tests/demo-driver.test.mjs relay
-UNOWNED tests/demo-log.test.mjs RELAY
+NM1.12 tests/demo-log.test.mjs RELAY
 NM3.3 tests/demo-run.test.mjs dist/remote/relay
 NM3.3 tests/demo-run.test.mjs relay
 NM3.3 tests/demo-run.test.mjs relay.subscribe
@@ -321,25 +320,25 @@ NM2.15 tests/legal-pages.test.mjs relay-service-limits
 NM2.15 tests/legal-pages.test.mjs relay-terms
 NM2.15 tests/legal-pages.test.mjs RelayTerms
 NM4.4 tests/navigation.test.mjs /relay
-UNOWNED tests/navigation.test.mjs relay/
+NM1.12 tests/navigation.test.mjs relay/
 NM4.4 tests/playground.test.mjs /relay
 NM3.3 tests/playground.test.mjs inMemoryRelay
 NM4.4 tests/pricing-page.test.mjs /relay
-UNOWNED tests/pricing-page.test.mjs OpenE2EE Relay
+NM1.12 tests/pricing-page.test.mjs OpenE2EE Relay
 PP52 tests/pricing-page.test.mjs relay_business_v1
 PP52 tests/pricing-page.test.mjs relay_free_v1
 PP52 tests/pricing-page.test.mjs relay_growth_v1
 PP52 tests/pricing-page.test.mjs relay_hobby_v1
 PP52 tests/pricing-page.test.mjs relay_starter_v1
 NM4.4 tests/pricing-page.test.mjs relay-plans
-UNOWNED tests/relay-connection.test.mjs EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
-UNOWNED tests/relay-connection.test.mjs OPEN_E2EE_RELAY_URL
+NM1.12 tests/relay-connection.test.mjs EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
+NM1.12 tests/relay-connection.test.mjs OPEN_E2EE_RELAY_URL
 NM4.4 tests/relay-connection.test.mjs src/pages/relay
 PP52 tests/relay-terms-gate.test.mjs relay_free_v1
 NM2.16 tests/release-manifest.test.mjs open-e2ee-relay-v1
 NM4.4 tests/signal-relay-page.test.mjs ../dist/relay
 NM4.4 tests/signal-relay-page.test.mjs dist/relay
-UNOWNED tests/signal-relay-pricing.test.mjs OPEN_E2EE_RELAY_URL
+NM1.12 tests/signal-relay-pricing.test.mjs OPEN_E2EE_RELAY_URL
 NM4.4 tests/signal-relay-pricing.test.mjs relay
 PP52 tests/signal-relay-pricing.test.mjs relay_business_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_enterprise_v1
@@ -361,9 +360,9 @@ NM2.15 tests/signal-relay-service-catalog.test.mjs relay-terms
 NM3.3 tests/site-content.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
 NM4.4 tests/site-content.test.mjs ../src/pages/relay
 NM4.4 tests/site-content.test.mjs /relay
-UNOWNED tests/site-content.test.mjs OpenE2EE Relay
+NM1.12 tests/site-content.test.mjs OpenE2EE Relay
 NM4.4 tests/site-content.test.mjs relay
-UNOWNED tests/site-content.test.mjs relay/
+NM1.12 tests/site-content.test.mjs relay/
 NM3.3 tests/site-content.test.mjs relayUrl
 NM3.3 tests/site-content.test.mjs startRelaySubscription
 NM4.4 tests/site-content.test.mjs your-relay-holds-ciphertext
