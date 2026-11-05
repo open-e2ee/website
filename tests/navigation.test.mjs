@@ -304,9 +304,8 @@ test('carries a start action in both header surfaces', async () => {
  * Reading the built pages could not catch it, because the markup was exactly
  * what the source asked for. This reads the source instead.
  *
- * It watches the Relay routes alone. A bare origin survives any route move, and
- * the console's other addresses are named in `src/data/pricing.mjs` and on
- * `/security`, which this guard does not yet reach.
+ * It watches the Relay routes alone. A bare origin survives any route move, so
+ * the guard does not police the console's other addresses.
  */
 test('only site-navigation writes the console Relay route', async () => {
   const owner = 'src/lib/site-navigation.ts';

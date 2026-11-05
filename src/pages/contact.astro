@@ -19,10 +19,10 @@ import {
 /*
  * One page, one channel per reason to write. A prospect reads this before an
  * account exists, so nothing here sits behind console sign-in, and support is
- * the address that the Relay terms and the Commercial Terms name for it. Every
- * address and calendar link on this page is the same one the pricing,
- * licensing, and legal pages already use, so a reader who arrives from any of
- * them lands on a channel they have seen.
+ * the address that the Relay terms name for it. Every address and calendar
+ * link on this page is the same one the pricing, licensing, and legal pages
+ * already use, so a reader who arrives from any of them lands on a channel
+ * they have seen.
  */
 ---
 
@@ -56,24 +56,6 @@ import {
             <a href={docs.reporting}>disclosure policy</a>.
           </p>
         </li>
-        {/* Commented out 2026-09-22 with the SDK commercial license table on
-            /pricing. The SDK is MIT OR Apache-2.0 since that day, so there is no
-            Enterprise or OEM SDK agreement to scope. The entry returns, with
-            `sdkLicensingBookingUrl` from src/data/booking.mjs, if a
-            self-hosted Relay license is sold.
-          <li>
-            <p class={LABEL}>Enterprise and OEM</p>
-            <h3><a href={sdkLicensingBookingUrl}>Book a licensing call</a></h3>
-            <p>
-              Portfolio and redistribution rights, a scoped security review, service levels, and a
-              signed order form. Or write to
-              <a href="mailto:sales@open-e2ee.dev?subject=Enterprise%20agreement">
-                sales@open-e2ee.dev
-              </a>
-              with the products the agreement has to cover.
-            </p>
-          </li>
-        */}
         <li>
           <p class={LABEL}>Signal Protocol Relay</p>
           <h3><a href={signalRelayEnterpriseBookingUrl}>Schedule a meeting</a></h3>

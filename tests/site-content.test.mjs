@@ -9,6 +9,7 @@
 
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -1710,14 +1711,13 @@ test('sends the folded demo route at a section the homepage still has', async ()
 });
 
 test('leaves the reviewer a path to the license the review is for', async () => {
-  /* /evaluate linked /licensing and /legal/terms inline. Folding it left this
+  /* /evaluate linked /licensing inline. Folding it left this
    * page closing on an enterprise meeting and a quickstart, both of which
    * assume the license question is already settled — and the reader who gets
    * to the end of the threat model is usually the person it is not settled for.
    *
    * /licensing rather than /pricing: the question at that point is which
-   * license governs, not what a tier costs, and /licensing carries the
-   * /legal/terms link itself, so one link restores the whole path.
+   * license governs, not what a plan costs.
    *
    * Matched as a whole anchor, label included, rather than on the href alone.
    * The first version of this guard asserted `href="/licensing"` and passed
@@ -1999,7 +1999,7 @@ test('calls the Relay by the name the glossary settles on', async () => {
   await walk('../src/');
   assert.ok(sources.length > 30, `expected to walk the whole tree, found ${sources.length} files`);
 
-  const frozen = /\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$|\/components\/(?:CommercialTerms|DataProcessingAgreement\d{8})\.astro$/;
+  const frozen = /\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$|\/components\/DataProcessingAgreement\d{8}\.astro$/;
   const live = sources.filter((source) => !frozen.test(source));
   assert.ok(live.length > 30, `every source read as a frozen page, found ${live.length} live files`);
   assert.ok(sources.length - live.length >= 4, `the frozen set is ${sources.length - live.length} files; the dated components are not in it`);
@@ -2680,8 +2680,8 @@ test('keeps the relay formula intact in the strings that travel alone', async ()
 
   for (const [page, source, built] of descriptions) {
     /* Read the rendered string in preference to the source. A description that
-     * interpolates — /pricing quotes the entry price from pricing.mjs rather
-     * than typing it — is a prop expression, not a quoted literal, and the
+     * interpolates a value rather than typing it is a prop expression, not a
+     * quoted literal, and the
      * source regex saw an empty description where the page ships a correct
      * one. The rendered page is also the more faithful subject: this test is
      * about the sentence that travels alone, and that sentence is the one in
@@ -3632,7 +3632,6 @@ test('backs the durability claim it prints under the recorded row', async () => 
 });
 
 test('promises no price it does not show, and links to one that shows them all', async () => {
-  const { startupTier } = await import('../src/data/pricing.mjs');
   const { signalRelayPlans } = await import('../src/data/signal-relay-pricing.mjs');
   const [index, dist, pricingPage] = await Promise.all([
     flat('../src/pages/index.astro'),
@@ -3658,96 +3657,57 @@ test('promises no price it does not show, and links to one that shows them all',
   /* And the page it links to renders every figure it sells, so the link does
    * not lead somewhere that lost the numbers the landing page declines to
    * state. Since 2026-09-22 those are the Relay plans: the SDK is MIT OR
-   * Apache-2.0 and its license table is a dated comment, so the dormant entry
-   * license price must be absent from the same page, or the link would lead
-   * to a price for something the site no longer sells. */
+   * Apache-2.0 and free, and payments ruling 30 removed its license table on
+   * 2026-11-05, so no annual license price may appear on the same page, or the
+   * link would lead to a price for something the site does not sell. */
   if (!pricingPage) return skipUnbuilt('dist/pricing/index.html');
   /* Every priced plan; "Custom" is not a price and the Enterprise band does
    * not print it. */
   for (const plan of signalRelayPlans.filter((plan) => /^\$/.test(plan.price))) {
     assert.ok(pricingPage.includes(plan.price), `/pricing does not render ${plan.name} at ${plan.price}`);
   }
-  assert.match(startupTier.price, /^\$[\d,]+$/);
-  assert.equal(pricingPage.includes(startupTier.price), false, `/pricing renders the dormant SDK entry license at ${startupTier.price}`);
+  assert.doesNotMatch(pricingPage, /\bper year\b/i, '/pricing renders an annual SDK license price');
+  assert.doesNotMatch(pricingPage, /SDK commercial licen[cs]e/i, '/pricing renders the retired SDK commercial license');
 });
 
-test('quotes the entry price from the module on every marketing page', async () => {
-  const { tiers } = await import('../src/data/pricing.mjs');
-
-  /* The landing page was single-sourced and four other surfaces were not, so
-   * the module prevented drift on exactly one of the five places the number
-   * appeared. /product, /evaluate and /pricing's own meta description each
-   * carried their own typed copy, all of them correct, all of them free to go
-   * stale independently at the next price change. Since 2026-09-22 no live
-   * page quotes the figure at all: the SDK is MIT OR Apache-2.0, the license
-   * table on /pricing is a dated comment, and /product states the license
-   * without a price. What the module still prevents is a typed copy coming
-   * back on any page while the table is dormant, which the sweep below is.
-   *
-   * Comments are stripped first: a comment does not render, so a figure inside
-   * one cannot drift on the page, and a guard that fired on the prose
-   * explaining the rule would be deleted by the next person who hit it. The
-   * dormant table maps the module's tiers and prints `tier.price` inside its
-   * comment, and that is the shape it must keep, so restoring it restores a
-   * single-sourced figure. */
+/*
+ * Payments ruling 30 (2026-11-05): the SDK is MIT or Apache-2.0 and free, and
+ * the site sells no SDK license. The catalog module that once priced one is
+ * gone, so the guard is now that no marketing page states an annual license
+ * price or links the console license checkout.
+ *
+ * Comments are stripped first: a comment does not render, and a guard that
+ * fired on the prose explaining the rule would be deleted by the next person
+ * who hit it.
+ *
+ * Recursive, with the exemption named rather than implied. src/pages/legal/
+ * holds the executed dated terms, which state the fee as contract language
+ * and are never edited. Every other directory is walked, so a page added
+ * under a new directory is covered without a list to update.
+ */
+test('states no SDK license price on any marketing page', async () => {
   const strip = (text) => text.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ');
-  const pricingSource = await read('../src/pages/pricing.astro');
-  assert.match(pricingSource, /\{tier\.price\}/, 'the dormant table no longer reads the tier prices from pricing.mjs');
-  assert.doesNotMatch(strip(pricingSource), /tier\.price|startupTier/, '/pricing reads the dormant module outside its comment');
-
-  /* Recursive, with the exemption named rather than implied. The first version
-   * called `readdir` without recursion and so covered the top level only, which
-   * happened to exclude src/pages/legal/ — the one directory that must be
-   * excluded. A guard that gets the right answer because it never looked is
-   * indistinguishable from one that looked and decided, right up until someone
-   * adds src/pages/solutions/ and it silently stops covering that too. */
   const marketingPages = [];
   const walk = async (dir) => {
     for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
       if (entry.isDirectory()) {
         if (`${dir}${entry.name}/` === '../src/pages/legal/') continue;
         await walk(`${dir}${entry.name}/`);
-      } else if (entry.name.endsWith('.astro')) {
+      } else if (/\.(astro|mdx)$/.test(entry.name)) {
         marketingPages.push(`${dir}${entry.name}`);
       }
     }
   };
   await walk('../src/pages/');
+  await walk('../src/content/');
   assert.ok(marketingPages.length > 5, `expected to walk the pages, found ${marketingPages.length}`);
 
   for (const page of marketingPages) {
     const body = strip(await read(page));
-    for (const tier of tiers) {
-      if (!/^\$/.test(tier.price)) continue;
-      assert.ok(
-        !body.includes(tier.price),
-        `${page} hard-codes ${tier.price}; read it from pricing.mjs instead`,
-      );
-    }
+    assert.doesNotMatch(body, /\$[\d,]+ per year/, `${page} states an annual SDK license price`);
+    assert.doesNotMatch(body, /console\.open-e2ee\.dev\/licenses/, `${page} links the SDK license checkout`);
   }
-
-  /* And the exemption is real: a sweep that reported nothing in the legal tree
-   * would mean the walk had missed the figure rather than that it was clean.
-   * The page itself is a two-line delegation — src/pages/legal/terms.astro
-   * renders <CommercialTerms /> — so the figure lives
-   * in the component, and that is what has to still carry it. */
-  assert.match(await read('../src/pages/legal/terms.astro'), /CommercialTerms/);
-  assert.match(await read('../src/components/CommercialTerms.astro'), /\$[\d,]+ per year/);
-
-  /* The legal pages are deliberately outside that sweep. /legal/terms and its
-   * frozen versioned copies state the fee as executed contract language, and a
-   * contract that re-prices itself when a marketing constant moves is a worse
-   * defect than the drift this module exists to stop.
-   *
-   * So the assertion here is the opposite of the one above, and it is
-   * deliberately not `terms.includes(startupTier.price)`. Tying the contract
-   * to the live constant would mean the next price rise turns this green test
-   * red until someone edits executed terms to match a marketing number — the
-   * precise coupling the exemption exists to prevent. What has to stay true is
-   * that the terms state a fee of their own and never read this module. */
-  const terms = await read('../src/components/CommercialTerms.astro');
-  assert.match(terms, /\$[\d,]+ per year/);
-  assert.doesNotMatch(terms, /startupTier|pricing\.mjs/);
+  assert.ok(!existsSync(new URL('../src/data/pricing.mjs', import.meta.url)), 'the SDK license catalog module is back');
 });
 
 test('does not read the ciphertext blob aloud, and does not eat spaces', async () => {
@@ -4638,9 +4598,9 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
    * "nothing phones home" and "no account" in the body, and every one of them
    * concluded a hosted service was being hidden. Since 2026-09-22 there is one:
    * /pricing sells the Signal Protocol Relay's plans and nothing else, because
-   * the SDK is MIT OR Apache-2.0 and its commercial license table is commented
-   * out of the page. The claim has to hold on both pages or the landing page
-   * is inventing a commercial model.
+   * the SDK is MIT OR Apache-2.0 and free. Payments ruling 30 removed its
+   * commercial license table on 2026-11-05. The claim has to hold on both pages
+   * or the landing page is inventing a commercial model.
    *
    * So the Open Source band states the license and routes to /licensing only,
    * and the Relay band is the one that routes to /pricing, under a label that
@@ -4651,25 +4611,9 @@ test('says what Pricing sells, on the page that shows the nav item', async () =>
   assert.doesNotMatch(index, /<a href="\/pricing">Pricing<\/a>/, 'the Open Source band routes to a page that sells no SDK license');
   assert.match(index, /<a href="\/pricing">Relay plans and limits<\/a>/);
 
-  /* /pricing itself: the stripped source carries no license section, and the
-   * source keeps it in a dated comment, so the table returns by uncommenting
-   * rather than by rewriting. */
-  const pricing = pricingRaw.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ').replace(/\s+/g, ' ');
-  assert.doesNotMatch(pricing, /id="licensing"/, 'the SDK license table is back on /pricing');
-  assert.match(pricingRaw, /<section id="licensing"/, 'the commented license table left the source');
-  assert.match(pricingRaw, /2026-09-22/, 'the comment does not date the removal');
-
-  /* The dormant catalog in src/data/pricing.mjs keeps its shape for the day a
-   * self-hosted Relay license is sold: three tiers, a free one that states the
-   * network-use trigger, an entry figure, and Custom. Nothing renders it. */
-  const { tiers, startupTier } = await import('../src/data/pricing.mjs');
-  assert.ok(tiers.some((tier) => tier.name === 'AGPLv3' && tier.price === 'Free'), 'the dormant catalog lost its free tier');
-  assert.ok(
-    tiers.some((tier) => /applications offered over a network/i.test(tier.detail)),
-    'the dormant free tier no longer states the network-use trigger',
-  );
-  assert.match(startupTier.price, /^\$[\d,]+$/, 'the dormant entry license carries no concrete price');
-  assert.deepEqual(tiers.map((tier) => tier.price), ['Free', startupTier.price, 'Custom'], 'the dormant prices are not free, the entry figure, and Custom');
+  /* /pricing itself: the source carries no license section, not even in a
+   * comment, because the table is removed rather than dormant. */
+  assert.doesNotMatch(pricingRaw, /id="licensing"|licenseRows|SDK commercial licen[cs]e/i, 'the SDK license table is back in the /pricing source');
 });
 
 test('names AGPL only where the comparison quotes libsignal\'s grant', async () => {
@@ -4679,12 +4623,11 @@ test('names AGPL only where the comparison quotes libsignal\'s grant', async () 
    * comparison table's "No — AGPL-3.0 only" is libsignal's grant, and the
    * difference from ours is the point of the row.
    *
-   * /legal is excluded because a contract defines its own terms. The
+   * /legal is excluded because a contract defines its own terms. The dated
    * Commercial Terms name the license in full and then use the short form the
    * way a defined term is used. Rewriting a defined term is an edit to an
    * instrument, and this project keeps executed instruments as they were
-   * executed. The dormant SDK license table in src/data/pricing.mjs is not
-   * swept either: nothing renders it.
+   * executed.
    *
    * On the built pages rather than the sources, because the sources carry
    * comments — this one included — that quote the word in order to rule it

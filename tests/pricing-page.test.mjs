@@ -14,9 +14,9 @@
  * section under the plans, one card per capability, and answers the pointer; one plan is marked with a tinted, padded column and carries the
  * filled action; Enterprise is one outlined band under them; the same rows
  * render again as one block per plan for narrow viewports; and the SDK
- * commercial license table that once closed the page is commented out of the
- * source, dated 2026-09-22, because the SDK is MIT OR Apache-2.0 and sells no
- * commercial license.
+ * commercial license table that once closed the page is gone from the page
+ * and the source, because the SDK is MIT OR Apache-2.0 and free (payments
+ * ruling 30, 2026-11-05).
  */
 
 import assert from 'node:assert/strict';
@@ -24,7 +24,6 @@ import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 
 import { signalRelayLimitsChange, signalRelayMeterDefinitions, signalRelayPlans, signalRelayProductionRetention, upcomingSignalProtocolRelayPlans } from '../src/data/signal-relay-pricing.mjs';
-import { tiers } from '../src/data/pricing.mjs';
 import { iconPaths } from '@open-e2ee/design/icons';
 
 const built = await readFile(new URL('../dist/pricing/index.html', import.meta.url), 'utf8').catch(
@@ -195,10 +194,10 @@ test('monthly active users lead the rows, their overage follows, and every cell 
   assert.deepEqual(cells('Attachment Uploads'), selfServe.map((plan) => plan.attachmentOperations));
   assert.deepEqual(cells('Encrypted Storage'), selfServe.map((plan) => plan.storage));
 
-  /* The row every plan shared, "SDK Commercial License", is commented out of
-   * the source as of 2026-09-22. The SDK is MIT OR Apache-2.0 from 3.0.0, so a
-   * proprietary application needs no commercial license and the row answered a
-   * question the license no longer raises. The check mark it carried is gone
+  /* The row every plan shared, "SDK Commercial License", left the page on
+   * 2026-09-22. The SDK is MIT OR Apache-2.0 from 3.0.0, so a proprietary
+   * application needs no commercial license and the row answered a question
+   * the license no longer raises. The check mark it carried is gone
    * with it from both renderings. */
   assert.equal(capacityRows.find((row) => row.label === 'SDK Commercial License'), undefined, 'the SDK Commercial License row is still on the page');
   assert.equal(built.indexOf('SDK Commercial License'), -1, 'the page still names the SDK Commercial License');
@@ -371,23 +370,22 @@ test('what every plan carries stands in one section of cards under the plans, li
   assert.equal(links.length, 1, 'the page must have one demo booking action');
   assert.equal(links[0][1], 'oe-button oe-button-secondary oe-button-large', 'the link is not the large secondary control');
   assert.equal(links[0][2], 'https://calendar.app.google/AzV4HAGYh91zy4ZG7');
-  assert.equal(tiers.find((tier) => tier.id === 'enterprise').cta.href, 'https://calendar.app.google/mb3PgGVCae7DFVAZ7');
-  assert.notEqual(tiers.find((tier) => tier.id === 'enterprise').cta.href, links[0][2]);
+  assert.equal(built.includes('https://calendar.app.google/mb3PgGVCae7DFVAZ7'), false, 'the retired SDK licensing calendar is on the page');
   assert.doesNotMatch(built, /See what is included|https:\/\/console\.open-e2ee\.dev\/contact\?plan=enterprise/);
   assert.ok(actions[2].endsWith(links[0][0]), 'the link does not close the action row');
   assert.ok(actions[2].indexOf(primary[0]) < actions[2].indexOf(links[0][0]), 'the link stands before the primary');
   assert.doesNotMatch(built, /<dialog |data-included|aria-haspopup/, 'the dialog the founder replaced on 2026-09-08 is still on the page');
   assert.match(table.slice(table.indexOf('<thead')), /^<thead><tr><th scope="col" class="[^"]*">Signal Protocol Relay<\/th><th scope="col"/, 'the head row does not open with the table\u2019s name');
 
-  /* The section stands right after the Enterprise band, closes the page now
-   * that the license table is commented out, names itself by its heading, and
+  /* The section stands right after the Enterprise band, closes the page,
+   * names itself by its heading, and
    * is the one place the heading appears. It is a band on the page ground, so its cards on the panel ground
    * read as cards. The page ships no dialog and no script of its own now: the
    * one script left is the Term component's. */
   assert.equal((built.match(/<section id="included"/g) ?? []).length, 1, 'the page does not have one included section');
   const enterpriseEnd = built.indexOf('</section>', built.indexOf(`data-signal-relay-plan="${enterprise.id}"`));
   assert.match(built.slice(enterpriseEnd, enterpriseEnd + 80), /^<\/section>\s*<section id="included"/, 'the section does not follow the Enterprise band directly');
-  assert.equal(built.indexOf('id="licensing"'), -1, 'the licensing section the founder commented out on 2026-09-22 is back on the page');
+  assert.equal(built.indexOf('id="licensing"'), -1, 'the SDK licensing section is back on the page');
   const attributes = included.slice(0, included.indexOf('>'));
   const labelId = attributes.match(/aria-labelledby="([^"]+)"/)?.[1];
   assert.ok(labelId, 'the section does not name itself by its heading');
@@ -700,12 +698,12 @@ test('Enterprise is one outlined band under the table, with its own action', () 
   assert.doesNotMatch(classes, /rule-t/);
 
   /* The founder's 2026-09-09 call: the band is one row as tall as its button
-   * plus padding, not the two-column grid the license rows keep, and it sits
-   * close under the table. Name, detail, and the action are direct children on
-   * one centerline, and no wrapper adds height of its own. The band prints no
-   * price: "Custom" is not one, and it outsized the name. The subdued link
-   * down to the SDK licenses the founder added on 2026-09-09 is commented out
-   * with the license table as of 2026-09-22, so the action stands alone. */
+   * plus padding, not a two-column grid, and it sits close under the table.
+   * Name, detail, and the action are direct children on one centerline, and no
+   * wrapper adds height of its own. The band prints no price: "Custom" is not
+   * one, and it outsized the name. The subdued link down to the SDK licenses
+   * the founder added on 2026-09-09 left with the license table, so the action
+   * stands alone. */
   assert.match(classes, /\bflex\b/, 'the band is not a row');
   assert.match(classes, /\bitems-center\b/, 'the band does not center its row');
   assert.doesNotMatch(classes, /\bgrid\b|py-[5-9]|py-1\d/, `the band is taller than its button: ${classes}`);
@@ -720,13 +718,12 @@ test('Enterprise is one outlined band under the table, with its own action', () 
   assert.doesNotMatch(action, /text-text-3/, 'the action is not the plain secondary control');
 });
 
-test('the SDK commercial license table is commented out of the page and kept in source', async () => {
-  /* The founder's 2026-09-22 call. The SDK is MIT OR Apache-2.0 from 3.0.0, so
-   * the site sells no SDK commercial license and the table of AGPLv3, Startup,
-   * and Enterprise columns that closed the page is dormant. It is commented
-   * out rather than deleted, dated, with its data module, because a
-   * self-hosted Relay license may be sold later. The built page carries no
-   * trace of it; the source carries all of it. */
+test('the SDK commercial license table is gone from the page and the source', async () => {
+  /* The founder's 2026-09-22 call took the table of AGPLv3, Startup, and
+   * Enterprise columns off the page, and payments ruling 30 of 2026-11-05
+   * removed it from the source: the SDK is MIT OR Apache-2.0 and free, and no
+   * SDK license is sold. Neither the built page nor the source carries it, not
+   * even in a comment. */
   assert.equal(built.indexOf('id="licensing"'), -1, 'the licensing section is on the page');
   assert.equal(built.indexOf('href="#licensing"'), -1, 'a link to the licensing section is on the page');
   assert.doesNotMatch(built, /AGPLv3|data-license|SDK commercial license/i, 'the license table left a trace on the page');
@@ -734,21 +731,9 @@ test('the SDK commercial license table is commented out of the page and kept in 
   assert.equal(built.slice(lastSection, lastSection + 60).includes('id="included"'), true, 'what every plan carries does not close the page');
 
   const source = await readFile(new URL('../src/pages/pricing.astro', import.meta.url), 'utf8');
-  const stripped = source.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ');
-  assert.equal(stripped.includes('id="licensing"'), false, 'the licensing section is live in the source');
-  assert.equal(stripped.includes("from '../data/pricing.mjs'"), false, 'the source still imports the dormant module');
-  const comments = [...source.matchAll(/\{?\/\*[\s\S]*?\*\/\}?/g)].map((m) => m[0]);
-  const section = comments.find((c) => c.includes('<section id="licensing"'));
-  assert.ok(section, 'the licensing section is not kept in a comment');
-  assert.match(section, /2026-09-22/, 'the commented section is not dated');
-  assert.match(section, /MIT OR Apache-2\.0/, 'the commented section does not say why');
-  assert.ok(comments.some((c) => c.includes("href: '#licensing'") && c.includes('2026-09-22')), 'the Enterprise band link is not kept in a dated comment');
-  assert.ok(comments.some((c) => c.includes("label: 'SDK Commercial License'") && c.includes('2026-09-22')), 'the shared row is not kept in a dated comment');
-
-  /* The dormant data module still describes the three licenses, priced, so
-   * restoring the table is restoring the comments and nothing else. */
-  assert.deepEqual(tiers.map((tier) => tier.name), ['AGPLv3', 'Startup', 'Enterprise']);
-  for (const tier of tiers) assert.match(tier.price, /^\$[\d,]+$|^Free$|^Custom$/, `${tier.name} has no price`);
+  assert.equal(source.includes('id="licensing"'), false, 'the licensing section is in the source');
+  assert.doesNotMatch(source, /data\/pricing\.mjs/, 'the source names the removed SDK license catalog');
+  assert.doesNotMatch(source, /licenseRows|ENTERPRISE_LINK|label: 'SDK Commercial License'/, 'the source keeps the SDK license table in a comment');
 });
 
 test('the meters and the Sandbox environment left their sections for the table and the cards', () => {
@@ -775,8 +760,8 @@ test('no two tiers on the page answer to the same name', () => {
   const plans = headingsIn(built);
 
   /* The page's tier headings are the Relay catalog and nothing else. The SDK
-   * license table that shared the name `Enterprise` is commented out as of
-   * 2026-09-22, so the name is on the page once. */
+   * license table that shared the name `Enterprise` is gone, so the name is on
+   * the page once. */
   assert.deepEqual([...plans].sort(), signalRelayPlans.map((plan) => plan.name).sort(), `the plan headings are ${[...plans]}`);
 });
 

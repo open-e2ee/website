@@ -23,9 +23,9 @@
  * blocks open the same routes, or the phone and the desktop sell different
  * things.
  *
- * The SDK commercial license table this once checked as well is commented out
- * of the page as of 2026-09-22: the SDK is MIT OR Apache-2.0 and sells no
- * commercial license. Its rules return with the table.
+ * The SDK commercial license table this once checked as well is gone: the SDK
+ * is MIT or Apache-2.0 and free, and no SDK license is sold, so the page must
+ * carry no #licensing section.
  *
  * A count alone would pass a page that put all five buttons in one row, which
  * is why each rule is scoped to a column, a row, or a rendering rather than to
@@ -72,7 +72,7 @@ const MARK = 'Most popular';
 const plans = section('relay-plans');
 
 if (!plans) failures.push('no section carries id="relay-plans"');
-if (section('licensing')) failures.push('a section carries id="licensing"; the SDK license table is commented out as of 2026-09-22');
+if (section('licensing')) failures.push('a section carries id="licensing"; the site sells no SDK license');
 
 /** One slice per plan marker in a slice, each running to the next marker. */
 function planSlices(slice, attribute) {

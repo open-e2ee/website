@@ -15,7 +15,6 @@ import {
   ACTIONS,
   BAND,
   BAND_HEAD,
-  BAND_SURFACE,
   CONTAINER,
   LEAD,
   METADATA,
@@ -25,12 +24,10 @@ import {
  * The four self-service plans are the columns of one table, and what a plan
  * carries is its rows. A buyer arrives with a size in mind, reads the Relay
  * MAU row first because that is the meter every plan is sized by, and reads
- * down the column that fits it. The table holds the rows that differ by plan
- * and one row every plan shares, the SDK license, because a buyer with a
- * proprietary application asks whether the SDK's license reaches it before
- * asking how many users a plan carries. What else every plan shares stands in
- * its own section under the plans, one card per capability, described once
- * rather than ticked four times, so the reader chooses before reading it.
+ * down the column that fits it. The table holds only the rows that differ by
+ * plan. What every plan shares stands in its own section under the plans, one
+ * card per capability, described once rather than ticked four times, so the
+ * reader chooses before reading it.
  *
  * The plans are the page. There is no hero above them: the head over the table
  * is the page's opening, a label, the heading, and a lead that says what the
@@ -149,42 +146,19 @@ const INCLUDED_CARD_ICON = 'shrink-0 text-text-3 transition-[color] duration-[va
 const INCLUDED_CARD_DETAIL = 'm-0 mt-2 text-[0.9375rem] leading-[1.5] text-text-3';
 
 /*
- * The licenses are a second table in the shape of the first, the founder's
- * 2026-09-09 call: one column per license in catalog order, one row per right
- * that differs by license, and the action in the foot. The narrow rendering
- * makes the blocks the plans make, on the same grid: three across would push
- * the last column's definitions past a 48rem window. No column is marked; the
- * entry license carries the filled action.
- */
-/* Commented out 2026-09-22 with the SDK commercial license table.
- * const LICENSE_HEAD = `${HEAD_CELL} border-t-transparent`;
- */
-
-/*
  * Enterprise is one outlined band under the table, so the fifth plan reads as
  * the table's last row and not as a footnote. The founder's 2026-09-09 call:
  * the band is one row as tall as its button plus padding, close under the
- * table. Name and detail sit on the button's centerline, and the actions keep
- * to the end: a subdued link down to the SDK licenses, then the action. The
- * link is the secondary control in the muted text, so it reads a step behind
- * the action beside it. The band prints no price: "Custom" is not one, and it
- * outsized the name. Under 34rem the row wraps and the actions take a line of
- * their own.
+ * table. Name and detail sit on the button's centerline, and the action keeps
+ * to the end of the row. The band prints no price: "Custom" is not one, and it
+ * outsized the name. Under 34rem the row wraps and the action takes a line of
+ * its own.
  */
 const ENTERPRISE_BAND = 'mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 rule bg-ground-panel px-5 py-3 max-[34rem]:px-4';
 
 const ENTERPRISE_DETAIL = 'm-0 text-[0.9375rem] text-text-3';
 
-/* The action keeps to the end of the row now that the band's link down to the
- * SDK license table is commented out; the link carried the margin before. */
 const ENTERPRISE_ACTION_CLASS = 'oe-button oe-button-secondary ms-auto max-[34rem]:ms-0';
-/*
- * Commented out 2026-09-22 with the SDK commercial license table below. The
- * band's link down to that table returns with the table.
- *
- * const ENTERPRISE_LINK_CLASS = 'oe-button oe-button-secondary ms-auto text-text-3! hover:text-text-1! max-[34rem]:ms-0';
- * const ENTERPRISE_LINK = { href: '#licensing', label: 'SDK commercial licenses' };
- */
 
 /*
  * The price is the largest thing in a column or a row, and the name reads as
@@ -278,12 +252,6 @@ const ENTERPRISE_ACTION = {
  * are monthly, which the price under each name already reads as "per month".
  * Free has no overage, so its overage cell reads as the cap it is.
  * Retention is the same on every plan, so it sits with what every plan carries.
- *
- * The SDK Commercial License row every plan shared is commented out below as of
- * 2026-09-22. The SDK is MIT OR Apache-2.0 since that day, so a proprietary
- * application needs no commercial license and the row answered a question the
- * license no longer raises. Section 4 of the Relay service terms still grants
- * the project license; the row returns if the SDK license changes.
  */
 const define = (name: string) => {
   const meter = signalRelayMeterDefinitions.find((entry) => entry.name === name);
@@ -313,16 +281,6 @@ const rows: Row[] = [
     value: (plan) => plan.storage,
   },
   { label: 'Additional Storage', definition: 'The price per additional exact GB-month after explicit overage acceptance.', value: (plan) => plan.overage?.storage ?? NO_OVERAGE },
-  /*
-   * Commented out 2026-09-22: see the rationale above the row definitions.
-   *
-   * {
-   *   label: 'SDK Commercial License',
-   *   definition:
-   *     'Use @open-e2ee/signal-protocol-sdk in one proprietary application that connects to the project, for as long as the project is active. Every plan carries it, Free included. It grants no self-hosting right and no right to redistribute the SDK.',
-   *   value: () => INCLUDED,
-   * },
-   */
 ];
 
 const rowId = (row: RowShape, scope: string) => `${scope}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
@@ -339,67 +297,6 @@ const cellClasses = (row: Row, plan: Plan) => [
 const compactRowClasses = (row: RowShape) => (row.lead ? COMPACT_LEAD : undefined);
 const compactLabelClasses = (row: RowShape) => (row.lead ? 'text-text-1' : 'text-text-3');
 const compactValueClasses = (row: RowShape) => [COMPACT_VALUE, row.lead ? LEAD_VALUE : 'text-text-1'];
-
-/*
- * The rows that differ by license, each named by the right it is and defined
- * on hover, as the Relay rows are. Whether the product can be closed source
- * leads, because that is the question that sends a buyer to this table. The
- * values are the catalog's, and the definitions state each license's answer
- * in the words of the agreement that gives it.
- */
-/*
- * Commented out 2026-09-22. The SDK is MIT OR Apache-2.0 since that day, so the
- * site sells no SDK commercial license and the table below is dormant. It
- * stays in source, with src/data/pricing.mjs, for a possible self-hosted Relay
- * license product. Restoring it means restoring this block, the import of
- * pricing.mjs, the Enterprise band link, the section in the template, and the
- * rules in tests/pricing-page.test.mjs and scripts/check-pricing-actions.mjs.
- *
-type Tier = (typeof tiers)[number];
-type LicenseRow = RowShape & { value: (tier: Tier) => string };
-const agpl = tiers.find((tier) => tier.id === 'agplv3');
-if (!agpl) throw new Error('pricing.astro: the license catalog has no AGPLv3 tier');
-const licenseRows: LicenseRow[] = [
-  {
-    label: 'Closed Source',
-    lead: true,
-    definition: `Ship a proprietary product without the AGPLv3 source obligations. ${agpl.detail}`,
-    value: (tier) => tier.closedSource,
-  },
-  {
-    label: 'Products Covered',
-    definition:
-      'The products one grant reaches. AGPLv3 reaches any product that meets its obligations. A Startup license covers one named product owned by one legal entity. An Enterprise license states its product and component scope in the contract.',
-    value: (tier) => tier.products,
-  },
-  {
-    label: 'Redistribution',
-    definition:
-      'Shipping the SDK as a standalone component, or inside a product that others then distribute. AGPLv3 permits it under its own terms. A Startup license excludes standalone redistribution. An Enterprise license negotiates portfolio or OEM rights.',
-    value: (tier) => tier.redistribution,
-  },
-  {
-    label: 'SDK Updates',
-    definition:
-      'New releases of @open-e2ee/signal-protocol-sdk. Every release is public under AGPLv3. A Startup license includes generally available updates during its term. An Enterprise contract states its own.',
-    value: (tier) => tier.updates,
-  },
-  {
-    label: 'Support',
-    definition:
-      'AGPLv3 carries no support. A Startup license includes reasonable email support during its term, and no implementation services or response times. An Enterprise license negotiates implementation support and service levels.',
-    value: (tier) => tier.support,
-  },
-  {
-    label: 'Security Review',
-    definition:
-      'A review of your integration with OpenE2EE. A Startup license does not include one unless a signed order form states it. An Enterprise license negotiates one.',
-    value: (tier) => tier.securityReview,
-  },
-];
-const licenseCellClasses = (row: RowShape) => [CELL, ...rowPadding(row), row.lead ? LEAD_VALUE : 'text-text-3'];
-const licenseActionClasses = (tier: Tier) => ['oe-button', 'oe-button-full', tier.cta.secondary && 'oe-button-secondary'];
- */
 
 /*
  * What every plan carries, one card per relay capability, each in the words
@@ -530,9 +427,6 @@ const INCLUDED_ANCHOR = 'included';
       <div class={ENTERPRISE_BAND} data-signal-relay-plan={enterprise.id}>
         <h3 class={TIER_HEADING}>{enterprise.name}</h3>
         <p class={ENTERPRISE_DETAIL}>{enterprise.detail}</p>
-        {/* Commented out 2026-09-22 with the SDK commercial license table:
-          * <a class={ENTERPRISE_LINK_CLASS} href={ENTERPRISE_LINK.href}>{ENTERPRISE_LINK.label}</a>
-          */}
         <a class={ENTERPRISE_ACTION_CLASS} href={ENTERPRISE_ACTION.href}>{ENTERPRISE_ACTION.label}</a>
       </div>
     </div>
@@ -553,79 +447,4 @@ const INCLUDED_ANCHOR = 'included';
       </dl>
     </div>
   </section>
-
-  {/*
-    * Commented out 2026-09-22. The SDK is MIT OR Apache-2.0 since that day, so no
-    * SDK commercial license is sold. The section stays in source for a
-    * possible self-hosted Relay license product; its data and rows are the
-    * commented block in the frontmatter above.
-    *
-  <section id="licensing" class:list={[BAND, BAND_SURFACE]}>
-    <div class={CONTAINER}>
-      <div class={BAND_HEAD}>
-        <h2>SDK commercial licensing</h2>
-        The lead says what the reader gets, as the hero's does, not what
-        the product is. The claims are the landing page's: the complete SDK,
-        closed-source products, the same build, and no meter. The table
-        under it says what differs.
-        <p class={MEASURE}>Ship the complete SDK in a closed-source product, on infrastructure you run. Same build, every feature, no meter.</p>
-      </div>
-      <div class={PLAN_TABLE_AT}>
-        <table class={PLAN_TABLE}>
-          <thead>
-            <tr>
-              <td class="pr-4"></td>
-              {tiers.map((tier) => (
-                <th scope="col" class={LICENSE_HEAD} data-license={tier.id}>
-                  <h3 class={TIER_HEADING}>{tier.name}</h3>
-                  <p class={TIER_PRICE}>{tier.price}</p>
-                  <p class={TIER_NOTE}>{tier.note}</p>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {licenseRows.map((row) => (
-              <tr>
-                <th scope="row" class:list={rowHeadClasses(row)}>
-                  <Term id={rowId(row, 'license-table')} label={row.label} definition={row.definition} />
-                </th>
-                {tiers.map((tier) => <td class:list={licenseCellClasses(row)}><PlanValue value={row.value(tier)} /></td>)}
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td class="rule-t pr-4"></td>
-              {tiers.map((tier) => (
-                <td class={FOOT_CELL} data-license-action={tier.id}>
-                  <a class:list={licenseActionClasses(tier)} href={tier.cta.href}>{tier.cta.label}</a>
-                </td>
-              ))}
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <ul class={COMPACT}>
-        {tiers.map((tier) => (
-          <li class={COMPACT_PLAN} data-license-compact={tier.id}>
-            <h3 class={TIER_HEADING}>{tier.name}</h3>
-            <p class={TIER_PRICE}>{tier.price}</p>
-            <p class={TIER_NOTE}>{tier.note}</p>
-            <dl class={COMPACT_ROWS}>
-              {licenseRows.map((row) => (
-                <div class:list={compactRowClasses(row)}>
-                  <dt class={compactLabelClasses(row)}><Term id={rowId(row, `license-${tier.id}`)} label={row.label} definition={row.definition} /></dt>
-                  <dd class:list={compactValueClasses(row)}><PlanValue value={row.value(tier)} /></dd>
-                </div>
-              ))}
-            </dl>
-            <a class:list={[licenseActionClasses(tier), COMPACT_ACTION]} href={tier.cta.href}>{tier.cta.label}</a>
-          </li>
-        ))}
-      </ul>
-      <p class:list={['text-text-3', MEASURE]}>A Startup commercial license renews annually until you cancel before the renewal date. Taxes may apply. The <a href="/legal/terms">Commercial Terms</a> control that grant, covered products, support, renewal, and post-expiration rights.</p>
-    </div>
-  </section>
-    */}
 </BaseLayout>

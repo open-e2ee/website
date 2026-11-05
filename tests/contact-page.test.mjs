@@ -3,8 +3,8 @@
  *
  * The console `/contact` page sends an anonymous visitor to sign-in, so a link
  * to it from this site offers support only to a reader who already has an
- * account. The support address is the one that the Relay terms and the
- * Commercial Terms name, and the contact page links it directly.
+ * account. The support address is the one that the Relay terms name, and the
+ * contact page links it directly.
  */
 
 import assert from 'node:assert/strict';
