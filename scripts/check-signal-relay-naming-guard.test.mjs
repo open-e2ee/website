@@ -235,6 +235,25 @@ test("skipped paths and ignore lines hold no hits", (t) => {
   ]);
 });
 
+test("ignore globs follow their documented anchoring", (t) => {
+  const files = {
+    "a/generated/x.ts": `export const ${W}Url = 1;\n`,
+    "a/b/generated/x.ts": `export const ${W}Url = 1;\n`,
+    "a/xgenerated/x.ts": `export const ${W}Url = 1;\n`,
+    "deep/dir/x.snap": `${W}Url\n`,
+    "nested/evidence/x.md": `${W}Url\n`,
+  };
+  const root = repository(t, {
+    ...clean,
+    ...files,
+    [allowlist]: "ignore a/**/generated/\nignore *.snap\nignore evidence/\n",
+  });
+  assert.deepEqual(guard(root).lines.slice(0, -1), [
+    `a/xgenerated/x.ts: ${W}Url (not in the allowlist)`,
+    `nested/evidence/x.md: ${W}Url (not in the allowlist)`,
+  ]);
+});
+
 test("--list prints an entry for each hit with its owner", (t) => {
   const root = repository(t, {
     ...clean,
@@ -297,4 +316,43 @@ test("the rules separate bare identifiers from prefixed names and prose", () => 
   ]);
   assert.deepEqual(pathNames(`${W}.md`), [["./", `${W}.md`]]);
   assert.deepEqual(pathNames(`src/signal-${W}-client.ts`), []);
+});
+
+test("a lone capital word in capital prose is prose, and a capital constant is a hit", () => {
+  const cases = [
+    [`TO THE EXTENT PERMITTED BY LAW, ${U} IS PROVIDED "AS IS"`, []],
+    [`const ${U} = 1;`, [U]],
+    [`case ${U}: return x;`, [U]],
+    [`NOTE ${U}_URL IS SET`, [`${U}_URL`]],
+  ];
+  for (const [line, expected] of cases) {
+    assert.deepEqual(lineIdentifiers(line), expected, line);
+  }
+});
+
+test("a regular expression delimiter is not a path separator", () => {
+  const cases = [
+    [`assert.match(panel, /against the page ${W}/);`, []],
+    [`if (/example\\.dev\\/[a-z/-]*${W}/.test(text)) {`, []],
+    [`/^${W}-url$/.test(name)`, [`${W}-url`]],
+    [`x = /a/ + ${W}/`, [`${W}/`]],
+    [`cp build ${W}/`, [`${W}/`]],
+    [`"${W}/"`, [`${W}/`]],
+  ];
+  for (const [line, expected] of cases) {
+    assert.deepEqual(lineIdentifiers(line), expected, line);
+  }
+});
+
+test("a comma list is a parameter list only after an opening bracket", () => {
+  const cases = [
+    [`the SDK's storage, ${W}, and the store`, []],
+    [`the SDK storage, ${W}, and the store`, []],
+    [`f(store, ${W})`, [W]],
+    [`f(g(a), ${W})`, [W]],
+    [`{ storage, ${W}: client }`, [W]],
+  ];
+  for (const [line, expected] of cases) {
+    assert.deepEqual(lineIdentifiers(line), expected, line);
+  }
 });

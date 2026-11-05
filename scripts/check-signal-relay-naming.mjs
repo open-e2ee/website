@@ -32,10 +32,11 @@
 //                    file or directory name in that directory (./ is the
 //                    root). The identifier is the rest of the line.
 //
-// A glob that ends with / matches the directory and every path under it. A
-// glob without another / matches at any depth. Any other glob matches from
-// the root. * matches within one path segment, ** matches across segments,
-// and ? matches one character. A path holds %XX for a space, a tab, or %.
+// A glob without / matches a file name at any depth. Any other glob matches
+// from the root, and a glob that ends with / matches the directory and every
+// path under it. * matches within one path segment, ** matches across
+// segments, **/ matches zero or more directories, and ? matches one
+// character. A path holds %XX for a space, a tab, or %.
 //
 // The script always skips the allowlist, lockfiles, binary files, and the
 // directories node_modules, .git, .worktrees, dist, build, coverage, and
@@ -130,6 +131,10 @@ const RULES = [
       "g",
     ),
     trim: /[.-]+$/,
+    // The closing delimiter of a regular expression literal is not a path
+    // separator.
+    skip: (line, start, end) =>
+      line[end - 1] === "/" && closesRegexLiteral(line, end - 1),
   },
   {
     // An upper-case constant or environment variable.
@@ -138,6 +143,12 @@ const RULES = [
       `(?<![A-Za-z0-9_])[A-Z0-9_]*${UPPER}[A-Z0-9_]*(?![A-Za-z0-9_$])`,
       "g",
     ),
+    // A lone capital word next to another capital word is prose, such as a
+    // license notice in capitals.
+    skip: (line, start, end) =>
+      LONE_UPPER.test(line.slice(start, end)) &&
+      (UPPER_BEFORE.test(line.slice(0, start)) ||
+        UPPER_AFTER.test(line.slice(end))),
   },
   {
     // A camelCase or PascalCase name.
@@ -177,12 +188,14 @@ const RULES = [
   },
   {
     // The bare word as a code name: a declaration, a parameter, a key, an
-    // assignment, a spread, a call, an SQL alias, or a quoted string.
+    // assignment, a spread, a call, an SQL alias, or a quoted string. A
+    // parameter after a comma needs an opening bracket earlier on the line,
+    // so a comma list in prose is prose.
     kind: "word",
     regex: new RegExp(
       [
         `(?<=\\b(?:const|let|var|function|class|interface|type|enum|readonly|private|protected|public|static|declare|export|import)\\s+)${WORD}s?(?![A-Za-z0-9_$-])`,
-        `(?<=[({,]\\s*)${WORD}s?(?=\\s*(?:[,)}=]|[?]?:|$))`,
+        `(?<=(?:[({]|[([{].*,)\\s*)${WORD}s?(?=\\s*(?:[,)}=]|[?]?:|$))`,
         `(?<=^\\s*)${WORD}s?(?=[?]?:\\s)`,
         `(?<==\\s*)${WORD}s?(?=\\s*(?:[;,)]|$))`,
         `(?<=[.][.][.])${WORD}s?(?![A-Za-z0-9_$-])`,
@@ -194,6 +207,35 @@ const RULES = [
     ),
   },
 ];
+const LONE_UPPER = new RegExp(`^${UPPER}S?$`);
+const UPPER_BEFORE = /(?<![A-Za-z0-9_$])[A-Z]+\s+$/;
+const UPPER_AFTER = /^\s+[A-Z]+(?![A-Za-z0-9_$])/;
+
+// A regular expression literal starts with a slash after an operator, an
+// opening bracket, or the start of the line. It holds escapes and character
+// classes, and it ends at the next free slash.
+const REGEX_OPENER = /(?:^|[(,=:[!&|?{};])\s*$/;
+const REGEX_LITERAL = /\/(?![*/])(?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+\//y;
+
+// Returns true when the slash at index closes a regular expression literal.
+function closesRegexLiteral(line, slash) {
+  let open = line.indexOf("/");
+  while (open !== -1 && open < slash) {
+    let next = open + 1;
+    if (REGEX_OPENER.test(line.slice(0, open))) {
+      REGEX_LITERAL.lastIndex = open;
+      const literal = REGEX_LITERAL.exec(line);
+      if (literal) {
+        const close = open + literal[0].length - 1;
+        if (close === slash) return true;
+        next = close + 1;
+      }
+    }
+    open = line.indexOf("/", next);
+  }
+  return false;
+}
+
 // matchAll copies lastIndex, so no code calls test or exec on this regex.
 const WORD_ANY_CASE = new RegExp(WORD, "gi");
 const HAS_WORD = new RegExp(WORD, "i");
@@ -259,9 +301,11 @@ function globRegex(glob) {
   for (let index = 0; index < pattern.length; index += 1) {
     const char = pattern[index];
     if (char === "*" && pattern[index + 1] === "*") {
-      source += ".*";
       index += 1;
-      if (pattern[index + 1] === "/") index += 1;
+      if (pattern[index + 1] === "/") {
+        source += "(?:.*/)?";
+        index += 1;
+      } else source += ".*";
     } else if (char === "*") source += "[^/]*";
     else if (char === "?") source += "[^/]";
     else source += char.replace(/[\\^$.|+()[\]{}]/g, "\\$&");
@@ -373,6 +417,7 @@ export function lineIdentifiers(source) {
         (at) => at >= start && at + WORD.length <= end && !claimed.has(at),
       );
       if (inside.length === 0) continue;
+      if (rule.skip && rule.skip(line, start, end)) continue;
       for (const at of inside) claimed.add(at);
       let identifier = found[0];
       if (rule.trim) identifier = identifier.replace(rule.trim, "");
