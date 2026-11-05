@@ -40,6 +40,14 @@ jobs:
       # starts with `npm test` and would run the suite a second time.
       - run: npm run build
 
+      # `npm test` starts with the Signal Relay naming guard. In a pull request
+      # it compares the allowlist with the one on origin/$GITHUB_BASE_REF, so
+      # that the list only shrinks. The checkout holds only the merge commit,
+      # so this step fetches the base tip. The guard reads one file from it.
+      - name: Fetch the pull request base for the naming guard
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags --depth=1 origin "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
+
       - run: npm test
 
       - run: npx wrangler deploy --config wrangler.redirect.jsonc --env="" --dry-run
