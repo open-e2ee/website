@@ -9,7 +9,7 @@ import {
   signalRelayPricingInstant,
   signalRelayProductionRetention,
   signalRelaySandboxEnvironment,
-  upcomingSignalRelayPlans,
+  upcomingSignalProtocolRelayPlans,
 } from '../src/data/signal-relay-pricing.mjs';
 import { virgilSecurityComparison, virgilSecurityComparisonAt } from '../src/data/virgil-security-comparison.mjs';
 
@@ -50,7 +50,7 @@ const earlierSandbox = { signalRelayMau: '25 test accounts', deliveryUnits: '25,
 test('publishes the exact approved Relay catalog from one data module', () => {
   assert.deepEqual(signalRelayPricingAt(beforeCut).plans.map(figures), [earlierFree, ...paidAndEnterprise]);
   assert.deepEqual(signalRelayPricingAt(atCut).plans.map(figures), [earlierFree, ...paidAndEnterprise]);
-  assert.deepEqual(upcomingSignalRelayPlans.map(figures), [hobby]);
+  assert.deepEqual(upcomingSignalProtocolRelayPlans.map(figures), [hobby]);
   assert.deepEqual(signalRelayPricingAt(beforeCut).sandboxEnvironment, earlierSandbox);
   assert.deepEqual(signalRelayPricingAt(atCut).sandboxEnvironment, earlierSandbox);
   assert.equal(signalRelayMeterDefinitions.length, 4);
@@ -80,8 +80,8 @@ test('orders the plans Free, Starter, Growth, Business, then Enterprise at every
  * published plans between Free and Starter.
  */
 test('holds Hobby at 9 USD per month out of the published plans until a dated terms version states it', () => {
-  assert.equal(upcomingSignalRelayPlans.length, 1);
-  const [plan] = upcomingSignalRelayPlans;
+  assert.equal(upcomingSignalProtocolRelayPlans.length, 1);
+  const [plan] = upcomingSignalProtocolRelayPlans;
   assert.deepEqual(figures(plan), hobby);
   assert.equal(plan.name, 'Hobby');
   assert.equal(plan.monthlyPriceUsd, 9);
@@ -97,7 +97,7 @@ test('holds Hobby at 9 USD per month out of the published plans until a dated te
 /*
  * The two terms guards compare the published plans with the dated terms. They
  * must read signalRelayPlans and signalRelaySandboxEnvironment, and never the plans that
- * wait for terms. A guard that read upcomingSignalRelayPlans would block every build
+ * wait for terms. A guard that read upcomingSignalProtocolRelayPlans would block every build
  * until the new terms exist. A guard that read neither would pass on no plans.
  */
 test('the terms guards scan the published plans only', async () => {
@@ -111,7 +111,7 @@ test('the terms guards scan the published plans only', async () => {
     assert.ok(start >= 0, `${path} lost the guard "${name}"`);
     const body = file.slice(start, file.indexOf('\n});', start));
     assert.match(body, /\bof signalRelayPlans\b/, `${path} does not scan signalRelayPlans`);
-    assert.doesNotMatch(file, /upcomingSignalRelayPlans/, `${path} reads the plans that wait for terms`);
+    assert.doesNotMatch(file, /upcomingSignalProtocolRelayPlans/, `${path} reads the plans that wait for terms`);
   }
 });
 

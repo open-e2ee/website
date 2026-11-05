@@ -23,7 +23,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 
-import { signalRelayLimitsChange, signalRelayMeterDefinitions, signalRelayPlans, signalRelayProductionRetention, upcomingSignalRelayPlans } from '../src/data/signal-relay-pricing.mjs';
+import { signalRelayLimitsChange, signalRelayMeterDefinitions, signalRelayPlans, signalRelayProductionRetention, upcomingSignalProtocolRelayPlans } from '../src/data/signal-relay-pricing.mjs';
 import { tiers } from '../src/data/pricing.mjs';
 import { iconPaths } from '@open-e2ee/design/icons';
 
@@ -519,8 +519,8 @@ test('publishes no date-only limits announcement under the plans', () => {
  * prints no column, block, action, or name for it until the terms state it.
  */
 test('prints no plan that waits for a dated Relay terms version', () => {
-  assert.deepEqual(upcomingSignalRelayPlans.map(({ id }) => id), ['relay_hobby_v1']);
-  for (const plan of upcomingSignalRelayPlans) {
+  assert.deepEqual(upcomingSignalProtocolRelayPlans.map(({ id }) => id), ['relay_hobby_v1']);
+  for (const plan of upcomingSignalProtocolRelayPlans) {
     assert.equal(built.indexOf(plan.id), -1, `the page names ${plan.id}`);
     assert.doesNotMatch(built, new RegExp(`\\b${plan.name}\\b`), `the page prints ${plan.name}`);
   }

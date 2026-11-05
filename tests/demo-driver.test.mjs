@@ -3,7 +3,7 @@
  * It composes the installed package's public API and nothing else — no
  * fork, no shim, no re-typed constant (invariant 1) — so these tests do a real
  * PQXDH handshake and a real Double Ratchet round trip against the real
- * `inMemoryStore()` adapter and this site's `pageSignalRelay()`. Nothing here is stubbed:
+ * `inMemoryStore()` adapter and this site's `pageSignalProtocolRelay()`. Nothing here is stubbed:
  * the whole value of the demo is that the cryptography is the shipped
  * cryptography, and a test that mocked it would be checking a story.
  *
@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
-import { pageSignalRelay } from '../src/lib/demo/signal-relay.ts';
+import { pageSignalProtocolRelay } from '../src/lib/demo/signal-relay.ts';
 import { flipOneByte } from './tamper.mjs';
 
 const PROBE = 'Dinner at 7. I got us the table by the window.';
@@ -48,7 +48,7 @@ const declaredEnvelopeFields = await (async () => {
 /**
  * The page relay, made to behave like one that has to cross something.
  *
- * `pageSignalRelay()` hands each envelope to its subscriber inside `send()` — a
+ * `pageSignalProtocolRelay()` hands each envelope to its subscriber inside `send()` — a
  * property no relay over a BroadcastChannel, a socket or a network has. This
  * keeps the real relay, real storage and real prekey consumption included, and
  * moves only the moment of delivery to after the send has resolved. That one
@@ -60,7 +60,7 @@ const declaredEnvelopeFields = await (async () => {
  * and a client handed a promise instead fails much later, in `stop()`.
  */
 function signalRelayThatDeliversLate({ deliverAfterMs = 50, delivery = 'late' } = {}) {
-  const signalRelay = pageSignalRelay();
+  const signalRelay = pageSignalProtocolRelay();
   const subscribe = signalRelay.subscribe.bind(signalRelay);
   const subscribers = new Map();
   signalRelay.demoDelivery = delivery;
@@ -370,7 +370,7 @@ test('says so when the recipient has no device, instead of a TypeError', async (
 /*
  * The three below are about a relay that does not deliver inside `send()`.
  *
- * Everything above this line runs on `pageSignalRelay()`, which does — and a
+ * Everything above this line runs on `pageSignalProtocolRelay()`, which does — and a
  * driver can depend on that without anyone noticing, because every test passes
  * and every scenario works. It did. The envelope wait was closed the instant
  * `send()` resolved, which is correct only for a relay that has already

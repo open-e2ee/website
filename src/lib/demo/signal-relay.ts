@@ -565,6 +565,6 @@ function metadataFor(preKey: PreKeyUpload, now: number): PreKeyMetadata {
 }
 
 /** A new, empty relay inside this page. */
-export function pageSignalRelay(): PageSignalProtocolRelay {
+export function pageSignalProtocolRelay(): PageSignalProtocolRelay {
   return new PageSignalProtocolRelay();
 }

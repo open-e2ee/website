@@ -1,4 +1,4 @@
-import { formatSignalRelayRate, signalRelayEarlierServiceCatalog, signalRelayServiceCatalog } from './signal-relay-service-catalog.mjs';
+import { formatSignalProtocolRelayRate, signalRelayEarlierServiceCatalog, signalRelayServiceCatalog } from './signal-relay-service-catalog.mjs';
 
 const count = (value) => value.toLocaleString('en-US');
 const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB` : `${bytes / 1_000_000} MB`;
@@ -33,15 +33,15 @@ const signalRelayPlan = (plan) => ({
   id: plan.planId,
   name: planNames[plan.planId],
   monthlyPriceUsd: Number(BigInt(plan.monthlyPriceMicrounits) / 1_000_000n),
-  price: formatSignalRelayRate({ numerator: plan.monthlyPriceMicrounits, denominator: '1' }, 1n, 0),
+  price: formatSignalProtocolRelayRate({ numerator: plan.monthlyPriceMicrounits, denominator: '1' }, 1n, 0),
   signalRelayMau: count(plan.monthlyActiveUsers),
   deliveryUnits: count(plan.deliveryUnits),
   attachmentOperations: count(plan.attachmentOperations),
   storage: storage(plan.storageBytes),
   overage: plan.overageRates ? {
-    signalRelayMau: formatSignalRelayRate(plan.overageRates.relay_mau),
-    delivery: `${formatSignalRelayRate(plan.overageRates.delivery_units, 1_000_000n, 0)} per million`,
-    storage: `${formatSignalRelayRate(plan.overageRates.storage_byte_month, 1_000_000_000n)} per GB-month`,
+    signalRelayMau: formatSignalProtocolRelayRate(plan.overageRates.relay_mau),
+    delivery: `${formatSignalProtocolRelayRate(plan.overageRates.delivery_units, 1_000_000n, 0)} per million`,
+    storage: `${formatSignalProtocolRelayRate(plan.overageRates.storage_byte_month, 1_000_000_000n)} per GB-month`,
   } : null,
   detail: plan.overageRates ? 'Per month. Optional overage needs explicit acceptance and a spend limit.'
     : 'Production roots, hard capacity caps, and no automatic charge.',
@@ -68,7 +68,7 @@ const enterprise = {
  */
 const awaitingTerms = new Map([['relay_hobby_v1', null]]);
 
-export const upcomingSignalRelayPlans = signalRelayServiceCatalog.plans
+export const upcomingSignalProtocolRelayPlans = signalRelayServiceCatalog.plans
   .filter(({ planId }) => awaitingTerms.has(planId))
   .map((plan) => ({ ...signalRelayPlan(plan), termsVersion: awaitingTerms.get(plan.planId) }));
 

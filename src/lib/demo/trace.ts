@@ -28,7 +28,7 @@
  * the fact became true.
  *
  * Those two can disagree, and the disagreement is recorded rather than tidied
- * away. `pageSignalRelay()` accepts an envelope *inside* the send call, so the
+ * away. `pageSignalProtocolRelay()` accepts an envelope *inside* the send call, so the
  * relay has stored the row before `send()` has returned to us — an envelope
  * whose `stored-at-signal-relay` timestamp precedes its `encrypted` one. That is a
  * true fact about a relay in the page and a reader who opens their Performance

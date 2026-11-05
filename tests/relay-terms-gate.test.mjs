@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { signalRelayPricingAt, upcomingSignalRelayPlans } from '../src/data/signal-relay-pricing.mjs';
+import { signalRelayPricingAt, upcomingSignalProtocolRelayPlans } from '../src/data/signal-relay-pricing.mjs';
 import { signalRelayServiceCatalog } from '../src/data/signal-relay-service-catalog.mjs';
 
 /*
@@ -75,7 +75,7 @@ test('terms gate: names every proposed catalog value the dated Relay terms do no
   const proposedSandbox = { ...sandboxEnvironment, signalRelayMau: `${count(signalRelayServiceCatalog.sandbox.monthlyActiveUsers)} test accounts`,
     deliveryUnits: count(signalRelayServiceCatalog.sandbox.deliveryUnits), attachmentOperations: count(signalRelayServiceCatalog.sandbox.attachmentOperations),
     storage: storage(signalRelayServiceCatalog.sandbox.storageBytes) };
-  const due = [proposedFree, ...upcomingSignalRelayPlans, ...plans.slice(1)];
+  const due = [proposedFree, ...upcomingSignalProtocolRelayPlans, ...plans.slice(1)];
   /* The value check finds "25" and "250 MB" elsewhere in the terms text. The
      row check names the complete Free and Hobby rows. */
   assert.deepEqual(unstatedValues(terms, due, proposedSandbox), [

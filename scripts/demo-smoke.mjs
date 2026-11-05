@@ -2363,7 +2363,7 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
      end of the reel is the one moment in the whole run when "holding nothing"
      is the correct drawing. The row is checked where it exists — `stored`, out
      of the watcher — and the empty rack it leaves behind is checked in
-     `checkSignalRelayShelves`. */
+     `checkSignalProtocolRelayShelves`. */
 
   const carried = leaks(pass.requests, findProbe);
   if (carried.length) {
@@ -2510,7 +2510,7 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
   checkScene(pass);
   checkKeyGeneration(pass);
   const spend = checkPrekeySpend(pass);
-  checkSignalRelayShelves(pass, spend);
+  checkSignalProtocolRelayShelves(pass, spend);
   checkStoredMailbox(pass);
   if (pass.repeated) checkSceneMoves(pass.afterFirst, pass.dom);
 
@@ -2781,7 +2781,7 @@ function checkPrekeySpend(pass) {
  * after the sentence was opened would be drawing a message that is both
  * delivered and waiting.
  */
-function checkSignalRelayShelves(pass, spend) {
+function checkSignalProtocolRelayShelves(pass, spend) {
   const scene = pass.dom.scene;
   const slots = scene?.slots;
   if (!slots) {

@@ -291,7 +291,7 @@ test('freezes the Startup terms version the site currently publishes', () => {
  * applies to every dated Relay page. The list is written out, not derived from
  * the live constant, for the reason the privacy list gives below.
  */
-const frozenSignalRelayTermsVersions = [
+const frozenSignalProtocolRelayTermsVersions = [
   { version: 'relay-2026-08-26', date: '2026-08-26', effective: 'August 26, 2026' },
   { version: 'relay-2026-09-10', date: '2026-09-10', effective: 'September 10, 2026' },
   { version: 'relay-2026-09-22', date: '2026-09-22', effective: 'September 22, 2026' },
@@ -304,7 +304,7 @@ const frozenSignalRelayTermsVersions = [
 ];
 
 test('keeps every dated Relay terms page frozen: it never reads the live document', async () => {
-  for (const { version, date, effective } of frozenSignalRelayTermsVersions) {
+  for (const { version, date, effective } of frozenSignalProtocolRelayTermsVersions) {
     const page = await read(`../src/pages/legal/relay-terms/${date}.astro`);
 
     assert.doesNotMatch(page, /components\/\w*RelayTerms/, `${version} renders the live terms`);
@@ -324,7 +324,7 @@ test('keeps every dated Relay terms page frozen: it never reads the live documen
 });
 
 test('freezes the Relay terms version the site currently publishes', () => {
-  const frozen = frozenSignalRelayTermsVersions.map(({ version }) => version);
+  const frozen = frozenSignalProtocolRelayTermsVersions.map(({ version }) => version);
   assert.ok(
     frozen.includes(signalRelayTermsVersion),
     `Relay terms version ${signalRelayTermsVersion} has no frozen page; frozen: ${frozen.join(', ')}`,

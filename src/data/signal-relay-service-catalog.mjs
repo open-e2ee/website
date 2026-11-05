@@ -18,7 +18,7 @@ export const signalRelayEarlierCatalogPin = Object.freeze({
   sha256: 'a5b4156e8bb9c15a1734e9647235820cbdd85c7878c5cae72bdde0e743b72da8',
 });
 
-export function parsePinnedSignalRelayCatalog(bytes, pin = signalRelayCatalogPin) {
+export function parsePinnedSignalProtocolRelayCatalog(bytes, pin = signalRelayCatalogPin) {
   const digest = createHash('sha256').update(bytes).digest('hex');
   if (digest !== pin.sha256) throw new Error('Relay catalog SHA256 mismatch');
   const catalog = JSON.parse(bytes.toString('utf8'));
@@ -30,17 +30,17 @@ export function parsePinnedSignalRelayCatalog(bytes, pin = signalRelayCatalogPin
   return catalog;
 }
 
-export const signalRelayServiceCatalog = parsePinnedSignalRelayCatalog(
+export const signalRelayServiceCatalog = parsePinnedSignalProtocolRelayCatalog(
   readFileSync('src/data/vendor/signal-relay-service-catalog.json'),
 );
 
-export const signalRelayEarlierServiceCatalog = parsePinnedSignalRelayCatalog(
+export const signalRelayEarlierServiceCatalog = parsePinnedSignalProtocolRelayCatalog(
   readFileSync('src/data/vendor/signal-relay-service-catalog-2026-10-18.json'),
   signalRelayEarlierCatalogPin,
 );
 
 // Format rational USD microunits without converting the rate to a float.
-export function formatSignalRelayRate({ numerator, denominator }, units = 1n, minimumDecimals = 2) {
+export function formatSignalProtocolRelayRate({ numerator, denominator }, units = 1n, minimumDecimals = 2) {
   let n = BigInt(numerator) * BigInt(units);
   const d = BigInt(denominator) * 1_000_000n;
   const whole = n / d;

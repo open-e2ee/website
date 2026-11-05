@@ -23,7 +23,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
-import { PageSignalProtocolRelay, PageSignalProtocolRelayUnsupportedError, pageSignalRelay } from '../src/lib/demo/signal-relay.ts';
+import { PageSignalProtocolRelay, PageSignalProtocolRelayUnsupportedError, pageSignalProtocolRelay } from '../src/lib/demo/signal-relay.ts';
 import { startDemoRun } from '../src/lib/demo/run.ts';
 import { flipOneByte } from './tamper.mjs';
 
@@ -84,7 +84,7 @@ const ABSENT = [
 ];
 
 test('a sent envelope waits in the mailbox and goes to a later subscriber', async () => {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   const receipt = await relay.send(envelope());
   assert.equal(receipt.messageId, 'msg-1');
   assert.equal(typeof receipt.serverTimestamp, 'number');
@@ -118,7 +118,7 @@ test('a sent envelope waits in the mailbox and goes to a later subscriber', asyn
 });
 
 test('the relay keeps no reference to what it was handed or what it handed out', async () => {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   const sent = envelope({ ciphertext: new Uint8Array([1, 2, 3]) });
   await relay.send(sent);
   sent.ciphertext[0] = 9;
@@ -129,7 +129,7 @@ test('the relay keeps no reference to what it was handed or what it handed out',
 });
 
 test('a resend with the same client message id gets the first receipt', async () => {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   const first = await relay.send(envelope({ clientMessageId: 'c-1' }));
   const again = await relay.send(envelope({ clientMessageId: 'c-1' }));
   assert.deepEqual(again, first);
@@ -141,7 +141,7 @@ test('a resend with the same client message id gets the first receipt', async ()
 });
 
 test('an ephemeral envelope reaches a live subscriber and is never queued', async () => {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   await relay.send(envelope({ deliveryClass: 'ephemeral' }));
   assert.equal(relay.getPendingMessages('bob', 1).length, 0);
 
@@ -154,7 +154,7 @@ test('an ephemeral envelope reaches a live subscriber and is never queued', asyn
 });
 
 test('the device registry allocates, lists, and removes devices', async () => {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   assert.equal(await relay.registerDevice('bob', {}), 1);
   assert.equal(await relay.registerDevice('bob', { deviceType: 'desktop' }), 2);
   await assert.rejects(relay.registerDevice('bob', { deviceId: 0 }), /Device ID must be between 1 and/);
@@ -177,7 +177,7 @@ test('the device registry allocates, lists, and removes devices', async () => {
 });
 
 test('a prekey bundle spends one one-time key of each kind', async () => {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   assert.equal(await relay.fetchPreKeyBundle('bob', 1), null, 'no identity, so no bundle');
 
   const identity = { version: 1, x25519: new Uint8Array(32).fill(1), ed25519: new Uint8Array(32).fill(2) };
@@ -243,7 +243,7 @@ test('the three member lists cover the installed relay contract exactly', async 
 });
 
 test('a group or credential call rejects and names the member', async () => {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   for (const member of REFUSED) {
     await assert.rejects(
       relay[member](),
@@ -260,7 +260,7 @@ test('a group or credential call rejects and names the member', async () => {
 });
 
 test('the connection state follows the live subscriptions and tells each listener once', () => {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   assert.equal(relay.relayConnectionState.state, 'stopped');
 
   const seen = [];
@@ -284,7 +284,7 @@ test('the connection state follows the live subscriptions and tells each listene
 });
 
 test('a listener that throws does not stop the others, and its error is not lost', () => {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   const rethrown = [];
   const queue = globalThis.queueMicrotask;
   globalThis.queueMicrotask = (task) => rethrown.push(task);
@@ -304,7 +304,7 @@ test('a listener that throws does not stop the others, and its error is not lost
 });
 
 test('a retry request is a mailbox envelope that keeps its client message id', async () => {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   const request = envelope({
     targetUserId: 'alice',
     senderUserId: 'bob',
@@ -336,8 +336,8 @@ test('a retry request is a mailbox envelope that keeps its client message id', a
  * before it uses one. So a method is recorded when it is called, and the
  * connection-state getter when it is read.
  */
-function recordedSignalRelay(called) {
-  const relay = pageSignalRelay();
+function recordedSignalProtocolRelay(called) {
+  const relay = pageSignalProtocolRelay();
   return new Proxy(relay, {
     get(target, property, receiver) {
       const value = Reflect.get(target, property, receiver);
@@ -369,7 +369,7 @@ test('the one-to-one session path calls only what the page relay carries', async
   const types = [];
   let corrupted = false;
   const session = await startDemoSession({
-    relay: recordedSignalRelay(called),
+    relay: recordedSignalProtocolRelay(called),
     logger: { sender: quiet, recipient: quiet },
     deadlineMs: 2_000,
     /* One flipped byte fails the message authentication, so the receiving
@@ -398,7 +398,7 @@ test('the one-to-one session path calls only what the page relay carries', async
 
 test('the two-device run calls only what the page relay carries', async () => {
   const called = new Set();
-  const run = await startDemoRun({ relay: () => recordedSignalRelay(called) });
+  const run = await startDemoRun({ relay: () => recordedSignalProtocolRelay(called) });
   try {
     await run.activate('a');
     await run.activate('b');

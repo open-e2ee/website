@@ -1,8 +1,8 @@
 import { signalRelayPricingAt, signalRelayPricingInstant } from './signal-relay-pricing.mjs';
-import { formatSignalRelayRate, signalRelayServiceCatalog } from './signal-relay-service-catalog.mjs';
+import { formatSignalProtocolRelayRate, signalRelayServiceCatalog } from './signal-relay-service-catalog.mjs';
 
 const starter = signalRelayServiceCatalog.plans.find((plan) => plan.planId === 'relay_starter_v1');
-const starterAt5000 = formatSignalRelayRate({
+const starterAt5000 = formatSignalProtocolRelayRate({
   numerator: String(BigInt(starter.monthlyPriceMicrounits) * BigInt(starter.overageRates.relay_mau.denominator)
     + BigInt(5000 - starter.monthlyActiveUsers) * BigInt(starter.overageRates.relay_mau.numerator)),
   denominator: starter.overageRates.relay_mau.denominator,

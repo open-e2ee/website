@@ -2,7 +2,7 @@
  * `run.ts` is the two-device demo's engine: two clients, one relay, one
  * recording. Like `driver.ts` it composes the installed package and nothing
  * else — real PQXDH, real Double Ratchet, the real `inMemoryStore()` and
- * this site's `pageSignalRelay()` — so nothing here is stubbed. A test that mocked the
+ * this site's `pageSignalProtocolRelay()` — so nothing here is stubbed. A test that mocked the
  * cryptography would be checking a story, and the whole value of the demo is
  * that it is not one.
  *
@@ -26,7 +26,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { createPlayback } from '../src/lib/demo/playback.ts';
-import { pageSignalRelay } from '../src/lib/demo/signal-relay.ts';
+import { pageSignalProtocolRelay } from '../src/lib/demo/signal-relay.ts';
 import { startDemoRun } from '../src/lib/demo/run.ts';
 import { STEPS } from '../src/lib/demo/trace.ts';
 
@@ -62,7 +62,7 @@ const declaredSelectionFields = await declaredFields(
 /**
  * The page relay, made to behave like one that has to cross something.
  *
- * `pageSignalRelay()` hands each envelope to its subscriber inside `send()`, a
+ * `pageSignalProtocolRelay()` hands each envelope to its subscriber inside `send()`, a
  * property no relay over a socket or a network has. Everything real stays —
  * real storage, real prekey consumption — and only the moment of delivery moves
  * to after the send resolves. That one difference is the whole of what the
@@ -75,7 +75,7 @@ const declaredSelectionFields = await declaredFields(
  * inside `stop()`.
  */
 function signalRelayThatDeliversLate({ deliverAfterMs = 50 } = {}) {
-  const relay = pageSignalRelay();
+  const relay = pageSignalProtocolRelay();
   const subscribe = relay.subscribe.bind(relay);
   relay.subscribe = (userId, deviceId, onEnvelope, options) =>
     subscribe(

@@ -52,6 +52,6 @@ test('builds from its own source and links to it', async () => {
 
   /* The relay is the one this site owns. The SDK exports no relay that runs
    * in a page. */
-  assert.match(exchange, /import \{ pageSignalRelay \} from '\.\.\/\.\.\/src\/lib\/demo\/signal-relay\.ts';/);
+  assert.match(exchange, /import \{ pageSignalProtocolRelay \} from '\.\.\/\.\.\/src\/lib\/demo\/signal-relay\.ts';/);
   assert.doesNotMatch(exchange, /remote\/relay\/memory|inMemoryRelay/);
 });

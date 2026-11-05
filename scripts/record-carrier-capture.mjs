@@ -45,9 +45,9 @@ const SDK = '@open-e2ee/signal-protocol-sdk';
  */
 const PROGRAM = `import { createSignalProtocolClient } from "${SDK}";
 import { inMemoryStore } from "${SDK}/local/store/memory";
-import { pageSignalRelay } from "../src/lib/demo/signal-relay.ts";
+import { pageSignalProtocolRelay } from "../src/lib/demo/signal-relay.ts";
 
-const relay = pageSignalRelay();
+const relay = pageSignalProtocolRelay();
 await relay.registerDevice("alice", { encryptedDeviceName: new ArrayBuffer(0) });
 await relay.registerDevice("bob", { encryptedDeviceName: new ArrayBuffer(0) });
 
