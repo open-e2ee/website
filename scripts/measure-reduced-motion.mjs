@@ -387,7 +387,7 @@ async function main() {
       const exited = new Promise((resolve) => held.chrome.child.once('exit', resolve));
       held.chrome.child.kill();
       await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 5_000))]);
-      /* Guarded for `relay-pages-visual.mjs`'s reason: Chrome on Linux keeps
+      /* Guarded for `signal-relay-pages-visual.mjs`'s reason: Chrome on Linux keeps
          writing its profile after the kill returns, and an unguarded removal
          both invents failures and replaces the one the body raised. */
       try {

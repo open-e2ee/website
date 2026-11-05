@@ -291,7 +291,7 @@ export function buildMobileReel(
       }
     }
 
-    if (event.step === 'stored-at-relay') {
+    if (event.step === 'stored-at-signal-relay') {
       const to = side(event.to);
       if (to) {
         const bytes =

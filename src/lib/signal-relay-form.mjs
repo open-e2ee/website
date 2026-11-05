@@ -42,14 +42,14 @@ import {
 } from '@open-e2ee/design/diagram';
 
 /** Canvas between the container edge and the cargo it holds. */
-export const RELAY_PADDING = 24;
+export const SIGNAL_RELAY_PADDING = 24;
 
 /** Canvas between one sealed slab and the next. */
-export const RELAY_SLAB_GAP = 18;
+export const SIGNAL_RELAY_SLAB_GAP = 18;
 
 /** The tick run is shorter than the grammar's default so three of them fit
     inside a slab narrow enough to stand three-across in a 220-unit store. */
-export const RELAY_TICK_SPACING = 14;
+export const SIGNAL_RELAY_TICK_SPACING = 14;
 
 /** Room above the cargo for the tick run, and below it for the container edge. */
 const HEAD_ROOM = TICK_LENGTH + 32;
@@ -73,7 +73,7 @@ function check(condition, message) {
  * @param {{ x: number, y: number, width: number, height: number, slabs?: number,
  *   ticks?: number, cargoX?: number | null, cargoWidth?: number | null }} options
  */
-export function relayContainer({
+export function signalRelayContainer({
   x,
   y,
   width,
@@ -90,10 +90,10 @@ export function relayContainer({
     'A relay shorter than its tick run and its cargo has no interior.',
   );
 
-  const left = cargoX === null ? x + RELAY_PADDING : cargoX;
-  const span = cargoWidth === null ? width - RELAY_PADDING * 2 : cargoWidth;
-  const slabWidth = (span - (slabs - 1) * RELAY_SLAB_GAP) / slabs;
-  const tickRun = (ticks - 1) * RELAY_TICK_SPACING;
+  const left = cargoX === null ? x + SIGNAL_RELAY_PADDING : cargoX;
+  const span = cargoWidth === null ? width - SIGNAL_RELAY_PADDING * 2 : cargoWidth;
+  const slabWidth = (span - (slabs - 1) * SIGNAL_RELAY_SLAB_GAP) / slabs;
+  const tickRun = (ticks - 1) * SIGNAL_RELAY_TICK_SPACING;
   check(
     slabWidth >= tickRun + 12,
     `A ${round(slabWidth)}-unit slab cannot carry ${ticks} ticks; widen the relay or hold fewer.`,
@@ -108,13 +108,13 @@ export function relayContainer({
   ];
 
   for (let index = 0; index < slabs; index += 1) {
-    const slabX = left + index * (slabWidth + RELAY_SLAB_GAP);
+    const slabX = left + index * (slabWidth + SIGNAL_RELAY_SLAB_GAP);
     parts.push(
       metadataTicks({
         x: slabX + (slabWidth - tickRun) / 2,
         y: top,
         count: ticks,
-        spacing: RELAY_TICK_SPACING,
+        spacing: SIGNAL_RELAY_TICK_SPACING,
         fill: BOUNDARY_STROKE,
       }),
     );

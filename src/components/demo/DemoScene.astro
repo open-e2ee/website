@@ -61,7 +61,7 @@ import SealedLock from './SealedLock.astro';
 /* Which column is which, in travel order. Written once so the markup below
    cannot disagree with itself, and so the relay is structurally in the middle
    rather than placed there by a column count. */
-const COLUMNS = ['a', 'relay', 'b'] as const;
+const COLUMNS = ['a', 'signal-relay', 'b'] as const;
 
 const LABELS = { a: 'Device A', b: 'Device B' } as const;
 
@@ -257,8 +257,8 @@ const STEP_LIST = STEPS.join(' ');
 
   {
     COLUMNS.map((column) =>
-      column === 'relay' ? (
-        <section class="demo-scene-column demo-scene-relay" aria-label="Relay">
+      column === 'signal-relay' ? (
+        <section class="demo-scene-column demo-scene-signal-relay" aria-label="Relay">
           {/*
             The network, drawn. One thin rule from each phone to the rack, and
             nothing else: no head, no dash and no color of its own. The
@@ -285,7 +285,7 @@ const STEP_LIST = STEPS.join(' ');
           */}
           {SIDES.map((side) => (
             <span
-              class="demo-relay-link"
+              class="demo-signal-relay-link"
               data-scene-link={side}
               data-connected="false"
               aria-hidden="true"
@@ -302,7 +302,7 @@ const STEP_LIST = STEPS.join(' ');
               state rules reach it with a sibling combinator. */}
           {SIDES.map((side) => (
             <span
-              class="demo-relay-link-label"
+              class="demo-signal-relay-link-label"
               data-scene-link-label={side}
               aria-hidden="true"
             >
@@ -311,7 +311,7 @@ const STEP_LIST = STEPS.join(' ');
             </span>
           ))}
 
-          <div class="demo-relay-rack">
+          <div class="demo-signal-relay-rack">
             {/* The faceplate. The vent slats are the relay's answer to the
                 phones' notch: the one flourish that says what kind of object
                 this is, drawn in the same ink and the same flat idiom, and
@@ -324,10 +324,10 @@ const STEP_LIST = STEPS.join(' ');
                 speaks for itself, so it is where the formula has to be. The
                 mobile figure carries the same two words for the same reason:
                 one demo at two widths cannot make two promises. */}
-            <header class="demo-relay-header">
-              <span class="demo-relay-title">relay</span>
-              <span class="demo-relay-sub">never needs plaintext</span>
-              <span class="demo-relay-vents" aria-hidden="true">
+            <header class="demo-signal-relay-header">
+              <span class="demo-signal-relay-title">relay</span>
+              <span class="demo-signal-relay-sub">never needs plaintext</span>
+              <span class="demo-signal-relay-vents" aria-hidden="true">
                 <span />
                 <span />
                 <span />
@@ -339,19 +339,19 @@ const STEP_LIST = STEPS.join(' ');
                 it, which is when the stylesheet draws the bays in — the
                 relay building this device's storage as it accepts it. */}
             {SIDES.map((side) => (
-              <div class="demo-relay-account" data-scene-account={side} data-registered="false">
-                <span class="demo-relay-account-name" data-scene-slot-name={side}>
+              <div class="demo-signal-relay-account" data-scene-account={side} data-registered="false">
+                <span class="demo-signal-relay-account-name" data-scene-slot-name={side}>
                   {LABELS[side]}
                 </span>
                 {SLOTS.map(({ slot, label, empty }) => (
-                  <div class="demo-relay-slot" data-scene-slot={slot} data-scene-side={side}>
-                    <span class="demo-relay-slot-label">{label}</span>
+                  <div class="demo-signal-relay-slot" data-scene-slot={slot} data-scene-side={side}>
+                    <span class="demo-signal-relay-slot-label">{label}</span>
                     <div
-                      class="demo-relay-slot-body"
+                      class="demo-signal-relay-slot-body"
                       data-scene-slot-body={slot}
                       data-scene-side={side}
                     >
-                      <span class="demo-relay-slot-empty">{empty}</span>
+                      <span class="demo-signal-relay-slot-empty">{empty}</span>
                     </div>
                   </div>
                 ))}
@@ -769,7 +769,7 @@ const STEP_LIST = STEPS.join(' ');
      * to the rack's, and those edges sit where these values put them.
      */
     --demo-device-width: 300px;
-    --demo-relay-width: 232px;
+    --demo-signal-relay-width: 232px;
     /* What a traveler glows: light. A glow is a light source, so it does not
        flip with the theme — surface here and foreground under `.dark` are the
        same warm white. Not the accent: the accent already inks every busy bay,
@@ -783,7 +783,7 @@ const STEP_LIST = STEPS.join(' ');
        themes. */
     --demo-wire-dormant: color-mix(in srgb, var(--oe-accent) 45%, var(--oe-canvas));
     grid-template-columns:
-      var(--demo-device-width) var(--demo-relay-width) var(--demo-device-width);
+      var(--demo-device-width) var(--demo-signal-relay-width) var(--demo-device-width);
     justify-content: space-between;
     column-gap: var(--oe-space-6);
     /* Columns stretch — the default — so the rack can be made as tall as a
@@ -1471,7 +1471,7 @@ const STEP_LIST = STEPS.join(' ');
      also hold a bar and a count, and a key that shrank to fit would be a
      different drawing at a different width. */
   .demo-device-keys-anchor :global(.demo-key),
-  .demo-relay-slot-body :global(.demo-key) {
+  .demo-signal-relay-slot-body :global(.demo-key) {
     display: flex;
     flex: none;
   }
@@ -1486,7 +1486,7 @@ const STEP_LIST = STEPS.join(' ');
      `overflow: visible` because the stroked form's outer edge lands exactly on
      the viewBox, and an svg clips to its box by default. */
   .demo-device-keys-anchor :global(.demo-key-glyph),
-  .demo-relay-slot-body :global(.demo-key-glyph) {
+  .demo-signal-relay-slot-body :global(.demo-key-glyph) {
     width: 26px;
     height: 15px;
     overflow: visible;
@@ -1505,7 +1505,7 @@ const STEP_LIST = STEPS.join(' ');
 
   /* Outlined is public: the same silhouette, open, because it travels and it is
      readable. */
-  .demo-relay-slot-body :global(.demo-key[data-public='true'] .demo-key-glyph) {
+  .demo-signal-relay-slot-body :global(.demo-key[data-public='true'] .demo-key-glyph) {
     stroke: var(--oe-diagram-carrier-stroke);
     stroke-width: 2;
     transition:
@@ -1516,7 +1516,7 @@ const STEP_LIST = STEPS.join(' ');
   /* The shelf's own amount, drawn the way the device draws its store: one key
      saying what lives here, a fill against the run's most, and the count that
      makes the length checkable. */
-  .demo-relay-slot-body :global(.demo-relay-slot-track) {
+  .demo-signal-relay-slot-body :global(.demo-signal-relay-slot-track) {
     flex: 1;
     min-width: 0;
     height: 0.5rem;
@@ -1529,7 +1529,7 @@ const STEP_LIST = STEPS.join(' ');
       box-shadow var(--oe-duration-normal) ease;
   }
 
-  .demo-relay-slot-body :global(.demo-relay-slot-bar) {
+  .demo-signal-relay-slot-body :global(.demo-signal-relay-slot-bar) {
     display: block;
     width: 0;
     height: 100%;
@@ -1539,7 +1539,7 @@ const STEP_LIST = STEPS.join(' ');
       background var(--oe-duration-normal) ease;
   }
 
-  .demo-relay-slot-body :global(.demo-relay-slot-count) {
+  .demo-signal-relay-slot-body :global(.demo-signal-relay-slot-count) {
     /* The device's count row sets the size for amounts in this scene, and the
        shelf keeps to it: inherited size here was the body's 1rem, which made
        the relay's number the loudest figure in the drawing — a shout from the
@@ -1557,21 +1557,21 @@ const STEP_LIST = STEPS.join(' ');
      in a glowing track, the count and the key in the same ink — the exact
      treatment the device's store wears while generating, because both bars
      are the same fact, an amount being written. */
-  .demo-relay-slot[data-busy='true'] :global(.demo-relay-slot-track) {
+  .demo-signal-relay-slot[data-busy='true'] :global(.demo-signal-relay-slot-track) {
     border-color: var(--oe-accent);
     box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
   }
 
-  .demo-relay-slot[data-busy='true'] :global(.demo-relay-slot-bar) {
+  .demo-signal-relay-slot[data-busy='true'] :global(.demo-signal-relay-slot-bar) {
     background: var(--oe-accent);
   }
 
-  .demo-relay-slot[data-busy='true'] :global(.demo-relay-slot-count) {
+  .demo-signal-relay-slot[data-busy='true'] :global(.demo-signal-relay-slot-count) {
     color: var(--oe-accent);
     text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
   }
 
-  .demo-relay-slot[data-busy='true'] :global(.demo-key[data-public='true'] .demo-key-glyph) {
+  .demo-signal-relay-slot[data-busy='true'] :global(.demo-key[data-public='true'] .demo-key-glyph) {
     stroke: var(--oe-accent);
     filter: drop-shadow(0 0 5px var(--oe-accent));
   }
@@ -1626,7 +1626,7 @@ const STEP_LIST = STEPS.join(' ');
      `display: flex` above outweighs the console's `[hidden]` rule for them
      too: without this, every empty shelf shows one stray key beside a caption
      saying nothing is published. */
-  .demo-relay-slot-body :global(.demo-key[hidden]) {
+  .demo-signal-relay-slot-body :global(.demo-key[hidden]) {
     display: none;
   }
 
@@ -1829,7 +1829,7 @@ const STEP_LIST = STEPS.join(' ');
    * at the top of their column — the grid aligns them there — so a rule a
    * little way down meets a real edge on both sides whatever else changes.
    */
-  .demo-relay-link {
+  .demo-signal-relay-link {
     position: absolute;
     /* The 2px rule this used to be sat with its top at 2.4rem; the tube is
        centered on the same line so the geometry the anchors measure holds. */
@@ -1855,15 +1855,15 @@ const STEP_LIST = STEPS.join(' ');
       transform var(--demo-flight-ms, var(--oe-duration-normal)) ease;
   }
 
-  .demo-relay-link[data-scene-link='a'] {
+  .demo-signal-relay-link[data-scene-link='a'] {
     left: var(--demo-device-width);
-    right: calc(50% + var(--demo-relay-width) / 2);
+    right: calc(50% + var(--demo-signal-relay-width) / 2);
     transform-origin: left center;
   }
 
-  .demo-relay-link[data-scene-link='b'] {
+  .demo-signal-relay-link[data-scene-link='b'] {
     right: var(--demo-device-width);
-    left: calc(50% + var(--demo-relay-width) / 2);
+    left: calc(50% + var(--demo-signal-relay-width) / 2);
     transform-origin: right center;
   }
 
@@ -1878,7 +1878,7 @@ const STEP_LIST = STEPS.join(' ');
    * rule. Not a dash in sight: a dashed rule in this system is the trust
    * boundary, and this is a channel, not a boundary.
    */
-  .demo-relay-link[data-connected='false'] {
+  .demo-signal-relay-link[data-connected='false'] {
     transform: scaleX(0);
   }
 
@@ -1893,7 +1893,7 @@ const STEP_LIST = STEPS.join(' ');
    * bubbles — and it is blue on both themes. The glow is the travelers' own
    * bloom, worn by the wire that carries them.
    */
-  .demo-relay-link[data-active='true'] {
+  .demo-signal-relay-link[data-active='true'] {
     border-color: var(--oe-accent);
     background: color-mix(in srgb, var(--oe-accent) 18%, transparent);
     box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
@@ -1910,7 +1910,7 @@ const STEP_LIST = STEPS.join(' ');
    * stops, deliberately: hard segments would read as dashes, and a dashed
    * rule in this system is the trust boundary.
    */
-  .demo-relay-link::after {
+  .demo-signal-relay-link::after {
     content: '';
     position: absolute;
     inset: 0 auto 0 0;
@@ -1926,7 +1926,7 @@ const STEP_LIST = STEPS.join(' ');
    * non-moving fact — the wire's accent — still carries the state.
    */
   @media (prefers-reduced-motion: no-preference) {
-    .demo-relay-link[data-active='true']::after {
+    .demo-signal-relay-link[data-active='true']::after {
       opacity: 1;
       animation: demo-link-flow var(--demo-flight-ms, 700ms) linear infinite;
     }
@@ -1936,8 +1936,8 @@ const STEP_LIST = STEPS.join(' ');
      writes `data-flow` with the traffic — pushes toward the relay, pulls
      toward the device — and the two sides mirror because their devices sit
      on opposite ends of their rules. */
-  .demo-relay-link[data-scene-link='a'][data-flow='to-device']::after,
-  .demo-relay-link[data-scene-link='b'][data-flow='to-relay']::after {
+  .demo-signal-relay-link[data-scene-link='a'][data-flow='to-device']::after,
+  .demo-signal-relay-link[data-scene-link='b'][data-flow='to-signal-relay']::after {
     animation-direction: reverse;
   }
 
@@ -1958,7 +1958,7 @@ const STEP_LIST = STEPS.join(' ');
    * span the wire's ends are pinned to, and stays out of the travelers'
    * lane below the wire.
    */
-  .demo-relay-link-label {
+  .demo-signal-relay-link-label {
     position: absolute;
     top: 1.1rem;
     display: flex;
@@ -1977,30 +1977,30 @@ const STEP_LIST = STEPS.join(' ');
       text-shadow var(--oe-duration-normal) ease;
   }
 
-  .demo-relay-link-label[data-scene-link-label='a'] {
+  .demo-signal-relay-link-label[data-scene-link-label='a'] {
     left: var(--demo-device-width);
-    right: calc(50% + var(--demo-relay-width) / 2);
+    right: calc(50% + var(--demo-signal-relay-width) / 2);
   }
 
-  .demo-relay-link-label[data-scene-link-label='b'] {
+  .demo-signal-relay-link-label[data-scene-link-label='b'] {
     right: var(--demo-device-width);
-    left: calc(50% + var(--demo-relay-width) / 2);
+    left: calc(50% + var(--demo-signal-relay-width) / 2);
   }
 
   /* No connection, no name: the label fades in with the channel it names. */
-  .demo-relay-link[data-scene-link='a'][data-connected='false']
-    ~ .demo-relay-link-label[data-scene-link-label='a'],
-  .demo-relay-link[data-scene-link='b'][data-connected='false']
-    ~ .demo-relay-link-label[data-scene-link-label='b'] {
+  .demo-signal-relay-link[data-scene-link='a'][data-connected='false']
+    ~ .demo-signal-relay-link-label[data-scene-link-label='a'],
+  .demo-signal-relay-link[data-scene-link='b'][data-connected='false']
+    ~ .demo-signal-relay-link-label[data-scene-link-label='b'] {
     opacity: 0;
   }
 
   /* While its channel serves a step, the name wears the traffic ink and the
      wire's own glow with it. */
-  .demo-relay-link[data-scene-link='a'][data-active='true']
-    ~ .demo-relay-link-label[data-scene-link-label='a'],
-  .demo-relay-link[data-scene-link='b'][data-active='true']
-    ~ .demo-relay-link-label[data-scene-link-label='b'] {
+  .demo-signal-relay-link[data-scene-link='a'][data-active='true']
+    ~ .demo-signal-relay-link-label[data-scene-link-label='a'],
+  .demo-signal-relay-link[data-scene-link='b'][data-active='true']
+    ~ .demo-signal-relay-link-label[data-scene-link-label='b'] {
     color: var(--oe-accent);
     text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
   }
@@ -2036,7 +2036,7 @@ const STEP_LIST = STEPS.join(' ');
    * objects: a phone is a rounded slab in a hand, a rack is a box in a row
    * of boxes.
    */
-  .demo-relay-rack {
+  .demo-signal-relay-rack {
     border: 2px solid var(--oe-border);
     border-radius: 12px;
     padding: var(--oe-space-2);
@@ -2050,7 +2050,7 @@ const STEP_LIST = STEPS.join(' ');
     flex: 1;
   }
 
-  .demo-relay-header {
+  .demo-signal-relay-header {
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
@@ -2058,20 +2058,20 @@ const STEP_LIST = STEPS.join(' ');
     padding: var(--oe-space-1) var(--oe-space-1) 0;
   }
 
-  .demo-relay-title {
+  .demo-signal-relay-title {
     grid-column: 1;
     font-family: var(--oe-font-mono);
     font-weight: 600;
   }
 
-  .demo-relay-sub {
+  .demo-signal-relay-sub {
     grid-column: 1;
     font-size: 0.8rem;
     opacity: 0.7;
   }
 
   /* The notch's ink and idiom, worn the relay's way. */
-  .demo-relay-vents {
+  .demo-signal-relay-vents {
     grid-column: 2;
     grid-row: 1 / span 2;
     display: flex;
@@ -2079,7 +2079,7 @@ const STEP_LIST = STEPS.join(' ');
     gap: 3px;
   }
 
-  .demo-relay-vents span {
+  .demo-signal-relay-vents span {
     width: 1.4rem;
     height: 3px;
     border-radius: 999px;
@@ -2094,7 +2094,7 @@ const STEP_LIST = STEPS.join(' ');
      Drawn as a rack unit: a screen-colored panel in the casing, the exact
      treatment a phone gives its screen, because an account is the part of the
      relay one device sees. */
-  .demo-relay-account {
+  .demo-signal-relay-account {
     display: flex;
     flex-direction: column;
     gap: var(--oe-space-1);
@@ -2116,20 +2116,20 @@ const STEP_LIST = STEPS.join(' ');
    * Visibility rather than `display`, so the rack's height arithmetic holds
    * through both states and the bays appear exactly where they will stand.
    */
-  .demo-relay-account[data-registered='false'] {
+  .demo-signal-relay-account[data-registered='false'] {
     background: var(--oe-surface-sunken);
   }
 
-  .demo-relay-account[data-registered='false'] .demo-relay-account-name {
+  .demo-signal-relay-account[data-registered='false'] .demo-signal-relay-account-name {
     opacity: 0;
   }
 
-  .demo-relay-account[data-registered='false'] .demo-relay-slot {
+  .demo-signal-relay-account[data-registered='false'] .demo-signal-relay-slot {
     visibility: hidden;
     transform: translateY(8px);
   }
 
-  .demo-relay-account-name {
+  .demo-signal-relay-account-name {
     font-family: var(--oe-font-mono);
     font-size: 0.75rem;
     font-weight: 600;
@@ -2142,7 +2142,7 @@ const STEP_LIST = STEPS.join(' ');
      with a real edge — so what changed is *presence*, not decoration. The old
      drawing dashed the empty state, and a dashed rule in this system is the
      trust boundary, which the inside of the relay's own storage is not. */
-  .demo-relay-slot {
+  .demo-signal-relay-slot {
     border: 1px solid transparent;
     border-radius: var(--oe-radius-sm);
     padding: var(--oe-space-2);
@@ -2169,15 +2169,15 @@ const STEP_LIST = STEPS.join(' ');
      is `data-busy` — the moment a publish fills it or a session-agreement
      spends from it — because a shelf merely stocked is standing material,
      and stays recessed like any bay at rest. */
-  .demo-relay-slot[data-scene-slot='mailbox'][data-holding='true'],
-  .demo-relay-slot[data-busy='true'] {
+  .demo-signal-relay-slot[data-scene-slot='mailbox'][data-holding='true'],
+  .demo-signal-relay-slot[data-busy='true'] {
     background: var(--oe-surface-raised);
     border-color: var(--oe-accent);
     box-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
   }
 
-  .demo-relay-slot[data-scene-slot='mailbox'][data-holding='true'] .demo-relay-slot-label,
-  .demo-relay-slot[data-busy='true'] .demo-relay-slot-label {
+  .demo-signal-relay-slot[data-scene-slot='mailbox'][data-holding='true'] .demo-signal-relay-slot-label,
+  .demo-signal-relay-slot[data-busy='true'] .demo-signal-relay-slot-label {
     color: var(--oe-accent);
     text-shadow: 0 0 6px color-mix(in srgb, var(--oe-accent) 55%, transparent);
   }
@@ -2188,7 +2188,7 @@ const STEP_LIST = STEPS.join(' ');
      covering the word that names it. Cut to the default shelf height it landed
      across the shelf above and the rack's own edge, which reads as a message
      sitting on top of the relay rather than in it. */
-  .demo-relay-slot[data-scene-slot='mailbox'] {
+  .demo-signal-relay-slot[data-scene-slot='mailbox'] {
     min-height: 7rem;
     /* And it takes the unit's share of the rack's spare height — capacity is
        the one thing a mailbox has more of than a caption needs. */
@@ -2201,13 +2201,13 @@ const STEP_LIST = STEPS.join(' ');
      just under the label and hand the envelope right back to it. Its own
      content centers both ways, so "empty" sits in the middle of the box it
      describes. */
-  .demo-relay-slot[data-scene-slot='mailbox'] .demo-relay-slot-body {
+  .demo-signal-relay-slot[data-scene-slot='mailbox'] .demo-signal-relay-slot-body {
     flex: 1;
     align-items: center;
     justify-content: center;
   }
 
-  .demo-relay-slot-label {
+  .demo-signal-relay-slot-label {
     font-family: var(--oe-font-mono);
     font-size: 0.7rem;
     color: var(--oe-text-muted, inherit);
@@ -2216,7 +2216,7 @@ const STEP_LIST = STEPS.join(' ');
       text-shadow var(--oe-duration-normal) ease;
   }
 
-  .demo-relay-slot-body {
+  .demo-signal-relay-slot-body {
     display: flex;
     align-items: center;
     gap: var(--oe-space-2);
@@ -2224,13 +2224,13 @@ const STEP_LIST = STEPS.join(' ');
     min-height: 1.4rem;
   }
 
-  .demo-relay-slot-empty {
+  .demo-signal-relay-slot-empty {
     font-family: var(--oe-font-mono);
     font-size: 0.7rem;
     opacity: 0.45;
   }
 
-  .demo-relay-slot[data-holding='true'] .demo-relay-slot-empty {
+  .demo-signal-relay-slot[data-holding='true'] .demo-signal-relay-slot-empty {
     display: none;
   }
 

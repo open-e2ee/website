@@ -1,8 +1,8 @@
-import { relayPricingAt, relayPricingInstant } from './relay-pricing.mjs';
-import { formatRelayRate, relayServiceCatalog } from './relay-service-catalog.mjs';
+import { signalRelayPricingAt, signalRelayPricingInstant } from './signal-relay-pricing.mjs';
+import { formatSignalRelayRate, signalRelayServiceCatalog } from './signal-relay-service-catalog.mjs';
 
-const starter = relayServiceCatalog.plans.find((plan) => plan.planId === 'relay_starter_v1');
-const starterAt5000 = formatRelayRate({
+const starter = signalRelayServiceCatalog.plans.find((plan) => plan.planId === 'relay_starter_v1');
+const starterAt5000 = formatSignalRelayRate({
   numerator: String(BigInt(starter.monthlyPriceMicrounits) * BigInt(starter.overageRates.relay_mau.denominator)
     + BigInt(5000 - starter.monthlyActiveUsers) * BigInt(starter.overageRates.relay_mau.numerator)),
   denominator: starter.overageRates.relay_mau.denominator,
@@ -13,9 +13,9 @@ const starterAt5000 = formatRelayRate({
  * first row names the lowest-priced self-serve plan that includes 100 Relay MAU.
  */
 export function virgilSecurityComparisonAt(at) {
-  const plans = relayPricingAt(at).plans.filter(({ monthlyPriceUsd }) => monthlyPriceUsd !== null);
+  const plans = signalRelayPricingAt(at).plans.filter(({ monthlyPriceUsd }) => monthlyPriceUsd !== null);
   const price = (id) => plans.find((plan) => plan.id === id).price;
-  const lowestFor = (mau) => plans.find((plan) => Number(plan.relayMau.replaceAll(',', '')) >= mau);
+  const lowestFor = (mau) => plans.find((plan) => Number(plan.signalRelayMau.replaceAll(',', '')) >= mau);
   const at100 = lowestFor(100);
   const free = plans.find(({ monthlyPriceUsd }) => monthlyPriceUsd === 0);
   return {
@@ -43,7 +43,7 @@ export function virgilSecurityComparisonAt(at) {
     ],
     stickerPrices: [
       ['100', 'Free', at100.monthlyPriceUsd === 0 ? 'Free' : at100.price, 'Virgil counts registered users; OpenE2EE counts monthly active accounts.'],
-      ['250', 'Free', price('relay_starter_v1'), `OpenE2EE Free ends at ${free.relayMau} Relay MAU because Relay also supplies delivery infrastructure.`],
+      ['250', 'Free', price('relay_starter_v1'), `OpenE2EE Free ends at ${free.signalRelayMau} Relay MAU because Relay also supplies delivery infrastructure.`],
       ['1,000', '$99', price('relay_starter_v1'), 'The sticker price matches, but the products include different infrastructure.'],
       ['5,000', 'About $95–$99', price('relay_growth_v1'), `Virgil lists two bands that both include 5,000 users. OpenE2EE Growth includes this activity. Starter plus accepted MAU overage is ${starterAt5000} if its other allowances fit.`],
       ['25,000', 'About $475', price('relay_business_v1'), 'Compare the complete application stack, not only vendor fees.'],
@@ -51,4 +51,4 @@ export function virgilSecurityComparisonAt(at) {
   };
 }
 
-export const virgilSecurityComparison = virgilSecurityComparisonAt(relayPricingInstant);
+export const virgilSecurityComparison = virgilSecurityComparisonAt(signalRelayPricingInstant);

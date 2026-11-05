@@ -3,7 +3,7 @@
  * It composes the installed package's public API and nothing else — no
  * fork, no shim, no re-typed constant (invariant 1) — so these tests do a real
  * PQXDH handshake and a real Double Ratchet round trip against the real
- * `inMemoryStore()` adapter and this site's `pageRelay()`. Nothing here is stubbed:
+ * `inMemoryStore()` adapter and this site's `pageSignalRelay()`. Nothing here is stubbed:
  * the whole value of the demo is that the cryptography is the shipped
  * cryptography, and a test that mocked it would be checking a story.
  *
@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { startDemoSession } from '../src/lib/demo/driver.ts';
-import { pageRelay } from '../src/lib/demo/relay.ts';
+import { pageSignalRelay } from '../src/lib/demo/signal-relay.ts';
 import { flipOneByte } from './tamper.mjs';
 
 const PROBE = 'Dinner at 7. I got us the table by the window.';
@@ -48,7 +48,7 @@ const declaredEnvelopeFields = await (async () => {
 /**
  * The page relay, made to behave like one that has to cross something.
  *
- * `pageRelay()` hands each envelope to its subscriber inside `send()` — a
+ * `pageSignalRelay()` hands each envelope to its subscriber inside `send()` — a
  * property no relay over a BroadcastChannel, a socket or a network has. This
  * keeps the real relay, real storage and real prekey consumption included, and
  * moves only the moment of delivery to after the send has resolved. That one
@@ -59,12 +59,12 @@ const declaredEnvelopeFields = await (async () => {
  * `subscribe` returns its unsubscribe function rather than a promise of one,
  * and a client handed a promise instead fails much later, in `stop()`.
  */
-function relayThatDeliversLate({ deliverAfterMs = 50, delivery = 'late' } = {}) {
-  const relay = pageRelay();
-  const subscribe = relay.subscribe.bind(relay);
+function signalRelayThatDeliversLate({ deliverAfterMs = 50, delivery = 'late' } = {}) {
+  const signalRelay = pageSignalRelay();
+  const subscribe = signalRelay.subscribe.bind(signalRelay);
   const subscribers = new Map();
-  relay.demoDelivery = delivery;
-  relay.subscribe = (userId, deviceId, onEnvelope, options) => {
+  signalRelay.demoDelivery = delivery;
+  signalRelay.subscribe = (userId, deviceId, onEnvelope, options) => {
     /* The driver's own observer subscribes to the recipient's row before the
        recipient's client does, so counting per row separates the two: the
        page watching the server, then the device reading its mail. */
@@ -75,14 +75,14 @@ function relayThatDeliversLate({ deliverAfterMs = 50, delivery = 'late' } = {}) 
       userId,
       deviceId,
       (envelope) => {
-        if (relay.demoDelivery === 'never') return;
-        if (relay.demoDelivery === 'observer-only' && nth > 1) return;
+        if (signalRelay.demoDelivery === 'never') return;
+        if (signalRelay.demoDelivery === 'observer-only' && nth > 1) return;
         setTimeout(() => onEnvelope(envelope), deliverAfterMs).unref?.();
       },
       options,
     );
   };
-  return relay;
+  return signalRelay;
 }
 
 /**
@@ -370,7 +370,7 @@ test('says so when the recipient has no device, instead of a TypeError', async (
 /*
  * The three below are about a relay that does not deliver inside `send()`.
  *
- * Everything above this line runs on `pageRelay()`, which does — and a
+ * Everything above this line runs on `pageSignalRelay()`, which does — and a
  * driver can depend on that without anyone noticing, because every test passes
  * and every scenario works. It did. The envelope wait was closed the instant
  * `send()` resolved, which is correct only for a relay that has already
@@ -379,7 +379,7 @@ test('says so when the recipient has no device, instead of a TypeError', async (
  */
 
 test('completes a round trip when the relay delivers after the send resolves', async () => {
-  const session = await startDemoSession({ relay: relayThatDeliversLate() });
+  const session = await startDemoSession({ relay: signalRelayThatDeliversLate() });
   try {
     const exchange = await failsIfSlow(
       session.send(PROBE),
@@ -399,7 +399,7 @@ test('completes a round trip when the relay delivers after the send resolves', a
 
 test('fails on its deadline when the relay never delivers at all', async () => {
   const session = await startDemoSession({
-    relay: relayThatDeliversLate({ delivery: 'never' }),
+    relay: signalRelayThatDeliversLate({ delivery: 'never' }),
     deadlineMs: 250,
   });
   try {
@@ -423,7 +423,7 @@ test('fails on its deadline when the envelope lands but no device decrypts it', 
      never reads it. The envelope wait is satisfied, so this is the only one of
      the three that reaches the second deadline at all. */
   const session = await startDemoSession({
-    relay: relayThatDeliversLate({ delivery: 'observer-only' }),
+    relay: signalRelayThatDeliversLate({ delivery: 'observer-only' }),
     deadlineMs: 250,
   });
   try {
@@ -445,8 +445,8 @@ test('is still usable after a send has failed on its deadline', async () => {
   /* A send that fails leaves the envelope slot and every device callback
      armed unless they are cleared on the way out, and the next send would
      then be resolved by the wrong message or by nothing at all. */
-  const relay = relayThatDeliversLate({ delivery: 'never' });
-  const session = await startDemoSession({ relay, deadlineMs: 250 });
+  const signalRelay = signalRelayThatDeliversLate({ delivery: 'never' });
+  const session = await startDemoSession({ relay: signalRelay, deadlineMs: 250 });
   try {
     await assert.rejects(
       () =>
@@ -458,7 +458,7 @@ test('is still usable after a send has failed on its deadline', async () => {
       /never delivered/,
     );
 
-    relay.demoDelivery = 'late';
+    signalRelay.demoDelivery = 'late';
     const exchange = await failsIfSlow(
       session.send(PROBE),
       5000,

@@ -19,7 +19,7 @@
     "demo:smoke": "node scripts/demo-smoke.mjs",
     "release:manifest:verify": "node scripts/verify-release-manifest.mjs",
     "motion:reduced": "node scripts/measure-reduced-motion.mjs",
-    "visual:relay": "node scripts/relay-pages-visual.mjs",
+    "visual:signal-relay": "node scripts/signal-relay-pages-visual.mjs",
     "visual:header": "node scripts/measure-header-baseline.mjs",
     "rail:clearance": "node scripts/measure-rail-clearance.mjs --widths 1280,1440,1680",
     "blog:cards": "node scripts/generate-blog-cards.mjs",

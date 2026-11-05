@@ -1,7 +1,7 @@
 /*
  * /playground is the browser example that this website owns. Its source is
  * `playground/`, and `scripts/build-playground.mjs` bundles it against the
- * installed SDK and the page relay in `src/lib/demo/relay.ts`.
+ * installed SDK and the page relay in `src/lib/demo/signal-relay.ts`.
  *
  * These tests hold it to two things. The exchange it runs works against the
  * installed SDK, end to end. And the page points at its own source, not at an
@@ -52,6 +52,6 @@ test('builds from its own source and links to it', async () => {
 
   /* The relay is the one this site owns. The SDK exports no relay that runs
    * in a page. */
-  assert.match(exchange, /import \{ pageRelay \} from '\.\.\/\.\.\/src\/lib\/demo\/relay\.ts';/);
+  assert.match(exchange, /import \{ pageSignalRelay \} from '\.\.\/\.\.\/src\/lib\/demo\/signal-relay\.ts';/);
   assert.doesNotMatch(exchange, /remote\/relay\/memory|inMemoryRelay/);
 });

@@ -118,7 +118,7 @@ export const STEP_DWELL_MS: DwellTable = {
      being cut off by the tile leaving for the wire. */
   encrypted: 3200,
   'in-transit': 2200,
-  'stored-at-relay': 1800,
+  'stored-at-signal-relay': 1800,
   delivered: 1400,
   /* The longest of the message steps, and it holds a whole sequence: the
      unlock keys fly to the tile, their landing turns the keyholes back and

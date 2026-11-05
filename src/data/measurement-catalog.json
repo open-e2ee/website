@@ -1,5 +1,5 @@
 {
-  "version": "relay-funnel-v1",
+  "version": "signal-relay-funnel-v1",
   "cliTelemetry": false,
   "websiteEvents": [
     "demo_run",

@@ -24,8 +24,8 @@ import {
   defaultVariant,
   heroCode,
   installCommand,
-  relayComment,
-  relayOptions,
+  signalRelayComment,
+  signalRelayOptions,
   snippetComments,
   snippetVariants,
   storageOptions,
@@ -402,7 +402,7 @@ test('compiles every hero variant against the installed SDK', async () => {
   ].join('\n');
   const files = new Map(
     snippetVariants.map((variant) => [
-      `${root}${variant.storage}-${variant.relay}.ts`,
+      `${root}${variant.storage}-${variant.signalRelay}.ts`,
       `${variant.code}\n${reader}\nexport {};\n`,
     ]),
   );
@@ -439,29 +439,29 @@ test('offers every adapter as a real, complete, copyable program', () => {
    * for a runtime highlighter, so a combination that did not exist at build
    * time could never be colored. This test is what stops that fan-out
    * becoming five chances to ship a wrong import. */
-  assert.equal(snippetVariants.length, storageOptions.length * relayOptions.length);
+  assert.equal(snippetVariants.length, storageOptions.length * signalRelayOptions.length);
   assert.equal(snippetVariants.length, 5);
 
   for (const variant of snippetVariants) {
     const store = storageOptions.find((option) => option.id === variant.storage);
-    const relay = relayOptions.find((option) => option.id === variant.relay);
+    const signalRelay = signalRelayOptions.find((option) => option.id === variant.signalRelay);
 
     /* Each variant imports its client factory from the package root, its
      * store, and whatever else the store needs to be constructible. A variant
      * that dropped any of them would still look like a program. */
     assert.ok(
-      variant.code.startsWith(`import { ${relay.factory} } from "${capture.packageName}";`),
-      `${variant.storage}/${variant.relay} does not open with its client factory`,
+      variant.code.startsWith(`import { ${signalRelay.factory} } from "${capture.packageName}";`),
+      `${variant.storage}/${variant.signalRelay} does not open with its client factory`,
     );
     assert.doesNotMatch(
       variant.code,
       /remote\/relay/,
-      `${variant.storage}/${variant.relay} imports a relay subpath the hosted client does not take`,
+      `${variant.storage}/${variant.signalRelay} imports a relay subpath the hosted client does not take`,
     );
     for (const line of store.imports ?? []) {
       assert.ok(
         variant.code.includes(line),
-        `${variant.storage}/${variant.relay} is missing an import its adapter needs: ${line}`,
+        `${variant.storage}/${variant.signalRelay} is missing an import its adapter needs: ${line}`,
       );
     }
     assert.match(
@@ -472,16 +472,16 @@ test('offers every adapter as a real, complete, copyable program', () => {
           '\\/',
         ),
       ),
-      `${variant.storage}/${variant.relay} does not import its store`,
+      `${variant.storage}/${variant.signalRelay} does not import its store`,
     );
     /* The relay has no construction line. The hosted client builds its
        adapter from `relayUrl`, and the comment that says what the URL is and
        what the relay does ships on a line of its own. */
-    assert.equal(relay.setup, undefined, `${variant.storage}/${variant.relay} binds the relay URL from one runtime`);
-    assert.doesNotMatch(variant.code, /process\.env|import\.meta\.env/, `${variant.storage}/${variant.relay} reads one runtime's environment`);
+    assert.equal(signalRelay.setup, undefined, `${variant.storage}/${variant.signalRelay} binds the relay URL from one runtime`);
+    assert.doesNotMatch(variant.code, /process\.env|import\.meta\.env/, `${variant.storage}/${variant.signalRelay} reads one runtime's environment`);
     assert.ok(
-      variant.code.split('\n').includes(relayComment),
-      `${variant.storage}/${variant.relay} lost the comment that says what a relay does`,
+      variant.code.split('\n').includes(signalRelayComment),
+      `${variant.storage}/${variant.signalRelay} lost the comment that says what a relay does`,
     );
 
     /* No elision may reappear. The panel has a copy button on it, and a
@@ -501,9 +501,9 @@ test('offers every adapter as a real, complete, copyable program', () => {
 
   /* The default uses the store the capture was recorded with, so the
    * provenance test above is testing the snippet a reader sees first. */
-  assert.equal(heroCode, buildSnippet(defaultVariant.storage, defaultVariant.relay));
+  assert.equal(heroCode, buildSnippet(defaultVariant.storage, defaultVariant.signalRelay));
   assert.equal(defaultVariant.storage, 'memory');
-  assert.equal(defaultVariant.relay, 'hosted');
+  assert.equal(defaultVariant.signalRelay, 'hosted');
 
   assert.throws(() => buildSnippet('nope', 'hosted'), /Unknown storage adapter/);
   assert.throws(() => buildSnippet('memory', 'nope'), /Unknown relay adapter/);
@@ -592,7 +592,7 @@ test('marks the experimental stores in the selector, and only those', async () =
   const experimental = storageOptions.filter((option) => option.experimental).map((o) => o.id);
   assert.deepEqual(experimental.sort(), []);
   assert.deepEqual(
-    relayOptions.filter((option) => option.experimental),
+    signalRelayOptions.filter((option) => option.experimental),
     [],
   );
 
@@ -644,13 +644,13 @@ test('binds the names the reader brings, or says whose they are', async () => {
    * factory: the hosted client is a root export and takes no relay subpath.
    * It is the only relay the panel offers, because the SDK exports no
    * relay an application can construct. */
-  assert.deepEqual(relayOptions.map((option) => option.id), ['hosted']);
-  const [hosted] = relayOptions;
+  assert.deepEqual(signalRelayOptions.map((option) => option.id), ['hosted']);
+  const [hosted] = signalRelayOptions;
   assert.equal(hosted.factory, 'createHostedSignalProtocolClient');
   assert.equal(hosted.subpath, undefined, 'the hosted client is reached through a relay subpath');
   assert.equal(hosted.imports, undefined, 'the hosted option imports something the SDK does not export');
   assert.equal(hosted.setup, undefined, 'the hosted option binds relayUrl from one runtime\'s environment');
-  assert.match(relayComment, /^\/\/ relayUrl is your Relay environment's connection URL\./);
+  assert.match(signalRelayComment, /^\/\/ relayUrl is your Relay environment's connection URL\./);
   assert.match(hosted.comment, /aliceSignIn and bobSignIn return each device's signed identity assertion/);
 
   for (const variant of snippetVariants) {
@@ -669,7 +669,7 @@ test('binds the names the reader brings, or says whose they are', async () => {
       /* A name that the store's comment or the relay comment gives to the
        * reader is disclosed, not bound; the disclosure checks below hold its
        * position. */
-      if (store.comment?.includes(name) || relayComment.includes(name)) continue;
+      if (store.comment?.includes(name) || signalRelayComment.includes(name)) continue;
       const mentions = new RegExp(`\\b${name}\\b`);
       const bound = lines.findIndex((line) => binds(line, name));
       const used = lines.findIndex(
@@ -678,8 +678,8 @@ test('binds the names the reader brings, or says whose they are', async () => {
       if (bound === -1 && used === -1) continue;
       /* Both directions. A binding with no use is an import a reader deletes,
        * which is the same class of waste as a use with no binding is of error. */
-      assert.ok(used !== -1, `${variant.storage}/${variant.relay} binds ${name} and never uses it`);
-      assert.ok(bound !== -1, `${variant.storage}/${variant.relay} uses ${name} unbound`);
+      assert.ok(used !== -1, `${variant.storage}/${variant.signalRelay} binds ${name} and never uses it`);
+      assert.ok(bound !== -1, `${variant.storage}/${variant.signalRelay} uses ${name} unbound`);
       assert.ok(bound < used, `${name} is used before it is bound`);
     }
 
@@ -692,7 +692,7 @@ test('binds the names the reader brings, or says whose they are', async () => {
     assert.equal(
       /SignalProtocolLocalSecretVault/.test(variant.code),
       bringsOwn,
-      `${variant.storage}/${variant.relay} disclosure does not match its store`,
+      `${variant.storage}/${variant.signalRelay} disclosure does not match its store`,
     );
     if (bringsOwn) {
       const said = lines.findIndex((line) => line.includes('SignalProtocolLocalSecretVault'));
@@ -704,16 +704,16 @@ test('binds the names the reader brings, or says whose they are', async () => {
      * above the first line that passes one. The variants name no `identity`
      * and pass no `relay`, because the hosted client derives the one and
      * builds the other. */
-    assert.match(variant.code, /aliceSignIn and bobSignIn/, `${variant.storage}/${variant.relay} lost the sign-in disclosure`);
+    assert.match(variant.code, /aliceSignIn and bobSignIn/, `${variant.storage}/${variant.signalRelay} lost the sign-in disclosure`);
     assert.match(variant.code, /hosted: \{ relayUrl, getIdentityAssertion: aliceSignIn \}/);
     assert.match(variant.code, /hosted: \{ relayUrl, getIdentityAssertion: bobSignIn \}/);
     assert.doesNotMatch(variant.code, /identity: \{ userId:/);
-    assert.doesNotMatch(variant.code, /, relay \}/, `${variant.storage}/${variant.relay} passes a relay adapter the hosted client builds`);
+    assert.doesNotMatch(variant.code, /, relay \}/, `${variant.storage}/${variant.signalRelay} passes a relay adapter the hosted client builds`);
     assert.match(variant.code, /alice\.send\(bob\.userId, /);
     const said = lines.findIndex((line) => line.includes('aliceSignIn and bobSignIn'));
     const used = lines.findIndex((line) => line.includes('getIdentityAssertion: aliceSignIn'));
     assert.ok(said !== -1 && said < used, 'the sign-in callback is used before it is explained');
-    const urlSaid = lines.indexOf(relayComment);
+    const urlSaid = lines.indexOf(signalRelayComment);
     const urlUsed = lines.findIndex((line) => /\brelayUrl\b/.test(line) && !line.startsWith('//'));
     assert.ok(urlSaid !== -1 && urlSaid < urlUsed, 'relayUrl is used before it is explained');
     assert.ok(!lines.some((line) => /^\s*const relayUrl\b/.test(line)), 'relayUrl is both disclosed and bound');
@@ -737,7 +737,7 @@ test('binds the names the reader brings, or says whose they are', async () => {
       if (!comment) continue;
       assert.ok(
         declared.has(comment),
-        `${variant.storage}/${variant.relay} carries an undeclared comment: ${comment}`,
+        `${variant.storage}/${variant.signalRelay} carries an undeclared comment: ${comment}`,
       );
     }
   }
@@ -986,7 +986,7 @@ test('says what the phone’s first reading measured, and breaks its row cleanly
 test('shows every metadata field the relay was recorded holding', async () => {
   /* The panel is captioned "the stored envelope" and used to render a
    * hand-written six of the recorded ten. The two it dropped —
-   * `senderDeviceId` and `serverTimestamp` — are both genuinely relay-held;
+   * `senderDeviceId` and `serverTimestamp` — are both genuinely held by the relay;
    * the capture annotates the second "Real relays assign this too." Nobody
    * chose that. A copy of recorded data drifted from the recording, and it
    * drifted towards a relay that looks like it knows less than it does.
@@ -1009,8 +1009,8 @@ test('shows every metadata field the relay was recorded holding', async () => {
 
   /* Every recorded key reaches metadataFields — otherwise the panel could be
    * faithful to an annotation list that is itself short of the real row. */
-  for (const key of Object.keys(capture.relayRecord)) {
-    assert.ok(recorded.includes(key), `relayRecord.${key} is absent from metadataFields`);
+  for (const key of Object.keys(capture.signalRelayRecord)) {
+    assert.ok(recorded.includes(key), `signalRelayRecord.${key} is absent from metadataFields`);
   }
 
   /* `npm test` before a build checks the source contract only. */
@@ -1025,7 +1025,7 @@ test('shows every metadata field the relay was recorded holding', async () => {
   }
 
   /* The held-back id is disclosed in prose, not merely absent. */
-  assert.match(dist, /a relay-assigned envelope id, in whatever format your relay assigns/);
+  assert.match(dist, /an envelope id that your relay assigns, in its own format/);
   assert.match(dist, /base64 characters, [\d,]+ bytes decoded, excerpt shown/);
 });
 
@@ -1612,7 +1612,7 @@ test('reaches the security review pack from the product page and the footer', as
   /* Absence is asserted against the link data, not the raw source. Both files
    * carry a comment naming /evaluate to record why the second entry went, and
    * a guard that forbade the word outright would forbid explaining itself —
-   * the same reason the relay-formula guards on this page read the rendered
+   * the same reason the relay formula guards on this page read the rendered
    * output rather than the file. */
   for (const source of [product, groups]) {
     const hrefs = [...source.matchAll(/href: '([^']+)'/g)].map((match) => match[1]);
@@ -1856,7 +1856,7 @@ test('does not revive the retired promise of an independent review, anywhere', a
    * /evaluate, a blog post, and the comparison data. A guard on the two trust
    * pages would have caught three of them.
    *
-   * So this walks the tree the same way the relay-formula guard above does,
+   * So this walks the tree the same way the relay formula guard above does,
    * and for the same reason: a list written by hand stops covering the page
    * added after it. Comments come out first — the landing page explains what
    * was retired, and explaining it means naming it. */
@@ -2590,8 +2590,8 @@ test('keeps the relay formula out of the absolute, in the drawings too', async (
    * Both now render one constant, so the guard is that they still render the
    * same one: a hardcoded string in either composition is how the phone and
    * the desktop end up making different promises about the relay. */
-  assert.match(signature, /relay: 'relay · never needs plaintext'/);
-  assert.equal(signature.match(/\{LABELS\.relay\}/g)?.length, 2);
+  assert.match(signature, /signalRelay: 'relay · never needs plaintext'/);
+  assert.equal(signature.match(/\{LABELS\.signalRelay\}/g)?.length, 2);
 
   /* The scene is HTML rather than an SVG with two coordinate tables, so it has
    * one relay header and the guarantee is that there is still only one. The
@@ -3563,7 +3563,7 @@ test('declares what the example uses', async () => {
     heroCode,
     /import \{ createHostedSignalProtocolClient \} from "@open-e2ee\/signal-protocol-sdk";/,
   );
-  assert.ok(heroCode.split('\n').includes(relayComment));
+  assert.ok(heroCode.split('\n').includes(signalRelayComment));
 
   /* No elision mark anywhere. This used to guard only the opening, because
    * the snippet was an excerpt and `…` was legitimate further down. Now the
@@ -3633,7 +3633,7 @@ test('backs the durability claim it prints under the recorded row', async () => 
 
 test('promises no price it does not show, and links to one that shows them all', async () => {
   const { startupTier } = await import('../src/data/pricing.mjs');
-  const { relayPlans } = await import('../src/data/relay-pricing.mjs');
+  const { signalRelayPlans } = await import('../src/data/signal-relay-pricing.mjs');
   const [index, dist, pricingPage] = await Promise.all([
     flat('../src/pages/index.astro'),
     readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(() => null),
@@ -3664,7 +3664,7 @@ test('promises no price it does not show, and links to one that shows them all',
   if (!pricingPage) return skipUnbuilt('dist/pricing/index.html');
   /* Every priced plan; "Custom" is not a price and the Enterprise band does
    * not print it. */
-  for (const plan of relayPlans.filter((plan) => /^\$/.test(plan.price))) {
+  for (const plan of signalRelayPlans.filter((plan) => /^\$/.test(plan.price))) {
     assert.ok(pricingPage.includes(plan.price), `/pricing does not render ${plan.name} at ${plan.price}`);
   }
   assert.match(startupTier.price, /^\$[\d,]+$/);
@@ -5259,7 +5259,7 @@ test('the scene places the envelope at every step the run records', async () => 
   /* And the places it names are places the scene has. A typo here does not
      throw: `anchorFor` would be handed a string it does not know and the
      envelope would land wherever the fallback put it. */
-  const PLACES = new Set(['sender', 'relay', 'receiver', null]);
+  const PLACES = new Set(['sender', 'signal-relay', 'receiver', null]);
   for (const [step, place] of Object.entries(ENVELOPE_AT)) {
     assert.ok(PLACES.has(place), `${step} puts the envelope at "${place}", which is not a place`);
   }

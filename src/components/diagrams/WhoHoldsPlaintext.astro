@@ -30,7 +30,7 @@ import {
   keySilhouettePath,
   slabPath,
 } from '@open-e2ee/design/diagram';
-import { relayContainer } from '../../lib/relay-form.mjs';
+import { signalRelayContainer } from '../../lib/signal-relay-form.mjs';
 
 const DEVICE_WIDTH = 150;
 const DEVICE_HEIGHT = 100;
@@ -157,7 +157,7 @@ const RULE_BOTTOM = 104;
   <text x={640} y={244} text-anchor="middle" class="diagram-boundary-label">open</text>
 
   <Fragment
-    set:html={relayContainer({
+    set:html={signalRelayContainer({
       x: MIDDLE_X,
       y: 272,
       width: MIDDLE_WIDTH,

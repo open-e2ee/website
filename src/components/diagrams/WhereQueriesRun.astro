@@ -14,9 +14,9 @@
  */
 
 import { PLAINTEXT_STROKE, deviceOutline, keySilhouettePath } from '@open-e2ee/design/diagram';
-import { relayContainer } from '../../lib/relay-form.mjs';
+import { signalRelayContainer } from '../../lib/signal-relay-form.mjs';
 
-const RELAY = { x: 20, y: 96, width: 220, height: 133 };
+const SIGNAL_RELAY = { x: 20, y: 96, width: 220, height: 133 };
 const DEVICE = { x: 480, y: 96, width: 220, height: 133 };
 const KEY = { x: 500, y: 188, width: 44, height: 26 };
 const BOUNDARY_X = 360;
@@ -32,9 +32,9 @@ const BOUNDARY_X = 360;
     one message, asked two questions in two places.
   </desc>
 
-  <Fragment set:html={relayContainer({ ...RELAY, slabs: 3 })} />
-  <text x={RELAY.x} y={82} class="diagram-tick-label">by recipient, device, group, time</text>
-  <text x={RELAY.x} y={262} class="diagram-label">relay · routing fields only</text>
+  <Fragment set:html={signalRelayContainer({ ...SIGNAL_RELAY, slabs: 3 })} />
+  <text x={SIGNAL_RELAY.x} y={82} class="diagram-tick-label">by recipient, device, group, time</text>
+  <text x={SIGNAL_RELAY.x} y={262} class="diagram-label">relay · routing fields only</text>
 
   <text x={BOUNDARY_X} y={64} text-anchor="middle" class="diagram-boundary-label">open</text>
   <line

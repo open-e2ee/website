@@ -69,7 +69,7 @@ data-mobile-name-a
 data-mobile-name-b
 data-mobile-pane
 data-mobile-ratchet-count
-data-mobile-relay
+data-mobile-signal-relay
 data-mobile-slabs
 data-mobile-spent-key
 data-mobile-start

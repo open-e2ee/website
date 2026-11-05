@@ -128,7 +128,7 @@ be the argument that sends people to it.
 
 - **Target query:** "e2ee server schema", "prekey table design", "signal protocol server implementation"
 - **Evidence of demand:** prekey tables, exhaustion rate limits, key-bundle versioning, device registries — **no schema published in any language.** Prekey exhaustion is a measured production failure: a 2025 study found [13% of WhatsApp companion devices lacked a one-time prekey at scan time](https://arxiv.org/pdf/2511.20252).
-- **Format:** `build/relay-data-model` with real DDL for Postgres and Convex.
+- **Format:** `build/signal-relay-data-model` with real DDL for Postgres and Convex.
 
 ### R13 — MLS in the browser and React Native
 

@@ -93,17 +93,17 @@ if (plans) {
   /* The wide rendering: the table's plan columns, then the Enterprise row. The
    * hero above the table carries the page's own actions, so the rendering
    * starts at the first plan. */
-  const compactStart = plans.indexOf('data-relay-plan-compact=');
+  const compactStart = plans.indexOf('data-signal-relay-plan-compact=');
   const compactEnd = compactStart === -1 ? -1 : plans.indexOf('</ul>', compactStart);
-  const tableStart = Math.max(plans.indexOf('data-relay-plan='), 0);
+  const tableStart = Math.max(plans.indexOf('data-signal-relay-plan='), 0);
   const wide = (compactStart === -1 ? plans : plans.slice(0, compactStart) + plans.slice(compactEnd)).slice(tableStart);
   const tableEnd = wide.indexOf('</table>');
   const table = tableEnd === -1 ? '' : wide.slice(0, tableEnd);
   const bodyStart = table.indexOf('<tbody');
   const footStart = table.indexOf('<tfoot');
   if (bodyStart === -1 || footStart === -1) failures.push('the Relay plan table has no body or no foot');
-  const heads = planSlices(table.slice(0, bodyStart === -1 ? table.length : bodyStart), 'data-relay-plan');
-  const feet = planSlices(footStart === -1 ? '' : table.slice(footStart), 'data-relay-plan-action');
+  const heads = planSlices(table.slice(0, bodyStart === -1 ? table.length : bodyStart), 'data-signal-relay-plan');
+  const feet = planSlices(footStart === -1 ? '' : table.slice(footStart), 'data-signal-relay-plan-action');
   if (feet.map((cell) => cell.id).join() !== heads.map((head) => head.id).join()) {
     failures.push(`the foot carries actions for ${feet.map((cell) => cell.id).join(', ') || 'no plan'} under columns ${heads.map((head) => head.id).join(', ')}`);
   }
@@ -112,7 +112,7 @@ if (plans) {
     if (found !== 0) failures.push(`${head.id} carries ${found} action control(s) in its head; the action stands in the foot`);
   }
   const columns = heads.map((head) => ({ id: head.id, html: head.html + (feet.find((cell) => cell.id === head.id)?.html ?? '') }));
-  rows = [...columns, ...planSlices(tableEnd === -1 ? '' : wide.slice(tableEnd), 'data-relay-plan')];
+  rows = [...columns, ...planSlices(tableEnd === -1 ? '' : wide.slice(tableEnd), 'data-signal-relay-plan')];
 
   if (rows.length < 5) failures.push(`only ${rows.length} Relay plan column(s) and row(s) on the page`);
 
@@ -132,7 +132,7 @@ if (plans) {
 
   /* The narrow rendering: one block per self-service plan, same routes. */
   const compact = compactStart === -1 ? '' : plans.slice(compactStart, compactEnd);
-  blocks = planSlices(compact, 'data-relay-plan-compact');
+  blocks = planSlices(compact, 'data-signal-relay-plan-compact');
   if (blocks.length !== rows.length - 1) {
     failures.push(`${blocks.length} compact plan block(s) against ${rows.length - 1} self-service column(s)`);
   }

@@ -58,19 +58,19 @@ import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory
 import type { InMemorySignalProtocolStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import { ciphertextBytes } from './ciphertext.ts';
 import { withDeadline } from './deadline.ts';
-import { pageRelay } from './relay.ts';
-import type { PageRelay } from './relay.ts';
+import { pageSignalRelay } from './signal-relay.ts';
+import type { PageSignalProtocolRelay } from './signal-relay.ts';
 import { createTrace } from './trace.ts';
 import type { Actor, BraidReport, Trace } from './trace.ts';
 
 /**
- * The two ends. `relay` is an actor in the trace but never a correspondent.
+ * The two ends. `signal-relay` is an actor in the trace but never a correspondent.
  *
  * Subtracted from `Actor` rather than written out, so that a third column added
  * to the drawing is a type error here rather than a device that silently cannot
  * be sent to.
  */
-export type DeviceActor = Exclude<Actor, 'relay'>;
+export type DeviceActor = Exclude<Actor, 'signal-relay'>;
 
 export interface DemoRunOptions {
   /** Account on the left. Shown to the reader, so callers name it. */
@@ -89,18 +89,18 @@ export interface DemoRunOptions {
    */
   protocol?: SignalProtocolConfig;
   /**
-   * How to build the relay, instead of a bare `pageRelay()`.
+   * How to build the relay, instead of a bare `pageSignalRelay()`.
    *
    * A test boundary rather than a knob, for the same reason `driver.ts` has
    * one: the page relay delivers inside `send()`, so a test that only
-   * ever sees `pageRelay()` cannot reach the case where delivery is late —
+   * ever sees `pageSignalRelay()` cannot reach the case where delivery is late —
    * which is the case that matters and the case that has shipped broken here
    * before.
    *
    * A factory rather than a relay because `reset()` needs a new one; see
-   * `raiseRelay()`.
+   * `raiseSignalRelay()`.
    */
-  relay?: () => PageRelay;
+  relay?: () => PageSignalProtocolRelay;
   /** How long any one wait on the relay may take before it is called a failure. */
   deadlineMs?: number;
 }
@@ -133,7 +133,7 @@ export interface DemoRun {
   /** The recording. Stable across `reset()`, so subscribers survive one. */
   readonly trace: Trace;
   /** The relay this run's devices register with. Replaced by a reset. */
-  readonly relay: PageRelay;
+  readonly relay: PageSignalProtocolRelay;
   /** Account name for an actor, for anything that has to print one. */
   userId(actor: DeviceActor): string;
   /**
@@ -213,7 +213,7 @@ interface Device {
   /** Set while a send to this device is outstanding. See the send below. */
   onEnvelope: ((arrival: { envelope: Envelope; atMs: number }) => void) | null;
   onDecrypted: ((arrival: { message: DecryptedEnvelope; atMs: number }) => void) | null;
-  unsubscribeRelay: () => void;
+  unsubscribeSignalRelay: () => void;
 }
 
 /**
@@ -388,7 +388,7 @@ function recordGeneration(
  * reporting as a zero it never observed.
  */
 async function countPublishedKeys(
-  relay: PageRelay,
+  relay: PageSignalProtocolRelay,
   userId: string,
   deviceId: number,
 ): Promise<number | null> {
@@ -466,14 +466,14 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     b: options.b ?? 'bob',
   };
   const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
-  const makeRelay = options.relay ?? pageRelay;
+  const makeSignalRelay = options.relay ?? pageSignalRelay;
   const protocol = options.protocol;
   const trace = createTrace();
 
   /* Mutable because `reset()` replaces them. What survives a reset is the trace
      and the object the page is holding; the devices and the relay do not, and
-     `raiseRelay()` says why. */
-  let relay: PageRelay;
+     `raiseSignalRelay()` says why. */
+  let relay: PageSignalProtocolRelay;
   /* Partial because devices exist one activation at a time: a run comes up
      with neither, and each `activate()` adds its own. */
   let devices: Partial<Record<DeviceActor, Device>> = {};
@@ -508,7 +508,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
   /* Wrap the relay method a send hands its envelope to. The page relay has
      only `send` for that: the multi-recipient member is optional in the relay
      contract, and this relay leaves it out, so the SDK has no other path. */
-  function instrumentRelay(target: PageRelay): void {
+  function instrumentSignalRelay(target: PageSignalProtocolRelay): void {
     const wrap = <A extends unknown[], R>(fn: (...args: A) => R): ((...args: A) => R) => {
       return (...args: A) => {
         if (handoffMark !== null) {
@@ -668,7 +668,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       },
       onEnvelope: null,
       onDecrypted: null,
-      unsubscribeRelay: () => {},
+      unsubscribeSignalRelay: () => {},
     };
 
     /*
@@ -686,7 +686,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      * default moved, and the symptom would be a send timing out on its
      * deadline, well away from the line that broke.
      */
-    device.unsubscribeRelay = relay.subscribe(userId, DEFAULT_DEVICE_ID, (envelope) => {
+    device.unsubscribeSignalRelay = relay.subscribe(userId, DEFAULT_DEVICE_ID, (envelope) => {
       device.onEnvelope?.({ envelope, atMs: performance.now() });
     });
 
@@ -733,10 +733,10 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
    * `activate()` — and a run begins as the relay alone, standing between two
    * machines that have not yet spoken to it.
    */
-  function raiseRelay(): void {
+  function raiseSignalRelay(): void {
     generation += 1;
-    relay = makeRelay();
-    instrumentRelay(relay);
+    relay = makeSignalRelay();
+    instrumentSignalRelay(relay);
   }
 
   /** The device an actor has, or the reason there is nothing to call. */
@@ -751,7 +751,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
   async function teardown(): Promise<void> {
     const current = Object.values(devices).filter((device) => device !== undefined);
     for (const device of current) {
-      device.unsubscribeRelay();
+      device.unsubscribeSignalRelay();
       device.onEnvelope = null;
       device.onDecrypted = null;
     }
@@ -928,7 +928,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      *
      * Both halves of that matter and both were learned from a defect.
      * Installing after the send loses an envelope to a relay that delivers
-     * inside `send()`, which `pageRelay()` does. Clearing at `send()`'s
+     * inside `send()`, which `pageSignalRelay()` does. Clearing at `send()`'s
      * return loses it to a relay that does not — the envelope arrives to a
      * closed slot and the wait below never resolves. Holding across the wait
      * covers both, and the deadline covers what is left: an envelope that is
@@ -972,7 +972,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
        memory the relay delivers inside the send, so the arrival promise has
        resolved by this line and the race is a read, not a wait. A transport
        that had not delivered yet resolves the race null and the figure first
-       appears on `stored-at-relay`, which measures the relay's own copy. */
+       appears on `stored-at-signal-relay`, which measures the relay's own copy. */
     const seen = await Promise.race([envelopeArrived, Promise.resolve(null)]);
     const sealedBytes = seen === null ? null : (ciphertextBytes(seen.envelope.ciphertext)?.length ?? 0);
 
@@ -994,11 +994,11 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     });
     /* An interval, not an instant: something really is outstanding between the
        device handing the envelope over and the relay confirming it holds the
-       row. It carries no measure of its own — see `stored-at-relay` below for
+       row. It carries no measure of its own — see `stored-at-signal-relay` below for
        why timing this one in memory would produce a number worth nothing. */
     trace.append({
       step: 'in-transit',
-      actor: 'relay',
+      actor: 'signal-relay',
       from: from.actor,
       to: to.actor,
       atMs: encryptedAt,
@@ -1027,8 +1027,8 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
        the two disagree here. That is a true fact about a relay in the page and
        `trace.ts` says why it is recorded rather than smoothed. */
     trace.append({
-      step: 'stored-at-relay',
-      actor: 'relay',
+      step: 'stored-at-signal-relay',
+      actor: 'signal-relay',
       from: from.actor,
       to: to.actor,
       atMs: storedAtMs,
@@ -1037,7 +1037,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     });
     trace.append({
       step: 'delivered',
-      actor: 'relay',
+      actor: 'signal-relay',
       from: from.actor,
       to: to.actor,
       atMs: storedAtMs,
@@ -1096,7 +1096,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      decryption slots, and a reader pressing send twice is ordinary. */
   let queue: Promise<unknown> = Promise.resolve();
 
-  raiseRelay();
+  raiseSignalRelay();
 
   return {
     trace,
@@ -1157,7 +1157,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
       activations = {};
       published.clear();
       sends = 0;
-      raiseRelay();
+      raiseSignalRelay();
     },
 
     async stop() {

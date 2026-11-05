@@ -23,9 +23,9 @@ const REEL = [
   { step: 'devices-ready', actor: 'a' },
   { step: 'session-established', actor: 'a', from: 'a', to: 'b' },
   { step: 'encrypted', actor: 'a', from: 'a', to: 'b' },
-  { step: 'in-transit', actor: 'relay', from: 'a', to: 'b' },
-  { step: 'stored-at-relay', actor: 'relay', from: 'a', to: 'b' },
-  { step: 'delivered', actor: 'relay', from: 'a', to: 'b' },
+  { step: 'in-transit', actor: 'signal-relay', from: 'a', to: 'b' },
+  { step: 'stored-at-signal-relay', actor: 'signal-relay', from: 'a', to: 'b' },
+  { step: 'delivered', actor: 'signal-relay', from: 'a', to: 'b' },
   { step: 'opened', actor: 'b', from: 'a', to: 'b' },
 ];
 

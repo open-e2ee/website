@@ -9,7 +9,7 @@
  * cryptography is the shipped cryptography (invariant 1): real
  * `createSignalProtocolClient`, real PQXDH, real Double Ratchet. What is
  * simulated is the infrastructure around it — `inMemoryStore()` for the device
- * and this site's own `pageRelay()` for the relay — which is what the disclosure beside
+ * and this site's own `pageSignalRelay()` for the relay — which is what the disclosure beside
  * the demo has to say out loud (invariant 5).
  *
  * Nothing in here touches the DOM. It is imported dynamically by `./loader`,
@@ -36,8 +36,8 @@ import type {
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import type { InMemorySignalProtocolStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 import { withDeadline } from './deadline.ts';
-import { pageRelay } from './relay.ts';
-import type { PageRelay } from './relay.ts';
+import { pageSignalRelay } from './signal-relay.ts';
+import type { PageSignalProtocolRelay } from './signal-relay.ts';
 
 export interface DemoSessionOptions {
   /** Account that types. Shown to the reader, so callers name it. */
@@ -48,7 +48,7 @@ export interface DemoSessionOptions {
    * Where each device's own log goes.
    *
    * The SDK takes an `Logger` per client and reports through it. That is the
-   * only surface on which a relay-path decryption failure is visible at all:
+   * only surface on which a decryption failure on the relay path is visible at all:
    * `onDecryptionError` is documented as "called when decryption fails", but
    * the relay subscription handles a failure through its own retry machinery
    * and never invokes the hook — it is reached only from the manual
@@ -72,16 +72,16 @@ export interface DemoSessionOptions {
    */
   tamper?: (envelope: Envelope) => Envelope;
   /**
-   * The relay to run the session on, instead of a fresh `pageRelay()`.
+   * The relay to run the session on, instead of a fresh `pageSignalRelay()`.
    *
    * This exists as a test boundary rather than as a configuration knob. The
    * whole of `exchange()` below is a set of waits on things a relay delivers,
    * and the page relay delivers all of them inside `send()` — so a test
-   * that only ever sees `pageRelay()` cannot reach the case where it does
+   * that only ever sees `pageSignalRelay()` cannot reach the case where it does
    * not, which is the case that matters and the case that shipped broken.
    * Passing a wrapper that defers delivery is how that case gets tested.
    */
-  relay?: PageRelay;
+  relay?: PageSignalProtocolRelay;
   /**
    * How long a send waits for the relay before giving up, in milliseconds.
    *
@@ -165,7 +165,7 @@ export interface DemoSession {
    * device the sender has never written to is a relay call the application
    * makes by hand.
    */
-  readonly relay: PageRelay;
+  readonly relay: PageSignalProtocolRelay;
   /** The sending device, for the SDK calls a scenario has to make itself. */
   readonly senderClient: DefaultSignalProtocolClient;
   /** The receiving account's primary device, and its storage. */
@@ -212,7 +212,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
 
   const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
 
-  const relay = options.relay ?? pageRelay();
+  const relay = options.relay ?? pageSignalRelay();
   await relay.registerDevice(sender, { encryptedDeviceName: new ArrayBuffer(0) });
   await relay.registerDevice(recipient, { encryptedDeviceName: new ArrayBuffer(0) });
 
@@ -285,7 +285,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
    * `recipientDeviceCount` on the send result is what says how many there
    * were. What each device then made of its own copy is on that device, in
    * `recipientDevices`. */
-  const unsubscribeRelay = relay.subscribe(recipient, DEFAULT_DEVICE_ID, (envelope) => {
+  const unsubscribeSignalRelay = relay.subscribe(recipient, DEFAULT_DEVICE_ID, (envelope) => {
     if (onEnvelope) onEnvelope(envelope);
     else pending.push(envelope);
     emit({ type: 'envelope-stored', envelope });
@@ -416,7 +416,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
      * resolves.
      *
      * It used to be cleared the moment `from.send()` returned, which was safe
-     * for exactly one reason: `pageRelay()` delivers to its subscriber
+     * for exactly one reason: `pageSignalRelay()` delivers to its subscriber
      * inside `send()`, so the envelope had always landed before the slot
      * closed. Against any relay that delivers later the envelope arrived to a
      * closed slot, went into `pending`, and this line waited on a promise
@@ -478,7 +478,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
     },
 
     async stop() {
-      unsubscribeRelay();
+      unsubscribeSignalRelay();
       listeners.clear();
       await Promise.all([from.stop(), ...recipientDevices.map((device) => device.client.stop())]);
     },

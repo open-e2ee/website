@@ -16,9 +16,9 @@
  */
 
 import { PLAINTEXT_STROKE, deviceOutline, keySilhouettePath } from '@open-e2ee/design/diagram';
-import { arrow, relayContainer } from '../../lib/relay-form.mjs';
+import { arrow, signalRelayContainer } from '../../lib/signal-relay-form.mjs';
 
-const RELAY = { x: 230, y: 30, width: 260, height: 112 };
+const SIGNAL_RELAY = { x: 230, y: 30, width: 260, height: 112 };
 const OLD_DEVICE = { x: 20, y: 200, width: 280, height: 130 };
 const NEW_DEVICE = { x: 420, y: 200, width: 280, height: 130 };
 const KEY = { x: 40, y: 286, width: 52, height: 30 };
@@ -35,11 +35,11 @@ const KEY = { x: 40, y: 286, width: 52, height: 30 };
     from it.
   </desc>
 
-  <Fragment set:html={relayContainer(RELAY)} />
+  <Fragment set:html={signalRelayContainer(SIGNAL_RELAY)} />
   {/* Clear of the shaft that rises into the box. The label started at the
       box's own left edge, and the arrow enters the underside at x=250, so
       the shaft and its head stood inside the first two characters of it. */}
-  <text x={RELAY.x + 42} y={164} class="diagram-label">relay · sealed envelopes, no keys</text>
+  <text x={SIGNAL_RELAY.x + 42} y={164} class="diagram-label">relay · sealed envelopes, no keys</text>
 
   <Fragment set:html={deviceOutline(OLD_DEVICE)} />
   <path d={keySilhouettePath(KEY)} fill={PLAINTEXT_STROKE} />

@@ -88,7 +88,7 @@ await client.establishSession(toAddress, bundle);`,
     text: 'The network carrying the envelope toward the relay — not something an app calls.',
   },
 
-  'stored-at-relay': {
+  'stored-at-signal-relay': {
     kind: 'note',
     text: 'The relay accepting and holding the envelope — the relay’s doing, not the app’s.',
   },

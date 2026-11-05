@@ -24,9 +24,9 @@ import { geometry } from '../lib/brand';
  * not turn with the drawing.
  */
 
-const RELAY_SIZE = 140;
-const RELAY_X = 478;
-const RELAY_Y = 92;
+const SIGNAL_RELAY_SIZE = 140;
+const SIGNAL_RELAY_X = 478;
+const SIGNAL_RELAY_Y = 92;
 
 const deviceBars = [
   { y: 22, width: 150 },
@@ -41,7 +41,7 @@ const LABELS = {
   boundaries: ['seal', 'open'],
   sealed: 'sealed',
   metadata: 'metadata visible',
-  relay: 'relay · never needs plaintext',
+  signalRelay: 'relay · never needs plaintext',
 };
 
 const devices = [10, 888].map((x, index) => ({ x, label: LABELS.devices[index] }));
@@ -67,9 +67,9 @@ const STACK = {
   envelopeRight: 220,
   arrowA: 284,
   arrowB: 488,
-  relayX: 125,
-  relayY: 330,
-  relaySize: 110,
+  signalRelayX: 125,
+  signalRelayY: 330,
+  signalRelaySize: 110,
   labelX: 238,
   center: 180,
 };
@@ -176,7 +176,7 @@ const STACK = {
 
   <use
     href="#sd-mark"
-    transform={`translate(${RELAY_X} ${RELAY_Y}) scale(${RELAY_SIZE / 512})`}
+    transform={`translate(${SIGNAL_RELAY_X} ${SIGNAL_RELAY_Y}) scale(${SIGNAL_RELAY_SIZE / 512})`}
   />
   {/*
     Centered under the mark rather than started at its left edge, which is where
@@ -184,8 +184,8 @@ const STACK = {
     the second envelope's own label, and the mark is a symbol with a center
     rather than a box with a left edge.
   */}
-  <text x={RELAY_X + RELAY_SIZE / 2} y={262} text-anchor="middle" class="diagram-label">
-    {LABELS.relay}
+  <text x={SIGNAL_RELAY_X + SIGNAL_RELAY_SIZE / 2} y={262} text-anchor="middle" class="diagram-label">
+    {LABELS.signalRelay}
   </text>
 </svg>
 
@@ -275,10 +275,10 @@ const STACK = {
 
   <use
     href="#sd-mark-stacked"
-    transform={`translate(${STACK.relayX} ${STACK.relayY}) scale(${STACK.relaySize / 512})`}
+    transform={`translate(${STACK.signalRelayX} ${STACK.signalRelayY}) scale(${STACK.signalRelaySize / 512})`}
   />
-  <text x={STACK.center} y={STACK.relayY + 136} text-anchor="middle" class="diagram-label">
-    {LABELS.relay}
+  <text x={STACK.center} y={STACK.signalRelayY + 136} text-anchor="middle" class="diagram-label">
+    {LABELS.signalRelay}
   </text>
 
   <use href="#sd-arrow-stacked" transform={`translate(${STACK.center} ${STACK.arrowB}) rotate(90) scale(${SCALE})`} />

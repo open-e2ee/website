@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 
-import { relayPlans } from '../src/data/relay-pricing.mjs';
+import { signalRelayPlans } from '../src/data/signal-relay-pricing.mjs';
 
 const built = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8').catch(
   () => null,
@@ -31,7 +31,7 @@ assert.ok(built, 'dist/index.html is missing; run npm run build before npm test'
 
 const source = await readFile(new URL('../src/pages/index.astro', import.meta.url), 'utf8');
 
-const free = relayPlans[0];
+const free = signalRelayPlans[0];
 
 /** The markup of one action row, from its hook to the end of the element. */
 function actionRow(hook) {
@@ -85,14 +85,14 @@ test('the free plan is named, from the catalog, before the demo runs', () => {
    * product contract at the next capacity change. */
   const band = built.slice(named, demo);
   const capacity = [
-    `${free.relayMau} Relay MAU`,
+    `${free.signalRelayMau} Relay MAU`,
     `${free.deliveryUnits} delivery units`,
     `${free.storage} storage`,
   ];
   for (const value of capacity) {
     assert.ok(band.includes(value), `the band does not carry the catalog's "${value}"`);
   }
-  assert.match(source, /relayPlans/, 'the page does not read the Relay catalog');
+  assert.match(source, /signalRelayPlans/, 'the page does not read the Relay catalog');
 });
 
 /*

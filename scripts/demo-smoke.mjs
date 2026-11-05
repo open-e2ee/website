@@ -125,7 +125,7 @@ const EXCUSED = `/did not finish/.test(document.querySelector(${JSON.stringify(S
  */
 const MAILBOX = (side) => `[data-scene-slot="mailbox"][data-scene-side="${side}"]`;
 const MAILBOX_EMPTY = (side) =>
-  `[data-scene-slot-body="mailbox"][data-scene-side="${side}"] .demo-relay-slot-empty`;
+  `[data-scene-slot-body="mailbox"][data-scene-side="${side}"] .demo-signal-relay-slot-empty`;
 
 /* The sealed message, and what is written on its outside. The size is the
    recording's own measure of the ciphertext, and the addressing is read off the
@@ -353,7 +353,7 @@ const BRAID_FIGURE = /^pq chunks (\d+) \/ (\d+)$/;
  * column is measured and paired by where it sits, so the drawing is free to
  * move, to be remarked or to be rebuilt, and the reading still describes it.
  */
-const RELAY_COLUMN = '.demo-scene-relay';
+const SIGNAL_RELAY_COLUMN = '.demo-scene-signal-relay';
 
 /* What the relay says about the one message it is holding. The scene draws
    every size as a figure and none as a length, so this is the drawing of the
@@ -912,7 +912,7 @@ const SNAPSHOT = `(() => {
 /* The step at which the relay takes the row, and the name the envelope is
    carrying while it does. The step is the scene's own word for it, taken from
    the recording rather than from this file's idea of the story. */
-const STORED_STEP = 'stored-at-relay';
+const STORED_STEP = 'stored-at-signal-relay';
 const SCENE_ENVELOPE_TO = '[data-scene-envelope-to]';
 const SCENE_ENVELOPE_FROM = '[data-scene-envelope-from]';
 
@@ -1210,8 +1210,8 @@ const WATCH_BRAID = `(() => {
  * carried with it so a pair that lines up by accident after a run drew a
  * different number of children can be told apart.
  */
-const RELAY_GEOMETRY = `(() => {
-  const column = document.querySelector(${JSON.stringify(RELAY_COLUMN)});
+const SIGNAL_RELAY_GEOMETRY = `(() => {
+  const column = document.querySelector(${JSON.stringify(SIGNAL_RELAY_COLUMN)});
   if (!column) return null;
   const drawn = [];
   const measure = (element, path) => {
@@ -2078,7 +2078,7 @@ async function visit(cdp, origin, held, { blocked = [], repeat = false, braid = 
     /* Measured after the reel has arrived and the page has gone quiet, so the
        column is drawing the state the run finished in rather than a frame of
        the journey there. */
-    const geometry = await evaluate(cdp, sessionId, RELAY_GEOMETRY);
+    const geometry = await evaluate(cdp, sessionId, SIGNAL_RELAY_GEOMETRY);
 
     await tab.fillPostData();
 
@@ -2363,7 +2363,7 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
      end of the reel is the one moment in the whole run when "holding nothing"
      is the correct drawing. The row is checked where it exists — `stored`, out
      of the watcher — and the empty rack it leaves behind is checked in
-     `checkRelayShelves`. */
+     `checkSignalRelayShelves`. */
 
   const carried = leaks(pass.requests, findProbe);
   if (carried.length) {
@@ -2510,7 +2510,7 @@ function checkRoundTrip(pass, origin, envelopeFields, expected) {
   checkScene(pass);
   checkKeyGeneration(pass);
   const spend = checkPrekeySpend(pass);
-  checkRelayShelves(pass, spend);
+  checkSignalRelayShelves(pass, spend);
   checkStoredMailbox(pass);
   if (pass.repeated) checkSceneMoves(pass.afterFirst, pass.dom);
 
@@ -2781,7 +2781,7 @@ function checkPrekeySpend(pass) {
  * after the sentence was opened would be drawing a message that is both
  * delivered and waiting.
  */
-function checkRelayShelves(pass, spend) {
+function checkSignalRelayShelves(pass, spend) {
   const scene = pass.dom.scene;
   const slots = scene?.slots;
   if (!slots) {
@@ -3315,7 +3315,7 @@ function checkBraidDrawing(disabled, required) {
     if (!pass.geometry) {
       throw new Red(
         `braid drawing — the run under braid ${setting} has no relay column on the page to ` +
-          `measure (${RELAY_COLUMN}), so what the setting does to the drawing cannot be asked`,
+          `measure (${SIGNAL_RELAY_COLUMN}), so what the setting does to the drawing cannot be asked`,
       );
     }
     const printed = pass.stored?.at?.size ?? '';
@@ -3396,7 +3396,7 @@ function checkBraidDrawing(disabled, required) {
     throw new Red(
       `braid drawing — the relay column is drawn to the size of what it is holding. The same ` +
         `page ran under both braid settings, ${factor.toFixed(2)}× apart in envelope size, and a ` +
-        `box in ${RELAY_COLUMN} changed by ${widest.ratio.toFixed(2)}× between them — over the ` +
+        `box in ${SIGNAL_RELAY_COLUMN} changed by ${widest.ratio.toFixed(2)}× between them — over the ` +
         `${BRAID_STEADY_RATIO}× a reflow accounts for. The envelope rides the wire at one size ` +
         `whatever it carries, and the size it carries is stated in figures.\n` +
         held +
