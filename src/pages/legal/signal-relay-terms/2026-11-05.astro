@@ -1,23 +1,18 @@
 ---
 /*
- * The OpenE2EE Signal Protocol Relay Service Terms, version relay-2026-11-02.
- * Section 3.9 applies the pinned catalog immediately to all projects.
- * Future catalog changes retain the 30-day notice requirement. This version
- * adds limited account-linked Console usage records.
+ * The OpenE2EE Signal Protocol Relay Service Terms, version
+ * signal-relay-2026-11-05, frozen at its own address. This version changes
+ * only names and addresses from the 2026-11-02 version: it takes the signal-relay
+ * version prefix and the `/legal/signal-relay-terms` address, and it links the
+ * signal-relay retention and service-limits addresses. Every clause is
+ * unchanged.
  *
- * `/legal/signal-relay-terms` renders this component. The dated page under
- * `/legal/relay-terms/` holds a literal snapshot of the same text and never
- * imports this file; tests/legal-pages.test.mjs enforces that, and asserts
- * that every price and included quantity in src/data/signal-relay-pricing.mjs is
- * stated here, so a price change cannot ship without a new version.
+ * `/legal/signal-relay-terms` renders the live component. This dated page holds
+ * a literal snapshot of the same text and never imports that component or the
+ * live version constants; tests/legal-pages.test.mjs enforces that.
  */
-import BaseLayout from '../layouts/BaseLayout.astro';
-import TableScroll from '../components/TableScroll.astro';
-import {
-  signalRelayTermsEffectiveDate,
-  signalRelayTermsPath,
-  signalRelayTermsVersion,
-} from '../lib/legal.mjs';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import TableScroll from '../../../components/TableScroll.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -31,7 +26,7 @@ import {
   LEGAL_NOTICE,
   LEGAL_PIN,
   LEGAL_TOC,
-} from '../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
@@ -48,12 +43,12 @@ import {
           the Signal Protocol Relay.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {signalRelayTermsEffectiveDate}</span>
-          <span>Version {signalRelayTermsVersion}</span>
+          <span>Effective November 5, 2026</span>
+          <span>Version signal-relay-2026-11-05</span>
         </p>
         <p class={LEGAL_PIN}>
           The current version of these Terms applies to every Customer. The permanent copy of this version is at{' '}
-          <a href={signalRelayTermsPath}><code>{signalRelayTermsPath}</code></a>.
+          <a href="/legal/signal-relay-terms/2026-11-05"><code>/legal/signal-relay-terms/2026-11-05</code></a>.
         </p>
       </div>
     </header>
@@ -312,7 +307,7 @@ import {
           OpenE2EE to process that data only to provide, secure, meter, support, and improve Relay,
           comply with law, and enforce these Terms. The <a href="/legal/privacy">Privacy Notice</a>,{' '}
           <a href="/legal/subprocessors">Subprocessor List</a>, and{' '}
-          <a href="/legal/relay-retention">Relay Retention Statement</a> describe the processing
+          <a href="/legal/signal-relay-retention">Relay Retention Statement</a> describe the processing
           boundary.
         </p>
         <p>
@@ -366,7 +361,7 @@ import {
           service-level agreement. Paid plans include reasonable email support through{' '}
           <a href="mailto:support@open-e2ee.dev">support@open-e2ee.dev</a> and the support shown in
           the applicable order, but no uptime credit or response guarantee unless a signed order
-          form says otherwise. The <a href="/legal/relay-service-limits">Service Limits</a>{' '}
+          form says otherwise. The <a href="/legal/signal-relay-service-limits">Service Limits</a>{' '}
           describe current operating constraints.
         </p>
 

@@ -47,10 +47,18 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * must move with these constants once the dated page is live. The 2026-10-24 version names OpenE2EE, Inc. as the
  * counterparty. The 2026-11-02 version discloses limited account-linked Console
  * usage and keeps optional browser analytics consent separate.
+ *
+ * The signal-relay-2026-11-05 version changes only names and addresses: it
+ * takes the signal-relay version prefix and the /legal/signal-relay-terms
+ * address, and it links the signal-relay retention and service-limits
+ * addresses. Every clause is unchanged. Each earlier version keeps its relay-
+ * version id and its /legal/relay-terms/<date> address, because the console
+ * stores the pair that a customer accepted. A version id and its path always
+ * take the same prefix: signal-relay-<date> at /legal/signal-relay-terms/<date>.
  */
-export const signalRelayTermsVersion = 'relay-2026-11-02';
-export const signalRelayTermsEffectiveDate = 'November 2, 2026';
-export const signalRelayTermsPath = '/legal/relay-terms/2026-11-02';
+export const signalRelayTermsVersion = 'signal-relay-2026-11-05';
+export const signalRelayTermsEffectiveDate = 'November 5, 2026';
+export const signalRelayTermsPath = '/legal/signal-relay-terms/2026-11-05';
 export const signalRelayTermsUrl = `https://open-e2ee.dev${signalRelayTermsPath}`;
 
 /*
