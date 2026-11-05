@@ -114,7 +114,7 @@ export function summarize(event: TraceEvent): string {
     case 'in-transit':
       return `Envelope traveling to the relay, addressed to ${event.to ?? 'the other device'}.`;
 
-    case 'stored-at-relay':
+    case 'stored-at-signal-relay':
       return `Relay stored the envelope (${measures.ciphertextBytes ?? 0} bytes).`;
 
     case 'delivered':

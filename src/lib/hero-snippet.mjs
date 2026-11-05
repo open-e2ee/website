@@ -128,7 +128,7 @@ export const storageOptions = [
  * `relayUrl` is the reader's own value, as it is in the SDK README. Each
  * runtime reads configuration in a different way: a browser bundle has no
  * `process`, and Expo inlines only `EXPO_PUBLIC_` variables. A binding from
- * one runtime's environment would not run in the others, so `relayComment`
+ * one runtime's environment would not run in the others, so `signalRelayComment`
  * says what the value is and the program does not bind it.
  *
  * `aliceSignIn` and `bobSignIn` are the reader's own functions. Each returns a
@@ -136,7 +136,7 @@ export const storageOptions = [
  * importable produces one, so the option says whose they are in a comment, the
  * same way the Node store does for `directory` and `vault`.
  */
-export const relayOptions = [
+export const signalRelayOptions = [
   {
     id: 'hosted',
     label: 'Signal Protocol Relay',
@@ -223,7 +223,7 @@ export const relayOptions = [
    Exported, alone among the six, because a test holds its position: directly
    above the sign-in disclosure, and above the first line that uses
    `relayUrl`. */
-export const relayComment =
+export const signalRelayComment =
   "// relayUrl is your Relay environment's connection URL. Devices post and collect envelopes there.";
 /*
  * The ones that ride on a line of code, and the width that shapes them.
@@ -260,21 +260,21 @@ const PLAINTEXT_COMMENT = "// plaintext, only on Bob's device";
 const SEND_COMMENT = "// Encrypted on Alice's device before the relay carries it.";
 
 export const snippetComments = [
-  relayComment,
+  signalRelayComment,
   ALICE_COMMENT,
   ADAPTERS_COMMENT,
   BOB_COMMENT,
   RECEIVE_COMMENT,
   PLAINTEXT_COMMENT,
   SEND_COMMENT,
-  ...[...storageOptions, ...relayOptions]
+  ...[...storageOptions, ...signalRelayOptions]
     .map((option) => option.comment)
     .filter(Boolean)
     .map((comment) => `// ${comment}`),
 ];
 
 /** The combination shown first. The in-memory store is the one the capture also uses. */
-export const defaultVariant = { storage: 'memory', relay: 'hosted' };
+export const defaultVariant = { storage: 'memory', signalRelay: 'hosted' };
 
 const specifier = (subpath) => `"${PACKAGE}/${subpath}"`;
 
@@ -287,16 +287,16 @@ const specifier = (subpath) => `"${PACKAGE}/${subpath}"`;
  * makes: an adapter is a value your application passes, not a fork in your
  * application's code.
  */
-export const buildSnippet = (storageId, relayId) => {
+export const buildSnippet = (storageId, signalRelayId) => {
   const store = storageOptions.find((option) => option.id === storageId);
-  const relay = relayOptions.find((option) => option.id === relayId);
+  const signalRelay = signalRelayOptions.find((option) => option.id === signalRelayId);
   if (!store) throw new Error(`Unknown storage adapter: ${storageId}`);
-  if (!relay) throw new Error(`Unknown relay adapter: ${relayId}`);
+  if (!signalRelay) throw new Error(`Unknown relay adapter: ${signalRelayId}`);
 
   const adapters = `  adapters: { storage: ${store.expr} },`;
 
   return [
-    `import { ${relay.factory} } from "${PACKAGE}";`,
+    `import { ${signalRelay.factory} } from "${PACKAGE}";`,
     `import { ${store.symbol} } from ${specifier(store.subpath)};`,
     /* A store may need names from beyond its own subpath, and they belong in
        the import block with the rest, not in a comment underneath. No option
@@ -305,9 +305,9 @@ export const buildSnippet = (storageId, relayId) => {
     '',
     /* The relay's two disclosures sit directly above the first line that uses
        the names they explain, which is Alice's `hosted` line. */
-    relayComment,
-    `// ${relay.comment}`,
-    `const alice = await ${relay.factory}({ ${ALICE_COMMENT}`,
+    signalRelayComment,
+    `// ${signalRelay.comment}`,
+    `const alice = await ${signalRelay.factory}({ ${ALICE_COMMENT}`,
     '  hosted: { relayUrl, getIdentityAssertion: aliceSignIn },',
     ...(store.comment ? [`  // ${store.comment}`] : []),
     `${adapters} ${ADAPTERS_COMMENT}`,
@@ -318,7 +318,7 @@ export const buildSnippet = (storageId, relayId) => {
 
        No blank line between the two, either. They are one beat, two devices,
        and a gap made them read as two unrelated setups. */
-    `const bob = await ${relay.factory}({ ${BOB_COMMENT}`,
+    `const bob = await ${signalRelay.factory}({ ${BOB_COMMENT}`,
     '  hosted: { relayUrl, getIdentityAssertion: bobSignIn },',
     adapters,
     '});',
@@ -354,15 +354,15 @@ export const buildSnippet = (storageId, relayId) => {
  * beside the data they describe is both the fix and the better place for them.
  */
 export const snippetVariants = storageOptions.flatMap((store) =>
-  relayOptions.map((relay) => ({
+  signalRelayOptions.map((signalRelay) => ({
     storage: store.id,
-    relay: relay.id,
+    signalRelay: signalRelay.id,
     storageLabel: store.label,
-    relayLabel: relay.label,
-    isDefault: store.id === defaultVariant.storage && relay.id === defaultVariant.relay,
-    experimental: store.experimental || relay.experimental,
-    code: buildSnippet(store.id, relay.id),
+    signalRelayLabel: signalRelay.label,
+    isDefault: store.id === defaultVariant.storage && signalRelay.id === defaultVariant.signalRelay,
+    experimental: store.experimental || signalRelay.experimental,
+    code: buildSnippet(store.id, signalRelay.id),
   })),
 );
 
-export const heroCode = buildSnippet(defaultVariant.storage, defaultVariant.relay);
+export const heroCode = buildSnippet(defaultVariant.storage, defaultVariant.signalRelay);

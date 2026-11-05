@@ -11,7 +11,7 @@
  * calls are real: delivery, the device registry, account identity, prekeys,
  * and the prekey inventory. A retry request is an envelope like any other, so
  * `send()` carries it. The group and ZK credential members throw
- * `PageRelayUnsupportedError`. The optional sealed-sender members are absent,
+ * `PageSignalProtocolRelayUnsupportedError`. The optional sealed-sender members are absent,
  * so a client that the demo configures without sealed sender never reaches
  * for them.
  *
@@ -44,18 +44,18 @@ import type {
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** A member of the relay contract that this page relay does not carry. */
-export class PageRelayUnsupportedError extends Error {
+export class PageSignalProtocolRelayUnsupportedError extends Error {
   readonly member: string;
 
   constructor(member: string) {
     super(`${member} is not supported by the page relay. It carries one-to-one messages only.`);
-    this.name = 'PageRelayUnsupportedError';
+    this.name = 'PageSignalProtocolRelayUnsupportedError';
     this.member = member;
   }
 }
 
 function unsupported(member: string): Promise<never> {
-  return Promise.reject(new PageRelayUnsupportedError(member));
+  return Promise.reject(new PageSignalProtocolRelayUnsupportedError(member));
 }
 
 /**
@@ -122,7 +122,7 @@ class ConnectionState {
   }
 }
 
-export class PageRelay implements SignalProtocolRelayServer {
+export class PageSignalProtocolRelay implements SignalProtocolRelayServer {
   private readonly connection = new ConnectionState();
   private readonly subscriptions = new Map<string, Array<(envelope: Envelope) => void>>();
   private liveSubscriptions = 0;
@@ -565,6 +565,6 @@ function metadataFor(preKey: PreKeyUpload, now: number): PreKeyMetadata {
 }
 
 /** A new, empty relay inside this page. */
-export function pageRelay(): PageRelay {
-  return new PageRelay();
+export function pageSignalProtocolRelay(): PageSignalProtocolRelay {
+  return new PageSignalProtocolRelay();
 }

@@ -7,7 +7,7 @@ carrier-cipher-note
 carrier-message
 carrier-meta
 carrier-pane
-carrier-pane-relay
+carrier-pane-signal-relay
 carrier-panel
 commitline
 commitline-commits

@@ -43,16 +43,15 @@ export const commercialTermsUrl = `https://open-e2ee.dev${commercialTermsPath}`;
  * records the URL below against each activation. The relay-2026-10-18 version
  * publishes the replacement catalog, defines decimal GB-months, and applies
  * the catalog immediately to every project. Section 3.9 retains notice for
- * future changes. The Console RELAY_TERMS_URL and RELAY_TERMS_VERSION settings
- * must move with these constants once the dated
- * page is live. The 2026-10-24 version names OpenE2EE, Inc. as the
+ * future changes. The Console settings for the Relay terms URL and version
+ * must move with these constants once the dated page is live. The 2026-10-24 version names OpenE2EE, Inc. as the
  * counterparty. The 2026-11-02 version discloses limited account-linked Console
  * usage and keeps optional browser analytics consent separate.
  */
-export const relayTermsVersion = 'relay-2026-11-02';
-export const relayTermsEffectiveDate = 'November 2, 2026';
-export const relayTermsPath = '/legal/relay-terms/2026-11-02';
-export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
+export const signalRelayTermsVersion = 'relay-2026-11-02';
+export const signalRelayTermsEffectiveDate = 'November 2, 2026';
+export const signalRelayTermsPath = '/legal/relay-terms/2026-11-02';
+export const signalRelayTermsUrl = `https://open-e2ee.dev${signalRelayTermsPath}`;
 
 /*
  * The Relay Retention Statement and the Service Limits are incorporated
@@ -81,13 +80,13 @@ export const relayTermsUrl = `https://open-e2ee.dev${relayTermsPath}`;
  * of up to 30 days and that Relay never restores a mailbox from that window. No
  * retention period and no deletion step changes.
  */
-export const relayRetentionVersion = '2026-10-24';
-export const relayRetentionEffectiveDate = 'October 24, 2026';
-export const relayRetentionPath = `/legal/relay-retention/${relayRetentionVersion}`;
+export const signalRelayRetentionVersion = '2026-10-24';
+export const signalRelayRetentionEffectiveDate = 'October 24, 2026';
+export const signalRelayRetentionPath = `/legal/relay-retention/${signalRelayRetentionVersion}`;
 
-export const relayServiceLimitsVersion = '2026-10-05';
-export const relayServiceLimitsEffectiveDate = 'October 5, 2026';
-export const relayServiceLimitsPath = `/legal/relay-service-limits/${relayServiceLimitsVersion}`;
+export const signalRelayServiceLimitsVersion = '2026-10-05';
+export const signalRelayServiceLimitsEffectiveDate = 'October 5, 2026';
+export const signalRelayServiceLimitsPath = `/legal/relay-service-limits/${signalRelayServiceLimitsVersion}`;
 
 /*
  * The privacy notice is versioned by date. Two versions were published on

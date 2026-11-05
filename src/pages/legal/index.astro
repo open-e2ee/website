@@ -7,13 +7,13 @@ import {
   privacyEffectiveDate,
   privacyPath,
   privacyVersion,
-  relayRetentionPath,
-  relayRetentionVersion,
-  relayServiceLimitsPath,
-  relayServiceLimitsVersion,
-  relayTermsEffectiveDate,
-  relayTermsPath,
-  relayTermsVersion,
+  signalRelayRetentionPath,
+  signalRelayRetentionVersion,
+  signalRelayServiceLimitsPath,
+  signalRelayServiceLimitsVersion,
+  signalRelayTermsEffectiveDate,
+  signalRelayTermsPath,
+  signalRelayTermsVersion,
 } from '../../lib/legal.mjs';
 import {
   BAND,
@@ -53,7 +53,7 @@ import {
             The project-scoped Relay service, capacity, billing, data, suspension, and support
             contract.
           </p>
-          <p class:list={[LABEL, 'mt-3']}>Effective {relayTermsEffectiveDate} · {relayTermsVersion}</p>
+          <p class:list={[LABEL, 'mt-3']}>Effective {signalRelayTermsEffectiveDate} · {signalRelayTermsVersion}</p>
         </li>
         <li>
           <p class={LABEL}>Data practices</p>
@@ -86,7 +86,7 @@ import {
         </li>
         <li>
           <p class={LABEL}>Relay version history</p>
-          <h3><a href={relayTermsPath}>Pinned Relay terms {relayTermsVersion}</a></h3>
+          <h3><a href={signalRelayTermsPath}>Pinned Relay terms {signalRelayTermsVersion}</a></h3>
           <p>
             The permanent copy the console records when an organization accepts this service
             agreement before its first Relay project. The superseded versions,{' '}
@@ -96,8 +96,8 @@ import {
             <a href="/legal/relay-terms/2026-09-10">relay-2026-09-10</a>, and{' '}
             <a href="/legal/relay-terms/2026-08-26">relay-2026-08-26</a>, keep their own addresses,
             and so do the policies the terms incorporate: the{' '}
-            <a href={relayRetentionPath}>retention statement {relayRetentionVersion}</a> and the{' '}
-            <a href={relayServiceLimitsPath}>service limits {relayServiceLimitsVersion}</a>.
+            <a href={signalRelayRetentionPath}>retention statement {signalRelayRetentionVersion}</a> and the{' '}
+            <a href={signalRelayServiceLimitsPath}>service limits {signalRelayServiceLimitsVersion}</a>.
           </p>
         </li>
         <li>

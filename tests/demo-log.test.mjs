@@ -31,7 +31,7 @@ test('formatEvent reports elapsed time since the run started, to one decimal', (
 });
 
 test('formatEvent keeps a real, possibly negative, delta rather than clamping one', () => {
-  /* `stored-at-relay` can be timestamped before `encrypted` on a relay in
+  /* `stored-at-signal-relay` can be timestamped before `encrypted` on a relay in
      the page — trace.ts says why — so a row before the run's first event is a
      true row, not a bug this file should hide by flooring at zero. */
   const row = formatEvent(encryptedEvent({ atMs: 900 }), 1000);
@@ -47,7 +47,7 @@ test('matches: an empty or whitespace query matches every row', () => {
 test('matches: case-insensitive substring over step, actor and summary', () => {
   /* A row built by hand, with a distinct token in each field, so a match
      against one field cannot be mistaken for a match against another. */
-  const row = { at: '0.0', step: 'devices-ready', actor: 'relay', summary: 'a fresh prekey bundle' };
+  const row = { at: '0.0', step: 'devices-ready', actor: 'signal-relay', summary: 'a fresh prekey bundle' };
 
   assert.equal(matches(row, 'DEVICES'), true, 'did not match the step, differently cased');
   assert.equal(matches(row, 'RELAY'), true, 'did not match the actor, differently cased');
@@ -122,7 +122,7 @@ test('code-snippets.ts has an entry for every step the trace can record', () => 
 });
 
 test('a step nothing in the app calls is marked as a note, not a fabricated call', () => {
-  for (const step of ['idle', 'in-transit', 'stored-at-relay', 'delivered']) {
+  for (const step of ['idle', 'in-transit', 'stored-at-signal-relay', 'delivered']) {
     assert.equal(
       CODE_SNIPPETS[step].kind,
       'note',

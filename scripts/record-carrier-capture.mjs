@@ -9,7 +9,7 @@
  *   node scripts/record-carrier-capture.mjs
  *
  * It runs `PROGRAM` below against the installed SDK and the page relay in
- * `src/lib/demo/relay.ts`, reads the envelope the relay held, and writes the
+ * `src/lib/demo/signal-relay.ts`, reads the envelope the relay held, and writes the
  * JSON with the program text in it.
  *
  * Re-record when the program stops being true of the installed package: a
@@ -45,9 +45,9 @@ const SDK = '@open-e2ee/signal-protocol-sdk';
  */
 const PROGRAM = `import { createSignalProtocolClient } from "${SDK}";
 import { inMemoryStore } from "${SDK}/local/store/memory";
-import { pageRelay } from "../src/lib/demo/relay.ts";
+import { pageSignalProtocolRelay } from "../src/lib/demo/signal-relay.ts";
 
-const relay = pageRelay();
+const relay = pageSignalProtocolRelay();
 await relay.registerDevice("alice", { encryptedDeviceName: new ArrayBuffer(0) });
 await relay.registerDevice("bob", { encryptedDeviceName: new ArrayBuffer(0) });
 
@@ -84,7 +84,7 @@ const PLAINTEXT = 'Dinner at 7. I got us the table by the window.';
  */
 const NOTES = {
   targetUserId:
-    'Recipient account the relay must route to. Protocol/relay-level: any real relay needs this to deliver.',
+    'Recipient account the relay must route to. Protocol and relay level: any real relay needs this to deliver.',
   targetDeviceId:
     "Which of the recipient's registered devices this copy is for. Each device gets its own separately encrypted envelope.",
   senderUserId:
@@ -99,9 +99,9 @@ const NOTES = {
   serverTimestamp: 'Assigned by the relay on accept. Real relays assign this too.',
   clientMessageId:
     'Sender-generated send id, a UUID, so a retry after an unknown result is recognized as the same send rather than stored twice. Set before encryption. The relay reads it to deduplicate, so it stays visible under sealed sender.',
-  id: "Relay-assigned envelope id. The msg-N form is this site's relay counting sends; a production relay assigns its own id format.",
+  id: "Envelope id that the relay assigns. The msg-N form is this site's relay counting sends; a production relay assigns its own id format.",
   recipientRegistrationId:
-    'Recipient device registration id, sent so the relay/recipient can detect a device reinstall. Present only on prekey_bundle envelopes. Protocol-level.',
+    'Recipient device registration id, sent so the relay or the recipient can detect a device reinstall. Present only on prekey_bundle envelopes. Protocol-level.',
   contentHint:
     'How the recipient should behave if this message fails to decrypt — RESENDABLE means it is content worth requesting again, rather than a typing indicator to discard. It says nothing about what the content is.',
   ciphertext: (chars) =>
@@ -116,7 +116,7 @@ const NOTES = {
  * the recorded text does. The file is written to a temporary directory at the
  * repository root for two reasons: Node resolves the SDK's bare specifier by
  * walking up from the importing file, and Node strips the types of the site's
- * `relay.ts` only outside `node_modules`.
+ * `signal-relay.ts` only outside `node_modules`.
  */
 async function run() {
   const repo = fileURLToPath(new URL('../', HERE));
@@ -150,7 +150,7 @@ const ciphertext =
  *
  * An optional field the sender left unset is dropped rather than printed. The
  * envelope object can carry the key with an `undefined` value, and JSON
- * serialization drops those from `relayRecord` regardless, so keeping them
+ * serialization drops those from `signalRelayRecord` regardless, so keeping them
  * would put a row reading "undefined" on a panel whose claim is that it shows
  * what the relay held. It did not hold them.
  */
@@ -176,7 +176,7 @@ const capture = {
   capturedAt: new Date().toISOString(),
   plaintext: PLAINTEXT,
   quickstartCode: PROGRAM,
-  relayRecord: { ...envelope, ciphertext },
+  signalRelayRecord: { ...envelope, ciphertext },
   ciphertext,
   ciphertextStringLength: ciphertext.length,
   ciphertextBytes: Buffer.from(ciphertext, 'base64').length,

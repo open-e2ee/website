@@ -1,7 +1,7 @@
 ---
-import RelayMailboxes from '../../components/diagrams/RelayMailboxes.astro';
+import SignalProtocolRelayMailboxes from '../../components/diagrams/SignalProtocolRelayMailboxes.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { relayPlans } from '../../data/relay-pricing.mjs';
+import { signalRelayPlans } from '../../data/signal-relay-pricing.mjs';
 import { startAction, startPromise } from '../../lib/site-navigation';
 import {
   ACTIONS,
@@ -20,7 +20,7 @@ import {
 } from '../../lib/recipes';
 
 /* The header's start control names this route; the page never writes it twice. */
-const RELAY_PROJECT = startAction.href;
+const SIGNAL_RELAY_PROJECT = startAction.href;
 
 /*
  * Read from the catalog rather than typed. The capacity is a product contract,
@@ -28,7 +28,7 @@ const RELAY_PROJECT = startAction.href;
  * this file, and a page that prints the numbers by hand is correct on the day it
  * ships.
  */
-const free = relayPlans.find((plan) => plan.id === 'relay_free_v1');
+const free = signalRelayPlans.find((plan) => plan.id === 'relay_free_v1');
 if (!free) throw new Error('relay/index.astro: the Relay catalog carries no free plan');
 
 /*
@@ -68,7 +68,7 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
           <p class={LEAD}>Ship fully featured end-to-end encrypted messaging, securely, and at scale. Run encrypted device mailboxes, zero-knowledge group credentials, group fan-out, attachment storage, and device push wake notifications without running delivery infrastructure. The SDK runs on each device and reaches Relay through one connection URL.</p>
           {/* The first two of the four Relay boundary statements. docs/messaging.md
               publishes them as a set, and the other two stand in the band that
-              names what Relay operates. tests/relay-page.test.mjs holds all
+              names what Relay operates. tests/signal-relay-page.test.mjs holds all
               four on the built page. */}
           <p>The Signal Protocol Relay stores ciphertext, delivery status, and the account, device, route, timing, size, quota, and abuse metadata that delivery requires. The relay never needs message plaintext or device private keys.</p>
           {/* Two actions and one order. The primary creates the project, which
@@ -76,7 +76,7 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
               secondary is the reading a developer who wants the shape of the
               API before an account asks for. */}
           <div class={ACTIONS}>
-            <a class="oe-button oe-button-stacked" href={RELAY_PROJECT}>{startAction.label}{' '}<span class="oe-button-note">{startPromise}</span></a>
+            <a class="oe-button oe-button-stacked" href={SIGNAL_RELAY_PROJECT}>{startAction.label}{' '}<span class="oe-button-note">{startPromise}</span></a>
             <a class="oe-button oe-button-secondary" href="https://docs.open-e2ee.dev/relay">Read the quickstart</a>
           </div>
         </div>
@@ -84,7 +84,7 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
           <p class={LABEL}>{free.name}</p>
           <p class={START_PRICE}>{free.price}</p>
           <ul class={START_CAPACITY}>
-            <li>{free.relayMau} Relay MAU</li>
+            <li>{free.signalRelayMau} Relay MAU</li>
             <li>{free.deliveryUnits} delivery units</li>
             <li>{free.storage} storage</li>
           </ul>
@@ -102,7 +102,7 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
         <p class={MEASURE}>A mailbox for each device, not one for each account. A device that has been offline for a week pulls what it missed, and a device added today receives what is sent from that moment.</p>
       </div>
       <figure class="diagram diagram-wide">
-        <RelayMailboxes />
+        <SignalProtocolRelayMailboxes />
         <figcaption>
           The application seals on the device. Relay stores and routes the sealed envelope, and the
           metadata ticks are what it reads to do that: the account, device, route, timing, size,
@@ -147,7 +147,7 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
       </dl>
       <p class={TEXT_LINKS}>
         <a href="https://docs.open-e2ee.dev/relay">Read the Relay quickstart</a>
-        <a href={RELAY_PROJECT}>Start a Relay project</a>
+        <a href={SIGNAL_RELAY_PROJECT}>Start a Relay project</a>
       </p>
     </div>
   </section>

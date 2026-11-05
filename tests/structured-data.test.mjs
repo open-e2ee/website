@@ -258,12 +258,12 @@ test('built pricing exposes Relay service offers without merchant Product markup
     return skipUnbuilt('dist/pricing/index.html');
   }
   const html = await read('dist/pricing/index.html');
-  const { relayPlans } = await import('../src/data/relay-pricing.mjs');
+  const { signalRelayPlans } = await import('../src/data/signal-relay-pricing.mjs');
   assert.doesNotMatch(html, /itemtype="https:\/\/schema.org\/Product"/);
   const table = html.match(/<table[^>]*itemtype="https:\/\/schema.org\/Service"[^>]*>([\s\S]*?)<\/table>/)?.[1];
   assert.ok(table, 'the rendered plan table describes the hosted service');
   const offers = table.split('<th ').filter((cell) => cell.includes('itemtype="https://schema.org/Offer"')).map((cell) => cell.split('</th>')[0]);
-  const plans = relayPlans.filter((plan) => plan.monthlyPriceUsd !== null);
+  const plans = signalRelayPlans.filter((plan) => plan.monthlyPriceUsd !== null);
   assert.equal(offers.length, plans.length);
   for (const [index, offer] of offers.entries()) {
     assert.match(offer, /itemprop="priceCurrency" content="USD"/);

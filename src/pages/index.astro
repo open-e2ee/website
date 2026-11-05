@@ -12,7 +12,7 @@ import HeroSnippet from '../components/HeroSnippet.astro';
 import OsiMark from '../components/OsiMark.astro';
 import PlatformStrip from '../components/PlatformStrip.astro';
 import TypeScriptMark from '../components/TypeScriptMark.astro';
-import { relayPlans } from '../data/relay-pricing.mjs';
+import { signalRelayPlans } from '../data/signal-relay-pricing.mjs';
 import {
   ACTIONS,
   BAND,
@@ -147,23 +147,23 @@ const HERO_MARKS = 'text-[0.9375rem] leading-[1.55] text-text-3';
  * one who arrived, and asking them to scroll back up is asking them to decide
  * twice.
  */
-const RELAY_START = 'mt-8 flex flex-col items-start gap-3';
+const SIGNAL_RELAY_START = 'mt-8 flex flex-col items-start gap-3';
 
-const RELAY_HEADING = 'text-[1.0625rem] leading-tight font-semibold text-text-1';
+const SIGNAL_RELAY_HEADING = 'text-[1.0625rem] leading-tight font-semibold text-text-1';
 
 /*
  * The Console route that creates a project. A plan is activated inside a
  * project, and the project is what this route makes; /pricing sends its five
  * plan columns to the same place for the same reason.
  */
-const RELAY_PROJECT = startAction.href;
+const SIGNAL_RELAY_PROJECT = startAction.href;
 
 /*
  * Read from the catalog rather than typed. The capacity below is a product
  * contract that is edited by someone who has no reason to open this file, and
  * a homepage that prints the numbers by hand is correct on the day it ships.
  */
-const free = relayPlans.find((plan) => plan.id === 'relay_free_v1');
+const free = signalRelayPlans.find((plan) => plan.id === 'relay_free_v1');
 if (!free) throw new Error('index.astro: the Relay catalog carries no free plan');
 
 /*
@@ -344,7 +344,7 @@ const differentiators: Differentiator[] = [
    *
    * "Nothing phones home" is the line an on-premises reader is actually
    * asking about: no telemetry, no license check, and no egress this package
-   * opens on its own. The managed Relay option is a separate deployment choice,
+   * opens on its own. The Signal Protocol Relay option is a separate deployment choice,
    * so this self-hosting row must not imply that OpenE2EE has no hosted product.
    *
    * The limit is written as the property that produces it rather than as a
@@ -510,7 +510,7 @@ const runtimes = [
         </p>
         <div class:list={[ACTIONS, 'justify-center']} data-actions="hero">
           {/* The hero opens the visual demo. The header also offers the playground. */}
-          <a class="oe-button oe-button-stacked" href={RELAY_PROJECT}>Start a Relay project{' '}<span class="oe-button-note">{startPromise}</span></a>
+          <a class="oe-button oe-button-stacked" href={SIGNAL_RELAY_PROJECT}>Start a Relay project{' '}<span class="oe-button-note">{startPromise}</span></a>
           <a class="oe-button oe-button-secondary" href="#demo">See the demo</a>
         </div>
         {/* The credentials, under the offer. */}
@@ -573,7 +573,7 @@ const runtimes = [
         <HeroSnippet />
         {/* The caption, the "Not in this example, and yours to supply"
             disclosure list, and the objections group that followed — the two
-            "Why not" paragraphs, the relay-formula line, and the maturity and
+            "Why not" paragraphs, the relay formula line, and the maturity and
             license line — were cut by founder decision on 2026-08-09 as
             explanatory hedging the hero does not carry. The facts they stated
             did not leave the site: /security carries the relay formula and the
@@ -613,10 +613,10 @@ const runtimes = [
         <div><dt>Groups and files</dt><dd>Bounded group fan-out and private encrypted attachment storage, so an application server does not become message infrastructure.</dd></div>
         <div><dt>Operations</dt><dd>Push wakes, exact usage, quotas, lifecycle controls, and recovery drills.</dd></div>
       </dl>
-      <div class={RELAY_START} data-actions="relay">
-        <h3 class={RELAY_HEADING}>{free.name}</h3>
-        <p class={MEASURE}>Production traffic at {free.price}: {free.relayMau} Relay MAU, {free.deliveryUnits} delivery units, and {free.storage} storage, under hard caps with no automatic charge. Every project also opens a Sandbox environment, which needs no card.</p>
-        <a class="oe-button" href={RELAY_PROJECT}>Start a Relay project</a>
+      <div class={SIGNAL_RELAY_START} data-actions="signal-relay">
+        <h3 class={SIGNAL_RELAY_HEADING}>{free.name}</h3>
+        <p class={MEASURE}>Production traffic at {free.price}: {free.signalRelayMau} Relay MAU, {free.deliveryUnits} delivery units, and {free.storage} storage, under hard caps with no automatic charge. Every project also opens a Sandbox environment, which needs no card.</p>
+        <a class="oe-button" href={SIGNAL_RELAY_PROJECT}>Start a Relay project</a>
       </div>
       <p class:list={['mt-8', TEXT_LINKS]}><a href="/relay">What Relay operates</a><a href="/pricing">Relay plans and limits</a></p>
     </div>

@@ -1,16 +1,16 @@
 /*
  * The exchange that /playground runs.
  *
- * Two SDK clients talk through `pageRelay()`, the relay that this website owns.
+ * Two SDK clients talk through `pageSignalProtocolRelay()`, the relay that this website owns.
  * It implements the SDK's `SignalProtocolRelayServer` contract in the memory of
  * this tab, so no envelope, key, or device record leaves the page. Every other
  * call here is a public SDK call. An application that connects separate devices
  * uses the OpenE2EE Signal Protocol Relay or a relay of its own in place of
- * `pageRelay()`.
+ * `pageSignalProtocolRelay()`.
  */
 import { createSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
-import { pageRelay } from '../../src/lib/demo/relay.ts';
+import { pageSignalProtocolRelay } from '../../src/lib/demo/signal-relay.ts';
 
 type Client = Awaited<ReturnType<typeof createSignalProtocolClient>>;
 
@@ -19,7 +19,7 @@ export async function runExchange(message: string, log: (line: string) => void):
     throw new Error('Enter a message with 1 to 2000 characters.');
   }
 
-  const relay = pageRelay();
+  const relay = pageSignalProtocolRelay();
   const aliceId = await relay.registerDevice('alice', { encryptedDeviceName: new ArrayBuffer(0) });
   const bobId = await relay.registerDevice('bob', { encryptedDeviceName: new ArrayBuffer(0) });
   const clients: Client[] = [];

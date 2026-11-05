@@ -106,7 +106,7 @@ test('draws it with the published grammar, and never with alpha', async () => {
 
   /* The carrier is a pair. One bracket is a different mark, and this repository
      shipped that bug on its own social card for two releases. */
-  const source = await read('../src/components/diagrams/RelayMailboxes.astro');
+  const source = await read('../src/components/diagrams/SignalProtocolRelayMailboxes.astro');
   assert.match(source, /from '@open-e2ee\/design\/diagram'/);
   assert.doesNotMatch(
     source,

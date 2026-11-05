@@ -8,15 +8,15 @@
  * `/legal/relay-terms` renders this component. The dated page under
  * `/legal/relay-terms/` holds a literal snapshot of the same text and never
  * imports this file; tests/legal-pages.test.mjs enforces that, and asserts
- * that every price and included quantity in src/data/relay-pricing.mjs is
+ * that every price and included quantity in src/data/signal-relay-pricing.mjs is
  * stated here, so a price change cannot ship without a new version.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TableScroll from '../components/TableScroll.astro';
 import {
-  relayTermsEffectiveDate,
-  relayTermsPath,
-  relayTermsVersion,
+  signalRelayTermsEffectiveDate,
+  signalRelayTermsPath,
+  signalRelayTermsVersion,
 } from '../lib/legal.mjs';
 import {
   ARTICLE_COLUMN,
@@ -48,12 +48,12 @@ import {
           the Signal Protocol Relay.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {relayTermsEffectiveDate}</span>
-          <span>Version {relayTermsVersion}</span>
+          <span>Effective {signalRelayTermsEffectiveDate}</span>
+          <span>Version {signalRelayTermsVersion}</span>
         </p>
         <p class={LEGAL_PIN}>
           The current version of these Terms applies to every Customer. The permanent copy of this version is at{' '}
-          <a href={relayTermsPath}><code>{relayTermsPath}</code></a>.
+          <a href={signalRelayTermsPath}><code>{signalRelayTermsPath}</code></a>.
         </p>
       </div>
     </header>

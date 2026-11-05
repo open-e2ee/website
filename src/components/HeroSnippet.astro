@@ -8,7 +8,7 @@ import { codeThemes } from '../lib/code-theme.mjs';
 import {
   defaultVariant,
   installCommand,
-  relayOptions,
+  signalRelayOptions,
   snippetVariants,
   storageOptions,
 } from '../lib/hero-snippet.mjs';
@@ -158,10 +158,10 @@ import {
       </label>
       <label class="code-select">
         <span class="code-select-label">Relay<span class="code-select-qualifier"> Server</span></span>
-        <select data-adapter="relay">
+        <select data-adapter="signal-relay">
           {
-            relayOptions.map((option) => (
-              <option value={option.id} selected={option.id === defaultVariant.relay}>
+            signalRelayOptions.map((option) => (
+              <option value={option.id} selected={option.id === defaultVariant.signalRelay}>
                 {option.label}
               </option>
             ))
@@ -235,7 +235,7 @@ import {
         <div
           class="code-variant"
           data-storage={variant.storage}
-          data-relay={variant.relay}
+          data-signal-relay={variant.signalRelay}
           hidden={!variant.isDefault}
         >
           <Code
@@ -244,7 +244,7 @@ import {
             themes={codeThemes}
             defaultColor={false}
             role="group"
-            aria-label={`Quickstart example, ${variant.storageLabel} store, ${variant.relayLabel}`}
+            aria-label={`Quickstart example, ${variant.storageLabel} store, ${variant.signalRelayLabel}`}
           />
           {/* The disclosure that used to sit here as a `<p class="code-note">` is
               in the program now. A name the program can bind is bound by an
@@ -307,7 +307,7 @@ import {
     for (const select of selects) wanted[select.dataset.adapter ?? ''] = select.value;
     for (const variant of variants) {
       const match =
-        variant.dataset.storage === wanted.storage && variant.dataset.relay === wanted.relay;
+        variant.dataset.storage === wanted.storage && variant.dataset.signalRelay === wanted['signal-relay'];
       variant.hidden = !match;
     }
     /* The shown block's own accessible name is already the sentence this

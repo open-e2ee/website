@@ -6,7 +6,7 @@ import sdkManifest from '@open-e2ee/signal-protocol-sdk/package.json';
 /*
  * The proof moment. Both panes come from `src/data/carrier-capture.json`,
  * which `scripts/record-carrier-capture.mjs` writes by running two SDK clients
- * against the page relay (`src/lib/demo/relay.ts`) and reading the envelope
+ * against the page relay (`src/lib/demo/signal-relay.ts`) and reading the envelope
  * the relay actually held. Nothing in this component is drawn, mocked up, or
  * hand-typed: if the recorded ciphertext were replaced by something
  * plausible-looking, the page would be making exactly the claim the brand
@@ -86,7 +86,7 @@ const recordedAtInstalled = capture.sdkVersion === installedVersion;
       coming back out is the live panel's half of the story. */}
   <CarrierBoundary kind="seal" />
 
-  <div class="carrier-pane carrier-pane-relay">
+  <div class="carrier-pane carrier-pane-signal-relay">
     <span class="label">relay — the stored envelope</span>
     {/*
       The blob is hidden from assistive technology and the note below is not.
@@ -112,7 +112,7 @@ const recordedAtInstalled = capture.sdkVersion === installedVersion;
       ))}
     </dl>
     <p class="carrier-cipher-note">
-      and a relay-assigned envelope id, in whatever format your relay assigns
+      and an envelope id that your relay assigns, in its own format
     </p>
   </div>
 

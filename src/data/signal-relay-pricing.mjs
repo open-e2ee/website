@@ -1,4 +1,4 @@
-import { formatRelayRate, relayEarlierServiceCatalog, relayServiceCatalog } from './relay-service-catalog.mjs';
+import { formatSignalProtocolRelayRate, signalRelayEarlierServiceCatalog, signalRelayServiceCatalog } from './signal-relay-service-catalog.mjs';
 
 const count = (value) => value.toLocaleString('en-US');
 const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB` : `${bytes / 1_000_000} MB`;
@@ -11,10 +11,10 @@ const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB
  */
 
 /* Production ciphertext retention on every production plan. */
-export const relayProductionRetention = 'Up to 30 days';
+export const signalRelayProductionRetention = 'Up to 30 days';
 
 const sandboxEnvironment = (sandbox) => ({
-  relayMau: `${count(sandbox.monthlyActiveUsers)} test accounts`,
+  signalRelayMau: `${count(sandbox.monthlyActiveUsers)} test accounts`,
   deliveryUnits: count(sandbox.deliveryUnits),
   attachmentOperations: count(sandbox.attachmentOperations),
   storage: storage(sandbox.storageBytes),
@@ -29,19 +29,19 @@ const planNames = {
   relay_business_v1: 'Business',
 };
 
-const relayPlan = (plan) => ({
+const signalRelayPlan = (plan) => ({
   id: plan.planId,
   name: planNames[plan.planId],
   monthlyPriceUsd: Number(BigInt(plan.monthlyPriceMicrounits) / 1_000_000n),
-  price: formatRelayRate({ numerator: plan.monthlyPriceMicrounits, denominator: '1' }, 1n, 0),
-  relayMau: count(plan.monthlyActiveUsers),
+  price: formatSignalProtocolRelayRate({ numerator: plan.monthlyPriceMicrounits, denominator: '1' }, 1n, 0),
+  signalRelayMau: count(plan.monthlyActiveUsers),
   deliveryUnits: count(plan.deliveryUnits),
   attachmentOperations: count(plan.attachmentOperations),
   storage: storage(plan.storageBytes),
   overage: plan.overageRates ? {
-    relayMau: formatRelayRate(plan.overageRates.relay_mau),
-    delivery: `${formatRelayRate(plan.overageRates.delivery_units, 1_000_000n, 0)} per million`,
-    storage: `${formatRelayRate(plan.overageRates.storage_byte_month, 1_000_000_000n)} per GB-month`,
+    signalRelayMau: formatSignalProtocolRelayRate(plan.overageRates.relay_mau),
+    delivery: `${formatSignalProtocolRelayRate(plan.overageRates.delivery_units, 1_000_000n, 0)} per million`,
+    storage: `${formatSignalProtocolRelayRate(plan.overageRates.storage_byte_month, 1_000_000_000n)} per GB-month`,
   } : null,
   detail: plan.overageRates ? 'Per month. Optional overage needs explicit acceptance and a spend limit.'
     : 'Production roots, hard capacity caps, and no automatic charge.',
@@ -52,7 +52,7 @@ const enterprise = {
   name: 'Enterprise',
   monthlyPriceUsd: null,
   price: 'Custom',
-  relayMau: 'Negotiated',
+  signalRelayMau: 'Negotiated',
   deliveryUnits: 'Negotiated',
   attachmentOperations: 'Negotiated',
   storage: 'Negotiated',
@@ -64,29 +64,29 @@ const enterprise = {
  * A catalog plan that no dated Relay terms version states yet, with the terms
  * version it waits for. The site does not publish it. The pull request that
  * adds the dated terms version removes the plan from this map, and the plan
- * then takes its catalog place in relayPlans.
+ * then takes its catalog place in signalRelayPlans.
  */
 const awaitingTerms = new Map([['relay_hobby_v1', null]]);
 
-export const upcomingRelayPlans = relayServiceCatalog.plans
+export const upcomingSignalProtocolRelayPlans = signalRelayServiceCatalog.plans
   .filter(({ planId }) => awaitingTerms.has(planId))
-  .map((plan) => ({ ...relayPlan(plan), termsVersion: awaitingTerms.get(plan.planId) }));
+  .map((plan) => ({ ...signalRelayPlan(plan), termsVersion: awaitingTerms.get(plan.planId) }));
 
 const freePlanId = 'relay_free_v1';
-const publishedFree = relayPlan(relayEarlierServiceCatalog.plans.find(({ planId }) => planId === freePlanId));
-const publishedSandbox = sandboxEnvironment(relayEarlierServiceCatalog.sandbox);
+const publishedFree = signalRelayPlan(signalRelayEarlierServiceCatalog.plans.find(({ planId }) => planId === freePlanId));
+const publishedSandbox = sandboxEnvironment(signalRelayEarlierServiceCatalog.sandbox);
 
 /*
  * Keep the date parameter for the comparison caller. Dates do not qualify new
  * Free or Sandbox terms. This matches Relay's unqualified catalog selection.
  */
-export function relayPricingAt(at) {
+export function signalRelayPricingAt(at) {
   void at;
   return {
     plans: [
-      ...relayServiceCatalog.plans
+      ...signalRelayServiceCatalog.plans
         .filter(({ planId }) => !awaitingTerms.has(planId))
-        .map((plan) => plan.planId === freePlanId ? publishedFree : relayPlan(plan)),
+        .map((plan) => plan.planId === freePlanId ? publishedFree : signalRelayPlan(plan)),
       enterprise,
     ],
     sandboxEnvironment: publishedSandbox,
@@ -95,14 +95,14 @@ export function relayPricingAt(at) {
 }
 
 /* Record the build instant without using it as catalog authority. */
-export const relayPricingInstant = new Date();
+export const signalRelayPricingInstant = new Date();
 
-const atBuild = relayPricingAt(relayPricingInstant);
-export const relayPlans = atBuild.plans;
-export const relaySandboxEnvironment = atBuild.sandboxEnvironment;
-export const relayLimitsChange = atBuild.limitsChange;
+const atBuild = signalRelayPricingAt(signalRelayPricingInstant);
+export const signalRelayPlans = atBuild.plans;
+export const signalRelaySandboxEnvironment = atBuild.sandboxEnvironment;
+export const signalRelayLimitsChange = atBuild.limitsChange;
 
-export const relayMeterDefinitions = [
+export const signalRelayMeterDefinitions = [
   {
     name: 'Relay MAU',
     definition: 'One canonical account with qualifying authenticated production activity during one UTC calendar month. Multiple devices for one account count once.',

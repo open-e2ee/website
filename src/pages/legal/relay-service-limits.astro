@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
-  relayServiceLimitsEffectiveDate,
-  relayServiceLimitsPath,
-  relayServiceLimitsVersion,
+  signalRelayServiceLimitsEffectiveDate,
+  signalRelayServiceLimitsPath,
+  signalRelayServiceLimitsVersion,
 } from '../../lib/legal.mjs';
 import {
   ARTICLE_COLUMN,
@@ -27,12 +27,12 @@ import {
         <h1>OpenE2EE Signal Protocol Relay Service Limits</h1>
         <p class={LEAD}>The operating boundary for capacity, support, and service commitments.</p>
         <p class={ARTICLE_META}>
-          <span>Effective {relayServiceLimitsEffectiveDate}</span>
-          <span>Version {relayServiceLimitsVersion}</span>
+          <span>Effective {signalRelayServiceLimitsEffectiveDate}</span>
+          <span>Version {signalRelayServiceLimitsVersion}</span>
         </p>
         <p class={LEGAL_PIN}>
           The Relay terms incorporate this document. The permanent copy of this version is at{' '}
-          <a href={relayServiceLimitsPath}><code>{relayServiceLimitsPath}</code></a>.
+          <a href={signalRelayServiceLimitsPath}><code>{signalRelayServiceLimitsPath}</code></a>.
         </p>
       </div>
     </header>

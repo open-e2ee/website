@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { relayPricingAt, upcomingRelayPlans } from '../src/data/relay-pricing.mjs';
-import { relayServiceCatalog } from '../src/data/relay-service-catalog.mjs';
+import { signalRelayPricingAt, upcomingSignalProtocolRelayPlans } from '../src/data/signal-relay-pricing.mjs';
+import { signalRelayServiceCatalog } from '../src/data/signal-relay-service-catalog.mjs';
 
 /*
  * The public guards compare the qualified plans with the dated terms. A date
@@ -24,7 +24,7 @@ function unstatedValues(terms, plans, sandbox) {
   };
   for (const plan of plans) {
     states(plan.price, `the ${plan.name} price`);
-    states(plan.relayMau, `the ${plan.name} Relay MAU allowance`);
+    states(plan.signalRelayMau, `the ${plan.name} Relay MAU allowance`);
     states(plan.deliveryUnits, `the ${plan.name} delivery units`);
     states(plan.attachmentOperations, `the ${plan.name} attachment uploads`);
     states(plan.storage, `the ${plan.name} storage`);
@@ -47,8 +47,8 @@ function unstatedRows(terms, plans) {
     const row = rows.find(([, name]) => name === plan.name);
     const stated = row ? [...row[2].matchAll(/<td>([^<]+)<\/td>/g)].map(([, cell]) => cell) : null;
     const due = [
-      plan.price, plan.relayMau, plan.deliveryUnits, plan.attachmentOperations, plan.storage,
-      plan.overage?.relayMau ?? 'Hard cap', plan.overage?.delivery ?? 'Hard cap', plan.overage?.storage ?? 'Hard cap',
+      plan.price, plan.signalRelayMau, plan.deliveryUnits, plan.attachmentOperations, plan.storage,
+      plan.overage?.signalRelayMau ?? 'Hard cap', plan.overage?.delivery ?? 'Hard cap', plan.overage?.storage ?? 'Hard cap',
     ];
     if (JSON.stringify(stated) !== JSON.stringify(due)) mismatched.push({ plan: plan.name, due, stated });
   }
@@ -58,7 +58,7 @@ function unstatedRows(terms, plans) {
 test('terms gate: the published catalog matches the dated terms at every build instant', async () => {
   const terms = await read(TERMS);
   for (const at of [beforeCut, new Date('2026-11-01T00:00:00Z'), new Date('2030-01-01T00:00:00Z')]) {
-    const { plans, sandboxEnvironment } = relayPricingAt(at);
+    const { plans, sandboxEnvironment } = signalRelayPricingAt(at);
     assert.deepEqual(unstatedValues(terms, plans, sandboxEnvironment), [], at.toISOString());
     assert.deepEqual(unstatedRows(terms, plans), [], at.toISOString());
   }
@@ -66,16 +66,16 @@ test('terms gate: the published catalog matches the dated terms at every build i
 
 test('terms gate: names every proposed catalog value the dated Relay terms do not state', async () => {
   const terms = await read(TERMS);
-  const { plans, sandboxEnvironment } = relayPricingAt(beforeCut);
+  const { plans, sandboxEnvironment } = signalRelayPricingAt(beforeCut);
   const count = (value) => value.toLocaleString('en-US');
   const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB` : `${bytes / 1_000_000} MB`;
-  const free = relayServiceCatalog.plans.find(({ planId }) => planId === 'relay_free_v1');
-  const proposedFree = { ...plans[0], relayMau: count(free.monthlyActiveUsers), deliveryUnits: count(free.deliveryUnits),
+  const free = signalRelayServiceCatalog.plans.find(({ planId }) => planId === 'relay_free_v1');
+  const proposedFree = { ...plans[0], signalRelayMau: count(free.monthlyActiveUsers), deliveryUnits: count(free.deliveryUnits),
     attachmentOperations: count(free.attachmentOperations), storage: storage(free.storageBytes) };
-  const proposedSandbox = { ...sandboxEnvironment, relayMau: `${count(relayServiceCatalog.sandbox.monthlyActiveUsers)} test accounts`,
-    deliveryUnits: count(relayServiceCatalog.sandbox.deliveryUnits), attachmentOperations: count(relayServiceCatalog.sandbox.attachmentOperations),
-    storage: storage(relayServiceCatalog.sandbox.storageBytes) };
-  const due = [proposedFree, ...upcomingRelayPlans, ...plans.slice(1)];
+  const proposedSandbox = { ...sandboxEnvironment, signalRelayMau: `${count(signalRelayServiceCatalog.sandbox.monthlyActiveUsers)} test accounts`,
+    deliveryUnits: count(signalRelayServiceCatalog.sandbox.deliveryUnits), attachmentOperations: count(signalRelayServiceCatalog.sandbox.attachmentOperations),
+    storage: storage(signalRelayServiceCatalog.sandbox.storageBytes) };
+  const due = [proposedFree, ...upcomingSignalProtocolRelayPlans, ...plans.slice(1)];
   /* The value check finds "25" and "250 MB" elsewhere in the terms text. The
      row check names the complete Free and Hobby rows. */
   assert.deepEqual(unstatedValues(terms, due, proposedSandbox), [
@@ -84,10 +84,10 @@ test('terms gate: names every proposed catalog value the dated Relay terms do no
     'the Hobby price: $9',
     'the Hobby delivery units: 50,000',
     'the Hobby attachment uploads: 10,000',
-    'the Hobby relayMau overage rate: $0.10',
+    'the Hobby signalRelayMau overage rate: $0.10',
     'the Hobby delivery overage rate: $400 per million',
     'the Hobby storage overage rate: $2.00 per GB-month',
-    'the Sandbox environment relayMau: 5 test accounts',
+    'the Sandbox environment signalRelayMau: 5 test accounts',
     'the Sandbox environment deliveryUnits: 10,000',
     'the Sandbox environment attachmentOperations: 2,500',
     'the Sandbox environment storage: 100 MB',

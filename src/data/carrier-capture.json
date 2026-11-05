@@ -3,8 +3,8 @@
   "packageName": "@open-e2ee/signal-protocol-sdk",
   "capturedAt": "2026-10-24T16:28:39.693Z",
   "plaintext": "Dinner at 7. I got us the table by the window.",
-  "quickstartCode": "import { createSignalProtocolClient } from \"@open-e2ee/signal-protocol-sdk\";\nimport { inMemoryStore } from \"@open-e2ee/signal-protocol-sdk/local/store/memory\";\nimport { pageRelay } from \"../src/lib/demo/relay.ts\";\n\nconst relay = pageRelay();\nawait relay.registerDevice(\"alice\", { encryptedDeviceName: new ArrayBuffer(0) });\nawait relay.registerDevice(\"bob\", { encryptedDeviceName: new ArrayBuffer(0) });\n\nconst alice = await createSignalProtocolClient({\n  identity: { userId: \"alice\" },\n  adapters: { storage: inMemoryStore(), relay },\n});\nconst bob = await createSignalProtocolClient({\n  identity: { userId: \"bob\" },\n  adapters: { storage: inMemoryStore(), relay },\n});\n\nawait alice.send(\"bob\", \"Dinner at 7. I got us the table by the window.\");\n\n// This is all the relay ever holds:\nconst [envelope] = relay.getPendingMessages(\"bob\", 1);\n\nbob.registerHook(\"onMessageDecrypted\", async (message) => {\n  console.log(message.content); // plaintext, only on Bob's device\n});\nbob.startRelaySubscription();",
-  "relayRecord": {
+  "quickstartCode": "import { createSignalProtocolClient } from \"@open-e2ee/signal-protocol-sdk\";\nimport { inMemoryStore } from \"@open-e2ee/signal-protocol-sdk/local/store/memory\";\nimport { pageSignalProtocolRelay } from \"../src/lib/demo/signal-relay.ts\";\n\nconst relay = pageSignalProtocolRelay();\nawait relay.registerDevice(\"alice\", { encryptedDeviceName: new ArrayBuffer(0) });\nawait relay.registerDevice(\"bob\", { encryptedDeviceName: new ArrayBuffer(0) });\n\nconst alice = await createSignalProtocolClient({\n  identity: { userId: \"alice\" },\n  adapters: { storage: inMemoryStore(), relay },\n});\nconst bob = await createSignalProtocolClient({\n  identity: { userId: \"bob\" },\n  adapters: { storage: inMemoryStore(), relay },\n});\n\nawait alice.send(\"bob\", \"Dinner at 7. I got us the table by the window.\");\n\n// This is all the relay ever holds:\nconst [envelope] = relay.getPendingMessages(\"bob\", 1);\n\nbob.registerHook(\"onMessageDecrypted\", async (message) => {\n  console.log(message.content); // plaintext, only on Bob's device\n});\nbob.startRelaySubscription();",
+  "signalRelayRecord": {
     "targetUserId": "bob",
     "targetDeviceId": 1,
     "senderUserId": "alice",
@@ -25,7 +25,7 @@
     {
       "field": "targetUserId",
       "value": "bob",
-      "note": "Recipient account the relay must route to. Protocol/relay-level: any real relay needs this to deliver."
+      "note": "Recipient account the relay must route to. Protocol and relay level: any real relay needs this to deliver."
     },
     {
       "field": "targetDeviceId",
@@ -70,12 +70,12 @@
     {
       "field": "recipientRegistrationId",
       "value": "13702",
-      "note": "Recipient device registration id, sent so the relay/recipient can detect a device reinstall. Present only on prekey_bundle envelopes. Protocol-level."
+      "note": "Recipient device registration id, sent so the relay or the recipient can detect a device reinstall. Present only on prekey_bundle envelopes. Protocol-level."
     },
     {
       "field": "id",
       "value": "msg-1",
-      "note": "Relay-assigned envelope id. The msg-N form is this site's relay counting sends; a production relay assigns its own id format."
+      "note": "Envelope id that the relay assigns. The msg-N form is this site's relay counting sends; a production relay assigns its own id format."
     },
     {
       "field": "serverTimestamp",

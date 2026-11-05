@@ -247,13 +247,13 @@ function senderOf(cue: SceneCue): Side {
  * run time, which catches the same drift arriving from the other direction: a
  * step removed from the protocol and left behind here.
  *
- * `relay` names the rack and not a slot on it, and the coarseness is deliberate.
+ * `signal-relay` names the rack and not a slot on it, and the coarseness is deliberate.
  * The relay keeps a mailbox per recipient, so *which* mailbox is a fact about
  * the message rather than about the step, and `anchorFor` reads it off the cue.
  * A pair of entries here would put a per-message fact in a per-step table, which
  * is the shape the old drawing had: one mailbox, belonging to nobody.
  */
-export const ENVELOPE_AT: Record<Step, 'sender' | 'relay' | 'receiver' | null> = {
+export const ENVELOPE_AT: Record<Step, 'sender' | 'signal-relay' | 'receiver' | null> = {
   idle: null,
   registered: null,
   'generating-keys': null,
@@ -261,8 +261,8 @@ export const ENVELOPE_AT: Record<Step, 'sender' | 'relay' | 'receiver' | null> =
   'bundles-published': null,
   'session-established': null,
   encrypted: 'sender',
-  'in-transit': 'relay',
-  'stored-at-relay': 'relay',
+  'in-transit': 'signal-relay',
+  'stored-at-signal-relay': 'signal-relay',
   delivered: 'receiver',
   opened: 'receiver',
 };
@@ -278,7 +278,7 @@ export const ENVELOPE_AT: Record<Step, 'sender' | 'relay' | 'receiver' | null> =
  * already dark showed the message encrypted while the keys that seal it were
  * still flying in).
  */
-const SEALED_AT = new Set<Step>(['in-transit', 'stored-at-relay', 'delivered', 'opened']);
+const SEALED_AT = new Set<Step>(['in-transit', 'stored-at-signal-relay', 'delivered', 'opened']);
 
 /*
  * The steps that tell one device's registration story. Each device registers
@@ -598,7 +598,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
     }
   }
 
-  function anchorFor(place: 'sender' | 'relay' | 'receiver', cue: SceneCue): HTMLElement {
+  function anchorFor(place: 'sender' | 'signal-relay' | 'receiver', cue: SceneCue): HTMLElement {
     /* Which device is the sender is a fact about the cue rather than a fixed
        side, because either device may start a conversation. */
     const from = senderOf(cue);
@@ -609,7 +609,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
        The bay's *body*, not the bay: the body is the part below the caption
        (the stylesheet stretches it to fill the bay), so the envelope sits in
        the box without covering the word "mailbox". */
-    if (place === 'relay') return slotBody('mailbox', to);
+    if (place === 'signal-relay') return slotBody('mailbox', to);
     if (place === 'sender') return phone(from);
     /* The tile rests beside the phone through the whole arrival, the opening
        included: its move into the conversation is the fold onto the bubble's
@@ -709,7 +709,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       rest only its own, `REGISTRATION_STEPS`' rule. */
   function setLinkTraffic(
     side: Side | null,
-    flow?: 'to-relay' | 'to-device',
+    flow?: 'to-signal-relay' | 'to-device',
     scope: readonly Side[] = SIDES,
   ): void {
     for (const s of scope) {
@@ -987,18 +987,18 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       anchor.dataset.public = 'true';
       anchor.append(keyGlyph());
       const track = document.createElement('span');
-      track.className = 'demo-relay-slot-track';
+      track.className = 'demo-signal-relay-slot-track';
       const bar = document.createElement('span');
-      bar.className = 'demo-relay-slot-bar';
+      bar.className = 'demo-signal-relay-slot-bar';
       track.append(bar);
       const count = document.createElement('span');
-      count.className = 'demo-relay-slot-count';
+      count.className = 'demo-signal-relay-slot-count';
       const parts = [anchor, track, count];
       for (const part of parts) part.hidden = true;
       body.append(...parts);
       return [
         side,
-        { empty: need<HTMLElement>(body, '.demo-relay-slot-empty'), anchor, bar, count, parts },
+        { empty: need<HTMLElement>(body, '.demo-signal-relay-slot-empty'), anchor, bar, count, parts },
       ] as const;
     }),
   ) as Record<
@@ -1070,7 +1070,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
       const holding = waiting === side;
       slot('mailbox', side).dataset.holding = String(holding);
       slotBody('mailbox', side)
-        .querySelector('.demo-relay-slot-empty')
+        .querySelector('.demo-signal-relay-slot-empty')
         ?.toggleAttribute('hidden', holding);
     }
   }
@@ -1489,14 +1489,14 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
          two pushes and two pulls: a publish pushes the burst up the
          publisher's own link, agreeing a session pulls the far bundle down
          the initiator's, sending pushes the envelope up the sender's, and
-         delivery pulls it down the recipient's. `stored-at-relay` lights
+         delivery pulls it down the recipient's. `stored-at-signal-relay` lights
          nothing on purpose — the message is at rest, and a wire lit while
          nothing moves would say the network is busier than it is. `spend.to`
          is the initiator, the device that fetched. */
-      if (publisher) setLinkTraffic(publisher, 'to-relay', scope);
-      else if (registering) setLinkTraffic(registering, 'to-relay', scope);
+      if (publisher) setLinkTraffic(publisher, 'to-signal-relay', scope);
+      else if (registering) setLinkTraffic(registering, 'to-signal-relay', scope);
       else if (spend) setLinkTraffic(spend.to, 'to-device', scope);
-      else if (cue.step === 'in-transit') setLinkTraffic(senderOf(cue), 'to-relay', scope);
+      else if (cue.step === 'in-transit') setLinkTraffic(senderOf(cue), 'to-signal-relay', scope);
       else if (cue.step === 'delivered') setLinkTraffic(recipientOf(cue), 'to-device', scope);
       else setLinkTraffic(null, undefined, scope);
 
@@ -1525,7 +1525,7 @@ export function mountScene(root: HTMLElement, names: SceneNames): SceneView {
          Which mailbox is the one the cue is addressed to. The relay is holding
          the row *for* the far device, so a row appearing over the sender's own
          mailbox would draw the message going nowhere. */
-      holdMailbox(cue.step === 'stored-at-relay' ? recipientOf(cue) : null);
+      holdMailbox(cue.step === 'stored-at-signal-relay' ? recipientOf(cue) : null);
 
       const place = ENVELOPE_AT[cue.step];
       if (place === null) {

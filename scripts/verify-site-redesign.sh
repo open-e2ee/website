@@ -147,7 +147,7 @@ sr_v11() {
 
 sr_v12() {
   have_chrome || return 1
-  npm run visual:relay
+  npm run visual:signal-relay
 }
 
 # --- UIR6.2, the article layout ------------------------------------------------------
@@ -191,7 +191,7 @@ sr_v16() {
 sr_v17() {
   have_demo_css || return 1
   local name
-  for name in demo-relay-slot-empty demo-keyhole-turn demo-mobile-slab demo-phone demo-scene-relay; do
+  for name in demo-signal-relay-slot-empty demo-keyhole-turn demo-mobile-slab demo-phone demo-scene-signal-relay; do
     grep -rq "$name" src/components/demo src/lib/demo || return 1
   done
 }
@@ -304,7 +304,7 @@ sr_v24() {
 # artifact proves nothing.
 
 PRICING=src/pages/pricing.astro
-RELAY_PAGE=src/pages/relay/index.astro
+SIGNAL_RELAY_PAGE=src/pages/relay/index.astro
 HOMEPAGE=src/pages/index.astro
 ARTICLE_CSS=src/styles/article.css
 DIAGRAMS=src/components/diagrams
@@ -345,9 +345,9 @@ sr_v29() {
 # FR5. The flagship page needs a product drawing and a free start. The figure
 # count comes from the built page.
 sr_v30() {
-  test -f "$RELAY_PAGE" || return 1
-  test -f tests/relay-page.test.mjs || return 1
-  node --test --test-reporter=tap tests/relay-page.test.mjs
+  test -f "$SIGNAL_RELAY_PAGE" || return 1
+  test -f tests/signal-relay-page.test.mjs || return 1
+  node --test --test-reporter=tap tests/signal-relay-page.test.mjs
 }
 
 # FR6. The rail overlapped every wide element by 32 px at three widths. This
@@ -371,7 +371,7 @@ sr_v32() {
 # form, and the check asserts every diagram composes it.
 sr_v33() {
   test -d "$DIAGRAMS" || return 1
-  test -f "$BASELINE/diagram-relay-form.txt" || return 1
+  test -f "$BASELINE/diagram-signal-relay-form.txt" || return 1
   node --test --test-reporter=tap tests/diagram-grammar.test.mjs
 }
 

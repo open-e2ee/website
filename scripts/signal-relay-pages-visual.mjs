@@ -7,8 +7,8 @@
  * the supported phone and desktop viewports.
  *
  *   npm run build
- *   npm run visual:relay
- *   npm run visual:relay -- --write
+ *   npm run visual:signal-relay
+ *   npm run visual:signal-relay -- --write
  */
 
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -17,7 +17,7 @@ import { Cdp, Infra, Red, launchChrome, productionHeaders, serve } from './chrom
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const DIST = join(ROOT, 'dist');
-const FIXTURE = join(ROOT, 'tests', 'fixtures', 'relay-pages-layout.json');
+const FIXTURE = join(ROOT, 'tests', 'fixtures', 'signal-relay-pages-layout.json');
 const WRITE = process.argv.includes('--write');
 /* Each page with the scroll regions it exposes. The comparison tables are
    wider than a phone and scroll inside a region each. The plan table is full
@@ -99,7 +99,7 @@ async function main() {
   try {
     const served = await serve(DIST, productionHeaders());
     held.server = served.server;
-    held.chrome = await launchChrome('oe-relay-layout-');
+    held.chrome = await launchChrome('oe-signal-relay-layout-');
     const version = await fetch(`http://127.0.0.1:${held.chrome.port}/json/version`).then((response) => response.json());
     const cdp = await Cdp.connect(version.webSocketDebuggerUrl);
     held.cdp = cdp;

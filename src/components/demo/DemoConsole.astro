@@ -1066,7 +1066,7 @@ const TOGGLES = [
          the moment the relay files it. An envelope drawn in flight with an
          em dash where the recipient goes says the routing is decided somewhere
          between the two, which is the opposite of what this demo is for. These
-         are the names this page gave the two devices; `stored-at-relay` below
+         are the names this page gave the two devices; `stored-at-signal-relay` below
          replaces them with the fields read off the relay's own copy, which is
          where the claim about what the relay can see has to come from. */
       if (event.step === 'encrypted' || event.step === 'in-transit') {
@@ -1097,7 +1097,7 @@ const TOGGLES = [
             : {}),
         };
       }
-      if (event.step === 'stored-at-relay') {
+      if (event.step === 'stored-at-signal-relay') {
         const envelope = (detail.envelope ?? {}) as Record<string, unknown>;
         /* The addressing on the drawn envelope is the addressing on the real
            one, read off the same object the relay stored, so the two cannot

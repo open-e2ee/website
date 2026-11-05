@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { relayPlans, relaySandboxEnvironment } from '../src/data/relay-pricing.mjs';
+import { signalRelayPlans, signalRelaySandboxEnvironment } from '../src/data/signal-relay-pricing.mjs';
 import {
   commercialTermsPath,
   commercialTermsUrl,
@@ -15,15 +15,15 @@ import {
   privacyPath,
   privacyUrl,
   privacyVersion,
-  relayRetentionEffectiveDate,
-  relayRetentionPath,
-  relayRetentionVersion,
-  relayServiceLimitsEffectiveDate,
-  relayServiceLimitsPath,
-  relayServiceLimitsVersion,
-  relayTermsPath,
-  relayTermsUrl,
-  relayTermsVersion,
+  signalRelayRetentionEffectiveDate,
+  signalRelayRetentionPath,
+  signalRelayRetentionVersion,
+  signalRelayServiceLimitsEffectiveDate,
+  signalRelayServiceLimitsPath,
+  signalRelayServiceLimitsVersion,
+  signalRelayTermsPath,
+  signalRelayTermsUrl,
+  signalRelayTermsVersion,
 } from '../src/lib/legal.mjs';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -63,15 +63,15 @@ test('pins the current Startup terms to an immutable canonical URL', () => {
   assert.equal(privacyVersion, '2026-11-02');
   assert.equal(privacyPath, '/legal/privacy/2026-11-02');
   assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-11-02');
-  assert.equal(relayTermsVersion, 'relay-2026-11-02');
-  assert.equal(relayTermsPath, '/legal/relay-terms/2026-11-02');
-  assert.equal(relayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-11-02');
-  assert.equal(relayRetentionVersion, '2026-10-24');
-  assert.equal(relayRetentionEffectiveDate, 'October 24, 2026');
-  assert.equal(relayRetentionPath, '/legal/relay-retention/2026-10-24');
-  assert.equal(relayServiceLimitsVersion, '2026-10-05');
-  assert.equal(relayServiceLimitsEffectiveDate, 'October 5, 2026');
-  assert.equal(relayServiceLimitsPath, '/legal/relay-service-limits/2026-10-05');
+  assert.equal(signalRelayTermsVersion, 'relay-2026-11-02');
+  assert.equal(signalRelayTermsPath, '/legal/relay-terms/2026-11-02');
+  assert.equal(signalRelayTermsUrl, 'https://open-e2ee.dev/legal/relay-terms/2026-11-02');
+  assert.equal(signalRelayRetentionVersion, '2026-10-24');
+  assert.equal(signalRelayRetentionEffectiveDate, 'October 24, 2026');
+  assert.equal(signalRelayRetentionPath, '/legal/relay-retention/2026-10-24');
+  assert.equal(signalRelayServiceLimitsVersion, '2026-10-05');
+  assert.equal(signalRelayServiceLimitsEffectiveDate, 'October 5, 2026');
+  assert.equal(signalRelayServiceLimitsPath, '/legal/relay-service-limits/2026-10-05');
   assert.equal(dpaVersion, '2026-10-24');
   assert.equal(dpaEffectiveDate, 'October 24, 2026');
   assert.equal(dpaPath, '/legal/dpa/2026-10-24');
@@ -102,7 +102,7 @@ test('keeps the privacy effective date on the day its version names', () => {
 });
 
 test('publishes canonical current, versioned, privacy, and Relay policy routes', async () => {
-  const [legalIndex, currentTerms, versionedTerms, relayTerms, relayVersion, privacy] = await Promise.all([
+  const [legalIndex, currentTerms, versionedTerms, signalRelayTerms, signalRelayVersion, privacy] = await Promise.all([
     read('../src/pages/legal/index.astro'),
     read('../src/pages/legal/terms.astro'),
     read('../src/pages/legal/terms/2026-09-10.astro'),
@@ -127,7 +127,7 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
   assert.match(legalIndex, /href="\/legal\/relay-retention"/);
   assert.match(legalIndex, /href="\/legal\/relay-service-limits"/);
   assert.doesNotMatch(legalIndex, /href="\/legal\/relay-beta-limits"/, 'the index links the retired live limits address');
-  assert.match(relayTerms, /SignalProtocolRelayTerms/);
+  assert.match(signalRelayTerms, /SignalProtocolRelayTerms/);
   await assertCanonicalAtOwnPath('/legal/relay-terms');
   await assertCanonicalAtOwnPath('/legal/relay-terms/2026-10-08');
   assert.match(privacy, /Privacy Notice/);
@@ -291,7 +291,7 @@ test('freezes the Startup terms version the site currently publishes', () => {
  * applies to every dated Relay page. The list is written out, not derived from
  * the live constant, for the reason the privacy list gives below.
  */
-const frozenRelayTermsVersions = [
+const frozenSignalProtocolRelayTermsVersions = [
   { version: 'relay-2026-08-26', date: '2026-08-26', effective: 'August 26, 2026' },
   { version: 'relay-2026-09-10', date: '2026-09-10', effective: 'September 10, 2026' },
   { version: 'relay-2026-09-22', date: '2026-09-22', effective: 'September 22, 2026' },
@@ -304,7 +304,7 @@ const frozenRelayTermsVersions = [
 ];
 
 test('keeps every dated Relay terms page frozen: it never reads the live document', async () => {
-  for (const { version, date, effective } of frozenRelayTermsVersions) {
+  for (const { version, date, effective } of frozenSignalProtocolRelayTermsVersions) {
     const page = await read(`../src/pages/legal/relay-terms/${date}.astro`);
 
     assert.doesNotMatch(page, /components\/\w*RelayTerms/, `${version} renders the live terms`);
@@ -324,10 +324,10 @@ test('keeps every dated Relay terms page frozen: it never reads the live documen
 });
 
 test('freezes the Relay terms version the site currently publishes', () => {
-  const frozen = frozenRelayTermsVersions.map(({ version }) => version);
+  const frozen = frozenSignalProtocolRelayTermsVersions.map(({ version }) => version);
   assert.ok(
-    frozen.includes(relayTermsVersion),
-    `Relay terms version ${relayTermsVersion} has no frozen page; frozen: ${frozen.join(', ')}`,
+    frozen.includes(signalRelayTermsVersion),
+    `Relay terms version ${signalRelayTermsVersion} has no frozen page; frozen: ${frozen.join(', ')}`,
   );
 });
 
@@ -344,10 +344,10 @@ test('freezes the Relay terms version the site currently publishes', () => {
  * through its 2026-09-29 version. Those copies keep the address and the title
  * they were published under, so a frozen entry can name its own slug and title.
  */
-const relayPolicies = [
+const signalRelayPolicies = [
   {
     slug: 'relay-retention',
-    current: relayRetentionVersion,
+    current: signalRelayRetentionVersion,
     title: 'Retention Statement',
     frozen: [
       { version: '2026-08-26', effective: 'August 26, 2026' },
@@ -361,7 +361,7 @@ const relayPolicies = [
   },
   {
     slug: 'relay-service-limits',
-    current: relayServiceLimitsVersion,
+    current: signalRelayServiceLimitsVersion,
     title: 'Service Limits',
     frozen: [
       { slug: 'relay-beta-limits', title: 'Beta Service Limits', version: '2026-08-26', effective: 'August 26, 2026' },
@@ -373,7 +373,7 @@ const relayPolicies = [
 ];
 
 test('keeps every dated Relay policy page frozen: it never reads the live page', async () => {
-  for (const { slug: liveSlug, title: liveTitle, frozen } of relayPolicies) {
+  for (const { slug: liveSlug, title: liveTitle, frozen } of signalRelayPolicies) {
     for (const { slug = liveSlug, title = liveTitle, version, effective } of frozen) {
       const page = await read(`../src/pages/legal/${slug}/${version}.astro`);
       const label = `${slug} ${version}`;
@@ -403,7 +403,7 @@ test('keeps every dated Relay policy page frozen: it never reads the live page',
 });
 
 test('freezes the Relay policy versions the site currently publishes', async () => {
-  for (const { slug, current, frozen } of relayPolicies) {
+  for (const { slug, current, frozen } of signalRelayPolicies) {
     const versions = frozen.map(({ version }) => version);
     assert.ok(
       versions.includes(current),
@@ -501,9 +501,9 @@ test('states every published price and included quantity in the Relay terms', as
     );
   };
 
-  for (const plan of relayPlans) {
+  for (const plan of signalRelayPlans) {
     states(plan.price, `the ${plan.name} price`);
-    states(plan.relayMau, `the ${plan.name} Relay MAU allowance`);
+    states(plan.signalRelayMau, `the ${plan.name} Relay MAU allowance`);
     states(plan.deliveryUnits, `the ${plan.name} delivery units`);
     states(plan.attachmentOperations, `the ${plan.name} attachment uploads`);
     states(plan.storage, `the ${plan.name} storage`);
@@ -512,7 +512,7 @@ test('states every published price and included quantity in the Relay terms', as
     }
   }
 
-  for (const [meter, value] of Object.entries(relaySandboxEnvironment)) {
+  for (const [meter, value] of Object.entries(signalRelaySandboxEnvironment)) {
     if (meter === 'detail') continue;
     states(value, `the Sandbox environment ${meter}`);
   }
@@ -626,7 +626,7 @@ test('keeps the privacy version history truthful about when each event arrived',
   );
 });
 
-test('describes the implemented providers and managed Relay boundary', async () => {
+test('describes the implemented providers and Signal Protocol Relay boundary', async () => {
   const privacy = await flat('../src/pages/legal/privacy.astro');
   for (const provider of ['Cloudflare', 'Vercel', 'WorkOS', 'Stripe', 'Better Stack', 'Google Workspace']) {
     assert.match(privacy, new RegExp(provider));
@@ -885,9 +885,9 @@ test('calls the Relay a beta on no current legal page', async () => {
     commercialTermsPath,
     dpaPath,
     privacyPath,
-    relayRetentionPath,
-    relayServiceLimitsPath,
-    relayTermsPath,
+    signalRelayRetentionPath,
+    signalRelayServiceLimitsPath,
+    signalRelayTermsPath,
   ]) {
     const page = new URL(`../src/pages${path}.astro`, import.meta.url);
     assert.ok(existsSync(page), `${path} has no dated page`);
@@ -913,7 +913,7 @@ test('calls the Relay a beta on no current legal page', async () => {
 test('lets a published version change the Relay terms and limits for every customer', async () => {
   for (const path of [
     '../src/components/SignalProtocolRelayTerms20261102.astro',
-    `../src/pages${relayTermsPath}.astro`,
+    `../src/pages${signalRelayTermsPath}.astro`,
   ]) {
     const terms = await flat(path);
     assert.match(
@@ -927,7 +927,7 @@ test('lets a published version change the Relay terms and limits for every custo
   }
   for (const path of [
     '../src/pages/legal/relay-service-limits.astro',
-    `../src/pages${relayServiceLimitsPath}.astro`,
+    `../src/pages${signalRelayServiceLimitsPath}.astro`,
   ]) {
     const limits = await flat(path);
     assert.match(limits, /limits at any time by publishing a new version of this page/, path);
@@ -936,7 +936,7 @@ test('lets a published version change the Relay terms and limits for every custo
 });
 
 test('applies the current catalog immediately and retains notice for future changes in both agreements', async () => {
-  for (const path of ['../src/components/SignalProtocolRelayTerms20261102.astro', `../src/pages${relayTermsPath}.astro`]) {
+  for (const path of ['../src/components/SignalProtocolRelayTerms20261102.astro', `../src/pages${signalRelayTermsPath}.astro`]) {
     const terms = await flat(path);
     assert.match(terms, /prices, included quantities, and overage rates in Section 3\.1 apply to every project from this version’s effective date/);
     assert.match(terms, /This catalog applies immediately without a notice waiting period or grandfathered allowances/);

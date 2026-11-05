@@ -2,7 +2,7 @@
  * `run.ts` is the two-device demo's engine: two clients, one relay, one
  * recording. Like `driver.ts` it composes the installed package and nothing
  * else — real PQXDH, real Double Ratchet, the real `inMemoryStore()` and
- * this site's `pageRelay()` — so nothing here is stubbed. A test that mocked the
+ * this site's `pageSignalProtocolRelay()` — so nothing here is stubbed. A test that mocked the
  * cryptography would be checking a story, and the whole value of the demo is
  * that it is not one.
  *
@@ -26,7 +26,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { createPlayback } from '../src/lib/demo/playback.ts';
-import { pageRelay } from '../src/lib/demo/relay.ts';
+import { pageSignalProtocolRelay } from '../src/lib/demo/signal-relay.ts';
 import { startDemoRun } from '../src/lib/demo/run.ts';
 import { STEPS } from '../src/lib/demo/trace.ts';
 
@@ -62,7 +62,7 @@ const declaredSelectionFields = await declaredFields(
 /**
  * The page relay, made to behave like one that has to cross something.
  *
- * `pageRelay()` hands each envelope to its subscriber inside `send()`, a
+ * `pageSignalProtocolRelay()` hands each envelope to its subscriber inside `send()`, a
  * property no relay over a socket or a network has. Everything real stays —
  * real storage, real prekey consumption — and only the moment of delivery moves
  * to after the send resolves. That one difference is the whole of what the
@@ -74,8 +74,8 @@ const declaredSelectionFields = await declaredFields(
  * promise of one, and a client given a promise instead fails much later,
  * inside `stop()`.
  */
-function relayThatDeliversLate({ deliverAfterMs = 50 } = {}) {
-  const relay = pageRelay();
+function signalRelayThatDeliversLate({ deliverAfterMs = 50 } = {}) {
+  const relay = pageSignalProtocolRelay();
   const subscribe = relay.subscribe.bind(relay);
   relay.subscribe = (userId, deviceId, onEnvelope, options) =>
     subscribe(
@@ -348,7 +348,7 @@ test('round-trips a sentence and records every step in protocol order', async ()
        finished and the trace steps back down to `registered`. Protocol order
        is a property of one participant's own record, and a sort across both
        would be asserting that the presses cannot be separate. */
-    for (const actor of ['a', 'b', 'relay']) {
+    for (const actor of ['a', 'b', 'signal-relay']) {
       const own = run.trace.events.filter(
         (event) => event.actor === actor && event.step !== 'devices-ready',
       );
@@ -362,7 +362,7 @@ test('round-trips a sentence and records every step in protocol order', async ()
     }
     const recorded = stepsOf(run).filter((step) => step !== 'devices-ready');
     for (const step of ['bundles-published', 'session-established', 'encrypted', 'in-transit',
-      'stored-at-relay', 'delivered', 'opened']) {
+      'stored-at-signal-relay', 'delivered', 'opened']) {
       assert.ok(recorded.includes(step), `no ${step} step was recorded`);
     }
   });
@@ -371,7 +371,7 @@ test('round-trips a sentence and records every step in protocol order', async ()
 test('hands over the live envelope the relay held, not a description of it', async () => {
   await withRun(async (run) => {
     const sent = await run.send('a', OUTBOUND);
-    const stored = run.trace.events.find((event) => event.step === 'stored-at-relay');
+    const stored = run.trace.events.find((event) => event.step === 'stored-at-signal-relay');
 
     assert.equal(stored.detail.envelope, sent.envelope, 'the trace copied the envelope');
     for (const field of Object.keys(sent.envelope)) {
@@ -444,7 +444,7 @@ test('the reply is a real send from the other device, not the first drawn backwa
     );
     /* Two envelopes, each with its own bytes. One envelope reused would show
        up as the same object twice. */
-    const stored = run.trace.events.filter((event) => event.step === 'stored-at-relay');
+    const stored = run.trace.events.filter((event) => event.step === 'stored-at-signal-relay');
     assert.equal(stored.length, 2);
     assert.notEqual(stored[0].detail.envelope, stored[1].detail.envelope);
 
@@ -579,7 +579,7 @@ function sceneCuesFrom(events) {
     if (event.step === 'encrypted' && from && typeof detail.text === 'string') {
       return { ...base, ...turned, sentence: { side: from, text: detail.text } };
     }
-    if (event.step === 'stored-at-relay') {
+    if (event.step === 'stored-at-signal-relay') {
       const envelope = detail.envelope ?? {};
       return {
         ...base,
@@ -793,7 +793,7 @@ test('the only measurement a cue carries is the size the recording measured', as
 
     const reel = sceneCuesFrom(run.trace.events);
     assert.ok(
-      reel.some((cue) => cue.step === 'stored-at-relay'),
+      reel.some((cue) => cue.step === 'stored-at-signal-relay'),
       'the recording produced no stored row, so this test checked a reel with no relay cue in it',
     );
 
@@ -811,9 +811,9 @@ test('the only measurement a cue carries is the size the recording measured', as
        the sizes arriving against the wrong rows all read as the failures they
        are rather than as a passing subset. */
     const measured = run.trace.events
-      .filter((event) => event.step === 'stored-at-relay')
+      .filter((event) => event.step === 'stored-at-signal-relay')
       .map((event) => event.measures?.ciphertextBytes);
-    const drawn = shown.filter((cue) => cue.step === 'stored-at-relay').map((cue) => cue.bytes);
+    const drawn = shown.filter((cue) => cue.step === 'stored-at-signal-relay').map((cue) => cue.bytes);
     assert.ok(
       measured.every((bytes) => typeof bytes === 'number' && bytes > 0),
       `the recording stored rows without measuring them: ${JSON.stringify(measured)}`,
@@ -1044,7 +1044,7 @@ test('the stored row names the device it is waiting for', async () => {
     await run.send('a', OUTBOUND);
     await run.send('b', REPLY);
 
-    const stored = sceneCuesFrom(run.trace.events).filter((cue) => cue.step === 'stored-at-relay');
+    const stored = sceneCuesFrom(run.trace.events).filter((cue) => cue.step === 'stored-at-signal-relay');
     assert.equal(stored.length, 2, 'the recording stored a row for only one direction');
     for (const cue of stored) {
       assert.ok(
@@ -1358,10 +1358,10 @@ test('survives a relay that delivers after the send has resolved', async () => {
 
       /* And the recording is still complete. A late envelope that was merely
          waited out would leave the relay's own step missing. */
-      const stored = run.trace.events.filter((event) => event.step === 'stored-at-relay');
+      const stored = run.trace.events.filter((event) => event.step === 'stored-at-signal-relay');
       assert.equal(stored.length, 1);
     },
-    { relay: () => relayThatDeliversLate() },
+    { relay: () => signalRelayThatDeliversLate() },
   );
 });
 

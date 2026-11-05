@@ -299,10 +299,10 @@ test('carries a start action in both header surfaces', async () => {
  * One module owns the console route this site starts a reader on.
  *
  * A console route move made this a live defect once: five source files each
- * wrote `https://console.open-e2ee.dev/products/relay/new`, the console retired
- * that route, and every start control on the site pointed at a 404. Reading the
- * built pages could not catch it, because the markup was exactly what the
- * source asked for. This reads the source instead.
+ * wrote the old Console product route for a new Relay project, the console
+ * retired that route, and every start control on the site pointed at a 404.
+ * Reading the built pages could not catch it, because the markup was exactly
+ * what the source asked for. This reads the source instead.
  *
  * It watches the Relay routes alone. A bare origin survives any route move, and
  * the console's other addresses are named in `src/data/pricing.mjs` and on

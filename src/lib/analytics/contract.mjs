@@ -6,7 +6,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const CAMPAIGNS = {
   utm_source: new Set(['hackernews', 'reddit', 'stackoverflow', 'devto', 'github', 'newsletter']),
   utm_medium: new Set(['referral', 'social', 'email', 'community']),
-  utm_campaign: new Set(['sdk-launch', 'relay-launch', 'discovery-2026']),
+  utm_campaign: new Set(['sdk-launch', 'signal-relay-launch', 'discovery-2026']),
 };
 
 export function privacySignal(nav) {

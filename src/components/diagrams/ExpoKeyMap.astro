@@ -25,7 +25,7 @@ import {
   keySilhouettePath,
   ratchetRamp,
 } from '@open-e2ee/design/diagram';
-import { arrow, relayContainer } from '../../lib/relay-form.mjs';
+import { arrow, signalRelayContainer } from '../../lib/signal-relay-form.mjs';
 
 const DEVICE = { x: 20, y: 60, width: 400, height: 210 };
 const VAULT = { x: 46, y: 150, width: 152, height: DEVICE.y + DEVICE.height - 150 };
@@ -36,9 +36,9 @@ const BOUNDARY_X = 476;
 /* The relay stands one full gutter clear of the seal. The arrow between them
    starts 48 units right of the rule, which is the grammar's minimum gutter, and
    ends against the container's left edge. */
-const RELAY = { x: 574, y: 100, width: 238, height: 146 };
-const RELAY_CARGO_X = 696;
-const RELAY_CARGO_WIDTH = 100;
+const SIGNAL_RELAY = { x: 574, y: 100, width: 238, height: 146 };
+const SIGNAL_RELAY_CARGO_X = 696;
+const SIGNAL_RELAY_CARGO_WIDTH = 100;
 
 const PREKEY = { x: 604, y: 152, width: 66, height: 38 };
 ---
@@ -118,12 +118,12 @@ const PREKEY = { x: 604, y: 152, width: 66, height: 38 };
   <Fragment set:html={arrow({ x: 524, y: 165, length: 32 })} />
 
   <Fragment
-    set:html={relayContainer({
-      ...RELAY,
+    set:html={signalRelayContainer({
+      ...SIGNAL_RELAY,
       slabs: 2,
       ticks: 3,
-      cargoX: RELAY_CARGO_X,
-      cargoWidth: RELAY_CARGO_WIDTH,
+      cargoX: SIGNAL_RELAY_CARGO_X,
+      cargoWidth: SIGNAL_RELAY_CARGO_WIDTH,
     })}
   />
 
@@ -140,7 +140,7 @@ const PREKEY = { x: 604, y: 152, width: 66, height: 38 };
   {/* Above the container rather than inside it. The tick run starts 6 units
       right of the cargo edge and 14 below the container top, so a label set
       inside at the cargo x was drawn across the ticks it names. */}
-  <text x={RELAY_CARGO_X} y={90} class="diagram-tick-label">metadata</text>
+  <text x={SIGNAL_RELAY_CARGO_X} y={90} class="diagram-tick-label">metadata</text>
 
-  <text x={RELAY.x} y={300} class="diagram-label">relay · public keys, sealed envelopes</text>
+  <text x={SIGNAL_RELAY.x} y={300} class="diagram-label">relay · public keys, sealed envelopes</text>
 </svg>

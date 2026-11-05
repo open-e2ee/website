@@ -4,11 +4,11 @@ import Icon, { type IconName } from '../components/Icon.astro';
 import Term from '../components/Term.astro';
 import PlanValue from '../components/PlanValue.astro';
 import {
-  relayMeterDefinitions,
-  relayPlans,
-  relayProductionRetention,
-} from '../data/relay-pricing.mjs';
-import { demoBookingUrl, relayEnterpriseBookingUrl } from '../data/booking.mjs';
+  signalRelayMeterDefinitions,
+  signalRelayPlans,
+  signalRelayProductionRetention,
+} from '../data/signal-relay-pricing.mjs';
+import { demoBookingUrl, signalRelayEnterpriseBookingUrl } from '../data/booking.mjs';
 import { startAction, startPromise } from '../lib/site-navigation';
 import { NO_OVERAGE } from '../lib/plan-values.mjs';
 import {
@@ -223,17 +223,17 @@ const PLAN_MARK = `${METADATA} min-h-[1lh] text-[var(--oe-sealed)]`;
  * from the paid secondaries, and the filled control stays the one accent in
  * the row.
  */
-const RELAY_PROJECT = startAction.href;
+const SIGNAL_RELAY_PROJECT = startAction.href;
 
-type Plan = (typeof relayPlans)[number];
+type Plan = (typeof signalRelayPlans)[number];
 
 const FREE = 'relay_free_v1';
 
-const selfServe = relayPlans.filter((plan) => plan.monthlyPriceUsd !== null);
-const enterprise = relayPlans.find((plan) => plan.monthlyPriceUsd === null);
+const selfServe = signalRelayPlans.filter((plan) => plan.monthlyPriceUsd !== null);
+const enterprise = signalRelayPlans.find((plan) => plan.monthlyPriceUsd === null);
 if (!enterprise) throw new Error('pricing.astro: the Relay catalog has no negotiated plan');
 
-const startHref = (plan: Plan) => (plan.id === FREE ? RELAY_PROJECT : `${RELAY_PROJECT}?plan=${plan.id}`);
+const startHref = (plan: Plan) => (plan.id === FREE ? SIGNAL_RELAY_PROJECT : `${SIGNAL_RELAY_PROJECT}?plan=${plan.id}`);
 const ACTION_LABEL: Record<string, string> = {
   relay_free_v1: 'Fun & Free',
   relay_starter_v1: 'Startup Starter',
@@ -264,7 +264,7 @@ const compactPlanClasses = (plan: Plan) => [
 ];
 
 const ENTERPRISE_ACTION = {
-  href: relayEnterpriseBookingUrl,
+  href: signalRelayEnterpriseBookingUrl,
   label: 'Schedule a meeting',
 };
 
@@ -286,7 +286,7 @@ const ENTERPRISE_ACTION = {
  * the project license; the row returns if the SDK license changes.
  */
 const define = (name: string) => {
-  const meter = relayMeterDefinitions.find((entry) => entry.name === name);
+  const meter = signalRelayMeterDefinitions.find((entry) => entry.name === name);
   if (!meter) throw new Error(`pricing.astro: the catalog defines no meter named ${name}`);
   return meter.definition;
 };
@@ -294,11 +294,11 @@ const define = (name: string) => {
 type RowShape = { label: string; definition: string; lead?: boolean };
 type Row = RowShape & { value: (plan: Plan) => string };
 const rows: Row[] = [
-  { label: 'Monthly Active Users', lead: true, definition: define('Relay MAU'), value: (plan) => plan.relayMau },
+  { label: 'Monthly Active Users', lead: true, definition: define('Relay MAU'), value: (plan) => plan.signalRelayMau },
   {
     label: 'Additional MAU',
     definition: 'Each additional monthly active account, after explicit overage acceptance. Other allowances do not increase. Free has no paid overage.',
-    value: (plan) => plan.overage?.relayMau ?? NO_OVERAGE,
+    value: (plan) => plan.overage?.signalRelayMau ?? NO_OVERAGE,
   },
   {
     label: 'Message Delivery Units',
@@ -437,7 +437,7 @@ const included: { icon: IconName; label: string; detail: string }[] = [
   {
     icon: 'clock',
     label: 'Ciphertext retention',
-    detail: `${relayProductionRetention} in device mailboxes and attachment storage before ciphertext expires. A project can set a shorter retention.`,
+    detail: `${signalRelayProductionRetention} in device mailboxes and attachment storage before ciphertext expires. A project can set a shorter retention.`,
   },
   {
     icon: 'pulse',
@@ -462,7 +462,7 @@ const INCLUDED_ANCHOR = 'included';
         <h1>Pricing that scales to zero.</h1>
         <p class:list={[LEAD, PLANS_LEAD]}>Ship fully featured end-to-end encrypted messaging, securely, and at scale.</p>
         <div class:list={[ACTIONS, PLANS_ACTIONS]} data-actions="pricing">
-          <a class={PLANS_PRIMARY} href={RELAY_PROJECT}>{startAction.label}{' '}<span class="oe-button-note">{startPromise}</span></a>
+          <a class={PLANS_PRIMARY} href={SIGNAL_RELAY_PROJECT}>{startAction.label}{' '}<span class="oe-button-note">{startPromise}</span></a>
           <a class={PLANS_SECONDARY} href={demoBookingUrl}>Schedule a demo</a>
         </div>
       </div>
@@ -474,7 +474,7 @@ const INCLUDED_ANCHOR = 'included';
             <tr>
               <th scope="col" class={CORNER}>{TABLE_NAME}</th>
               {selfServe.map((plan) => (
-                <th scope="col" class:list={headClasses(plan)} data-relay-plan={plan.id} itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                <th scope="col" class:list={headClasses(plan)} data-signal-relay-plan={plan.id} itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                   <meta itemprop="priceCurrency" content="USD" />
                   <meta itemprop="price" content={String(plan.monthlyPriceUsd)} />
                   <p class={PLAN_MARK}>{planMark(plan)}</p>
@@ -499,7 +499,7 @@ const INCLUDED_ANCHOR = 'included';
             <tr>
               <td class="rule-t pr-4"></td>
               {selfServe.map((plan) => (
-                <td class:list={footClasses(plan)} data-relay-plan-action={plan.id}>
+                <td class:list={footClasses(plan)} data-signal-relay-plan-action={plan.id}>
                   <a class:list={startClasses(plan)} href={startHref(plan)}>{startLabel(plan)}</a>
                 </td>
               ))}
@@ -510,7 +510,7 @@ const INCLUDED_ANCHOR = 'included';
       <p class={COMPACT_NAME}>{TABLE_NAME}</p>
       <ul class={COMPACT}>
         {selfServe.map((plan) => (
-          <li class:list={compactPlanClasses(plan)} data-relay-plan-compact={plan.id}>
+          <li class:list={compactPlanClasses(plan)} data-signal-relay-plan-compact={plan.id}>
             <p class={PLAN_MARK}>{planMark(plan)}</p>
             <h3 class={TIER_HEADING}>{plan.name}</h3>
             <p class={TIER_PRICE}>{plan.price}</p>
@@ -527,7 +527,7 @@ const INCLUDED_ANCHOR = 'included';
           </li>
         ))}
       </ul>
-      <div class={ENTERPRISE_BAND} data-relay-plan={enterprise.id}>
+      <div class={ENTERPRISE_BAND} data-signal-relay-plan={enterprise.id}>
         <h3 class={TIER_HEADING}>{enterprise.name}</h3>
         <p class={ENTERPRISE_DETAIL}>{enterprise.detail}</p>
         {/* Commented out 2026-09-22 with the SDK commercial license table:

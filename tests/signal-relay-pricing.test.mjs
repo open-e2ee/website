@@ -2,15 +2,15 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
-  relayLimitsChange,
-  relayMeterDefinitions,
-  relayPlans,
-  relayPricingAt,
-  relayPricingInstant,
-  relayProductionRetention,
-  relaySandboxEnvironment,
-  upcomingRelayPlans,
-} from '../src/data/relay-pricing.mjs';
+  signalRelayLimitsChange,
+  signalRelayMeterDefinitions,
+  signalRelayPlans,
+  signalRelayPricingAt,
+  signalRelayPricingInstant,
+  signalRelayProductionRetention,
+  signalRelaySandboxEnvironment,
+  upcomingSignalProtocolRelayPlans,
+} from '../src/data/signal-relay-pricing.mjs';
 import { virgilSecurityComparison, virgilSecurityComparisonAt } from '../src/data/virgil-security-comparison.mjs';
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -25,49 +25,49 @@ const afterCut = new Date('2026-11-01T00:00:00.001Z');
 const futureBuild = new Date('2030-01-01T00:00:00Z');
 const buildInstants = [new Date('2026-10-18T00:00:00Z'), beforeCut, atCut, afterCut, futureBuild];
 
-const figures = ({ id, price, relayMau, deliveryUnits, attachmentOperations, storage, overage }) => ({
+const figures = ({ id, price, signalRelayMau, deliveryUnits, attachmentOperations, storage, overage }) => ({
   id,
   price,
-  relayMau,
+  signalRelayMau,
   deliveryUnits,
   attachmentOperations,
   storage,
   overage,
 });
 
-const earlierFree = { id: 'relay_free_v1', price: '$0', relayMau: '100', deliveryUnits: '100,000', attachmentOperations: '20,000', storage: '1 GB', overage: null };
-const hobby = { id: 'relay_hobby_v1', price: '$9', relayMau: '100', deliveryUnits: '50,000', attachmentOperations: '10,000', storage: '1 GB', overage: { relayMau: '$0.10', delivery: '$400 per million', storage: '$2.00 per GB-month' } };
+const earlierFree = { id: 'relay_free_v1', price: '$0', signalRelayMau: '100', deliveryUnits: '100,000', attachmentOperations: '20,000', storage: '1 GB', overage: null };
+const hobby = { id: 'relay_hobby_v1', price: '$9', signalRelayMau: '100', deliveryUnits: '50,000', attachmentOperations: '10,000', storage: '1 GB', overage: { signalRelayMau: '$0.10', delivery: '$400 per million', storage: '$2.00 per GB-month' } };
 const paidAndEnterprise = [
-  { id: 'relay_starter_v1', price: '$99', relayMau: '1,000', deliveryUnits: '500,000', attachmentOperations: '100,000', storage: '10 GB', overage: { relayMau: '$0.05', delivery: '$200 per million', storage: '$1.00 per GB-month' } },
-  { id: 'relay_growth_v1', price: '$499', relayMau: '5,000', deliveryUnits: '2,500,000', attachmentOperations: '500,000', storage: '50 GB', overage: { relayMau: '$0.03', delivery: '$100 per million', storage: '$0.75 per GB-month' } },
-  { id: 'relay_business_v1', price: '$999', relayMau: '25,000', deliveryUnits: '12,500,000', attachmentOperations: '2,500,000', storage: '250 GB', overage: { relayMau: '$0.02', delivery: '$60 per million', storage: '$0.55 per GB-month' } },
-  { id: 'relay_enterprise_v1', price: 'Custom', relayMau: 'Negotiated', deliveryUnits: 'Negotiated', attachmentOperations: 'Negotiated', storage: 'Negotiated', overage: null },
+  { id: 'relay_starter_v1', price: '$99', signalRelayMau: '1,000', deliveryUnits: '500,000', attachmentOperations: '100,000', storage: '10 GB', overage: { signalRelayMau: '$0.05', delivery: '$200 per million', storage: '$1.00 per GB-month' } },
+  { id: 'relay_growth_v1', price: '$499', signalRelayMau: '5,000', deliveryUnits: '2,500,000', attachmentOperations: '500,000', storage: '50 GB', overage: { signalRelayMau: '$0.03', delivery: '$100 per million', storage: '$0.75 per GB-month' } },
+  { id: 'relay_business_v1', price: '$999', signalRelayMau: '25,000', deliveryUnits: '12,500,000', attachmentOperations: '2,500,000', storage: '250 GB', overage: { signalRelayMau: '$0.02', delivery: '$60 per million', storage: '$0.55 per GB-month' } },
+  { id: 'relay_enterprise_v1', price: 'Custom', signalRelayMau: 'Negotiated', deliveryUnits: 'Negotiated', attachmentOperations: 'Negotiated', storage: 'Negotiated', overage: null },
 ];
 
 const sandboxDetail = 'Created automatically for each project. It uses isolated state and credentials, 24-hour default retention, a seven-day retention maximum, and suspension after 30 inactive days.';
-const earlierSandbox = { relayMau: '25 test accounts', deliveryUnits: '25,000', attachmentOperations: '25,000', storage: '250 MB', detail: sandboxDetail };
+const earlierSandbox = { signalRelayMau: '25 test accounts', deliveryUnits: '25,000', attachmentOperations: '25,000', storage: '250 MB', detail: sandboxDetail };
 
 test('publishes the exact approved Relay catalog from one data module', () => {
-  assert.deepEqual(relayPricingAt(beforeCut).plans.map(figures), [earlierFree, ...paidAndEnterprise]);
-  assert.deepEqual(relayPricingAt(atCut).plans.map(figures), [earlierFree, ...paidAndEnterprise]);
-  assert.deepEqual(upcomingRelayPlans.map(figures), [hobby]);
-  assert.deepEqual(relayPricingAt(beforeCut).sandboxEnvironment, earlierSandbox);
-  assert.deepEqual(relayPricingAt(atCut).sandboxEnvironment, earlierSandbox);
-  assert.equal(relayMeterDefinitions.length, 4);
-  assert.equal(relayProductionRetention, 'Up to 30 days');
+  assert.deepEqual(signalRelayPricingAt(beforeCut).plans.map(figures), [earlierFree, ...paidAndEnterprise]);
+  assert.deepEqual(signalRelayPricingAt(atCut).plans.map(figures), [earlierFree, ...paidAndEnterprise]);
+  assert.deepEqual(upcomingSignalProtocolRelayPlans.map(figures), [hobby]);
+  assert.deepEqual(signalRelayPricingAt(beforeCut).sandboxEnvironment, earlierSandbox);
+  assert.deepEqual(signalRelayPricingAt(atCut).sandboxEnvironment, earlierSandbox);
+  assert.equal(signalRelayMeterDefinitions.length, 4);
+  assert.equal(signalRelayProductionRetention, 'Up to 30 days');
 });
 
 test('the module exports are the catalog at the build instant', () => {
-  assert.ok(relayPricingInstant instanceof Date && !Number.isNaN(relayPricingInstant.getTime()));
-  const atBuild = relayPricingAt(relayPricingInstant);
-  assert.deepEqual(relayPlans, atBuild.plans);
-  assert.deepEqual(relaySandboxEnvironment, atBuild.sandboxEnvironment);
-  assert.deepEqual(relayLimitsChange, atBuild.limitsChange);
+  assert.ok(signalRelayPricingInstant instanceof Date && !Number.isNaN(signalRelayPricingInstant.getTime()));
+  const atBuild = signalRelayPricingAt(signalRelayPricingInstant);
+  assert.deepEqual(signalRelayPlans, atBuild.plans);
+  assert.deepEqual(signalRelaySandboxEnvironment, atBuild.sandboxEnvironment);
+  assert.deepEqual(signalRelayLimitsChange, atBuild.limitsChange);
 });
 
 test('orders the plans Free, Starter, Growth, Business, then Enterprise at every instant', () => {
   for (const at of [new Date('2026-10-23T00:00:00Z'), beforeCut, atCut, new Date('2027-01-01T00:00:00Z')]) {
-    const { plans } = relayPricingAt(at);
+    const { plans } = signalRelayPricingAt(at);
     assert.deepEqual(plans.map(({ name }) => name), ['Free', 'Starter', 'Growth', 'Business', 'Enterprise'], at.toISOString());
     assert.deepEqual(plans.map(({ id }) => id), ['relay_free_v1', 'relay_starter_v1', 'relay_growth_v1', 'relay_business_v1', 'relay_enterprise_v1'], at.toISOString());
   }
@@ -80,8 +80,8 @@ test('orders the plans Free, Starter, Growth, Business, then Enterprise at every
  * published plans between Free and Starter.
  */
 test('holds Hobby at 9 USD per month out of the published plans until a dated terms version states it', () => {
-  assert.equal(upcomingRelayPlans.length, 1);
-  const [plan] = upcomingRelayPlans;
+  assert.equal(upcomingSignalProtocolRelayPlans.length, 1);
+  const [plan] = upcomingSignalProtocolRelayPlans;
   assert.deepEqual(figures(plan), hobby);
   assert.equal(plan.name, 'Hobby');
   assert.equal(plan.monthlyPriceUsd, 9);
@@ -89,46 +89,46 @@ test('holds Hobby at 9 USD per month out of the published plans until a dated te
   /* No dated terms version states Hobby yet. */
   assert.equal(plan.termsVersion, null);
   for (const at of [beforeCut, atCut, new Date('2027-01-01T00:00:00Z')]) {
-    assert.ok(!relayPricingAt(at).plans.some(({ id }) => id === plan.id), at.toISOString());
+    assert.ok(!signalRelayPricingAt(at).plans.some(({ id }) => id === plan.id), at.toISOString());
   }
-  assert.ok(!relayPlans.some(({ id }) => id === plan.id));
+  assert.ok(!signalRelayPlans.some(({ id }) => id === plan.id));
 });
 
 /*
  * The two terms guards compare the published plans with the dated terms. They
- * must read relayPlans and relaySandboxEnvironment, and never the plans that
- * wait for terms. A guard that read upcomingRelayPlans would block every build
+ * must read signalRelayPlans and signalRelaySandboxEnvironment, and never the plans that
+ * wait for terms. A guard that read upcomingSignalProtocolRelayPlans would block every build
  * until the new terms exist. A guard that read neither would pass on no plans.
  */
 test('the terms guards scan the published plans only', async () => {
   const guards = {
     'tests/legal-pages.test.mjs': 'states every published price and included quantity in the Relay terms',
-    'tests/relay-service-catalog.test.mjs': 'both current and immutable terms state the exact catalog rows',
+    'tests/signal-relay-service-catalog.test.mjs': 'both current and immutable terms state the exact catalog rows',
   };
   for (const [path, name] of Object.entries(guards)) {
     const file = await source(path);
     const start = file.indexOf(`test('${name}'`);
     assert.ok(start >= 0, `${path} lost the guard "${name}"`);
     const body = file.slice(start, file.indexOf('\n});', start));
-    assert.match(body, /\bof relayPlans\b/, `${path} does not scan relayPlans`);
-    assert.doesNotMatch(file, /upcomingRelayPlans/, `${path} reads the plans that wait for terms`);
+    assert.match(body, /\bof signalRelayPlans\b/, `${path} does not scan signalRelayPlans`);
+    assert.doesNotMatch(file, /upcomingSignalProtocolRelayPlans/, `${path} reads the plans that wait for terms`);
   }
 });
 
 test('a build date cannot qualify smaller Free or Sandbox limits', () => {
   for (const at of buildInstants) {
-    assert.deepEqual(relayPricingAt(at).plans.map(figures), [earlierFree, ...paidAndEnterprise], at.toISOString());
-    assert.deepEqual(relayPricingAt(at).sandboxEnvironment, earlierSandbox, at.toISOString());
+    assert.deepEqual(signalRelayPricingAt(at).plans.map(figures), [earlierFree, ...paidAndEnterprise], at.toISOString());
+    assert.deepEqual(signalRelayPricingAt(at).sandboxEnvironment, earlierSandbox, at.toISOString());
   }
 });
 
 test('publishes no date-only limits announcement before or after the withdrawn cut', () => {
-  for (const at of buildInstants) assert.equal(relayPricingAt(at).limitsChange, null, at.toISOString());
-  assert.equal(relayLimitsChange, null);
+  for (const at of buildInstants) assert.equal(signalRelayPricingAt(at).limitsChange, null, at.toISOString());
+  assert.equal(signalRelayLimitsChange, null);
 });
 
 test('prices the comparison rows from the qualified plans at every build instant', () => {
-  assert.deepEqual(virgilSecurityComparison, virgilSecurityComparisonAt(relayPricingInstant));
+  assert.deepEqual(virgilSecurityComparison, virgilSecurityComparisonAt(signalRelayPricingInstant));
   const expected = virgilSecurityComparisonAt(beforeCut).stickerPrices;
   assert.deepEqual(expected[0], ['100', 'Free', 'Free', 'Virgil counts registered users; OpenE2EE counts monthly active accounts.']);
   assert.deepEqual(expected[1], ['250', 'Free', '$99', 'OpenE2EE Free ends at 100 Relay MAU because Relay also supplies delivery infrastructure.']);
@@ -187,5 +187,5 @@ test('publishes canonical Relay routes with accessible responsive tables', async
   assert.match(box[2], /\stabindex="0"/, 'a keyboard cannot reach what scrolls');
   assert.match(box[2], /\srole="region"/);
   assert.match(box[2], /\saria-label=\{label\}/);
-  assert.match(box[2], /\sdata-table-scroll\b/, 'scripts/relay-pages-visual.mjs measures no region');
+  assert.match(box[2], /\sdata-table-scroll\b/, 'scripts/signal-relay-pages-visual.mjs measures no region');
 });

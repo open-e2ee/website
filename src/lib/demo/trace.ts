@@ -28,9 +28,9 @@
  * the fact became true.
  *
  * Those two can disagree, and the disagreement is recorded rather than tidied
- * away. `pageRelay()` accepts an envelope *inside* the send call, so the
+ * away. `pageSignalProtocolRelay()` accepts an envelope *inside* the send call, so the
  * relay has stored the row before `send()` has returned to us — an envelope
- * whose `stored-at-relay` timestamp precedes its `encrypted` one. That is a
+ * whose `stored-at-signal-relay` timestamp precedes its `encrypted` one. That is a
  * true fact about a relay in the page and a reader who opens their Performance
  * panel will see it. Sorting the list by time would hide it and would also put
  * the storage before the encryption in the explanation, which is worse.
@@ -43,9 +43,9 @@
  * Who a step belongs to.
  *
  * Three actors, because the drawing has three columns and the log has a
- * three-way filter. `a` and `b` are the two devices; `relay` is the middle.
+ * three-way filter. `a` and `b` are the two devices; `signal-relay` is the middle.
  */
-export type Actor = 'a' | 'relay' | 'b';
+export type Actor = 'a' | 'signal-relay' | 'b';
 
 /**
  * The steps a run can pass through, in the order a complete run reaches them.
@@ -80,7 +80,7 @@ export type Step =
   | 'session-established'
   | 'encrypted'
   | 'in-transit'
-  | 'stored-at-relay'
+  | 'stored-at-signal-relay'
   | 'delivered'
   | 'opened';
 
@@ -94,7 +94,7 @@ export const STEPS: readonly Step[] = [
   'session-established',
   'encrypted',
   'in-transit',
-  'stored-at-relay',
+  'stored-at-signal-relay',
   'delivered',
   'opened',
 ];

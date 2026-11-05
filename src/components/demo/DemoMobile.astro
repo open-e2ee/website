@@ -119,16 +119,16 @@ const LOCKS = [
     A bay glows while it holds a row, and says `empty` when it holds none.
     Nothing legible.
   */}
-  <div class="demo-mobile-relay" data-mobile-relay>
+  <div class="demo-mobile-signal-relay" data-mobile-signal-relay>
     {/* `{' '}` because Astro collapses the newlines between inline elements:
         without it the header's text content runs the words together for
         anything that reads text rather than layout. The flex row ignores the
         whitespace-only nodes, so the visible spacing stays the gap's. */}
-    <p class="demo-mobile-relay-head">
-      <span class="demo-mobile-relay-title">relay</span>{' '}
-      <span class="demo-mobile-relay-dot" aria-hidden="true">·</span>{' '}
-      <span class="demo-mobile-relay-sub">never needs plaintext</span>
-      <span class="demo-mobile-relay-vents" aria-hidden="true"><span></span><span></span><span></span></span>
+    <p class="demo-mobile-signal-relay-head">
+      <span class="demo-mobile-signal-relay-title">relay</span>{' '}
+      <span class="demo-mobile-signal-relay-dot" aria-hidden="true">·</span>{' '}
+      <span class="demo-mobile-signal-relay-sub">never needs plaintext</span>
+      <span class="demo-mobile-signal-relay-vents" aria-hidden="true"><span></span><span></span><span></span></span>
     </p>
     <div class="demo-mobile-accounts">
       {
@@ -757,7 +757,7 @@ const LOCKS = [
        `scene-view.ts`'s `setLinkTraffic`: the wire carries traffic for exactly
        the frame it serves, and the next frame's write ends it. `flow` drives
        the direction the stylesheet's sweep runs in. */
-    function setLinkTraffic(side: MobileSide | null, flow?: 'to-relay' | 'to-device') {
+    function setLinkTraffic(side: MobileSide | null, flow?: 'to-signal-relay' | 'to-device') {
       for (const s of ['a', 'b'] as const) {
         links[s].dataset.active = String(s === side);
         if (s === side && flow !== undefined) links[s].dataset.flow = flow;
@@ -1289,7 +1289,7 @@ const LOCKS = [
           bundles[frame.side].dataset.busy = 'true';
           if (frame.keys !== undefined)
             bundleCounts[frame.side].textContent = String(frame.keys);
-          setLinkTraffic(frame.side, 'to-relay');
+          setLinkTraffic(frame.side, 'to-signal-relay');
           flyKeys(frame.side, dwells?.publish ?? 0);
           break;
         case 'session':
@@ -1361,7 +1361,7 @@ const LOCKS = [
           /* Asserted rather than animated: a loop resumed mid-message must
              still cross sealed. */
           setKeyholes(true);
-          setLinkTraffic(frame.from, 'to-relay');
+          setLinkTraffic(frame.from, 'to-signal-relay');
           /* The sealed tile contracts into the packet the wire carries —
              the addressing and the rail fold away, the byte count is the
              whole face — and only then rides, into the addressee's bay (the
@@ -1525,7 +1525,7 @@ const LOCKS = [
     --demo-traveler-halo: var(--oe-foreground);
   }
 
-  .demo-mobile-relay,
+  .demo-mobile-signal-relay,
   .demo-mobile-caption {
     grid-column: 1 / -1;
   }
@@ -2105,7 +2105,7 @@ const LOCKS = [
 
   /* The base sweep runs down the tube — toward the device, which sits under
      the rack — so a push toward the relay reverses it. */
-  .demo-mobile-link[data-flow='to-relay']::after {
+  .demo-mobile-link[data-flow='to-signal-relay']::after {
     animation-direction: reverse;
   }
 
@@ -2155,7 +2155,7 @@ const LOCKS = [
 
   /* The wide scene's rack, shortened: same casing as the phones, one inline
      header line, and a mailbox bay over each device. */
-  .demo-mobile-relay {
+  .demo-mobile-signal-relay {
     border: 2px solid var(--oe-border);
     border-radius: 12px;
     background: var(--oe-device-surface);
@@ -2165,7 +2165,7 @@ const LOCKS = [
     gap: var(--oe-space-2);
   }
 
-  .demo-mobile-relay-head {
+  .demo-mobile-signal-relay-head {
     display: flex;
     align-items: baseline;
     gap: var(--oe-space-1);
@@ -2173,26 +2173,26 @@ const LOCKS = [
     padding: 0 var(--oe-space-1);
   }
 
-  .demo-mobile-relay-title {
+  .demo-mobile-signal-relay-title {
     font-family: var(--oe-font-mono);
     font-size: 0.8rem;
     font-weight: 600;
     white-space: nowrap;
   }
 
-  .demo-mobile-relay-dot,
-  .demo-mobile-relay-sub {
+  .demo-mobile-signal-relay-dot,
+  .demo-mobile-signal-relay-sub {
     font-size: 0.72rem;
     opacity: 0.7;
   }
 
-  .demo-mobile-relay-sub {
+  .demo-mobile-signal-relay-sub {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .demo-mobile-relay-vents {
+  .demo-mobile-signal-relay-vents {
     margin-left: auto;
     align-self: center;
     display: flex;
@@ -2200,7 +2200,7 @@ const LOCKS = [
     gap: 3px;
   }
 
-  .demo-mobile-relay-vents span {
+  .demo-mobile-signal-relay-vents span {
     width: 1.4rem;
     height: 3px;
     border-radius: 999px;

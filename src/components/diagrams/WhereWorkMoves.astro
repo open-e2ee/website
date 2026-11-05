@@ -16,7 +16,7 @@
  */
 
 import { CONTENT_BAR_FILL, PLAINTEXT_STROKE, contentBarRects, deviceOutline } from '@open-e2ee/design/diagram';
-import { arrow, relayContainer } from '../../lib/relay-form.mjs';
+import { arrow, signalRelayContainer } from '../../lib/signal-relay-form.mjs';
 
 const WORK = ['search', 'notifications', 'moderation'];
 
@@ -131,7 +131,7 @@ const bars = (box: { x: number; width: number }, top: number) =>
   <text x={470} y={360} class="diagram-tick-label">envelope</text>
   <Fragment set:html={arrow({ x: 470, y: 375, length: 50 })} />
 
-  <Fragment set:html={relayContainer({ ...RIGHT, y: ROW_TWO, height: BOX_HEIGHT, ticks: 4 })} />
+  <Fragment set:html={signalRelayContainer({ ...RIGHT, y: ROW_TWO, height: BOX_HEIGHT, ticks: 4 })} />
   <text x={RIGHT.x + 24} y={322} class="diagram-tick-label">metadata</text>
   <text x={RIGHT.x} y={476} class="diagram-label">relay · routes envelopes</text>
 </svg>
