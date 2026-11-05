@@ -61,9 +61,23 @@
 /relay/pricing/ /pricing/#relay-plans 308
 # /legal/relay-beta-limits was the live Relay limits document while Relay was a
 # beta. Relay is generally available, and the document is now the Service
-# Limits at /legal/relay-service-limits. Every frozen Relay terms version up to
-# relay-2026-09-29 links the old address, and those pages are never edited, so
-# the rule keeps their link working. The rules are exact: the dated copies under
-# /legal/relay-beta-limits/<date> are permanent addresses and still serve.
-/legal/relay-beta-limits /legal/relay-service-limits/ 308
-/legal/relay-beta-limits/ /legal/relay-service-limits/ 308
+# Limits at /legal/signal-relay-service-limits. Every frozen Relay terms version
+# up to relay-2026-09-29 links the old address, and those pages are never
+# edited, so the rule keeps their link working. It points at the current
+# address directly, so the old link takes one hop. The rules are exact: the
+# dated copies under /legal/relay-beta-limits/<date> are permanent addresses
+# and still serve.
+/legal/relay-beta-limits /legal/signal-relay-service-limits/ 308
+/legal/relay-beta-limits/ /legal/signal-relay-service-limits/ 308
+# The live Relay terms, retention statement, and service limits moved to the
+# signal-relay addresses that name the Signal Protocol Relay. Accepted terms,
+# DPA, and privacy versions link the old live addresses, and those pages are
+# never edited, so these rules are permanent. The rules are exact: the dated
+# copies under /legal/relay-terms/<date>, /legal/relay-retention/<date>, and
+# /legal/relay-service-limits/<date> are permanent addresses and still serve.
+/legal/relay-terms /legal/signal-relay-terms/ 308
+/legal/relay-terms/ /legal/signal-relay-terms/ 308
+/legal/relay-retention /legal/signal-relay-retention/ 308
+/legal/relay-retention/ /legal/signal-relay-retention/ 308
+/legal/relay-service-limits /legal/signal-relay-service-limits/ 308
+/legal/relay-service-limits/ /legal/signal-relay-service-limits/ 308

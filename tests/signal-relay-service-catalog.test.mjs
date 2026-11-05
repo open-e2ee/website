@@ -81,6 +81,12 @@ test('formats exact rational microunits for customer-facing rates', () => {
 });
 
 test('both current and immutable terms state the exact catalog rows', async () => {
+  const live = await readFile(new URL('../src/pages/legal/signal-relay-terms.astro', import.meta.url), 'utf8');
+  assert.match(
+    live,
+    /components\/SignalProtocolRelayTerms20261102\.astro/,
+    'the live Relay terms page does not render the component this test reads as current',
+  );
   for (const path of ['src/components/SignalProtocolRelayTerms20261102.astro', 'src/pages/legal/relay-terms/2026-10-24.astro']) {
     const terms = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
     const rows = [...terms.matchAll(/<tr><th scope="row">([^<]+)<\/th>(.*?)<\/tr>/g)];
