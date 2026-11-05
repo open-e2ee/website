@@ -1,5 +1,11 @@
-/terms /legal/terms/ 308
-/terms/ /legal/terms/ 308
+# The SDK is MIT or Apache-2.0 and free, so the live SDK Commercial Terms page
+# is gone. Its addresses go to the licensing page. The executed dated copies
+# under /legal/terms/ stay published, so these rules are exact and no splat
+# covers /legal/terms/.
+/terms /licensing/ 308
+/terms/ /licensing/ 308
+/legal/terms /licensing/ 308
+/legal/terms/ /licensing/ 308
 /terms/2026-07-23 /legal/terms/2026-07-23/ 308
 /terms/2026-07-23/ /legal/terms/2026-07-23/ 308
 /terms/2026-09-10 /legal/terms/2026-09-10/ 308

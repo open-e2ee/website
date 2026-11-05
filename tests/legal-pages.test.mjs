@@ -4,9 +4,6 @@ import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { signalRelayPlans, signalRelaySandboxEnvironment } from '../src/data/signal-relay-pricing.mjs';
 import {
-  commercialTermsPath,
-  commercialTermsUrl,
-  commercialTermsVersion,
   dpaEffectiveDate,
   dpaPath,
   dpaUrl,
@@ -57,10 +54,7 @@ async function assertCanonicalAtOwnPath(path, message) {
   );
 }
 
-test('pins the current Startup terms to an immutable canonical URL', () => {
-  assert.equal(commercialTermsVersion, 'startup-2026-10-24');
-  assert.equal(commercialTermsPath, '/legal/terms/2026-10-24');
-  assert.equal(commercialTermsUrl, 'https://open-e2ee.dev/legal/terms/2026-10-24');
+test('pins the current legal documents to immutable canonical URLs', () => {
   assert.equal(privacyVersion, '2026-11-02');
   assert.equal(privacyPath, '/legal/privacy/2026-11-02');
   assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-11-02');
@@ -103,9 +97,8 @@ test('keeps the privacy effective date on the day its version names', () => {
 });
 
 test('publishes canonical current, versioned, privacy, and Relay policy routes', async () => {
-  const [legalIndex, currentTerms, versionedTerms, signalRelayTerms, signalRelayVersion, privacy] = await Promise.all([
+  const [legalIndex, versionedTerms, signalRelayTerms, signalRelayVersion, privacy] = await Promise.all([
     read('../src/pages/legal/index.astro'),
-    read('../src/pages/legal/terms.astro'),
     read('../src/pages/legal/terms/2026-09-10.astro'),
     read('../src/pages/legal/signal-relay-terms.astro'),
     read('../src/pages/legal/relay-terms/2026-10-08.astro'),
@@ -114,13 +107,11 @@ test('publishes canonical current, versioned, privacy, and Relay policy routes',
 
   await assertCanonicalAtOwnPath('/legal');
   /* The SDK Commercial Terms left the index on 2026-09-22: the SDK is MIT OR
-   * Apache-2.0 and no license is sold. The live and dated /legal/terms pages
-   * stay published, and the footer still reaches the live one as the website
-   * terms, but the index lists only the agreements the site sells against. */
+   * Apache-2.0 and no license is sold. Payments ruling 30 removed the live
+   * /legal/terms page on 2026-11-05; the dated copies stay published, and the
+   * index lists only the agreements the site sells against. */
   assert.doesNotMatch(legalIndex, /href="\/legal\/terms/, 'the index lists the retired SDK Commercial Terms');
   assert.match(legalIndex, /href="\/legal\/privacy"/);
-  assert.match(currentTerms, /CommercialTerms/);
-  await assertCanonicalAtOwnPath('/legal/terms');
   await assertCanonicalAtOwnPath('/legal/terms/2026-09-10');
   assert.match(legalIndex, /href="\/legal\/signal-relay-terms"/);
   assert.match(legalIndex, /href="\/legal\/acceptable-use"/);
@@ -282,12 +273,56 @@ test('keeps every dated terms page frozen: it never reads the live document', as
   }
 });
 
-test('freezes the Startup terms version the site currently publishes', () => {
-  const frozen = frozenCommercialTermsVersions.map(({ version }) => version);
+/*
+ * Payments ruling 30 (2026-11-05): the SDK is MIT or Apache-2.0 and free, so
+ * the live SDK Commercial Terms page and its component are gone. The executed
+ * dated copies stay published and unedited, and no navigation reaches them. The
+ * frozen relay-2026-09-10 terms link /legal/terms and may not be edited, so the
+ * old address redirects to the licensing page instead of returning a 404. The
+ * rules are exact: a splat on /legal/terms/ would move the dated copies.
+ */
+test('retires the live SDK Commercial Terms and keeps the dated copies unlinked', async () => {
+  assert.ok(!existsSync(new URL('../src/pages/legal/terms.astro', import.meta.url)), 'the live SDK Commercial Terms page is back');
+  assert.ok(!existsSync(new URL('../src/components/CommercialTerms.astro', import.meta.url)), 'the live SDK Commercial Terms component is back');
+  assert.ok(existsSync(new URL('../src/pages/licensing.astro', import.meta.url)), 'the /legal/terms redirect points at a page this repo does not have');
+
+  const rules = (await read('../public/_redirects'))
+    .split('\n')
+    .filter((line) => line.startsWith('/'))
+    .map((line) => line.trim().split(/\s+/));
+  for (const source of ['/legal/terms', '/legal/terms/', '/terms', '/terms/']) {
+    assert.deepEqual(
+      rules.filter(([rule]) => rule === source),
+      [[source, '/licensing/', '308']],
+      `${source} does not redirect once, permanently, to /licensing/`,
+    );
+  }
   assert.ok(
-    frozen.includes(commercialTermsVersion),
-    `Startup terms version ${commercialTermsVersion} has no frozen page; frozen: ${frozen.join(', ')}`,
+    !rules.some(([source]) => source.startsWith('/legal/terms/') && source !== '/legal/terms/'),
+    'a rule covers a dated SDK Commercial Terms copy',
   );
+
+  /* The frozen instruments under src/pages/legal may link each other; nothing
+   * else may send a reader to the retired terms. */
+  const frozen = /\/pages\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$/;
+  const walk = async (dir) => {
+    const found = [];
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const url = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dir);
+      if (entry.isDirectory()) found.push(...(await walk(url)));
+      else if (/\.(astro|mdx?|mjs|ts)$/.test(entry.name)) found.push(url);
+    }
+    return found;
+  };
+  const sources = (await walk(new URL('../src/', import.meta.url))).filter((url) => !frozen.test(url.pathname));
+  assert.ok(sources.length > 50, `only ${sources.length} sources were read`);
+  for (const url of sources) {
+    assert.doesNotMatch(await readFile(url, 'utf8'), /href=["'{`]*\/legal\/terms/, `${url.pathname} links the retired SDK Commercial Terms`);
+  }
+
+  for (const { date } of frozenCommercialTermsVersions) {
+    assert.ok(existsSync(new URL(`../src/pages/legal/terms/${date}.astro`, import.meta.url)), `the executed ${date} terms copy is gone`);
+  }
 });
 
 /*
@@ -609,18 +644,17 @@ test('states every published price and included quantity in the Relay terms', as
   }
 });
 
-test('makes privacy and terms available from the site footer', async () => {
+test('makes privacy and the Relay terms available from the site footer', async () => {
   const footer = await read('../src/components/Footer.astro');
   assert.match(footer, /href="\/legal"/);
   assert.match(footer, /href="\/legal\/privacy"/);
-  assert.match(footer, /href="\/legal\/terms"/);
+  assert.doesNotMatch(footer, /href="\/legal\/terms"/, 'the footer links the retired SDK Commercial Terms');
   assert.match(footer, /href="\/legal\/signal-relay-terms"/);
   assert.match(footer, /OpenE2EE, Inc\. and OpenE2EE contributors/);
 });
 
 test('names the selected counterparty in current documents and preserves accepted copies', async () => {
   for (const path of [
-    '../src/components/CommercialTerms.astro',
     '../src/components/SignalProtocolRelayTerms20261105.astro',
     '../src/components/DataProcessingAgreement20261024.astro',
     '../src/pages/legal/privacy.astro',
@@ -641,33 +675,6 @@ test('names the selected counterparty in current documents and preserves accepte
   ]) {
     assert.match(await read(path), /OpenE2EE LLC/, `${path} no longer preserves its accepted text`);
   }
-});
-
-test('discloses annual renewal and protects accepted versions from retroactive replacement', async () => {
-  const terms = await flat('../src/components/CommercialTerms.astro');
-  assert.match(terms, /automatically renews for successive one-year terms/i);
-  assert.match(terms, /remains governed by the version recorded at checkout/i);
-});
-
-/*
- * The 2026-07-23 text sent a customer to a Stripe-hosted billing portal to
- * cancel, and the console never offered one. Renewal is cancelled on the
- * console license page (console PR #195), so the terms name that page and
- * nothing else as the cancellation path.
- */
-test('names the console license page as the only cancellation path', async () => {
-  const terms = await flat('../src/components/CommercialTerms.astro');
-  const cancellation = /<strong>Your Startup subscription automatically renews[^<]*<\/strong>([^<]*)/.exec(terms);
-  assert.ok(cancellation, 'the renewal paragraph is missing');
-  assert.match(cancellation[1], /cancel renewal from the license page in the console/);
-  assert.doesNotMatch(cancellation[1], /billing portal/);
-});
-
-test('grants the license over the package that is actually published', async () => {
-  const terms = await flat('../src/components/CommercialTerms.astro');
-  assert.match(terms, /@open-e2ee\/signal-protocol-sdk/);
-  /* The pre-launch draft named a package that was never published. */
-  assert.doesNotMatch(terms, /@open-e2ee\/sdk\b/);
 });
 
 /*
@@ -891,11 +898,10 @@ test('publishes the subprocessor list the agreement points at', async () => {
 });
 
 test('reaches each agreement from the pages that sell against it', async () => {
-  /* `flat` keeps comments, and two of these sources carry the retired SDK
-   * license path inside a comment on purpose: the dated table on /pricing and
-   * the notes on /licensing that say what the page stopped being. The shipped
-   * markup is what sells, so the comments come out before the two negative
-   * checks below. */
+  /* `flat` keeps comments, and /licensing carries the retired SDK license
+   * path inside a comment on purpose: the notes that say what the page stopped
+   * being. The shipped markup is what sells, so the comments come out before
+   * the two negative checks below. */
   const shipped = async (path) => (await read(path)).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ').replace(/\s+/g, ' ');
   const [pricing, relay, licensing, footer] = await Promise.all([
     shipped('../src/pages/pricing.astro'),
@@ -908,13 +914,11 @@ test('reaches each agreement from the pages that sell against it', async () => {
    * prose about them since the founder cut its How buying works band on
    * 2026-09-08, so the footer on every page, /pricing included, is the route,
    * and the console binds the terms at checkout. The SDK commercial license
-   * table on /pricing, which reached /legal/terms, is commented out as of
-   * 2026-09-22; the stripped source reaches no agreement, and the comment
-   * still does. */
+   * table on /pricing, which reached /legal/terms, is gone since payments
+   * ruling 30 of 2026-11-05. */
   assert.match(footer, /href="\/legal\/signal-relay-terms"/);
   assert.match(relay, /href="\/legal\/signal-relay-terms"/);
   assert.doesNotMatch(pricing, /href="\/legal\/terms"/, '/pricing reaches the SDK commercial terms it no longer sells against');
-  assert.match(await read('../src/pages/pricing.astro'), /href="\/legal\/terms"/, 'the commented table lost its route to the terms');
   /* The SDK is MIT OR Apache-2.0 from 3.0.0. /licensing names the two license
    * files, which are the instruments now, and the Relay's terms, which are the
    * one agreement the site still sells against. */
@@ -927,7 +931,7 @@ test('reaches each agreement from the pages that sell against it', async () => {
 test('permanently redirects short and historical legal paths to one hierarchy', async () => {
   const redirects = await read('../public/_redirects');
 
-  assert.match(redirects, /^\/terms \/legal\/terms\/ 308$/m);
+  assert.match(redirects, /^\/terms \/licensing\/ 308$/m);
   assert.match(redirects, /^\/privacy \/legal\/privacy\/ 308$/m);
   assert.match(redirects, /^\/terms\/2026-07-23 \/legal\/terms\/2026-07-23\/ 308$/m);
   assert.match(redirects, /^\/terms\/2026-09-10 \/legal\/terms\/2026-09-10\/ 308$/m);
@@ -972,9 +976,8 @@ test('calls the Relay a beta on no current legal page', async () => {
       sources.add(String(new URL(component, page)));
     }
   }
-  assert.ok(pages.length >= 9, `only ${pages.length} current legal pages were read`);
+  assert.ok(pages.length >= 8, `only ${pages.length} current legal pages were read`);
   for (const path of [
-    commercialTermsPath,
     dpaPath,
     privacyPath,
     signalRelayRetentionPath,
