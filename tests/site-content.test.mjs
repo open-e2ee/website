@@ -1987,7 +1987,7 @@ test('gives the SDK license agreement one name wherever a page links it', async 
  * that was published under that name, it is served as an immutable copy of a
  * document a customer may have accepted, and correcting a word in it would make
  * it a different document than the one it claims to be. No live page has an
- * exemption: the 2026-11-07 Data Processing Agreement names the accepted
+ * exemption: the 2026-11-08 Data Processing Agreement names the accepted
  * instrument by its current title, the OpenE2EE Signal Protocol Relay Service
  * Terms.
  */

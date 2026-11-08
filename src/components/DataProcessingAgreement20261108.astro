@@ -1,6 +1,32 @@
 ---
-/* Immutable copy of 2026-11-07. Do not edit this published version. */
-import BaseLayout from '../../../layouts/BaseLayout.astro';
+/*
+ * The OpenE2EE Data Processing Agreement, version 2026-11-08. It carries the
+ * Article 28(3) processor terms and the transfer mechanism for personal data
+ * OpenE2EE processes on a Relay customer's instructions. Section 4 and Annex I
+ * list measuring and improving the Relay's reliability, performance, and cost
+ * as a purpose, because Relay operating records carry keyed hashes of account
+ * and device identifiers. Annex II calls each project's test environment the
+ * Sandbox environment, the name that the console and the Relay use.
+ *
+ * Version 2026-11-08 changes only names and addresses from 2026-10-24. Section
+ * 1 names the accepted instrument the OpenE2EE Signal Protocol Relay Service
+ * Terms, the Customer Personal Data definition names the OpenE2EE Signal
+ * Protocol Relay, and the terms and retention links take the signal-relay
+ * addresses. Every clause is unchanged.
+ *
+ * It is a component rather than a page for the reason the other two legal
+ * documents are: /legal/dpa renders the live version and a dated page freezes
+ * each published one, and both need the same text without a second copy of it
+ * drifting. The dated page holds a literal snapshot and never imports this
+ * file — tests/legal-pages.test.mjs enforces that.
+ *
+ * The document is auto-incorporated: it binds when the Relay terms are
+ * accepted, and no peer of this size asks for a signature. What it may claim is
+ * bounded by docs/messaging.md — no certification, no compliance guarantee, and
+ * no security-review claim.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { dpaEffectiveDate, dpaPath, dpaVersion } from '../lib/legal.mjs';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -12,12 +38,12 @@ import {
   LEAD,
   LEGAL_PIN,
   LEGAL_TOC,
-} from '../../../lib/recipes';
+} from '../lib/recipes';
 ---
 
 <BaseLayout
-  title="Data Processing Agreement 2026-11-07"
-  description="Frozen copy of the OpenE2EE Data Processing Agreement, version 2026-11-07."
+  title="Data Processing Agreement"
+  description="Article 28 processor terms and transfer mechanism for personal data OpenE2EE processes for Relay customers."
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -29,12 +55,12 @@ import {
           instructions. It is part of the Relay Service Terms and takes effect with them.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective November 7, 2026</span>
-          <span>Version 2026-11-07</span>
+          <span>Effective {dpaEffectiveDate}</span>
+          <span>Version {dpaVersion}</span>
         </p>
         <p class={LEGAL_PIN}>
-          This is the permanent copy of this version. The agreement offered now is the{' '}
-          <a href="/legal/dpa">current Data Processing Agreement</a>.
+          The permanent copy of this version is at{' '}
+          <a href={dpaPath}><code>{dpaPath}</code></a>.
         </p>
       </div>
     </header>
@@ -75,8 +101,8 @@ import {
         <p>
           This Data Processing Agreement is between OpenE2EE, Inc., a Delaware corporation
           (“OpenE2EE,” “we,” or “us”), and the organization that accepts the{' '}
-          <a href="/legal/signal-relay-terms">OpenE2EE Signal Protocol Relay Service Terms</a>
-          (“Customer,” “you”). It forms part of those Terms.
+          <a href="/legal/signal-relay-terms">OpenE2EE Signal Protocol Relay Service Terms</a> (“Customer,” “you”). It
+          forms part of those Terms.
         </p>
         <p>
           It becomes binding when you accept the Terms. You do not need to sign it, countersign it,

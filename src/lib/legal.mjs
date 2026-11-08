@@ -179,13 +179,13 @@ export const privacyUrl = `https://open-e2ee.dev${privacyPath}`;
  * other clause is unchanged. The 2026-10-24 version names OpenE2EE, Inc. as
  * the processor and data importer.
  *
- * The 2026-11-07 version changes only names and addresses. It names the
+ * The 2026-11-08 version changes only names and addresses. It names the
  * accepted instrument the OpenE2EE Signal Protocol Relay Service Terms and the
  * service the OpenE2EE Signal Protocol Relay, and it links the signal-relay
  * terms and retention addresses. Every clause is unchanged, and the 2026-10-24
  * version keeps its text at its own address.
  */
-export const dpaVersion = '2026-11-07';
-export const dpaEffectiveDate = 'November 7, 2026';
-export const dpaPath = '/legal/dpa/2026-11-07';
+export const dpaVersion = '2026-11-08';
+export const dpaEffectiveDate = 'November 8, 2026';
+export const dpaPath = '/legal/dpa/2026-11-08';
 export const dpaUrl = `https://open-e2ee.dev${dpaPath}`;
