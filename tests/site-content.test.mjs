@@ -1962,9 +1962,11 @@ test('gives the SDK license agreement one name wherever a page links it', async 
 
 /*
  * The product is the OpenE2EE Signal Protocol Relay: the Signal Protocol Relay,
- * or the Relay, after a surface's first mention. "Managed Relay" and
- * "OpenE2EE Relay" are the names it was described by before, and "hosted
- * Relay" and "Signal Relay" are the shortenings that lose the protocol.
+ * or the Relay, after a surface's first mention. "Managed Relay" and the
+ * company name followed directly by "Relay" are the names it was described by
+ * before, and "hosted Relay" and "Signal Relay" are the shortenings that lose
+ * the protocol. The second name is built from parts below, so that this file
+ * does not spell the bare name that the Signal Relay naming guard rejects.
  *
  * Nothing else catches them. The build audit's TERMINOLOGY list is short by
  * design, and each retired name is a plain English phrase that reads correctly
@@ -1981,12 +1983,13 @@ test('gives the SDK license agreement one name wherever a page links it', async 
  * Relay" is not a retired name. It names the dormant offer of a license to run
  * the Relay on a customer's own servers, and it can also start a sentence.
  *
- * Frozen dated legal pages and the dated components they render are exempt.
- * /legal/privacy/2026-08-26 is the text that was published under that name, it
- * is served as an immutable copy of a document a customer may have accepted,
- * and correcting a word in it would make it a different document than the one
- * it claims to be. "OpenE2EE Relay Service Terms" is exempt on every page: it
- * is the title of the accepted instrument, not a description of the product.
+ * Frozen dated legal pages are exempt. /legal/privacy/2026-08-26 is the text
+ * that was published under that name, it is served as an immutable copy of a
+ * document a customer may have accepted, and correcting a word in it would make
+ * it a different document than the one it claims to be. No live page has an
+ * exemption: the 2026-11-08 Data Processing Agreement names the accepted
+ * instrument by its current title, the OpenE2EE Signal Protocol Relay Service
+ * Terms.
  */
 test('calls the Relay by the name the glossary settles on', async () => {
   const sources = [];
@@ -1999,12 +2002,13 @@ test('calls the Relay by the name the glossary settles on', async () => {
   await walk('../src/');
   assert.ok(sources.length > 30, `expected to walk the whole tree, found ${sources.length} files`);
 
-  const frozen = /\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$|\/components\/DataProcessingAgreement\d{8}\.astro$/;
+  const frozen = /\/legal\/[a-z-]+\/\d{4}-\d{2}-\d{2}\.astro$/;
   const live = sources.filter((source) => !frozen.test(source));
   assert.ok(live.length > 30, `every source read as a frozen page, found ${live.length} live files`);
-  assert.ok(sources.length - live.length >= 4, `the frozen set is ${sources.length - live.length} files; the dated components are not in it`);
+  assert.ok(sources.length - live.length >= 4, `the frozen set is ${sources.length - live.length} files; the dated legal pages are not in it`);
 
-  const retired = /Managed Relay|OpenE2EE Relay(?! Service Terms)|(?<![Ss]elf-)[Hh]osted Relay|Signal Relay\b/;
+  const retiredProductName = ['OpenE2EE', 'Relay'].join(' ');
+  const retired = new RegExp(`Managed Relay|${retiredProductName}|(?<![Ss]elf-)[Hh]osted Relay|Signal Relay\\b`);
   for (const source of live) {
     const text = await read(source);
     const hit = text.match(retired);

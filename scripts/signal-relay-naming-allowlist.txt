@@ -3,32 +3,22 @@
 # Each entry is one bare relay identifier that remains in this repository:
 #   <owner> <path> <identifier>
 # <owner> is the task in docs/plans/signal-relay-naming-migration-plan.html
-# (or the payments plan for PP52) that removes the hit. Remove an entry in
-# the commit that removes its hit. In a pull request the guard fails on an
-# entry or directive that the base branch does not hold, so this list only
-# shrinks.
+# (or the payments plan for PP52) that removes the hit, or the founder
+# decision (NM-FD<n>) that keeps the hit as an approved historical constant.
+# Remove an entry in the commit that removes its hit. In a pull request the
+# guard fails on an entry or directive that the base branch does not hold, so
+# this list only shrinks.
+#
+# NM-FD11 keeps the attested public release manifest at its URL. The file
+# name and release id stay, and the workflow, verifier, and test keep the path
+# and id that they attest and check, so the manifest and its attestation still
+# verify. The next release manifest takes a signal-relay id.
 #
 # The guard skips dist/, build/, node_modules/, and the lockfiles itself, and
 # .gitignore covers .astro/ and the other generated output, so this file has
 # no ignore directives.
 
-NM3.3 .gauntlet-workbench.md ./remote/relay
-NM3.3 .gauntlet-workbench.md /remote/relay
-NM3.3 .gauntlet-workbench.md convexRelay
-NM3.3 .gauntlet-workbench.md dist/remote/relay
-NM1.12 .gauntlet-workbench.md mock-relay
-NM1.12 .gauntlet-workbench.md mockRelay
-NM3.3 .gauntlet-workbench.md relay
-NM1.12 .gauntlet-workbench.md RELAY_COMMENT
-NM1.12 .gauntlet-workbench.md relay-carries-
-NM3.3 .gauntlet-workbench.md relay.getPendingMessages
-NM3.3 .gauntlet-workbench.md relay.registerDevice
-NM3.3 .gauntlet-workbench.md relay.send
-NM3.3 .gauntlet-workbench.md relay.subscribe
-NM3.3 .gauntlet-workbench.md remote/relay
-NM3.3 .gauntlet-workbench.md remote/relay/convex/relay.ts
-NM1.12 .gauntlet-workbench.md storage-and-relay
-NM2.16 .github/workflows/release-manifest.yml open-e2ee-relay-v1
+NM-FD11 .github/workflows/release-manifest.yml open-e2ee-relay-v1
 NM4.4 playground/index.html /relay
 NM3.3 playground/src/exchange.ts relay
 NM3.3 playground/src/exchange.ts relay.getPendingMessages
@@ -42,8 +32,8 @@ NM4.4 public/_redirects relay-plans
 NM2.15 public/_redirects relay-retention
 NM2.15 public/_redirects relay-service-limits
 NM2.15 public/_redirects relay-terms
-NM2.16 public/releases/ open-e2ee-relay-v1.json
-NM2.16 public/releases/open-e2ee-relay-v1.json open-e2ee-relay-v1
+NM-FD11 public/releases/ open-e2ee-relay-v1.json
+NM-FD11 public/releases/open-e2ee-relay-v1.json open-e2ee-relay-v1
 NM4.5 public/releases/open-e2ee-relay-v1.json relay
 NM4.4 scripts/check-pricing-actions.mjs relay-plans
 NM4.4 scripts/measure-lockup-fit.mjs /relay
@@ -52,13 +42,9 @@ NM3.3 scripts/record-carrier-capture.mjs relay.getPendingMessages
 NM3.3 scripts/record-carrier-capture.mjs relay.registerDevice
 NM3.3 scripts/record-carrier-capture.mjs startRelaySubscription
 NM1.12 scripts/sdk-identifier-allowlist.json OPEN_E2EE_RELAY_URL
-NM2.16 scripts/verify-release-manifest.mjs open-e2ee-relay-v1
+NM-FD11 scripts/verify-release-manifest.mjs open-e2ee-relay-v1
 NM4.5 scripts/verify-release-manifest.mjs relay
 NM4.4 scripts/verify-site-redesign.sh src/pages/relay
-NM-FD19 src/components/DataProcessingAgreement20261024.astro OpenE2EE Relay
-NM2.15 src/components/DataProcessingAgreement20261024.astro relay-retention
-NM2.15 src/components/DataProcessingAgreement20261024.astro relay-terms
-NM1.12 src/components/demo/DemoLog.astro relay
 NM3.3 src/components/HeroSnippet.astro relay
 NM4.4 src/components/NextStep.astro //docs.open-e2ee.dev/relay
 NM4.4 src/components/NextStep.astro /relay
@@ -263,7 +249,6 @@ NM1.12 tests/ relay-connection.test.mjs
 NM1.12 tests/ relay-terms-gate.test.mjs
 NM3.3 tests/demo-driver.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
 NM3.3 tests/demo-driver.test.mjs relay
-NM1.12 tests/demo-log.test.mjs RELAY
 NM3.3 tests/demo-run.test.mjs dist/remote/relay
 NM3.3 tests/demo-run.test.mjs relay
 NM3.3 tests/demo-run.test.mjs relay.subscribe
@@ -311,7 +296,6 @@ NM4.4 tests/navigation.test.mjs /relay
 NM4.4 tests/playground.test.mjs /relay
 NM3.3 tests/playground.test.mjs inMemoryRelay
 NM4.4 tests/pricing-page.test.mjs /relay
-NM1.12 tests/pricing-page.test.mjs OpenE2EE Relay
 PP52 tests/pricing-page.test.mjs relay_business_v1
 PP52 tests/pricing-page.test.mjs relay_free_v1
 PP52 tests/pricing-page.test.mjs relay_growth_v1
@@ -322,7 +306,7 @@ NM1.12 tests/relay-connection.test.mjs EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
 NM1.12 tests/relay-connection.test.mjs OPEN_E2EE_RELAY_URL
 NM4.4 tests/relay-connection.test.mjs src/pages/relay
 PP52 tests/relay-terms-gate.test.mjs relay_free_v1
-NM2.16 tests/release-manifest.test.mjs open-e2ee-relay-v1
+NM-FD11 tests/release-manifest.test.mjs open-e2ee-relay-v1
 NM4.4 tests/signal-relay-page.test.mjs ../dist/relay
 NM4.4 tests/signal-relay-page.test.mjs dist/relay
 NM1.12 tests/signal-relay-pricing.test.mjs OPEN_E2EE_RELAY_URL
@@ -347,7 +331,6 @@ NM2.15 tests/signal-relay-service-catalog.test.mjs relay-terms
 NM3.3 tests/site-content.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
 NM4.4 tests/site-content.test.mjs ../src/pages/relay
 NM4.4 tests/site-content.test.mjs /relay
-NM1.12 tests/site-content.test.mjs OpenE2EE Relay
 NM4.4 tests/site-content.test.mjs relay
 NM3.3 tests/site-content.test.mjs relayUrl
 NM3.3 tests/site-content.test.mjs startRelaySubscription
