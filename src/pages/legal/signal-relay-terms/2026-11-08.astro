@@ -1,24 +1,19 @@
 ---
 /*
  * The OpenE2EE Signal Protocol Relay Service Terms, version
- * signal-relay-2026-11-05. This version changes only names and addresses from
- * the 2026-11-02 version: it takes the signal-relay version prefix and the
- * `/legal/signal-relay-terms` address, and it links the signal-relay retention
- * and service-limits addresses. Every clause is unchanged.
+ * signal-relay-2026-11-08, frozen at its own address. This version publishes
+ * the current service catalog in Section 3.1. It changes three things from the
+ * 2026-11-05 version: the plan table gains the Hobby row, the Free row states
+ * the current Free limits, and the Sandbox environment paragraph states the
+ * current Sandbox limits. It also links the pricing page without the plans
+ * fragment. Every other clause is unchanged.
  *
- * `/legal/signal-relay-terms` renders this component. The dated page under
- * `/legal/signal-relay-terms/` holds a literal snapshot of the same text and never
- * imports this file; tests/legal-pages.test.mjs enforces that, and asserts
- * that every price and included quantity in src/data/signal-relay-pricing.mjs is
- * stated here, so a price change cannot ship without a new version.
+ * `/legal/signal-relay-terms` renders the live component. This dated page holds
+ * a literal snapshot of the same text and never imports that component or the
+ * live version constants; tests/legal-pages.test.mjs enforces that.
  */
-import BaseLayout from '../layouts/BaseLayout.astro';
-import TableScroll from '../components/TableScroll.astro';
-import {
-  signalRelayTermsEffectiveDate,
-  signalRelayTermsPath,
-  signalRelayTermsVersion,
-} from '../lib/legal.mjs';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import TableScroll from '../../../components/TableScroll.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -32,7 +27,7 @@ import {
   LEGAL_NOTICE,
   LEGAL_PIN,
   LEGAL_TOC,
-} from '../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
@@ -49,12 +44,12 @@ import {
           the Signal Protocol Relay.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {signalRelayTermsEffectiveDate}</span>
-          <span>Version {signalRelayTermsVersion}</span>
+          <span>Effective November 8, 2026</span>
+          <span>Version signal-relay-2026-11-08</span>
         </p>
         <p class={LEGAL_PIN}>
           The current version of these Terms applies to every Customer. The permanent copy of this version is at{' '}
-          <a href={signalRelayTermsPath}><code>{signalRelayTermsPath}</code></a>.
+          <a href="/legal/signal-relay-terms/2026-11-08"><code>/legal/signal-relay-terms/2026-11-08</code></a>.
         </p>
       </div>
     </header>
@@ -166,7 +161,7 @@ import {
         <p>
           The plans, their included quantities, and their overage rates are set out in the table
           below. Fees are in United States dollars and do not include tax. The{' '}
-          <a href="/pricing#relay-plans">Relay pricing page</a> is a summary of this table. Where
+          <a href="/pricing">Relay pricing page</a> is a summary of this table. Where
           the two differ, these Terms control.
         </p>
         <TableScroll label="Relay plans, monthly fees, included quantities, and overage rates">
@@ -185,7 +180,8 @@ import {
               </tr>
             </thead>
             <tbody>
-              <tr><th scope="row">Free</th><td>$0</td><td>100</td><td>100,000</td><td>20,000</td><td>1 GB</td><td>Hard cap</td><td>Hard cap</td><td>Hard cap</td></tr>
+              <tr><th scope="row">Free</th><td>$0</td><td>25</td><td>12,500</td><td>2,500</td><td>250 MB</td><td>Hard cap</td><td>Hard cap</td><td>Hard cap</td></tr>
+              <tr><th scope="row">Hobby</th><td>$9</td><td>100</td><td>50,000</td><td>10,000</td><td>1 GB</td><td>$0.10</td><td>$400 per million</td><td>$2.00 per GB-month</td></tr>
               <tr><th scope="row">Starter</th><td>$99</td><td>1,000</td><td>500,000</td><td>100,000</td><td>10 GB</td><td>$0.05</td><td>$200 per million</td><td>$1.00 per GB-month</td></tr>
               <tr><th scope="row">Growth</th><td>$499</td><td>5,000</td><td>2,500,000</td><td>500,000</td><td>50 GB</td><td>$0.03</td><td>$100 per million</td><td>$0.75 per GB-month</td></tr>
               <tr><th scope="row">Business</th><td>$999</td><td>25,000</td><td>12,500,000</td><td>2,500,000</td><td>250 GB</td><td>$0.02</td><td>$60 per million</td><td>$0.55 per GB-month</td></tr>
@@ -195,8 +191,8 @@ import {
         </TableScroll>
         <p>
           Included quantities are per calendar month. Additional MAU is priced per account. Every
-          project also has a Sandbox environment with 25 test accounts and, each calendar
-          month, 25,000 delivery units, 25,000 attachment uploads, and 250 MB of storage. It keeps
+          project also has a Sandbox environment with 5 test accounts and, each calendar
+          month, 10,000 delivery units, 2,500 attachment uploads, and 100 MB of storage. It keeps
           content for 24 hours by default and seven days at most, and it may be suspended after 30
           inactive days. The Sandbox environment has no fee and no overage.
         </p>

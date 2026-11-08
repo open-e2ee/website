@@ -21,12 +21,12 @@ import {
 } from '../lib/recipes';
 
 /*
- * The four self-service plans are the columns of one table, and what a plan
+ * The five self-service plans are the columns of one table, and what a plan
  * carries is its rows. A buyer arrives with a size in mind, reads the Relay
  * MAU row first because that is the meter every plan is sized by, and reads
  * down the column that fits it. The table holds only the rows that differ by
  * plan. What every plan shares stands in its own section under the plans, one
- * card per capability, described once rather than ticked four times, so the
+ * card per capability, described once rather than ticked five times, so the
  * reader chooses before reading it.
  *
  * The plans are the page. There is no hero above them: the head over the table
@@ -65,7 +65,7 @@ const HEAD_CELL = `${PLAN_HEAD} border-t-[3px] px-4 pt-4 pb-4 font-normal`;
 /*
  * The corner of the Relay table names it, the founder's 2026-09-09 call: the
  * name stands in the head's empty corner, at the top of the head row, in the
- * size a plan name takes, so it reads as the table's name and not as a fifth
+ * size a plan name takes, so it reads as the table's name and not as a sixth
  * column. It carries no top padding and no edge, so it floats at the table's
  * top, above the plan heads' first line, the founder's 2026-09-09 call.
  * The narrow rendering has no corner, so the name stands over the blocks.
@@ -146,7 +146,7 @@ const INCLUDED_CARD_ICON = 'shrink-0 text-text-3 transition-[color] duration-[va
 const INCLUDED_CARD_DETAIL = 'm-0 mt-2 text-[0.9375rem] leading-[1.5] text-text-3';
 
 /*
- * Enterprise is one outlined band under the table, so the fifth plan reads as
+ * Enterprise is one outlined band under the table, so the sixth plan reads as
  * the table's last row and not as a footnote. The founder's 2026-09-09 call:
  * the band is one row as tall as its button plus padding, close under the
  * table. Name and detail sit on the button's centerline, and the action keeps
@@ -208,15 +208,17 @@ const enterprise = signalRelayPlans.find((plan) => plan.monthlyPriceUsd === null
 if (!enterprise) throw new Error('pricing.astro: the Relay catalog has no negotiated plan');
 
 const startHref = (plan: Plan) => (plan.id === FREE ? SIGNAL_RELAY_PROJECT : `${SIGNAL_RELAY_PROJECT}?plan=${plan.id}`);
+/* Keyed by plan name. A plan with no label fails the build. */
 const ACTION_LABEL: Record<string, string> = {
-  relay_free_v1: 'Fun & Free',
-  relay_starter_v1: 'Startup Starter',
-  relay_growth_v1: 'Get Growing',
-  relay_business_v1: 'Big Business',
+  Free: 'Fun & Free',
+  Hobby: 'Happy Hobby',
+  Starter: 'Startup Starter',
+  Growth: 'Get Growing',
+  Business: 'Big Business',
 };
 const startLabel = (plan: Plan) => {
-  const label = ACTION_LABEL[plan.id];
-  if (!label) throw new Error(`pricing.astro: no action label for the ${plan.id} plan`);
+  const label = ACTION_LABEL[plan.name];
+  if (!label) throw new Error(`pricing.astro: no action label for the ${plan.name} plan`);
   return label;
 };
 const planMark = (plan: Plan) => (plan.id === HIGHLIGHT ? HIGHLIGHT_LABEL : '');
@@ -351,7 +353,7 @@ const INCLUDED_ANCHOR = 'included';
 
 <BaseLayout
   title="Pricing"
-  description="OpenE2EE Signal Protocol Relay plans from Free through Starter, Growth, Business, and Enterprise, with every meter and overage rate."
+  description="OpenE2EE Signal Protocol Relay plans from Free through Hobby, Starter, Growth, Business, and Enterprise, with every meter and overage rate."
 >
   <section id="relay-plans" class={PLANS}>
     <div class={CONTAINER}>

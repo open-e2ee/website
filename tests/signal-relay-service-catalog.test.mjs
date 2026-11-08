@@ -5,14 +5,11 @@ import {
   formatSignalProtocolRelayRate,
   parsePinnedSignalProtocolRelayCatalog,
   signalRelayCatalogPin,
-  signalRelayEarlierCatalogPin,
-  signalRelayEarlierServiceCatalog,
   signalRelayServiceCatalog,
 } from '../src/data/signal-relay-service-catalog.mjs';
 import { signalRelayPlans } from '../src/data/signal-relay-pricing.mjs';
 
 const artifact = new URL('../src/data/vendor/signal-relay-service-catalog.json', import.meta.url);
-const earlierArtifact = new URL('../src/data/vendor/signal-relay-service-catalog-2026-10-18.json', import.meta.url);
 
 test('pins the merged Relay revision, version, and exact catalog bytes', async () => {
   assert.equal(signalRelayCatalogPin.sourceRevision, 'b6db5bb4d24f0bff4a0dcb13f91e4765b84f5a06');
@@ -22,26 +19,13 @@ test('pins the merged Relay revision, version, and exact catalog bytes', async (
   assert.deepEqual(signalRelayServiceCatalog.plans.map(({ planId }) => planId), ['relay_free_v1', 'relay_hobby_v1', 'relay_starter_v1', 'relay_growth_v1', 'relay_business_v1']);
 });
 
-/* Relay keeps these Free and Sandbox targets until qualified original
- * authority selects new terms. The website reads their exact pinned bytes. */
-test('pins the earlier Relay catalog that still supplies qualified Free and Sandbox limits', async () => {
-  assert.equal(signalRelayEarlierCatalogPin.sourceRevision, '3d74de4ec7859e6d15c0c38ce4203e4e07d52b49');
-  assert.equal(signalRelayEarlierCatalogPin.catalogVersion, 'relay_managed_2026_10_18_v1');
-  assert.equal(signalRelayEarlierCatalogPin.sha256, 'a5b4156e8bb9c15a1734e9647235820cbdd85c7878c5cae72bdde0e743b72da8');
-  const [earlier, current] = await Promise.all([readFile(earlierArtifact), readFile(artifact)]);
-  assert.deepEqual(parsePinnedSignalProtocolRelayCatalog(earlier, signalRelayEarlierCatalogPin), signalRelayEarlierServiceCatalog);
-  /* Each artifact passes only its own pin. */
-  assert.throws(() => parsePinnedSignalProtocolRelayCatalog(earlier), /SHA256 mismatch/);
-  assert.throws(() => parsePinnedSignalProtocolRelayCatalog(current, signalRelayEarlierCatalogPin), /SHA256 mismatch/);
-});
-
 test('rejects drift in each price, capacity, and rational rate before reading the catalog', async () => {
-  for (const [file, pin] of [[artifact, signalRelayCatalogPin], [earlierArtifact, signalRelayEarlierCatalogPin]]) {
+  for (const [file, pin] of [[artifact, signalRelayCatalogPin]]) {
     const original = await readFile(file, 'utf8');
     assert.equal(`${JSON.stringify(JSON.parse(original), null, 2)}\n`, original);
     const fields = ['monthlyPriceMicrounits', 'monthlyActiveUsers', 'deliveryUnits', 'attachmentOperations', 'storageBytes'];
     const plans = JSON.parse(original).plans.length;
-    assert.equal(plans, pin === signalRelayCatalogPin ? 5 : 4);
+    assert.equal(plans, 5);
     for (let index = 0; index < plans; index++) {
       for (const field of fields) {
         const changed = JSON.parse(original);
@@ -84,10 +68,10 @@ test('both current and immutable terms state the exact catalog rows', async () =
   const live = await readFile(new URL('../src/pages/legal/signal-relay-terms.astro', import.meta.url), 'utf8');
   assert.match(
     live,
-    /components\/SignalProtocolRelayTerms20261105\.astro/,
+    /components\/SignalProtocolRelayTerms20261108\.astro/,
     'the live Relay terms page does not render the component this test reads as current',
   );
-  for (const path of ['src/components/SignalProtocolRelayTerms20261105.astro', 'src/pages/legal/relay-terms/2026-10-24.astro']) {
+  for (const path of ['src/components/SignalProtocolRelayTerms20261108.astro', 'src/pages/legal/signal-relay-terms/2026-11-08.astro']) {
     const terms = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
     const rows = [...terms.matchAll(/<tr><th scope="row">([^<]+)<\/th>(.*?)<\/tr>/g)];
     for (const plan of signalRelayPlans.filter(({ monthlyPriceUsd }) => monthlyPriceUsd !== null)) {

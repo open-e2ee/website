@@ -152,11 +152,11 @@ test('the self-service plans are the columns of one table, in catalog order', ()
     selfServe.map((plan) => plan.id),
     'the table columns are not the self-service catalog, in catalog order',
   );
-  /* Hobby waits for a dated Relay terms version that states it. */
+  /* The dated Relay terms signal-relay-2026-11-08 state Hobby. */
   assert.deepEqual(
     columns,
-    ['relay_free_v1', 'relay_starter_v1', 'relay_growth_v1', 'relay_business_v1'],
-    'the table columns are not Free, Starter, Growth, and Business',
+    ['relay_free_v1', 'relay_hobby_v1', 'relay_starter_v1', 'relay_growth_v1', 'relay_business_v1'],
+    'the table columns are not Free, Hobby, Starter, Growth, and Business',
   );
   assert.deepEqual(
     [...built.matchAll(/data-signal-relay-plan-compact="([^"]+)"/g)].map((m) => m[1]),
@@ -482,10 +482,12 @@ test('what every plan carries stands in one section of cards under the plans, li
   assert.doesNotMatch(built.slice(built.indexOf('<table'), built.indexOf('</table>')), /retention/i, 'retention is still a row of the plan table');
 });
 
-/* The founder's 2026-09-08 labels, recorded in docs/messaging.md. The plan
- * keeps its name in its heading; the action under the rows is the invitation. */
+/* The founder's 2026-09-08 labels, recorded in docs/messaging.md, and the
+ * Hobby label in the same pattern. The plan keeps its name in its heading;
+ * the action under the rows is the invitation. */
 const ACTION_LABELS = {
   relay_free_v1: 'Fun &amp; Free',
+  relay_hobby_v1: 'Happy Hobby',
   relay_starter_v1: 'Startup Starter',
   relay_growth_v1: 'Get Growing',
   relay_business_v1: 'Big Business',
@@ -517,15 +519,37 @@ test('publishes no date-only limits announcement under the plans', () => {
 });
 
 /*
- * A plan that waits for a dated Relay terms version is not on sale. The page
- * prints no column, block, action, or name for it until the terms state it.
+ * A plan that waits for a dated Relay terms version is not on sale. The
+ * signal-relay-2026-11-08 terms state every catalog plan, so no plan waits,
+ * and Hobby has its column, its block, and its action.
  */
-test('prints no plan that waits for a dated Relay terms version', () => {
-  assert.deepEqual(upcomingSignalProtocolRelayPlans.map(({ id }) => id), ['relay_hobby_v1']);
-  for (const plan of upcomingSignalProtocolRelayPlans) {
-    assert.equal(built.indexOf(plan.id), -1, `the page names ${plan.id}`);
-    assert.doesNotMatch(built, new RegExp(`\\b${plan.name}\\b`), `the page prints ${plan.name}`);
-  }
+test('prints every catalog plan, Hobby included, and no plan waits for a dated Relay terms version', () => {
+  assert.deepEqual(upcomingSignalProtocolRelayPlans, []);
+  const hobby = selfServe.find(({ id }) => id === 'relay_hobby_v1');
+  assert.ok(hobby, 'Hobby is not a published self-service plan');
+  assert.ok(columnHead(hobby.id).includes('>Hobby</h3>'), 'Hobby has no column head');
+  assert.ok(columnHead(hobby.id).includes('>$9</p>'), 'Hobby does not print $9');
+  assert.match(built, /data-signal-relay-plan-compact="relay_hobby_v1"/, 'Hobby has no narrow block');
+  assert.ok(built.includes('href="https://console.open-e2ee.dev/signal-relay/new?plan=relay_hobby_v1"'), 'Hobby has no action');
+});
+
+/*
+ * The Free column states the current Free limits from the catalog that the
+ * signal-relay-2026-11-08 terms state, and none of the limits before it.
+ */
+test('the Free column prints the current Free limits', () => {
+  const free = selfServe.findIndex(({ id }) => id === 'relay_free_v1');
+  assert.equal(free, 0);
+  assert.deepEqual(
+    ['Monthly Active Users', 'Message Delivery Units', 'Attachment Uploads', 'Encrypted Storage'].map((label) => cells(label)[free]),
+    ['25', '12,500', '2,500', '250 MB'],
+  );
+  const hobby = selfServe.findIndex(({ id }) => id === 'relay_hobby_v1');
+  assert.equal(hobby, 1);
+  assert.deepEqual(
+    ['Monthly Active Users', 'Message Delivery Units', 'Attachment Uploads', 'Encrypted Storage'].map((label) => cells(label)[hobby]),
+    ['100', '50,000', '10,000', '1 GB'],
+  );
 });
 
 test('one plan is marked, and it alone carries the filled action', () => {

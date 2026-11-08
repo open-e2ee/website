@@ -36,10 +36,15 @@
  * version id and its /legal/relay-terms/<date> address, because the console
  * stores the pair that a customer accepted. A version id and its path always
  * take the same prefix: signal-relay-<date> at /legal/signal-relay-terms/<date>.
+ *
+ * The signal-relay-2026-11-08 version publishes the current service catalog:
+ * it adds the Hobby plan and states the current Free and Sandbox limits.
+ * Every other clause is unchanged. The Console settings for the Relay terms
+ * URL and version must move with these constants once the dated page is live.
  */
-export const signalRelayTermsVersion = 'signal-relay-2026-11-05';
-export const signalRelayTermsEffectiveDate = 'November 5, 2026';
-export const signalRelayTermsPath = '/legal/signal-relay-terms/2026-11-05';
+export const signalRelayTermsVersion = 'signal-relay-2026-11-08';
+export const signalRelayTermsEffectiveDate = 'November 8, 2026';
+export const signalRelayTermsPath = '/legal/signal-relay-terms/2026-11-08';
 export const signalRelayTermsUrl = `https://open-e2ee.dev${signalRelayTermsPath}`;
 
 /*

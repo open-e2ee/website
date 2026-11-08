@@ -48,7 +48,6 @@ NM4.4 scripts/verify-site-redesign.sh src/pages/relay
 NM3.3 src/components/HeroSnippet.astro relay
 NM4.4 src/components/NextStep.astro //docs.open-e2ee.dev/relay
 NM4.4 src/components/NextStep.astro /relay
-NM4.4 src/components/SignalProtocolRelayTerms20261105.astro relay-plans
 NM3.3 src/content/blog/e2ee-changes-your-application-architecture.mdx relay
 NM4.4 src/content/blog/signal-protocol-react-native-expo-2026.mdx //docs.open-e2ee.dev/relay
 NM1.12 src/content/blog/signal-protocol-react-native-expo-2026.mdx EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
@@ -70,7 +69,6 @@ PP52 src/data/signal-relay-pricing.mjs relay_growth_v1
 PP52 src/data/signal-relay-pricing.mjs relay_hobby_v1
 PP52 src/data/signal-relay-pricing.mjs relay_mau
 PP52 src/data/signal-relay-pricing.mjs relay_starter_v1
-PP52 src/data/signal-relay-service-catalog.mjs relay_managed_2026_10_18_v1
 PP52 src/data/signal-relay-service-catalog.mjs relay_managed_2026_11_01_v1
 PP52 src/data/virgil-security-comparison.mjs relay_business_v1
 PP52 src/data/virgil-security-comparison.mjs relay_growth_v1
@@ -233,9 +231,7 @@ NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-service-limits
 NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-terms
 NM4.4 src/pages/legal/signal-relay-service-limits.astro relay-plans
 NM4.4 src/pages/legal/signal-relay-terms/2026-11-05.astro relay-plans
-PP52 src/pages/pricing.astro relay_business_v1
 PP52 src/pages/pricing.astro relay_free_v1
-PP52 src/pages/pricing.astro relay_growth_v1
 PP52 src/pages/pricing.astro relay_starter_v1
 NM4.4 src/pages/pricing.astro relay-plans
 NM3.3 src/pages/product.astro ./remote/relay
@@ -317,17 +313,14 @@ PP52 tests/signal-relay-pricing.test.mjs relay_free_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_growth_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_hobby_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_starter_v1
-NM2.15 tests/signal-relay-pricing.test.mjs relay-2026-10-24
 NM4.4 tests/signal-relay-pricing.test.mjs src/pages/relay
 PP52 tests/signal-relay-service-catalog.test.mjs relay_business_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_free_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_growth_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_hobby_v1
-PP52 tests/signal-relay-service-catalog.test.mjs relay_managed_2026_10_18_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_managed_2026_11_01_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_mau
 PP52 tests/signal-relay-service-catalog.test.mjs relay_starter_v1
-NM2.15 tests/signal-relay-service-catalog.test.mjs relay-terms
 NM3.3 tests/site-content.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
 NM4.4 tests/site-content.test.mjs ../src/pages/relay
 NM4.4 tests/site-content.test.mjs /relay
