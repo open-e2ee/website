@@ -45,13 +45,16 @@
 // new file before its first commit.
 //
 // Failures. A hit that no entry holds. An entry with no hit. A duplicate
-// line. With a base ref, a directive or entry that the allowlist at the base
-// ref does not hold, so the allowlist only shrinks. Entries compare by path
-// and identifier, so a pull request can change the owner of an entry. --base <ref> sets the
-// base. Without it, the script uses origin/$GITHUB_BASE_REF when GitHub
-// Actions sets GITHUB_BASE_REF for a pull request. --no-base turns the base
-// check off. A base ref without the allowlist skips the base check, because
-// that pull request adds the guard.
+// line. With a base ref, a directive that the allowlist at the base ref does
+// not hold, or a new entry whose identifier the base allowlist does not hold
+// under the same owner. Entries compare by path and identifier, so a pull
+// request can change the owner of an entry. A new entry can repeat a frozen
+// name in a new path until its owner task renames it, so the set of owner
+// and identifier names only shrinks. --base <ref> sets the base. Without it,
+// the script uses origin/$GITHUB_BASE_REF when GitHub Actions sets
+// GITHUB_BASE_REF for a pull request. --no-base turns the base check off. A
+// base ref without the allowlist skips the base check, because that pull
+// request adds the guard.
 //
 // --list prints an entry for each hit and exits 0. An entry keeps its owner
 // from the allowlist, or gets the owner UNOWNED.
@@ -363,7 +366,13 @@ function parseAllowlist(text, source) {
     const [, owner, path, identifier] = entry;
     const key = `${decodePath(path)}\0${identifier}`;
     entries.push({ owner, path: decodePath(path), identifier, key, where });
-    lines.push({ key, where, label: `${decodePath(path)}: ${identifier}` });
+    lines.push({
+      key,
+      where,
+      label: `${decodePath(path)}: ${identifier}`,
+      owner,
+      identifier,
+    });
   });
   return { scan, ignore, entries, lines };
 }
@@ -496,7 +505,9 @@ function resolveBase(options) {
   return pullRequestBase ? `origin/${pullRequestBase}` : null;
 }
 
-function baseLines(root, base, allowlistPath) {
+// Returns the line keys of the allowlist at the base ref, and the owners of
+// each identifier there, or null when the base ref has no allowlist.
+function baseAllowlist(root, base, allowlistPath) {
   if (
     !gitSucceeds(root, ["rev-parse", "--verify", "--quiet", `${base}^{commit}`])
   ) {
@@ -507,7 +518,25 @@ function baseLines(root, base, allowlistPath) {
   const spec = `${base}:./${allowlistPath}`;
   if (!gitSucceeds(root, ["cat-file", "-e", spec])) return null;
   const parsed = parseAllowlist(git(root, ["show", spec]), spec);
-  return new Set(parsed.lines.map((line) => line.key));
+  const owners = new Map();
+  for (const entry of parsed.entries) {
+    if (!owners.has(entry.identifier)) owners.set(entry.identifier, new Set());
+    owners.get(entry.identifier).add(entry.owner);
+  }
+  return { keys: new Set(parsed.lines.map((line) => line.key)), owners };
+}
+
+// Returns why an allowlist line that the base does not hold fails, or null
+// when it is an entry that repeats a base name under the same owner.
+function newLineReason(line, base, held) {
+  const reason = `allowlist line ${line.where} is not on base ${base}`;
+  if (line.identifier === undefined) return reason;
+  const owners = held.owners.get(line.identifier);
+  if (owners === undefined) {
+    return `${reason} and ${line.identifier} has no base entry`;
+  }
+  if (owners.has(line.owner)) return null;
+  return `${reason} and ${line.identifier} is owned by ${[...owners].sort().join(", ")} there`;
 }
 
 function run(options) {
@@ -578,18 +607,15 @@ function run(options) {
   const base = resolveBase(options);
   let baseNote = "no base check";
   if (base !== null) {
-    const held = baseLines(root, base, allowlistPath);
+    const held = baseAllowlist(root, base, allowlistPath);
     if (held === null) {
       baseNote = `base ${base} has no allowlist, base check skipped`;
     } else {
       baseNote = `base ${base}`;
       for (const line of config.lines) {
-        if (!held.has(line.key)) {
-          failures.push({
-            label: line.label,
-            reason: `allowlist line ${line.where} is not on base ${base}`,
-          });
-        }
+        if (held.keys.has(line.key)) continue;
+        const reason = newLineReason(line, base, held);
+        if (reason !== null) failures.push({ label: line.label, reason });
       }
     }
   }
