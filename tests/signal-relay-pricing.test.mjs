@@ -150,15 +150,15 @@ test('keeps the comparison factual, dated, sourced, and explicit about the 5,000
 });
 
 test('publishes canonical Relay routes with accessible responsive tables', async () => {
-  const relay = await source('src/pages/relay/index.astro');
+  const signalRelay = await source('src/pages/signal-relay/index.astro');
   const pricing = await source('src/pages/pricing.astro');
   const comparison = await source('src/pages/compare/virgil-security.astro');
   /* BaseLayout derives the canonical from the served path, and
      tests/index-hygiene.test.mjs checks it on the built page. */
-  for (const page of [relay, pricing, comparison]) assert.doesNotMatch(page, /\bcanonical=/);
-  assert.match(relay, /OPEN_E2EE_RELAY_URL/);
-  assert.match(relay, /public configuration, not a credential/i);
-  assert.match(relay, /do not select a Relay hostname or pair/i);
+  for (const page of [signalRelay, pricing, comparison]) assert.doesNotMatch(page, /\bcanonical=/);
+  assert.match(signalRelay, /OPEN_E2EE_RELAY_URL/);
+  assert.match(signalRelay, /public configuration, not a credential/i);
+  assert.match(signalRelay, /do not select a Relay hostname or pair/i);
   /* Every wide table goes through the one component that carries the
      accessibility contract, and each one names what it holds. Written out at
      the table, two of the five call sites carried the scroll recipe and

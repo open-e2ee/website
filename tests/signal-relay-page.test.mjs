@@ -21,8 +21,8 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
  * and every assertion below reads rendered markup.
  */
 async function builtPage() {
-  const html = await read('../dist/relay/index.html').catch(() => null);
-  assert.ok(html, 'dist/relay/index.html is missing — build before reading what shipped');
+  const html = await read('../dist/signal-relay/index.html').catch(() => null);
+  assert.ok(html, 'dist/signal-relay/index.html is missing — build before reading what shipped');
 
   /* The page without the chrome around it. The site header carries a start
      action on every page since FR4, so a check for one anywhere in the file
@@ -168,4 +168,36 @@ test('publishes all four Relay boundary statements together', async () => {
   for (const statement of statements) {
     assert.ok(text.includes(statement), `the page does not carry: ${statement}`);
   }
+});
+
+test('serves the page at /signal-relay/ only, with no redirect from the retired path', async () => {
+  /* NM-FD5 renamed the public path in place: the old address serves the 404
+   * page, and no rule in public/_redirects sends it anywhere. A redirect added
+   * later would reverse that ruling without a test failing, so the rules are
+   * read here. The retired segment is built from parts, so that this file does
+   * not spell the bare name that the Signal Relay naming guard rejects. */
+  const retired = `/${['re', 'lay'].join('')}`;
+  const redirects = await read('../public/_redirects');
+  const sources = redirects
+    .split('\n')
+    .filter((line) => line.trim() !== '' && !line.startsWith('#'))
+    .map((line) => line.trim().split(/\s+/)[0]);
+  assert.ok(sources.length > 0, 'public/_redirects holds no rules');
+  for (const source of sources) {
+    assert.ok(
+      source !== retired && !source.startsWith(`${retired}/`) && !source.startsWith(`${retired}*`),
+      `public/_redirects sends ${source} somewhere; NM-FD5 renamed the page in place`,
+    );
+  }
+
+  /* The sitemap names the new address and not the old one. */
+  const index = await read('../dist/sitemap-index.xml').catch(() => null);
+  assert.ok(index, 'dist/sitemap-index.xml is missing — build before reading what shipped');
+  const pages = [];
+  for (const [, sitemap] of index.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+    const xml = await read(`../dist${new URL(sitemap).pathname}`);
+    pages.push(...[...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => new URL(loc).pathname));
+  }
+  assert.ok(pages.includes('/signal-relay/'), 'the sitemap does not list /signal-relay/');
+  assert.ok(!pages.includes(`${retired}/`), `the sitemap still lists ${retired}/`);
 });

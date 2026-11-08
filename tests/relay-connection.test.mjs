@@ -19,7 +19,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 const PREFIXES = ['NEXT_PUBLIC_', 'EXPO_PUBLIC_', 'VITE_'];
 
 test('the Relay page names the framework prefix on the connection variable', async () => {
-  const signalRelayPage = await read('src/pages/relay/index.astro');
+  const signalRelayPage = await read('src/pages/signal-relay/index.astro');
   const row = signalRelayPage.match(/<dt>One variable<\/dt><dd>([\s\S]*?)<\/dd>/)?.[1];
   assert.ok(row, 'the Relay page has no "One variable" row');
   assert.match(row, /<code>OPEN_E2EE_RELAY_URL<\/code>/);

@@ -143,7 +143,7 @@ test("--base rejects a new allowlist line and accepts a removed one", (t) => {
   assert.equal(added.status, 1);
   assert.deepEqual(added.lines.slice(0, -1), [
     `ignore generated/ (allowlist line ${allowlist}:3 is not on base main)`,
-    `src/new.ts: ${W}Url (allowlist line ${allowlist}:2 is not on base main)`,
+    `src/new.ts: ${W}Url (allowlist line ${allowlist}:2 is not on base main and ${W}Url has no base entry)`,
   ]);
   assert.match(added.lines.at(-1), /, base main, \d+ ms$/);
 
@@ -172,6 +172,69 @@ test("the base check keys an entry by path and identifier, not by owner", (t) =>
     duplicate.lines[0],
     `src/old.ts: ${W}Url (duplicate allowlist line at ${allowlist}:2)`,
   );
+});
+
+// Returns a repository on a change branch whose main allowlist holds one
+// entry for a frozen name.
+function frozenName(t) {
+  const root = repository(t, {
+    ...clean,
+    "src/old.ts": `export const ${W}ScopeId = 1;\n`,
+    [allowlist]: `NM3.1 src/old.ts ${W}ScopeId\n`,
+  });
+  git(root, "checkout", "--quiet", "-b", "change");
+  write(root, { "test/new.test.ts": `assert.equal(row.${W}ScopeId, 1);\n` });
+  return root;
+}
+
+test("--base accepts a new entry that repeats a base name under the same owner", (t) => {
+  const root = frozenName(t);
+  write(root, {
+    [allowlist]: `NM3.1 src/old.ts ${W}ScopeId\nNM3.1 test/new.test.ts ${W}ScopeId\n`,
+  });
+  const result = guard(root, ["--base", "main"]);
+  assert.equal(result.status, 0, result.lines.join("\n"));
+  assert.match(
+    result.lines[0],
+    /^check-signal-relay-naming: ok, 2 hits in 3 files, 2 allowlist entries, base main, \d+ ms$/,
+  );
+});
+
+test("--base rejects a new entry that gives a base name a different owner", (t) => {
+  const root = frozenName(t);
+  write(root, {
+    [allowlist]: `NM3.1 src/old.ts ${W}ScopeId\nNM7.3 test/new.test.ts ${W}ScopeId\n`,
+  });
+  const result = guard(root, ["--base", "main"]);
+  assert.equal(result.status, 1);
+  assert.deepEqual(result.lines.slice(0, -1), [
+    `test/new.test.ts: ${W}ScopeId (allowlist line ${allowlist}:2 is not on base main and ${W}ScopeId is owned by NM3.1 there)`,
+  ]);
+});
+
+test("--base rejects a new entry for a name that base does not hold", (t) => {
+  const root = frozenName(t);
+  write(root, {
+    "test/new.test.ts": `assert.equal(row.${W}Commit, 1);\n`,
+    [allowlist]: `NM3.1 src/old.ts ${W}ScopeId\nNM3.1 test/new.test.ts ${W}Commit\n`,
+  });
+  const result = guard(root, ["--base", "main"]);
+  assert.equal(result.status, 1);
+  assert.deepEqual(result.lines.slice(0, -1), [
+    `test/new.test.ts: ${W}Commit (allowlist line ${allowlist}:2 is not on base main and ${W}Commit has no base entry)`,
+  ]);
+});
+
+test("--base rejects a new ignore directive", (t) => {
+  const root = frozenName(t);
+  write(root, {
+    [allowlist]: `NM3.1 src/old.ts ${W}ScopeId\nignore test/\n`,
+  });
+  const result = guard(root, ["--base", "main"]);
+  assert.equal(result.status, 1);
+  assert.deepEqual(result.lines.slice(0, -1), [
+    `ignore test/ (allowlist line ${allowlist}:2 is not on base main)`,
+  ]);
 });
 
 test("GITHUB_BASE_REF sets the base, and a base without the allowlist skips the check", (t) => {

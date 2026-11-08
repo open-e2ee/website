@@ -37,7 +37,7 @@ const DIST = join(ROOT, 'dist');
    rather than one: the header is one component, and a reading that takes it
    from a single page cannot tell a component from a page that happens to
    render it. */
-const PATHS = ['/', '/relay/', '/pricing/'];
+const PATHS = ['/', '/signal-relay/', '/pricing/'];
 
 /* Tall enough for the sticky header and the first band under it. */
 const VIEWPORT_HEIGHT = 900;
