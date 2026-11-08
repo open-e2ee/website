@@ -69,9 +69,9 @@ const failures = [];
 /** The label one plan carries, and with it the filled action. */
 const MARK = 'Most popular';
 
-const plans = section('relay-plans');
+const plans = section('signal-relay-plans');
 
-if (!plans) failures.push('no section carries id="relay-plans"');
+if (!plans) failures.push('no section carries id="signal-relay-plans"');
 if (section('licensing')) failures.push('a section carries id="licensing"; the site sells no SDK license');
 
 /** One slice per plan marker in a slice, each running to the next marker. */

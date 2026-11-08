@@ -9,6 +9,10 @@
 # guard fails on an entry or directive that the base branch does not hold, so
 # this list only shrinks.
 #
+# NM-FD5 keeps the frozen dated Relay terms and limits pages as published.
+# They link the pricing plan table by its old id, which now lands at the top
+# of /pricing. The live pages link the signal-relay id.
+#
 # NM-FD11 keeps the attested public release manifest at its URL. The file
 # name and release id stay, and the workflow, verifier, and test keep the path
 # and id that they attest and check, so the manifest and its attestation still
@@ -19,24 +23,19 @@
 # no ignore directives.
 
 NM-FD11 .github/workflows/release-manifest.yml open-e2ee-relay-v1
-NM4.4 playground/index.html /relay
 NM3.3 playground/src/exchange.ts relay
 NM3.3 playground/src/exchange.ts relay.getPendingMessages
 NM3.3 playground/src/exchange.ts relay.registerDevice
 NM3.3 playground/src/exchange.ts startRelaySubscription
 NM3.3 playground/src/exchange.ts stopRelaySubscription
-NM4.4 public/_redirects /relay
 NM2.15 public/_redirects relay-2026-09-29
 NM2.15 public/_redirects relay-beta-limits
-NM4.4 public/_redirects relay-plans
 NM2.15 public/_redirects relay-retention
 NM2.15 public/_redirects relay-service-limits
 NM2.15 public/_redirects relay-terms
 NM-FD11 public/releases/ open-e2ee-relay-v1.json
 NM-FD11 public/releases/open-e2ee-relay-v1.json open-e2ee-relay-v1
 NM4.5 public/releases/open-e2ee-relay-v1.json relay
-NM4.4 scripts/check-pricing-actions.mjs relay-plans
-NM4.4 scripts/measure-lockup-fit.mjs /relay
 NM3.3 scripts/record-carrier-capture.mjs relay
 NM3.3 scripts/record-carrier-capture.mjs relay.getPendingMessages
 NM3.3 scripts/record-carrier-capture.mjs relay.registerDevice
@@ -44,10 +43,8 @@ NM3.3 scripts/record-carrier-capture.mjs startRelaySubscription
 NM1.12 scripts/sdk-identifier-allowlist.json OPEN_E2EE_RELAY_URL
 NM-FD11 scripts/verify-release-manifest.mjs open-e2ee-relay-v1
 NM4.5 scripts/verify-release-manifest.mjs relay
-NM4.4 scripts/verify-site-redesign.sh src/pages/relay
 NM3.3 src/components/HeroSnippet.astro relay
 NM4.4 src/components/NextStep.astro //docs.open-e2ee.dev/relay
-NM4.4 src/components/NextStep.astro /relay
 NM3.3 src/content/blog/e2ee-changes-your-application-architecture.mdx relay
 NM4.4 src/content/blog/signal-protocol-react-native-expo-2026.mdx //docs.open-e2ee.dev/relay
 NM1.12 src/content/blog/signal-protocol-react-native-expo-2026.mdx EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
@@ -113,13 +110,7 @@ NM2.15 src/lib/legal.mjs relay-beta-limits
 NM2.15 src/lib/legal.mjs relay-retention
 NM2.15 src/lib/legal.mjs relay-service-limits
 NM2.15 src/lib/legal.mjs relay-terms
-NM4.4 src/lib/site-navigation.ts /relay
-NM4.4 src/pages/ relay
-NM4.4 src/pages/compare/virgil-security.astro relay-plans
-NM4.4 src/pages/index.astro /relay
-NM4.4 src/pages/index.astro relay
 PP52 src/pages/index.astro relay_free_v1
-NM4.4 src/pages/index.astro your-relay-holds-ciphertext
 NM2.15 src/pages/legal/ relay-beta-limits
 NM2.15 src/pages/legal/ relay-retention
 NM2.15 src/pages/legal/ relay-service-limits
@@ -156,12 +147,12 @@ NM2.15 src/pages/legal/privacy/2026-10-24.astro relay-retention
 NM2.15 src/pages/legal/privacy/2026-11-02.astro relay-retention
 NM2.15 src/pages/legal/relay-beta-limits/2026-08-26.astro OpenE2EE Relay
 NM2.15 src/pages/legal/relay-beta-limits/2026-08-26.astro relay-beta-limits
-NM4.4 src/pages/legal/relay-beta-limits/2026-08-26.astro relay-plans
+NM-FD5 src/pages/legal/relay-beta-limits/2026-08-26.astro relay-plans
 NM2.15 src/pages/legal/relay-beta-limits/2026-09-10.astro OpenE2EE Relay
 NM2.15 src/pages/legal/relay-beta-limits/2026-09-10.astro relay-beta-limits
-NM4.4 src/pages/legal/relay-beta-limits/2026-09-10.astro relay-plans
+NM-FD5 src/pages/legal/relay-beta-limits/2026-09-10.astro relay-plans
 NM2.15 src/pages/legal/relay-beta-limits/2026-09-29.astro relay-beta-limits
-NM4.4 src/pages/legal/relay-beta-limits/2026-09-29.astro relay-plans
+NM-FD5 src/pages/legal/relay-beta-limits/2026-09-29.astro relay-plans
 NM2.15 src/pages/legal/relay-retention/2026-08-26.astro OpenE2EE Relay
 NM2.15 src/pages/legal/relay-retention/2026-08-26.astro relay-retention
 NM2.15 src/pages/legal/relay-retention/2026-09-10.astro OpenE2EE Relay
@@ -172,14 +163,14 @@ NM2.15 src/pages/legal/relay-retention/2026-10-08.astro relay-retention
 NM2.15 src/pages/legal/relay-retention/2026-10-19.astro relay-retention
 NM2.15 src/pages/legal/relay-retention/2026-10-24.astro relay-retention
 NM2.15 src/pages/legal/relay-service-limits/2026-10-05.astro relay-beta-limits
-NM4.4 src/pages/legal/relay-service-limits/2026-10-05.astro relay-plans
+NM-FD5 src/pages/legal/relay-service-limits/2026-10-05.astro relay-plans
 NM2.15 src/pages/legal/relay-service-limits/2026-10-05.astro relay-service-limits
 NM2.15 src/pages/legal/relay-terms/2026-08-26.astro ManagedRelayTerms20260826
 NM2.15 src/pages/legal/relay-terms/2026-08-26.astro OpenE2EE Relay
 PP52 src/pages/legal/relay-terms/2026-08-26.astro relay_terms_acceptances
 NM2.15 src/pages/legal/relay-terms/2026-08-26.astro relay-2026-08-26
 NM2.15 src/pages/legal/relay-terms/2026-08-26.astro relay-beta-limits
-NM4.4 src/pages/legal/relay-terms/2026-08-26.astro relay-plans
+NM-FD5 src/pages/legal/relay-terms/2026-08-26.astro relay-plans
 NM2.15 src/pages/legal/relay-terms/2026-08-26.astro relay-retention
 NM2.15 src/pages/legal/relay-terms/2026-08-26.astro relay-terms
 NM2.15 src/pages/legal/relay-terms/2026-09-10.astro ManagedRelayTerms20260910
@@ -187,59 +178,53 @@ NM2.15 src/pages/legal/relay-terms/2026-09-10.astro OpenE2EE Relay
 PP52 src/pages/legal/relay-terms/2026-09-10.astro relay_terms_acceptances
 NM2.15 src/pages/legal/relay-terms/2026-09-10.astro relay-2026-09-10
 NM2.15 src/pages/legal/relay-terms/2026-09-10.astro relay-beta-limits
-NM4.4 src/pages/legal/relay-terms/2026-09-10.astro relay-plans
+NM-FD5 src/pages/legal/relay-terms/2026-09-10.astro relay-plans
 NM2.15 src/pages/legal/relay-terms/2026-09-10.astro relay-retention
 NM2.15 src/pages/legal/relay-terms/2026-09-10.astro relay-terms
 PP52 src/pages/legal/relay-terms/2026-09-22.astro relay_terms_acceptances
 NM2.15 src/pages/legal/relay-terms/2026-09-22.astro relay-2026-09-22
 NM2.15 src/pages/legal/relay-terms/2026-09-22.astro relay-beta-limits
-NM4.4 src/pages/legal/relay-terms/2026-09-22.astro relay-plans
+NM-FD5 src/pages/legal/relay-terms/2026-09-22.astro relay-plans
 NM2.15 src/pages/legal/relay-terms/2026-09-22.astro relay-retention
 NM2.15 src/pages/legal/relay-terms/2026-09-22.astro relay-terms
 PP52 src/pages/legal/relay-terms/2026-09-29.astro relay_terms_acceptances
 NM2.15 src/pages/legal/relay-terms/2026-09-29.astro relay-2026-09-29
 NM2.15 src/pages/legal/relay-terms/2026-09-29.astro relay-beta-limits
-NM4.4 src/pages/legal/relay-terms/2026-09-29.astro relay-plans
+NM-FD5 src/pages/legal/relay-terms/2026-09-29.astro relay-plans
 NM2.15 src/pages/legal/relay-terms/2026-09-29.astro relay-retention
 NM2.15 src/pages/legal/relay-terms/2026-09-29.astro relay-terms
 PP52 src/pages/legal/relay-terms/2026-10-05.astro relay_terms_acceptances
 NM2.15 src/pages/legal/relay-terms/2026-10-05.astro relay-2026-10-05
-NM4.4 src/pages/legal/relay-terms/2026-10-05.astro relay-plans
+NM-FD5 src/pages/legal/relay-terms/2026-10-05.astro relay-plans
 NM2.15 src/pages/legal/relay-terms/2026-10-05.astro relay-retention
 NM2.15 src/pages/legal/relay-terms/2026-10-05.astro relay-service-limits
 NM2.15 src/pages/legal/relay-terms/2026-10-05.astro relay-terms
 PP52 src/pages/legal/relay-terms/2026-10-08.astro relay_terms_acceptances
 NM2.15 src/pages/legal/relay-terms/2026-10-08.astro relay-2026-10-08
-NM4.4 src/pages/legal/relay-terms/2026-10-08.astro relay-plans
+NM-FD5 src/pages/legal/relay-terms/2026-10-08.astro relay-plans
 NM2.15 src/pages/legal/relay-terms/2026-10-08.astro relay-retention
 NM2.15 src/pages/legal/relay-terms/2026-10-08.astro relay-service-limits
 NM2.15 src/pages/legal/relay-terms/2026-10-08.astro relay-terms
 NM2.15 src/pages/legal/relay-terms/2026-10-18.astro relay-2026-10-18
-NM4.4 src/pages/legal/relay-terms/2026-10-18.astro relay-plans
+NM-FD5 src/pages/legal/relay-terms/2026-10-18.astro relay-plans
 NM2.15 src/pages/legal/relay-terms/2026-10-18.astro relay-retention
 NM2.15 src/pages/legal/relay-terms/2026-10-18.astro relay-service-limits
 NM2.15 src/pages/legal/relay-terms/2026-10-18.astro relay-terms
 NM2.15 src/pages/legal/relay-terms/2026-10-24.astro relay-2026-10-24
-NM4.4 src/pages/legal/relay-terms/2026-10-24.astro relay-plans
+NM-FD5 src/pages/legal/relay-terms/2026-10-24.astro relay-plans
 NM2.15 src/pages/legal/relay-terms/2026-10-24.astro relay-retention
 NM2.15 src/pages/legal/relay-terms/2026-10-24.astro relay-service-limits
 NM2.15 src/pages/legal/relay-terms/2026-10-24.astro relay-terms
 NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-2026-11-02
-NM4.4 src/pages/legal/relay-terms/2026-11-02.astro relay-plans
+NM-FD5 src/pages/legal/relay-terms/2026-11-02.astro relay-plans
 NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-retention
 NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-service-limits
 NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-terms
-NM4.4 src/pages/legal/signal-relay-service-limits.astro relay-plans
-NM4.4 src/pages/legal/signal-relay-terms/2026-11-05.astro relay-plans
 PP52 src/pages/pricing.astro relay_free_v1
 PP52 src/pages/pricing.astro relay_starter_v1
-NM4.4 src/pages/pricing.astro relay-plans
 NM3.3 src/pages/product.astro ./remote/relay
-NM4.4 src/pages/product.astro /relay
-NM4.4 src/pages/relay/index.astro //docs.open-e2ee.dev/relay
-NM1.12 src/pages/relay/index.astro OPEN_E2EE_RELAY_URL
-PP52 src/pages/relay/index.astro relay_free_v1
-NM4.4 src/pages/relay/index.astro relay-plans
+NM4.4 src/pages/signal-relay/index.astro //docs.open-e2ee.dev/relay
+NM1.12 src/pages/signal-relay/index.astro OPEN_E2EE_RELAY_URL
 NM3.3 src/pages/security.astro remote/relay
 NM1.12 tests/ relay-connection.test.mjs
 NM1.12 tests/ relay-terms-gate.test.mjs
@@ -269,10 +254,7 @@ NM3.3 tests/demo-signal-relay.test.mjs relay.subscribeRelayConnectionState
 NM3.3 tests/demo-signal-relay.test.mjs relay.uploadPreKeys
 NM3.3 tests/demo-signal-relay.test.mjs relayConnectionState
 NM3.3 tests/demo-signal-relay.test.mjs subscribeRelayConnectionState
-NM4.4 tests/diagram-grammar.test.mjs /relay
 PP52 tests/external-links.test.mjs relay_starter_v1
-NM4.4 tests/legal-pages.test.mjs ../src/pages/relay
-NM4.4 tests/legal-pages.test.mjs relay
 NM2.15 tests/legal-pages.test.mjs relay-
 NM2.15 tests/legal-pages.test.mjs relay-2026-08-26
 NM2.15 tests/legal-pages.test.mjs relay-2026-09-10
@@ -288,32 +270,24 @@ NM2.15 tests/legal-pages.test.mjs relay-retention
 NM2.15 tests/legal-pages.test.mjs relay-service-limits
 NM2.15 tests/legal-pages.test.mjs relay-terms
 NM2.15 tests/legal-pages.test.mjs RelayTerms
-NM4.4 tests/navigation.test.mjs /relay
-NM4.4 tests/playground.test.mjs /relay
+NM3.3 tests/playground.test.mjs /relay
 NM3.3 tests/playground.test.mjs inMemoryRelay
-NM4.4 tests/pricing-page.test.mjs /relay
 PP52 tests/pricing-page.test.mjs relay_business_v1
 PP52 tests/pricing-page.test.mjs relay_free_v1
 PP52 tests/pricing-page.test.mjs relay_growth_v1
 PP52 tests/pricing-page.test.mjs relay_hobby_v1
 PP52 tests/pricing-page.test.mjs relay_starter_v1
-NM4.4 tests/pricing-page.test.mjs relay-plans
 NM1.12 tests/relay-connection.test.mjs EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
 NM1.12 tests/relay-connection.test.mjs OPEN_E2EE_RELAY_URL
-NM4.4 tests/relay-connection.test.mjs src/pages/relay
 PP52 tests/relay-terms-gate.test.mjs relay_free_v1
 NM-FD11 tests/release-manifest.test.mjs open-e2ee-relay-v1
-NM4.4 tests/signal-relay-page.test.mjs ../dist/relay
-NM4.4 tests/signal-relay-page.test.mjs dist/relay
 NM1.12 tests/signal-relay-pricing.test.mjs OPEN_E2EE_RELAY_URL
-NM4.4 tests/signal-relay-pricing.test.mjs relay
 PP52 tests/signal-relay-pricing.test.mjs relay_business_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_enterprise_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_free_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_growth_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_hobby_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_starter_v1
-NM4.4 tests/signal-relay-pricing.test.mjs src/pages/relay
 PP52 tests/signal-relay-service-catalog.test.mjs relay_business_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_free_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_growth_v1
@@ -322,9 +296,7 @@ PP52 tests/signal-relay-service-catalog.test.mjs relay_managed_2026_11_01_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_mau
 PP52 tests/signal-relay-service-catalog.test.mjs relay_starter_v1
 NM3.3 tests/site-content.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
-NM4.4 tests/site-content.test.mjs ../src/pages/relay
-NM4.4 tests/site-content.test.mjs /relay
-NM4.4 tests/site-content.test.mjs relay
+NM3.3 tests/site-content.test.mjs /relay
+NM3.3 tests/site-content.test.mjs relay
 NM3.3 tests/site-content.test.mjs relayUrl
 NM3.3 tests/site-content.test.mjs startRelaySubscription
-NM4.4 tests/site-content.test.mjs your-relay-holds-ciphertext

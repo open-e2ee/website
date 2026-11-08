@@ -266,7 +266,7 @@ test('monthly active users lead the rows, their overage follows, and every cell 
   assert.deepEqual(cells('Additional Storage').slice(1), selfServe.slice(1).map((plan) => plan.overage.storage));
   const underTable = built.slice(built.indexOf('</table>'), built.indexOf('<section id="included"'));
   assert.doesNotMatch(underTable, /Prefer to operate the delivery layer|allowances are monthly|Free stops at every cap/, 'a note the founder removed still stands under the table');
-  assert.doesNotMatch(underTable, /href="\/relay"|href="\/compare\/virgil-security"/, 'a link the founder removed still stands under the table');
+  assert.doesNotMatch(underTable, /href="\/signal-relay"|href="\/compare\/virgil-security"/, 'a link the founder removed still stands under the table');
   assert.equal(built.indexOf('How buying works'), -1, 'the How buying works band the founder cut is still on the page');
   assert.doesNotMatch(built.slice(0, built.indexOf('<footer')), /Taxes can apply|Compare self-hosted rights|Ask a licensing question|Create a project and build in its Development environment/, 'a line of the How buying works band is still on the page');
   for (const row of capacityRows) assert.doesNotMatch(row.label, /per month|[Ee]xact|[Ee]xcess|operations/, `row label "${row.label}"`);
@@ -312,7 +312,7 @@ test('every row that differs by plan is headed by a name that defines itself', (
    * may clip or scroll: a scroll box here cut the last rows' tooltips off and
    * counted their hidden boxes as height the table scrolled through. */
   assert.doesNotMatch(built, /data-table-scroll/, 'the page has a scroll region');
-  const wrapper = built.slice(built.indexOf('id="relay-plans"'), table.length ? built.indexOf('<table') : -1);
+  const wrapper = built.slice(built.indexOf('id="signal-relay-plans"'), table.length ? built.indexOf('<table') : -1);
   assert.doesNotMatch(wrapper, /overflow|contain:/, 'the table sits inside a clipping box');
 });
 
@@ -323,7 +323,7 @@ test('what every plan carries stands in one section of cards under the plans, li
    * the heading names the page. The founder's 2026-09-08 lead is the one
    * sentence, and the sentence that lists what Relay runs is on the Relay
    * page, not here twice. */
-  const plansStart = built.indexOf('id="relay-plans"');
+  const plansStart = built.indexOf('id="signal-relay-plans"');
   const plansClasses = built.slice(built.lastIndexOf('<section', plansStart), plansStart).match(/class="([^"]*)"/)?.[1] ?? '';
   assert.doesNotMatch(plansClasses, /rule-t/, 'the opening section draws a rule under the site header');
   assert.ok(built.indexOf('<h1') > plansStart, 'a hero still opens the page above the plans');
@@ -494,7 +494,7 @@ const ACTION_LABELS = {
 };
 
 test('every plan\'s action carries the label the founder chose for it', () => {
-  const plans = built.slice(built.indexOf('id="relay-plans"'), built.indexOf(`data-signal-relay-plan="${enterprise.id}"`));
+  const plans = built.slice(built.indexOf('id="signal-relay-plans"'), built.indexOf(`data-signal-relay-plan="${enterprise.id}"`));
   for (const plan of selfServe) {
     const expected = ACTION_LABELS[plan.id];
     assert.ok(expected, `${plan.id} has no label in this test`);

@@ -377,12 +377,12 @@ const differentiators: Differentiator[] = [
    * line of a two-column grid, so the span costs no vertical space and buys
    * the body a full measure.
    *
-   * The id does not change with the title. It is the one deep link on this
-   * page a reader arrives on from somewhere else, and the cell still holds
-   * ciphertext, so the anchor is still true.
+   * The id is the title. It is the one deep link on this page a reader
+   * arrives on from somewhere else, so it names what the cell is about and
+   * holds no relay identifier that docs/identity.md would rename.
    */
   {
-    id: 'your-relay-holds-ciphertext',
+    id: 'infrastructure-you-own',
     title: 'Infrastructure you own',
     icon: 'server',
     wide: true,
@@ -501,9 +501,9 @@ const runtimes = [
             Two sentences. The first says where the encryption happens, so the
             second cannot be read as a hosted chat service; the second says what
             OpenE2EE operates, in the four nouns a reader would otherwise have
-            to open /relay to find. No boundary claim here: docs/messaging.md
+            to open /signal-relay to find. No boundary claim here: docs/messaging.md
             publishes the four Relay boundary statements together or not at all,
-            and /relay is where they are together. */}
+            and /signal-relay is where they are together. */}
         <p class:list={[LEAD, 'max-w-none!']} data-hero-lead>
           The SDK encrypts on each device. The OpenE2EE Signal Protocol Relay operates the delivery: encrypted
           device mailboxes, group fan-out, private attachments, and push wakes.
@@ -601,7 +601,7 @@ const runtimes = [
     The canvas ground rather than the panel: the demo band under it is a panel,
     and two panels in a row erase the boundary the rule is drawn to state.
   */}
-  <section id="relay" class:list={[BAND, HERO_RAMP]}>
+  <section id="signal-relay" class:list={[BAND, HERO_RAMP]}>
     <div class={CONTAINER}>
       <div class={BAND_HEAD}>
         <p class={LABEL}>Signal Protocol Relay</p>
@@ -618,7 +618,7 @@ const runtimes = [
         <p class={MEASURE}>Production traffic at {free.price}: {free.signalRelayMau} Relay MAU, {free.deliveryUnits} delivery units, and {free.storage} storage, under hard caps with no automatic charge. Every project also opens a Sandbox environment, which needs no card.</p>
         <a class="oe-button" href={SIGNAL_RELAY_PROJECT}>Start a Relay project</a>
       </div>
-      <p class:list={['mt-8', TEXT_LINKS]}><a href="/relay">What Relay operates</a><a href="/pricing">Relay plans and limits</a></p>
+      <p class:list={['mt-8', TEXT_LINKS]}><a href="/signal-relay">What Relay operates</a><a href="/pricing">Relay plans and limits</a></p>
     </div>
   </section>
 

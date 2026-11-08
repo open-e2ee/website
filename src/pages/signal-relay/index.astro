@@ -1,7 +1,7 @@
 ---
 import SignalProtocolRelayMailboxes from '../../components/diagrams/SignalProtocolRelayMailboxes.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { signalRelayPlans } from '../../data/signal-relay-pricing.mjs';
+import { signalRelayFreePlan } from '../../data/signal-relay-pricing.mjs';
 import { startAction, startPromise } from '../../lib/site-navigation';
 import {
   ACTIONS,
@@ -28,8 +28,8 @@ const SIGNAL_RELAY_PROJECT = startAction.href;
  * this file, and a page that prints the numbers by hand is correct on the day it
  * ships.
  */
-const free = signalRelayPlans.find((plan) => plan.id === 'relay_free_v1');
-if (!free) throw new Error('relay/index.astro: the Relay catalog carries no free plan');
+const free = signalRelayFreePlan;
+if (!free) throw new Error('signal-relay/index.astro: the Relay catalog carries no free plan');
 
 /*
  * The hero was one measure-wide column, which left the right half of it empty on
@@ -89,7 +89,7 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
             <li>{free.storage} storage</li>
           </ul>
           <p class:list={[METADATA, 'text-text-3']}>{free.detail}</p>
-          <p class={TEXT_LINKS}><a href="/pricing#relay-plans">Compare every plan</a></p>
+          <p class={TEXT_LINKS}><a href="/pricing#signal-relay-plans">Compare every plan</a></p>
         </div>
       </div>
     </div>
@@ -125,7 +125,7 @@ const START_CAPACITY = 'm-0 flex list-none flex-col gap-1 p-0 text-[0.9375rem] t
           asks whether Relay is required, and a reader who operates their own
           infrastructure asks where the metadata lives. */}
       <p class={MEASURE}>The OpenE2EE Signal Protocol SDK works with the Signal Protocol Relay or another adapter. The Signal Protocol Relay is the shortest hosted path, not a requirement of the SDK. A self-hosted adapter keeps relay metadata in infrastructure the developer operates. A managed project places the required relay metadata with OpenE2EE.</p>
-      <p class={TEXT_LINKS}><a href="/pricing#relay-plans">Plans, meters, and overage</a><a href="/legal/signal-relay-terms">Signal Protocol Relay service terms</a><a href="/compare/virgil-security">Compare architecture with Virgil Security</a><a href="/licensing">Review SDK licensing</a></p>
+      <p class={TEXT_LINKS}><a href="/pricing#signal-relay-plans">Plans, meters, and overage</a><a href="/legal/signal-relay-terms">Signal Protocol Relay service terms</a><a href="/compare/virgil-security">Compare architecture with Virgil Security</a><a href="/licensing">Review SDK licensing</a></p>
     </div>
   </section>
 

@@ -61,7 +61,7 @@ export type FooterGroup = {
  */
 export const headerNavigation: readonly NavigationLink[] = [
   { href: '/product', label: 'SDK' },
-  { href: '/relay', label: 'Relay' },
+  { href: '/signal-relay', label: 'Relay' },
   { href: '/#demo', label: 'Demo' },
   { href: '/playground/', label: 'Playground' },
   { href: 'https://docs.open-e2ee.dev', label: 'Docs' },
@@ -126,7 +126,7 @@ export const footerGroups: readonly FooterGroup[] = [
     heading: 'Products',
     links: [
       { href: '/product', label: 'Signal Protocol SDK' },
-      { href: '/relay', label: 'Signal Protocol Relay' },
+      { href: '/signal-relay', label: 'Signal Protocol Relay' },
       /* "Demo in your browser" pointed at /demo and is gone with the route.
          The scenarios are a homepage section now, and a footer link to a
          fragment of the page the logo above already links to is the kind of

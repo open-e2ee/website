@@ -27,8 +27,8 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 /*
  * The five diagrams of infrastructure the reader operates. `SignalProtocolRelayMailboxes` is
- * deliberately not among them: it stands on /relay, whose subject is OpenE2EE
- * Relay itself, and `DESIGN.md` gives that drawing the branded form.
+ * deliberately not among them: it stands on /signal-relay, whose subject is the
+ * Signal Protocol Relay itself, and `DESIGN.md` gives that drawing the branded form.
  */
 const READER_DIAGRAMS = [
   'ExpoKeyMap',

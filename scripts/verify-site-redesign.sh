@@ -304,7 +304,7 @@ sr_v24() {
 # artifact proves nothing.
 
 PRICING=src/pages/pricing.astro
-SIGNAL_RELAY_PAGE=src/pages/relay/index.astro
+SIGNAL_RELAY_PAGE=src/pages/signal-relay/index.astro
 HOMEPAGE=src/pages/index.astro
 ARTICLE_CSS=src/styles/article.css
 DIAGRAMS=src/components/diagrams

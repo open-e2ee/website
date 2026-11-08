@@ -1385,13 +1385,13 @@ test('keeps the example’s settings on one row, and shortens the writing to hol
 });
 
 test('centers the hero at the phone’s width as well as the desktop’s', async () => {
-  const [index, recipes, strip, navigation, pricing, relay, product, nextStep] = await Promise.all([
+  const [index, recipes, strip, navigation, pricing, signalRelay, product, nextStep] = await Promise.all([
     read('../src/pages/index.astro'),
     read('../src/lib/recipes.ts'),
     read('../src/components/PlatformStrip.astro'),
     read('../src/lib/site-navigation.ts'),
     read('../src/pages/pricing.astro'),
-    read('../src/pages/relay/index.astro'),
+    read('../src/pages/signal-relay/index.astro'),
     read('../src/pages/product.astro'),
     read('../src/components/NextStep.astro'),
   ]);
@@ -1424,7 +1424,7 @@ test('centers the hero at the phone’s width as well as the desktop’s', async
   assert.doesNotMatch(recipes, /CTA_PRIMARY|CTA_SUBLABEL/, 'a recipe for a promise outside the button is back');
   assert.match(navigation, /export const startPromise = 'Sandbox · no credit card needed';/, 'the console\u2019s promise is not one string');
   assert.match(pricing, /const PLANS_PRIMARY = 'oe-button oe-button-large oe-button-stacked';/, 'the pricing primary is not the large stacked button');
-  const heroes = { index, pricing, relay, product, nextStep };
+  const heroes = { index, pricing, signalRelay, product, nextStep };
   for (const [name, source] of Object.entries(heroes)) {
     assert.doesNotMatch(source, /CTA_SUBLABEL|<span class="oe-button">/, `${name} sets the promise outside the button, or draws a button inside a link`);
     assert.doesNotMatch(source, /Development environment · no card|Free to start · no card/, `${name} carries the old words`);
@@ -4086,7 +4086,7 @@ test('names the cost of E2EE in the deck that lists the benefits', async () => {
    * one deep link on this page that a reader is given by someone else. Every
    * cell is addressable through the same `item.id`, so the pin is on the id
    * and on the binding that renders it, not on a sentence pointing at it. */
-  assert.match(index, /id: 'your-relay-holds-ciphertext'/);
+  assert.match(index, /id: 'infrastructure-you-own'/);
   assert.match(index, /<li id=\{item\.id\}/);
 
   /* docs/messaging.md §3 bans "the relay can't read your messages" by name.
