@@ -1188,8 +1188,8 @@ test('changes only names and addresses from the 2026-11-02 version in signal-rel
  * DPA 2026-11-08 is a naming version under founder decision NM-FD19. Its text
  * is the 2026-10-24 text with exactly these substitutions: the effective date,
  * the version, the title of the accepted instrument, the name of the service in
- * the Customer Personal Data definition, and the terms and retention links that
- * moved to the signal-relay addresses. Any other difference is a clause change,
+ * the Customer Personal Data definition and in the Annex I data importer, and
+ * the terms and retention links that moved to the signal-relay addresses. Any other difference is a clause change,
  * which needs its own version and its own review.
  */
 const dpaNamingSubstitutions = [
@@ -1207,6 +1207,10 @@ const dpaNamingSubstitutions = [
   [
     `process on your behalf to provide the console and ${['OpenE2EE', 'Relay'].join(' ')}. Annex I describes it.`,
     'process on your behalf to provide the console and the OpenE2EE Signal Protocol Relay.\n          Annex I describes it.',
+  ],
+  [
+    `supporting the console and OpenE2EE\n          Relay.`,
+    'supporting the console and the\n          OpenE2EE Signal Protocol Relay.',
   ],
 ];
 
