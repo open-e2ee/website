@@ -203,7 +203,7 @@ test('offers the two products the site sells and the one thing it teaches', asyn
   /* The site sells two products. The header named one of them and reached the
      other through the first one's pricing page. */
   assert.match(header, /\{ href: '\/product', label: 'SDK' \}/);
-  assert.match(header, /\{ href: '\/relay', label: 'Relay' \}/);
+  assert.match(header, /\{ href: '\/signal-relay', label: 'Relay' \}/);
   assert.match(header, /\{ href: '\/#demo', label: 'Demo' \}/);
   assert.match(header, /\{ href: '\/playground\/', label: 'Playground' \}/);
   assert.match(header, /\{ href: '\/blog', label: 'Blog' \}/);

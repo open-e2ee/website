@@ -99,6 +99,8 @@ export const signalRelayPricingInstant = new Date();
 
 const atBuild = signalRelayPricingAt(signalRelayPricingInstant);
 export const signalRelayPlans = atBuild.plans;
+/* The Free plan as the site publishes it, so a page does not write its id. */
+export const signalRelayFreePlan = signalRelayPlans.find(({ id }) => id === freePlanId);
 export const signalRelaySandboxEnvironment = atBuild.sandboxEnvironment;
 export const signalRelayLimitsChange = atBuild.limitsChange;
 

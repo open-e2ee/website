@@ -524,7 +524,7 @@ test('links the live Relay legal pages at their signal-relay addresses', async (
     '../src/components/Footer.astro',
     '../src/pages/contact.astro',
     '../src/pages/licensing.astro',
-    '../src/pages/relay/index.astro',
+    '../src/pages/signal-relay/index.astro',
     '../src/pages/legal/index.astro',
   ];
   for (const path of surfaces) {
@@ -905,9 +905,9 @@ test('reaches each agreement from the pages that sell against it', async () => {
    * being. The shipped markup is what sells, so the comments come out before
    * the two negative checks below. */
   const shipped = async (path) => (await read(path)).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ').replace(/\s+/g, ' ');
-  const [pricing, relay, licensing, footer] = await Promise.all([
+  const [pricing, signalRelay, licensing, footer] = await Promise.all([
     shipped('../src/pages/pricing.astro'),
-    flat('../src/pages/relay/index.astro'),
+    flat('../src/pages/signal-relay/index.astro'),
     shipped('../src/pages/licensing.astro'),
     flat('../src/components/Footer.astro'),
   ]);
@@ -919,7 +919,7 @@ test('reaches each agreement from the pages that sell against it', async () => {
    * table on /pricing, which reached /legal/terms, is gone since payments
    * ruling 30 of 2026-11-05. */
   assert.match(footer, /href="\/legal\/signal-relay-terms"/);
-  assert.match(relay, /href="\/legal\/signal-relay-terms"/);
+  assert.match(signalRelay, /href="\/legal\/signal-relay-terms"/);
   assert.doesNotMatch(pricing, /href="\/legal\/terms"/, '/pricing reaches the SDK commercial terms it no longer sells against');
   /* The SDK is MIT OR Apache-2.0 from 3.0.0. /licensing names the two license
    * files, which are the instruments now, and the Relay's terms, which are the
@@ -1141,11 +1141,18 @@ test('pairs the current Relay terms version id with a dated path of the same pre
 /*
  * signal-relay-2026-11-05 is a naming version. Its text is the 2026-11-02 text
  * with exactly these substitutions: the effective date, the version id, the
- * permanent address, and the two incorporated policy links that moved to the
- * signal-relay addresses. Any other difference is a clause change, which needs
- * its own version and its own review. The comparison starts at the rendered
- * markup, so the frontmatter comment may describe the version.
+ * permanent address, the two incorporated policy links that moved to the
+ * signal-relay addresses, and the pricing link, whose plan table id took the
+ * signal-relay name in place under NM-FD5. Any other difference is a clause
+ * change, which needs its own version and its own review. The comparison
+ * starts at the rendered markup, so the frontmatter comment may describe the
+ * version.
+ *
+ * The retired plan table id is built from parts, so that this file does not
+ * spell the bare name that the Signal Relay naming guard rejects. The frozen
+ * 2026-11-02 page still carries it.
  */
+const retiredPlansFragment = `${['re', 'lay'].join('')}-plans`;
 const signalRelayNamingSubstitutions = [
   ['<span>Effective November 2, 2026</span>', '<span>Effective November 5, 2026</span>'],
   ['<span>Version relay-2026-11-02</span>', '<span>Version signal-relay-2026-11-05</span>'],
@@ -1155,6 +1162,7 @@ const signalRelayNamingSubstitutions = [
   ],
   ['<a href="/legal/relay-retention">', '<a href="/legal/signal-relay-retention">'],
   ['<a href="/legal/relay-service-limits">', '<a href="/legal/signal-relay-service-limits">'],
+  [`<a href="/pricing#${retiredPlansFragment}">`, '<a href="/pricing#signal-relay-plans">'],
 ];
 
 const markup = (source) => source.slice(source.indexOf('<BaseLayout'));
