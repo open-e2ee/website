@@ -50,7 +50,7 @@ test('matches: case-insensitive substring over step, actor and summary', () => {
   const row = { at: '0.0', step: 'devices-ready', actor: 'signal-relay', summary: 'a fresh prekey bundle' };
 
   assert.equal(matches(row, 'DEVICES'), true, 'did not match the step, differently cased');
-  assert.equal(matches(row, 'RELAY'), true, 'did not match the actor, differently cased');
+  assert.equal(matches(row, 'SIGNAL-RELAY'), true, 'did not match the actor, differently cased');
   assert.equal(matches(row, 'PREKEY'), true, 'did not match the summary, differently cased');
 });
 

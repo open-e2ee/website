@@ -25,12 +25,8 @@ import {
 /*
  * `scripts/spelling-table.mjs` lists the words it rejects, so the scan skips
  * it. Nothing else here is exempt for that reason.
- *
- * `.gauntlet-workbench.md` is a round-by-round log of a finished exercise. It
- * records what the exercise tried, including verbatim quotations from its
- * reviewers. This project does not maintain it as text.
  */
-const EXCLUDED = new Set(['scripts/spelling-table.mjs', '.gauntlet-workbench.md']);
+const EXCLUDED = new Set(['scripts/spelling-table.mjs']);
 
 const SCANNED = /\.(astro|ts|mjs|js|md|css)$/;
 

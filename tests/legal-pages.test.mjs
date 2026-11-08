@@ -67,10 +67,10 @@ test('pins the current legal documents to immutable canonical URLs', () => {
   assert.equal(signalRelayServiceLimitsVersion, '2026-10-05');
   assert.equal(signalRelayServiceLimitsEffectiveDate, 'October 5, 2026');
   assert.equal(signalRelayServiceLimitsPath, '/legal/relay-service-limits/2026-10-05');
-  assert.equal(dpaVersion, '2026-10-24');
-  assert.equal(dpaEffectiveDate, 'October 24, 2026');
-  assert.equal(dpaPath, '/legal/dpa/2026-10-24');
-  assert.equal(dpaUrl, 'https://open-e2ee.dev/legal/dpa/2026-10-24');
+  assert.equal(dpaVersion, '2026-11-07');
+  assert.equal(dpaEffectiveDate, 'November 7, 2026');
+  assert.equal(dpaPath, '/legal/dpa/2026-11-07');
+  assert.equal(dpaUrl, 'https://open-e2ee.dev/legal/dpa/2026-11-07');
 });
 
 /*
@@ -153,6 +153,7 @@ const frozenDpaVersions = [
   { version: '2026-09-27', effective: 'September 27, 2026' },
   { version: '2026-09-29', effective: 'September 29, 2026' },
   { version: '2026-10-24', effective: 'October 24, 2026' },
+  { version: '2026-11-07', effective: 'November 7, 2026' },
 ];
 
 test('keeps every dated DPA page frozen: it never reads the live agreement', async () => {
@@ -216,7 +217,7 @@ const DPA_SECTIONS = [
 
 test('carries every Article 28 section, on the live agreement and every frozen copy', async () => {
   const pages = [
-    '../src/components/DataProcessingAgreement20261024.astro',
+    '../src/components/DataProcessingAgreement20261107.astro',
     ...frozenDpaVersions.map(({ version }) => `../src/pages/legal/dpa/${version}.astro`),
   ];
 
@@ -656,11 +657,12 @@ test('makes privacy and the Relay terms available from the site footer', async (
 test('names the selected counterparty in current documents and preserves accepted copies', async () => {
   for (const path of [
     '../src/components/SignalProtocolRelayTerms20261105.astro',
-    '../src/components/DataProcessingAgreement20261024.astro',
+    '../src/components/DataProcessingAgreement20261107.astro',
     '../src/pages/legal/privacy.astro',
     '../src/pages/legal/terms/2026-10-24.astro',
     '../src/pages/legal/relay-terms/2026-10-24.astro',
     '../src/pages/legal/dpa/2026-10-24.astro',
+    '../src/pages/legal/dpa/2026-11-07.astro',
     '../src/pages/legal/privacy/2026-10-24.astro',
   ]) {
     const source = await flat(path);
@@ -787,7 +789,7 @@ test('states the keyed-hash operating records in every document that bounds them
   const [privacy, retention, agreement] = await Promise.all([
     flat('../src/pages/legal/privacy.astro'),
     flat('../src/pages/legal/signal-relay-retention.astro'),
-    flat('../src/components/DataProcessingAgreement20261024.astro'),
+    flat('../src/components/DataProcessingAgreement20261107.astro'),
   ]);
 
   assert.match(privacy, /appear only as keyed hashes made with a key that OpenE2EE holds/);
@@ -835,7 +837,7 @@ test('names the Sandbox environment everywhere except the frozen legal versions'
 
   for (const path of [
     '../src/components/SignalProtocolRelayTerms20261105.astro',
-    '../src/components/DataProcessingAgreement20261024.astro',
+    '../src/components/DataProcessingAgreement20261107.astro',
     '../src/pages/legal/privacy.astro',
     '../src/pages/legal/signal-relay-retention.astro',
     '../src/pages/legal/signal-relay-service-limits.astro',
@@ -1176,6 +1178,68 @@ test('changes only names and addresses from the 2026-11-02 version in signal-rel
     .replace('{signalRelayTermsVersion}', signalRelayTermsVersion)
     .replace('<a href={signalRelayTermsPath}><code>{signalRelayTermsPath}</code></a>', `<a href="${signalRelayTermsPath}"><code>${signalRelayTermsPath}</code></a>`);
   assert.equal(rendered, markup(frozen), 'the live Relay terms differ from their dated copy');
+
+  for (const source of [frozen, live]) {
+    assert.doesNotMatch(source, /href="\/legal\/relay-(terms|retention|service-limits|beta-limits)[/"]/, 'the new version links a retired Relay address');
+  }
+});
+
+/*
+ * DPA 2026-11-07 is a naming version under founder decision NM-FD19. Its text
+ * is the 2026-10-24 text with exactly these substitutions: the effective date,
+ * the version, the title of the accepted instrument, the name of the service in
+ * the Customer Personal Data definition, and the terms and retention links that
+ * moved to the signal-relay addresses. Any other difference is a clause change,
+ * which needs its own version and its own review.
+ */
+const dpaNamingSubstitutions = [
+  ['title="Data Processing Agreement 2026-10-24"', 'title="Data Processing Agreement 2026-11-07"'],
+  [
+    'description="Frozen copy of the OpenE2EE Data Processing Agreement, version 2026-10-24."',
+    'description="Frozen copy of the OpenE2EE Data Processing Agreement, version 2026-11-07."',
+  ],
+  ['<span>Effective October 24, 2026</span>', '<span>Effective November 7, 2026</span>'],
+  ['<span>Version 2026-10-24</span>', '<span>Version 2026-11-07</span>'],
+  [
+    `<a href="/legal/relay-terms">${['OpenE2EE', 'Relay'].join(' ')} Service Terms</a> (“Customer,” “you”). It\n          forms part of those Terms.`,
+    '<a href="/legal/signal-relay-terms">OpenE2EE Signal Protocol Relay Service Terms</a>\n          (“Customer,” “you”). It forms part of those Terms.',
+  ],
+  [
+    `process on your behalf to provide the console and ${['OpenE2EE', 'Relay'].join(' ')}. Annex I describes it.`,
+    'process on your behalf to provide the console and the OpenE2EE Signal Protocol Relay.\n          Annex I describes it.',
+  ],
+];
+
+test('changes only names and addresses from the 2026-10-24 version in DPA 2026-11-07', async () => {
+  const [previous, frozen, live] = await Promise.all([
+    read('../src/pages/legal/dpa/2026-10-24.astro'),
+    read('../src/pages/legal/dpa/2026-11-07.astro'),
+    read('../src/components/DataProcessingAgreement20261107.astro'),
+  ]);
+
+  let expected = markup(previous);
+  for (const [from, to] of dpaNamingSubstitutions) {
+    assert.equal(expected.split(from).length, 2, `the 2026-10-24 page does not carry exactly one ${from}`);
+    expected = expected.replace(from, to);
+  }
+  const retention = ['<a href="/legal/relay-retention">', '<a href="/legal/signal-relay-retention">'];
+  assert.equal(expected.split(retention[0]).length, 5, 'the 2026-10-24 page does not link the retention statement four times');
+  expected = expected.replaceAll(retention[0], retention[1]);
+  assert.equal(markup(frozen), expected, 'the dated 2026-11-07 page differs from the 2026-10-24 page by more than naming');
+
+  const rendered = markup(live)
+    .replace('title="Data Processing Agreement"', 'title="Data Processing Agreement 2026-11-07"')
+    .replace(
+      'description="Article 28 processor terms and transfer mechanism for personal data OpenE2EE processes for Relay customers."',
+      'description="Frozen copy of the OpenE2EE Data Processing Agreement, version 2026-11-07."',
+    )
+    .replace('{dpaEffectiveDate}', dpaEffectiveDate)
+    .replace('{dpaVersion}', dpaVersion)
+    .replace(
+      "The permanent copy of this version is at{' '}\n          <a href={dpaPath}><code>{dpaPath}</code></a>.",
+      "This is the permanent copy of this version. The agreement offered now is the{' '}\n          <a href=\"/legal/dpa\">current Data Processing Agreement</a>.",
+    );
+  assert.equal(rendered, markup(frozen), 'the live Data Processing Agreement differs from its dated copy');
 
   for (const source of [frozen, live]) {
     assert.doesNotMatch(source, /href="\/legal\/relay-(terms|retention|service-limits|beta-limits)[/"]/, 'the new version links a retired Relay address');

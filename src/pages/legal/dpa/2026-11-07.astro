@@ -1,27 +1,6 @@
 ---
-/*
- * The OpenE2EE Data Processing Agreement, version 2026-10-24. It carries the
- * Article 28(3) processor terms and the transfer mechanism for personal data
- * OpenE2EE processes on a Relay customer's instructions. Section 4 and Annex I
- * list measuring and improving the Relay's reliability, performance, and cost
- * as a purpose, because Relay operating records carry keyed hashes of account
- * and device identifiers. Annex II calls each project's test environment the
- * Sandbox environment, the name that the console and the Relay use. Every
- * other clause is unchanged from 2026-09-29, except for the counterparty name.
- *
- * It is a component rather than a page for the reason the other two legal
- * documents are: /legal/dpa renders the live version and a dated page freezes
- * each published one, and both need the same text without a second copy of it
- * drifting. The dated page holds a literal snapshot and never imports this
- * file — tests/legal-pages.test.mjs enforces that.
- *
- * The document is auto-incorporated: it binds when the Relay terms are
- * accepted, and no peer of this size asks for a signature. What it may claim is
- * bounded by docs/messaging.md — no certification, no compliance guarantee, and
- * no security-review claim.
- */
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { dpaEffectiveDate, dpaPath, dpaVersion } from '../lib/legal.mjs';
+/* Immutable copy of 2026-11-07. Do not edit this published version. */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   ARTICLE_COLUMN,
   ARTICLE_HEADER,
@@ -33,12 +12,12 @@ import {
   LEAD,
   LEGAL_PIN,
   LEGAL_TOC,
-} from '../lib/recipes';
+} from '../../../lib/recipes';
 ---
 
 <BaseLayout
-  title="Data Processing Agreement"
-  description="Article 28 processor terms and transfer mechanism for personal data OpenE2EE processes for Relay customers."
+  title="Data Processing Agreement 2026-11-07"
+  description="Frozen copy of the OpenE2EE Data Processing Agreement, version 2026-11-07."
 >
   <article>
     <header class={ARTICLE_HEADER}>
@@ -50,12 +29,12 @@ import {
           instructions. It is part of the Relay Service Terms and takes effect with them.
         </p>
         <p class={ARTICLE_META}>
-          <span>Effective {dpaEffectiveDate}</span>
-          <span>Version {dpaVersion}</span>
+          <span>Effective November 7, 2026</span>
+          <span>Version 2026-11-07</span>
         </p>
         <p class={LEGAL_PIN}>
-          The permanent copy of this version is at{' '}
-          <a href={dpaPath}><code>{dpaPath}</code></a>.
+          This is the permanent copy of this version. The agreement offered now is the{' '}
+          <a href="/legal/dpa">current Data Processing Agreement</a>.
         </p>
       </div>
     </header>
@@ -96,8 +75,8 @@ import {
         <p>
           This Data Processing Agreement is between OpenE2EE, Inc., a Delaware corporation
           (“OpenE2EE,” “we,” or “us”), and the organization that accepts the{' '}
-          <a href="/legal/relay-terms">OpenE2EE Relay Service Terms</a> (“Customer,” “you”). It
-          forms part of those Terms.
+          <a href="/legal/signal-relay-terms">OpenE2EE Signal Protocol Relay Service Terms</a>
+          (“Customer,” “you”). It forms part of those Terms.
         </p>
         <p>
           It becomes binding when you accept the Terms. You do not need to sign it, countersign it,
@@ -129,7 +108,8 @@ import {
         </p>
         <p>
           <strong>Customer Personal Data</strong> means personal data contained in the data we
-          process on your behalf to provide the console and OpenE2EE Relay. Annex I describes it.
+          process on your behalf to provide the console and the OpenE2EE Signal Protocol Relay.
+          Annex I describes it.
         </p>
         <p>
           <strong>SCCs</strong> means the standard contractual clauses annexed to Commission
@@ -180,7 +160,7 @@ import {
           and to comply with law. For that measurement we use operating records in which account
           and device identifiers appear only as keyed hashes and which contain no content, and we
           keep them for the period stated in the{' '}
-          <a href="/legal/relay-retention">Relay Retention Statement</a>. We do not sell it, share
+          <a href="/legal/signal-relay-retention">Relay Retention Statement</a>. We do not sell it, share
           it for cross-context behavioral advertising, use it for advertising of any kind, or use
           it to train machine-learning models.
         </p>
@@ -262,7 +242,7 @@ import {
           respond to requests to exercise a data subject’s rights of access, rectification, erasure,
           restriction, portability, and objection. The console’s own account and project deletion
           actions and the boundaries described in the{' '}
-          <a href="/legal/relay-retention">Relay Retention Statement</a> are the primary means by
+          <a href="/legal/signal-relay-retention">Relay Retention Statement</a> are the primary means by
           which you exercise that control directly.
         </p>
         <p>
@@ -331,7 +311,7 @@ import {
         </p>
         <p>
           Deletion follows the boundaries and periods published in the{' '}
-          <a href="/legal/relay-retention">Relay Retention Statement</a>, which describes what
+          <a href="/legal/signal-relay-retention">Relay Retention Statement</a>, which describes what
           project deletion removes and which narrow security, billing, reconciliation, and legal
           records survive payload deletion, for how long, and why. Those records use opaque
           identifiers and contain no message content. Backups roll off on their documented cycle
@@ -452,7 +432,7 @@ import {
         </p>
         <p>
           <strong>Duration.</strong> For the term of the Relay Service Terms, plus the retention
-          periods published in the <a href="/legal/relay-retention">Relay Retention Statement</a>.
+          periods published in the <a href="/legal/signal-relay-retention">Relay Retention Statement</a>.
         </p>
         <p>
           <strong>Subprocessors.</strong> Subject matter, nature, and duration as set out in the
