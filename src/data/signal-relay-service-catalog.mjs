@@ -9,15 +9,6 @@ export const signalRelayCatalogPin = Object.freeze({
   sha256: 'ddaf69635969ef8123c2361852572cfd63d334bda4361ef5108ab95ce081a967',
 });
 
-// Relay keeps these Free and Sandbox targets until qualified original authority
-// selects new terms. The website reads their exact pinned bytes. A build date
-// cannot qualify the newer catalog.
-export const signalRelayEarlierCatalogPin = Object.freeze({
-  sourceRevision: '3d74de4ec7859e6d15c0c38ce4203e4e07d52b49',
-  catalogVersion: 'relay_managed_2026_10_18_v1',
-  sha256: 'a5b4156e8bb9c15a1734e9647235820cbdd85c7878c5cae72bdde0e743b72da8',
-});
-
 export function parsePinnedSignalProtocolRelayCatalog(bytes, pin = signalRelayCatalogPin) {
   const digest = createHash('sha256').update(bytes).digest('hex');
   if (digest !== pin.sha256) throw new Error('Relay catalog SHA256 mismatch');
@@ -32,11 +23,6 @@ export function parsePinnedSignalProtocolRelayCatalog(bytes, pin = signalRelayCa
 
 export const signalRelayServiceCatalog = parsePinnedSignalProtocolRelayCatalog(
   readFileSync('src/data/vendor/signal-relay-service-catalog.json'),
-);
-
-export const signalRelayEarlierServiceCatalog = parsePinnedSignalProtocolRelayCatalog(
-  readFileSync('src/data/vendor/signal-relay-service-catalog-2026-10-18.json'),
-  signalRelayEarlierCatalogPin,
 );
 
 // Format rational USD microunits without converting the rate to a float.

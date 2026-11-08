@@ -66,7 +66,6 @@ PP52 src/data/signal-relay-pricing.mjs relay_growth_v1
 PP52 src/data/signal-relay-pricing.mjs relay_hobby_v1
 PP52 src/data/signal-relay-pricing.mjs relay_mau
 PP52 src/data/signal-relay-pricing.mjs relay_starter_v1
-PP52 src/data/signal-relay-service-catalog.mjs relay_managed_2026_10_18_v1
 PP52 src/data/signal-relay-service-catalog.mjs relay_managed_2026_11_01_v1
 PP52 src/data/virgil-security-comparison.mjs relay_business_v1
 PP52 src/data/virgil-security-comparison.mjs relay_growth_v1
@@ -221,9 +220,7 @@ NM-FD5 src/pages/legal/relay-terms/2026-11-02.astro relay-plans
 NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-retention
 NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-service-limits
 NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-terms
-PP52 src/pages/pricing.astro relay_business_v1
 PP52 src/pages/pricing.astro relay_free_v1
-PP52 src/pages/pricing.astro relay_growth_v1
 PP52 src/pages/pricing.astro relay_starter_v1
 NM3.3 src/pages/product.astro ./remote/relay
 NM4.4 src/pages/signal-relay/index.astro //docs.open-e2ee.dev/relay
@@ -291,16 +288,13 @@ PP52 tests/signal-relay-pricing.test.mjs relay_free_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_growth_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_hobby_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_starter_v1
-NM2.15 tests/signal-relay-pricing.test.mjs relay-2026-10-24
 PP52 tests/signal-relay-service-catalog.test.mjs relay_business_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_free_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_growth_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_hobby_v1
-PP52 tests/signal-relay-service-catalog.test.mjs relay_managed_2026_10_18_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_managed_2026_11_01_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_mau
 PP52 tests/signal-relay-service-catalog.test.mjs relay_starter_v1
-NM2.15 tests/signal-relay-service-catalog.test.mjs relay-terms
 NM3.3 tests/site-content.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
 NM3.3 tests/site-content.test.mjs /relay
 NM3.3 tests/site-content.test.mjs relay

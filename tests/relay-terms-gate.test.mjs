@@ -5,11 +5,13 @@ import { signalRelayPricingAt, upcomingSignalProtocolRelayPlans } from '../src/d
 import { signalRelayServiceCatalog } from '../src/data/signal-relay-service-catalog.mjs';
 
 /*
- * The public guards compare the qualified plans with the dated terms. A date
- * cannot activate the proposed smaller limits or Hobby. Keep the exact missing
- * values below as evidence for the next qualified catalog and terms release.
+ * The public guards compare the published plans with the dated terms. The
+ * signal-relay-2026-11-08 terms state every catalog plan, including Hobby, and
+ * the current Free and Sandbox limits. A date cannot select different values.
  */
-const TERMS = 'src/components/SignalProtocolRelayTerms20261105.astro';
+const TERMS = 'src/components/SignalProtocolRelayTerms20261108.astro';
+const FROZEN = 'src/pages/legal/signal-relay-terms/2026-11-08.astro';
+const PREVIOUS = 'src/pages/legal/signal-relay-terms/2026-11-05.astro';
 const beforeCut = new Date('2026-10-31T23:59:59.999Z');
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -64,44 +66,52 @@ test('terms gate: the published catalog matches the dated terms at every build i
   }
 });
 
-test('terms gate: names every proposed catalog value the dated Relay terms do not state', async () => {
-  const terms = await read(TERMS);
-  const { plans, sandboxEnvironment } = signalRelayPricingAt(beforeCut);
+test('terms gate: publishes every catalog plan and the current Sandbox limits, and the dated terms state them', async () => {
+  const [terms, frozen, previous] = await Promise.all([read(TERMS), read(FROZEN), read(PREVIOUS)]);
   const count = (value) => value.toLocaleString('en-US');
   const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB` : `${bytes / 1_000_000} MB`;
-  const free = signalRelayServiceCatalog.plans.find(({ planId }) => planId === 'relay_free_v1');
-  const proposedFree = { ...plans[0], signalRelayMau: count(free.monthlyActiveUsers), deliveryUnits: count(free.deliveryUnits),
-    attachmentOperations: count(free.attachmentOperations), storage: storage(free.storageBytes) };
-  const proposedSandbox = { ...sandboxEnvironment, signalRelayMau: `${count(signalRelayServiceCatalog.sandbox.monthlyActiveUsers)} test accounts`,
-    deliveryUnits: count(signalRelayServiceCatalog.sandbox.deliveryUnits), attachmentOperations: count(signalRelayServiceCatalog.sandbox.attachmentOperations),
-    storage: storage(signalRelayServiceCatalog.sandbox.storageBytes) };
-  const due = [proposedFree, ...upcomingSignalProtocolRelayPlans, ...plans.slice(1)];
-  /* The value check finds "25" and "250 MB" elsewhere in the terms text. The
-     row check names the complete Free and Hobby rows. */
-  assert.deepEqual(unstatedValues(terms, due, proposedSandbox), [
-    'the Free delivery units: 12,500',
-    'the Free attachment uploads: 2,500',
-    'the Hobby price: $9',
-    'the Hobby delivery units: 50,000',
-    'the Hobby attachment uploads: 10,000',
-    'the Hobby signalRelayMau overage rate: $0.10',
-    'the Hobby delivery overage rate: $400 per million',
-    'the Hobby storage overage rate: $2.00 per GB-month',
-    'the Sandbox environment signalRelayMau: 5 test accounts',
-    'the Sandbox environment deliveryUnits: 10,000',
-    'the Sandbox environment attachmentOperations: 2,500',
-    'the Sandbox environment storage: 100 MB',
-  ]);
-  assert.deepEqual(unstatedRows(terms, due), [
-    {
-      plan: 'Free',
-      due: ['$0', '25', '12,500', '2,500', '250 MB', 'Hard cap', 'Hard cap', 'Hard cap'],
-      stated: ['$0', '100', '100,000', '20,000', '1 GB', 'Hard cap', 'Hard cap', 'Hard cap'],
-    },
-    {
-      plan: 'Hobby',
-      due: ['$9', '100', '50,000', '10,000', '1 GB', '$0.10', '$400 per million', '$2.00 per GB-month'],
-      stated: null,
-    },
+  const catalogFree = signalRelayServiceCatalog.plans.find(({ planId }) => planId === 'relay_free_v1');
+  const catalogSandbox = signalRelayServiceCatalog.sandbox;
+  assert.deepEqual(upcomingSignalProtocolRelayPlans, []);
+  for (const at of [beforeCut, new Date('2026-11-08T00:00:00Z'), new Date('2030-01-01T00:00:00Z')]) {
+    const { plans, sandboxEnvironment } = signalRelayPricingAt(at);
+    const negotiated = plans.at(-1);
+    assert.deepEqual([negotiated.name, negotiated.monthlyPriceUsd], ['Enterprise', null], at.toISOString());
+    assert.deepEqual(plans.map(({ id }) => id), [
+      ...signalRelayServiceCatalog.plans.map(({ planId }) => planId), negotiated.id,
+    ], at.toISOString());
+    const free = plans.find(({ id }) => id === 'relay_free_v1');
+    assert.deepEqual(
+      [free.signalRelayMau, free.deliveryUnits, free.attachmentOperations, free.storage],
+      [count(catalogFree.monthlyActiveUsers), count(catalogFree.deliveryUnits), count(catalogFree.attachmentOperations), storage(catalogFree.storageBytes)],
+      at.toISOString(),
+    );
+    const hobby = plans.find(({ name }) => name === 'Hobby');
+    assert.ok(hobby, `Hobby is not published at ${at.toISOString()}`);
+    const catalogHobby = signalRelayServiceCatalog.plans.find(({ planId }) => planId === hobby.id);
+    assert.ok(catalogHobby, 'the published Hobby plan is not a catalog plan');
+    assert.deepEqual(
+      [hobby.name, hobby.monthlyPriceUsd, hobby.signalRelayMau, hobby.deliveryUnits, hobby.attachmentOperations, hobby.storage],
+      ['Hobby', Number(BigInt(catalogHobby.monthlyPriceMicrounits) / 1_000_000n), count(catalogHobby.monthlyActiveUsers),
+        count(catalogHobby.deliveryUnits), count(catalogHobby.attachmentOperations), storage(catalogHobby.storageBytes)],
+      at.toISOString(),
+    );
+    assert.deepEqual(
+      [sandboxEnvironment.signalRelayMau, sandboxEnvironment.deliveryUnits, sandboxEnvironment.attachmentOperations, sandboxEnvironment.storage],
+      [`${count(catalogSandbox.monthlyActiveUsers)} test accounts`, count(catalogSandbox.deliveryUnits),
+        count(catalogSandbox.attachmentOperations), storage(catalogSandbox.storageBytes)],
+      at.toISOString(),
+    );
+    for (const [path, text] of [[TERMS, terms], [FROZEN, frozen]]) {
+      assert.deepEqual(unstatedValues(text, plans, sandboxEnvironment), [], `${path} ${at.toISOString()}`);
+      assert.deepEqual(unstatedRows(text, plans), [], `${path} ${at.toISOString()}`);
+    }
+  }
+  /* The superseded 2026-11-05 terms do not state the Hobby row or the current
+     Free row, so the published catalog needs the 2026-11-08 version. */
+  const { plans } = signalRelayPricingAt(beforeCut);
+  assert.deepEqual(unstatedRows(previous, plans).map(({ plan, stated }) => [plan, stated]), [
+    ['Free', ['$0', '100', '100,000', '20,000', '1 GB', 'Hard cap', 'Hard cap', 'Hard cap']],
+    ['Hobby', null],
   ]);
 });

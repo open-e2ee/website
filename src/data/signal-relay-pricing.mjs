@@ -1,13 +1,13 @@
-import { formatSignalProtocolRelayRate, signalRelayEarlierServiceCatalog, signalRelayServiceCatalog } from './signal-relay-service-catalog.mjs';
+import { formatSignalProtocolRelayRate, signalRelayServiceCatalog } from './signal-relay-service-catalog.mjs';
 
 const count = (value) => value.toLocaleString('en-US');
 const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB` : `${bytes / 1_000_000} MB`;
 
 /*
- * The released Relay keeps the earlier Free and Sandbox targets until qualified
- * Organization and original-period authority selects new terms. A build date
- * cannot select that change. The public catalog and dated terms change in the
- * same qualified release. Paid prices retain the pinned catalog values.
+ * Every plan and the Sandbox environment take the pinned catalog values. The
+ * signal-relay-2026-11-08 terms state the current Free and Sandbox limits, so
+ * the site publishes them from the same catalog as the paid plans. A build date
+ * cannot select different values.
  */
 
 /* Production ciphertext retention on every production plan. */
@@ -66,19 +66,17 @@ const enterprise = {
  * adds the dated terms version removes the plan from this map, and the plan
  * then takes its catalog place in signalRelayPlans.
  */
-const awaitingTerms = new Map([['relay_hobby_v1', null]]);
+const awaitingTerms = new Map();
 
 export const upcomingSignalProtocolRelayPlans = signalRelayServiceCatalog.plans
   .filter(({ planId }) => awaitingTerms.has(planId))
   .map((plan) => ({ ...signalRelayPlan(plan), termsVersion: awaitingTerms.get(plan.planId) }));
 
-const freePlanId = 'relay_free_v1';
-const publishedFree = signalRelayPlan(signalRelayEarlierServiceCatalog.plans.find(({ planId }) => planId === freePlanId));
-const publishedSandbox = sandboxEnvironment(signalRelayEarlierServiceCatalog.sandbox);
+const publishedSandbox = sandboxEnvironment(signalRelayServiceCatalog.sandbox);
 
 /*
- * Keep the date parameter for the comparison caller. Dates do not qualify new
- * Free or Sandbox terms. This matches Relay's unqualified catalog selection.
+ * Keep the date parameter for the comparison caller. Dates do not select
+ * different plans or limits. This matches Relay's unqualified catalog selection.
  */
 export function signalRelayPricingAt(at) {
   void at;
@@ -86,7 +84,7 @@ export function signalRelayPricingAt(at) {
     plans: [
       ...signalRelayServiceCatalog.plans
         .filter(({ planId }) => !awaitingTerms.has(planId))
-        .map((plan) => plan.planId === freePlanId ? publishedFree : signalRelayPlan(plan)),
+        .map(signalRelayPlan),
       enterprise,
     ],
     sandboxEnvironment: publishedSandbox,
@@ -100,6 +98,7 @@ export const signalRelayPricingInstant = new Date();
 const atBuild = signalRelayPricingAt(signalRelayPricingInstant);
 export const signalRelayPlans = atBuild.plans;
 /* The Free plan as the site publishes it, so a page does not write its id. */
+const freePlanId = 'relay_free_v1';
 export const signalRelayFreePlan = signalRelayPlans.find(({ id }) => id === freePlanId);
 export const signalRelaySandboxEnvironment = atBuild.sandboxEnvironment;
 export const signalRelayLimitsChange = atBuild.limitsChange;
