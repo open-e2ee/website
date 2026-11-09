@@ -100,7 +100,7 @@ export interface DemoRunOptions {
    * A factory rather than a relay because `reset()` needs a new one; see
    * `raiseSignalProtocolRelay()`.
    */
-  relay?: () => PageSignalProtocolRelay;
+  signalProtocolRelay?: () => PageSignalProtocolRelay;
   /** How long any one wait on the relay may take before it is called a failure. */
   deadlineMs?: number;
 }
@@ -133,7 +133,7 @@ export interface DemoRun {
   /** The recording. Stable across `reset()`, so subscribers survive one. */
   readonly trace: Trace;
   /** The relay this run's devices register with. Replaced by a reset. */
-  readonly relay: PageSignalProtocolRelay;
+  readonly signalProtocolRelay: PageSignalProtocolRelay;
   /** Account name for an actor, for anything that has to print one. */
   userId(actor: DeviceActor): string;
   /**
@@ -388,17 +388,17 @@ function recordGeneration(
  * reporting as a zero it never observed.
  */
 async function countPublishedKeys(
-  relay: PageSignalProtocolRelay,
+  signalProtocolRelay: PageSignalProtocolRelay,
   userId: string,
   deviceId: number,
 ): Promise<number | null> {
   const [identity, ecSignedPreKey, kemLastResortPreKey, ecOneTimeCount, kemOneTimeCount] =
     await Promise.all([
-      relay.getIdentityKey(userId),
-      relay.getEcSignedPreKeyMetadata(userId, deviceId),
-      relay.getKemLastResortPreKeyMetadata(userId, deviceId),
-      relay.getPreKeyCount(userId, deviceId, 'ec'),
-      relay.getPreKeyCount(userId, deviceId, 'kem'),
+      signalProtocolRelay.getIdentityKey(userId),
+      signalProtocolRelay.getEcSignedPreKeyMetadata(userId, deviceId),
+      signalProtocolRelay.getKemLastResortPreKeyMetadata(userId, deviceId),
+      signalProtocolRelay.getPreKeyCount(userId, deviceId, 'ec'),
+      signalProtocolRelay.getPreKeyCount(userId, deviceId, 'kem'),
     ]);
   if (
     !identity &&
@@ -466,14 +466,14 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     b: options.b ?? 'bob',
   };
   const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
-  const makeSignalProtocolRelay = options.relay ?? pageSignalProtocolRelay;
+  const makeSignalProtocolRelay = options.signalProtocolRelay ?? pageSignalProtocolRelay;
   const protocol = options.protocol;
   const trace = createTrace();
 
   /* Mutable because `reset()` replaces them. What survives a reset is the trace
      and the object the page is holding; the devices and the relay do not, and
      `raiseSignalProtocolRelay()` says why. */
-  let relay: PageSignalProtocolRelay;
+  let signalProtocolRelay: PageSignalProtocolRelay;
   /* Partial because devices exist one activation at a time: a run comes up
      with neither, and each `activate()` adds its own. */
   let devices: Partial<Record<DeviceActor, Device>> = {};
@@ -568,7 +568,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     const generating = recordGeneration(trace, actor, mark);
 
     performance.mark(mark('start'));
-    await relay.registerDevice(userId, { encryptedDeviceName: new ArrayBuffer(0) });
+    await signalProtocolRelay.registerDevice(userId, { encryptedDeviceName: new ArrayBuffer(0) });
     performance.mark(mark('registered'));
     const registerMs = measure(
       `oe-demo:register:${generation}:${actor}`,
@@ -608,7 +608,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     const storage = inMemoryStore();
     const config = createSignalProtocolClientConfig({
       identity: { userId },
-      adapters: { storage, relay },
+      adapters: { storage, signalProtocolRelay },
       protocol,
     });
     /*
@@ -686,14 +686,18 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      * default moved, and the symptom would be a send timing out on its
      * deadline, well away from the line that broke.
      */
-    device.unsubscribeSignalProtocolRelay = relay.subscribe(userId, DEFAULT_DEVICE_ID, (envelope) => {
-      device.onEnvelope?.({ envelope, atMs: performance.now() });
-    });
+    device.unsubscribeSignalProtocolRelay = signalProtocolRelay.subscribe(
+      userId,
+      DEFAULT_DEVICE_ID,
+      (envelope) => {
+        device.onEnvelope?.({ envelope, atMs: performance.now() });
+      },
+    );
 
     client.registerHook('onMessageDecrypted', (message) => {
       device.onDecrypted?.({ message, atMs: performance.now() });
     });
-    client.startRelaySubscription();
+    client.startSignalProtocolRelaySubscription();
 
     /* Before the device reports itself ready, because that is the order it
        happened in: the keys were made on the way up. */
@@ -735,8 +739,8 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
    */
   function raiseSignalProtocolRelay(): void {
     generation += 1;
-    relay = makeSignalProtocolRelay();
-    instrumentSignalProtocolRelay(relay);
+    signalProtocolRelay = makeSignalProtocolRelay();
+    instrumentSignalProtocolRelay(signalProtocolRelay);
   }
 
   /** The device an actor has, or the reason there is nothing to call. */
@@ -790,7 +794,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     /* Outside the marks above on purpose: this reads the relay back, and
        a reader watching `publishMs` should see how long the publish took,
        not that plus a diagnostic query the publish itself never made. */
-    const publicKeys = await countPublishedKeys(relay, device.userId, device.address.deviceId);
+    const publicKeys = await countPublishedKeys(signalProtocolRelay, device.userId, device.address.deviceId);
     /* The device's own count rides the same report. At this step the two
        are equal — publishing copies public halves out and consumes nothing
        — but the column that prints private keys reads its figure from the
@@ -835,7 +839,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     const mark = (stage: string) =>
       `oe-demo:establish:${generation}:${from.actor}-${to.actor}:${stage}`;
     performance.mark(mark('start'));
-    const bundle = await relay.fetchPreKeyBundle(to.userId, to.address.deviceId, from.userId);
+    const bundle = await signalProtocolRelay.fetchPreKeyBundle(to.userId, to.address.deviceId, from.userId);
     if (!bundle) {
       throw new Error(
         `the relay has no prekey bundle for ${to.userId}, so there is nothing to ` +
@@ -873,7 +877,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
      * follows, and what leaves the shelf standing at its last known figure
      * instead of drawing an account that has been emptied.
      */
-    const peerKeys = await countPublishedKeys(relay, to.userId, to.address.deviceId);
+    const peerKeys = await countPublishedKeys(signalProtocolRelay, to.userId, to.address.deviceId);
 
     /* `establishSession` resolves to nothing, so what the agreement produced is
        read from the event it raised on the way past. Nullable, and left
@@ -1104,8 +1108,8 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     /* A getter, because `reset()` replaces it. A caller that had read the
        property once and kept it would go on watching a relay nobody is sending
        to. */
-    get relay() {
-      return relay;
+    get signalProtocolRelay() {
+      return signalProtocolRelay;
     },
 
     /* From the names, not the device: an account has a name before its device

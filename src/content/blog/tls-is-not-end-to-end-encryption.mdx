@@ -46,21 +46,21 @@ This round trip uses the OpenE2EE Signal Protocol SDK and the OpenE2EE Signal Pr
 import { createHostedSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 
-const relayUrl = process.env.OPEN_E2EE_RELAY_URL!;
+const signalProtocolRelayUrl = process.env.OPEN_E2EE_RELAY_URL!;
 
 const alice = await createHostedSignalProtocolClient({
-  hosted: { relayUrl, getIdentityAssertion: aliceSignIn },
+  hosted: { signalProtocolRelayUrl, getIdentityAssertion: aliceSignIn },
   adapters: { storage: inMemoryStore() },
 });
 const bob = await createHostedSignalProtocolClient({
-  hosted: { relayUrl, getIdentityAssertion: bobSignIn },
+  hosted: { signalProtocolRelayUrl, getIdentityAssertion: bobSignIn },
   adapters: { storage: inMemoryStore() },
 });
 
 bob.registerHook('onMessageDecrypted', (message) => {
   console.log(message.content); // plaintext, only on Bob's device
 });
-bob.startRelaySubscription();
+bob.startSignalProtocolRelaySubscription();
 
 await alice.send(bob.userId, 'Dinner at 7. I got us the table by the window.');
 ```

@@ -81,7 +81,7 @@ export interface DemoSessionOptions {
    * not, which is the case that matters and the case that shipped broken.
    * Passing a wrapper that defers delivery is how that case gets tested.
    */
-  relay?: PageSignalProtocolRelay;
+  signalProtocolRelay?: PageSignalProtocolRelay;
   /**
    * How long a send waits for the relay before giving up, in milliseconds.
    *
@@ -165,7 +165,7 @@ export interface DemoSession {
    * device the sender has never written to is a relay call the application
    * makes by hand.
    */
-  readonly relay: PageSignalProtocolRelay;
+  readonly signalProtocolRelay: PageSignalProtocolRelay;
   /** The sending device, for the SDK calls a scenario has to make itself. */
   readonly senderClient: DefaultSignalProtocolClient;
   /** The receiving account's primary device, and its storage. */
@@ -212,9 +212,9 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
 
   const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
 
-  const relay = options.relay ?? pageSignalProtocolRelay();
-  await relay.registerDevice(sender, { encryptedDeviceName: new ArrayBuffer(0) });
-  await relay.registerDevice(recipient, { encryptedDeviceName: new ArrayBuffer(0) });
+  const signalProtocolRelay = options.signalProtocolRelay ?? pageSignalProtocolRelay();
+  await signalProtocolRelay.registerDevice(sender, { encryptedDeviceName: new ArrayBuffer(0) });
+  await signalProtocolRelay.registerDevice(recipient, { encryptedDeviceName: new ArrayBuffer(0) });
 
   const senderStorage = inMemoryStore();
   const recipientStorage = inMemoryStore();
@@ -225,20 +225,20 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
    * changes, which is the point of the scenarios that use it — the sender is
    * behaving correctly and is still told the send succeeded. */
   if (options.tamper) {
-    const store = relay.send.bind(relay);
+    const store = signalProtocolRelay.send.bind(signalProtocolRelay);
     const tamper = options.tamper;
-    relay.send = (envelope) => store(tamper(envelope));
+    signalProtocolRelay.send = (envelope) => store(tamper(envelope));
   }
 
   const [from, to] = await Promise.all([
     createSignalProtocolClient({
       identity: { userId: sender },
-      adapters: { storage: senderStorage, relay },
+      adapters: { storage: senderStorage, signalProtocolRelay },
       logger: options.logger?.sender,
     }),
     createSignalProtocolClient({
       identity: { userId: recipient },
-      adapters: { storage: recipientStorage, relay },
+      adapters: { storage: recipientStorage, signalProtocolRelay },
       logger: options.logger?.recipient,
     }),
   ]);
@@ -285,11 +285,15 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
    * `recipientDeviceCount` on the send result is what says how many there
    * were. What each device then made of its own copy is on that device, in
    * `recipientDevices`. */
-  const unsubscribeSignalProtocolRelay = relay.subscribe(recipient, DEFAULT_DEVICE_ID, (envelope) => {
-    if (onEnvelope) onEnvelope(envelope);
-    else pending.push(envelope);
-    emit({ type: 'envelope-stored', envelope });
-  });
+  const unsubscribeSignalProtocolRelay = signalProtocolRelay.subscribe(
+    recipient,
+    DEFAULT_DEVICE_ID,
+    (envelope) => {
+      if (onEnvelope) onEnvelope(envelope);
+      else pending.push(envelope);
+      emit({ type: 'envelope-stored', envelope });
+    },
+  );
 
   /*
    * The receiving account's devices, each keeping what it decrypted.
@@ -322,7 +326,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
       device.received.push(message);
       device.onDecrypted?.(message);
     });
-    client.startRelaySubscription();
+    client.startSignalProtocolRelaySubscription();
     recipientDevices.push(device);
     return device;
   }
@@ -337,7 +341,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
    * direction, so no application message comes to the sender, and its hook
    * does nothing. */
   from.registerHook('onMessageDecrypted', () => {});
-  from.startRelaySubscription();
+  from.startSignalProtocolRelaySubscription();
 
   performance.mark('oe-demo:boot:end');
   const bootMs = measure('oe-demo:boot', 'oe-demo:boot:start', 'oe-demo:boot:end');
@@ -450,7 +454,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
     sender,
     recipient,
     bootMs,
-    relay,
+    signalProtocolRelay,
     senderClient: from,
     recipientClient: to,
     recipientStorage,

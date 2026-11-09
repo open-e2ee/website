@@ -47,28 +47,28 @@ const PROGRAM = `import { createSignalProtocolClient } from "${SDK}";
 import { inMemoryStore } from "${SDK}/local/store/memory";
 import { pageSignalProtocolRelay } from "../src/lib/demo/signal-relay.ts";
 
-const relay = pageSignalProtocolRelay();
-await relay.registerDevice("alice", { encryptedDeviceName: new ArrayBuffer(0) });
-await relay.registerDevice("bob", { encryptedDeviceName: new ArrayBuffer(0) });
+const signalProtocolRelay = pageSignalProtocolRelay();
+await signalProtocolRelay.registerDevice("alice", { encryptedDeviceName: new ArrayBuffer(0) });
+await signalProtocolRelay.registerDevice("bob", { encryptedDeviceName: new ArrayBuffer(0) });
 
 const alice = await createSignalProtocolClient({
   identity: { userId: "alice" },
-  adapters: { storage: inMemoryStore(), relay },
+  adapters: { storage: inMemoryStore(), signalProtocolRelay },
 });
 const bob = await createSignalProtocolClient({
   identity: { userId: "bob" },
-  adapters: { storage: inMemoryStore(), relay },
+  adapters: { storage: inMemoryStore(), signalProtocolRelay },
 });
 
 await alice.send("bob", "Dinner at 7. I got us the table by the window.");
 
 // This is all the relay ever holds:
-const [envelope] = relay.getPendingMessages("bob", 1);
+const [envelope] = signalProtocolRelay.getPendingMessages("bob", 1);
 
 bob.registerHook("onMessageDecrypted", async (message) => {
   console.log(message.content); // plaintext, only on Bob's device
 });
-bob.startRelaySubscription();`;
+bob.startSignalProtocolRelaySubscription();`;
 
 /** The plaintext the program sends, and the device pane's whole content. */
 const PLAINTEXT = 'Dinner at 7. I got us the table by the window.';
