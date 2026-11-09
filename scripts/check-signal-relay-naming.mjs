@@ -215,9 +215,10 @@ const UPPER_BEFORE = /(?<![A-Za-z0-9_$])[A-Z]+\s+$/;
 const UPPER_AFTER = /^\s+[A-Z]+(?![A-Za-z0-9_$])/;
 
 // A regular expression literal starts with a slash after an operator, an
-// opening bracket, or the start of the line. It holds escapes and character
-// classes, and it ends at the next free slash.
-const REGEX_OPENER = /(?:^|[(,=:[!&|?{};])\s*$/;
+// opening bracket, an arrow, or the start of the line. A bare > is not an
+// opener, because text after a closing tag can start with a slash. A literal
+// holds escapes and character classes, and it ends at the next free slash.
+const REGEX_OPENER = /(?:^|[(,=:[!&|?{};]|=>)\s*$/;
 const REGEX_LITERAL = /\/(?![*/])(?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+\//y;
 
 // Returns true when the slash at index closes a regular expression literal.
