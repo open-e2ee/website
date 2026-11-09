@@ -375,7 +375,7 @@ test('the one-to-one session path calls only what the page relay carries', async
   const types = [];
   let corrupted = false;
   const session = await startDemoSession({
-    relay: recordedSignalProtocolRelay(called),
+    signalProtocolRelay: recordedSignalProtocolRelay(called),
     logger: { sender: quiet, recipient: quiet },
     deadlineMs: 2_000,
     /* One flipped byte fails the message authentication, so the receiving
@@ -404,7 +404,7 @@ test('the one-to-one session path calls only what the page relay carries', async
 
 test('the two-device run calls only what the page relay carries', async () => {
   const called = new Set();
-  const run = await startDemoRun({ relay: () => recordedSignalProtocolRelay(called) });
+  const run = await startDemoRun({ signalProtocolRelay: () => recordedSignalProtocolRelay(called) });
   try {
     await run.activate('a');
     await run.activate('b');

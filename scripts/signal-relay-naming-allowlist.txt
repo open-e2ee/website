@@ -73,14 +73,12 @@ PP52 src/data/virgil-security-comparison.mjs relay_starter_v1
 NM-FD25 src/lib/demo/code-snippets.ts relay
 NM-FD25 src/lib/demo/code-snippets.ts relay.fetchPreKeyBundle
 NM-FD25 src/lib/demo/code-snippets.ts relay.registerDevice
-NM-FD25 src/lib/demo/driver.ts options.relay
 NM-FD25 src/lib/demo/driver.ts relay
 NM-FD25 src/lib/demo/driver.ts relay.registerDevice
 NM-FD25 src/lib/demo/driver.ts relay.send
 NM-FD25 src/lib/demo/driver.ts relay.send.bind
 NM-FD25 src/lib/demo/driver.ts relay.subscribe
 NM-FD25 src/lib/demo/driver.ts startRelaySubscription
-NM-FD25 src/lib/demo/run.ts options.relay
 NM-FD25 src/lib/demo/run.ts relay
 NM-FD25 src/lib/demo/run.ts relay.fetchPreKeyBundle
 NM-FD25 src/lib/demo/run.ts relay.getEcSignedPreKeyMetadata
@@ -216,7 +214,6 @@ NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-service-limits
 NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-terms
 PP52 src/pages/pricing.astro relay_free_v1
 PP52 src/pages/pricing.astro relay_starter_v1
-NM-FD25 tests/demo-driver.test.mjs relay
 NM-FD25 tests/demo-run.test.mjs relay
 NM-FD25 tests/demo-run.test.mjs relay.subscribe
 NM-FD25 tests/demo-run.test.mjs relay.subscribe.bind

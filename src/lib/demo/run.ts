@@ -100,7 +100,7 @@ export interface DemoRunOptions {
    * A factory rather than a relay because `reset()` needs a new one; see
    * `raiseSignalProtocolRelay()`.
    */
-  relay?: () => PageSignalProtocolRelay;
+  signalProtocolRelay?: () => PageSignalProtocolRelay;
   /** How long any one wait on the relay may take before it is called a failure. */
   deadlineMs?: number;
 }
@@ -133,7 +133,7 @@ export interface DemoRun {
   /** The recording. Stable across `reset()`, so subscribers survive one. */
   readonly trace: Trace;
   /** The relay this run's devices register with. Replaced by a reset. */
-  readonly relay: PageSignalProtocolRelay;
+  readonly signalProtocolRelay: PageSignalProtocolRelay;
   /** Account name for an actor, for anything that has to print one. */
   userId(actor: DeviceActor): string;
   /**
@@ -466,7 +466,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     b: options.b ?? 'bob',
   };
   const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
-  const makeSignalProtocolRelay = options.relay ?? pageSignalProtocolRelay;
+  const makeSignalProtocolRelay = options.signalProtocolRelay ?? pageSignalProtocolRelay;
   const protocol = options.protocol;
   const trace = createTrace();
 
@@ -1104,7 +1104,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     /* A getter, because `reset()` replaces it. A caller that had read the
        property once and kept it would go on watching a relay nobody is sending
        to. */
-    get relay() {
+    get signalProtocolRelay() {
       return relay;
     },
 

@@ -379,7 +379,7 @@ test('says so when the recipient has no device, instead of a TypeError', async (
  */
 
 test('completes a round trip when the relay delivers after the send resolves', async () => {
-  const session = await startDemoSession({ relay: signalRelayThatDeliversLate() });
+  const session = await startDemoSession({ signalProtocolRelay: signalRelayThatDeliversLate() });
   try {
     const exchange = await failsIfSlow(
       session.send(PROBE),
@@ -399,7 +399,7 @@ test('completes a round trip when the relay delivers after the send resolves', a
 
 test('fails on its deadline when the relay never delivers at all', async () => {
   const session = await startDemoSession({
-    relay: signalRelayThatDeliversLate({ delivery: 'never' }),
+    signalProtocolRelay: signalRelayThatDeliversLate({ delivery: 'never' }),
     deadlineMs: 250,
   });
   try {
@@ -423,7 +423,7 @@ test('fails on its deadline when the envelope lands but no device decrypts it', 
      never reads it. The envelope wait is satisfied, so this is the only one of
      the three that reaches the second deadline at all. */
   const session = await startDemoSession({
-    relay: signalRelayThatDeliversLate({ delivery: 'observer-only' }),
+    signalProtocolRelay: signalRelayThatDeliversLate({ delivery: 'observer-only' }),
     deadlineMs: 250,
   });
   try {
@@ -446,7 +446,7 @@ test('is still usable after a send has failed on its deadline', async () => {
      armed unless they are cleared on the way out, and the next send would
      then be resolved by the wrong message or by nothing at all. */
   const signalRelay = signalRelayThatDeliversLate({ delivery: 'never' });
-  const session = await startDemoSession({ relay: signalRelay, deadlineMs: 250 });
+  const session = await startDemoSession({ signalProtocolRelay: signalRelay, deadlineMs: 250 });
   try {
     await assert.rejects(
       () =>

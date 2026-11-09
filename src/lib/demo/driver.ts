@@ -81,7 +81,7 @@ export interface DemoSessionOptions {
    * not, which is the case that matters and the case that shipped broken.
    * Passing a wrapper that defers delivery is how that case gets tested.
    */
-  relay?: PageSignalProtocolRelay;
+  signalProtocolRelay?: PageSignalProtocolRelay;
   /**
    * How long a send waits for the relay before giving up, in milliseconds.
    *
@@ -165,7 +165,7 @@ export interface DemoSession {
    * device the sender has never written to is a relay call the application
    * makes by hand.
    */
-  readonly relay: PageSignalProtocolRelay;
+  readonly signalProtocolRelay: PageSignalProtocolRelay;
   /** The sending device, for the SDK calls a scenario has to make itself. */
   readonly senderClient: DefaultSignalProtocolClient;
   /** The receiving account's primary device, and its storage. */
@@ -212,7 +212,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
 
   const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
 
-  const relay = options.relay ?? pageSignalProtocolRelay();
+  const relay = options.signalProtocolRelay ?? pageSignalProtocolRelay();
   await relay.registerDevice(sender, { encryptedDeviceName: new ArrayBuffer(0) });
   await relay.registerDevice(recipient, { encryptedDeviceName: new ArrayBuffer(0) });
 
@@ -450,7 +450,7 @@ export async function startDemoSession(options: DemoSessionOptions = {}): Promis
     sender,
     recipient,
     bootMs,
-    relay,
+    signalProtocolRelay: relay,
     senderClient: from,
     recipientClient: to,
     recipientStorage,

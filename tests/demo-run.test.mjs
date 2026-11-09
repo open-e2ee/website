@@ -1361,7 +1361,7 @@ test('survives a relay that delivers after the send has resolved', async () => {
       const stored = run.trace.events.filter((event) => event.step === 'stored-at-signal-relay');
       assert.equal(stored.length, 1);
     },
-    { relay: () => signalRelayThatDeliversLate() },
+    { signalProtocolRelay: () => signalRelayThatDeliversLate() },
   );
 });
 
