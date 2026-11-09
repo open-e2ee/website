@@ -38,7 +38,7 @@ export const CODE_SNIPPETS: Record<Step, CodeSnippet> = {
      because even it is not the relay's business. */
   registered: {
     kind: 'call',
-    code: 'await signalProtocolRelay.registerDevice(userId, { encryptedDeviceName });',
+    code: 'await relay.registerDevice(userId, { encryptedDeviceName });',
   },
 
   /* The same call as `devices-ready` below, shown by the one argument that
@@ -60,7 +60,7 @@ export const CODE_SNIPPETS: Record<Step, CodeSnippet> = {
     kind: 'call',
     code: `const config = createSignalProtocolClientConfig({
   identity: { userId },
-  adapters: { storage: inMemoryStore(), signalProtocolRelay },
+  adapters: { storage: inMemoryStore(), relay },
 });
 const client = await DefaultSignalProtocolClient.create(userId, config);`,
   },
@@ -74,7 +74,7 @@ const client = await DefaultSignalProtocolClient.create(userId, config);`,
      be agreed against, and both calls are the developer's, not the relay's. */
   'session-established': {
     kind: 'call',
-    code: `const bundle = await signalProtocolRelay.fetchPreKeyBundle(toUserId, toDeviceId, fromUserId);
+    code: `const bundle = await relay.fetchPreKeyBundle(toUserId, toDeviceId, fromUserId);
 await client.establishSession(toAddress, bundle);`,
   },
 

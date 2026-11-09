@@ -19,27 +19,27 @@ export async function runExchange(message: string, log: (line: string) => void):
     throw new Error('Enter a message with 1 to 2000 characters.');
   }
 
-  const signalProtocolRelay = pageSignalProtocolRelay();
-  const aliceId = await signalProtocolRelay.registerDevice('alice', { encryptedDeviceName: new ArrayBuffer(0) });
-  const bobId = await signalProtocolRelay.registerDevice('bob', { encryptedDeviceName: new ArrayBuffer(0) });
+  const relay = pageSignalProtocolRelay();
+  const aliceId = await relay.registerDevice('alice', { encryptedDeviceName: new ArrayBuffer(0) });
+  const bobId = await relay.registerDevice('bob', { encryptedDeviceName: new ArrayBuffer(0) });
   const clients: Client[] = [];
 
   try {
     log('Create Alice and Bob with separate keys and stores.');
     const alice = await createSignalProtocolClient({
       identity: { userId: 'alice', deviceId: aliceId },
-      adapters: { storage: inMemoryStore(), signalProtocolRelay },
+      adapters: { storage: inMemoryStore(), relay },
     });
     clients.push(alice);
     const bob = await createSignalProtocolClient({
       identity: { userId: 'bob', deviceId: bobId },
-      adapters: { storage: inMemoryStore(), signalProtocolRelay },
+      adapters: { storage: inMemoryStore(), relay },
     });
     clients.push(bob);
 
     async function deliver(sender: Client, receiver: Client, recipient: string, deviceId: number, text: string) {
       await sender.send(recipient, text);
-      const envelopes = signalProtocolRelay.getPendingMessages(recipient, deviceId);
+      const envelopes = relay.getPendingMessages(recipient, deviceId);
       const envelope = envelopes.find((item) => item.contentKind !== 'receipt');
       if (!envelope) throw new Error('The relay did not receive an encrypted envelope.');
       const payload = envelope.ciphertext;
@@ -51,12 +51,12 @@ export async function runExchange(message: string, log: (line: string) => void):
 
       await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => {
-          receiver.stopSignalProtocolRelaySubscription();
+          receiver.stopRelaySubscription();
           reject(new Error(`No decrypted message reached ${recipient} within 30 seconds.`));
         }, 30_000);
         receiver.registerHook('onMessageDecrypted', async (decrypted) => {
           clearTimeout(timer);
-          receiver.stopSignalProtocolRelaySubscription();
+          receiver.stopRelaySubscription();
           if (decrypted.content !== text) {
             reject(new Error('The decrypted message did not match the sent message.'));
             return;
@@ -64,7 +64,7 @@ export async function runExchange(message: string, log: (line: string) => void):
           log(`${recipient} decrypted: ${decrypted.content}`);
           resolve();
         });
-        receiver.startSignalProtocolRelaySubscription();
+        receiver.startRelaySubscription();
       });
     }
 
@@ -72,6 +72,6 @@ export async function runExchange(message: string, log: (line: string) => void):
     await deliver(bob, alice, 'alice', aliceId, `Received: ${message}`);
     log('PASS: both devices decrypted the expected messages.');
   } finally {
-    for (const client of clients) client.stopSignalProtocolRelaySubscription();
+    for (const client of clients) client.stopRelaySubscription();
   }
 }

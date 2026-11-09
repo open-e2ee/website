@@ -205,27 +205,12 @@ export class PageSignalProtocolRelay implements SignalProtocolRelayServer {
    * page relay has no connection to lose, so it never reads `connecting` or
    * `reconnecting`.
    */
-  get signalProtocolRelayConnectionState(): SignalProtocolRelayConnectionState {
+  get relayConnectionState(): SignalProtocolRelayConnectionState {
     return this.connection.current;
   }
 
-  subscribeSignalProtocolRelayConnectionState(
-    listener: (state: SignalProtocolRelayConnectionState) => void,
-  ): Unsubscribe {
-    return this.connection.subscribe(listener);
-  }
-
-  /*
-   * SDK 14.2 still requires the two earlier names of the members above in
-   * `SignalProtocolRelayServer`. Each forwards to its new name. SDK 15.0.0
-   * removes the earlier names, and this class drops them with that upgrade.
-   */
-  get relayConnectionState(): SignalProtocolRelayConnectionState {
-    return this.signalProtocolRelayConnectionState;
-  }
-
   subscribeRelayConnectionState(listener: (state: SignalProtocolRelayConnectionState) => void): Unsubscribe {
-    return this.subscribeSignalProtocolRelayConnectionState(listener);
+    return this.connection.subscribe(listener);
   }
 
   async markDelivered(envelopeId: string): Promise<void> {

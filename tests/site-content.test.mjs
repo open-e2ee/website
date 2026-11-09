@@ -322,10 +322,10 @@ function splitComment(line) {
 const HOSTED_LINES = [
   `import { createHostedSignalProtocolClient } from "${capture.packageName}";`,
   'const alice = await createHostedSignalProtocolClient({',
-  '  hosted: { signalProtocolRelayUrl, getIdentityAssertion: aliceSignIn },',
+  '  hosted: { relayUrl: signalRelayUrl, getIdentityAssertion: aliceSignIn },',
   '  adapters: { storage: inMemoryStore() },',
   'const bob = await createHostedSignalProtocolClient({',
-  '  hosted: { signalProtocolRelayUrl, getIdentityAssertion: bobSignIn },',
+  '  hosted: { relayUrl: signalRelayUrl, getIdentityAssertion: bobSignIn },',
   `await alice.send(bob.userId, "${capture.plaintext}");`,
 ];
 
@@ -395,7 +395,7 @@ test('compiles every hero variant against the installed SDK', async () => {
   const ts = (await import('typescript')).default;
   const root = fileURLToPath(new URL('../.hero-variants/', import.meta.url));
   const reader = [
-    'declare const signalProtocolRelayUrl: string;',
+    'declare const signalRelayUrl: string;',
     `declare const aliceSignIn: import("${capture.packageName}").GetIdentityAssertion;`,
     `declare const bobSignIn: import("${capture.packageName}").GetIdentityAssertion;`,
     `declare const directory: Parameters<typeof import("${capture.packageName}/local/store/node").nodeStore>[0]["directory"];`,
@@ -476,8 +476,8 @@ test('offers every adapter as a real, complete, copyable program', () => {
       `${variant.storage}/${variant.signalRelay} does not import its store`,
     );
     /* The relay has no construction line. The hosted client builds its
-       adapter from `signalProtocolRelayUrl`, and the comment that says what
-       the URL is and what the relay does ships on a line of its own. */
+       adapter from `signalRelayUrl`, and the comment that says what the URL is and
+       what the relay does ships on a line of its own. */
     assert.equal(signalRelay.setup, undefined, `${variant.storage}/${variant.signalRelay} binds the relay URL from one runtime`);
     assert.doesNotMatch(variant.code, /process\.env|import\.meta\.env/, `${variant.storage}/${variant.signalRelay} reads one runtime's environment`);
     assert.ok(
@@ -636,11 +636,11 @@ test('binds the names the reader brings, or says whose they are', async () => {
   assert.equal(rn.expr, 'await reactNativeStore()');
   assert.equal(rn.comment, undefined, 'the React Native option captions a name it does not use');
 
-  /* The Signal Protocol Relay discloses `signalProtocolRelayUrl` and the two
-   * sign-in callbacks. The URL is the reader's configuration, and each
-   * runtime reads configuration in a different way: a browser bundle has no
-   * `process`, and Expo inlines only `EXPO_PUBLIC_` variables. The callbacks
-   * are the reader's identity-provider calls. Nothing importable stands behind any of
+  /* The Signal Protocol Relay discloses `signalRelayUrl` and the two sign-in
+   * callbacks. The URL is the reader's configuration, and each runtime reads
+   * configuration in a different way: a browser bundle has no `process`, and
+   * Expo inlines only `EXPO_PUBLIC_` variables. The callbacks are the
+   * reader's identity-provider calls. Nothing importable stands behind any of
    * the three. It imports nothing beyond its
    * factory: the hosted client is a root export and takes no relay subpath.
    * It is the only relay the panel offers, because the SDK exports no
@@ -650,12 +650,8 @@ test('binds the names the reader brings, or says whose they are', async () => {
   assert.equal(hosted.factory, 'createHostedSignalProtocolClient');
   assert.equal(hosted.subpath, undefined, 'the hosted client is reached through a relay subpath');
   assert.equal(hosted.imports, undefined, 'the hosted option imports something the SDK does not export');
-  assert.equal(
-    hosted.setup,
-    undefined,
-    'the hosted option binds signalProtocolRelayUrl from one runtime\'s environment',
-  );
-  assert.match(signalRelayComment, /^\/\/ signalProtocolRelayUrl is your Relay connection URL\./);
+  assert.equal(hosted.setup, undefined, 'the hosted option binds signalRelayUrl from one runtime\'s environment');
+  assert.match(signalRelayComment, /^\/\/ signalRelayUrl is your Relay environment's connection URL\./);
   assert.match(hosted.comment, /aliceSignIn and bobSignIn return each device's signed identity assertion/);
 
   for (const variant of snippetVariants) {
@@ -670,7 +666,7 @@ test('binds the names the reader brings, or says whose they are', async () => {
      * first of them starts with `import`. */
     const importsEnd = lines.indexOf('');
     const store = storageOptions.find((option) => option.id === variant.storage);
-    for (const name of ['signalProtocolRelayUrl', 'vault']) {
+    for (const name of ['signalRelayUrl', 'vault']) {
       /* A name that the store's comment or the relay comment gives to the
        * reader is disclosed, not bound; the disclosure checks below hold its
        * position. */
@@ -707,30 +703,21 @@ test('binds the names the reader brings, or says whose they are', async () => {
 
     /* The same rule for the Signal Protocol Relay's sign-in callbacks: said
      * above the first line that passes one. The variants name no `identity`
-     * and pass no `signalProtocolRelay`, because the hosted client derives the
-     * one and builds the other. */
+     * and pass no `adapters.relay`, because the hosted client derives the one
+     * and builds the other. */
     assert.match(variant.code, /aliceSignIn and bobSignIn/, `${variant.storage}/${variant.signalRelay} lost the sign-in disclosure`);
-    assert.match(variant.code, /hosted: \{ signalProtocolRelayUrl, getIdentityAssertion: aliceSignIn \}/);
-    assert.match(variant.code, /hosted: \{ signalProtocolRelayUrl, getIdentityAssertion: bobSignIn \}/);
+    assert.match(variant.code, /hosted: \{ relayUrl: signalRelayUrl, getIdentityAssertion: aliceSignIn \}/);
+    assert.match(variant.code, /hosted: \{ relayUrl: signalRelayUrl, getIdentityAssertion: bobSignIn \}/);
     assert.doesNotMatch(variant.code, /identity: \{ userId:/);
-    assert.doesNotMatch(
-      variant.code,
-      /, (?:signalProtocolRelay|relay) \}/,
-      `${variant.storage}/${variant.signalRelay} passes a relay adapter the hosted client builds`,
-    );
+    assert.doesNotMatch(variant.code, /, relay \}/, `${variant.storage}/${variant.signalRelay} passes a relay adapter the hosted client builds`);
     assert.match(variant.code, /alice\.send\(bob\.userId, /);
     const said = lines.findIndex((line) => line.includes('aliceSignIn and bobSignIn'));
     const used = lines.findIndex((line) => line.includes('getIdentityAssertion: aliceSignIn'));
     assert.ok(said !== -1 && said < used, 'the sign-in callback is used before it is explained');
     const urlSaid = lines.indexOf(signalRelayComment);
-    const urlUsed = lines.findIndex(
-      (line) => /\bsignalProtocolRelayUrl\b/.test(line) && !line.startsWith('//'),
-    );
-    assert.ok(urlSaid !== -1 && urlSaid < urlUsed, 'signalProtocolRelayUrl is used before it is explained');
-    assert.ok(
-      !lines.some((line) => /^\s*const signalProtocolRelayUrl\b/.test(line)),
-      'signalProtocolRelayUrl is both disclosed and bound',
-    );
+    const urlUsed = lines.findIndex((line) => /\bsignalRelayUrl\b/.test(line) && !line.startsWith('//'));
+    assert.ok(urlSaid !== -1 && urlSaid < urlUsed, 'signalRelayUrl is used before it is explained');
+    assert.ok(!lines.some((line) => /^\s*const signalRelayUrl\b/.test(line)), 'signalRelayUrl is both disclosed and bound');
   }
 
   /* Every comment in every variant is one the module declares, wherever on the
@@ -3556,7 +3543,7 @@ test('shows the receive side in the hero, not only the send', () => {
    * started by hand — `client.d.ts` starts it automatically only when a hook
    * was already configured. A snippet that registers and never subscribes
    * shows a receive path that never fires. */
-  assert.match(heroCode, /bob\.startSignalProtocolRelaySubscription\(\);/);
+  assert.match(heroCode, /bob\.startRelaySubscription\(\);/);
 
   /* The receiving client is the one the sender addresses. Two devices in the
    * panel make that checkable where one client and a string could not: a
@@ -3571,7 +3558,7 @@ test('declares what the example uses', async () => {
    * expensive one, because each of them decoded an undeclared relay as a
    * server they would have to run. So the program names its backend: the
    * client factory says it is the hosted one, and a comment says what
-   * `signalProtocolRelayUrl` is before the clients use it. */
+   * `signalRelayUrl` is before the clients use it. */
   assert.match(
     heroCode,
     /import \{ inMemoryStore \} from "@open-e2ee\/signal-protocol-sdk\/local\/store\/memory";/,

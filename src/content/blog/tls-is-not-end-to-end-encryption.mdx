@@ -40,27 +40,27 @@ End-to-end encryption moves the boundary. The sending device generates keys and 
 
 ## What it looks like in code
 
-This round trip uses the OpenE2EE Signal Protocol SDK and the OpenE2EE Signal Protocol Relay. Set `OPEN_E2EE_RELAY_URL` to the URL of your project's Sandbox environment. The two sign-in functions in the code are your own. Each one returns the signed identity assertion for one device from your identity provider:
+This round trip uses the OpenE2EE Signal Protocol SDK and the OpenE2EE Signal Protocol Relay. Set `OPEN_E2EE_SIGNAL_RELAY_URL` to the URL of your project's Sandbox environment. The two sign-in functions in the code are your own. Each one returns the signed identity assertion for one device from your identity provider:
 
 ```ts
 import { createHostedSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
 import { inMemoryStore } from '@open-e2ee/signal-protocol-sdk/local/store/memory';
 
-const signalProtocolRelayUrl = process.env.OPEN_E2EE_RELAY_URL!;
+const signalRelayUrl = process.env.OPEN_E2EE_SIGNAL_RELAY_URL!;
 
 const alice = await createHostedSignalProtocolClient({
-  hosted: { signalProtocolRelayUrl, getIdentityAssertion: aliceSignIn },
+  hosted: { relayUrl: signalRelayUrl, getIdentityAssertion: aliceSignIn },
   adapters: { storage: inMemoryStore() },
 });
 const bob = await createHostedSignalProtocolClient({
-  hosted: { signalProtocolRelayUrl, getIdentityAssertion: bobSignIn },
+  hosted: { relayUrl: signalRelayUrl, getIdentityAssertion: bobSignIn },
   adapters: { storage: inMemoryStore() },
 });
 
 bob.registerHook('onMessageDecrypted', (message) => {
   console.log(message.content); // plaintext, only on Bob's device
 });
-bob.startSignalProtocolRelaySubscription();
+bob.startRelaySubscription();
 
 await alice.send(bob.userId, 'Dinner at 7. I got us the table by the window.');
 ```

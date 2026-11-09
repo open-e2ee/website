@@ -75,9 +75,9 @@ const declaredSelectionFields = await declaredFields(
  * inside `stop()`.
  */
 function signalRelayThatDeliversLate({ deliverAfterMs = 50 } = {}) {
-  const signalProtocolRelay = pageSignalProtocolRelay();
-  const subscribe = signalProtocolRelay.subscribe.bind(signalProtocolRelay);
-  signalProtocolRelay.subscribe = (userId, deviceId, onEnvelope, options) =>
+  const relay = pageSignalProtocolRelay();
+  const subscribe = relay.subscribe.bind(relay);
+  relay.subscribe = (userId, deviceId, onEnvelope, options) =>
     subscribe(
       userId,
       deviceId,
@@ -86,7 +86,7 @@ function signalRelayThatDeliversLate({ deliverAfterMs = 50 } = {}) {
       },
       options,
     );
-  return signalProtocolRelay;
+  return relay;
 }
 
 /**
@@ -1361,7 +1361,7 @@ test('survives a relay that delivers after the send has resolved', async () => {
       const stored = run.trace.events.filter((event) => event.step === 'stored-at-signal-relay');
       assert.equal(stored.length, 1);
     },
-    { signalProtocolRelay: () => signalRelayThatDeliversLate() },
+    { relay: () => signalRelayThatDeliversLate() },
   );
 });
 

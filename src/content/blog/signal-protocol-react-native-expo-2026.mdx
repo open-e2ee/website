@@ -79,17 +79,17 @@ import 'react-native-get-random-values';
 import { createHostedSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
 import { expoStore } from '@open-e2ee/signal-protocol-sdk/local/store/expo';
 
-const signalProtocolRelayUrl = process.env.EXPO_PUBLIC_OPEN_E2EE_RELAY_URL!;
+const signalRelayUrl = process.env.EXPO_PUBLIC_OPEN_E2EE_SIGNAL_RELAY_URL!;
 
 const signal = await createHostedSignalProtocolClient({
-  hosted: { signalProtocolRelayUrl, getIdentityAssertion: signIn },
+  hosted: { relayUrl: signalRelayUrl, getIdentityAssertion: signIn },
   adapters: { storage: await expoStore() },
 });
 
 signal.registerHook('onMessageDecrypted', (message) => {
   addToConversation(message.content);
 });
-signal.startSignalProtocolRelaySubscription();
+signal.startRelaySubscription();
 
 await signal.send(peerUserId, 'Dinner at 7.');
 ```
@@ -98,7 +98,7 @@ On first run, the client generates the identity keys and publishes the public ma
 
 The defaults are `postQuantum: 'required'` and `braid: 'required'`. PQXDH uses ML-KEM-1024 for session establishment. The braid setting requires the post-quantum ratchet. There is no public `postQuantum: 'disabled'` mode.
 
-Every Relay project opens a Sandbox environment, which needs no card. Point `signalProtocolRelayUrl` at it while you build.
+Every Relay project opens a Sandbox environment, which needs no card. Point `relayUrl` at it while you build.
 
 ## Where the keys live
 
@@ -134,7 +134,7 @@ Key lifetime determines whether the app still works in month six.
 
 ```ts
 const signal = await createHostedSignalProtocolClient({
-  hosted: { signalProtocolRelayUrl, getIdentityAssertion: signIn },
+  hosted: { relayUrl: signalRelayUrl, getIdentityAssertion: signIn },
   adapters: { storage: await expoStore() },
   preKeyLowThreshold: 50,
   onPreKeyLow: (remaining) => {

@@ -5,7 +5,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { lineIdentifiers, pathNames } from "./check-signal-relay-naming.mjs";
+import {
+  declaresAdapterVariable,
+  lineIdentifiers,
+  pathNames,
+} from "./check-signal-relay-naming.mjs";
 
 // The fixtures assemble the word so that this file holds no hit of its own.
 const W = ["r", "e", "l", "a", "y"].join("");
@@ -183,7 +187,7 @@ function frozenName(t) {
     [allowlist]: `NM3.1 src/old.ts ${W}ScopeId\n`,
   });
   git(root, "checkout", "--quiet", "-b", "change");
-  write(root, { "test/new.test.ts": `assert.equal(row.${W}ScopeId, 1);\n` });
+  write(root, { "test/new.test.ts": `const ${W}ScopeId = row.id;\n` });
   return root;
 }
 
@@ -292,7 +296,7 @@ test("skipped paths and ignore lines hold no hits", (t) => {
   });
   const result = guard(root);
   assert.equal(result.status, 0, result.lines.join("\n"));
-  write(root, { "src/visible.txt": `${W}Url\n` });
+  write(root, { "src/visible.txt": `const ${W}Url = 1;\n` });
   assert.deepEqual(guard(root).lines.slice(0, -1), [
     `src/visible.txt: ${W}Url (not in the allowlist)`,
   ]);
@@ -303,8 +307,8 @@ test("ignore globs follow their documented anchoring", (t) => {
     "a/generated/x.ts": `export const ${W}Url = 1;\n`,
     "a/b/generated/x.ts": `export const ${W}Url = 1;\n`,
     "a/xgenerated/x.ts": `export const ${W}Url = 1;\n`,
-    "deep/dir/x.snap": `${W}Url\n`,
-    "nested/evidence/x.md": `${W}Url\n`,
+    "deep/dir/x.snap": `const ${W}Url = 1;\n`,
+    "nested/evidence/x.md": `const ${W}Url = 1;\n`,
   };
   const root = repository(t, {
     ...clean,
@@ -357,7 +361,7 @@ test("the rules separate bare identifiers from prefixed names and prose", () => 
       `"OpenE2EE ${C} group credential v1"`,
       [`OpenE2EE ${C} group credential v1`],
     ],
-    [`options.${W}.host`, [`options.${W}.host`]],
+    [`config.${W}.json`, [`config.${W}.json`]],
     [`connect({ ${W} })`, [W]],
     [`new WebSocket(url, ["${W}"])`, [W]],
     [`SELECT id AS ${W}`, [W]],
@@ -416,9 +420,98 @@ test("a comma list is a parameter list only after an opening bracket", () => {
     [`the SDK storage, ${W}, and the store`, []],
     [`f(store, ${W})`, [W]],
     [`f(g(a), ${W})`, [W]],
-    [`{ storage, ${W}: client }`, [W]],
+    [`{ storage, ${W} }`, [W]],
   ];
   for (const [line, expected] of cases) {
     assert.deepEqual(lineIdentifiers(line), expected, line);
   }
+});
+
+// NM-FD25: SDK-owned members, methods, and option keys use role names, and
+// example code may name the Relay adapter variable with the bare word.
+test("a role name passes as an SDK member, method, or option key", () => {
+  const cases = [
+    `adapters.${W}`,
+    `client.start${C}Subscription();`,
+    `alice.stop${C}Subscription();`,
+    `options.${W}.host`,
+    `const state = client?.${W}ConnectionState;`,
+    `{ storage, ${W}: client }`,
+    `hosted: { ${W}Url: signal${C}Url, getIdentityAssertion },`,
+    `  ${W}ScopeId?: string;`,
+    `  start${C}Subscription(): void {`,
+    `  get ${W}ConnectionState() {`,
+    `// Call start${C}Subscription after the first send.`,
+    `"Pass ${W}Url to the client."`,
+  ];
+  for (const line of cases) {
+    assert.deepEqual(lineIdentifiers(line), [], line);
+  }
+});
+
+test("the bare word passes as the adapter variable only in its file", () => {
+  const cases = [
+    `const ${W} = pageSignalProtocol${C}();`,
+    `adapters: { storage: inMemoryStore(), ${W} },`,
+    `await ${W}.send(envelope);`,
+  ];
+  for (const line of cases) {
+    assert.deepEqual(lineIdentifiers(line, { adapterVariable: true }), [], line);
+  }
+  assert.deepEqual(lineIdentifiers(`await ${W}.send(envelope);`), [
+    `${W}.send`,
+  ]);
+  assert.deepEqual(lineIdentifiers(`connect({ ${W} })`), [W]);
+  assert.equal(declaresAdapterVariable(`const ${W} = pageSignalProtocol${C}();`), true);
+  assert.equal(declaresAdapterVariable(`const ${W}: SignalProtocol${C} = x;`), true);
+  assert.equal(declaresAdapterVariable(`f({ adapters: { storage, ${W} } })`), true);
+  assert.equal(declaresAdapterVariable(`const ${W} = connect();`), false);
+});
+
+test("a bare name outside the role scope fails", () => {
+  const cases = [
+    [`export type ${C}ConnectionState = string;`, [`${C}ConnectionState`]],
+    [`type ${C}ConnectionState = string;`, [`${C}ConnectionState`]],
+    [`config.${W}.json`, [`config.${W}.json`]],
+    [`https://sandbox.${W}.open-e2ee.dev`, [`sandbox.${W}.open-e2ee.dev`]],
+    [`import { x } from "./remote/${W}";`, [`./remote/${W}`]],
+    [`const ${W}Url = process.env.URL;`, [`${W}Url`]],
+    [`function start${C}Subscription() {}`, [`start${C}Subscription`]],
+    [`import { start${C}Subscription } from "x";`, [`start${C}Subscription`]],
+    [`send('${W}')`, [W]],
+    [`{ "${W}Url": 1 }`, [`${W}Url`]],
+    [`hosted: { ${W}Url, getIdentityAssertion },`, [`${W}Url`]],
+  ];
+  for (const [line, expected] of cases) {
+    assert.deepEqual(lineIdentifiers(line), expected, line);
+    assert.deepEqual(
+      lineIdentifiers(line, { adapterVariable: true }),
+      expected,
+      line,
+    );
+  }
+  assert.deepEqual(lineIdentifiers(`const ${W} = connect();`), [W]);
+  assert.deepEqual(
+    lineIdentifiers(`const ${W} = connect();`, { adapterVariable: true }),
+    [W],
+  );
+});
+
+test("the scan reads the adapter variable per file", (t) => {
+  const root = repository(t, {
+    ...clean,
+    "src/example.ts": [
+      `const ${W} = pageSignalProtocol${C}();`,
+      `const alice = createSignalProtocolClient({ adapters: { storage, ${W} } });`,
+      `alice.start${C}Subscription();`,
+      "",
+    ].join("\n"),
+  });
+  assert.equal(guard(root).status, 0);
+  write(root, { "src/other.ts": `await ${W}.send(envelope);\n` });
+  const result = guard(root);
+  assert.equal(result.status, 1);
+  assert.deepEqual(result.lines.slice(0, -1), [
+    `src/other.ts: ${W}.send (not in the allowlist)`,
+  ]);
 });
