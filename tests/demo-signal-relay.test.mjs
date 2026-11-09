@@ -404,7 +404,7 @@ test('the one-to-one session path calls only what the page relay carries', async
 
 test('the two-device run calls only what the page relay carries', async () => {
   const called = new Set();
-  const run = await startDemoRun({ signalProtocolRelay: () => recordedSignalProtocolRelay(called) });
+  const run = await startDemoRun({ createSignalProtocolRelay: () => recordedSignalProtocolRelay(called) });
   try {
     await run.activate('a');
     await run.activate('b');

@@ -100,7 +100,7 @@ export interface DemoRunOptions {
    * A factory rather than a relay because `reset()` needs a new one; see
    * `raiseSignalProtocolRelay()`.
    */
-  signalProtocolRelay?: () => PageSignalProtocolRelay;
+  createSignalProtocolRelay?: () => PageSignalProtocolRelay;
   /** How long any one wait on the relay may take before it is called a failure. */
   deadlineMs?: number;
 }
@@ -466,7 +466,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
     b: options.b ?? 'bob',
   };
   const deadlineMs = options.deadlineMs ?? DELIVERY_DEADLINE_MS;
-  const makeSignalProtocolRelay = options.signalProtocolRelay ?? pageSignalProtocolRelay;
+  const createSignalProtocolRelay = options.createSignalProtocolRelay ?? pageSignalProtocolRelay;
   const protocol = options.protocol;
   const trace = createTrace();
 
@@ -735,7 +735,7 @@ export async function startDemoRun(options: DemoRunOptions = {}): Promise<DemoRu
    */
   function raiseSignalProtocolRelay(): void {
     generation += 1;
-    relay = makeSignalProtocolRelay();
+    relay = createSignalProtocolRelay();
     instrumentSignalProtocolRelay(relay);
   }
 
