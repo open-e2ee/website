@@ -225,6 +225,26 @@ const UPPER_AFTER = /^\s+[A-Z]+(?![A-Za-z0-9_$])/;
 const REGEX_OPENER = /(?:^|[(,=:[!&|?{};]|=>)\s*$/;
 const REGEX_LITERAL = /\/(?![*/])(?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+\//y;
 
+// Returns true when a regular expression literal can start at the slash. The
+// closing brace of a template placeholder ends a value, so a slash after it
+// is a path separator. A closing brace whose opening brace is not on the
+// line stays an opener.
+function opensRegexLiteral(line, slash) {
+  const before = line.slice(0, slash);
+  if (!REGEX_OPENER.test(before)) return false;
+  const brace = before.trimEnd().length - 1;
+  if (line[brace] !== "}") return true;
+  let depth = 0;
+  for (let at = brace; at >= 0; at -= 1) {
+    if (line[at] === "}") depth += 1;
+    else if (line[at] === "{") {
+      depth -= 1;
+      if (depth === 0) return line[at - 1] !== "$";
+    }
+  }
+  return true;
+}
+
 // Returns the { open, close } slash indexes of the regular expression literal
 // that the slash at index delimits, or null. A slash inside a literal is not
 // a delimiter.
@@ -233,7 +253,7 @@ function regexLiteralAt(line, index) {
   let open = line.indexOf("/");
   while (open !== -1 && open <= index) {
     let next = open + 1;
-    if (REGEX_OPENER.test(line.slice(0, open))) {
+    if (opensRegexLiteral(line, open)) {
       REGEX_LITERAL.lastIndex = open;
       const literal = REGEX_LITERAL.exec(line);
       if (literal) {

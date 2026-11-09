@@ -417,12 +417,14 @@ test("an opening regular expression delimiter is not a path separator", () => {
     [`x = /${W}/.test(s)`, []],
     [`See /${W}/ for the setup.`, [`/${W}`]],
     [`GET https://api.example.dev/${W}/v1`, [`//api.example.dev/${W}`]],
-    // The slash after the placeholder opens a literal that ends before the
-    // word, so the path is a hit.
+    // A slash after a template placeholder is a path separator.
     [
       `fetch(\`\${origin}/dist/remote/${W}/index.js\`)`,
       [`/dist/remote/${W}`],
     ],
+    [`\${sdkRoot}/${W}/x`, [`/${W}`]],
+    [`\`\${a}/${W}/\``, [`/${W}`]],
+    [`if (x) {} /${W}/.test(s)`, []],
   ];
   for (const [line, expected] of cases) {
     assert.deepEqual(lineIdentifiers(line), expected, line);
