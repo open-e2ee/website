@@ -12,30 +12,6 @@
 // identifier, key, label, file name, environment variable, or URL segment
 // without that prefix. Prose is not an identifier.
 //
-// Role scope (NM-FD25, docs/decisions.md#sdk-role-names-20261109). A member,
-// method, or option key of an object that the Signal Protocol SDK owns uses
-// its role name, and example code may name the variable that holds the Relay
-// adapter with the bare word. The role names are the earlier names in the
-// members table of SDK 14.2.0, such as relayUrl and startRelaySubscription.
-// A role name is not a hit in these places:
-//   - after . or ?., as a member access in a property chain. A host name or
-//     a file name is not a property chain.
-//   - as an unquoted object key or interface member, before :
-//   - as a method or accessor name in a definition that opens a body
-//   - the bare word only: as a variable, or as an object shorthand property,
-//     in a file that holds the adapter variable. The file declares it with
-//     const, let, or var and an initializer or type that names a
-//     SignalProtocolRelay export, or passes it as the shorthand property of
-//     an adapters object.
-// A role name with more than one word is also not a hit in a comment, a
-// string, or prose. Each role name is a hit as the name of a declaration, on
-// an import or export line, and as a quoted key. An object shorthand property
-// with more than one word is a hit, because it also names a variable. The
-// bare word in quotes is a hit, because it is also a wire value. Exports,
-// types, files, subpaths, URLs, wire keys, stored keys, and ids keep the
-// prefix. The guard reads syntax, not types, so it accepts a member or key
-// with a role name on any object.
-//
 // The script is the same file in each repository that runs it. The
 // repository supplies only the allowlist, which holds the configuration and
 // the hits that remain. The default allowlist is
@@ -50,7 +26,8 @@
 //   ignore <glob>    Do not scan the paths that match the glob.
 //   <owner> <path> <identifier>
 //                    One remaining hit. <owner> is the task ID that removes
-//                    the hit, or NM-FD1 for an approved historical constant.
+//                    the hit, NM-FD1 for an approved historical constant, or
+//                    NM-FD25 for a role name (see below).
 //                    <path> is the file that holds the identifier. A path
 //                    that ends with / names a directory, and the entry is a
 //                    file or directory name in that directory (./ is the
@@ -68,13 +45,25 @@
 // --exclude-standard` lists, so the scan follows .gitignore and also reads a
 // new file before its first commit.
 //
+// Role names. The founder ruling sdk-role-names-20261109 (NM-FD25) gives a
+// member, method, or option key of an object that the Signal Protocol SDK owns
+// the role name, such as adapters.<word> or hosted.<word>Url. Example code
+// that calls the SDK can give the variable that holds the Relay adapter the
+// bare word. An entry with the owner NM-FD25 keeps such a hit. Its identifier
+// is a dotted chain of names in which each name that holds the word is one of
+// the role names in ROLE_NAMES. A file or directory name is never a role
+// name. The repository keeps the scope: an NM-FD25 entry names one file in
+// which each hit of the identifier is a role name.
+//
 // Failures. A hit that no entry holds. An entry with no hit. A duplicate
-// line. With a base ref, a directive that the allowlist at the base ref does
-// not hold, or a new entry whose identifier the base allowlist does not hold
-// under the same owner. Entries compare by path and identifier, so a pull
-// request can change the owner of an entry. A new entry can repeat a frozen
-// name in a new path until its owner task renames it, so the set of owner
-// and identifier names only shrinks. --base <ref> sets the base. Without it,
+// line. An NM-FD25 entry that is not a role name. With a base ref, a
+// directive that the allowlist at the base ref does not hold, or a new entry
+// whose identifier the base allowlist does not hold under the same owner. A
+// new NM-FD25 entry passes the base check, because the ruling keeps it.
+// Entries compare by path and identifier, so a pull request can change the
+// owner of an entry. A new entry can repeat a frozen name in a new path
+// until its owner task renames it, so the set of owner and identifier names
+// only shrinks. --base <ref> sets the base. Without it,
 // the script uses origin/$GITHUB_BASE_REF when GitHub Actions sets
 // GITHUB_BASE_REF for a pull request. --no-base turns the base check off. A
 // base ref without the allowlist skips the base check, because that pull
@@ -100,6 +89,25 @@ const GIT_TIMEOUT_MS = 60_000;
 const WORD = ["r", "e", "l", "a", "y"].join("");
 const UPPER = WORD.toUpperCase();
 const ANY = `[Rr]${WORD.slice(1)}`;
+const CAPITAL = `R${WORD.slice(1)}`;
+
+// The owner of a role-name entry, and the SDK member, method, and option key
+// names that the ruling gives the role name.
+const ROLE_OWNER = "NM-FD25";
+const ROLE_NAMES = new Set([
+  WORD,
+  `${WORD}Url`,
+  `${WORD}ScopeId`,
+  `${WORD}Retryable`,
+  `${WORD}ConnectionState`,
+  `subscribe${CAPITAL}ConnectionState`,
+  `start${CAPITAL}Subscription`,
+  `stop${CAPITAL}Subscription`,
+  `on${CAPITAL}ProtocolError`,
+  `set${CAPITAL}Batching`,
+  `shared${CAPITAL}`,
+]);
+const CODE_NAME = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 const SKIPPED_DIRECTORIES = new Set([
   "node_modules",
@@ -264,123 +272,6 @@ function closesRegexLiteral(line, slash) {
   return false;
 }
 
-// The role names of the SDK 14.2.0 members table (NM-FD25).
-const PASCAL = `R${WORD.slice(1)}`;
-const ROLE_NAMES = new Set([
-  WORD,
-  `${WORD}Url`,
-  `${WORD}ScopeId`,
-  `${WORD}Retryable`,
-  `${WORD}ConnectionState`,
-  `subscribe${PASCAL}ConnectionState`,
-  `start${PASCAL}Subscription`,
-  `stop${PASCAL}Subscription`,
-  `on${PASCAL}ProtocolError`,
-  `set${PASCAL}Batching`,
-  `set${PASCAL}ProtocolErrorReporter`,
-  `shared${PASCAL}`,
-]);
-const NAME_CHAR = /[A-Za-z0-9_$]/;
-const CHAIN_CHAR = /[A-Za-z0-9_$.?-]/;
-const MEMBER_BEFORE = /(?:^|[^.])[?]?[.]$/;
-// A host name or a file name, not a property chain.
-const NOT_PROPERTY_CHAIN =
-  /-|[.](?:app|com|dev|example|invalid|io|local|localhost|net|org|test|astro|cjs|css|html|js|json|jsonc|jsx|md|mdx|mjs|mts|sh|sql|toml|ts|tsx|txt|ya?ml)$/;
-const KEY_AFTER = /^\s*[?]?:(?!:)/;
-const SHORTHAND_BEFORE = /[{,]\s*$/;
-const SHORTHAND_AFTER = /^\s*[,}]/;
-const DEFINITION_BEFORE =
-  /^\s*(?:(?:static|public|private|protected|readonly|override|abstract|async)\s+)*(?:([gs]et)\s+)?$/;
-const DEFINITION_BODY = /\)\s*(?::\s*[^;=(){}]+)?\s*\{/;
-const VARIABLE_BEFORE = /\b(?:const|let|var)\s+$/;
-const DECLARATION_BEFORE =
-  /\b(?:const|let|var|function\*?|class|interface|type|enum|namespace)\s+$/;
-const IMPORT_EXPORT_LINE = /^\s*(?:import\b|export\s*(?:type\s*)?\{|export\b.*\bfrom\b)/;
-const QUOTE = /["'`]/;
-const ADAPTER_DECLARATION = new RegExp(
-  `\\b(?:const|let|var)\\s+${WORD}(?![A-Za-z0-9_$])[^;]*SignalProtocol${PASCAL}`,
-);
-const ADAPTER_SHORTHAND = new RegExp(
-  `\\badapters\\s*:\\s*\\{(?:[^}]*,)?\\s*${WORD}\\s*[,}]`,
-);
-
-// Returns the innermost bracket that the text opens and does not close.
-function openBracket(text) {
-  let depth = 0;
-  for (let index = text.length - 1; index >= 0; index -= 1) {
-    const char = text[index];
-    if (char === ")" || char === "]" || char === "}") depth += 1;
-    else if (char === "(" || char === "[" || char === "{") {
-      if (depth === 0) return char;
-      depth -= 1;
-    }
-  }
-  return null;
-}
-
-// Returns true when the file declares the Relay adapter variable, or passes
-// it as the shorthand adapters option (NM-FD25).
-export function declaresAdapterVariable(text) {
-  return text
-    .split(/\r?\n/)
-    .some(
-      (line) => ADAPTER_DECLARATION.test(line) || ADAPTER_SHORTHAND.test(line),
-    );
-}
-
-// Returns true when the occurrence of the word at index is a role name in the
-// NM-FD25 scope.
-function inRoleScope(line, at, context) {
-  let start = at;
-  while (start > 0 && NAME_CHAR.test(line[start - 1])) start -= 1;
-  let end = at + WORD.length;
-  while (end < line.length && NAME_CHAR.test(line[end])) end += 1;
-  const name = line.slice(start, end);
-  if (!ROLE_NAMES.has(name)) return false;
-  if (IMPORT_EXPORT_LINE.test(line)) return false;
-  const before = line.slice(0, start);
-  const after = line.slice(end);
-  // A quote that closes after a member access, as in `adapters.relay`, does
-  // not make the word a string.
-  const opens = QUOTE.test(line[start - 1] ?? "");
-  const quoted = opens || QUOTE.test(after[0] ?? "");
-  if (opens && (name === WORD || KEY_AFTER.test(after.slice(1)))) return false;
-  if (MEMBER_BEFORE.test(before)) {
-    let chainStart = start;
-    while (chainStart > 0 && CHAIN_CHAR.test(line[chainStart - 1]))
-      chainStart -= 1;
-    let chainEnd = end;
-    while (chainEnd < line.length && CHAIN_CHAR.test(line[chainEnd]))
-      chainEnd += 1;
-    const chain = line.slice(chainStart, chainEnd).replace(/[.?-]+$/, "");
-    return !NOT_PROPERTY_CHAIN.test(chain);
-  }
-  if (VARIABLE_BEFORE.test(before)) {
-    return name === WORD && context.adapterVariable === true &&
-      ADAPTER_DECLARATION.test(line.slice(before.search(VARIABLE_BEFORE)));
-  }
-  if (DECLARATION_BEFORE.test(before)) return false;
-  if (!quoted && KEY_AFTER.test(after)) return true;
-  // A shorthand property also names a variable.
-  if (
-    SHORTHAND_BEFORE.test(before) &&
-    SHORTHAND_AFTER.test(after) &&
-    openBracket(before) === "{"
-  ) {
-    return name === WORD && context.adapterVariable === true;
-  }
-  const definition = DEFINITION_BEFORE.exec(before);
-  if (
-    definition &&
-    /^\s*\(/.test(after) &&
-    (definition[1] !== undefined || DEFINITION_BODY.test(after))
-  ) {
-    return true;
-  }
-  if (name !== WORD) return true;
-  return context.adapterVariable === true && !quoted;
-}
-
 // matchAll copies lastIndex, so no code calls test or exec on this regex.
 const WORD_ANY_CASE = new RegExp(WORD, "gi");
 const HAS_WORD = new RegExp(WORD, "i");
@@ -513,6 +404,7 @@ function parseAllowlist(text, source) {
       where,
       label: `${decodePath(path)}: ${identifier}`,
       owner,
+      path: decodePath(path),
       identifier,
     });
   });
@@ -547,10 +439,31 @@ function isBare(text, index) {
   return !PREFIX.test(text.slice(Math.max(0, index - PREFIX_WINDOW), index));
 }
 
+// Returns true when an identifier is a role name: a dotted chain of code
+// names, such as adapters.<word>, in which each name that holds the word is
+// in ROLE_NAMES.
+export function isRoleName(identifier) {
+  const names = identifier.split(/[?]?[.]/);
+  return (
+    names.every((name) => CODE_NAME.test(name)) &&
+    names.some((name) => ROLE_NAMES.has(name)) &&
+    names.every((name) => !HAS_WORD.test(name) || ROLE_NAMES.has(name))
+  );
+}
+
+// Returns true when an allowlist entry is a role-name entry that the
+// ruling keeps: a file entry, not a directory entry, for a role name.
+function isRoleEntry(entry) {
+  return (
+    entry.owner === ROLE_OWNER &&
+    !entry.path.endsWith("/") &&
+    isRoleName(entry.identifier)
+  );
+}
+
 // Returns the identifiers on one line. Each occurrence of the word belongs
-// to at most one identifier. context.adapterVariable is true when the file
-// declares the Relay adapter variable.
-export function lineIdentifiers(source, context = {}) {
+// to at most one identifier.
+export function lineIdentifiers(source) {
   // A string escape such as a newline escape ends a name. Two spaces keep
   // each offset.
   const line = source.replace(/\\[nrtbfv0]/g, "  ");
@@ -574,13 +487,7 @@ export function lineIdentifiers(source, context = {}) {
       let identifier = found[0];
       if (rule.trim) identifier = identifier.replace(rule.trim, "");
       if (rule.exclude && rule.exclude.test(identifier)) continue;
-      if (
-        inside.some(
-          (at) => isBare(line, at) && !inRoleScope(line, at, context),
-        )
-      ) {
-        identifiers.push(identifier);
-      }
+      if (inside.some((at) => isBare(line, at))) identifiers.push(identifier);
     }
   }
   return identifiers;
@@ -640,10 +547,8 @@ function scan(root, allowlistPath, config) {
     if (isBinary(path, buffer)) continue;
     const text = buffer.toString("utf8");
     if (!HAS_WORD.test(text)) continue;
-    const context = { adapterVariable: declaresAdapterVariable(text) };
     for (const line of text.split(/\r?\n/)) {
-      for (const identifier of lineIdentifiers(line, context))
-        add(path, identifier);
+      for (const identifier of lineIdentifiers(line)) add(path, identifier);
     }
   }
   return { hits, files };
@@ -678,10 +583,12 @@ function baseAllowlist(root, base, allowlistPath) {
 }
 
 // Returns why an allowlist line that the base does not hold fails, or null
-// when it is an entry that repeats a base name under the same owner.
+// when it is a role-name entry or an entry that repeats a base name under the
+// same owner.
 function newLineReason(line, base, held) {
   const reason = `allowlist line ${line.where} is not on base ${base}`;
   if (line.identifier === undefined) return reason;
+  if (isRoleEntry(line)) return null;
   const owners = held.owners.get(line.identifier);
   if (owners === undefined) {
     return `${reason} and ${line.identifier} has no base entry`;
@@ -738,6 +645,14 @@ function run(options) {
         reason: `duplicate allowlist line at ${line.where}`,
       });
     seen.add(line.key);
+  }
+  for (const entry of config.entries) {
+    if (entry.owner === ROLE_OWNER && !isRoleEntry(entry)) {
+      failures.push({
+        label: `${entry.path}: ${entry.identifier}`,
+        reason: `allowlist line ${entry.where} is not a role name that ${ROLE_OWNER} keeps`,
+      });
+    }
   }
   const allowed = new Set(config.entries.map((entry) => entry.key));
   for (const hit of hits.values()) {
