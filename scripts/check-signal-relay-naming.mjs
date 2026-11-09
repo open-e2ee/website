@@ -134,10 +134,14 @@ const RULES = [
       "g",
     ),
     trim: /[.-]+$/,
-    // The closing delimiter of a regular expression literal is not a path
-    // separator.
-    skip: (line, start, end) =>
-      line[end - 1] === "/" && closesRegexLiteral(line, end - 1),
+    // A delimiter of a regular expression literal is not a path separator.
+    // The match starts at the opening delimiter and ends inside the literal,
+    // or it ends at the closing delimiter.
+    skip: (line, start, end) => {
+      const opened = regexLiteralAt(line, start);
+      if (opened?.open === start && end - 1 <= opened.close) return true;
+      return regexLiteralAt(line, end - 1)?.close === end - 1;
+    },
   },
   {
     // An upper-case constant or environment variable.
@@ -221,23 +225,26 @@ const UPPER_AFTER = /^\s+[A-Z]+(?![A-Za-z0-9_$])/;
 const REGEX_OPENER = /(?:^|[(,=:[!&|?{};]|=>)\s*$/;
 const REGEX_LITERAL = /\/(?![*/])(?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+\//y;
 
-// Returns true when the slash at index closes a regular expression literal.
-function closesRegexLiteral(line, slash) {
+// Returns the { open, close } slash indexes of the regular expression literal
+// that the slash at index delimits, or null. A slash inside a literal is not
+// a delimiter.
+function regexLiteralAt(line, index) {
+  if (line[index] !== "/") return null;
   let open = line.indexOf("/");
-  while (open !== -1 && open < slash) {
+  while (open !== -1 && open <= index) {
     let next = open + 1;
     if (REGEX_OPENER.test(line.slice(0, open))) {
       REGEX_LITERAL.lastIndex = open;
       const literal = REGEX_LITERAL.exec(line);
       if (literal) {
         const close = open + literal[0].length - 1;
-        if (close === slash) return true;
+        if (open === index || close === index) return { open, close };
         next = close + 1;
       }
     }
     open = line.indexOf("/", next);
   }
-  return false;
+  return null;
 }
 
 // matchAll copies lastIndex, so no code calls test or exec on this regex.
