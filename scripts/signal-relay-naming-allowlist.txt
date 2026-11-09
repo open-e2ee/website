@@ -214,4 +214,4 @@ PP52 tests/signal-relay-service-catalog.test.mjs relay_managed_2026_11_01_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_mau
 PP52 tests/signal-relay-service-catalog.test.mjs relay_starter_v1
 PP52 tests/signal-relay-terms-gate.test.mjs relay_free_v1
-NM1.12 tests/site-content.test.mjs /relay
+NM5.1C tests/site-content.test.mjs /relay
