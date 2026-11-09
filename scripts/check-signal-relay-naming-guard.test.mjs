@@ -410,6 +410,27 @@ test("a regular expression delimiter is not a path separator", () => {
   }
 });
 
+test("an opening regular expression delimiter is not a path separator", () => {
+  const cases = [
+    [`assert.doesNotMatch(index, /${W} can't read/i);`, []],
+    [`if (/${W}:manage|org_v34/.test(markup)) bad += 1;`, []],
+    [`x = /${W}/.test(s)`, []],
+    [`See /${W}/ for the setup.`, [`/${W}`]],
+    [`GET https://api.example.dev/${W}/v1`, [`//api.example.dev/${W}`]],
+    // A slash after a template placeholder is a path separator.
+    [
+      `fetch(\`\${origin}/dist/remote/${W}/index.js\`)`,
+      [`/dist/remote/${W}`],
+    ],
+    [`\${sdkRoot}/${W}/x`, [`/${W}`]],
+    [`\`\${a}/${W}/\``, [`/${W}`]],
+    [`if (x) {} /${W}/.test(s)`, []],
+  ];
+  for (const [line, expected] of cases) {
+    assert.deepEqual(lineIdentifiers(line), expected, line);
+  }
+});
+
 test("a comma list is a parameter list only after an opening bracket", () => {
   const cases = [
     [`the SDK's storage, ${W}, and the store`, []],
