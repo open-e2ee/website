@@ -223,8 +223,6 @@ PP52 src/pages/pricing.astro relay_starter_v1
 NM3.3 src/pages/product.astro ./remote/relay
 NM1.12 src/pages/signal-relay/index.astro OPEN_E2EE_RELAY_URL
 NM3.3 src/pages/security.astro remote/relay
-NM1.12 tests/ relay-connection.test.mjs
-NM1.12 tests/ relay-terms-gate.test.mjs
 NM3.3 tests/demo-driver.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
 NM3.3 tests/demo-driver.test.mjs relay
 NM3.3 tests/demo-run.test.mjs dist/remote/relay
@@ -274,10 +272,9 @@ PP52 tests/pricing-page.test.mjs relay_free_v1
 PP52 tests/pricing-page.test.mjs relay_growth_v1
 PP52 tests/pricing-page.test.mjs relay_hobby_v1
 PP52 tests/pricing-page.test.mjs relay_starter_v1
-NM1.12 tests/relay-connection.test.mjs EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
-NM1.12 tests/relay-connection.test.mjs OPEN_E2EE_RELAY_URL
-PP52 tests/relay-terms-gate.test.mjs relay_free_v1
 NM-FD11 tests/release-manifest.test.mjs open-e2ee-relay-v1
+NM1.12 tests/signal-relay-connection.test.mjs EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
+NM1.12 tests/signal-relay-connection.test.mjs OPEN_E2EE_RELAY_URL
 NM1.12 tests/signal-relay-pricing.test.mjs OPEN_E2EE_RELAY_URL
 PP52 tests/signal-relay-pricing.test.mjs relay_business_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_enterprise_v1
@@ -292,6 +289,7 @@ PP52 tests/signal-relay-service-catalog.test.mjs relay_hobby_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_managed_2026_11_01_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_mau
 PP52 tests/signal-relay-service-catalog.test.mjs relay_starter_v1
+PP52 tests/signal-relay-terms-gate.test.mjs relay_free_v1
 NM3.3 tests/site-content.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
 NM3.3 tests/site-content.test.mjs /relay
 NM3.3 tests/site-content.test.mjs relay
