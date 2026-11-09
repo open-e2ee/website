@@ -456,8 +456,8 @@ test('offers every adapter as a real, complete, copyable program', () => {
     );
     assert.doesNotMatch(
       variant.code,
-      /remote\/(?:signal-)?relay/,
-      `${variant.storage}/${variant.signalRelay} imports a relay subpath the hosted client does not take`,
+      /\/remote\//,
+      `${variant.storage}/${variant.signalRelay} imports a remote subpath the hosted client does not take`,
     );
     for (const line of store.imports ?? []) {
       assert.ok(
