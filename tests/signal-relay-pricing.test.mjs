@@ -157,7 +157,7 @@ test('publishes canonical Relay routes with accessible responsive tables', async
   /* BaseLayout derives the canonical from the served path, and
      tests/index-hygiene.test.mjs checks it on the built page. */
   for (const page of [signalRelay, pricing, comparison]) assert.doesNotMatch(page, /\bcanonical=/);
-  assert.match(signalRelay, /OPEN_E2EE_RELAY_URL/);
+  assert.match(signalRelay, /OPEN_E2EE_SIGNAL_RELAY_URL/);
   assert.match(signalRelay, /public configuration, not a credential/i);
   assert.match(signalRelay, /do not select a Relay hostname or pair/i);
   /* Every wide table goes through the one component that carries the

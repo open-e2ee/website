@@ -5,7 +5,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { lineIdentifiers, pathNames } from "./check-signal-relay-naming.mjs";
+import {
+  isRoleName,
+  lineIdentifiers,
+  pathNames,
+} from "./check-signal-relay-naming.mjs";
 
 // The fixtures assemble the word so that this file holds no hit of its own.
 const W = ["r", "e", "l", "a", "y"].join("");
@@ -235,6 +239,82 @@ test("--base rejects a new ignore directive", (t) => {
   assert.deepEqual(result.lines.slice(0, -1), [
     `ignore test/ (allowlist line ${allowlist}:2 is not on base main)`,
   ]);
+});
+
+test("--base accepts a new NM-FD25 entry for a role name that base does not hold", (t) => {
+  const root = frozenName(t);
+  write(root, {
+    "docs/start.mdx": [
+      `const ${W} = createAdapter();`,
+      `const client = await open({ adapters: { ${W} }, hosted: { ${W}Url } });`,
+      `client.start${C}Subscription();`,
+      "",
+    ].join("\n"),
+    [allowlist]: [
+      `NM3.1 src/old.ts ${W}ScopeId`,
+      `NM3.1 test/new.test.ts ${W}ScopeId`,
+      `NM-FD25 docs/start.mdx ${W}`,
+      `NM-FD25 docs/start.mdx ${W}Url`,
+      `NM-FD25 docs/start.mdx start${C}Subscription`,
+      "",
+    ].join("\n"),
+  });
+  const result = guard(root, ["--base", "main"]);
+  assert.equal(result.status, 0, result.lines.join("\n"));
+});
+
+test("NM-FD25 keeps only a role name and never a directory entry", (t) => {
+  const root = repository(t, {
+    ...clean,
+    "src/new.ts": `export const ${W}Commit = 1;\n`,
+    [`src/${W}/index.ts`]: "export {};\n",
+    [allowlist]: [
+      `NM-FD25 src/new.ts ${W}Commit`,
+      `NM-FD25 src/ ${W}`,
+      "",
+    ].join("\n"),
+  });
+  const result = guard(root);
+  assert.equal(result.status, 1);
+  assert.deepEqual(result.lines.slice(0, -1), [
+    `src/: ${W} (allowlist line ${allowlist}:2 is not a role name that NM-FD25 keeps)`,
+    `src/new.ts: ${W}Commit (allowlist line ${allowlist}:1 is not a role name that NM-FD25 keeps)`,
+  ]);
+});
+
+test("a role name with no entry still fails", (t) => {
+  const root = repository(t, clean);
+  write(root, { "src/new.ts": `export function connect(${W}: Client) {}\n` });
+  const result = guard(root);
+  assert.equal(result.status, 1);
+  assert.deepEqual(result.lines.slice(0, -1), [
+    `src/new.ts: ${W} (not in the allowlist)`,
+  ]);
+});
+
+test("isRoleName accepts SDK role names and refuses other bare names", () => {
+  for (const name of [
+    W,
+    `${W}Url`,
+    `adapters.${W}`,
+    `hosted.${W}Url`,
+    `${W}.registerDevice`,
+    `client?.subscribe${C}ConnectionState`,
+    `on${C}ProtocolError`,
+  ]) {
+    assert.equal(isRoleName(name), true, name);
+  }
+  for (const name of [
+    `${W}Commit`,
+    `${W}-core`,
+    `${W}_mau`,
+    `sandbox.${W}.open-e2ee.dev`,
+    `options.${W}.${W}Host`,
+    `OPEN_E2EE_${U}_TOKEN`,
+    `${C}Error`,
+  ]) {
+    assert.equal(isRoleName(name), false, name);
+  }
 });
 
 test("GITHUB_BASE_REF sets the base, and a base without the allowlist skips the check", (t) => {

@@ -26,7 +26,8 @@
 //   ignore <glob>    Do not scan the paths that match the glob.
 //   <owner> <path> <identifier>
 //                    One remaining hit. <owner> is the task ID that removes
-//                    the hit, or NM-FD1 for an approved historical constant.
+//                    the hit, NM-FD1 for an approved historical constant, or
+//                    NM-FD25 for a role name (see below).
 //                    <path> is the file that holds the identifier. A path
 //                    that ends with / names a directory, and the entry is a
 //                    file or directory name in that directory (./ is the
@@ -44,13 +45,25 @@
 // --exclude-standard` lists, so the scan follows .gitignore and also reads a
 // new file before its first commit.
 //
+// Role names. The founder ruling sdk-role-names-20261109 (NM-FD25) gives a
+// member, method, or option key of an object that the Signal Protocol SDK owns
+// the role name, such as adapters.<word> or hosted.<word>Url. Example code
+// that calls the SDK can give the variable that holds the Relay adapter the
+// bare word. An entry with the owner NM-FD25 keeps such a hit. Its identifier
+// is a dotted chain of names in which each name that holds the word is one of
+// the role names in ROLE_NAMES. A file or directory name is never a role
+// name. The repository keeps the scope: an NM-FD25 entry names one file in
+// which each hit of the identifier is a role name.
+//
 // Failures. A hit that no entry holds. An entry with no hit. A duplicate
-// line. With a base ref, a directive that the allowlist at the base ref does
-// not hold, or a new entry whose identifier the base allowlist does not hold
-// under the same owner. Entries compare by path and identifier, so a pull
-// request can change the owner of an entry. A new entry can repeat a frozen
-// name in a new path until its owner task renames it, so the set of owner
-// and identifier names only shrinks. --base <ref> sets the base. Without it,
+// line. An NM-FD25 entry that is not a role name. With a base ref, a
+// directive that the allowlist at the base ref does not hold, or a new entry
+// whose identifier the base allowlist does not hold under the same owner. A
+// new NM-FD25 entry passes the base check, because the ruling keeps it.
+// Entries compare by path and identifier, so a pull request can change the
+// owner of an entry. A new entry can repeat a frozen name in a new path
+// until its owner task renames it, so the set of owner and identifier names
+// only shrinks. --base <ref> sets the base. Without it,
 // the script uses origin/$GITHUB_BASE_REF when GitHub Actions sets
 // GITHUB_BASE_REF for a pull request. --no-base turns the base check off. A
 // base ref without the allowlist skips the base check, because that pull
@@ -76,6 +89,25 @@ const GIT_TIMEOUT_MS = 60_000;
 const WORD = ["r", "e", "l", "a", "y"].join("");
 const UPPER = WORD.toUpperCase();
 const ANY = `[Rr]${WORD.slice(1)}`;
+const CAPITAL = `R${WORD.slice(1)}`;
+
+// The owner of a role-name entry, and the SDK member, method, and option key
+// names that the ruling gives the role name.
+const ROLE_OWNER = "NM-FD25";
+const ROLE_NAMES = new Set([
+  WORD,
+  `${WORD}Url`,
+  `${WORD}ScopeId`,
+  `${WORD}Retryable`,
+  `${WORD}ConnectionState`,
+  `subscribe${CAPITAL}ConnectionState`,
+  `start${CAPITAL}Subscription`,
+  `stop${CAPITAL}Subscription`,
+  `on${CAPITAL}ProtocolError`,
+  `set${CAPITAL}Batching`,
+  `shared${CAPITAL}`,
+]);
+const CODE_NAME = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 const SKIPPED_DIRECTORIES = new Set([
   "node_modules",
@@ -399,6 +431,7 @@ function parseAllowlist(text, source) {
       where,
       label: `${decodePath(path)}: ${identifier}`,
       owner,
+      path: decodePath(path),
       identifier,
     });
   });
@@ -431,6 +464,28 @@ function isBinary(path, buffer) {
 
 function isBare(text, index) {
   return !PREFIX.test(text.slice(Math.max(0, index - PREFIX_WINDOW), index));
+}
+
+// Returns true when an identifier is a role name: a dotted chain of code
+// names, such as adapters.<word>, in which each name that holds the word is
+// in ROLE_NAMES.
+export function isRoleName(identifier) {
+  const names = identifier.split(/[?]?[.]/);
+  return (
+    names.every((name) => CODE_NAME.test(name)) &&
+    names.some((name) => ROLE_NAMES.has(name)) &&
+    names.every((name) => !HAS_WORD.test(name) || ROLE_NAMES.has(name))
+  );
+}
+
+// Returns true when an allowlist entry is a role-name entry that the
+// ruling keeps: a file entry, not a directory entry, for a role name.
+function isRoleEntry(entry) {
+  return (
+    entry.owner === ROLE_OWNER &&
+    !entry.path.endsWith("/") &&
+    isRoleName(entry.identifier)
+  );
 }
 
 // Returns the identifiers on one line. Each occurrence of the word belongs
@@ -555,10 +610,12 @@ function baseAllowlist(root, base, allowlistPath) {
 }
 
 // Returns why an allowlist line that the base does not hold fails, or null
-// when it is an entry that repeats a base name under the same owner.
+// when it is a role-name entry or an entry that repeats a base name under the
+// same owner.
 function newLineReason(line, base, held) {
   const reason = `allowlist line ${line.where} is not on base ${base}`;
   if (line.identifier === undefined) return reason;
+  if (isRoleEntry(line)) return null;
   const owners = held.owners.get(line.identifier);
   if (owners === undefined) {
     return `${reason} and ${line.identifier} has no base entry`;
@@ -615,6 +672,14 @@ function run(options) {
         reason: `duplicate allowlist line at ${line.where}`,
       });
     seen.add(line.key);
+  }
+  for (const entry of config.entries) {
+    if (entry.owner === ROLE_OWNER && !isRoleEntry(entry)) {
+      failures.push({
+        label: `${entry.path}: ${entry.identifier}`,
+        reason: `allowlist line ${entry.where} is not a role name that ${ROLE_OWNER} keeps`,
+      });
+    }
   }
   const allowed = new Set(config.entries.map((entry) => entry.key));
   for (const hit of hits.values()) {

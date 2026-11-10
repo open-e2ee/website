@@ -146,7 +146,7 @@ const adapters = [
   {
     role: 'Relay',
     body: 'How sealed envelopes reach the other device. Use your own backend contract or the OpenE2EE Signal Protocol Relay, which the root client reaches by URL.',
-    options: ['./remote/relay', './remote/relay/types'],
+    options: ['./remote/signal-relay', './remote/signal-relay/types'],
   },
   {
     role: 'Object store',
@@ -234,7 +234,7 @@ const ordered = projects
     no time. The quickstart uses the hosted client against the Relay Sandbox,
     which needs a project, an identity provider, and no card. The time that
     setup takes depends on the reader's identity provider, so no figure for it
-    is checkable. The Composition band lists ./remote/relay, the contract for
+    is checkable. The Composition band lists ./remote/signal-relay, the contract for
     an application-owned relay.
 
     The `Code` component, the shared code theme, and the carrier-capture import

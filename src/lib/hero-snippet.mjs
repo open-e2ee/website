@@ -125,9 +125,10 @@ export const storageOptions = [
  * application can also supply its own `SignalProtocolRelayServer`, but no
  * importable relay stands behind that choice, so the panel does not offer it.
  *
- * `relayUrl` is the reader's own value, as it is in the SDK README. Each
- * runtime reads configuration in a different way: a browser bundle has no
- * `process`, and Expo inlines only `EXPO_PUBLIC_` variables. A binding from
+ * `signalRelayUrl` is the reader's own value, and it fills the SDK's
+ * `hosted.relayUrl` option. Each runtime reads configuration in a different
+ * way: a browser bundle has no `process`, and Expo inlines only
+ * `EXPO_PUBLIC_` variables. A binding from
  * one runtime's environment would not run in the others, so `signalRelayComment`
  * says what the value is and the program does not bind it.
  *
@@ -175,7 +176,7 @@ export const signalRelayOptions = [
  * the paste.
  *
  * The Signal Protocol Relay option carries disclosures of the same kind for
- * `relayUrl`, `aliceSignIn`, and `bobSignIn`. A comment saying where a name
+ * `signalRelayUrl`, `aliceSignIn`, and `bobSignIn`. A comment saying where a name
  * comes from is a weaker version of a line that binds it, so a disclosure is
  * spent only on a name with nothing importable behind it. The URL is the
  * reader's configuration, and the two callbacks are the reader's own
@@ -192,11 +193,11 @@ export const signalRelayOptions = [
    This read "The relay is yours. Swapping it changes this line and nothing
    else" — an answer about ownership, given to a reader who does not yet know
    what the thing is, and an answer the two dropdowns above already give by
-   being operable. The first question a name like `relay` raises is what it
+   being operable. The first question the Relay raises is what it
    does with a message, so that is what the line says now.
 
    Post and collect is the frame, and `envelope` is the SDK's own noun for what
-   travels: `relay.send({ ciphertext, … })` and `relay.subscribe(userId,
+   travels: the adapter's `send({ ciphertext, … })` and `subscribe(userId,
    deviceId, cb)` are literally those two verbs, so the picture is the API's
    vocabulary rather than one laid over it.
 
@@ -214,17 +215,19 @@ export const signalRelayOptions = [
    that fails: it describes the contents rather than the sender, which is true
    and does not help a reader who meets the word before the distinction.
 
-   It also says what `relayUrl` is, because the program does not bind it, and
-   that is the first thing a reader of the line below asks. The URL is the
-   connection URL of a Relay environment, which is what the Relay page and the
-   SDK README call it. "There" keeps the line at 97 characters, which is the
-   1024 budget below.
+   It also says what `signalRelayUrl` is, because the program does not bind
+   it, and that is the first thing a reader of the line below asks. The URL is
+   the connection URL of a Relay environment, which is what the Relay page and
+   the SDK README call it. The variable carries the Signal prefix because only
+   the SDK's own members and option keys take the role name (NM-FD25). The
+   prefix cost six characters, so "there" came off the end, and the line stays
+   at 97 characters, which is the 1024 budget below.
 
    Exported, alone among the six, because a test holds its position: directly
    above the sign-in disclosure, and above the first line that uses
-   `relayUrl`. */
+   `signalRelayUrl`. */
 export const signalRelayComment =
-  "// relayUrl is your Relay environment's connection URL. Devices post and collect envelopes there.";
+  "// signalRelayUrl is your Relay environment's connection URL. Devices post and collect envelopes.";
 /*
  * The ones that ride on a line of code, and the width that shapes them.
  *
@@ -308,7 +311,7 @@ export const buildSnippet = (storageId, signalRelayId) => {
     signalRelayComment,
     `// ${signalRelay.comment}`,
     `const alice = await ${signalRelay.factory}({ ${ALICE_COMMENT}`,
-    '  hosted: { relayUrl, getIdentityAssertion: aliceSignIn },',
+    '  hosted: { relayUrl: signalRelayUrl, getIdentityAssertion: aliceSignIn },',
     ...(store.comment ? [`  // ${store.comment}`] : []),
     `${adapters} ${ADAPTERS_COMMENT}`,
     '});',
@@ -319,7 +322,7 @@ export const buildSnippet = (storageId, signalRelayId) => {
        No blank line between the two, either. They are one beat, two devices,
        and a gap made them read as two unrelated setups. */
     `const bob = await ${signalRelay.factory}({ ${BOB_COMMENT}`,
-    '  hosted: { relayUrl, getIdentityAssertion: bobSignIn },',
+    '  hosted: { relayUrl: signalRelayUrl, getIdentityAssertion: bobSignIn },',
     adapters,
     '});',
     '',

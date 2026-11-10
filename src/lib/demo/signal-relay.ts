@@ -36,10 +36,10 @@ import type {
   PreKeyMetadata,
   PreKeyPublicationPlan,
   PreKeyUpload,
-  RelayConnectionState,
+  SignalProtocolRelayConnectionState,
   SignalProtocolRelayServer,
   Unsubscribe,
-} from '@open-e2ee/signal-protocol-sdk/remote/relay/types';
+} from '@open-e2ee/signal-protocol-sdk/remote/signal-relay/types';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -92,16 +92,16 @@ function identityKey(userId: string, identityType: IdentityType = 'aci'): string
  * thrown again in a microtask.
  */
 class ConnectionState {
-  private value: RelayConnectionState = { state: 'stopped', since: Date.now() };
-  private readonly listeners = new Set<(state: RelayConnectionState) => void>();
+  private value: SignalProtocolRelayConnectionState = { state: 'stopped', since: Date.now() };
+  private readonly listeners = new Set<(state: SignalProtocolRelayConnectionState) => void>();
 
-  get current(): RelayConnectionState {
+  get current(): SignalProtocolRelayConnectionState {
     return this.value;
   }
 
-  move(state: RelayConnectionState['state']): void {
+  move(state: SignalProtocolRelayConnectionState['state']): void {
     if (this.value.state === state) return;
-    const next: RelayConnectionState = { state, since: Date.now() };
+    const next: SignalProtocolRelayConnectionState = { state, since: Date.now() };
     this.value = next;
     for (const listener of [...this.listeners]) {
       try {
@@ -114,7 +114,7 @@ class ConnectionState {
     }
   }
 
-  subscribe(listener: (state: RelayConnectionState) => void): Unsubscribe {
+  subscribe(listener: (state: SignalProtocolRelayConnectionState) => void): Unsubscribe {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
@@ -205,11 +205,11 @@ export class PageSignalProtocolRelay implements SignalProtocolRelayServer {
    * page relay has no connection to lose, so it never reads `connecting` or
    * `reconnecting`.
    */
-  get relayConnectionState(): RelayConnectionState {
+  get relayConnectionState(): SignalProtocolRelayConnectionState {
     return this.connection.current;
   }
 
-  subscribeRelayConnectionState(listener: (state: RelayConnectionState) => void): Unsubscribe {
+  subscribeRelayConnectionState(listener: (state: SignalProtocolRelayConnectionState) => void): Unsubscribe {
     return this.connection.subscribe(listener);
   }
 

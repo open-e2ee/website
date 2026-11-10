@@ -7,7 +7,13 @@
 # decision (NM-FD<n>) that keeps the hit as an approved historical constant.
 # Remove an entry in the commit that removes its hit. In a pull request the
 # guard fails on an entry or directive that the base branch does not hold, so
-# this list only shrinks.
+# this list only shrinks. An NM-FD25 entry is the one exception.
+#
+# NM-FD25 marks an SDK role name, such as adapters.relay or hosted.relayUrl.
+# The ruling sdk-role-names-20261109 in docs/decisions.md keeps these names.
+# In this repository an NM-FD25 entry is permitted only in the demo and
+# example code and in the tests that check that code.
+# tests/signal-relay-naming-scope.test.mjs lists the scope and enforces it.
 #
 # NM-FD5 keeps the frozen dated Relay terms and limits pages as published.
 # They link the pricing plan table by its old id, which now lands at the top
@@ -23,11 +29,11 @@
 # no ignore directives.
 
 NM-FD11 .github/workflows/release-manifest.yml open-e2ee-relay-v1
-NM3.3 playground/src/exchange.ts relay
-NM3.3 playground/src/exchange.ts relay.getPendingMessages
-NM3.3 playground/src/exchange.ts relay.registerDevice
-NM3.3 playground/src/exchange.ts startRelaySubscription
-NM3.3 playground/src/exchange.ts stopRelaySubscription
+NM-FD25 playground/src/exchange.ts relay
+NM-FD25 playground/src/exchange.ts relay.getPendingMessages
+NM-FD25 playground/src/exchange.ts relay.registerDevice
+NM-FD25 playground/src/exchange.ts startRelaySubscription
+NM-FD25 playground/src/exchange.ts stopRelaySubscription
 NM2.15 public/_redirects relay-2026-09-29
 NM2.15 public/_redirects relay-beta-limits
 NM2.15 public/_redirects relay-retention
@@ -36,27 +42,22 @@ NM2.15 public/_redirects relay-terms
 NM-FD11 public/releases/ open-e2ee-relay-v1.json
 NM-FD11 public/releases/open-e2ee-relay-v1.json open-e2ee-relay-v1
 NM4.5 public/releases/open-e2ee-relay-v1.json relay
-NM3.3 scripts/record-carrier-capture.mjs relay
-NM3.3 scripts/record-carrier-capture.mjs relay.getPendingMessages
-NM3.3 scripts/record-carrier-capture.mjs relay.registerDevice
-NM3.3 scripts/record-carrier-capture.mjs startRelaySubscription
-NM1.12 scripts/sdk-identifier-allowlist.json OPEN_E2EE_RELAY_URL
+NM-FD25 scripts/record-carrier-capture.mjs relay
+NM-FD25 scripts/record-carrier-capture.mjs relay.getPendingMessages
+NM-FD25 scripts/record-carrier-capture.mjs relay.registerDevice
+NM-FD25 scripts/record-carrier-capture.mjs startRelaySubscription
 NM-FD11 scripts/verify-release-manifest.mjs open-e2ee-relay-v1
 NM4.5 scripts/verify-release-manifest.mjs relay
-NM3.3 src/components/HeroSnippet.astro relay
-NM3.3 src/content/blog/e2ee-changes-your-application-architecture.mdx relay
-NM1.12 src/content/blog/signal-protocol-react-native-expo-2026.mdx EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
-NM3.3 src/content/blog/signal-protocol-react-native-expo-2026.mdx linkHostedRelayDevice
-NM3.3 src/content/blog/signal-protocol-react-native-expo-2026.mdx relay
-NM3.3 src/content/blog/signal-protocol-react-native-expo-2026.mdx relayUrl
-NM3.3 src/content/blog/signal-protocol-react-native-expo-2026.mdx startRelaySubscription
-NM1.12 src/content/blog/tls-is-not-end-to-end-encryption.mdx OPEN_E2EE_RELAY_URL
-NM3.3 src/content/blog/tls-is-not-end-to-end-encryption.mdx relayUrl
-NM3.3 src/content/blog/tls-is-not-end-to-end-encryption.mdx startRelaySubscription
-NM3.3 src/data/carrier-capture.json relay
-NM3.3 src/data/carrier-capture.json relay.getPendingMessages
-NM3.3 src/data/carrier-capture.json relay.registerDevice
-NM3.3 src/data/carrier-capture.json startRelaySubscription
+NM-FD25 src/components/HeroSnippet.astro adapters.relay
+NM-FD25 src/content/blog/e2ee-changes-your-application-architecture.mdx adapters.relay
+NM-FD25 src/content/blog/signal-protocol-react-native-expo-2026.mdx relayUrl
+NM-FD25 src/content/blog/signal-protocol-react-native-expo-2026.mdx startRelaySubscription
+NM-FD25 src/content/blog/tls-is-not-end-to-end-encryption.mdx relayUrl
+NM-FD25 src/content/blog/tls-is-not-end-to-end-encryption.mdx startRelaySubscription
+NM-FD25 src/data/carrier-capture.json relay
+NM-FD25 src/data/carrier-capture.json relay.getPendingMessages
+NM-FD25 src/data/carrier-capture.json relay.registerDevice
+NM-FD25 src/data/carrier-capture.json startRelaySubscription
 PP52 src/data/signal-relay-pricing.mjs relay_business_v1
 PP52 src/data/signal-relay-pricing.mjs relay_enterprise_v1
 PP52 src/data/signal-relay-pricing.mjs relay_free_v1
@@ -69,35 +70,28 @@ PP52 src/data/virgil-security-comparison.mjs relay_business_v1
 PP52 src/data/virgil-security-comparison.mjs relay_growth_v1
 PP52 src/data/virgil-security-comparison.mjs relay_mau
 PP52 src/data/virgil-security-comparison.mjs relay_starter_v1
-NM3.3 src/lib/demo/code-snippets.ts relay
-NM3.3 src/lib/demo/code-snippets.ts relay.fetchPreKeyBundle
-NM3.3 src/lib/demo/code-snippets.ts relay.registerDevice
-NM3.3 src/lib/demo/driver.ts options.relay
-NM3.3 src/lib/demo/driver.ts relay
-NM3.3 src/lib/demo/driver.ts relay.registerDevice
-NM3.3 src/lib/demo/driver.ts relay.send
-NM3.3 src/lib/demo/driver.ts relay.send.bind
-NM3.3 src/lib/demo/driver.ts relay.subscribe
-NM3.3 src/lib/demo/driver.ts startRelaySubscription
-NM3.3 src/lib/demo/run.ts options.relay
-NM3.3 src/lib/demo/run.ts relay
-NM3.3 src/lib/demo/run.ts relay.fetchPreKeyBundle
-NM3.3 src/lib/demo/run.ts relay.getEcSignedPreKeyMetadata
-NM3.3 src/lib/demo/run.ts relay.getIdentityKey
-NM3.3 src/lib/demo/run.ts relay.getKemLastResortPreKeyMetadata
-NM3.3 src/lib/demo/run.ts relay.getPreKeyCount
-NM3.3 src/lib/demo/run.ts relay.registerDevice
-NM3.3 src/lib/demo/run.ts relay.subscribe
-NM3.3 src/lib/demo/run.ts startRelaySubscription
-NM3.3 src/lib/demo/signal-relay.ts @open-e2ee/signal-protocol-sdk/remote/relay
-NM3.3 src/lib/demo/signal-relay.ts relayConnectionState
-NM3.3 src/lib/demo/signal-relay.ts RelayConnectionState
-NM3.3 src/lib/demo/signal-relay.ts subscribeRelayConnectionState
-NM3.3 src/lib/hero-snippet.mjs relay
-NM3.3 src/lib/hero-snippet.mjs relay.send
-NM3.3 src/lib/hero-snippet.mjs relay.subscribe
-NM3.3 src/lib/hero-snippet.mjs relayUrl
-NM3.3 src/lib/hero-snippet.mjs startRelaySubscription
+NM-FD25 src/lib/demo/code-snippets.ts relay
+NM-FD25 src/lib/demo/code-snippets.ts relay.fetchPreKeyBundle
+NM-FD25 src/lib/demo/code-snippets.ts relay.registerDevice
+NM-FD25 src/lib/demo/driver.ts relay
+NM-FD25 src/lib/demo/driver.ts relay.registerDevice
+NM-FD25 src/lib/demo/driver.ts relay.send
+NM-FD25 src/lib/demo/driver.ts relay.send.bind
+NM-FD25 src/lib/demo/driver.ts relay.subscribe
+NM-FD25 src/lib/demo/driver.ts startRelaySubscription
+NM-FD25 src/lib/demo/run.ts relay
+NM-FD25 src/lib/demo/run.ts relay.fetchPreKeyBundle
+NM-FD25 src/lib/demo/run.ts relay.getEcSignedPreKeyMetadata
+NM-FD25 src/lib/demo/run.ts relay.getIdentityKey
+NM-FD25 src/lib/demo/run.ts relay.getKemLastResortPreKeyMetadata
+NM-FD25 src/lib/demo/run.ts relay.getPreKeyCount
+NM-FD25 src/lib/demo/run.ts relay.registerDevice
+NM-FD25 src/lib/demo/run.ts relay.subscribe
+NM-FD25 src/lib/demo/run.ts startRelaySubscription
+NM-FD25 src/lib/demo/signal-relay.ts relayConnectionState
+NM-FD25 src/lib/demo/signal-relay.ts subscribeRelayConnectionState
+NM-FD25 src/lib/hero-snippet.mjs relayUrl
+NM-FD25 src/lib/hero-snippet.mjs startRelaySubscription
 NM2.15 src/lib/legal.mjs relay-2026-09-10
 NM2.15 src/lib/legal.mjs relay-2026-09-22
 NM2.15 src/lib/legal.mjs relay-2026-09-29
@@ -220,35 +214,28 @@ NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-service-limits
 NM2.15 src/pages/legal/relay-terms/2026-11-02.astro relay-terms
 PP52 src/pages/pricing.astro relay_free_v1
 PP52 src/pages/pricing.astro relay_starter_v1
-NM3.3 src/pages/product.astro ./remote/relay
-NM1.12 src/pages/signal-relay/index.astro OPEN_E2EE_RELAY_URL
-NM3.3 src/pages/security.astro remote/relay
-NM3.3 tests/demo-driver.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
-NM3.3 tests/demo-driver.test.mjs relay
-NM3.3 tests/demo-run.test.mjs dist/remote/relay
-NM3.3 tests/demo-run.test.mjs relay
-NM3.3 tests/demo-run.test.mjs relay.subscribe
-NM3.3 tests/demo-run.test.mjs relay.subscribe.bind
-NM3.3 tests/demo-signal-relay.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
-NM3.3 tests/demo-signal-relay.test.mjs relay
-NM3.3 tests/demo-signal-relay.test.mjs relay.fetchPreKeyBundle
-NM3.3 tests/demo-signal-relay.test.mjs relay.getActiveDevices
-NM3.3 tests/demo-signal-relay.test.mjs relay.getDevices
-NM3.3 tests/demo-signal-relay.test.mjs relay.getEcSignedPreKeyMetadata
-NM3.3 tests/demo-signal-relay.test.mjs relay.getPendingMessages
-NM3.3 tests/demo-signal-relay.test.mjs relay.getPreKeyCount
-NM3.3 tests/demo-signal-relay.test.mjs relay.getPreKeyInventory
-NM3.3 tests/demo-signal-relay.test.mjs relay.markDelivered
-NM3.3 tests/demo-signal-relay.test.mjs relay.provisionIdentityKey
-NM3.3 tests/demo-signal-relay.test.mjs relay.registerDevice
-NM3.3 tests/demo-signal-relay.test.mjs relay.relayConnectionState.state
-NM3.3 tests/demo-signal-relay.test.mjs relay.removeDevice
-NM3.3 tests/demo-signal-relay.test.mjs relay.send
-NM3.3 tests/demo-signal-relay.test.mjs relay.subscribe
-NM3.3 tests/demo-signal-relay.test.mjs relay.subscribeRelayConnectionState
-NM3.3 tests/demo-signal-relay.test.mjs relay.uploadPreKeys
-NM3.3 tests/demo-signal-relay.test.mjs relayConnectionState
-NM3.3 tests/demo-signal-relay.test.mjs subscribeRelayConnectionState
+NM-FD25 tests/demo-run.test.mjs relay
+NM-FD25 tests/demo-run.test.mjs relay.subscribe
+NM-FD25 tests/demo-run.test.mjs relay.subscribe.bind
+NM-FD25 tests/demo-signal-relay.test.mjs relay
+NM-FD25 tests/demo-signal-relay.test.mjs relay.fetchPreKeyBundle
+NM-FD25 tests/demo-signal-relay.test.mjs relay.getActiveDevices
+NM-FD25 tests/demo-signal-relay.test.mjs relay.getDevices
+NM-FD25 tests/demo-signal-relay.test.mjs relay.getEcSignedPreKeyMetadata
+NM-FD25 tests/demo-signal-relay.test.mjs relay.getPendingMessages
+NM-FD25 tests/demo-signal-relay.test.mjs relay.getPreKeyCount
+NM-FD25 tests/demo-signal-relay.test.mjs relay.getPreKeyInventory
+NM-FD25 tests/demo-signal-relay.test.mjs relay.markDelivered
+NM-FD25 tests/demo-signal-relay.test.mjs relay.provisionIdentityKey
+NM-FD25 tests/demo-signal-relay.test.mjs relay.registerDevice
+NM-FD25 tests/demo-signal-relay.test.mjs relay.relayConnectionState.state
+NM-FD25 tests/demo-signal-relay.test.mjs relay.removeDevice
+NM-FD25 tests/demo-signal-relay.test.mjs relay.send
+NM-FD25 tests/demo-signal-relay.test.mjs relay.subscribe
+NM-FD25 tests/demo-signal-relay.test.mjs relay.subscribeRelayConnectionState
+NM-FD25 tests/demo-signal-relay.test.mjs relay.uploadPreKeys
+NM-FD25 tests/demo-signal-relay.test.mjs relayConnectionState
+NM-FD25 tests/demo-signal-relay.test.mjs subscribeRelayConnectionState
 PP52 tests/external-links.test.mjs relay_starter_v1
 NM2.15 tests/legal-pages.test.mjs relay-
 NM2.15 tests/legal-pages.test.mjs relay-2026-08-26
@@ -265,17 +252,12 @@ NM2.15 tests/legal-pages.test.mjs relay-retention
 NM2.15 tests/legal-pages.test.mjs relay-service-limits
 NM2.15 tests/legal-pages.test.mjs relay-terms
 NM2.15 tests/legal-pages.test.mjs RelayTerms
-NM3.3 tests/playground.test.mjs /relay
-NM3.3 tests/playground.test.mjs inMemoryRelay
 PP52 tests/pricing-page.test.mjs relay_business_v1
 PP52 tests/pricing-page.test.mjs relay_free_v1
 PP52 tests/pricing-page.test.mjs relay_growth_v1
 PP52 tests/pricing-page.test.mjs relay_hobby_v1
 PP52 tests/pricing-page.test.mjs relay_starter_v1
 NM-FD11 tests/release-manifest.test.mjs open-e2ee-relay-v1
-NM1.12 tests/signal-relay-connection.test.mjs EXPO_PUBLIC_OPEN_E2EE_RELAY_URL
-NM1.12 tests/signal-relay-connection.test.mjs OPEN_E2EE_RELAY_URL
-NM1.12 tests/signal-relay-pricing.test.mjs OPEN_E2EE_RELAY_URL
 PP52 tests/signal-relay-pricing.test.mjs relay_business_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_enterprise_v1
 PP52 tests/signal-relay-pricing.test.mjs relay_free_v1
@@ -290,8 +272,6 @@ PP52 tests/signal-relay-service-catalog.test.mjs relay_managed_2026_11_01_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_mau
 PP52 tests/signal-relay-service-catalog.test.mjs relay_starter_v1
 PP52 tests/signal-relay-terms-gate.test.mjs relay_free_v1
-NM3.3 tests/site-content.test.mjs ../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay
-NM3.3 tests/site-content.test.mjs /relay
-NM3.3 tests/site-content.test.mjs relay
-NM3.3 tests/site-content.test.mjs relayUrl
-NM3.3 tests/site-content.test.mjs startRelaySubscription
+NM-FD25 tests/site-content.test.mjs adapters.relay
+NM-FD25 tests/site-content.test.mjs relayUrl
+NM-FD25 tests/site-content.test.mjs startRelaySubscription

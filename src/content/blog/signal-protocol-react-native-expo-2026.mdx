@@ -79,10 +79,10 @@ import 'react-native-get-random-values';
 import { createHostedSignalProtocolClient } from '@open-e2ee/signal-protocol-sdk';
 import { expoStore } from '@open-e2ee/signal-protocol-sdk/local/store/expo';
 
-const relayUrl = process.env.EXPO_PUBLIC_OPEN_E2EE_RELAY_URL!;
+const signalRelayUrl = process.env.EXPO_PUBLIC_OPEN_E2EE_SIGNAL_RELAY_URL!;
 
 const signal = await createHostedSignalProtocolClient({
-  hosted: { relayUrl, getIdentityAssertion: signIn },
+  hosted: { relayUrl: signalRelayUrl, getIdentityAssertion: signIn },
   adapters: { storage: await expoStore() },
 });
 
@@ -134,7 +134,7 @@ Key lifetime determines whether the app still works in month six.
 
 ```ts
 const signal = await createHostedSignalProtocolClient({
-  hosted: { relayUrl, getIdentityAssertion: signIn },
+  hosted: { relayUrl: signalRelayUrl, getIdentityAssertion: signIn },
   adapters: { storage: await expoStore() },
   preKeyLowThreshold: 50,
   onPreKeyLow: (remaining) => {
@@ -150,7 +150,7 @@ The SDK throttles the status check. A throttled call returns `oneTimePreKeysRema
 
 `preKeyLowThreshold` defaults to 50, which is half a batch. `keyRefreshIntervalMs` is 2 days. `maxPreKeyAgeMs` is 14 days. `preKeyCheckThrottleMs` is 12 hours. A foregrounded app therefore checks at most twice a day, not on every message. The 14-day maximum age and 2-day refresh interval leave a twelve-day recovery window for an offline device.
 
-For a headless task or push handler, call `rotateKeysHeadless(relay, userId, deviceId, { storage })`. Import it from `@open-e2ee/signal-protocol-sdk/client/headless`. It rotates and replenishes keys without a full client.
+For a headless task or push handler, call `rotateKeysHeadless(signalProtocolRelay, userId, deviceId, { storage })`. Import it from `@open-e2ee/signal-protocol-sdk/client/headless`. It rotates and replenishes keys without a full client.
 
 ## The second device, and first contact
 
@@ -158,7 +158,7 @@ A linked device does not hold the session keys that encrypted past messages. Dev
 
 State transfer uses `prepareOldDeviceTransfer` and `restoreDeviceBackup` from `@open-e2ee/signal-protocol-sdk/device`. Transfer copies the identity private key. It copies no prekeys, ratchet sessions, or message state. The new device generates its own prekeys and starts its own sessions. After a transfer, two devices hold the same identity private key. The [deviations document](https://github.com/open-e2ee/signal-protocol-js/blob/main/docs/DEVIATIONS.md#54-extensions-transfer-device-names) records this model.
 
-`linkHostedRelayDevice` from `@open-e2ee/signal-protocol-sdk` links the new device to its Signal Protocol Relay account. The new device's store must already hold the account identity, from a device transfer or from a channel that your app owns. The call runs in one process that holds the stores of both devices. It sends no private key to the Relay.
+`linkHostedSignalProtocolRelayDevice` from `@open-e2ee/signal-protocol-sdk` links the new device to its Signal Protocol Relay account. The new device's store must already hold the account identity, from a device transfer or from a channel that your app owns. The call runs in one process that holds the stores of both devices. It sends no private key to the Relay.
 
 The SDK records trust on first use (TOFU) as `UNVERIFIED_TOFU`. It pins one composite X25519 and Ed25519 identity tuple per `(userId, identityType)`. If either component changes, the SDK fails closed until the app calls `acceptIdentityRotation`. Pinning detects a later change. It does not prove who was present at first contact.
 

@@ -51,7 +51,7 @@ async function declaredFields(declarationPath, interfaceName) {
 }
 
 const declaredEnvelopeFields = await declaredFields(
-  'dist/remote/relay/types.d.ts',
+  'dist/remote/signal-relay/types.d.ts',
   'Envelope',
 );
 const declaredSelectionFields = await declaredFields(
@@ -1361,7 +1361,7 @@ test('survives a relay that delivers after the send has resolved', async () => {
       const stored = run.trace.events.filter((event) => event.step === 'stored-at-signal-relay');
       assert.equal(stored.length, 1);
     },
-    { relay: () => signalRelayThatDeliversLate() },
+    { createSignalProtocolRelay: () => signalRelayThatDeliversLate() },
   );
 });
 

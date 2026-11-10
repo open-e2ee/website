@@ -75,12 +75,18 @@ const REFUSED = [
   'issueAuthCredential',
 ];
 
-/** The optional members of the contract that this relay leaves out. */
+/**
+ * The optional members of the contract that this relay leaves out. The last
+ * two are the long forms of the two connection-state members. SDK 14.3.0
+ * deprecates them, and SDK 15.0.0 removes them (NM-FD25).
+ */
 const ABSENT = [
   'groupServer',
   'refreshGroupSendEndorsements',
   'fetchSenderCertificate',
   'sendMultiRecipientUnidentified',
+  'signalProtocolRelayConnectionState',
+  'subscribeSignalProtocolRelayConnectionState',
 ];
 
 test('a sent envelope waits in the mailbox and goes to a later subscriber', async () => {
@@ -215,7 +221,7 @@ test('a prekey bundle spends one one-time key of each kind', async () => {
  */
 async function declaredMembers(interfaceName) {
   const types = await readFile(
-    new URL('../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/relay/types.d.ts', import.meta.url),
+    new URL('../node_modules/@open-e2ee/signal-protocol-sdk/dist/remote/signal-relay/types.d.ts', import.meta.url),
     'utf8',
   );
   const block = types.match(new RegExp(`export interface ${interfaceName} (?:extends \\w+ )?\\{[\\s\\S]*?\\n\\}`));
@@ -369,7 +375,7 @@ test('the one-to-one session path calls only what the page relay carries', async
   const types = [];
   let corrupted = false;
   const session = await startDemoSession({
-    relay: recordedSignalProtocolRelay(called),
+    signalProtocolRelay: recordedSignalProtocolRelay(called),
     logger: { sender: quiet, recipient: quiet },
     deadlineMs: 2_000,
     /* One flipped byte fails the message authentication, so the receiving
@@ -398,7 +404,7 @@ test('the one-to-one session path calls only what the page relay carries', async
 
 test('the two-device run calls only what the page relay carries', async () => {
   const called = new Set();
-  const run = await startDemoRun({ relay: () => recordedSignalProtocolRelay(called) });
+  const run = await startDemoRun({ createSignalProtocolRelay: () => recordedSignalProtocolRelay(called) });
   try {
     await run.activate('a');
     await run.activate('b');
