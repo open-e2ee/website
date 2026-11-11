@@ -65,7 +65,7 @@ PP52 src/data/signal-relay-pricing.mjs relay_growth_v1
 PP52 src/data/signal-relay-pricing.mjs relay_hobby_v1
 PP52 src/data/signal-relay-pricing.mjs relay_mau
 PP52 src/data/signal-relay-pricing.mjs relay_starter_v1
-PP52 src/data/signal-relay-service-catalog.mjs relay_managed_2026_11_01_v1
+NM8.12 src/data/signal-relay-service-catalog.mjs relay_managed_2026_11_01_v1
 PP52 src/data/virgil-security-comparison.mjs relay_business_v1
 PP52 src/data/virgil-security-comparison.mjs relay_growth_v1
 PP52 src/data/virgil-security-comparison.mjs relay_mau
@@ -268,7 +268,7 @@ PP52 tests/signal-relay-service-catalog.test.mjs relay_business_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_free_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_growth_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_hobby_v1
-PP52 tests/signal-relay-service-catalog.test.mjs relay_managed_2026_11_01_v1
+NM8.12 tests/signal-relay-service-catalog.test.mjs relay_managed_2026_11_01_v1
 PP52 tests/signal-relay-service-catalog.test.mjs relay_mau
 PP52 tests/signal-relay-service-catalog.test.mjs relay_starter_v1
 PP52 tests/signal-relay-terms-gate.test.mjs relay_free_v1
