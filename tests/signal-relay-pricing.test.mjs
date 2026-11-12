@@ -46,7 +46,7 @@ const paidAndEnterprise = [
 ];
 
 const sandboxDetail = 'Created automatically for each project. It uses isolated state and credentials, 24-hour default retention, a seven-day retention maximum, and suspension after 30 inactive days.';
-const sandbox = { signalRelayMau: '5 test accounts', deliveryUnits: '10,000', attachmentOperations: '2,500', storage: '100 MB', detail: sandboxDetail };
+const sandbox = { registeredTestAccounts: '5 test accounts', deliveryUnits: '10,000', attachmentOperations: '2,500', storage: '100 MB', detail: sandboxDetail };
 
 test('publishes the exact approved Relay catalog from one data module', () => {
   assert.deepEqual(signalRelayPricingAt(beforeCut).plans.map(figures), [free, hobby, ...paidAndEnterprise]);

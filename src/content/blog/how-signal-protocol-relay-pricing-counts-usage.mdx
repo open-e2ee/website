@@ -24,13 +24,34 @@ With accepted MAU overage, Starter with 2,000 active accounts costs $149 under t
 Each additional active account costs $0.10 on Hobby, $0.05 on Starter, $0.03 on Growth, or $0.02 on Business.
 Additional active accounts do not increase the other allowances.
 
+## Sandbox keeps registered test accounts
+
+Each project also has a separate Sandbox environment.
+Its account allowance counts currently registered canonical test accounts and does not reset each month.
+Linked devices, exact registration retries, and device replacement share the account's existing slot.
+Unresolved registrations reserve slots while the Relay confirms their outcomes.
+
+When no slot is available, genuinely new accounts wait.
+Existing accounts remain usable within the service's other limits.
+A lower limit can leave registered and reserved accounts above capacity without removing their slots.
+
+Confirmed account deletion frees a slot.
+A deletion acknowledgment or physical purge completion alone does not confirm release.
+The supported SDK deletion status must report `capacityRelease: 'released'`.
+Keep the same persistent encrypted store for deletion and status reads.
+Removing a device, clearing local storage, or reinstalling an app does not free its account slot.
+The [Sandbox operating guide](https://docs.open-e2ee.dev/signal-relay/limits-billing-and-operations#sandbox-account-capacity) gives the supported reclamation steps.
+
+Production continues to count monthly active accounts.
+
 ## One message can use several delivery units
 
 One accepted encrypted envelope or shared-body reference uses one delivery unit for each destination device.
 One stored Relay delivery receipt for one sender device also uses one delivery unit.
 A send to two destination devices uses two units. While Relay stores the message, an exact retry with the same stable operation identifier does not charge again.
 
-Included delivery units are 12,500 on Free, 50,000 on Hobby, 500,000 on Starter, 2.5 million on Growth, and 12.5 million on Business.
+Included delivery units are 12,500 on Free, 50,000 on Hobby, and 500,000 on Starter.
+Growth includes 2.5 million, and Business includes 12.5 million.
 Paid excess delivery costs $400, $200, $100, or $60 per million units on Hobby, Starter, Growth, or Business.
 
 ## Uploads and storage are separate

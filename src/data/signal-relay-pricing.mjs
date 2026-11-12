@@ -14,7 +14,7 @@ const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB
 export const signalRelayProductionRetention = 'Up to 30 days';
 
 const sandboxEnvironment = (sandbox) => ({
-  signalRelayMau: `${count(sandbox.monthlyActiveUsers)} test accounts`,
+  registeredTestAccounts: `${count(sandbox.monthlyActiveUsers)} test accounts`,
   deliveryUnits: count(sandbox.deliveryUnits),
   attachmentOperations: count(sandbox.attachmentOperations),
   storage: storage(sandbox.storageBytes),
