@@ -236,7 +236,6 @@ NM-FD25 tests/demo-signal-relay.test.mjs relay.subscribeRelayConnectionState
 NM-FD25 tests/demo-signal-relay.test.mjs relay.uploadPreKeys
 NM-FD25 tests/demo-signal-relay.test.mjs relayConnectionState
 NM-FD25 tests/demo-signal-relay.test.mjs subscribeRelayConnectionState
-NM8.2 tests/external-links.test.mjs relay_starter_v1
 NM2.15 tests/legal-pages.test.mjs relay-
 NM2.15 tests/legal-pages.test.mjs relay-2026-08-26
 NM2.15 tests/legal-pages.test.mjs relay-2026-09-10
