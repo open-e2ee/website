@@ -188,8 +188,10 @@ const PLAN_MARK = `${METADATA} min-h-[1lh] text-[var(--oe-sealed)]`;
  * Every self-service plan opens the Console route that creates a project,
  * because a production plan is activated inside a project. A paid plan names
  * itself in the query so the Console can offer that plan first once the
- * project exists. The highlighted plan is the filled action; the others are
- * secondary, and every one of them opens the same route. Each action carries
+ * project exists. The query spells the plan id with the signal_ prefix; the
+ * catalog keeps its fixed ids (NM-FD31), and the Console reads both spellings.
+ * The highlighted plan is the filled action; the others are secondary, and
+ * every one of them opens the same route. Each action carries
  * the label the founder chose for it on 2026-09-08 (`docs/messaging.md`); the
  * plan keeps its name in the heading over the column, and the label under the
  * rows is the invitation. Free is the one plan that costs nothing, so its
@@ -207,7 +209,7 @@ const selfServe = signalRelayPlans.filter((plan) => plan.monthlyPriceUsd !== nul
 const enterprise = signalRelayPlans.find((plan) => plan.monthlyPriceUsd === null);
 if (!enterprise) throw new Error('pricing.astro: the Relay catalog has no negotiated plan');
 
-const startHref = (plan: Plan) => (plan.id === FREE ? SIGNAL_RELAY_PROJECT : `${SIGNAL_RELAY_PROJECT}?plan=${plan.id}`);
+const startHref = (plan: Plan) => (plan.id === FREE ? SIGNAL_RELAY_PROJECT : `${SIGNAL_RELAY_PROJECT}?plan=signal_${plan.id}`);
 /* Keyed by plan name. A plan with no label fails the build. */
 const ACTION_LABEL: Record<string, string> = {
   Free: 'Fun & Free',
