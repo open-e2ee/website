@@ -31,7 +31,8 @@ Its account allowance counts currently registered canonical test accounts and do
 Linked devices, exact registration retries, and device replacement share the account's existing slot.
 Unresolved registrations reserve slots while the Relay confirms their outcomes.
 
-When no slot is available, genuinely new accounts wait.
+When no slot is available, the Relay refuses new accounts.
+A refused registration can succeed after a slot becomes available.
 Existing accounts remain usable within the service's other limits.
 A lower limit can leave registered and reserved accounts above capacity without removing their slots.
 
