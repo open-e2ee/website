@@ -498,7 +498,7 @@ test('every plan\'s action carries the label the founder chose for it', () => {
   for (const plan of selfServe) {
     const expected = ACTION_LABELS[plan.id];
     assert.ok(expected, `${plan.id} has no label in this test`);
-    const href = plan.id === 'relay_free_v1' ? 'https://console.open-e2ee.dev/signal-relay/new' : `https://console.open-e2ee.dev/signal-relay/new?plan=${plan.id}`;
+    const href = plan.id === 'relay_free_v1' ? 'https://console.open-e2ee.dev/signal-relay/new' : `https://console.open-e2ee.dev/signal-relay/new?plan=signal_${plan.id}`;
     const labels = [...plans.matchAll(/<a class="oe-button[^"]*" href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].filter((m) => m[1] === href).map((m) => m[2]);
     assert.equal(labels.length, 2, `${plan.name} does not have one action per rendering`);
     for (const label of labels) assert.equal(label, expected, `${plan.name} action reads "${label}"`);
@@ -530,7 +530,7 @@ test('prints every catalog plan, Hobby included, and no plan waits for a dated R
   assert.ok(columnHead(hobby.id).includes('>Hobby</h3>'), 'Hobby has no column head');
   assert.ok(columnHead(hobby.id).includes('>$9</p>'), 'Hobby does not print $9');
   assert.match(built, /data-signal-relay-plan-compact="relay_hobby_v1"/, 'Hobby has no narrow block');
-  assert.ok(built.includes('href="https://console.open-e2ee.dev/signal-relay/new?plan=relay_hobby_v1"'), 'Hobby has no action');
+  assert.ok(built.includes('href="https://console.open-e2ee.dev/signal-relay/new?plan=signal_relay_hobby_v1"'), 'Hobby has no action');
 });
 
 /*
@@ -663,7 +663,7 @@ test('a paid plan names itself to the console, and the free plan needs no query'
     if (plan.id === 'relay_free_v1') {
       assert.equal(href, 'https://console.open-e2ee.dev/signal-relay/new');
     } else {
-      assert.equal(href, `https://console.open-e2ee.dev/signal-relay/new?plan=${plan.id}`);
+      assert.equal(href, `https://console.open-e2ee.dev/signal-relay/new?plan=signal_${plan.id}`);
     }
     /* The console is the same product: the reader is leaving on purpose, and a
      * second tab holding the page they just read is litter. */
