@@ -97,7 +97,7 @@ test('terms gate: publishes every catalog plan and the current Sandbox limits, a
       at.toISOString(),
     );
     assert.deepEqual(
-      [sandboxEnvironment.signalRelayMau, sandboxEnvironment.deliveryUnits, sandboxEnvironment.attachmentOperations, sandboxEnvironment.storage],
+      [sandboxEnvironment.registeredTestAccounts, sandboxEnvironment.deliveryUnits, sandboxEnvironment.attachmentOperations, sandboxEnvironment.storage],
       [`${count(catalogSandbox.monthlyActiveUsers)} test accounts`, count(catalogSandbox.deliveryUnits),
         count(catalogSandbox.attachmentOperations), storage(catalogSandbox.storageBytes)],
       at.toISOString(),

@@ -472,7 +472,7 @@ test('what every plan carries stands in one section of cards under the plans, li
   assert.equal(cards.find((card) => card.label === 'Sealed sender').detail, 'Sender certificates, access keys, and unidentified delivery to devices and groups.');
   assert.doesNotMatch(included, /anonymous|untraceable/i, 'a card applies a banned word to sealed sender');
   assert.equal((built.match(/[Zz]ero-knowledge/g) ?? []).length, 1, '"zero-knowledge" is on the page other than as the name of the group credentials card');
-  assert.equal(cards.find((card) => card.label === 'Sandbox environment').detail, 'One with every project, at no cost and without a card.');
+  assert.equal(cards.find((card) => card.label === 'Sandbox environment').detail, 'One with every project, at no cost and without a card. Registered test accounts use slots until confirmed account deletion frees them. Linked devices share a slot.');
   /* Retention is the same on every plan, so it is one card here and not a
    * row of one repeated figure, and the figure is the catalog's. */
   assert.equal(
