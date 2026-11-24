@@ -1268,7 +1268,7 @@ test('changes only the usage period wording from the 2026-11-08 version in signa
     expected = expected.replace(from, to);
   }
   assert.equal(markup(frozen), expected, 'the dated signal-relay-2026-11-24 page differs from the 2026-11-08 page by more than the usage period wording');
-  assert.doesNotMatch(markup(frozen), /calendar month/, 'the 2026-11-24 version still names a calendar month');
+  assert.doesNotMatch(markup(frozen), /calendar\s+month/, 'the 2026-11-24 version still names a calendar month');
 
   const rendered = markup(live)
     .replace('{signalRelayTermsEffectiveDate}', signalRelayTermsEffectiveDate)
