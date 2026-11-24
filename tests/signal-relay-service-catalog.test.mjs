@@ -68,10 +68,10 @@ test('both current and immutable terms state the exact catalog rows', async () =
   const live = await readFile(new URL('../src/pages/legal/signal-relay-terms.astro', import.meta.url), 'utf8');
   assert.match(
     live,
-    /components\/SignalProtocolRelayTerms20261108\.astro/,
+    /components\/SignalProtocolRelayTerms20261124\.astro/,
     'the live Relay terms page does not render the component this test reads as current',
   );
-  for (const path of ['src/components/SignalProtocolRelayTerms20261108.astro', 'src/pages/legal/signal-relay-terms/2026-11-08.astro']) {
+  for (const path of ['src/components/SignalProtocolRelayTerms20261124.astro', 'src/pages/legal/signal-relay-terms/2026-11-24.astro']) {
     const terms = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
     const rows = [...terms.matchAll(/<tr><th scope="row">([^<]+)<\/th>(.*?)<\/tr>/g)];
     for (const plan of signalRelayPlans.filter(({ monthlyPriceUsd }) => monthlyPriceUsd !== null)) {

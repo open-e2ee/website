@@ -5,7 +5,7 @@ const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB
 
 /*
  * Every plan and the Sandbox environment take the pinned catalog values. The
- * signal-relay-2026-11-08 terms state the current Free and Sandbox limits, so
+ * signal-relay-2026-11-24 terms state the current Free and Sandbox limits, so
  * the site publishes them from the same catalog as the paid plans. A build date
  * cannot select different values.
  */
@@ -106,7 +106,7 @@ export const signalRelayLimitsChange = atBuild.limitsChange;
 export const signalRelayMeterDefinitions = [
   {
     name: 'Relay MAU',
-    definition: 'One canonical account with qualifying authenticated production activity during one UTC calendar month. Multiple devices for one account count once.',
+    definition: 'One canonical account with qualifying authenticated production activity during one billing period. Multiple devices for one account count once.',
   },
   {
     name: 'Delivery unit',
@@ -118,6 +118,6 @@ export const signalRelayMeterDefinitions = [
   },
   {
     name: 'Storage',
-    definition: 'Live customer ciphertext plus attachment bytes, integrated from exact byte changes over time. Internal identifiers, indexes, and bookkeeping are not billable bytes. One GB is 1,000,000,000 bytes. One GB-month uses the actual UTC calendar month.'
+    definition: 'Live customer ciphertext plus attachment bytes, integrated from exact byte changes over time. Internal identifiers, indexes, and bookkeeping are not billable bytes. One GB is 1,000,000,000 bytes. One GB-month uses the actual length of the billing period.'
   },
 ];

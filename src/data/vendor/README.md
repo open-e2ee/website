@@ -5,7 +5,7 @@
 Its catalog version is `relay_managed_2026_11_01_v1`.
 Its SHA256, including the final newline, is
 `ddaf69635969ef8123c2361852572cfd63d334bda4361ef5108ab95ce081a967`.
-The terms version `signal-relay-2026-11-08` publishes its Hobby plan and its current Free and Sandbox limits.
+The terms version `signal-relay-2026-11-24` publishes its Hobby plan and its current Free and Sandbox limits.
 
 The website checks the digest before it parses the artifact.
 The static build derives prices, capacities, Sandbox limits, and rational overage rates from this file.
