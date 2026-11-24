@@ -1,17 +1,20 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { signalRelayPricingAt, upcomingSignalProtocolRelayPlans } from '../src/data/signal-relay-pricing.mjs';
+import { signalRelayMeterDefinitions, signalRelayPricingAt, upcomingSignalProtocolRelayPlans } from '../src/data/signal-relay-pricing.mjs';
 import { signalRelayServiceCatalog } from '../src/data/signal-relay-service-catalog.mjs';
 
 /*
  * The public guards compare the published plans with the dated terms. The
  * signal-relay-2026-11-08 terms state every catalog plan, including Hobby, and
- * the current Free and Sandbox limits. A date cannot select different values.
+ * the current Free and Sandbox limits. The signal-relay-2026-11-24 terms keep
+ * them and state the Relay MAU and the GB-month by the billing period. A date
+ * cannot select different values.
  */
-const TERMS = 'src/components/SignalProtocolRelayTerms20261108.astro';
-const FROZEN = 'src/pages/legal/signal-relay-terms/2026-11-08.astro';
-const PREVIOUS = 'src/pages/legal/signal-relay-terms/2026-11-05.astro';
+const TERMS = 'src/components/SignalProtocolRelayTerms20261124.astro';
+const FROZEN = 'src/pages/legal/signal-relay-terms/2026-11-24.astro';
+const PREVIOUS = 'src/pages/legal/signal-relay-terms/2026-11-08.astro';
+const PRE_CATALOG = 'src/pages/legal/signal-relay-terms/2026-11-05.astro';
 const beforeCut = new Date('2026-10-31T23:59:59.999Z');
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -67,7 +70,7 @@ test('terms gate: the published catalog matches the dated terms at every build i
 });
 
 test('terms gate: publishes every catalog plan and the current Sandbox limits, and the dated terms state them', async () => {
-  const [terms, frozen, previous] = await Promise.all([read(TERMS), read(FROZEN), read(PREVIOUS)]);
+  const [terms, frozen, preCatalog] = await Promise.all([read(TERMS), read(FROZEN), read(PRE_CATALOG)]);
   const count = (value) => value.toLocaleString('en-US');
   const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB` : `${bytes / 1_000_000} MB`;
   const catalogFree = signalRelayServiceCatalog.plans.find(({ planId }) => planId === 'relay_free_v1');
@@ -110,8 +113,22 @@ test('terms gate: publishes every catalog plan and the current Sandbox limits, a
   /* The superseded 2026-11-05 terms do not state the Hobby row or the current
      Free row, so the published catalog needs the 2026-11-08 version. */
   const { plans } = signalRelayPricingAt(beforeCut);
-  assert.deepEqual(unstatedRows(previous, plans).map(({ plan, stated }) => [plan, stated]), [
+  assert.deepEqual(unstatedRows(preCatalog, plans).map(({ plan, stated }) => [plan, stated]), [
     ['Free', ['$0', '100', '100,000', '20,000', '1 GB', 'Hard cap', 'Hard cap', 'Hard cap']],
     ['Hobby', null],
   ]);
+});
+
+test('terms gate: the dated terms state the published Relay MAU and Storage definitions', async () => {
+  const [terms, frozen, previous] = await Promise.all([read(TERMS), read(FROZEN), read(PREVIOUS)]);
+  const flat = (source) => source.replace(/\s+/g, ' ');
+  const define = (name) => signalRelayMeterDefinitions.find((meter) => meter.name === name).definition;
+  for (const name of ['Relay MAU', 'Storage']) {
+    for (const [path, text] of [[TERMS, terms], [FROZEN, frozen]]) {
+      assert.ok(flat(text).includes(define(name)), `${path} does not state the published ${name} definition`);
+    }
+    /* The superseded 2026-11-08 terms count both meters by the UTC calendar
+       month, so the published definitions need the 2026-11-24 version. */
+    assert.ok(!flat(previous).includes(define(name)), `${PREVIOUS} already states the published ${name} definition`);
+  }
 });

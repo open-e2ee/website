@@ -5,7 +5,7 @@ const storage = (bytes) => bytes >= 1_000_000_000 ? `${bytes / 1_000_000_000} GB
 
 /*
  * Every plan and the Sandbox environment take the pinned catalog values. The
- * signal-relay-2026-11-08 terms state the current Free and Sandbox limits, so
+ * signal-relay-2026-11-24 terms state the current Free and Sandbox limits, so
  * the site publishes them from the same catalog as the paid plans. A build date
  * cannot select different values.
  */

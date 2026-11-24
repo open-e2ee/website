@@ -39,12 +39,17 @@
  *
  * The signal-relay-2026-11-08 version publishes the current service catalog:
  * it adds the Hobby plan and states the current Free and Sandbox limits.
- * Every other clause is unchanged. The Console settings for the Relay terms
- * URL and version must move with these constants once the dated page is live.
+ * Every other clause is unchanged.
+ *
+ * The signal-relay-2026-11-24 version states the usage period of each meter:
+ * included quantities per billing period, the Sandbox limits for each usage
+ * period, and the Relay MAU and the GB-month by the billing period. Every other
+ * clause is unchanged. The Console settings for the Relay terms URL and
+ * version must move with these constants once the dated page is live.
  */
-export const signalRelayTermsVersion = 'signal-relay-2026-11-08';
-export const signalRelayTermsEffectiveDate = 'November 8, 2026';
-export const signalRelayTermsPath = '/legal/signal-relay-terms/2026-11-08';
+export const signalRelayTermsVersion = 'signal-relay-2026-11-24';
+export const signalRelayTermsEffectiveDate = 'November 24, 2026';
+export const signalRelayTermsPath = '/legal/signal-relay-terms/2026-11-24';
 export const signalRelayTermsUrl = `https://open-e2ee.dev${signalRelayTermsPath}`;
 
 /*

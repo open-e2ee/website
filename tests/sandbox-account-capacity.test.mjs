@@ -18,6 +18,6 @@ test('the usage post explains Sandbox reclamation and the dated terms stay uncha
   assert.match(post, /capacityRelease: 'released'/);
   assert.match(post, /Removing a device, clearing local storage, or reinstalling an app does not free/);
   assert.match(post, /draft: true/);
-  const terms = await readFile(new URL('../src/pages/legal/signal-relay-terms/2026-11-08.astro', import.meta.url), 'utf8');
+  const terms = await readFile(new URL('../src/pages/legal/signal-relay-terms/2026-11-24.astro', import.meta.url), 'utf8');
   assert.match(terms, /Sandbox environment with 5 test accounts/);
 });

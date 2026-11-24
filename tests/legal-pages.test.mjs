@@ -58,9 +58,9 @@ test('pins the current legal documents to immutable canonical URLs', () => {
   assert.equal(privacyVersion, '2026-11-02');
   assert.equal(privacyPath, '/legal/privacy/2026-11-02');
   assert.equal(privacyUrl, 'https://open-e2ee.dev/legal/privacy/2026-11-02');
-  assert.equal(signalRelayTermsVersion, 'signal-relay-2026-11-08');
-  assert.equal(signalRelayTermsPath, '/legal/signal-relay-terms/2026-11-08');
-  assert.equal(signalRelayTermsUrl, 'https://open-e2ee.dev/legal/signal-relay-terms/2026-11-08');
+  assert.equal(signalRelayTermsVersion, 'signal-relay-2026-11-24');
+  assert.equal(signalRelayTermsPath, '/legal/signal-relay-terms/2026-11-24');
+  assert.equal(signalRelayTermsUrl, 'https://open-e2ee.dev/legal/signal-relay-terms/2026-11-24');
   assert.equal(signalRelayRetentionVersion, '2026-10-24');
   assert.equal(signalRelayRetentionEffectiveDate, 'October 24, 2026');
   assert.equal(signalRelayRetentionPath, '/legal/relay-retention/2026-10-24');
@@ -349,6 +349,7 @@ const frozenSignalProtocolRelayTermsVersions = [
   { version: 'relay-2026-11-02', date: '2026-11-02', effective: 'November 2, 2026' },
   { slug: 'signal-relay-terms', version: 'signal-relay-2026-11-05', date: '2026-11-05', effective: 'November 5, 2026' },
   { slug: 'signal-relay-terms', version: 'signal-relay-2026-11-08', date: '2026-11-08', effective: 'November 8, 2026' },
+  { slug: 'signal-relay-terms', version: 'signal-relay-2026-11-24', date: '2026-11-24', effective: 'November 24, 2026' },
 ];
 
 test('keeps every dated Relay terms page frozen: it never reads the live document', async () => {
@@ -615,7 +616,7 @@ test('freezes the privacy version the notice currently publishes', () => {
  * guard rules out.
  */
 test('states every published price and included quantity in the Relay terms', async () => {
-  const terms = await flat('../src/components/SignalProtocolRelayTerms20261108.astro');
+  const terms = await flat('../src/components/SignalProtocolRelayTerms20261124.astro');
 
   /* Bounded on both sides so a shorter figure cannot be satisfied by a longer
    * one containing it: "100" must not pass on "100,000", and "$0" must not
@@ -657,7 +658,7 @@ test('makes privacy and the Relay terms available from the site footer', async (
 
 test('names the selected counterparty in current documents and preserves accepted copies', async () => {
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20261108.astro',
+    '../src/components/SignalProtocolRelayTerms20261124.astro',
     '../src/components/DataProcessingAgreement20261108.astro',
     '../src/pages/legal/privacy.astro',
     '../src/pages/legal/terms/2026-10-24.astro',
@@ -739,7 +740,7 @@ test('describes the implemented providers and Signal Protocol Relay boundary', a
 
 test('publishes the exact Relay legal and lifecycle boundary', async () => {
   const [terms, acceptableUse, subprocessors, retention, beta] = await Promise.all([
-    flat('../src/components/SignalProtocolRelayTerms20261108.astro'),
+    flat('../src/components/SignalProtocolRelayTerms20261124.astro'),
     flat('../src/pages/legal/acceptable-use.astro'),
     flat('../src/pages/legal/subprocessors.astro'),
     flat('../src/pages/legal/signal-relay-retention.astro'),
@@ -837,7 +838,7 @@ test('names the Sandbox environment everywhere except the frozen legal versions'
   }
 
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20261108.astro',
+    '../src/components/SignalProtocolRelayTerms20261124.astro',
     '../src/components/DataProcessingAgreement20261108.astro',
     '../src/pages/legal/privacy.astro',
     '../src/pages/legal/signal-relay-retention.astro',
@@ -992,7 +993,7 @@ test('calls the Relay a beta on no current legal page', async () => {
     sources.add(String(page));
   }
   assert.ok(
-    sources.has(String(new URL('../src/components/SignalProtocolRelayTerms20261108.astro', import.meta.url))),
+    sources.has(String(new URL('../src/components/SignalProtocolRelayTerms20261124.astro', import.meta.url))),
     'the guard does not read the live Relay terms',
   );
 
@@ -1010,7 +1011,7 @@ test('calls the Relay a beta on no current legal page', async () => {
 
 test('lets a published version change the Relay terms and limits for every customer', async () => {
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20261108.astro',
+    '../src/components/SignalProtocolRelayTerms20261124.astro',
     `../src/pages${signalRelayTermsPath}.astro`,
   ]) {
     const terms = await flat(path);
@@ -1034,7 +1035,7 @@ test('lets a published version change the Relay terms and limits for every custo
 });
 
 test('applies the current catalog immediately and retains notice for future changes in both agreements', async () => {
-  for (const path of ['../src/components/SignalProtocolRelayTerms20261108.astro', `../src/pages${signalRelayTermsPath}.astro`]) {
+  for (const path of ['../src/components/SignalProtocolRelayTerms20261124.astro', `../src/pages${signalRelayTermsPath}.astro`]) {
     const terms = await flat(path);
     assert.match(terms, /prices, included quantities, and overage rates in Section 3\.1 apply to every project from this version’s effective date/);
     assert.match(terms, /This catalog applies immediately without a notice waiting period or grandfathered allowances/);
@@ -1108,10 +1109,11 @@ test('separates default account-linked Console usage from optional browser conse
 
 test('new Relay terms disclose limited Console usage without bundling optional browser consent', async () => {
   for (const path of [
-    '../src/components/SignalProtocolRelayTerms20261108.astro',
+    '../src/components/SignalProtocolRelayTerms20261124.astro',
     '../src/pages/legal/relay-terms/2026-11-02.astro',
     '../src/pages/legal/signal-relay-terms/2026-11-05.astro',
     '../src/pages/legal/signal-relay-terms/2026-11-08.astro',
+    '../src/pages/legal/signal-relay-terms/2026-11-24.astro',
   ]) {
     const terms = await flat(path);
     assert.match(terms, /records limited account-linked Console usage/);
@@ -1210,10 +1212,9 @@ const signalRelayCatalogSubstitutions = [
 ];
 
 test('changes only the plan table and the Sandbox limits from the 2026-11-05 version in signal-relay-2026-11-08', async () => {
-  const [previous, frozen, live] = await Promise.all([
+  const [previous, frozen] = await Promise.all([
     read('../src/pages/legal/signal-relay-terms/2026-11-05.astro'),
     read('../src/pages/legal/signal-relay-terms/2026-11-08.astro'),
-    read('../src/components/SignalProtocolRelayTerms20261108.astro'),
   ]);
 
   let expected = markup(previous);
@@ -1222,6 +1223,52 @@ test('changes only the plan table and the Sandbox limits from the 2026-11-05 ver
     expected = expected.replace(from, to);
   }
   assert.equal(markup(frozen), expected, 'the dated signal-relay-2026-11-08 page differs from the 2026-11-05 page by more than the catalog');
+  assert.doesNotMatch(frozen, /href="\/legal\/relay-(terms|retention|service-limits|beta-limits)[/"]/, 'the 2026-11-08 version links a retired Relay address');
+});
+
+/*
+ * signal-relay-2026-11-24 is a usage-period version. Its text is the 2026-11-08
+ * text with exactly these substitutions: the effective date, the version id,
+ * the permanent address, the included quantities per billing period, the
+ * Sandbox limits for each usage period, the Relay MAU by one billing period,
+ * and the GB-month by the actual length of the billing period. Any other
+ * difference is a clause change, which needs its own version and its own
+ * review. Sections 3.3, 3.7, 3.9 and 10, the plan table, and every price and
+ * quantity stay as they were.
+ */
+const signalRelayUsagePeriodSubstitutions = [
+  ['<span>Effective November 8, 2026</span>', '<span>Effective November 24, 2026</span>'],
+  ['<span>Version signal-relay-2026-11-08</span>', '<span>Version signal-relay-2026-11-24</span>'],
+  [
+    '<a href="/legal/signal-relay-terms/2026-11-08"><code>/legal/signal-relay-terms/2026-11-08</code></a>',
+    '<a href="/legal/signal-relay-terms/2026-11-24"><code>/legal/signal-relay-terms/2026-11-24</code></a>',
+  ],
+  ['Included quantities are per calendar month.', 'Included quantities are per billing period.'],
+  [
+    'Sandbox environment with 5 test accounts and, each calendar\n          month, 10,000 delivery units,',
+    'Sandbox environment with 5 test accounts and, each usage\n          period, 10,000 delivery units,',
+  ],
+  [
+    'production activity during one UTC calendar month. Multiple devices for one account',
+    'production activity during one billing period. Multiple devices for one account',
+  ],
+  ['One GB-month uses the actual UTC calendar month.', 'One GB-month uses the actual length of the billing period.'],
+];
+
+test('changes only the usage period wording from the 2026-11-08 version in signal-relay-2026-11-24', async () => {
+  const [previous, frozen, live] = await Promise.all([
+    read('../src/pages/legal/signal-relay-terms/2026-11-08.astro'),
+    read('../src/pages/legal/signal-relay-terms/2026-11-24.astro'),
+    read('../src/components/SignalProtocolRelayTerms20261124.astro'),
+  ]);
+
+  let expected = markup(previous);
+  for (const [from, to] of signalRelayUsagePeriodSubstitutions) {
+    assert.equal(expected.split(from).length, 2, `the 2026-11-08 page does not carry exactly one ${from}`);
+    expected = expected.replace(from, to);
+  }
+  assert.equal(markup(frozen), expected, 'the dated signal-relay-2026-11-24 page differs from the 2026-11-08 page by more than the usage period wording');
+  assert.doesNotMatch(markup(frozen), /calendar month/, 'the 2026-11-24 version still names a calendar month');
 
   const rendered = markup(live)
     .replace('{signalRelayTermsEffectiveDate}', signalRelayTermsEffectiveDate)

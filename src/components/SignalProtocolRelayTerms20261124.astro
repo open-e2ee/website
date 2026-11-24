@@ -1,11 +1,12 @@
 ---
 /*
  * The OpenE2EE Signal Protocol Relay Service Terms, version
- * signal-relay-2026-11-08. This version publishes the current service catalog
- * in Section 3.1. It changes three things from
- * the 2026-11-05 version: the plan table gains the Hobby row, the Free row
- * states the current Free limits, and the Sandbox environment paragraph states
- * the current Sandbox limits. Every other clause is unchanged.
+ * signal-relay-2026-11-24. This version states the usage period of each meter.
+ * It changes four sentences from the 2026-11-08 version. Section 3.1 states
+ * the included quantities per billing period and the Sandbox limits for each
+ * usage period. Section 3.2 defines the Relay MAU by one billing period and the
+ * GB-month by the actual length of the billing period. Every other clause is
+ * unchanged.
  *
  * `/legal/signal-relay-terms` renders this component. The dated page under
  * `/legal/signal-relay-terms/` holds a literal snapshot of the same text and never
@@ -196,9 +197,9 @@ import {
           </table>
         </TableScroll>
         <p>
-          Included quantities are per calendar month. Additional MAU is priced per account. Every
-          project also has a Sandbox environment with 5 test accounts and, each calendar
-          month, 10,000 delivery units, 2,500 attachment uploads, and 100 MB of storage. It keeps
+          Included quantities are per billing period. Additional MAU is priced per account. Every
+          project also has a Sandbox environment with 5 test accounts and, each usage
+          period, 10,000 delivery units, 2,500 attachment uploads, and 100 MB of storage. It keeps
           content for 24 hours by default and seven days at most, and it may be suspended after 30
           inactive days. The Sandbox environment has no fee and no overage.
         </p>
@@ -208,7 +209,7 @@ import {
         <ul>
           <li>
             <strong>Relay MAU.</strong> One canonical account with qualifying authenticated
-            production activity during one UTC calendar month. Multiple devices for one account
+            production activity during one billing period. Multiple devices for one account
             count once.
           </li>
           <li>
@@ -223,7 +224,7 @@ import {
           <li>
             <strong>Storage.</strong> Live customer ciphertext plus attachment bytes, integrated
             from exact byte changes over time. Internal identifiers, indexes, and bookkeeping are
-            not billable bytes. One GB is 1,000,000,000 bytes. One GB-month uses the actual UTC calendar month.
+            not billable bytes. One GB is 1,000,000,000 bytes. One GB-month uses the actual length of the billing period.
           </li>
         </ul>
         <p>
