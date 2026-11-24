@@ -75,18 +75,12 @@ const REFUSED = [
   'issueAuthCredential',
 ];
 
-/**
- * The optional members of the contract that this relay leaves out. The last
- * two are the long forms of the two connection-state members. SDK 14.3.0
- * deprecates them, and SDK 15.0.0 removes them (NM-FD25).
- */
+/** The optional members of the contract that this relay leaves out. */
 const ABSENT = [
   'groupServer',
   'refreshGroupSendEndorsements',
   'fetchSenderCertificate',
   'sendMultiRecipientUnidentified',
-  'signalProtocolRelayConnectionState',
-  'subscribeSignalProtocolRelayConnectionState',
 ];
 
 test('a sent envelope waits in the mailbox and goes to a later subscriber', async () => {
